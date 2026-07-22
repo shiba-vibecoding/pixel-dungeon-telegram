@@ -1,7 +1,6 @@
 Play	시작
 Highscores	최고 점수
 About	정보
-Send E-Mail	Send E-Mail
 Top Rankings	최고 랭킹
 Total games won/played: 	총 플레이 회수.
 No games have been played yet.	한번도 플레이 하지 않음.
@@ -250,7 +249,6 @@ Unable to load additional information	추가 정보를 로드하지 못했음
 Stats	스탯
 Items	아이템
 Badges	업적
-Level %1$d %2$s	Level %1$d %2$s
 Challenges	도전
 Health	체력
 Strength	힘
@@ -273,7 +271,6 @@ Default Zoom	기본 배율
 Scale up UI	확대 UI
 Immersive mode	실감 모드
 Music	음악
-Sound FX	Sound FX
 Brightness	밝기
 Second quickslot	두 번째 퀵 슬롯
 Switch to portrait	세로 모드로 전환
@@ -304,7 +301,6 @@ EQUIP	장착
 UNEQUIP	해제
 You can't remove cursed %s!	%s 은/는 저주로 인해 해제 할 수 없습니다!
 Amulet of Yendor	옌더의 부적
-END THE GAME	END THE GAME
 The Amulet of Yendor is the most powerful known artifact of unknown origin. It is said that the amulet is able to fulfill any wish if its owner's will-power is strong enough to "persuade" it to do it.	옌더의 부적은 정체불명의 가장 강력한 유물입니다. 이 부적은 소유자의 의지가 충분하다면 어떤 소원이든 성취할 수 있다고 합니다.
 Ankh	앙크
 The ancient symbol of immortality grants an ability to return to life after death. Upon resurrection all non-equipped items are lost.	영생을 상징하는 고대의 물건으로 소유자의 생명을 되살릴 수 있는 능력이 있습니다. 부활할 시 장착하지 않은 모든 아이템은 손실됩니다.
@@ -1187,4 +1183,8 @@ As you take a sip, you feel something changing inside you.	한 모금 마시자,
 Disguised as a %s	%s 모습으로 변장함
 You merged two wands into one %s.	두 마법 막대를 합쳐 %s 하나를 만들었다.
 Select a wand to merge	합칠 마법 막대를 선택하세요.
+Send E-Mail	이메일 보내기
+Level %1$d %2$s	레벨 %1$d %2$s
+Sound FX	효과음
+END THE GAME	게임 종료
 Games played: 	플레이 수:

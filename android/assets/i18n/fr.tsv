@@ -120,7 +120,6 @@ assassin	assassin
 When performing a surprise attack, the _Assassin_ inflicts additional damage to his target.	Quand il fait une attaque surprise, l'_Assassin_ inflige des dommages supplémentaires à sa cible.
 freerunner	coureur
 The _Freerunner_ can move almost twice faster, than most of the monsters. When he is running, the Freerunner is much harder to hit. For that he must be unencumbered and not starving.	Le _Coureur_ se déplace presque deux fois plus vite que la plupart des monstres. Quand il court, le coureur est beaucoup plus dur à toucher. Mais pour cela, il ne doit pas être encombré et ne pas être affamé.
-sniper	sniper
 _Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	Les _Snipers_ sont capables de détecter les points faibles dans l'armure d'un ennemi, ignorant cette protection lors de l'utilisation d'armes à distance.
 warden	gardienne
 Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	Les _Gardiennes_ ont une forte connexion avec les forces de la nature, ce qui leur donne la possibilité de collecter de la rosée et des graines sur les plantes. Fouler des herbes hautes leur octroie par ailleurs un bonus d'armure temporaire.
@@ -258,7 +257,6 @@ This is all that's left from one of your predecessors. Maybe it's worth checking
 Journal	Journal
 Languages	Langues
 Unable to load additional information	Impossible de charger plus d'informations
-Stats	Stats
 Items	Objets
 Badges	Médailles
 Level %1$d %2$s	Niveau %1$d %2$s
@@ -307,7 +305,6 @@ Battle wand	Sceptre pour le combat
 Non-battle wand	Autres sceptres
 Good luck in your quest, %s!	Bonne chance dans votre quête, %s !
 Select an item for the quickslot	Choisissez un objet à mettre en raccourci
-smth	smth
 DROP	POSER
 THROW	LANCER
 Your pack is too full for the %s	Vous n'avez plus de place pour %s
@@ -907,7 +904,6 @@ One of this demon's other names is "orb of hatred", because when it sees an enem
 %s's deathgaze killed you...	les gaz toxique de l'%s vous ont tué...
 fetid rat	rat fétide
 This marsupial rat is much larger, than a regular one. It is surrounded by a foul cloud.	Ce rat est plus gros que les autres. Il est entouré d'un nuage nauséabond.
-gnoll scout	gnoll scout
 Gnolls are hyena-like humanoids. They dwell in sewers and dungeons, venturing up to raid the surface from time to time. Gnoll scouts are regular members of their pack, they are not as strong as brutes and not as intelligent as shamans.	Les gnolls sont des hommes-hyènes. Ils errent dans les égouts et les donjons, s'aventurant à la surface pour mener des raids de temps en temps. Les scouts sont des membres courants de leur meute, ils ne sont pas aussi forts que les brutes et pas aussi intelligents que les shamans.
 golem	golem
 The Dwarves tried to combine their knowledge of mechanisms with their newfound power of elemental binding. They used spirits of earth as the "soul" for the mechanical bodies of golems, which were believed to be most controllable of all. Despite this, the tiniest mistake in the ritual could cause an outbreak.	Les nains ont essayé de combiner leurs connaissances en bricolage avec leur nouveaux pouvoirs engageant les pouvoirs des élémentaires. Ils utilisèrent les esprits de la terre comme "âme" pour les corps mécaniques des golems, qu'ils pensaient être les plus dociles de tous. Malgré cela, la plus petite erreur dans le rituel pouvait déclencher un débordement.
@@ -939,7 +935,6 @@ Marsupial rats are aggressive, but rather weak denizens of the sewers. They can 
 scorpio	scorpion
 These huge arachnid-like demonic creatures avoid close combat by all means, firing crippling serrated spikes from long distances.	Ces énormes arachnides démoniaques évitent le combat rapproché à tout prix, tirant des épines empoisonnées et crantées sur de longues distances.
 senior monk	moine senior
-gnoll shaman	gnoll shaman
 The most intelligent gnolls can master shamanistic magic. Gnoll shamans prefer battle spells to compensate for lack of might, not hesitating to use them on those who question their status in a tribe.	les gnolls les plus intelligents peuvent maîtriser de la magie shamanique. Les gnoll shamans préfèrent les sorts de combat pour compenser leur manque de force, n'hésitant pas à les utiliser sur ceux qui remettent leur statut en question dans la tribu.
 %s's lightning bolt killed you...	L'éclair du %s vous a tué...
 shielded brute	brute au bouclier
@@ -1187,4 +1182,9 @@ As you take a sip, you feel something changing inside you.	En prenant une gorgé
 Disguised as a %s	Déguisé en %s
 You merged two wands into one %s.	Vous avez fusionné deux baguettes pour créer %s.
 Select a wand to merge	Choisissez une baguette à fusionner
+sniper	tireur d'élite
+Stats	Statistiques
+smth	quelque chose
+gnoll scout	éclaireur gnoll
+gnoll shaman	chaman gnoll
 Games played: 	Parties jouées :

@@ -76,7 +76,7 @@ public enum HeroClass {
 		"Huntresses start with a unique upgradeable boomerang.",
 		"Huntresses are proficient with missile weapons and get a damage bonus for excessive strength when using them.",
 		"Huntresses gain more health from dewdrops.",
-		"Huntresses sense neighbouring monsters even if they are hidden behind obstacles."
+		"Huntresses sense neighboring monsters even if they are hidden behind obstacles."
 	};
 	
 	public void initHero( Hero hero ) {

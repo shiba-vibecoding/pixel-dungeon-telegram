@@ -1,14 +1,10 @@
-Play	Play
 Highscores	ハイスコア
-About	About
 Send E-Mail	E-Mail を送る
 Top Rankings	トップランキング
 Total games won/played: 	プレイしたゲームの合計:
 No games have been played yet.	まだゲームをプレイしていません。
 No additional information	追加情報はありません
 Your Badges	あなたのバッジ
-Load Game	Load Game
-New Game	New Game
 Erase current game	進行中のゲームを消去
 Depth: %1$d, level: %2$d	階層: %1$d\nレベル: %2$d
 Do you really want to start new game?	本当に新しいゲームを始めたいですか？
@@ -183,8 +179,6 @@ Monster killed by a Grim weapon	致命の武器でモンスターを倒した
 100 games played	ゲームを100プレイした
 500 games played	ゲームを500プレイした
 2000 games played	ゲームを2000プレイした
-Happy end	Happy end
-Challenge won	Challenge won
 Thanks for your support!	ご協力ありがとうございました！
 On diet	ダイエット中
 Faith is my armor	信仰は鎧となる
@@ -1187,4 +1181,10 @@ As you take a sip, you feel something changing inside you.	一口飲むと、体
 Disguised as a %s	%sに変装中
 You merged two wands into one %s.	2本の杖を融合して%sを作り出した。
 Select a wand to merge	融合する杖を選択
+Play	プレイ
+About	ゲーム情報
+Load Game	ゲームをロード
+New Game	ニューゲーム
+Happy end	幸せな結末
+Challenge won	チャレンジ達成
 Games played: 	プレイ回数：

@@ -41,7 +41,6 @@ Your steps echo across the dungeon.	Tus pasos producen eco a través de la mazmo
 You hear the water splashing around you.	Escuchas agua goteando alrededor tuya.
 The smell of vegetation is thick in the air.	La presencia de vegetación se siente en el aire.
 The atmosphere hints that this floor hides many secrets.	La atmósfera da indicios de que este nivel esconde muchos secretos.
-mob	mob
 %1$s hit %2$s	%1$s ha golpeado %2$s
 %1$s defeated %2$s	%1$s ha derrotado %2$s
 %1$s %2$s your attack	%1$s %2$s tu ataque
@@ -120,7 +119,6 @@ assassin	asesino
 When performing a surprise attack, the _Assassin_ inflicts additional damage to his target.	Cuando inflinge una ataque sorpresa, el _Asesino_ añade daño adicional al enemigo.
 freerunner	corredor
 The _Freerunner_ can move almost twice faster, than most of the monsters. When he is running, the Freerunner is much harder to hit. For that he must be unencumbered and not starving.	El _Corredor_ se mueve casi el doble de rápidoque muchos de los monstruos. Cuando está corriendo es mucho más difícil de acertar. Para ello no debe tener un enemigo al lado ni tener mucha hambre.
-sniper	sniper
 _Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	Los _Snipers_ pueden detectar puntos débiles en la armadura de un enemigo, ignorándola al usar un proyectil.
 warden	guardian
 Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	Teniendo una conexión con las fuerzas de la naturaleza, el _Guardian_ posee la habilidad de coger gotas de rocío y semillas de las plantas. También pisar la hierba le da un bufo de armadura.
@@ -175,7 +173,6 @@ Item of level 12 acquired	Ítem de nivel 12 adquirido
 All rare monsters slain	Todos los monstruos raros mutilados
 Amulet of Yendor obtained	Amuleto de Yendor obtenido
 Amulet of Yendor obtained by Warrior, Mage, Rogue & Huntress	Amuleto de Yendor obtenido por Guerrero, Mago, Bellaco & Cazadora
-7-hit combo	7-hit combo
 3 potions cooked	3 pociones cocinadas
 6 potions cooked	6 pociones cocinadas
 9 potions cooked	9 pociones cocinadas
@@ -307,7 +304,6 @@ Battle wand	Batalla varita
 Non-battle wand	Varita no batalla
 Good luck in your quest, %s!	Buena suerte en su búsqueda, %s!
 Select an item for the quickslot	Seleccione un elemento para la Quickslot
-smth	smth
 DROP	DEJAR
 THROW	TIRAR
 Your pack is too full for the %s	Su paquete es demasiado lleno para el %s
@@ -375,23 +371,15 @@ Never mind	No importa
 PLANT	PLANTA
 Throw this seed to the place where you want to grow %1$s.\n\n%2$s	Tire a esta semilla en el lugar donde desea crecer %1$s.\n\n%2$s
 seed of %s	semilla de %s
-Dreamweed	Dreamweed
 Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Al tocar un Dreamweed segrega una nube brillante de gas confuso.
-Earthroot	Earthroot
 When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Cuando una criatura toca un Earthroot, sus raíces crean una especie de armadura natural a su alrededor.
 Herbal armor	Armadura herbal
-Fadeleaf	Fadeleaf
 Touching a Fadeleaf will teleport any creature to a random place on the current level.	Tocar una Fadeleaf se teletransportarse a cualquier criatura a un lugar al azar en el nivel actual.
-Firebloom	Firebloom
 When something touches a Firebloom, it bursts into flames.	Cuando algo toca una Firebloom, estalla en llamas.
-Icecap	Icecap
 Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Al tocar un Icecap excreta un polen, que congela todo en su vecindad.
-Rotberry	Rotberry
 Berries of this shrub taste like sweet, sweet death.	Las bayas de este arbusto saben a dulce, dulce muerte.
 The seed emits a roar that echoes throughout the dungeon!	La semilla emite un rugido que hace eco a lo largo de la mazmorra!
-Sorrowmoss	Sorrowmoss
 A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Un Sorrowmoss es una flor (no un musgo) con pétalos afilados, recubiertas de una de veneno mortal.
-Sungrass	Sungrass
 Sungrass is renowned for its sap's healing properties.	Sungrass es famoso por las propiedades curativas de su savia.
 Herbal healing	Curación herbaria
 your %s constricts around you painfully	tu %s constriñe a tu alrededor dolorosamente
@@ -525,7 +513,6 @@ Potion of Liquid Flame	Poción de la Llama Líquido
 This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	Este frasco contiene un compuesto inestable que va a estallar violentamente en llamas tras la exposición al aire libre.
 Potion of Might	Poción de Poderío
 This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	Este poderoso líquido curso a través de los músculos, de forma permanente aumento de su fuerza en un punto y la salud en cinco puntos.
-+1 str, +5 ht	+1 str, +5 ht
 Potion of Mind Vision	Poción de la Mente Visión
 After drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls. Also this potion will permit you to see through nearby walls and doors.	Después de beber esto, tu mente se convertirá en sintonía con la firma psíquica de criaturas distantes, lo que le permite sentir presencias biológicos a través de paredes. También esta poción le permitirá ver a través de paredes y puertas cercanas.
 You can somehow feel the presence of other creatures' minds!	De alguna manera puede sentir la presencia de las mentes de otras criaturas!
@@ -539,7 +526,6 @@ You've stopped sensing any smells!	Has dejado de detectar olores!
 Potion of Strength	Poción de Fuerza
 This powerful liquid will course through your muscles, permanently increasing your strength by one point.	Este poderoso líquido curso a través de los músculos, de forma permanente aumento de su fuerza por un punto.
 Newfound strength surges through your body.	Nueva fuerza surge a través de su cuerpo.
-+1 str	+1 str
 Potion of Toxic Gas	Poción de Gas Tóxico
 Uncorking or shattering this pressurized glass will cause its contents to explode into a deadly cloud of toxic green gas. You might choose to fling this potion at distant enemies instead of uncorking it by hand.	El descorche o destrozando este vidrio a presión hará que su contenido a explotar en una nube mortal de gas verde tóxico. Usted puede optar por lanzar esta poción a los enemigos distantes en lugar de descorchar a mano.
 corpse dust	polvo de cadáver
@@ -569,7 +555,6 @@ You can only wear two rings at a time. Unequip one of your equipped rings.	Sólo
 diamond	diamante
 opal	ópalo
 garnet	granate
-ruby	ruby
 amethyst	amatista
 topaz	topacio
 onyx	ónix
@@ -690,7 +675,6 @@ rowan	serbal
 willow	sauce
 mahogany	caoba
 bamboo	bambú
-purpleheart	purpleheart
 oak	roble
 birch	abedul
 Wand of Amok	Varita de Furia
@@ -777,7 +761,6 @@ battle axe	hacha de batalla
 The enormous steel head of this battle axe puts considerable heft behind each stroke.	La enorme cabeza de acero de esta hacha de batalla pone considerable influencia detrás de cada golpe.
 dagger	daga
 A simple iron dagger with a well worn wooden handle.	Una daga de hierro simple con un mango de madera desgastada.
-glaive	glaive
 A polearm consisting of a sword blade on the end of a pole.	Un arma de asta que consiste en una hoja de la espada en el extremo de un poste.
 knuckleduster	puño de hierro
 A piece of iron shaped to fit around the knuckles.	Un pedazo de hierro en forma de encajar alrededor de los nudillos.
@@ -846,7 +829,6 @@ Burning	Quemar
 You burned to death...	Usted quemado hasta la muerte ...
 Charmed	Encantado
 Combo	Combo
-%d hit combo!	%d hit combo!
 Crippled	Lisiado
 Frozen	Congelado
 Fury	Furia
@@ -958,7 +940,6 @@ Tengu	Tengu
 memory of Tengu	memoria del Tengu
 Tengu are members of the ancient assassins clan, which is also called Tengu. These assassins are noted for extensive use of shuriken and traps.	Tengu son miembros del clan asesinos antiguos, que también se llama Tengu. Estos asesinos son conocidos por el uso extensivo de shuriken y trampas.
 Free at last...	Libre al fin...
-Gotcha, %s!	Gotcha, %s!
 crazy thief	ladrón loco
 Deeper levels of the dungeon have always been a hiding place for all kinds of criminals. Not all of them could keep a clear mind during their extended periods so far from daylight. Long ago, these crazy thieves and bandits have forgotten who they are and why they steal.	Niveles más profundos de la mazmorra siempre han sido un lugar de escondite para todo tipo de delincuentes. No todos ellos podían mantener una mente clara durante sus largos períodos lejos de la luz del día. Hace mucho tiempo, estos ladrones y bandidos locos han olvidado quiénes son y por qué se roban.
 %1$s stole %2$s from you!	%1$s robó %2$s de usted!
@@ -1187,4 +1168,23 @@ As you take a sip, you feel something changing inside you.	Al dar un sorbo, sien
 Disguised as a %s	Disfrazado de %s
 You merged two wands into one %s.	Has fusionado dos varitas para crear %s.
 Select a wand to merge	Elige una varita para fusionar
+mob	monstruo
+sniper	tirador
+7-hit combo	combo de 7 golpes
+smth	algo
+Dreamweed	hierbasueño
+Earthroot	raíz terrestre
+Fadeleaf	hoja evanescente
+Firebloom	flor de fuego
+Icecap	sombrerillo de hielo
+Rotberry	bayapodrida
+Sorrowmoss	musgo triste
+Sungrass	hierba solar
++1 str, +5 ht	+1 fue, +5 sal
++1 str	+1 fue
+ruby	rubí
+purpleheart	amaranto
+glaive	guja
+Gotcha, %s!	¡Te tengo, %s!
+%d hit combo!	¡Combo de %d golpes!
 Games played: 	Partidas jugadas:

@@ -36,7 +36,6 @@ Your steps echo across the dungeon.	I tuoi passi riecheggiano nel dungeon.
 You hear the water splashing around you.	Puoi udire l'acqua intorno a te.
 The smell of vegetation is thick in the air.	L'odore di vegetazione è acuto nell'aria.
 The atmosphere hints that this floor hides many secrets.	L'atmosfera suggerisce che il piano nasconda diversi segreti.
-mob	mob
 %1$s hit %2$s	%1$s colpisce %2$s
 %1$s defeated %2$s	%1$s ha sconfitto %2$s
 %1$s %2$s your attack	%1$s %2$s il tuo attacco
@@ -113,7 +112,6 @@ battlemage	Mago-Combattente
 When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	Quando si combatte con una bacchetta in mano, il _Mago-combattente_ infligge danno aggiuntivo a seconda del numero attuale di cariche. Ogni colpo andato a segno restituisce 1 carica per questa bacchetta.
 assassin	assassino
 When performing a surprise attack, the _Assassin_ inflicts additional damage to his target.	Quando si esegue un attacco a sorpresa, l' _Assassino_ infligge ulteriori danni al suo bersaglio.
-freerunner	freerunner
 The _Freerunner_ can move almost twice faster, than most of the monsters. When he is running, the Freerunner is much harder to hit. For that he must be unencumbered and not starving.	Il _Freerunner_ può muoversi quasi il doppio più velocemente, rispetto alla maggior parte dei mostri. Quando è in movimento, il Freerunner è molto più difficile da colpire. Per questo egli deve essere svincolato e non morire di fame.
 sniper	tiratore
 _Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	I _Tiratori_ sono in grado di rilevare i punti deboli nell' armatura di un nemico, di fatto ignora quando si usa un'arma missile.
@@ -170,7 +168,6 @@ Item of level 12 acquired	Item di livello 12 acquisito
 All rare monsters slain	Uccisi tutti i mostri rari
 Amulet of Yendor obtained	Amuleto di Yendor ottenuto
 Amulet of Yendor obtained by Warrior, Mage, Rogue & Huntress	Amuleto di Yendor ottenuto da tutte le classi
-7-hit combo	7-hit combo
 3 potions cooked	3 pozioni create
 6 potions cooked	6 pozioni create
 9 potions cooked	9 pozioni create
@@ -188,9 +185,7 @@ Challenge won	Sfida vinta
 Thanks for your support!	Grazie per il tuo sostegno!
 On diet	Sulla dieta
 Faith is my armor	La fede è la mia armatura
-Pharmacophobia	Pharmacophobia
 Barren land	terra sterile
-Swarm intelligence	Swarm intelligence
 Into darkness	nel buio
 Forbidden runes	Rune Proibite
 Well of Health	Pozzo della Salute
@@ -229,7 +224,6 @@ Start New Game	Inizia nuova partita
 Main Menu	Menu principale 
 Exit Game	Esci da Remixed Dungeon
 Return to Game	Ritorna nel gioco
-Buffs	Buffs
 Experience	Esperienza
 Catalogus	Cataloghi
 Oh yes! You are my hero!\nRegarding your reward, I don't have cash with me right now, but I have something better for you. This is my family heirloom ring: my granddad took it off a dead paladin's finger.	Oh, si! Sei il mio eroe! \nRiguardo la tua ricompensa, non ho monete con me al momento, ma ho qualcosa di meglio per te. Questo è il cimelio della mia famiglia: mio nonno raccolse questo anello dal dito di un paladino morto. 
@@ -248,7 +242,6 @@ This is all that's left from one of your predecessors. Maybe it's worth checking
 Journal	Diario
 Unable to load additional information	Impossibile caricare ulteriori informazioni
 Stats	Statistiche
-Items	Items
 Badges	Emblemi
 Level %1$d %2$s	Livello %1$d %2$s
 Challenges	Sfide
@@ -295,7 +288,6 @@ Battle wand	Bacchetta da battaglia
 Non-battle wand	Bacchetta d'utilità 
 Good luck in your quest, %s!	Buona fortuna nella vostra missione, %s!
 Select an item for the quickslot	Scegli un oggetto per il lancio rapido
-smth	smth
 DROP	GETTA
 THROW	LANCIA
 Your pack is too full for the %s	Il tuo zaino è troppo pieno per il/la/i %s
@@ -366,7 +358,6 @@ Firebloom	Fuocofiore
 When something touches a Firebloom, it bursts into flames.	Quando qualcosa tocca un Fuocofiore, scoppia in fiamme.
 Icecap	Calotta ghiacciata
 Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Al momento di toccare una Calotta glaciale espella un polline, che congela tutto nelle sue vicinanze
-Rotberry	Rotberry
 Berries of this shrub taste like sweet, sweet death.	Bacche di questo arbusto hanno il sapore dolce, dolce morte.
 The seed emits a roar that echoes throughout the dungeon!	Il seme emette un boato che risuona per tutto il dungeon!
 Sorrowmoss	Muschio della sventura
@@ -475,7 +466,6 @@ Are you sure you want to drink it? In most cases you should throw such potions a
 Are you sure you want to throw it? In most cases it makes sense to drink it.	Sei sicuro di voler buttare? Nella maggior parte dei casi ha senso bere.
 The flask shatters and %s liquid splashes harmlessly	La boccetta si frantuma e un liquido %s si sparge senza provocare danno
 turquoise	turchese
-crimson	crimson
 azure	azzurro
 jade	giada
 golden	oro
@@ -483,7 +473,6 @@ magenta	magenta
 charcoal	carbone
 ivory	avorio
 amber	ambrato
-bistre	bistre
 indigo	indaco
 silver	argento
 Potion of Experience	Pozione d'Esperienza 
@@ -502,7 +491,6 @@ Potion of Liquid Flame	Pozione di Fiamma liquefatta
 This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	Questa boccetta contiene un composto instabile che scoppia violentemente in fiamme in esposizione all'aria aperta.
 Potion of Might	Pozione di Vigore
 This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	Questo potente liquido fluirà attraverso i tuoi muscoli, aumentando permanentemente la tua forza di un punto e la vita di cinque punti. 
-+1 str, +5 ht	+1 str, +5 ht
 Potion of Mind Vision	Pozione di visione mentale
 After drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls. Also this potion will permit you to see through nearby walls and doors.	Dopo averla bevuta, la tu menta percepirà il segnale psichico di creature distanti, permettendoti di sentire presenze biologiche attraverso i muri. Inoltre questa pozione ti permetterà di vedere attraverso i muri e le porte vicine.
 You can somehow feel the presence of other creatures' minds!	In qualche modo puoi sentire la presenza di menti di altre creature! 
@@ -541,9 +529,7 @@ you are now familiar enough with your %1$s to identify it. It is %2$s.	hai abbas
 diamond	diamante
 opal	opale
 garnet	granato
-ruby	ruby
 amethyst	ametista
-topaz	topaz
 onyx	onice
 tourmaline	tormalina
 emerald	smeraldo
@@ -901,7 +887,6 @@ The deadly swarm of flies buzzes angrily. Every non-magical attack will split it
 Tengu	tengu
 Tengu are members of the ancient assassins clan, which is also called Tengu. These assassins are noted for extensive use of shuriken and traps.	Tengu sono membri degli antichi assassini del clan , che è anche chiamato Tengu. Questi assassini sono noti per l'uso estensivo di shuriken e trappole.
 Free at last...	Finalmente libero...
-Gotcha, %s!	Gotcha, %s!
 crazy thief	Ladro pazzo
 Deeper levels of the dungeon have always been a hiding place for all kinds of criminals. Not all of them could keep a clear mind during their extended periods so far from daylight. Long ago, these crazy thieves and bandits have forgotten who they are and why they steal.	I livelli più profondi del dungeon sono sempre stati un nascondiglio per tutti i tipi di criminali. Non tutti potevano mantenere una mente lucida durante i loro lunghi periodi così lontano dalla luce del giorno. Molto tempo fa, questi banditi e ladri folli hanno dimenticato chi sono e perché rubano. Questo bandito sembra aver rivestito il pugnale con qualcosa!
 %1$s stole %2$s from you!	%1$s ha rubato %2$s da te!
@@ -1187,4 +1172,19 @@ As you take a sip, you feel something changing inside you.	Bevendo un sorso, sen
 Disguised as a %s	Travestito da %s
 You merged two wands into one %s.	Hai fuso due bacchette per creare %s.
 Select a wand to merge	Seleziona una bacchetta da fondere
+mob	creatura
+freerunner	corridore libero
+7-hit combo	combo da 7 colpi
+Pharmacophobia	Farmacofobia
+Swarm intelligence	Intelligenza dello sciame
+Buffs	Potenziamenti
+Items	Oggetti
+smth	qualcosa
+Rotberry	Baccamarcia
+crimson	cremisi
+bistre	bistro
++1 str, +5 ht	+1 for, +5 sal
+ruby	rubino
+topaz	topazio
+Gotcha, %s!	Preso, %s!
 Games played: 	Partite giocate:

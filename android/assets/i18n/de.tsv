@@ -41,7 +41,6 @@ Your steps echo across the dungeon.	Das Echo deiner Schritte hallt durch den Ker
 You hear the water splashing around you.	Du hörst das Wasser um dich herum plätschern.
 The smell of vegetation is thick in the air.	Der Geruch von Vegetation ist dick in der Luft.
 The atmosphere hints that this floor hides many secrets.	Die Atmosphäre lässt erahnen, dass diese Ebene viele Geheimnisse bereithält.
-mob	mob
 %1$s hit %2$s	%1$s treffen %2$s
 %1$s defeated %2$s	%1$s hat %2$s besiegt
 %1$s %2$s your attack	%1$s %2$s deinem Angriff
@@ -52,7 +51,6 @@ poisoned	vergiftet
 amok	wut
 slowed	verlangsamt
 mind	geist
-vision	vision
 paralyzed	paralysiert
 frightened	erschrocken
 rooted	verwurzelt
@@ -97,12 +95,8 @@ Mages recharge their wands faster.	Magier laden ihre Zauberstäbe schneller auf.
 When eaten, any piece of food restores 1 charge for all wands in the inventory.	Jedes Nahrungsmittel stellt beim Essen 1 Ladung bei allen Zauberstäben im Rucksack wieder her.
 Mages can use wands as a melee weapon.	Magiere können ihre Zauberstäbe als Nahkampfwaffe nutzen.
 Scrolls of Identify are identified from the beginning.	Identifizierungsrollen sind bereits zu Beginn bekannt.
-Rogues start with a Ring of Shadows+1.	Rogues start with a Ring of Shadows+1.
 Rogues identify a type of a ring on equipping it.	Rogues identify the type of a ring on equipping it.
 Rogues are proficient with light armor, dodging better while wearing one.	Rogues are proficient with light armor, dodging better while wearing it.
-Rogues are proficient in detecting hidden doors and traps.	Rogues are proficient in detecting hidden doors and traps.
-Rogues can go without food longer.	Rogues can go without food longer.
-Scrolls of Magic Mapping are identified from the beginning.	Scrolls of Magic Mapping are identified from the beginning.
 Huntresses start with 15 points of Health.	Jägerinnen beginnen mit 15 Lebenspunkten.
 Huntresses start with a unique upgradeable boomerang.	Jägerinnen beginnen mit einem einzigartigen aufwertbaren Bummerang.
 Huntresses are proficient with missile weapons and get a damage bonus for excessive strength when using them.	Jägerinnen sind effektiv im Umgang mit Fernkampfwaffen und erhalten einen Schadensbonus beim Benutzen, wenn ihre Stärke die erforderliche Stärke für die Waffe übersteigt.
@@ -259,7 +253,6 @@ Unable to load additional information	Es konnten keine zusätzlichen Information
 Stats	Werte
 Items	Gegenstände
 Badges	Medaillen
-Level %1$d %2$s	Level %1$d %2$s
 Challenges	Herausforderungen
 Health	Gesundheit
 Strength	Stärke
@@ -344,7 +337,6 @@ Collect gold coins to spend them later in a shop.	Sammle Goldmünzen um sie spä
 A pile of %d gold coins.	Ein Stapel mit %d Goldmünzen.
 One gold coin.	Eine Goldmünze.
 you wince as your grip involuntarily tightens around your %s	Sie zusammenzucken, wie Sie Ihren Griff Unwillkürlich zieht um Ihr %s
-lloyd's beacon	lloyd's beacon
 SET	SATZ
 RETURN	ZURÜCKKEHREN
 Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	Lloyd's beacon ist ein kompliziertes magische Gerät, das Sie an einen Ort, den Sie bereits haben, zurückkehren können.
@@ -373,21 +365,15 @@ Never mind	Vergiss es
 PLANT	PFLANZEN
 Throw this seed to the place where you want to grow %1$s.\n\n%2$s	Werfen Sie diesen Samen zu der Stelle, an der Sie %1$s wachsen wollen.\n\n%2$s
 seed of %s	samen der %s
-Dreamweed	Dreamweed
 Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Beim Berühren eines Dreamweed es sondert eine glitzernde Wolke aus Gas verwirrend.
-Earthroot	Earthroot
 When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Wenn eine Kreatur berührt eine Earthroot, seine Wurzeln schaffen eine Art natürliche Rüstung um ihn herum.
 Herbal armor	pflanzliche Rüstung
-Fadeleaf	Fadeleaf
 Touching a Fadeleaf will teleport any creature to a random place on the current level.	Berühren einer Fadeleaf wird jede Kreatur in eine zufällige Platz auf dem derzeitigen Niveau zu teleportieren.
-Firebloom	Firebloom
 When something touches a Firebloom, it bursts into flames.	Wenn etwas berührt einen Firebloom, platzt sie in Flammen.
-Icecap	Icecap
 Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Beim Berühren einer Icecap scheidet eine Pollen, die alles, was in seiner Umgebung friert.
 Rotberry	Rottbeere
 Berries of this shrub taste like sweet, sweet death.	Beeren dieses Strauches schmecken süß, süßer Tod.
 The seed emits a roar that echoes throughout the dungeon!	Der Samen emittiert ein Brüllen, das in der gesamten Dungeon hallt!
-Sorrowmoss	Sorrowmoss
 A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Ein Sorrowmoss ist eine Blume (kein Moos) mit gestochen scharfen Blütenblätter, mit einem tödlichen Gift überzogen.
 Sungrass	Sonnengras
 Sungrass is renowned for its sap's healing properties.	Sungrass ist bekannt für heilenden Eigenschaften seines SAP.
@@ -498,8 +484,6 @@ The flask shatters and %s liquid splashes harmlessly	Die Kolben zerbricht und %s
 turquoise	türkis
 crimson	karmesinrot
 azure	azurblau
-jade	jade
-golden	golden
 magenta	magenta
 charcoal	holzkohle
 ivory	elfenbein
@@ -741,7 +725,6 @@ Interaction of different types of magic has negated the enchantment on this weap
 broken %1$s :%2$d	kaputte %1$s :%2$d
 grim %s	grimmig %s
 blazing %s	flammendes %s
-eldritch %s	eldritch %s
 unstable %s	instabile %s
 vampiric %s	vampirischen %s
 lucky %s	glück %s
@@ -843,8 +826,6 @@ Burning	Brennende
 %s burns up!	%s verbrennt!
 You burned to death...	Sie verbrannt zu Tode...
 Charmed	Fasziniert
-Combo	Combo
-%d hit combo!	%d hit combo!
 Crippled	Gelähmt
 Frozen	Eingefroren
 Fury	Furie
@@ -873,7 +854,6 @@ Weakened	Geschwächt
 backpack	Rucksack
 Real description is coming soon!	Richtige Beschreibung folgt!
 You hear something died in the distance	Du hörst wie etwas in der Ferne stirbt
-echo of 	echo of 
 %1$s: "%2$s"	%1$s: "%2$s"
 This %s is sleeping	Dieser %s schläft
 This %s is hunting	Dieser %s jagd
@@ -910,7 +890,6 @@ Gnolls are hyena-like humanoids. They dwell in sewers and dungeons, venturing up
 golem	Golem
 The Dwarves tried to combine their knowledge of mechanisms with their newfound power of elemental binding. They used spirits of earth as the "soul" for the mechanical bodies of golems, which were believed to be most controllable of all. Despite this, the tiniest mistake in the ritual could cause an outbreak.	Die Zwerge versuchten, ihr technisches Wissen mit ihrer neu gewonnen Kraft der elementaren Beschwörung zu kombinieren. Sie nutzen Erdelementare, um ihre mechanischen Golemkörper zu "beseelen" welche als besonders einfach zu kontrollieren galten. Allerdings konnte schon der kleinste Fehler im Bindungsritual eine Katastrophe herbeiführen.
 Goo	Goo
-spawn of Goo	spawn of Goo
 Little known about The Goo. It's quite possible that it is not even a creature, but rather a conglomerate of substances from the sewers that gained rudiments of free will.	Wenig über die Goo bekannt. Es ist durchaus möglich, dass es noch nicht einmal ein Wesen, sondern ein Konglomerat von Substanzen aus der Kanalisation, die Rudimente des freien Willens erlangt.
 Goo is pumping itself up!	Glibber lädt sich auf!
 glurp... glurp...	glurp... glurp...
@@ -965,7 +944,6 @@ dwarf warlock	Zwergenhexenmeister
 %s's shadow bolt killed you...	%s's Schattenblitz hat dich getötet...
 wraith	Geist
 Yog-Dzewa	Yog-Dzewa
-echo of Yog-Dzewa	echo of Yog-Dzewa
 Yog-Dzewa is an Old God, a powerful entity from the realms of chaos. A century ago, the ancient dwarves barely won the war against its army of demons, but were unable to kill the god itself. Instead, they then imprisoned it in the halls below their city, believing it to be too weak to rise ever again.	Yog-Dzewa ist eine alte Gott, ein leistungsfähiges Unternehmen aus dem Reich des Chaos. Vor einem Jahrhundert, die alten Zwerge kaum gewonnen, den Krieg gegen die Armee von Dämonen, konnten aber den Gott selbst zu töten. Stattdessen werden sie dann in den Hallen unter ihrer Stadt eingesperrt, zu glauben, es zu schwach, um jemals wieder steigen werden.
 ...	...
 Hope is an illusion...	Hoffentlich ist es eine Illusion...
@@ -1187,4 +1165,26 @@ As you take a sip, you feel something changing inside you.	Als du einen Schluck 
 Disguised as a %s	Verkleidet als %s
 You merged two wands into one %s.	Aus zwei Zauberstäben hast du %s erschaffen.
 Select a wand to merge	Wähle einen Zauberstab zum Verschmelzen
+mob	Monster
+vision	Sicht
+Rogues start with a Ring of Shadows+1.	Schurken beginnen mit einem Ring der Schatten +1.
+Rogues are proficient in detecting hidden doors and traps.	Schurken sind geübt darin, verborgene Türen und Fallen aufzuspüren.
+Rogues can go without food longer.	Schurken kommen länger ohne Nahrung aus.
+Scrolls of Magic Mapping are identified from the beginning.	Schriftrollen der magischen Kartierung sind von Anfang an identifiziert.
+Level %1$d %2$s	Stufe %1$d %2$s
+lloyd's beacon	Lloyds Leuchtfeuer
+Dreamweed	Traumkraut
+Earthroot	Erdwurzel
+Fadeleaf	Schwundblatt
+Firebloom	Feuerblüte
+Icecap	Eiskappe
+Sorrowmoss	Trauermoos
+jade	jadegrün
+golden	goldfarben
+eldritch %s	unheimlicher %s
+Combo	Kombo
+%d hit combo!	%d-Treffer-Kombo!
+echo of 	Echo von
+spawn of Goo	Nachkomme von Goo
+echo of Yog-Dzewa	Echo von Yog-Dzewa
 Games played: 	Gespielte Partien:

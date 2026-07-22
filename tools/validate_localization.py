@@ -11,6 +11,41 @@ import re
 
 PLACEHOLDER = re.compile(r"%(?:\d+\$)?\+?([dsf])")
 
+# Some names, runes, sound effects and universal symbols are intentionally the
+# same in multiple languages.  Every other source-equals-translation entry is
+# treated as an untranslated regression, including single-word menu labels.
+UNCHANGED_COMMON = {
+    "Pixel Dungeon", "pixeldungeon.watabou.ru", "rodriformiga@gmail.com",
+    "+", "-", "Ankh", "KAUNAN", "SOWILO", "LAGUZ", "YNGVI", "GYFU",
+    "RAIDO", "ISAZ", "MANNAZ", "NAUDIZ", "BERKANAN", "ODAL", "TIWAZ",
+    "Baa!", "Baa?", "Baa.", "Baa...", "Bee...", "Ble...", "ZAP",
+    "%1$s :%2$d", "%1$s: \"%2$s\"", "DM-300", "DM-350", "Goo",
+    "glurp... glurp...", "GLURP-GLURP!", "!!!", "Tengu", "Yog-Dzewa",
+    "...", "Psst, %s!", r"\\?\\?\\?", "1", "magenta", "shuriken",
+    "tomahawk", "golem", "gladiator", "berserker", "Combo",
+}
+
+UNCHANGED_BY_CATALOGUE = {
+    "de.tsv": {"indigo", "Statue"},
+    "es.tsv": {"invisible", "Invisible", "ERROR", "Catalogus", "jade", "Pedestal"},
+    "fr.tsv": {
+        "invisible", "Invisible", "mage", "assassin", "Potions", "Journal", "turquoise",
+        "indigo", "onyx", "tourmaline", "quartz", "agate", "boomerang",
+        "Barricade", "Statue",
+    },
+    "id.tsv": {"opal", "a"},
+    "it.tsv": set(),
+    "ja.tsv": set(),
+    "ko.tsv": set(),
+    "pl.tsv": set(),
+    "pt_BR.tsv": {"jade", "Pedestal"},
+    "ru.tsv": set(),
+    "tr.tsv": {"opal", "topaz"},
+    "uk.tsv": set(),
+    "zh_CN.tsv": set(),
+    "zh_TW.tsv": set(),
+}
+
 
 def read(path, encoding):
     with io.open(path, "r", encoding=encoding) as handle:
@@ -43,6 +78,16 @@ def main():
             entries[english] = translated
             catalogue_characters.update(english)
             catalogue_characters.update(translated)
+            if not translated and english != "a":
+                print("{}:{}: empty translation: {}".format(
+                    filename, line_number, english))
+                failed = True
+            if (english == translated and
+                    english not in UNCHANGED_COMMON and
+                    english not in UNCHANGED_BY_CATALOGUE.get(filename, set())):
+                print("{}:{}: untranslated English text: {}".format(
+                    filename, line_number, english))
+                failed = True
             if sorted(PLACEHOLDER.findall(english)) != sorted(
                     PLACEHOLDER.findall(translated)):
                 print("{}:{}: placeholder mismatch".format(filename, line_number))

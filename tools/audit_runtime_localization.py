@@ -10,10 +10,16 @@ import re
 
 
 JAVA_STRING = re.compile(r'"(?:\\.|[^"\\])*"')
+STRING_SEQUENCE = re.compile(
+    r'"(?:\\.|[^"\\])*"(?:\s*\+\s*"(?:\\.|[^"\\])*")*', re.DOTALL)
 STRING_DECLARATION = re.compile(
     r'\b(?:public|protected|private)?\s*static\s+(?:final\s+)?String\s+'
     r'([A-Z][A-Z0-9_]*)\s*=\s*('
     r'(?:(?:"(?:\\.|[^"\\])*")|[^;])*);', re.DOTALL)
+STRING_ARRAY_DECLARATION = re.compile(
+    r'\b(?:public|protected|private)?\s*(?:static\s+)?(?:final\s+)?String\s*'
+    r'\[\](?:\[\])?\s+([A-Za-z][A-Za-z0-9_]*)\s*=\s*'
+    r'((?:(?:"(?:\\.|[^"\\])*")|[^;])*);', re.DOTALL)
 DIRECT_MESSAGE = re.compile(
     r'\b(?:GLog\.[ipnwh]|yell)\s*\(\s*("(?:\\.|[^"\\])*")')
 RETURN_EXPRESSION = re.compile(
@@ -144,6 +150,15 @@ def main():
                       and JAVA_STRING.search(match.group(2))):
                     dynamic.append((path, line_number(source, match.start()),
                                     match.group(1), 'composed display constant'))
+            if not (path.endswith(os.path.join('i18n', 'Localization.java')) or
+                    path.endswith(os.path.join('windows', 'WndLanguage.java'))):
+                for match in STRING_ARRAY_DECLARATION.finditer(source):
+                    for sequence in STRING_SEQUENCE.finditer(match.group(2)):
+                        value = string_expression(sequence.group(0))
+                        if player_facing(value, 'TXT_ARRAY'):
+                            found.setdefault(value, (
+                                path, line_number(source, match.start()),
+                                'display array ' + match.group(1)))
             for match in DIRECT_MESSAGE.finditer(source):
                 value = unescape_java(match.group(1))
                 if player_facing(value):

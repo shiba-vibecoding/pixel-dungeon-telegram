@@ -41,15 +41,12 @@ Your steps echo across the dungeon.	Dźwięk twych kroków roznosi się echem po
 You hear the water splashing around you.	Słyszysz plusk wody wokół ciebie.
 The smell of vegetation is thick in the air.	Zapach roślinności jest silny w powietrzu.
 The atmosphere hints that this floor hides many secrets.	Atmosfera podpowiada, że ten poziom skrywa wiele sekretów.
-mob	mob
-%1$s hit %2$s	%1$s hit %2$s
 %1$s defeated %2$s	%1$s pokonany %2$s
 %1$s %2$s your attack	%1$s %2$s twój atak
 %1$s %2$s %3$s's attack	%1$s %2$s atak %3$s
 The pain snapped %s out of paralysis	Ból sprawił, że %s został wyrwany z paraliżu
 dodged	unik
 poisoned	zatruty
-amok	amok
 slowed	spowolniony
 mind	telepatyczna
 vision	wizja
@@ -307,7 +304,6 @@ Battle wand	Bojowy kostur
 Non-battle wand	Nie-Bojowy kostur
 Good luck in your quest, %s!	Powodzenia w twej misji, %s!
 Select an item for the quickslot	Wybierz przedmiot, który chcesz przyporządkować do quickslota
-smth	smth
 DROP	ZOSTAW
 THROW	RZUĆ
 Your pack is too full for the %s	Nie masz dość miejsca w plecaku by wziąć %s
@@ -507,7 +503,6 @@ charcoal	zwęglona
 ivory	śnieżnobiała
 amber	bursztynowa
 bistre	ciemnobrunatna
-indigo	indigo
 silver	srebna
 Potion of Experience	Mikstura Doświadczenia
 The storied experiences of multitudes of battles reduced to liquid form, this draught will instantly raise your experience level.	Przechowywane przez wieki doświadczenia uczestników wielu bitew zostały sprowadzone do ciekłej postaci. Ten wyciąg z czystej mądrości natychmiast zwiększy twój poziom doświadczenia.
@@ -836,7 +831,6 @@ Power of health radiates from the water of this well. Take a sip from it to heal
 As you take a sip, you feel your wounds heal completely.	Gdy tylko bierzesz łyk z tej studni, czujesz jak twoje rany goją się całkowicie.
 Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	Potęga zmiany emanuje z wody tej studni. Wrzuć przedmiot do studni by zmienić go w coś innego.
 Everything is covered with a thick web here.	Wszystko jest tutaj pokryte grubą siecią.
-Amok	Amok
 Barkskin	Twarda Skóra
 Bleeding	Krwotok
 You bled to death...	Wykrwawiasz się na śmierć...
@@ -1187,4 +1181,10 @@ As you take a sip, you feel something changing inside you.	Biorąc łyk, czujesz
 Disguised as a %s	Wyglądasz jak %s
 You merged two wands into one %s.	Połączono dwie różdżki, tworząc %s.
 Select a wand to merge	Wybierz różdżkę do połączenia
+mob	potwór
+%1$s hit %2$s	%1$s trafia %2$s
+amok	szał
+smth	coś
+indigo	indygo
+Amok	Szał
 Games played: 	Rozegrane gry:

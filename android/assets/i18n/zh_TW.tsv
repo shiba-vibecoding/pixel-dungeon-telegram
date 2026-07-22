@@ -525,7 +525,6 @@ Potion of Liquid Flame	液態火焰藥劑
 This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	瓶子裡裝著不穩定的複合物，一旦暴露在空氣中便會猛烈爆發並燃燒。
 Potion of Might	強健藥劑
 This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	這強大的液體會進入你的肌肉，永久提升 1 點力量及 5 點生命。
-+1 str, +5 ht	+1 str, +5 ht
 Potion of Mind Vision	心靈視界藥劑
 After drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls. Also this potion will permit you to see through nearby walls and doors.	喝下之後你的心靈會感應到遠方生物的精神意象，讓你能隔牆感知到生物的存在。這種藥劑也能讓你透視附近的牆壁和門。
 You can somehow feel the presence of other creatures' minds!	你能以某種方式感覺到其他生物心智的存在！
@@ -539,7 +538,6 @@ You've stopped sensing any smells!	你聞不到任何氣味了！
 Potion of Strength	力量藥劑
 This powerful liquid will course through your muscles, permanently increasing your strength by one point.	這種強效的液體會進入你的肌肉，永久提升 1 點力量。
 Newfound strength surges through your body.	新獲得的力量湧入你的身體。
-+1 str	+1 str
 Potion of Toxic Gas	毒氣藥劑
 Uncorking or shattering this pressurized glass will cause its contents to explode into a deadly cloud of toxic green gas. You might choose to fling this potion at distant enemies instead of uncorking it by hand.	拔開塞子或打破這種加壓的玻璃瓶會使內容物爆開成致命的綠色毒霧。你應該會想將此藥劑扔向遠方的敵人而不是在手上打開。
 corpse dust	屍塵
@@ -1187,4 +1185,6 @@ As you take a sip, you feel something changing inside you.	喝下一口後，你
 Disguised as a %s	變裝成%s
 You merged two wands into one %s.	你將兩根法杖融合成了%s。
 Select a wand to merge	選擇一根要融合的法杖
++1 str, +5 ht	+1 力量，+5 生命
++1 str	+1 力量
 Games played: 	遊玩次數：

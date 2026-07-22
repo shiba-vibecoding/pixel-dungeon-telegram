@@ -42,7 +42,7 @@ public class Sign {
 			
 		"Beware of Goo!",
 		
-		"Pixel-Mart - all you need for successful adventure!",
+		"Pixel-Mart. All you need for successful adventure!",
 		"Identify your potions and scrolls as soon as possible. Don't put it off to the moment " +
 			"when you actually need them.",
 		"Being hungry doesn't hurt, but starving does hurt.",

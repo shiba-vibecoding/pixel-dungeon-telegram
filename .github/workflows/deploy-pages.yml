@@ -41,7 +41,9 @@ jobs:
       - name: Validate translations and Stars worker
         run: |
           python tools/validate_localization.py
-          python tools/audit_runtime_localization.py --fail-on-missing
+          for catalogue in android/assets/i18n/*.tsv; do
+            python tools/audit_runtime_localization.py core/src "$catalogue" --fail-on-missing
+          done
           node --test telegram-worker/test.mjs
 
       - name: Build GWT game

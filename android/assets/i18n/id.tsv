@@ -222,7 +222,6 @@ Scrolls	Gulungan
 Which way will you follow?	Jalan mana yang Anda ingin ikuti?
 I'll decide later	Saya akan pilih nanti
 Mastery	Penguasaan
-ERROR	ERROR
 Settings	Pengaturan
 Rankings	Papan Peringkat
 Start New Game	Mulai Permainan Baru
@@ -295,7 +294,6 @@ Battle wand	Tongkat Perang
 Non-battle wand	Tongkat utilitas
 Good luck in your quest, %s!	Semoga beruntung di misi Anda, %s!
 Select an item for the quickslot	Pilih item untuk slot cepat
-smth	smth
 DROP	LETAKKAN
 THROW	LEMPAR
 Your pack is too full for the %s	Tas Anda terlalu penuh untuk %s
@@ -326,7 +324,6 @@ Collect gold coins to spend them later in a shop.	Kumpulkan koin emas untuk dipa
 A pile of %d gold coins.	Sebuah tumpukan %d koin emas.
 One gold coin.	Satu koin emas.
 you wince as your grip involuntarily tightens around your %s	Anda meringis sebagai pegangan Anda tanpa sadar mengencangkan sekitar %s Anda
-lloyd's beacon	lloyd's beacon
 SET	SIAPKAN
 RETURN	KEMBALI
 Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	Suar Lloyd adalah perangkat ajaib yang rumit, yang memungkinkan Anda kembali ke tempat yang pernah Anda kunjungi.
@@ -355,23 +352,17 @@ Never mind	Lupakan
 PLANT	TANAM
 Throw this seed to the place where you want to grow %1$s.\n\n%2$s	Lempar biji ini ke tempat dimana Anda ingin menanamnya %1$s.\n\n%2$s
 seed of %s	biji dari %s
-Dreamweed	Dreamweed
 Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Saat menyentuh Dreamweed akan muncul awan gas membingungkan yang berkilau.
 Earthroot	akar tanah
 When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Saat sebuah makhluk menyentuh akar tanah, akarnya akan membentuk semacam zirah alami di sekitarnya.
 Herbal armor	Zirah alami
-Fadeleaf	Fadeleaf
 Touching a Fadeleaf will teleport any creature to a random place on the current level.	Menyentuh tanaman Fadeleaf akan menteleportasikan makhluk apapun ke tempat acak di level itu.
-Firebloom	Firebloom
 When something touches a Firebloom, it bursts into flames.	Saat sesuatu menyentuh Firebloom, tanaman ini akan berubah menjadi api.
-Icecap	Icecap
 Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Saat menyentuh setangkai Icecap akan keluar serbuk sari, yang akan membekukan semuanya yang ada dekatnya.
 Rotberry	Murbei
 Berries of this shrub taste like sweet, sweet death.	Buah beri dari semak ini rasanya seperti kematian yang manis dan manis.
 The seed emits a roar that echoes throughout the dungeon!	Benih itu mengeluarkan raungan yang bergema di seluruh ruang bawah tanah!
-Sorrowmoss	Sorrowmoss
 A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Sorrowmoss adalah sebuah bunga (bukan lumut) dengan daun bunga tajam sekali, yang ditutupi dengan racun mematikan.
-Sungrass	Sungrass
 Sungrass is renowned for its sap's healing properties.	Sungrass dikenal karena getahnya dapat menyembuhkan.
 Herbal healing	Penyembuhan alami
 your %s constricts around you painfully	 %s anda mengencangkan dirinya di sekeliling anda dengan menyakitkan
@@ -475,15 +466,9 @@ Are you sure you want to drink it? In most cases you should throw such potions a
 Are you sure you want to throw it? In most cases it makes sense to drink it.	Apakah Anda yakin untuk melempar ini? Di kebanyakan keadaan lebih masuk akal untuk meminum ini.
 The flask shatters and %s liquid splashes harmlessly	Botolnya pecah dan cairan %s terpercik dengan tidak membahayakan
 turquoise	toska
-crimson	crimson
-azure	azure
 jade	giok
 golden	emas
 magenta	magenta
-charcoal	charcoal
-ivory	ivory
-amber	amber
-bistre	bistre
 indigo	nila
 silver	perak
 Potion of Experience	Ramuan Pengalaman
@@ -646,18 +631,13 @@ You can use this wand as a melee weapon.	Anda Dapat Menggunakan Tongkat Ini Seba
 your wand fizzles; it must be out of charges for now	Tongkat anda berdesis; mungkin untuk sekarang kehabisan cas
 You can't target yourself	Anda tidak dapat menargetkan diri sendiri
 Choose direction to zap	Pilih arah untuk menembak
-holly	holly
-yew	yew
 ebony	kayu hitam
 cherry	ceri
 teak	kayu jati
-rowan	rowan
-willow	willow
 mahogany	mahoni
 bamboo	bambu
 purpleheart	hati ungu
 oak	ek
-birch	birch
 Wand of Amok	Tongkat Amuk
 The purple light from this wand will make the target run amok attacking random creatures in its vicinity.	Cahaya ungu dari tongkat ini akan membuat target mengamuk, menyerang makhluk acak di sekitarnya.
 Wand of Avalanche	Tongkat Longsor
@@ -736,7 +716,6 @@ battle axe	kapak perang
 The enormous steel head of this battle axe puts considerable heft behind each stroke.	Ujung baja besar dari kapak perang ini memberikan berat yang banyak dari tiap serangan.
 dagger	pisau
 A simple iron dagger with a well worn wooden handle.	Sebilah pisau besi dengan gagang kayu yang baik.
-glaive	glaive
 A polearm consisting of a sword blade on the end of a pole.	Sebatang tongkat dengan mata pedang di ujungnya.
 knuckleduster	knuckle
 A piece of iron shaped to fit around the knuckles.	Sepotong besi berbentuk untuk muat di lipatan jari.
@@ -766,9 +745,7 @@ Because of your excess strength the damage of your attack with this %s is increa
 \n\nYou hold the %s at the ready.	\n\n\nAnda memegang %s dengan siap.
 boomerang	bumerang
 Thrown to the enemy this flat curved wooden missile will return to the hands of its thrower.	Saat dilempar ke arah musuh senjata jarak jauh kayu gepeng, melengkung, ini akan kembali ke tangan pelemparnya.
-curare dart	curare dart
 These little evil darts don't do much damage but they can paralyze the target leaving it helpless and motionless for some time.	Anak panah kecil yang jahat ini tidak memberikan banyak kerusakan, tetapi mereka dapat melumpuhkan target sehingga membuatnya tidak berdaya dan tidak bergerak untuk beberapa waktu.
-dart	dart
 These simple metal spikes are weighted to fly true and sting their prey with a flick of the wrist.	Duri logam sederhana ini telah dibuat untuk terbang lurus dan menusuk mangsa mereka dengan kibasan dari pergelangan tangan.
 incendiary dart	dart membakar
 The spike on each of these darts is designed to pin it to its target while the unstable compounds strapped to its length burst into brilliant flames.	Lonjakan pada masing-masing anak panah ini dirancang untuk menjepitnya ke targetnya sementara senyawa tidak stabil yang diikatkan pada panjangnya meledak menjadi nyala api yang cemerlang.
@@ -894,7 +871,6 @@ cave spinner	laba-laba gua
 These greenish furry cave spiders try to avoid direct combat, preferring to wait in the distance while their victim, entangled in the spinner's excreted cobweb, slowly dies from their poisonous bite.	Laba-laba gua kehijauan berbulu ini mencoba untuk menghindari pertarungan langsung, memilih untuk menunggu agak jauh saat korban mereka, terlilit di dalam jaring laba-laba, perlahan akan mati karena gigitan beracunnya.
 animated statue	patung tersihir
 You would think that it's just another ugly statue of this dungeon, but its red glowing eyes give itself away. While the statue itself is made of stone, the _%s_, it's wielding, looks real.	Anda akan berpikir ini hanyalah patung jelek lainnya dari dungeon ini, tapi mata merah berkilaunya membuka kedoknya. Walaupun patungnya sendiri terbuat dari batu,  _%s_, yang dipegannya, terlihat nyata.
-succubus	succubus
 The succubi are demons that look like seductive (in a slightly gothic way) girls. Using its magic, the succubus can charm a hero, who will become unable to attack anything until the charm wears off.	Para succubus adalah setan perempuan yang terlihat menarik (dengan cara yang agak gotik). Menggunakan sihirnya, succubus dapat mempesona pahlawan, sehingga tidak menyerang apapun sampai efeknya hilang.
 swarm of flies	gerombolan lalat
 The deadly swarm of flies buzzes angrily. Every non-magical attack will split it into two smaller but equally dangerous swarms.	Gerombolan lalat yang mematikan berdengung dengan marah. Semua serang non-sihir akan membelahnya menjadi dua gerombolan lebih kecil yang sama bahayanya.
@@ -983,7 +959,6 @@ Depth entrance	Pintu masuk tingkat
 Depth exit	Pintu keluar tingkat
 Embers	Bara api
 Locked door	Pintu terkunci
-Pedestal	Pedestal
 Barricade	Penghalang
 High grass	Rumput tinggi
 Locked depth exit	Pintu keluar tingkat terkunci
@@ -1187,4 +1162,29 @@ As you take a sip, you feel something changing inside you.	Saat meneguknya, Anda
 Disguised as a %s	Menyamar sebagai %s
 You merged two wands into one %s.	Anda menggabungkan dua tongkat sihir menjadi satu %s.
 Select a wand to merge	Pilih tongkat sihir untuk digabungkan
+ERROR	GALAT
+smth	sesuatu
+lloyd's beacon	suar Lloyd
+Dreamweed	rumput mimpi
+Fadeleaf	daun pudar
+Firebloom	bunga api
+Icecap	tudung es
+Sorrowmoss	lumut duka
+Sungrass	rumput surya
+crimson	merah tua
+azure	biru langit
+charcoal	arang
+ivory	gading
+amber	ambar
+bistre	cokelat jelaga
+willow	dedalu
+birch	betula
+curare dart	damak kurare
+dart	damak
+succubus	sukubus
+Pedestal	Tumpuan
+yew	tis
+glaive	pedang galah
+holly	kayu holly
+rowan	kayu rowan
 Games played: 	Permainan dimainkan:

@@ -295,7 +295,6 @@ Battle wand	Savaş asası
 Non-battle wand	Yardımcı asa
 Good luck in your quest, %s!	Maceranda başarılar, %s!
 Select an item for the quickslot	Hızlı kullanım için bir nesne seçin
-smth	smth
 DROP	BIRAK
 THROW	FIRLAT
 Your pack is too full for the %s	%s için çantan dolu
@@ -655,7 +654,6 @@ rowan	üvez
 willow	söğüt
 mahogany	maun
 bamboo	bambu
-purpleheart	purpleheart
 oak	meşe
 birch	huş
 Wand of Amok	Dehşet Asası
@@ -768,7 +766,6 @@ boomerang	bumerang
 Thrown to the enemy this flat curved wooden missile will return to the hands of its thrower.	Bu ağaçtan yapılmış bumerang düşmana attıktan sonra ellerine geri dönecek
 curare dart	zehirli ok
 These little evil darts don't do much damage but they can paralyze the target leaving it helpless and motionless for some time.	Bu küçük oklar fazla zarar vermese de rakibini hareketsiz ve savunmasız bırakabilir
-dart	dart
 These simple metal spikes are weighted to fly true and sting their prey with a flick of the wrist.	Bu metal oklar bir bilek hareketiyle havada süzülmesi için dizayn edilmiş
 incendiary dart	yakıcı ok
 The spike on each of these darts is designed to pin it to its target while the unstable compounds strapped to its length burst into brilliant flames.	Bu dartların her birinin üzerindeki sivri uç, uzunluğuna bağlı dengesiz bileşikler parlak alevlere dönüşürken onu hedefine sabitlemek için tasarlanmıştır.
@@ -1187,4 +1184,7 @@ As you take a sip, you feel something changing inside you.	Bir yudum alınca iç
 Disguised as a %s	Kılık değiştirme: %s
 You merged two wands into one %s.	İki asayı birleştirerek %s oluşturdun.
 Select a wand to merge	Birleştirilecek bir asa seç
+smth	bir şey
+purpleheart	mor kalp ağacı
+dart	ok
 Games played: 	Oynanan oyun:

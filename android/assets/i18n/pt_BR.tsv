@@ -41,7 +41,6 @@ Your steps echo across the dungeon.	Seus passos ecoam através do calabouço.
 You hear the water splashing around you.	Você ouve o respingos de água ao seu redor.
 The smell of vegetation is thick in the air.	O cheiro da vegetação está forte no ar.
 The atmosphere hints that this floor hides many secrets.	O ambiente sugere que este piso esconde muitos segredos.
-mob	mob
 %1$s hit %2$s	%1$s bateu em %2$s
 %1$s defeated %2$s	%1$s derrotou %2$s
 %1$s %2$s your attack	%1$s %2$s seu ataque
@@ -175,7 +174,6 @@ Item of level 12 acquired	Item de Level 12 adquirido
 All rare monsters slain	Todos os monstros raros foram mortos
 Amulet of Yendor obtained	Amuleto de Yendor adquirido
 Amulet of Yendor obtained by Warrior, Mage, Rogue & Huntress	Amuleto de Yendor obtido por Guerreiro, Mago, Ladrão & Caçadora
-7-hit combo	7-hit combo
 3 potions cooked	3 poções realizadas
 6 potions cooked	6 poções realizadas
 9 potions cooked	9 poções realizadas
@@ -234,12 +232,10 @@ Maybe later	Talvez mais tarde
 Mastery	Mestre
 ERROR	ERRO
 Settings	Configurações
-Rankings	Rankings
 Start New Game	Iniciar Novo Jogo
 Main Menu	Menu Principal
 Exit Game	Sair do Jogo
 Return to Game	Voltar ao Jogo
-Buffs	Buffs
 Experience	Experiência
 Catalogus	Catálogo
 Oh yes! You are my hero!\nRegarding your reward, I don't have cash with me right now, but I have something better for you. This is my family heirloom ring: my granddad took it off a dead paladin's finger.	Ah, Ohhh! Você é meu herói!\nVou te dar uma recompensa, mas eu não tenho dinheiro comigo agora.\n\nEspere!! Eu tenho algo melhor para você. Este meu anel é herança de família: meu avô tirou-o do dedo de um paladino morto.
@@ -258,10 +254,8 @@ This is all that's left from one of your predecessors. Maybe it's worth checking
 Journal	Diário
 Languages	Idiomas
 Unable to load additional information	Não foi possível carregar informações adicionais
-Stats	Stats
 Items	Itens
 Badges	Medalhas
-Level %1$d %2$s	Level %1$d %2$s
 Challenges	Desafios
 Health	Vida
 Strength	Força
@@ -307,7 +301,6 @@ Battle wand	Varinha de Batalha
 Non-battle wand	Varinha não de Batalha
 Good luck in your quest, %s!	Boa sorte em sua busca, %s!
 Select an item for the quickslot	Selecione um item para o QuickSlot
-smth	smth
 DROP	LARGAR
 THROW	JOGAR
 Your pack is too full for the %s	Sua mochila está muito cheia para %s
@@ -386,7 +379,6 @@ Firebloom	planta de fogo
 When something touches a Firebloom, it bursts into flames.	Quando algo toca uma planta de fogo, ele explode em chamas.
 Icecap	planta de gelo
 Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Ao tocar uma planta de gelo, ela excreta um pólen, que congela tudo em sua vizinhança.
-Rotberry	Rotberry
 Berries of this shrub taste like sweet, sweet death.	Berries deste arbusto tem gosto de doce, doce morte.
 The seed emits a roar that echoes throughout the dungeon!	A semente emite um rugido que ecoa em todo o calabouço!
 Sorrowmoss	planta do veneno
@@ -525,7 +517,6 @@ Potion of Liquid Flame	Poção de Chama Líquida
 This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	Este frasco contém um composto instável que irá explodir violentamente em chamas, por exposição ao ar livre.
 Potion of Might	Poção de Poder
 This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	Este líquido poderoso flui naturalmente através de seus músculos, aumentando permanentemente a sua força em um ponto e vida em cinco pontos.
-+1 str, +5 ht	+1 str, +5 ht
 Potion of Mind Vision	Poção de Visão
 After drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls. Also this potion will permit you to see through nearby walls and doors.	Depois de beber essa poção, sua mente vai entrar em sintonia com a assinatura psíquica das criaturas distantes, permitindo que você senta as presenças biológicas através das paredes. Esta poção também permitirá que você veja através de paredes e portas próximas.
 You can somehow feel the presence of other creatures' minds!	Você pode de alguma forma sentir a presença de espíritos de outras criaturas!
@@ -539,7 +530,6 @@ You've stopped sensing any smells!	Você não sente odores!
 Potion of Strength	Poção da Força
 This powerful liquid will course through your muscles, permanently increasing your strength by one point.	Este líquido poderoso flui naturalmente através de seus músculos, aumentando permanentemente a sua força por um ponto.
 Newfound strength surges through your body.	Uma nova força surge através de seu corpo.
-+1 str	+1 str
 Potion of Toxic Gas	Poção de Gás Tóxico
 Uncorking or shattering this pressurized glass will cause its contents to explode into a deadly cloud of toxic green gas. You might choose to fling this potion at distant enemies instead of uncorking it by hand.	Abrir ou quebrar esse vidro pressurizado fará com que o seu conteúdo exploda em uma nuvem mortal de gás tóxico verde. Você pode optar por lançar esta poção em inimigos distantes ao invés de abri-lo com a mão.
 corpse dust	poeira de cadáver
@@ -846,7 +836,6 @@ Burning	Queimando
 You burned to death...	Você queimou até a morte ...
 Charmed	Encantado
 Combo	Combo
-%d hit combo!	%d hit combo!
 Crippled	Aleijado
 Frozen	Congelado
 Fury	Furioso
@@ -1187,4 +1176,15 @@ As you take a sip, you feel something changing inside you.	Ao dar um gole, você
 Disguised as a %s	Disfarçado de %s
 You merged two wands into one %s.	Você fundiu duas varinhas para criar %s.
 Select a wand to merge	Escolha uma varinha para fundir
+mob	criatura
+7-hit combo	combo de 7 golpes
+Rankings	Classificação
+Buffs	Efeitos
+Stats	Atributos
+Level %1$d %2$s	Nível %1$d %2$s
+smth	algo
+Rotberry	Frutapodre
++1 str, +5 ht	+1 for, +5 PV
++1 str	+1 for
+%d hit combo!	Combo de %d golpes!
 Games played: 	Partidas jogadas:
