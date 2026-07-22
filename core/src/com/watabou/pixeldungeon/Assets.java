@@ -112,6 +112,11 @@ public class Assets {
 	public static final String FONTS2X	= "font2x.png";
 	public static final String FONTS25X	= "font25x.png";
 	public static final String FONTS3X	= "font3x.png";
+	public static final String FONTS1X_LAYOUT	= "font1x-layout.txt";
+	public static final String FONTS15X_LAYOUT	= "font15x-layout.txt";
+	public static final String FONTS2X_LAYOUT	= "font2x-layout.txt";
+	public static final String FONTS25X_LAYOUT	= "font25x-layout.txt";
+	public static final String FONTS3X_LAYOUT	= "font3x-layout.txt";
 	public static final String FONTS_INTL	= "font-intl.png";
 	public static final String FONTS_INTL_CHARS	= "font-intl-chars.txt";
 	public static final String FONTS_INTL_WIDTHS	= "font-intl-widths.txt";

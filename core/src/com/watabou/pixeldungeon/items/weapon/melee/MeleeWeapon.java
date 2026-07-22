@@ -18,6 +18,7 @@
 package com.watabou.pixeldungeon.items.weapon.melee;
 
 import com.watabou.pixeldungeon.Dungeon;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.items.Item;
 import com.watabou.pixeldungeon.items.weapon.Weapon;
 import com.watabou.pixeldungeon.utils.Utils;
@@ -26,6 +27,26 @@ import com.watabou.utils.Random;
 public class MeleeWeapon extends Weapon {
 	
 	private int tier;
+
+	private static final String TXT_OVERVIEW =
+		"This %1$s is %2$s tier-%3$d melee weapon.";
+	private static final String TXT_AVERAGE = "Its average damage is %d points per hit.";
+	private static final String TXT_TYPICAL =
+		"Its typical average damage is %1$d points per hit and usually it requires %2$d points of strength.";
+	private static final String TXT_TOO_HEAVY = "Probably this weapon is too heavy for you.";
+	private static final String TXT_TRAIT = "This is a rather %s weapon.";
+	private static final String TXT_BALANCED_SPEED = "It was balanced to make it faster.";
+	private static final String TXT_BALANCED_ACCURACY = "It was balanced to make it more accurate.";
+	private static final String TXT_ENCHANTED = "It is enchanted.";
+	private static final String TXT_LOW_STRENGTH =
+		"Because of your inadequate strength the accuracy and speed of your attack with this %s is decreased.";
+	private static final String TXT_EXCESS_STRENGTH =
+		"Because of your excess strength the damage of your attack with this %s is increased.";
+	private static final String TXT_HOLD = "You hold the %1$s at the ready%2$s.";
+	private static final String TXT_CURSED_HOLD =
+		", and because it is cursed, you are powerless to let go";
+	private static final String TXT_CURSED_INFO =
+		"You can feel a malevolent magic lurking within %s.";
 	
 	public MeleeWeapon( int tier, float acu, float dly ) {
 		super();
@@ -85,84 +106,85 @@ public class MeleeWeapon extends Weapon {
 		
 		final String p = "\n\n";
 		
-		StringBuilder info = new StringBuilder( desc() );
+		StringBuilder info = new StringBuilder( Utils.format( desc() ) );
 		
 		int lvl = visiblyUpgraded();
-		String quality = lvl != 0 ? 
+		String rawQuality = lvl != 0 ?
 			(lvl > 0 ? 
 				(isBroken() ? "broken" : "upgraded") : 
 				"degraded") : 
 			"";
-		info.append( p );
-		info.append( "This " + name + " is " + Utils.indefinite( quality ) );
-		info.append( " tier-" + tier + " melee weapon. " );
+		String quality;
+		if (Localization.ENGLISH.equals( Localization.language() )) {
+			quality = Utils.indefinite( rawQuality );
+		} else if ("upgraded".equals( rawQuality )) {
+			quality = Utils.format( "a upgraded" );
+		} else if ("degraded".equals( rawQuality )) {
+			quality = Utils.format( "an degraded" );
+		} else if ("broken".equals( rawQuality )) {
+			quality = Utils.format( "a broken" );
+		} else {
+			quality = Utils.format( "a" );
+		}
+		info.append( p ).append( Utils.format( TXT_OVERVIEW, name, quality, tier ) );
 		
 		if (levelKnown) {
 			int min = min();
 			int max = max();
-			info.append( "Its average damage is " + (min + (max - min) / 2) + " points per hit. " );
+			info.append( " " ).append(
+				Utils.format( TXT_AVERAGE, min + (max - min) / 2 ) );
 		} else {
 			int min = min0();
 			int max = max0();
-			info.append( 
-				"Its typical average damage is " + (min + (max - min) / 2) + " points per hit " +
-				"and usually it requires " + typicalSTR() + " points of strength. " );
+			info.append( " " ).append( Utils.format(
+				TXT_TYPICAL, min + (max - min) / 2, typicalSTR() ) );
 			if (typicalSTR() > Dungeon.hero.STR()) {
-				info.append( "Probably this weapon is too heavy for you. " );
+				info.append( " " ).append( Utils.format( TXT_TOO_HEAVY ) );
 			}
 		}
 		
+		String trait = null;
 		if (DLY != 1f) {
-			info.append( "This is a rather " + (DLY < 1f ? "fast" : "slow") );
+			trait = Utils.format( DLY < 1f ? "fast" : "slow" );
 			if (ACU != 1f) {
-				if ((ACU > 1f) == (DLY < 1f)) {
-					info.append( " and ");
-				} else {
-					info.append( " but ");
-				}
-				info.append( ACU > 1f ? "accurate" : "inaccurate" );
+				trait += " " + Utils.format( (ACU > 1f) == (DLY < 1f) ? "and" : "but" ) +
+					" " + Utils.format( ACU > 1f ? "accurate" : "inaccurate" );
 			}
-			info.append( " weapon. ");
 		} else if (ACU != 1f) {
-			info.append( "This is a rather " + (ACU > 1f ? "accurate" : "inaccurate") + " weapon. " );
+			trait = Utils.format( ACU > 1f ? "accurate" : "inaccurate" );
+		}
+		if (trait != null) {
+			info.append( " " ).append( Utils.format( TXT_TRAIT, trait ) );
 		}
 		switch (imbue) {
 		case SPEED:
-			info.append( "It was balanced to make it faster. " );
+			info.append( " " ).append( Utils.format( TXT_BALANCED_SPEED ) );
 			break;
 		case ACCURACY:
-			info.append( "It was balanced to make it more accurate. " );
+			info.append( " " ).append( Utils.format( TXT_BALANCED_ACCURACY ) );
 			break;
 		case NONE:
 		}
 		
 		if (enchantment != null) {
-			info.append( "It is enchanted." );
+			info.append( " " ).append( Utils.format( TXT_ENCHANTED ) );
 		}
 		
 		if (levelKnown && Dungeon.hero.belongings.backpack.items.contains( this )) {
 			if (STR > Dungeon.hero.STR()) {
-				info.append( p );
-				info.append( 
-					"Because of your inadequate strength the accuracy and speed " +
-					"of your attack with this " + name + " is decreased." );
+				info.append( p ).append( Utils.format( TXT_LOW_STRENGTH, name ) );
 			}
 			if (STR < Dungeon.hero.STR()) {
-				info.append( p );
-				info.append( 
-					"Because of your excess strength the damage " +
-					"of your attack with this " + name + " is increased." );
+				info.append( p ).append( Utils.format( TXT_EXCESS_STRENGTH, name ) );
 			}
 		}
 		
 		if (isEquipped( Dungeon.hero )) {
-			info.append( p );
-			info.append( "You hold the " + name + " at the ready" + 
-				(cursed ? ", and because it is cursed, you are powerless to let go." : ".") ); 
+			info.append( p ).append( Utils.format( TXT_HOLD, name,
+				cursed ? Utils.format( TXT_CURSED_HOLD ) : "" ) );
 		} else {
 			if (cursedKnown && cursed) {
-				info.append( p );
-				info.append( "You can feel a malevolent magic lurking within " + name +"." );
+				info.append( p ).append( Utils.format( TXT_CURSED_INFO, name ) );
 			}
 		}
 		

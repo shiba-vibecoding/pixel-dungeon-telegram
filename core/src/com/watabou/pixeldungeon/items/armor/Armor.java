@@ -48,6 +48,22 @@ public class Armor extends EquipableItem {
 	
 	private static final String TXT_INCOMPATIBLE = 
 		"Interaction of different types of magic has erased the glyph on this armor!";
+
+	private static final String TXT_KNOWN_INFO =
+		"\n\nThis %1$s provides damage absorption up to \"%2$d\"  points per attack.";
+	private static final String TXT_LOW_STR_EQUIPPED =
+		"\n\nBecause of your inadequate strength your movement speed and defense skill is decreased. ";
+	private static final String TXT_LOW_STR =
+		"\n\nBecause of your inadequate strength wearing this armor will decrease your movement speed and defense skill.";
+	private static final String TXT_TYPICAL_INFO =
+		"\n\nTypical %1$s provides damage absorption up to %2$d points per attack and requires %3$d points of strength.";
+	private static final String TXT_TOO_HEAVY = "Probably this armor is too heavy for you.";
+	private static final String TXT_ENCHANTED = "It is enchanted.";
+	private static final String TXT_WEARING = "\n\nYou are wearing the %1$s%2$s.";
+	private static final String TXT_CURSED_REMOVE =
+		", and because it is cursed, you are powerless to remove it";
+	private static final String TXT_CURSED_INFO =
+		"\n\nYou can feel a malevolent magic lurking within the %s.";
 	
 	public int tier;
 	public int STR;
@@ -217,49 +233,51 @@ public class Armor extends EquipableItem {
 	@Override
 	public String info() {
 		String name = name();
-		StringBuilder info = new StringBuilder( desc() );
+		StringBuilder info = new StringBuilder( Utils.format( desc() ) );
 		
 		if (levelKnown) {
-			info.append( 
-				"\n\nThis " + name + " provides damage absorption up to " +
-				"" + Math.max( DR(), 0 ) + " points per attack. " );
+			appendParagraph( info, Utils.format(
+				TXT_KNOWN_INFO, name, Math.max( DR(), 0 ) ).replace( "\"", "" ) );
 			
 			if (STR > Dungeon.hero.STR()) {
 				
 				if (isEquipped( Dungeon.hero )) {
-					info.append( 
-						"\n\nBecause of your inadequate strength your " +
-						"movement speed and defense skill is decreased. " );
+					appendParagraph( info, Utils.format( TXT_LOW_STR_EQUIPPED ) );
 				} else {
-					info.append( 
-						"\n\nBecause of your inadequate strength wearing this armor " +
-						"will decrease your movement speed and defense skill. " );
+					appendParagraph( info, Utils.format( TXT_LOW_STR ) );
 				}
 				
 			}
 		} else {
-			info.append( 
-				"\n\nTypical " + name + " provides damage absorption up to " + typicalDR() + " points per attack " +
-				" and requires " + typicalSTR() + " points of strength. " );
+			String typical = Utils.format(
+				TXT_TYPICAL_INFO, name, typicalDR(), typicalSTR() ).trim();
 			if (typicalSTR() > Dungeon.hero.STR()) {
-				info.append( "Probably this armor is too heavy for you. " );
+				typical += " " + Utils.format( TXT_TOO_HEAVY );
 			}
+			appendParagraph( info, typical );
 		}
 		
 		if (glyph != null) {
-			info.append( "It is enchanted." );
+			info.append( " " ).append( Utils.format( TXT_ENCHANTED ) );
 		}
 		
 		if (isEquipped( Dungeon.hero )) {
-			info.append( "\n\nYou are wearing the " + name + 
-				(cursed ? ", and because it is cursed, you are powerless to remove it." : ".") ); 
+			appendParagraph( info, Utils.format( TXT_WEARING, name,
+				cursed ? Utils.format( TXT_CURSED_REMOVE ) : "" ) );
 		} else {
 			if (cursedKnown && cursed) {
-				info.append( "\n\nYou can feel a malevolent magic lurking within the " + name + "." );
+				appendParagraph( info, Utils.format( TXT_CURSED_INFO, name ) );
 			}
 		}
 		
 		return info.toString();
+	}
+
+	private static void appendParagraph( StringBuilder info, String paragraph ) {
+		String text = paragraph.trim();
+		if (text.length() > 0) {
+			info.append( "\n\n" ).append( text );
+		}
 	}
 	
 	@Override

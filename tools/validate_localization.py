@@ -11,6 +11,14 @@ import re
 
 PLACEHOLDER = re.compile(r"%(?:\d+\$)?\+?([dsf])")
 
+LEGACY_FONT_LAYOUTS = {
+    "font1x-layout.txt": (96, 1024, 8),
+    "font15x-layout.txt": (96, 1024, 16),
+    "font2x-layout.txt": (210, 1024, 64),
+    "font25x-layout.txt": (210, 1024, 64),
+    "font3x-layout.txt": (210, 2048, 128),
+}
+
 # Some names, runes, sound effects and universal symbols are intentionally the
 # same in multiple languages.  Every other source-equals-translation entry is
 # treated as an untranslated regression, including single-word menu labels.
@@ -125,6 +133,28 @@ def main():
         print("International font is missing {} catalogue glyphs: {}".format(
             len(missing_glyphs), "".join(missing_glyphs)))
         failed = True
+
+    for filename, (expected, image_width, image_height) in LEGACY_FONT_LAYOUTS.items():
+        entries = read(os.path.join(args.assets, filename), "ascii").strip().split(";")
+        if len(entries) != expected:
+            print("{}: expected {} glyphs, found {}".format(
+                filename, expected, len(entries)))
+            failed = True
+            continue
+        for index, entry in enumerate(entries):
+            try:
+                left, top, right, bottom = [int(value) for value in entry.split(",")]
+            except ValueError:
+                print("{}: invalid glyph {}: {}".format(filename, index, entry))
+                failed = True
+                break
+            if not (0 <= left < right <= image_width and
+                    0 <= top < bottom <= image_height):
+                print("{}: out-of-range glyph {}: {}".format(filename, index, entry))
+                failed = True
+                break
+        else:
+            print("{}: {} deterministic glyphs".format(filename, len(entries)))
 
     raise SystemExit(1 if failed else 0)
 

@@ -28,6 +28,12 @@ DIRECT_UI = re.compile(
 DIRECT_STATUS = re.compile(
     r'\bshowStatus\s*\(\s*[^,\n]+,\s*'
     r'("(?:\\.|[^"\\])*")')
+RAW_INFO_BUILDER = re.compile(
+    r'new\s+StringBuilder\s*\(\s*desc\s*\(\s*\)\s*\)')
+INFO_APPEND = re.compile(
+    r'\binfo\.append\s*\(\s*((?:(?:"(?:\\.|[^"\\])*")|[^;])*?)\);',
+    re.DOTALL)
+RAW_TEXT_CONCAT = re.compile(r'\breturn\s+(TXT_[A-Z0-9_]*)\s*\+')
 RETURN_EXPRESSION = re.compile(
     r'\breturn\s+((?:(?:"(?:\\.|[^"\\])*")|[^;])*);', re.DOTALL)
 NAME_ASSIGNMENT = re.compile(r'\bname\s*=\s*(.*?);', re.DOTALL)
@@ -177,6 +183,21 @@ def main():
                 value = unescape_java(match.group(1))
                 if player_facing(value, 'TXT_STATUS'):
                     found.setdefault(value, (path, line_number(source, match.start()), 'direct status text'))
+            for match in RAW_INFO_BUILDER.finditer(source):
+                dynamic.append((path, line_number(source, match.start()),
+                                'item info', 'description is composed before localization'))
+            for match in INFO_APPEND.finditer(source):
+                expression = match.group(1)
+                literal_text = ''.join(
+                    unescape_java(literal) for literal in JAVA_STRING.findall(expression))
+                explicitly_localized = (
+                    'Utils.format' in expression or 'Localization.translate' in expression)
+                if (player_facing(literal_text, 'INFO_APPEND') and not explicitly_localized):
+                    dynamic.append((path, line_number(source, match.start()),
+                                    'item info', 'raw text is appended after localization'))
+            for match in RAW_TEXT_CONCAT.finditer(source):
+                dynamic.append((path, line_number(source, match.start()),
+                                match.group(1), 'raw text constant is concatenated before localization'))
             for match in RETURN_EXPRESSION.finditer(source):
                 value = string_expression(match.group(1))
                 if player_facing(value, 'RETURN_TEXT'):

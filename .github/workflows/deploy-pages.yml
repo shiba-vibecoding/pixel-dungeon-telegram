@@ -62,6 +62,9 @@ jobs:
           test -f site/telegram-storage.js
           test -f site/privacy.html
           test -f site/html/html.nocache.js
+          for layout in font1x font15x font2x font25x font3x; do
+            grep -q "t:${layout}-layout.txt:" site/assets/assets.txt
+          done
           test ! -d site/WEB-INF
           test ! -f site/stars-config.js
           grep -Eq 'telegram\.css\?v=[0-9a-f]{12}' site/index.html

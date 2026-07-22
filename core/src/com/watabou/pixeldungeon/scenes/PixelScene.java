@@ -105,32 +105,32 @@ public class PixelScene extends Scene {
 		if (font1x == null) {
 			
 			// 3x5 (6)
-			font1x = Font.colorMarked( 
-				BitmapCache.get( Assets.FONTS1X ), 0x00000000, BitmapText.Font.LATIN_FULL );
+			font1x = packedFont( Assets.FONTS1X, Assets.FONTS1X_LAYOUT,
+				BitmapText.Font.LATIN_FULL );
 			font1x.baseLine = 6;
 			font1x.tracking = -1;
 			
 			// 5x8 (10)
-			font15x = Font.colorMarked( 
-					BitmapCache.get( Assets.FONTS15X ), 12, 0x00000000, BitmapText.Font.LATIN_FULL );
+			font15x = packedFont( Assets.FONTS15X, Assets.FONTS15X_LAYOUT,
+				BitmapText.Font.LATIN_FULL );
 			font15x.baseLine = 9;
 			font15x.tracking = -1;
 			
 			// 6x10 (12)
-			font2x = Font.colorMarked( 
-				BitmapCache.get( Assets.FONTS2X ), 14, 0x00000000, BitmapText.Font.ALL_CHARS );
+			font2x = packedFont( Assets.FONTS2X, Assets.FONTS2X_LAYOUT,
+				BitmapText.Font.ALL_CHARS );
 			font2x.baseLine = 11;
 			font2x.tracking = -1;
 			
 			// 7x12 (15)
-			font25x = Font.colorMarked( 
-				BitmapCache.get( Assets.FONTS25X ), 17, 0x00000000, BitmapText.Font.ALL_CHARS );
+			font25x = packedFont( Assets.FONTS25X, Assets.FONTS25X_LAYOUT,
+				BitmapText.Font.ALL_CHARS );
 			font25x.baseLine = 13;
 			font25x.tracking = -1;
 			
 			// 9x15 (18)
-			font3x = Font.colorMarked( 
-				BitmapCache.get( Assets.FONTS3X ), 22, 0x00000000, BitmapText.Font.ALL_CHARS );
+			font3x = packedFont( Assets.FONTS3X, Assets.FONTS3X_LAYOUT,
+				BitmapText.Font.ALL_CHARS );
 			font3x.baseLine = 17;
 			font3x.tracking = -2;
 
@@ -143,6 +143,12 @@ public class PixelScene extends Scene {
 			fontIntl.baseLine = 16;
 			fontIntl.tracking = 0;
 		}
+	}
+
+	private static BitmapText.Font packedFont(
+			String texture, String layout, String chars ) {
+		String bounds = Gdx.files.internal( layout ).readString( "UTF-8" );
+		return Font.packed( BitmapCache.get( texture ), chars, bounds );
 	}
 	
 	@Override

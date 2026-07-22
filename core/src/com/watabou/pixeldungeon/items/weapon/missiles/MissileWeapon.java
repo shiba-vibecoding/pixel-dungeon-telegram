@@ -27,6 +27,7 @@ import com.watabou.pixeldungeon.actors.hero.HeroClass;
 import com.watabou.pixeldungeon.items.Item;
 import com.watabou.pixeldungeon.items.weapon.Weapon;
 import com.watabou.pixeldungeon.scenes.GameScene;
+import com.watabou.pixeldungeon.utils.Utils;
 import com.watabou.pixeldungeon.windows.WndOptions;
 
 abstract public class MissileWeapon extends Weapon {
@@ -36,6 +37,13 @@ abstract public class MissileWeapon extends Weapon {
 	private static final String TXT_NO			= "No, I changed my mind";
 	private static final String TXT_R_U_SURE	= 
 		"Do you really want to equip it as a melee weapon?";
+	private static final String TXT_AVERAGE =
+		"\n\nAverage damage of this weapon equals to %d points per hit.";
+	private static final String TXT_LOW_STRENGTH =
+		"Because of your inadequate strength the accuracy and speed of your attack with this %s is decreased.";
+	private static final String TXT_EXCESS_STRENGTH =
+		"Because of your excess strength the damage of your attack with this %s is increased.";
+	private static final String TXT_HOLD = "\n\nYou hold the %s at the ready.";
 	
 	{
 		stackable = true;
@@ -118,27 +126,24 @@ abstract public class MissileWeapon extends Weapon {
 	@Override
 	public String info() {
 		
-		StringBuilder info = new StringBuilder( desc() );
+		StringBuilder info = new StringBuilder( Utils.format( desc() ) );
 		
 		int min = min();
 		int max = max();
-		info.append( "\n\nAverage damage of this weapon equals to " + (min + (max - min) / 2) + " points per hit. " );
+		info.append( "\n\n" ).append(
+			Utils.format( TXT_AVERAGE, min + (max - min) / 2 ).trim() );
 		
 		if (Dungeon.hero.belongings.backpack.items.contains( this )) {
 			if (STR > Dungeon.hero.STR()) {
-				info.append( 
-					"Because of your inadequate strength the accuracy and speed " +
-					"of your attack with this " + name + " is decreased." );
+				info.append( " " ).append( Utils.format( TXT_LOW_STRENGTH, name ) );
 			}
 			if (STR < Dungeon.hero.STR()) {
-				info.append( 
-					"Because of your excess strength the damage " +
-					"of your attack with this " + name + " is increased." );
+				info.append( " " ).append( Utils.format( TXT_EXCESS_STRENGTH, name ) );
 			}
 		}
 		
 		if (isEquipped( Dungeon.hero )) {
-			info.append( "\n\nYou hold the " + name + " at the ready." ); 
+			info.append( "\n\n" ).append( Utils.format( TXT_HOLD, name ).trim() );
 		}
 		
 		return info.toString();

@@ -110,10 +110,11 @@ public final class Localization {
 	}
 
 	public static boolean usesInternationalFont() {
-		// Legacy atlases discover glyph boundaries by inspecting decoded pixels.
-		// Some Android WebViews decode those pixels differently, shifting the
-		// character map. The international atlas uses a fixed, stable grid.
-		return !ENGLISH.equals( language );
+		// Keep the original heavier pixel font for Latin and Russian text. The
+		// international atlas is reserved for languages whose glyphs require it.
+		return TURKISH.equals( language ) || UKRAINIAN.equals( language ) ||
+			JAPANESE.equals( language ) || KOREAN.equals( language ) ||
+			isChinese();
 	}
 
 	public static String translate( String text ) {

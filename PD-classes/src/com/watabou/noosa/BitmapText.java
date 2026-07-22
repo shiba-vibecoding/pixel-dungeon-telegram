@@ -317,10 +317,38 @@ public class BitmapText extends Visual {
 			lineHeight = baseLine = cellHeight;
 		}
 
+		private Font( SmartTexture tx, String chars, String layoutData ) {
+			super( tx );
+			texture = tx;
+
+			String[] glyphs = layoutData.trim().split( ";" );
+			if (glyphs.length != chars.length()) {
+				throw new IllegalArgumentException( "Font layout does not match character set" );
+			}
+			float invWidth = 1f / tx.width;
+			float invHeight = 1f / tx.height;
+			for (int i = 0; i < chars.length(); i++) {
+				String[] bounds = glyphs[i].split( "," );
+				if (bounds.length != 4) {
+					throw new IllegalArgumentException( "Invalid font glyph bounds" );
+				}
+				add( chars.charAt( i ), new RectF(
+					Integer.parseInt( bounds[0] ) * invWidth,
+					Integer.parseInt( bounds[1] ) * invHeight,
+					Integer.parseInt( bounds[2] ) * invWidth,
+					Integer.parseInt( bounds[3] ) * invHeight ) );
+			}
+			lineHeight = baseLine = height( frames.get( chars.charAt( 0 ) ) );
+		}
+
 		public static Font grid( GdxTexture bmp, int cellWidth, int cellHeight,
 				String chars, String widthData ) {
 			return new Font( TextureCache.get( bmp ), cellWidth, cellHeight,
 				chars, widthData );
+		}
+
+		public static Font packed( GdxTexture bmp, String chars, String layoutData ) {
+			return new Font( TextureCache.get( bmp ), chars, layoutData );
 		}
 		
 		protected void splitBy( GdxTexture bitmap, int height, int color, String chars ) {
