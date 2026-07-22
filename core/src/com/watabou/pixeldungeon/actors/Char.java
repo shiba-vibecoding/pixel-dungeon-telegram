@@ -377,7 +377,7 @@ public abstract class Char extends Actor {
 			} else if (buff instanceof Paralysis) {
 
 				sprite.add( CharSprite.State.PARALYSED );
-				sprite.showStatus( CharSprite.NEGATIVE, "paralysed" );
+				sprite.showStatus( CharSprite.NEGATIVE, "paralyzed" );
 				
 			} else if (buff instanceof Terror) {
 				

@@ -24,6 +24,7 @@ function launch(search) {
     setTimeout(callback) { timers.push(callback); return timers.length; },
   };
   const document = {
+    currentScript: { src: 'https://example.test/telegram-bootstrap.js?v=release-test' },
     createElement() { return {}; },
     body: {
       appendChild(script) {
@@ -42,7 +43,7 @@ function launch(search) {
 
 const browser = launch('');
 await flush();
-assert(browser.loaded.join('|') === 'telegram-init.js|html/html.nocache.js',
+assert(browser.loaded.join('|') === 'telegram-init.js?v=release-test|html/html.nocache.js?v=release-test',
   'plain browser must initialize the wrapper and then boot GWT');
 assert(browser.restores() === 1, 'save restore must run exactly once before GWT');
 
@@ -52,11 +53,11 @@ assert(telegram.loaded.length === 1 && telegram.loaded[0].startsWith('https://te
 assert(telegram.timers.length === 1, 'Telegram SDK fallback timer is missing');
 telegram.timers[0]();
 await flush();
-assert(telegram.loaded.filter((src) => src === 'html/html.nocache.js').length === 1,
+assert(telegram.loaded.filter((src) => src === 'html/html.nocache.js?v=release-test').length === 1,
   'SDK timeout fallback did not boot GWT');
 telegram.sdk.onload();
 await flush();
-assert(telegram.loaded.filter((src) => src === 'html/html.nocache.js').length === 1,
+assert(telegram.loaded.filter((src) => src === 'html/html.nocache.js?v=release-test').length === 1,
   'late SDK completion booted the game twice');
 
 console.log('Telegram bootstrap and SDK timeout fallback: OK');

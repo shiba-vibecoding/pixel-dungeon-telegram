@@ -64,6 +64,8 @@ jobs:
           test -f site/html/html.nocache.js
           test ! -d site/WEB-INF
           test ! -f site/stars-config.js
+          grep -Eq 'telegram\.css\?v=[0-9a-f]{12}' site/index.html
+          grep -Eq 'telegram-bootstrap\.js\?v=[0-9a-f]{12}' site/index.html
           ! grep -R -q -E "openDonation|Telegram Stars|Support with Telegram Stars" site
           ! grep -q "SuperDev Refresh" site/index.html
 

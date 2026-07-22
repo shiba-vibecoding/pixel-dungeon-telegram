@@ -25,6 +25,9 @@ DIRECT_MESSAGE = re.compile(
 DIRECT_UI = re.compile(
     r'\bnew\s+(?:RedButton|WndMessage|Toast)\s*\(\s*'
     r'("(?:\\.|[^"\\])*")')
+DIRECT_STATUS = re.compile(
+    r'\bshowStatus\s*\(\s*[^,\n]+,\s*'
+    r'("(?:\\.|[^"\\])*")')
 RETURN_EXPRESSION = re.compile(
     r'\breturn\s+((?:(?:"(?:\\.|[^"\\])*")|[^;])*);', re.DOTALL)
 NAME_ASSIGNMENT = re.compile(r'\bname\s*=\s*(.*?);', re.DOTALL)
@@ -170,6 +173,10 @@ def main():
                 value = unescape_java(match.group(1))
                 if player_facing(value, 'TXT_UI'):
                     found.setdefault(value, (path, line_number(source, match.start()), 'direct UI text'))
+            for match in DIRECT_STATUS.finditer(source):
+                value = unescape_java(match.group(1))
+                if player_facing(value, 'TXT_STATUS'):
+                    found.setdefault(value, (path, line_number(source, match.start()), 'direct status text'))
             for match in RETURN_EXPRESSION.finditer(source):
                 value = string_expression(match.group(1))
                 if player_facing(value, 'RETURN_TEXT'):

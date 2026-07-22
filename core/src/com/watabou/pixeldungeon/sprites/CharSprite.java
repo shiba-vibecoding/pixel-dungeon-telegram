@@ -120,9 +120,9 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	
 	public void showStatus( int color, String text, Object... args ) {
 		if (visible) {
-			if (args.length > 0) {
-				text = Utils.format( text, args );
-			}
+			// Translate status words even when they have no format arguments.
+			// Previously strings such as "dodged" reached FloatingText in English.
+			text = Utils.format( text, args );
 			if (ch != null) {
 				FloatingText.show( x + width * 0.5f, y, ch.pos, text, color );
 			} else {

@@ -16,6 +16,7 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..');
@@ -31,26 +32,45 @@ const SRC = candidates.find((p) => fs.existsSync(path.join(p, 'index.html')));
 const DEST = process.argv[3] ? path.resolve(process.argv[3]) : path.join(repoRoot, 'dist-telegram');
 const MARKER = 'telegram-mini-app-overlay';
 
-const HEAD_INJECT = `
-    <!-- ${MARKER} -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="telegram.css">
-`;
-
-const BODY_INJECT = `
-    <!-- ${MARKER} -->
-    <script src="telegram-storage.js"></script>
-    <script src="telegram-bootstrap.js"></script>
-`;
-
 if (!SRC) {
   console.error('ERROR: no web build found. Looked in:\n  ' + candidates.join('\n  '));
   console.error('Check out the gh-pages build to ../pd-gdx-web, or build from source with gradlew html:dist.');
   process.exit(1);
 }
+
+// Tie every wrapper resource to the exact generated game build. This prevents
+// Telegram's WebView cache from combining a new glyph atlas with stale code.
+const releaseHash = createHash('sha256');
+for (const relativePath of ['index.html', 'html/html.nocache.js', 'assets/assets.txt']) {
+  const sourcePath = path.join(SRC, relativePath);
+  if (fs.existsSync(sourcePath)) {
+    releaseHash.update(relativePath);
+    releaseHash.update(fs.readFileSync(sourcePath));
+  }
+}
+for (const wrapperFile of ['telegram.css', 'telegram-storage.js', 'telegram-init.js', 'telegram-bootstrap.js']) {
+  releaseHash.update(wrapperFile);
+  releaseHash.update(fs.readFileSync(path.join(here, wrapperFile)));
+}
+const RELEASE_ID = releaseHash.digest('hex').slice(0, 12);
+
+const HEAD_INJECT = `
+    <!-- ${MARKER} -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="stylesheet" href="telegram.css?v=${RELEASE_ID}">
+`;
+
+const BODY_INJECT = `
+    <!-- ${MARKER} -->
+    <script src="telegram-storage.js?v=${RELEASE_ID}"></script>
+    <script src="telegram-bootstrap.js?v=${RELEASE_ID}"></script>
+`;
 
 // 1. Clean copy of the game build.
 fs.rmSync(DEST, { recursive: true, force: true });

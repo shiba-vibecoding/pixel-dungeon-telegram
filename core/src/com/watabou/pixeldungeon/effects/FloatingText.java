@@ -23,6 +23,7 @@ import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.pixeldungeon.DungeonTilemap;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.scenes.GameScene;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.utils.SparseArray;
@@ -37,6 +38,7 @@ public class FloatingText extends BitmapText {
 	private int key = -1;
 
 	private float cameraZoom = -1;
+	private String fontLanguage;
 	
 	private static SparseArray<ArrayList<FloatingText>> stacks = new SparseArray<ArrayList<FloatingText>>();
 	
@@ -78,18 +80,13 @@ public class FloatingText extends BitmapText {
 		
 		revive();
 		
-		if (cameraZoom != Camera.main.zoom) {
+		String language = Localization.language();
+		if (cameraZoom != Camera.main.zoom || !language.equals( fontLanguage )) {
 			cameraZoom = Camera.main.zoom;
 			PixelScene.chooseFont( 9, cameraZoom );
 			font = PixelScene.font;
 			scale.set( PixelScene.scale );
-		}
-
-		if (cameraZoom != Camera.main.zoom) {
-			cameraZoom = Camera.main.zoom;
-			PixelScene.chooseFont( 9, cameraZoom );
-			font = PixelScene.font;
-			scale.set( PixelScene.scale );
+			fontLanguage = language;
 		}
 
 		text( text );
