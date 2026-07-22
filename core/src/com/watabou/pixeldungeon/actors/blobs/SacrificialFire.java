@@ -42,9 +42,9 @@ import com.watabou.utils.Random;
 
 public class SacrificialFire extends Blob {
 	
-	private static final String TXT_WORTHY		= "\"Your sacrifice is worthy...\" ";
-	private static final String TXT_UNWORTHY	= "\"Your sacrifice is unworthy...\" ";
-	private static final String TXT_REWARD		= "\"Your sacrifice is worthy and so you are!\" ";
+	private static final String TXT_WORTHY		= "\"Your sacrifice is worthy...\"";
+	private static final String TXT_UNWORTHY	= "\"Your sacrifice is unworthy...\"";
+	private static final String TXT_REWARD		= "\"Your sacrifice is worthy and so you are!\"";
 	
 	protected int pos;
 	

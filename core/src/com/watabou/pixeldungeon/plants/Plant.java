@@ -110,6 +110,16 @@ public class Plant implements Bundlable {
 		protected String plantName;
 		
 		public Class<? extends Item> alchemyClass;
+
+		protected void setPlantName( String value ) {
+			plantName = value;
+			name = Utils.format( "seed of %s", plantName );
+		}
+
+		@Override
+		public String name() {
+			return Utils.format( "seed of %s", plantName );
+		}
 		
 		@Override
 		public ArrayList<String> actions( Hero hero ) {

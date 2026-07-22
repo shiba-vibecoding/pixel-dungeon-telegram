@@ -45,7 +45,7 @@ import com.watabou.pixeldungeon.utils.GLog;
 
 public class WaterOfTransmutation extends WellWater {
 	
-	private static final String TXT_PROCCED = "As you take a sip, you feel something changes in you.";
+	private static final String TXT_PROCCED = "As you take a sip, you feel something changing inside you.";
 
 	@Override
 	protected Item affectItem( Item item ) {

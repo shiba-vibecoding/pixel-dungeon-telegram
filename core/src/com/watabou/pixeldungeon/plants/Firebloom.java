@@ -54,9 +54,7 @@ public class Firebloom extends Plant {
 	
 	public static class Seed extends Plant.Seed {
 		{
-			plantName = "Firebloom";
-			
-			name = "seed of " + plantName;
+			setPlantName( "Firebloom" );
 			image = ItemSpriteSheet.SEED_FIREBLOOM;
 			
 			plantClass = Firebloom.class;

@@ -214,7 +214,7 @@ public class Potion extends Item {
 	
 	public void shatter( int cell ) {
 		if (Dungeon.visible[cell]) {
-			GLog.i( "The flask shatters and " + color() + " liquid splashes harmlessly" );
+			GLog.i( "The flask shatters and %s liquid splashes harmlessly", color() );
 			Sample.INSTANCE.play( Assets.SND_SHATTER );
 			splash( cell );
 		}
@@ -244,15 +244,13 @@ public class Potion extends Item {
 	
 	@Override
 	public String name() {
-		return isKnown() ? name : color + " potion";
+		return isKnown() ? name : Utils.format( "%s potion", color );
 	}
 	
 	@Override
 	public String info() {
-		return isKnown() ?
-			desc() :
-			"This flask contains a swirling " + color + " liquid. " +
-			"Who knows what it will do when drunk or thrown?";
+		return isKnown() ? desc() : Utils.format(
+			"This flask contains a swirling %s liquid. Who knows what it will do when drunk or thrown?", color );
 	}
 	
 	@Override

@@ -56,9 +56,7 @@ public class Sorrowmoss extends Plant {
 	
 	public static class Seed extends Plant.Seed {
 		{
-			plantName = "Sorrowmoss";
-			
-			name = "seed of " + plantName;
+			setPlantName( "Sorrowmoss" );
 			image = ItemSpriteSheet.SEED_SORROWMOSS;
 			
 			plantClass = Sorrowmoss.class;

@@ -80,9 +80,7 @@ public class Fadeleaf extends Plant {
 	
 	public static class Seed extends Plant.Seed {
 		{
-			plantName = "Fadeleaf";
-			
-			name = "seed of " + plantName;
+			setPlantName( "Fadeleaf" );
 			image = ItemSpriteSheet.SEED_FADELEAF;
 			
 			plantClass = Fadeleaf.class;

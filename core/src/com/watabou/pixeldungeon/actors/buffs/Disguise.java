@@ -22,6 +22,7 @@ import com.watabou.pixeldungeon.actors.hero.HeroClass;
 import com.watabou.pixeldungeon.effects.CellEmitter;
 import com.watabou.pixeldungeon.effects.Speck;
 import com.watabou.pixeldungeon.sprites.HeroSprite;
+import com.watabou.pixeldungeon.utils.Utils;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
@@ -79,17 +80,6 @@ public class Disguise extends FlavourBuff {
     }
 
     public String toString() {
-        switch (costume) {
-            case WARRIOR:
-                return "Disguised as a warrior";
-            case MAGE:
-                return "Disguised as a mage";
-            case ROGUE:
-                return "Disguised as a rogue";
-            case HUNTRESS:
-                return "Disguised as a huntress";
-            default:
-                return "";
-        }
+        return costume == null ? "" : Utils.format( "Disguised as a %s", costume.title() );
     }
 }

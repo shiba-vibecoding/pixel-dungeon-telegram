@@ -2,13 +2,6 @@ Pixel Dungeon	Pixel Dungeon
 Play	Spielen
 Highscores	Rekorde
 About	Über
-LibGDX port: Arcnor / Web port: nojus297	LibGDX-Port: Arcnor / Web-Port: nojus297
-Telegram port: @barboskich	Telegram-Port: @barboskich
-Say thanks	Danke sagen
-Thank you!	Vielen Dank!
-This is a voluntary tip for the Telegram port. It never affects gameplay.	Dies ist ein freiwilliges Trinkgeld für den Telegram-Port. Es hat keinerlei Einfluss auf das Spiel.
-Support with Telegram Stars	Mit Telegram Stars unterstützen
-Open @barboskich	@barboskich öffnen
 Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Code & Grafik: Watabou\nMusik: Cube_Code\n\nDieses Spiel wird von Brian Walker brogue inspiriert. Versuchen Sie es auf Windows, Mac OS oder Linux - Es ist toll! :)\n\nBitte besuchen offiziellen Website für weitere Informationen:
 pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
 Languages Create: rodriformiga	Übersetzung: rodriformiga, Sarius
@@ -1148,6 +1141,13 @@ You were killed by a discharge of a lightning trap...	Du wurdest durch die Entla
 You don't know what is there.	Du weist nicht was dort ist.
 Select a cell to examine	Wählen Sie eine Zelle zu prüfen.
 1	0
+LibGDX port: Arcnor / Web port: nojus297	LibGDX-Port: Arcnor / Web-Port: nojus297
+Telegram port: @barboskich	Telegram-Port: @barboskich
+Say thanks	Danke sagen
+Thank you!	Vielen Dank!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Dies ist ein freiwilliges Trinkgeld für den Telegram-Port. Es hat keinerlei Einfluss auf das Spiel.
+Support with Telegram Stars	Mit Telegram Stars unterstützen
+Open @barboskich	@barboskich öffnen
 Do you want to respec into %s?	Möchtest du deine Spezialisierung zu %s ändern?
 Yes, I want to respec	Ja, ich möchte die Spezialisierung wechseln
 Choose language	Sprache wählen
@@ -1183,3 +1183,8 @@ A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Be
 Despite their small size, golden bees tend to protect their master fiercely. They don't live long though.	Trotz ihrer geringen Größe verteidigen goldene Bienen ihren Meister erbittert. Allerdings leben sie nicht lange.
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, was für eine angenehme Überraschung, an einem solchen Ort einen anständigen Menschen zu treffen! Ich bin wegen einer seltenen Zutat hier: _Leichenstaub_. Man kann ihn aus Skelettresten gewinnen, und davon gibt es im Dungeon reichlich. Als Magier kann ich mich zwar gegen die hiesigen Monster verteidigen, aber ich verlaufe mich ständig – höchst peinlich. Könntest du mir vielleicht helfen? Für deine Dienste würde ich dich gern mit einem meiner besten Zauberstäbe bezahlen.
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, was für eine angenehme Überraschung, an einem solchen Ort einen anständigen Menschen zu treffen! Ich bin wegen einer seltenen Zutat hier: eines _Phantomfisches_. Man kann ihn mit bloßen Händen fangen, doch im Wasser ist er kaum zu erkennen. Als Magier kann ich mich zwar gegen die hiesigen Monster verteidigen, aber ich verlaufe mich ständig – höchst peinlich. Könntest du mir vielleicht helfen? Für deine Dienste würde ich dich gern mit einem meiner besten Zauberstäbe bezahlen.
+As you take a sip, you feel something changing inside you.	Als du einen Schluck nimmst, spürst du, wie sich etwas in dir verändert.
+Disguised as a %s	Verkleidet als %s
+You merged two wands into one %s.	Aus zwei Zauberstäben hast du %s erschaffen.
+Select a wand to merge	Wähle einen Zauberstab zum Verschmelzen
+Games played: 	Gespielte Partien:

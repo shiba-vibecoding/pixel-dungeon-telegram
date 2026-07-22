@@ -2,13 +2,6 @@ Pixel Dungeon	Pixel Dungeon
 Play	Jogar
 Highscores	Rankings
 About	Sobre
-LibGDX port: Arcnor / Web port: nojus297	Port para LibGDX: Arcnor / port para web: nojus297
-Telegram port: @barboskich	Port para Telegram: @barboskich
-Say thanks	Agradecer
-Thank you!	Obrigado!
-This is a voluntary tip for the Telegram port. It never affects gameplay.	Esta é uma contribuição voluntária para o port do Telegram. Ela nunca afeta a jogabilidade.
-Support with Telegram Stars	Apoiar com Telegram Stars
-Open @barboskich	Abrir @barboskich
 Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Código & Gráficos: Watabou\nMúsica: Cube_Code\n\nEste jogo foi inspirado por Brian Walker's Brogue. \nTente também em Windows, Mac OS ou Linux - é incrível! ;)\n\nPor Favor visite o site oficial para mais informações:
 pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
 Languages Create: rodriformiga	Tradução: rodriformiga
@@ -1156,6 +1149,13 @@ You were killed by a discharge of a lightning trap...	Você foi morto por uma de
 You don't know what is there.	Você não sabe o que tem ali.
 Select a cell to examine	Selecione uma célula para examinar
 1	0
+LibGDX port: Arcnor / Web port: nojus297	Port para LibGDX: Arcnor / port para web: nojus297
+Telegram port: @barboskich	Port para Telegram: @barboskich
+Say thanks	Agradecer
+Thank you!	Obrigado!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Esta é uma contribuição voluntária para o port do Telegram. Ela nunca afeta a jogabilidade.
+Support with Telegram Stars	Apoiar com Telegram Stars
+Open @barboskich	Abrir @barboskich
 Choose language	Escolher idioma
 Key bindings	Configuração de teclas
 Switch to fullscreen	Mudar para tela cheia
@@ -1183,3 +1183,8 @@ Move NE	Mover para NE
 Move SW	Mover para SO
 Move SE	Mover para SE
 Current Cell	Célula atual
+As you take a sip, you feel something changing inside you.	Ao dar um gole, você sente algo mudando dentro de si.
+Disguised as a %s	Disfarçado de %s
+You merged two wands into one %s.	Você fundiu duas varinhas para criar %s.
+Select a wand to merge	Escolha uma varinha para fundir
+Games played: 	Partidas jogadas:

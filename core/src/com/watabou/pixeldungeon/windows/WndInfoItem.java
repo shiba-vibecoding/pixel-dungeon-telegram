@@ -35,7 +35,7 @@ public class WndInfoItem extends Window {
 	private static final String TXT_TOMB			= "Tomb";
 	private static final String TXT_SKELETON		= "Skeletal remains";
 	private static final String TXT_WONT_KNOW		= "You won't know what's inside until you open it!";
-	private static final String TXT_NEED_KEY		= TXT_WONT_KNOW + " But to open it you need a golden key.";
+	private static final String TXT_NEED_KEY		= " But to open it you need a golden key.";
 	private static final String TXT_INSIDE			= "You can see %s inside, but to open the chest you need a golden key.";
 	private static final String TXT_OWNER	= 
 		"This ancient tomb may contain something useful, " +
@@ -85,7 +85,7 @@ public class WndInfoItem extends Window {
 				info = Utils.format( TXT_INSIDE, Utils.indefinite( heap.peek().name() ) );
 			} else {
 				title = TXT_LOCKED_CHEST;
-				info = TXT_NEED_KEY;
+				info = Utils.format( TXT_WONT_KNOW ) + Utils.format( TXT_NEED_KEY );
 			}
 			
 			fillFields( heap.image(), heap.glowing(), TITLE_COLOR, title, info );

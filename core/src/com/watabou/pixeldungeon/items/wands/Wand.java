@@ -57,7 +57,7 @@ public abstract class Wand extends KindOfWeapon {
 	public static final String AC_MERGE = "MERGE";
 
     private static final float TIME_TO_MERGE = 2.0f;
-	private static final String TXT_MERGED = "you merged two your wands to create one %s";
+	private static final String TXT_MERGED = "You merged two wands into one %s.";
     private static final String TXT_SELECT_WAND = "Select a wand to merge";
 
 	private static final String TXT_WOOD	= "This thin %s wand is warm to the touch. Who knows what it will do when used?";
@@ -309,16 +309,13 @@ public abstract class Wand extends KindOfWeapon {
 			sb.append( " (" + status +  ")" );
 		}
 		
-		if (isBroken()) {
-			sb.insert( 0, "broken " );
-		}
-		
-		return sb.toString();
+		String result = sb.toString();
+		return isBroken() ? Utils.format( "broken %s", result ) : result;
 	}
 	
 	@Override
 	public String name() {
-		return isKnown() ? name : wood + " wand";
+		return isKnown() ? name : Utils.format( "%s wand", wood );
 	}
 	
 	@Override

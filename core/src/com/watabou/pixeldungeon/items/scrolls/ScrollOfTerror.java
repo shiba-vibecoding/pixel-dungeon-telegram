@@ -57,7 +57,7 @@ public class ScrollOfTerror extends Scroll {
 			GLog.i( "The scroll emits a brilliant flash of red light" );
 			break;
 		case 1:
-			GLog.i( "The scroll emits a brilliant flash of red light and the " + affected.name + " flees!" );
+			GLog.i( "The scroll emits a brilliant flash of red light and the %s flees!", affected.name );
 			break;
 		default:
 			GLog.i( "The scroll emits a brilliant flash of red light and the monsters flee!" );

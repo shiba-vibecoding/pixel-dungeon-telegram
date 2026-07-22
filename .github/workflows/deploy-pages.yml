@@ -30,8 +30,19 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v6
+
+      - name: Validate translations and Stars worker
+        run: |
+          python tools/validate_localization.py
+          python tools/audit_runtime_localization.py --fail-on-missing
+          node --test telegram-worker/test.mjs
 
       - name: Build GWT game
         run: |
@@ -40,10 +51,8 @@ jobs:
 
       - name: Package Telegram Mini App
         env:
-          TELEGRAM_AUTHOR_URL: ${{ vars.TELEGRAM_AUTHOR_URL }}
+          STARS_API_URL: ${{ vars.STARS_API_URL }}
           STARS_INVOICE_50: ${{ vars.STARS_INVOICE_50 }}
-          STARS_INVOICE_100: ${{ vars.STARS_INVOICE_100 }}
-          STARS_INVOICE_250: ${{ vars.STARS_INVOICE_250 }}
         run: node telegram/build-telegram.mjs html/build/dist site
 
       - name: Validate deployable site

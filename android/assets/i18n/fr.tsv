@@ -2,13 +2,6 @@ Pixel Dungeon	Pixel Dungeon
 Play	Jouer
 Highscores	Meilleurs scores
 About	A propos
-LibGDX port: Arcnor / Web port: nojus297	Portage LibGDX : Arcnor / portage Web : nojus297
-Telegram port: @barboskich	Portage Telegram : @barboskich
-Say thanks	Dire merci
-Thank you!	Merci !
-This is a voluntary tip for the Telegram port. It never affects gameplay.	Ceci est un pourboire volontaire pour le portage Telegram. Il n’a aucun effet sur le jeu.
-Support with Telegram Stars	Soutenir avec Telegram Stars
-Open @barboskich	Ouvrir @barboskich
 Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Code & graphiques: Watabou\nMusic: Cube_Code\n\nCe jeu est inspiré par Brian Walker's Brogue. Essayez-le sur Windows, Mac OS ou Linux - il est génial! ;)\n\nS'il vous plaît visitez le site officiel pour plus d'info:
 pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
 Languages Create: rodriformiga	Traduction: Rémi Schneider/Emmanuel Dempuré/Bastien/Nikolay/rodriformiga
@@ -1156,6 +1149,13 @@ You were killed by a discharge of a lightning trap...	Vous avez été tué par u
 You don't know what is there.	Vous ne savez pas ce qu'il y'a ici.
 Select a cell to examine	Choisissez l'endroit à observer
 1	0
+LibGDX port: Arcnor / Web port: nojus297	Portage LibGDX : Arcnor / portage Web : nojus297
+Telegram port: @barboskich	Portage Telegram : @barboskich
+Say thanks	Dire merci
+Thank you!	Merci !
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Ceci est un pourboire volontaire pour le portage Telegram. Il n’a aucun effet sur le jeu.
+Support with Telegram Stars	Soutenir avec Telegram Stars
+Open @barboskich	Ouvrir @barboskich
 Choose language	Choisir la langue
 Key bindings	Raccourcis clavier
 Switch to fullscreen	Passer en plein écran
@@ -1183,3 +1183,8 @@ Move NE	Aller au NE
 Move SW	Aller au SO
 Move SE	Aller au SE
 Current Cell	Case actuelle
+As you take a sip, you feel something changing inside you.	En prenant une gorgée, vous sentez quelque chose changer en vous.
+Disguised as a %s	Déguisé en %s
+You merged two wands into one %s.	Vous avez fusionné deux baguettes pour créer %s.
+Select a wand to merge	Choisissez une baguette à fusionner
+Games played: 	Parties jouées :

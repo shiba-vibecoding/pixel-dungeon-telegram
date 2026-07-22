@@ -47,9 +47,7 @@ public class Rotberry extends Plant {
 	
 	public static class Seed extends Plant.Seed {
 		{
-			plantName = "Rotberry";
-			
-			name = "seed of " + plantName;
+			setPlantName( "Rotberry" );
 			image = ItemSpriteSheet.SEED_ROTBERRY;
 			
 			plantClass = Rotberry.class;

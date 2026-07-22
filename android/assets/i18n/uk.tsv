@@ -1,13 +1,6 @@
 Play	Грати
 Highscores	Рекорди
 About	Про гру
-LibGDX port: Arcnor / Web port: nojus297	LibGDX-порт: Arcnor / вебпорт: nojus297
-Telegram port: @barboskich	Telegram-порт: @barboskich
-Say thanks	Подякувати
-Thank you!	Дякуємо!
-This is a voluntary tip for the Telegram port. It never affects gameplay.	Це добровільна подяка за Telegram-порт. Вона ніяк не впливає на ігровий процес.
-Support with Telegram Stars	Підтримати в Telegram Stars
-Open @barboskich	Відкрити @barboskich
 Send E-Mail	Відправити E-Mail
 Top Rankings	Кращі результати
 Total games won/played: 	Всього ігор зіграно:
@@ -1064,6 +1057,13 @@ lightning trap	електрична пастка
 You were killed by a discharge of a lightning trap...	Тебе прибило розрядом електричної пастки...
 You don't know what is there.	Ти не знаєш, що там.
 Select a cell to examine	Обери комірку для вивчення
+LibGDX port: Arcnor / Web port: nojus297	LibGDX-порт: Arcnor / вебпорт: nojus297
+Telegram port: @barboskich	Telegram-порт: @barboskich
+Say thanks	Подякувати
+Thank you!	Дякуємо!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Це добровільна подяка за Telegram-порт. Вона ніяк не впливає на ігровий процес.
+Support with Telegram Stars	Підтримати в Telegram Stars
+Open @barboskich	Відкрити @barboskich
 Sacrificial chamber	Жертовна зала
 Killed by an explosion of a bomb on level %d	Загибель від вибуху бомби на %d-му рівні
 Do you want to respec into %s?	Бажаєш змінити спеціалізацію на %s?
@@ -1183,3 +1183,8 @@ Hello adventurer... Once I was like you - strong and confident... And now I'm de
 Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Дякую, %s! Прокляття зруйновано, і тепер я нарешті можу спочити... Візьми один із цих предметів — можливо, він стане в пригоді у твоїй подорожі...
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	О, яка приємна несподіванка — зустріти порядну людину в такому місці! Я прийшов сюди по рідкісний складник — _примарну рибу_. Її можна зловити голими руками, але у воді майже неможливо помітити. Як маг, я цілком здатен захиститися від місцевих чудовиськ, та постійно гублюся — це дуже ніяково. Можливо, ти мені допоможеш? За послугу я охоче віддам один зі своїх найкращих жезлів.
 1	1
+As you take a sip, you feel something changing inside you.	Зробивши ковток, ти відчуваєш, як усередині щось змінюється.
+Disguised as a %s	Маскування: %s
+You merged two wands into one %s.	Із двох паличок створено предмет: %s.
+Select a wand to merge	Вибери паличку для об’єднання
+Games played: 	Зіграно ігор:

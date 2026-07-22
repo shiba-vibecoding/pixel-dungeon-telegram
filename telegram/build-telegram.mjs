@@ -70,13 +70,14 @@ for (const f of [
 
 // Public invoice links can be supplied as GitHub repository variables. Bot
 // tokens never belong in this static bundle.
-const invoiceEnv = [50, 100, 250].map((stars) => ({
-  stars,
-  url: (process.env[`STARS_INVOICE_${stars}`] || '').trim(),
-}));
-if (invoiceEnv.some((invoice) => invoice.url)) {
+const invoiceEnv = [{
+  stars: 50,
+  url: (process.env.STARS_INVOICE_50 || '').trim(),
+}];
+const starsApiUrl = (process.env.STARS_API_URL || '').trim();
+if (invoiceEnv[0].url || starsApiUrl) {
   const publicConfig = {
-    authorUrl: (process.env.TELEGRAM_AUTHOR_URL || 'https://t.me/barboskich').trim(),
+    apiUrl: starsApiUrl,
     invoices: invoiceEnv,
   };
   fs.writeFileSync(

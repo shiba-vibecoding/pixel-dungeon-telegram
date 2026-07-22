@@ -2,13 +2,6 @@ Pixel Dungeon	Pixel Dungeon
 Play	Играть
 Highscores	Рекорды
 About	Об игре
-LibGDX port: Arcnor / Web port: nojus297	LibGDX-порт: Arcnor / веб-порт: nojus297
-Telegram port: @barboskich	Telegram-порт: @barboskich
-Say thanks	Сказать спасибо
-Thank you!	Спасибо!
-This is a voluntary tip for the Telegram port. It never affects gameplay.	Это добровольная благодарность за Telegram-порт. Она никак не влияет на игровой процесс.
-Support with Telegram Stars	Поддержать в Telegram Stars
-Open @barboskich	Открыть @barboskich
 Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Программирование & графика: Watabou\nМузыка: Cube_Code\n\nРазработчики этой игры вдохновлялись Brogue от Brian Walker. Вы можете сыграть в неё на Windows, Mac OS или Linux - она классная! ;)\n\nПосетите официальный сайт игры для дополнительной информации:
 pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
 Languages Create: rodriformiga	Перевод: Georgiy Danilov, Mikhael Danilov, rodriformiga
@@ -1156,6 +1149,13 @@ You were killed by a discharge of a lightning trap...	Тебя пришибло 
 You don't know what is there.	Ты не знаешь что там.
 Select a cell to examine	Выбери ячейку, для изучения
 1	0
+LibGDX port: Arcnor / Web port: nojus297	LibGDX-порт: Arcnor / веб-порт: nojus297
+Telegram port: @barboskich	Telegram-порт: @barboskich
+Say thanks	Сказать спасибо
+Thank you!	Спасибо!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Это добровольная благодарность за Telegram-порт. Она никак не влияет на игровой процесс.
+Support with Telegram Stars	Поддержать в Telegram Stars
+Open @barboskich	Открыть @barboskich
 Choose language	Выберите язык
 Key bindings	Настройка клавиш
 Switch to fullscreen	На весь экран
@@ -1183,3 +1183,8 @@ Move NE	Идти на СВ
 Move SW	Идти на ЮЗ
 Move SE	Идти на ЮВ
 Current Cell	Текущая клетка
+As you take a sip, you feel something changing inside you.	Сделав глоток, ты чувствуешь, как внутри тебя что-то меняется.
+Disguised as a %s	Маскировка: %s
+You merged two wands into one %s.	Из двух палочек создан предмет: %s.
+Select a wand to merge	Выбери палочку для объединения
+Games played: 	Сыграно игр:

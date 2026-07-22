@@ -2,13 +2,6 @@ Pixel Dungeon	Pixel Dungeon
 Play	Graj
 Highscores	Rekordy
 About	o Grze
-LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port webowy: nojus297
-Telegram port: @barboskich	Port na Telegram: @barboskich
-Say thanks	Podziękuj
-Thank you!	Dziękujemy!
-This is a voluntary tip for the Telegram port. It never affects gameplay.	To dobrowolne wsparcie portu na Telegram. Nie ma żadnego wpływu na rozgrywkę.
-Support with Telegram Stars	Wesprzyj przez Telegram Stars
-Open @barboskich	Otwórz @barboskich
 Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Kod & grafika: Watabou\nMuzyka: Cube_Code\n\nTa gra jest inspirowana akcentem Brian Walker's. Wypróbuj Windows, Mac OS i Linux - to jest zajebiste!\n\nZapraszamy do odwiedzenia oficjalnej strony o dodatkowe informacje:
 pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
 Languages Create: rodriformiga	Tłumaczenie: Łukasza Piętki, rodriformiga
@@ -1156,6 +1149,13 @@ You were killed by a discharge of a lightning trap...	Zostałeś zabity przez wy
 You don't know what is there.	Nie wiesz co tam się znajduje.
 Select a cell to examine	Wybierz miejsce by je zbadać
 1	0
+LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port webowy: nojus297
+Telegram port: @barboskich	Port na Telegram: @barboskich
+Say thanks	Podziękuj
+Thank you!	Dziękujemy!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	To dobrowolne wsparcie portu na Telegram. Nie ma żadnego wpływu na rozgrywkę.
+Support with Telegram Stars	Wesprzyj przez Telegram Stars
+Open @barboskich	Otwórz @barboskich
 Choose language	Wybierz język
 Key bindings	Przypisanie klawiszy
 Switch to fullscreen	Przełącz na pełny ekran
@@ -1183,3 +1183,8 @@ Move NE	Idź na płn.-wsch.
 Move SW	Idź na płd.-zach.
 Move SE	Idź na płd.-wsch.
 Current Cell	Bieżące pole
+As you take a sip, you feel something changing inside you.	Biorąc łyk, czujesz, że coś w tobie się zmienia.
+Disguised as a %s	Wyglądasz jak %s
+You merged two wands into one %s.	Połączono dwie różdżki, tworząc %s.
+Select a wand to merge	Wybierz różdżkę do połączenia
+Games played: 	Rozegrane gry:

@@ -1101,7 +1101,7 @@ public class Hero extends Char {
 				GLog.w( "You catch fire!" );
 				interrupt();
 			} else if (buff instanceof Paralysis) {
-				GLog.w( "You are paralysed!" );
+				GLog.w( "You are paralyzed!" );
 				interrupt();
 			} else if (buff instanceof Poison) {
 				GLog.w( "You are poisoned!" );

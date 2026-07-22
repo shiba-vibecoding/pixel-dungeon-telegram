@@ -103,3 +103,8 @@ Hello adventurer... Once I was like you - strong and confident... And now I'm de
 Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	ありがとう、%s！ 呪いは解け、ようやく安らかに眠れる… この品のどちらかを受け取ってくれ。旅の役に立つかもしれない…
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	おお、こんな場所でまともな人に会えるとは嬉しい驚きだ！ 私は珍しい素材、_幻影魚_を探しに来た。素手で捕まえられるが、水中ではほとんど見えない。魔法使いだからこの辺りの怪物から身を守ることはできるのだが、すぐ道に迷ってしまってね。実に恥ずかしい。手を貸してくれないか？ お礼に私の最高の杖を一本差し上げよう。
 1	1
+As you take a sip, you feel something changing inside you.	一口飲むと、体の中で何かが変わっていくのを感じた。
+Disguised as a %s	%sに変装中
+You merged two wands into one %s.	2本の杖を融合して%sを作り出した。
+Select a wand to merge	融合する杖を選択
+Games played: 	プレイ回数：

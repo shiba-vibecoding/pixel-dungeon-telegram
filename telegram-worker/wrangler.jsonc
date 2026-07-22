@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pixel-dungeon-stars",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-22",
+  "workers_dev": true,
+  "vars": {
+    "ALLOWED_ORIGIN": "https://shiba-vibecoding.github.io",
+    "MINI_APP_URL": "https://shiba-vibecoding.github.io/pixel-dungeon-telegram/",
+    "SUPPORT_URL": "https://t.me/barboskich"
+  }
+}

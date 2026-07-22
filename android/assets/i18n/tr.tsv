@@ -1,13 +1,6 @@
 Play	Oyna
 Highscores	Yüksek skorlar
 About	Hakkında
-LibGDX port: Arcnor / Web port: nojus297	LibGDX portu: Arcnor / web portu: nojus297
-Telegram port: @barboskich	Telegram portu: @barboskich
-Say thanks	Teşekkür et
-Thank you!	Teşekkürler!
-This is a voluntary tip for the Telegram port. It never affects gameplay.	Bu, Telegram portu için gönüllü bir destektir. Oynanışı hiçbir şekilde etkilemez.
-Support with Telegram Stars	Telegram Stars ile destekle
-Open @barboskich	@barboskich’i aç
 Send E-Mail	E-Posta Gönder
 Top Rankings	Yüksek Skorlar
 Total games won/played: 	Toplam oynanan oyun:
@@ -1084,6 +1077,13 @@ lightning trap	yıldırım tuzağı
 You were killed by a discharge of a lightning trap...	Şimşek tuzağının çakmasıyla öldün...
 You don't know what is there.	Burada ne var bilmiyorsun.
 Select a cell to examine	Kontrol edilecek bir hücre seç
+LibGDX port: Arcnor / Web port: nojus297	LibGDX portu: Arcnor / web portu: nojus297
+Telegram port: @barboskich	Telegram portu: @barboskich
+Say thanks	Teşekkür et
+Thank you!	Teşekkürler!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Bu, Telegram portu için gönüllü bir destektir. Oynanışı hiçbir şekilde etkilemez.
+Support with Telegram Stars	Telegram Stars ile destekle
+Open @barboskich	@barboskich’i aç
 Sacrificial chamber	Kurban odası
 Killed by an explosion of a bomb on level %d	%d. katta bir bombanın patlamasıyla öldün
 Do you want to respec into %s?	Uzmanlığını %s olarak değiştirmek istiyor musun?
@@ -1183,3 +1183,8 @@ Hello adventurer... Once I was like you - strong and confident... And now I'm de
 Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Teşekkür ederim, %s! Lanet bozuldu ve sonunda huzur bulabilirim... Lütfen bu eşyalardan birini al; yolculuğunda işine yarayabilir...
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Aa, böyle bir yerde düzgün birine rastlamak ne hoş bir sürpriz! Buraya nadir bir malzeme, bir _hayalet balığı_ bulmaya geldim. Onu çıplak elle yakalayabilirsin, ama suda fark etmek çok zordur. Büyü kullanabildiğim için buradaki canavarlara karşı kendimi koruyabiliyorum, fakat hemen yolumu kaybediyorum; doğrusu çok utanç verici. Belki bana yardım edebilirsin? Hizmetinin karşılığında en iyi asalarımdan birini memnuniyetle veririm.
 1	1
+As you take a sip, you feel something changing inside you.	Bir yudum alınca içinde bir şeylerin değiştiğini hissediyorsun.
+Disguised as a %s	Kılık değiştirme: %s
+You merged two wands into one %s.	İki asayı birleştirerek %s oluşturdun.
+Select a wand to merge	Birleştirilecek bir asa seç
+Games played: 	Oynanan oyun:

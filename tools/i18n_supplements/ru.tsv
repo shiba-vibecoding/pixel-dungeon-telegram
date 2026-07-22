@@ -32,3 +32,8 @@ Move NE	Идти на СВ
 Move SW	Идти на ЮЗ
 Move SE	Идти на ЮВ
 Current Cell	Текущая клетка
+As you take a sip, you feel something changing inside you.	Сделав глоток, ты чувствуешь, как внутри тебя что-то меняется.
+Disguised as a %s	Маскировка: %s
+You merged two wands into one %s.	Из двух палочек создан предмет: %s.
+Select a wand to merge	Выбери палочку для объединения
+Games played: 	Сыграно игр:

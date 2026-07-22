@@ -1,13 +1,6 @@
 Play	开始游戏
 Highscores	排行榜
 About	关于我们
-LibGDX port: Arcnor / Web port: nojus297	LibGDX 移植：Arcnor / 网页移植：nojus297
-Telegram port: @barboskich	Telegram 移植：@barboskich
-Say thanks	表示感谢
-Thank you!	谢谢！
-This is a voluntary tip for the Telegram port. It never affects gameplay.	这是对 Telegram 移植版的自愿赞助，绝不会影响游戏体验。
-Support with Telegram Stars	使用 Telegram Stars 支持
-Open @barboskich	打开 @barboskich
 Send E-Mail	发送邮件
 Top Rankings	最高纪录
 Total games won/played: 	总游戏次数
@@ -1084,6 +1077,13 @@ lightning trap	闪电陷阱
 You were killed by a discharge of a lightning trap...	你被闪电陷阱的电击杀死了……
 You don't know what is there.	你不知道那里有什么。
 Select a cell to examine	选择检查一个区域
+LibGDX port: Arcnor / Web port: nojus297	LibGDX 移植：Arcnor / 网页移植：nojus297
+Telegram port: @barboskich	Telegram 移植：@barboskich
+Say thanks	表示感谢
+Thank you!	谢谢！
+This is a voluntary tip for the Telegram port. It never affects gameplay.	这是对 Telegram 移植版的自愿赞助，绝不会影响游戏体验。
+Support with Telegram Stars	使用 Telegram Stars 支持
+Open @barboskich	打开 @barboskich
 Sacrificial chamber	献祭密室
 Killed by an explosion of a bomb on level %d	死于第%d层的炸弹爆炸
 Do you want to respec into %s?	要转职为%s吗？
@@ -1183,3 +1183,8 @@ Hello adventurer... Once I was like you - strong and confident... And now I'm de
 Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	谢谢你，%s！诅咒终于被打破，我也能安息了……请从这些物品中挑一件带走吧，也许它能在旅途中帮到你……
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	哦，真没想到能在这种地方遇见一位正派人！我来这里是为了寻找一种稀有材料——_幻影鱼_。它可以徒手抓住，但在水中极难发现。身为法师，我对付本地怪物倒不成问题，可我总是很快迷路，实在难为情。你愿意帮我吗？我很乐意拿一根最好的魔杖作为报酬。
 1	1
+As you take a sip, you feel something changing inside you.	喝下一口后，你感觉体内有什么正在发生变化。
+Disguised as a %s	变装成%s
+You merged two wands into one %s.	你将两根法杖融合成了%s。
+Select a wand to merge	选择一根要融合的法杖
+Games played: 	已玩局数：

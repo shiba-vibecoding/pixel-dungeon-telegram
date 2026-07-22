@@ -12,8 +12,8 @@
   var root = document.documentElement;
 
   var donationCopy = {
-    en: { title: 'Thank you!', message: 'A voluntary thank-you with no gameplay bonuses. Choose an amount:', missing: 'Telegram Stars payments are not configured yet.', paid: 'Thank you for supporting the port!', failed: 'The payment could not be completed.', cancel: 'Cancel' },
-    ru: { title: 'Спасибо!', message: 'Добровольная благодарность без игровых бонусов. Выберите сумму:', missing: 'Платежи в Telegram Stars пока не настроены.', paid: 'Спасибо за поддержку порта!', failed: 'Не удалось завершить платёж.', cancel: 'Отмена' },
+    en: { title: 'Thank you!', message: 'A voluntary thank-you with no gameplay bonuses.', missing: 'Telegram Stars payments are not configured yet.', outside: 'Open the game inside Telegram to pay with Stars.', paid: 'Thank you for supporting the port!', failed: 'The payment could not be completed.', cancel: 'Cancel' },
+    ru: { title: 'Спасибо!', message: 'Добровольная благодарность без игровых бонусов.', missing: 'Платежи в Telegram Stars пока не настроены.', outside: 'Откройте игру внутри Telegram, чтобы оплатить Звёздами.', paid: 'Спасибо за поддержку порта!', failed: 'Не удалось завершить платёж.', cancel: 'Отмена' },
     es: { title: '¡Gracias!', message: 'Una propina voluntaria sin ventajas en el juego. Elige una cantidad:', missing: 'Los pagos con Telegram Stars aún no están configurados.', paid: '¡Gracias por apoyar el port!', failed: 'No se pudo completar el pago.', cancel: 'Cancelar' },
     fr: { title: 'Merci !', message: 'Un pourboire volontaire, sans avantage en jeu. Choisissez un montant :', missing: 'Les paiements Telegram Stars ne sont pas encore configurés.', paid: 'Merci de soutenir le portage !', failed: 'Le paiement n’a pas pu aboutir.', cancel: 'Annuler' },
     de: { title: 'Danke!', message: 'Ein freiwilliges Dankeschön ohne Spielvorteile. Wähle einen Betrag:', missing: 'Telegram-Stars-Zahlungen sind noch nicht eingerichtet.', paid: 'Danke für deine Unterstützung des Ports!', failed: 'Die Zahlung konnte nicht abgeschlossen werden.', cancel: 'Abbrechen' },
@@ -46,38 +46,26 @@
     var invoices = starsConfig().invoices;
     if (!Array.isArray(invoices)) return [];
     return invoices.filter(function (invoice) {
-      return invoice && Number(invoice.stars) > 0 && typeof invoice.url === 'string' &&
+      return invoice && Number(invoice.stars) === 50 && typeof invoice.url === 'string' &&
         /^(https:\/\/t\.me\/\$|tg:\/\/invoice\?slug=)/.test(invoice.url);
-    }).slice(0, 3);
+    }).slice(0, 1);
   }
 
-  function openAuthor() {
-    var url = starsConfig().authorUrl || 'https://t.me/barboskich';
-    try {
-      var activeTg = window.Telegram && window.Telegram.WebApp;
-      if (isTelegramContext(activeTg) && typeof activeTg.openTelegramLink === 'function' && /^https:\/\/t\.me\//.test(url)) {
-        activeTg.openTelegramLink(url);
-      } else {
-        window.open(url, '_blank', 'noopener');
-      }
-      return true;
-    } catch (e) {
-      return false;
-    }
+  function starsApiUrl() {
+    var url = starsConfig().apiUrl;
+    if (typeof url !== 'string' || !/^https:\/\//.test(url)) return '';
+    return url.replace(/\/+$/, '');
   }
 
   function openDonation(language) {
     var activeTg = window.Telegram && window.Telegram.WebApp;
-    if (!isTelegramContext(activeTg) || typeof activeTg.openInvoice !== 'function') {
-      return openAuthor();
-    }
-
     var copy = copyFor(language);
-    var invoices = validInvoices();
-    if (!invoices.length) {
-      if (typeof activeTg.showAlert === 'function') activeTg.showAlert(copy.missing);
+    if (!isTelegramContext(activeTg) || typeof activeTg.openInvoice !== 'function') {
+      window.alert(copy.outside || donationCopy.en.outside);
       return true;
     }
+
+    var invoices = validInvoices();
 
     function pay(invoice) {
       activeTg.openInvoice(invoice.url, function (status) {
@@ -90,32 +78,78 @@
       });
     }
 
-    if (invoices.length === 1 || typeof activeTg.showPopup !== 'function') {
+    if (invoices.length) {
       pay(invoices[0]);
       return true;
     }
 
-    var buttons = invoices.map(function (invoice, index) {
-      return { id: String(index), type: 'default', text: String(invoice.stars) + ' ⭐' };
-    });
-    activeTg.showPopup({ title: copy.title, message: copy.message, buttons: buttons }, function (id) {
-      if (invoices[Number(id)]) pay(invoices[Number(id)]);
+    var apiUrl = starsApiUrl();
+    if (!apiUrl) {
+      if (typeof activeTg.showAlert === 'function') activeTg.showAlert(copy.missing);
+      return true;
+    }
+
+    fetch(apiUrl + '/invoice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ language: language || 'en' })
+    }).then(function (response) {
+      if (!response.ok) throw new Error('Invoice endpoint returned ' + response.status);
+      return response.json();
+    }).then(function (data) {
+      if (!data || Number(data.stars) !== 50 || typeof data.url !== 'string' ||
+          !/^(https:\/\/t\.me\/\$|tg:\/\/invoice\?slug=)/.test(data.url)) {
+        throw new Error('Invalid invoice response');
+      }
+      pay({ stars: 50, url: data.url });
+    }).catch(function () {
+      if (typeof activeTg.showAlert === 'function') activeTg.showAlert(copy.failed);
     });
     return true;
   }
 
   window.PixelDungeonTelegram = window.PixelDungeonTelegram || {};
   window.PixelDungeonTelegram.openDonation = openDonation;
-  window.PixelDungeonTelegram.openAuthor = openAuthor;
 
   function setVar(name, value) {
     try { root.style.setProperty(name, value); } catch (e) {}
+  }
+
+  /*
+   * libGDX's GWT backend measures window.innerWidth/innerHeight, while a
+   * fullscreen Mini App has a smaller content-safe rectangle. Resize the GWT
+   * panel and canvas to that rectangle; changing the canvas backing size is
+   * detected by libGDX on its next frame and causes a normal game resize.
+   */
+  function fitGameToSafeArea() {
+    var host = document.getElementById('embed-html');
+    if (!host) return;
+    var rect = host.getBoundingClientRect();
+    var width = Math.max(1, Math.round(rect.width));
+    var height = Math.max(1, Math.round(rect.height));
+    var panel = host.firstElementChild;
+    if (panel) {
+      panel.style.width = width + 'px';
+      panel.style.height = height + 'px';
+    }
+    var canvas = host.getElementsByTagName('canvas')[0];
+    if (!canvas) return;
+    if (canvas.width !== width) canvas.width = width;
+    if (canvas.height !== height) canvas.height = height;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+  }
+
+  function scheduleSafeAreaFit() {
+    window.setTimeout(fitGameToSafeArea, 0);
+    window.setTimeout(fitGameToSafeArea, 80);
   }
 
   // --- Fallback viewport height (used before/without Telegram) ---------------
   function applyWindowHeight() {
     setVar('--tg-viewport-height', window.innerHeight + 'px');
     setVar('--tg-viewport-stable-height', window.innerHeight + 'px');
+    scheduleSafeAreaFit();
   }
   applyWindowHeight();
   window.addEventListener('resize', applyWindowHeight);
@@ -131,6 +165,7 @@
       evt.initEvent('resize', true, true);
       window.dispatchEvent(evt);
     }
+    scheduleSafeAreaFit();
   }
   [50, 200, 500, 1000, 2000].forEach(function (t) { setTimeout(pokeResize, t); });
 
@@ -182,12 +217,15 @@
   function updateInsets() {
     var s = tg.safeAreaInset || {};
     var c = tg.contentSafeAreaInset || {};
-    setVar('--tg-safe-top', (s.top || 0) + 'px');
-    setVar('--tg-safe-bottom', (s.bottom || 0) + 'px');
-    setVar('--tg-safe-left', (s.left || 0) + 'px');
-    setVar('--tg-safe-right', (s.right || 0) + 'px');
-    setVar('--tg-content-top', (c.top || 0) + 'px');
-    setVar('--tg-content-bottom', (c.bottom || 0) + 'px');
+    var top = Math.max(Number(s.top) || 0, Number(c.top) || 0);
+    var bottom = Math.max(Number(s.bottom) || 0, Number(c.bottom) || 0);
+    var left = Math.max(Number(s.left) || 0, Number(c.left) || 0);
+    var right = Math.max(Number(s.right) || 0, Number(c.right) || 0);
+    setVar('--pd-safe-top', top + 'px');
+    setVar('--pd-safe-bottom', bottom + 'px');
+    setVar('--pd-safe-left', left + 'px');
+    setVar('--pd-safe-right', right + 'px');
+    scheduleSafeAreaFit();
   }
 
   updateViewport();
@@ -199,4 +237,15 @@
         tg.onEvent(name, function () { updateViewport(); updateInsets(); pokeResize(); });
       } catch (e) {}
     });
+
+  // The GWT canvas is inserted only after its assets finish preloading.
+  if (typeof MutationObserver !== 'undefined') {
+    var gameHost = document.getElementById('embed-html');
+    if (gameHost) {
+      new MutationObserver(scheduleSafeAreaFit).observe(gameHost, {
+        childList: true,
+        subtree: true
+      });
+    }
+  }
 })();

@@ -138,7 +138,7 @@ public class DM300 extends Mob {
 	@Override
 	public void notice() {
 		super.notice();
-		yell( "Unauthorised personnel detected." );
+		yell( "Unauthorized personnel detected." );
 	}
 	
 	@Override

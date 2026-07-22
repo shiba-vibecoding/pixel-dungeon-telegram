@@ -40,7 +40,7 @@ public class LloydsBeacon extends Item {
 		"Strong magic aura of this place prevents you from using the lloyd's beacon!";
 	
 	private static final String TXT_CREATURES = 
-		"Psychic aura of neighbouring creatures doesn't allow you to use the lloyd's beacon at this moment.";
+		"Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.";
 	
 	private static final String TXT_RETURN = 
 		"The lloyd's beacon is successfully set at your current location, now you can return here anytime.";

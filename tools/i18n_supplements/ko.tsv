@@ -104,3 +104,8 @@ Hello adventurer... Once I was like you - strong and confident... And now I'm de
 Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	고맙다, %s! 저주가 풀렸으니 마침내 쉴 수 있겠어… 이 물건들 중 하나를 가져가 줘. 네 여정에 도움이 될지도 몰라…
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	오, 이런 곳에서 멀쩡한 사람을 만나다니 반가운 일이군! 나는 희귀한 재료인 _유령 물고기_를 찾으러 왔네. 맨손으로 잡을 수는 있지만 물속에서는 거의 보이지 않지. 마법사라 이곳의 괴물에게서 몸을 지키는 건 어렵지 않지만, 금세 길을 잃어 버려서 정말 부끄럽군. 혹시 나를 도와주겠나? 수고의 대가로 내 최고의 마법봉 중 하나를 기꺼이 주겠네.
 1	1
+As you take a sip, you feel something changing inside you.	한 모금 마시자, 몸속에서 무언가 변하는 것이 느껴졌다.
+Disguised as a %s	%s 모습으로 변장함
+You merged two wands into one %s.	두 마법 막대를 합쳐 %s 하나를 만들었다.
+Select a wand to merge	합칠 마법 막대를 선택하세요.
+Games played: 	플레이 수:

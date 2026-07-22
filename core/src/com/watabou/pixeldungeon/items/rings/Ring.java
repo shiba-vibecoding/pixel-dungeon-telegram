@@ -163,7 +163,7 @@ public class Ring extends EquipableItem {
 			cursedKnown = true;
 			if (cursed) {
 				equipCursed( hero );
-				GLog.n( "your " + this + " tightens around your finger painfully" );
+				GLog.n( "Your %s tightens around your finger painfully", toString() );
 			}
 			
 			hero.spendAndNext( TIME_TO_EQUIP );
@@ -255,34 +255,35 @@ public class Ring extends EquipableItem {
 	
 	@Override
 	public String toString() {
-		return 
-			levelKnown && isBroken() ? 
-				"broken " + super.toString() : 
-				super.toString();
+		String result = super.toString();
+		return levelKnown && isBroken() ? Utils.format( "broken %s", result ) : result;
 	}
 	
 	@Override
 	public String name() {
-		return isKnown() ? name : gem + " ring";
+		return isKnown() ? name : Utils.format( "%s ring", gem );
 	}
 	
 	@Override
 	public String desc() {
-		return 
-			"This metal band is adorned with a large " + gem + " gem " +
-			"that glitters in the darkness. Who knows what effect it has when worn?";
+		return Utils.format(
+			"This metal band is adorned with a large %s gem that glitters in the darkness. " +
+			"Who knows what effect it has when worn?", gem );
 	}
 	
 	@Override
 	public String info() {
 		if (isEquipped( Dungeon.hero )) {
 			
-			return desc() + "\n\n" + "The " + name() + " is on your finger" + 
-				(cursed ? ", and because it is cursed, you are powerless to remove it." : "." );
+			return Utils.format( "%s\n\nThe %s is on your finger %s.",
+				desc(), name(), cursed ?
+					", and because it is cursed, you are powerless to remove it" : "" )
+				.replace( " ,", "," ).replace( " .", "." );
 			
 		} else if (cursed && cursedKnown) {
 			
-			return desc() + "\n\nYou can feel a malevolent magic lurking within the " + name() + ".";
+			return Utils.format(
+				"%s\n\nYou can feel a malevolent magic lurking within the %s.", desc(), name() );
 			
 		} else {
 			

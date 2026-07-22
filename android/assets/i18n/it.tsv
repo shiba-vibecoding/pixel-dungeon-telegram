@@ -1,13 +1,6 @@
 Play	Gioca
 Highscores	Punteggi Migliori
 About	Circa
-LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port web: nojus297
-Telegram port: @barboskich	Port Telegram: @barboskich
-Say thanks	Ringrazia
-Thank you!	Grazie!
-This is a voluntary tip for the Telegram port. It never affects gameplay.	È un contributo volontario per il port Telegram. Non influisce in alcun modo sul gioco.
-Support with Telegram Stars	Sostieni con Telegram Stars
-Open @barboskich	Apri @barboskich
 Send E-Mail	Spedisci e-mail
 Top Rankings	Migliori Classificati
 Total games won/played: 	Partite totali giocate:
@@ -1085,6 +1078,13 @@ lightning trap	Trappola fulminante
 You were killed by a discharge of a lightning trap...	Sei stato ucciso dalla scarica di una trappola fulminante
 You don't know what is there.	Non sai cosa ci sia.
 Select a cell to examine	Scegli una casella da esaminare
+LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port web: nojus297
+Telegram port: @barboskich	Port Telegram: @barboskich
+Say thanks	Ringrazia
+Thank you!	Grazie!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	È un contributo volontario per il port Telegram. Non influisce in alcun modo sul gioco.
+Support with Telegram Stars	Sostieni con Telegram Stars
+Open @barboskich	Apri @barboskich
 Sacrificial chamber	Camera sacrificale
 Killed by an explosion of a bomb on level %d	Ucciso dall'esplosione di una bomba al livello %d
 Do you want to respec into %s?	Vuoi cambiare specializzazione in %s?
@@ -1183,3 +1183,8 @@ Hello adventurer... Once I was like you - strong and confident... And now I'm de
 Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Grazie, %s! La maledizione è spezzata e finalmente posso riposare... Prendi uno di questi oggetti: forse ti sarà utile durante il viaggio...
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, che piacevole sorpresa incontrare una persona perbene in un posto simile! Sono venuto qui per un ingrediente raro: un _pesce fantasma_. Puoi prenderlo a mani nude, ma nell'acqua è quasi impossibile scorgerlo. Con la magia so difendermi dai mostri del luogo, ma mi perdo in continuazione: che vergogna. Potresti aiutarmi? Sarei lieto di ricompensarti con una delle mie bacchette migliori.
 1	1
+As you take a sip, you feel something changing inside you.	Bevendo un sorso, senti che qualcosa dentro di te sta cambiando.
+Disguised as a %s	Travestito da %s
+You merged two wands into one %s.	Hai fuso due bacchette per creare %s.
+Select a wand to merge	Seleziona una bacchetta da fondere
+Games played: 	Partite giocate:

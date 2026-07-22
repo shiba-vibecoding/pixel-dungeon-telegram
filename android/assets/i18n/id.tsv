@@ -1,13 +1,6 @@
 Play	Main
 Highscores	Nilai Tertinggi
 About	Tentang
-LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port web: nojus297
-Telegram port: @barboskich	Port Telegram: @barboskich
-Say thanks	Ucapkan terima kasih
-Thank you!	Terima kasih!
-This is a voluntary tip for the Telegram port. It never affects gameplay.	Ini adalah dukungan sukarela untuk port Telegram. Tidak pernah memengaruhi permainan.
-Support with Telegram Stars	Dukung dengan Telegram Stars
-Open @barboskich	Buka @barboskich
 Send E-Mail	Kirim E-Mail
 Top Rankings	Peringkat Teratas
 Total games won/played: 	Total bermain:
@@ -1085,6 +1078,13 @@ lightning trap	jebakan petir
 You were killed by a discharge of a lightning trap...	Anda tersambar hingga terbunuh oleh jebakan petir...
 You don't know what is there.	Anda tidak tahu ada apa disana
 Select a cell to examine	Pilih sel yang diperiksa
+LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port web: nojus297
+Telegram port: @barboskich	Port Telegram: @barboskich
+Say thanks	Ucapkan terima kasih
+Thank you!	Terima kasih!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Ini adalah dukungan sukarela untuk port Telegram. Tidak pernah memengaruhi permainan.
+Support with Telegram Stars	Dukung dengan Telegram Stars
+Open @barboskich	Buka @barboskich
 Sacrificial chamber	Ruang pengorbanan
 Killed by an explosion of a bomb on level %d	Tewas akibat ledakan bom di lantai %d
 Do you want to respec into %s?	Ingin mengganti spesialisasi menjadi %s?
@@ -1183,3 +1183,8 @@ Hello adventurer... Once I was like you - strong and confident... And now I'm de
 Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Terima kasih, %s! Kutukannya telah hancur dan akhirnya aku bisa beristirahat... Ambillah salah satu benda ini, mungkin akan berguna dalam perjalananmu...
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, sungguh menyenangkan bertemu orang baik di tempat seperti ini! Aku datang mencari bahan langka — seekor _ikan hantu_. Ikan itu bisa ditangkap dengan tangan kosong, tetapi sangat sulit terlihat di dalam air. Sebagai pengguna sihir aku mampu melindungi diri dari monster di sini, tetapi sebentar saja sudah tersesat—sungguh memalukan. Maukah kamu membantuku? Aku akan senang membayar jasamu dengan salah satu tongkat terbaikku.
 1	1
+As you take a sip, you feel something changing inside you.	Saat meneguknya, Anda merasakan sesuatu berubah di dalam diri Anda.
+Disguised as a %s	Menyamar sebagai %s
+You merged two wands into one %s.	Anda menggabungkan dua tongkat sihir menjadi satu %s.
+Select a wand to merge	Pilih tongkat sihir untuk digabungkan
+Games played: 	Permainan dimainkan:

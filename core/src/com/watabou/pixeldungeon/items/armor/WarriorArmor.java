@@ -76,7 +76,7 @@ public class WarriorArmor extends ClassArmor {
 	public String desc() {
 		return
 			"While this armor looks heavy, it allows a warrior to perform heroic leap towards " +
-			"a targeted location, slamming down to stun all neighbouring enemies.";
+			"a targeted location, slamming down to stun all neighboring enemies.";
 	}
 	
 	protected static CellSelector.Listener leaper = new  CellSelector.Listener() {

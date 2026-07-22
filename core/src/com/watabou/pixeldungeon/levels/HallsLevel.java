@@ -127,7 +127,7 @@ public class HallsLevel extends RegularLevel {
 		case Terrain.STATUE_SP:
 			return "The pillar is made of real humanoid skulls. Awesome."; 
 		case Terrain.BOOKSHELF:
-			return "Books in ancient languages smoulder in the bookshelf.";
+			return "Books in ancient languages smolder in the bookshelf.";
 		default:
 			return super.tileDesc( tile );
 		}

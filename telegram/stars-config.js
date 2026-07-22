@@ -6,10 +6,8 @@
  * ignored, so the game remains safe to deploy before payments are configured.
  */
 window.PixelDungeonStars = {
-  authorUrl: 'https://t.me/barboskich',
+  apiUrl: '',
   invoices: [
-    { stars: 50, url: '' },
-    { stars: 100, url: '' },
-    { stars: 250, url: '' }
+    { stars: 50, url: '' }
   ]
 };

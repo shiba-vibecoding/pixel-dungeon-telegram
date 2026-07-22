@@ -46,7 +46,6 @@ public class AboutScene extends PixelScene {
 	private static final String TXT_VOLUNTARY =
 		"This is a voluntary tip for the Telegram port. It never affects gameplay.";
 	private static final String TXT_STARS = "Support with Telegram Stars";
-	private static final String TXT_AUTHOR = "Open @barboskich";
 
 	private static final String LNK = "pixeldungeon.watabou.ru";
 	private static final String AUTHOR_LNK = "https://t.me/barboskich";
@@ -146,13 +145,11 @@ public class AboutScene extends PixelScene {
 	}
 
 	private void showThanks() {
-		add( new WndOptions( TXT_THANK_YOU, TXT_VOLUNTARY, TXT_STARS, TXT_AUTHOR ) {
+		add( new WndOptions( TXT_THANK_YOU, TXT_VOLUNTARY, TXT_STARS ) {
 			@Override
 			protected void onSelect( int index ) {
 				if (index == 0) {
 					PixelDungeon.instance.getPlatformSupport().openDonation( Localization.language() );
-				} else if (index == 1) {
-					Gdx.net.openURI( AUTHOR_LNK );
 				}
 			}
 		} );

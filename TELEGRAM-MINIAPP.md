@@ -38,11 +38,11 @@ A small, self-contained overlay in [`telegram/`](telegram/). The game is unchang
 
 | File | Purpose |
 |------|---------|
-| `telegram/telegram-init.js` | Boots the Telegram WebApp SDK: `ready()`+`expand()`, fullscreen + portrait lock, disable swipe-to-close, closing confirmation, dark theme; nudges libGDX to re-fit the canvas to the Telegram viewport and exposes the optional Stars invoice picker. |
-| `telegram/stars-config.js` | Public, token-free list of voluntary Telegram Stars invoice links. Empty links are ignored. |
+| `telegram/telegram-init.js` | Boots the Telegram WebApp SDK: `ready()`+`expand()`, fullscreen + portrait lock, disable swipe-to-close, closing confirmation, dark theme; keeps libGDX inside Telegram's live content-safe area and opens the fixed 50 Stars invoice. |
+| `telegram/stars-config.js` | Public, token-free Stars endpoint/invoice configuration. Empty values are ignored. |
 | `telegram/telegram-storage.js` | Migrates legacy browser saves, namespaces local data by Telegram user ID, restores Telegram CloudStorage before game boot and keeps it synchronized. |
 | `telegram/telegram-bootstrap.js` | Loads the Telegram SDK only for real Mini App launches, waits for cloud restore, then starts GWT; includes a timeout fallback so CDN/API failure cannot brick the game. |
-| `telegram/telegram.css` | Dark background + kill scroll/zoom/text-selection. Deliberately minimal — libGDX puts its canvas inside `#embed-html > table > … > canvas` and sizes it to the window itself, so we must NOT impose flex/height layout on it. |
+| `telegram/telegram.css` | Dark background, touch hardening and Telegram/device safe-area bounds so the top HUD never sits under fullscreen controls or a phone cutout. |
 | `telegram/build-telegram.mjs` | Copies the clean web build into `dist-telegram-clean/` and patches `index.html` (SDK + overlay). The SDK `<script>` goes at the end of `<body>`, never in `<head>` (a `<head>` script from telegram.org would block the game wherever telegram.org is slow/blocked). |
 | `telegram/serve.mjs` | A tiny HTTP/1.1 static server for local testing (see §3). |
 
@@ -99,34 +99,34 @@ two devices at once.
 
 ## 5. Configure the optional “Say thanks” donation
 
-The button lives in **About → Say thanks** and is deliberately non-gameplay:
-it grants no items, bonuses, achievements or progression. Outside Telegram it
-opens the port author's public profile.
+The dialog lives in **About → Say thanks** and contains one button for a fixed
+**50 Stars** voluntary tip. It grants no items, bonuses, achievements or
+progression. Outside Telegram it explains that Stars checkout must be opened in
+the Mini App.
 
-Telegram Stars payments for digital goods use currency `XTR` and require a bot.
-Do **not** put the bot token in this repository or in the Mini App bundle. Your bot
-backend must create three invoice links (the suggested amounts are 50, 100 and
-250 Stars), answer every `pre_checkout_query` within 10 seconds, record
-`successful_payment`, and provide a `/paysupport` command for payment questions.
+Telegram Stars payments use currency `XTR` and require a bot. Do **not** put the
+bot token in this repository or in the Mini App bundle. The free Cloudflare
+Worker in [`telegram-worker/`](telegram-worker/) creates the localized 50 Stars
+invoice, answers every `pre_checkout_query`, records successful charge ids in an
+optional `PAYMENTS` KV binding and provides `/terms`, `/support` and
+`/paysupport`.
 
-After the backend creates the links, paste only the public links into
-`telegram/stars-config.js`:
+Deploy that Worker, then add its public origin (without `/invoice`) as the GitHub
+repository variable `STARS_API_URL`. The Pages workflow injects it into the
+static bundle. A previously generated fixed public link can instead be supplied
+as `STARS_INVOICE_50`:
 
 ```js
 window.PixelDungeonStars = {
-  authorUrl: 'https://t.me/barboskich',
-  invoices: [
-    { stars: 50,  url: 'https://t.me/$YOUR_50_STAR_INVOICE' },
-    { stars: 100, url: 'https://t.me/$YOUR_100_STAR_INVOICE' },
-    { stars: 250, url: 'https://t.me/$YOUR_250_STAR_INVOICE' }
-  ]
+  apiUrl: 'https://pixel-dungeon-stars.YOUR-SUBDOMAIN.workers.dev',
+  invoices: [{ stars: 50, url: '' }]
 };
 ```
 
 Re-run `node telegram/build-telegram.mjs html/build/dist dist-telegram-clean`
-after changing the configuration. The Mini App opens the selected link through
-`Telegram.WebApp.openInvoice()` and handles `paid`, `cancelled`, `failed` and
-`pending` without touching game saves or balance.
+after changing a local configuration. The Mini App opens the link through
+`Telegram.WebApp.openInvoice()` and handles the result without touching game
+saves, achievements or balance.
 
 Official references: [Telegram Stars payments](https://core.telegram.org/bots/payments-stars)
 and [Mini App `openInvoice`](https://core.telegram.org/bots/webapps#initializing-mini-apps).

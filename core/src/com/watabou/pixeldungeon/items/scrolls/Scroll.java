@@ -151,15 +151,14 @@ public abstract class Scroll extends Item {
 	
 	@Override
 	public String name() {
-		return isKnown() ? name : "scroll \"" + rune + "\"";
+		return isKnown() ? name : Utils.format( "scroll \"%s\"", rune );
 	}
 	
 	@Override
 	public String info() {
-		return isKnown() ?
-			desc() :
+		return isKnown() ? desc() : Utils.format(
 			"This parchment is covered with indecipherable writing, and bears a title " +
-			"of rune " + rune + ". Who knows what it will do when read aloud?";
+			"of rune %s. Who knows what it will do when read aloud?", rune );
 	}
 	
 	@Override

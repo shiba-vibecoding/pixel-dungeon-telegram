@@ -50,9 +50,7 @@ public class Dreamweed extends Plant {
 	
 	public static class Seed extends Plant.Seed {
 		{
-			plantName = "Dreamweed";
-			
-			name = "seed of " + plantName;
+			setPlantName( "Dreamweed" );
 			image = ItemSpriteSheet.SEED_DREAMWEED;
 			
 			plantClass = Dreamweed.class;
