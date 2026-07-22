@@ -32,6 +32,9 @@ import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Badges;
 import com.watabou.pixeldungeon.PixelDungeon;
 import com.watabou.pixeldungeon.effects.BadgeBanner;
+import com.watabou.pixeldungeon.i18n.Localization;
+import com.watabou.pixeldungeon.ui.LocalizedBitmapText;
+import com.watabou.pixeldungeon.ui.LocalizedBitmapTextMultiline;
 import com.watabou.utils.BitmapCache;
 
 public class PixelScene extends Scene {
@@ -55,6 +58,7 @@ public class PixelScene extends Scene {
 	public static BitmapText.Font font2x;
 	public static BitmapText.Font font25x;
 	public static BitmapText.Font font3x;
+	public static BitmapText.Font fontIntl;
 	
 	@Override
 	public void create() {
@@ -114,21 +118,30 @@ public class PixelScene extends Scene {
 			
 			// 6x10 (12)
 			font2x = Font.colorMarked( 
-				BitmapCache.get( Assets.FONTS2X ), 14, 0x00000000, BitmapText.Font.LATIN_FULL );
+				BitmapCache.get( Assets.FONTS2X ), 14, 0x00000000, BitmapText.Font.ALL_CHARS );
 			font2x.baseLine = 11;
 			font2x.tracking = -1;
 			
 			// 7x12 (15)
 			font25x = Font.colorMarked( 
-				BitmapCache.get( Assets.FONTS25X ), 17, 0x00000000, BitmapText.Font.LATIN_FULL );
+				BitmapCache.get( Assets.FONTS25X ), 17, 0x00000000, BitmapText.Font.ALL_CHARS );
 			font25x.baseLine = 13;
 			font25x.tracking = -1;
 			
 			// 9x15 (18)
 			font3x = Font.colorMarked( 
-				BitmapCache.get( Assets.FONTS3X ), 22, 0x00000000, BitmapText.Font.LATIN_FULL );
+				BitmapCache.get( Assets.FONTS3X ), 22, 0x00000000, BitmapText.Font.ALL_CHARS );
 			font3x.baseLine = 17;
 			font3x.tracking = -2;
+
+			String intlChars = Gdx.files.internal( Assets.FONTS_INTL_CHARS )
+				.readString( "UTF-8" ).replace( "\r", "" ).replace( "\n", "" );
+			String intlWidths = Gdx.files.internal( Assets.FONTS_INTL_WIDTHS )
+				.readString( "UTF-8" ).trim();
+			fontIntl = Font.grid( BitmapCache.get( Assets.FONTS_INTL ),
+				16, 18, intlChars, intlWidths );
+			fontIntl.baseLine = 16;
+			fontIntl.tracking = 0;
 		}
 	}
 	
@@ -200,6 +213,21 @@ public class PixelScene extends Scene {
 
 		}
 
+		// The two tiniest legacy atlases are Latin-only.  Use the complete
+		// atlas at a fractional scale when Cyrillic is active, which keeps text
+		// readable even in the minimum 128x224 virtual resolution.
+		if (!Localization.ENGLISH.equals( Localization.language() ) &&
+			(font == font1x || font == font15x)) {
+			font = font2x;
+			scale = Math.max( 0.5f, pt / 12f );
+		}
+
+		if (Localization.usesInternationalFont()) {
+			float previousLineHeight = font.lineHeight;
+			font = fontIntl;
+			scale *= previousLineHeight / fontIntl.lineHeight;
+		}
+
 		scale /= zoom;
 	}
 	
@@ -211,9 +239,20 @@ public class PixelScene extends Scene {
 		
 		chooseFont( size );
 		
-		BitmapText result = new BitmapText( text, font );
+		BitmapText result = new LocalizedBitmapText( text, font );
 		result.scale.set( scale );
 		
+		return result;
+	}
+
+	public static BitmapText createInternationalText( String text, float size ) {
+		chooseFont( size );
+		float resultScale = scale;
+		if (font != fontIntl) {
+			resultScale *= font.lineHeight / fontIntl.lineHeight;
+		}
+		BitmapText result = new BitmapText( text, fontIntl );
+		result.scale.set( resultScale );
 		return result;
 	}
 	
@@ -225,7 +264,7 @@ public class PixelScene extends Scene {
 		
 		chooseFont( size );
 		
-		BitmapTextMultiline result = new BitmapTextMultiline( text, font );
+		BitmapTextMultiline result = new LocalizedBitmapTextMultiline( text, font );
 		result.scale.set( scale );
 		
 		return result;
@@ -269,7 +308,7 @@ public class PixelScene extends Scene {
 	
 	public static class Fader extends ColorBlock {
 		
-		private static float FADE_TIME = 1f;
+		private static float FADE_TIME = 0.7f;
 		
 		private boolean light;
 		

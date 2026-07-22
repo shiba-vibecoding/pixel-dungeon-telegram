@@ -1,0 +1,106 @@
+LibGDX port: Arcnor / Web port: nojus297	LibGDX 포팅: Arcnor / 웹 포팅: nojus297
+Telegram port: @barboskich	Telegram 포팅: @barboskich
+Say thanks	감사 전하기
+Thank you!	감사합니다!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Telegram 포팅을 위한 자발적인 후원입니다. 게임 플레이에는 전혀 영향을 주지 않습니다.
+Support with Telegram Stars	Telegram Stars로 후원
+Open @barboskich	@barboskich 열기
+Sacrificial chamber	희생의 방
+Killed by an explosion of a bomb on level %d	%d층에서 폭탄 폭발로 사망
+Do you want to respec into %s?	%s(으)로 전직을 바꾸겠습니까?
+Yes, I want to respec	네, 전직을 바꾸겠습니다
+Maybe later	나중에
+Language	언어
+Because of frequent use, your %s has broken.	너무 자주 사용해서 %s이(가) 부서졌다.
+Because of frequent use, your %s is going to break soon.	너무 자주 사용해서 %s이(가) 곧 부서질 것 같다.
+bomb	폭탄
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	흑색 화약이 든 비교적 작은 폭탄이다. 편리하게도 던지면 도화선에 자동으로 불이 붙는다.
+You killed yourself with a bomb...	자신의 폭탄에 목숨을 잃었다…
+honeypot	꿀단지
+SHATTER	깨뜨린다
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	이 작은 단지에는 꿀이 별로 없지만, 황금빛 벌 한 마리가 이곳을 떠나려 하지 않는다.
+%s of auto-repair	자동 수리의 %s
+enchantment of viscosity	점성의 마법
+The enchantment of viscosity killed you...	점성의 마법이 당신을 죽였다…
+Defered damage (%d)	지연된 피해 (%d)
+phantom fish	유령 물고기
+broken %s	부서진 %s
+Unequip one ring	반지 하나를 해제
+Scroll of Enchantment	마법 부여의 주문서
+Select an enchantable item	마법을 부여할 물건을 선택
+your %s glows in the dark	%s이(가) 어둠 속에서 빛난다
+Scroll of Wipe Out	말살의 주문서
+You are now familiar enough with your %s.	이제 %s을(를) 충분히 익혔다.
+Wand of Reach	손길의 마법 막대
+shocking %s	전격의 %s
+tempered %s	단련된 %s
+"Your sacrifice is worthy..."	"네 희생은 가치가 있다…"
+"Your sacrifice is unworthy..."	"네 희생은 가치가 없다…"
+"Your sacrifice is worthy and so you are!"	"네 희생은 가치가 있다. 너 역시 그러하다!"
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	이곳에는 희생의 불꽃이 타오른다. 불꽃에 닿은 모든 생명은 던전의 정령에게 바칠 제물로 낙인찍힌다.
+Marked for sacrifice	희생의 표식
+Immune to gases	가스 면역
+Blinded with rage	분노에 눈이 멀음
+Zeroed in	조준 완료
+echo of 	메아리치는 
+curse personification	저주의 화신
+DM-350	DM-350
+spawn of Goo	구의 분신
+King of Dwarves	드워프의 왕
+undead King of Dwarves	언데드 드워프 왕
+memory of Tengu	텐구의 기억
+echo of Yog-Dzewa	요그제바의 메아리
+Yes, I will do it for you	그래, 널 위해 해 주지
+No, I can't help you	아니, 도와줄 수 없어
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	_유령 물고기_는 찾았나, %s? 근처 웅덩이들을 뒤져 보는 게 좋을 거야.
+As you try to read the sign it bursts into greenish flames.	표지판을 읽으려는 순간, 녹색을 띤 불길에 휩싸였다.
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	던전 깊은 층의 상점에서 골드를 쓸 수 있다. 첫 상점은 6층에 있다.
+If you are burning, you can't put out the fire in the water while levitating.	공중에 떠 있는 동안에는 물에 들어가도 몸에 붙은 불을 끌 수 없다.
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	무기와 방어구는 마법 막대나 반지보다 빨리 닳지만, 수리할 방법도 더 많다.
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	말살의 주문서를 얻는 유일한 방법은 던전의 정령에게 선물로 받는 것이다.
+Choose language	언어 선택
+Key bindings	키 설정
+Switch to fullscreen	전체 화면으로 전환
+Switch to windowed	창 모드로 전환
+Reset To Defaults	기본값으로 복원
+<None>	<없음>
+Press a key for "%s", or press %s to remove the binding.	“%s”에 지정할 키를 누르거나, %s 키를 눌러 지정을 해제하세요.
+Hero Info	영웅 정보
+Wait	대기
+Search	탐색
+Examine cell	칸 조사
+Resume motion	이동 재개
+Backpack	배낭
+Quickslot	빠른 슬롯
+Attack	공격
+Visible Enemies	보이는 적
+Zoom In	확대
+Zoom Out	축소
+Move North	북쪽으로 이동
+Move South	남쪽으로 이동
+Move West	서쪽으로 이동
+Move East	동쪽으로 이동
+Move NW	북서쪽으로 이동
+Move NE	북동쪽으로 이동
+Move SW	남서쪽으로 이동
+Move SE	남동쪽으로 이동
+Current Cell	현재 칸
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	코드 및 그래픽: Watabou\n음악: Cube_Code\n\n이 게임은 Brian Walker의 Brogue에서 영감을 받았습니다. Windows, Mac OS, Linux에서 즐겨 보세요. 정말 멋진 게임입니다! ;)\n\n자세한 정보는 공식 웹사이트를 방문해 주세요:
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	현지화: rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+Languages	언어
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	이 작고 반투명한 물고기는 공중에서도 간신히 보인다. 물속에서는 사실상 완전히 보이지 않는다.
+You can only wear two rings at a time. Unequip one of your equipped rings.	반지는 한 번에 두 개까지만 착용할 수 있다. 착용 중인 반지 하나를 빼야 한다.
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	이 주문서는 무기나 방어구에 무작위 마법을 부여해 특별한 힘을 갖게 한다.
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	이 주문서를 읽으면 던전 정령들의 분노가 해방되어 현재 층의 모든 것을 죽인다. 뭐, 거의 모든 것이다. 강력한 생물 중 일부는 영향을 받지 않을 수도 있다.
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	이 다용도 마법봉은 멀리 있는 물건을 끌어오거나 적과 자리를 바꾸는 데 쓸 수 있다. 마법봉이 내뿜는 힘의 파동은 지나가는 모든 칸에 영향을 주어 함정을 발동시키고, 키 큰 풀을 짓밟고, 닫힌 문을 열며 열린 문을 닫는다.
+broken %1$s :%2$d	망가진 %1$s :%2$d
+a broken	망가진
+%1$s: "%2$s"	%1$s: “%2$s”
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	이 생물은 슬픈 유령을 닮았지만 주위로 어둠이 소용돌이친다. 얼굴에는 절망이 서려 있다.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	안녕, 모험가여… 한때 나도 너처럼 강하고 자신감이 넘쳤지… 하지만 이제 난 죽었다… 끔찍한 저주에 묶여 이곳을 떠날 수도 없어… 제발… 나를 도와줘… _저주를 없애 줘_…
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	고맙다, %s! 저주가 풀렸으니 마침내 쉴 수 있겠어… 이 물건들 중 하나를 가져가 줘. 네 여정에 도움이 될지도 몰라…
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	오, 이런 곳에서 멀쩡한 사람을 만나다니 반가운 일이군! 나는 희귀한 재료인 _유령 물고기_를 찾으러 왔네. 맨손으로 잡을 수는 있지만 물속에서는 거의 보이지 않지. 마법사라 이곳의 괴물에게서 몸을 지키는 건 어렵지 않지만, 금세 길을 잃어 버려서 정말 부끄럽군. 혹시 나를 도와주겠나? 수고의 대가로 내 최고의 마법봉 중 하나를 기꺼이 주겠네.
+1	1

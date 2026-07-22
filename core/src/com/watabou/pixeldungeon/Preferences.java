@@ -18,6 +18,7 @@
 package com.watabou.pixeldungeon;
 
 import com.badlogic.gdx.Gdx;
+import com.watabou.noosa.Game;
 
 public enum Preferences {
 
@@ -33,6 +34,7 @@ public enum Preferences {
 	public static final String KEY_DONATED		= "donated";
 	public static final String KEY_INTRO		= "intro";
 	public static final String KEY_BRIGHTNESS	= "brightness";
+	public static final String KEY_LANGUAGE		= "language";
 
 	public static final String KEY_WINDOW_FULLSCREEN	= "windowFullscreen";
 	public static final String KEY_WINDOW_WIDTH			= "windowWidth";
@@ -47,7 +49,8 @@ public enum Preferences {
 	
 	private com.badlogic.gdx.Preferences get() {
 		if (prefs == null) {
-			prefs = Gdx.app.getPreferences(FILE_NAME);
+			String name = Game.instance.getPlatformSupport().preferencesName( FILE_NAME );
+			prefs = Gdx.app.getPreferences( name );
 		}
 		return prefs;
 	}

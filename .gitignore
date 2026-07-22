@@ -50,6 +50,8 @@ local.properties
 build/
 nbbuild/
 dist/
+dist-telegram*/
+site/
 nbdist/
 nbactions.xml
 nb-configuration.xml

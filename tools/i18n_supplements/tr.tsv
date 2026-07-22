@@ -1,0 +1,106 @@
+LibGDX port: Arcnor / Web port: nojus297	LibGDX portu: Arcnor / web portu: nojus297
+Telegram port: @barboskich	Telegram portu: @barboskich
+Say thanks	Teşekkür et
+Thank you!	Teşekkürler!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Bu, Telegram portu için gönüllü bir destektir. Oynanışı hiçbir şekilde etkilemez.
+Support with Telegram Stars	Telegram Stars ile destekle
+Open @barboskich	@barboskich’i aç
+Sacrificial chamber	Kurban odası
+Killed by an explosion of a bomb on level %d	%d. katta bir bombanın patlamasıyla öldün
+Do you want to respec into %s?	Uzmanlığını %s olarak değiştirmek istiyor musun?
+Yes, I want to respec	Evet, uzmanlığımı değiştirmek istiyorum
+Maybe later	Belki sonra
+Language	Dil
+Because of frequent use, your %s has broken.	Sık kullanımdan dolayı %s kırıldı.
+Because of frequent use, your %s is going to break soon.	Sık kullanımdan dolayı %s yakında kırılacak.
+bomb	bomba
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	Bu, kara barutla doldurulmuş küçükçe bir bomba. Neyse ki fırlatıldığında fitili kendiliğinden yanıyor.
+You killed yourself with a bomb...	Kendini bir bombayla öldürdün...
+honeypot	bal küpü
+SHATTER	PARÇALA
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	Bu küçük küpte pek bal yok, ama içindeki altın arı yuvasını terk etmek istemiyor.
+%s of auto-repair	kendini onaran %s
+enchantment of viscosity	viskozite büyüsü
+The enchantment of viscosity killed you...	Viskozite büyüsü seni öldürdü...
+phantom fish	hayalet balık
+broken %s	kırık %s
+Unequip one ring	Bir yüzüğü çıkar
+Scroll of Enchantment	Büyüleme Parşömeni
+Select an enchantable item	Büyülenebilecek bir eşya seç
+your %s glows in the dark	%s karanlıkta parlıyor
+Scroll of Wipe Out	Yok Etme Parşömeni
+You are now familiar enough with your %s.	Artık %s ile yeterince aşinasın.
+Wand of Reach	Uzanma Asası
+shocking %s	elektrikli %s
+tempered %s	tavlanmış %s
+"Your sacrifice is worthy..."	"Kurbanın buna layık..."
+"Your sacrifice is unworthy..."	"Kurbanın buna layık değil..."
+"Your sacrifice is worthy and so you are!"	"Kurbanın layık; sen de öylesin!"
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	Burada kurban ateşi yanıyor. Bu ateşe dokunan her yaratık, zindanın ruhlarına sunulmak üzere işaretlenir.
+Marked for sacrifice	Kurban olarak işaretlendi
+Immune to gases	Gazlara karşı bağışık
+Blinded with rage	Öfkeden gözü dönmüş
+Zeroed in	Hedefe kilitli
+echo of 	yankı: 
+curse personification	lanetin vücut bulmuş hâli
+DM-350	DM-350
+spawn of Goo	Goo'nun yavrusu
+King of Dwarves	Cüceler Kralı
+undead King of Dwarves	ölümsüz Cüceler Kralı
+undead dwarf	hortlak cüce
+memory of Tengu	Tengu'nun hatırası
+echo of Yog-Dzewa	Yog-Dzewa'nın yankısı
+Yes, I will do it for you	Evet, senin için yapacağım
+No, I can't help you	Hayır, sana yardım edemem
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	_Hayalet balığı_ bulabildin mi, %s? Buradaki su birikintilerinden birine bakmayı dene.
+As you try to read the sign it bursts into greenish flames.	Tabelayı okumaya çalıştığında yeşilimsi alevler içinde kalıyor.
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	Altınını zindanın daha derinlerindeki dükkânlarda harcayabilirsin. İlki 6. katta.
+If you are burning, you can't put out the fire in the water while levitating.	Yanıyorsan havada süzülürken suya girerek ateşi söndüremezsin.
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	Silahlar ve zırhlar, asalara ve yüzüklere göre daha çabuk yıpranır; ama onları onarmanın daha çok yolu vardır.
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	Yok Etme Parşömeni'ni elde etmenin tek yolu, onu zindan ruhlarından armağan olarak almaktır.
+Choose language	Dil seç
+Key bindings	Tuş atamaları
+Switch to fullscreen	Tam ekrana geç
+Switch to windowed	Pencere moduna geç
+Reset To Defaults	Varsayılanlara dön
+<None>	<Yok>
+Press a key for "%s", or press %s to remove the binding.	“%s” için bir tuşa bas veya atamayı kaldırmak için %s tuşuna bas.
+Hero Info	Kahraman bilgisi
+Wait	Bekle
+Search	Ara
+Examine cell	Hücreyi incele
+Resume motion	Harekete devam et
+Backpack	Sırt çantası
+Quickslot	Hızlı yuva
+Attack	Saldır
+Visible Enemies	Görünen düşmanlar
+Zoom In	Yakınlaştır
+Zoom Out	Uzaklaştır
+Move North	Kuzeye git
+Move South	Güneye git
+Move West	Batıya git
+Move East	Doğuya git
+Move NW	Kuzeybatıya git
+Move NE	Kuzeydoğuya git
+Move SW	Güneybatıya git
+Move SE	Güneydoğuya git
+Current Cell	Mevcut hücre
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Kod ve grafikler: Watabou\nMüzik: Cube_Code\n\nBu oyun Brian Walker'ın Brogue adlı eserinden ilham almıştır. Windows, Mac OS veya Linux'ta deneyin; harika bir oyundur! ;)\n\nDaha fazla bilgi için resmî siteyi ziyaret edin:
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	Yerelleştirme: rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+Languages	Diller
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	Bu küçük, yarı saydam balık havada bile güçlükle seçiliyor. Suyun içinde ise neredeyse tamamen görünmez oluyor.
+You can only wear two rings at a time. Unequip one of your equipped rings.	Aynı anda yalnızca iki yüzük takabilirsin. Takılı yüzüklerinden birini çıkar.
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	Bu parşömen bir silaha veya zırha rastgele bir büyü işleyerek ona özel bir güç kazandırabilir.
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	Bu parşömeni okuyarak zindan ruhlarının öfkesini serbest bırakabilir ve mevcut kattaki her şeyi öldürebilirsin. Daha doğrusu, neredeyse her şeyi. Güçlü yaratıkların bazıları etkilenmeyebilir.
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	Bu kullanışlı asa uzaktaki nesneleri çekmek ve düşmanlarla yer değiştirmek için kullanılabilir. Yaydığı büyülü kuvvet dalgaları geçtiği bütün hücreleri etkiler; tuzakları tetikler, uzun otları ezer, kapalı kapıları açar ve açık kapıları kapatır.
+broken %1$s :%2$d	kırık %1$s :%2$d
+a broken	kırık
+%1$s: "%2$s"	%1$s: “%2$s”
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	Bu yaratık üzgün hayalete benziyor, fakat çevresinde karanlık dönüp duruyor. Yüzünde umutsuz bir ifade var.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Merhaba maceracı... Bir zamanlar ben de senin gibiydim; güçlü ve kendime güvenen... Şimdiyse ölüyüm... Korkunç bir lanet beni buraya bağladığı için bu yeri terk edemiyorum... Lütfen... Bana yardım et... _Laneti yok et_...
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Teşekkür ederim, %s! Lanet bozuldu ve sonunda huzur bulabilirim... Lütfen bu eşyalardan birini al; yolculuğunda işine yarayabilir...
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Aa, böyle bir yerde düzgün birine rastlamak ne hoş bir sürpriz! Buraya nadir bir malzeme, bir _hayalet balığı_ bulmaya geldim. Onu çıplak elle yakalayabilirsin, ama suda fark etmek çok zordur. Büyü kullanabildiğim için buradaki canavarlara karşı kendimi koruyabiliyorum, fakat hemen yolumu kaybediyorum; doğrusu çok utanç verici. Belki bana yardım edebilirsin? Hizmetinin karşılığında en iyi asalarımdan birini memnuniyetle veririm.
+1	1

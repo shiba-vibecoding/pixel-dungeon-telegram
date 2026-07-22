@@ -10,7 +10,9 @@ buildscript {
         // classpath 'com.android.tools.build:gradle:0.12.2'
         // classpath 'com.github.jtakakura:gradle-robovm-plugin:0.0.10'
         classpath 'org.wisepersist:gwt-gradle-plugin:1.0.13'
-        classpath 'org.gretty:gretty:3.0.2'
+        // The old implementation coordinate disappeared with JCenter.
+        // Use the equivalent plugin marker still published by Gradle Portal.
+        classpath 'org.gretty:org.gretty.gradle.plugin:3.1.0'
     }
 }
 
@@ -26,7 +28,10 @@ allprojects {
         appName = 'pixel-dungeon'
         appTitle = 'Pixel Dungeon'
         appId = 'com.watabou.pixeldungeon'
-        gdxVersion = '1.10.1-SNAPSHOT'
+        // The historic 1.10.1 snapshot was removed from Sonatype.  1.11.0 is
+        // the nearest published release and fixes GWT reflection generation
+        // overflowing Java's 65k constant-pool limit on this project.
+        gdxVersion = '1.11.0'
         roboVMVersion = '2.3.12'
         // gdxControllersVersion = '2.1.0'
     }

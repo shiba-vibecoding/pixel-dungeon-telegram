@@ -54,6 +54,19 @@ public abstract class PDPlatformSupport<GameActionType> {
 		return true;
 	}
 
+	/** Returns the platform-specific namespace for a libGDX preference store. */
+	public String preferencesName(String baseName) {
+		return baseName;
+	}
+
+	/**
+	 * Opens the platform's voluntary support flow. Platforms without a native
+	 * payment bridge fall back to the Telegram port author's public profile.
+	 */
+	public void openDonation(String language) {
+		Gdx.net.openURI("https://t.me/barboskich");
+	}
+
 	public byte[] readFile(String fileName) throws IOException {
 		final FileHandle fh = Gdx.files.external(basePath != null ? basePath + fileName : fileName);
 		if (!fh.exists())

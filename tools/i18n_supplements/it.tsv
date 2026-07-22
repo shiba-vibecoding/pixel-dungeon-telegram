@@ -1,0 +1,105 @@
+LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port web: nojus297
+Telegram port: @barboskich	Port Telegram: @barboskich
+Say thanks	Ringrazia
+Thank you!	Grazie!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	È un contributo volontario per il port Telegram. Non influisce in alcun modo sul gioco.
+Support with Telegram Stars	Sostieni con Telegram Stars
+Open @barboskich	Apri @barboskich
+Sacrificial chamber	Camera sacrificale
+Killed by an explosion of a bomb on level %d	Ucciso dall'esplosione di una bomba al livello %d
+Do you want to respec into %s?	Vuoi cambiare specializzazione in %s?
+Yes, I want to respec	Sì, voglio cambiare specializzazione
+Maybe later	Forse più tardi
+Language	Lingua
+Because of frequent use, your %s has broken.	A causa dell'uso frequente, il tuo %s si è rotto.
+Because of frequent use, your %s is going to break soon.	A causa dell'uso frequente, il tuo %s sta per rompersi.
+bomb	bomba
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	Una bomba piuttosto piccola, piena di polvere nera. Per fortuna, la miccia si accende da sola quando la bomba viene lanciata.
+You killed yourself with a bomb...	Ti sei ucciso con una bomba...
+honeypot	vasetto di miele
+SHATTER	ROMPI
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	In questo vasetto non c'è molto miele, ma c'è un'ape dorata che non vuole proprio andarsene.
+%s of auto-repair	%s autoriparante
+enchantment of viscosity	incantamento della viscosità
+The enchantment of viscosity killed you...	L'incantamento della viscosità ti ha ucciso...
+phantom fish	pesce fantasma
+broken %s	%s rotto
+Unequip one ring	Togli un anello
+Scroll of Enchantment	Pergamena dell'Incantamento
+Select an enchantable item	Seleziona un oggetto incantabile
+your %s glows in the dark	la tua %s risplende nell'oscurità
+Scroll of Wipe Out	Pergamena dell'Annientamento
+You are now familiar enough with your %s.	Ora conosci abbastanza bene il tuo %s.
+Wand of Reach	Bacchetta della Portata
+shocking %s	%s folgorante
+tempered %s	%s temprato
+"Your sacrifice is worthy..."	"Il tuo sacrificio è degno..."
+"Your sacrifice is unworthy..."	"Il tuo sacrificio non è degno..."
+"Your sacrifice is worthy and so you are!"	"Il tuo sacrificio è degno, e lo sei anche tu!"
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	Qui arde un fuoco sacrificale. Ogni creatura toccata dalle fiamme viene consacrata agli spiriti del dungeon.
+Marked for sacrifice	Segnato per il sacrificio
+Immune to gases	Immune ai gas
+Blinded with rage	Accecato dalla rabbia
+Zeroed in	Nel mirino
+echo of 	eco di 
+curse personification	incarnazione della maledizione
+DM-350	DM-350
+spawn of Goo	progenie di Goo
+King of Dwarves	Re dei Nani
+undead King of Dwarves	Re non morto dei Nani
+memory of Tengu	ricordo di Tengu
+echo of Yog-Dzewa	eco di Yog-Dzewa
+Yes, I will do it for you	Sì, lo farò per te
+No, I can't help you	No, non posso aiutarti
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Hai avuto fortuna con il _pesce fantasma_, %s? Prova a cercarlo in una delle pozze qui vicino.
+As you try to read the sign it bursts into greenish flames.	Non appena provi a leggere il cartello, questo divampa in fiamme verdastre.
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	Puoi spendere l'oro nei negozi dei livelli più profondi. Il primo si trova al 6º livello.
+If you are burning, you can't put out the fire in the water while levitating.	Se stai bruciando, non puoi spegnere il fuoco nell'acqua mentre leviti.
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	Armi e armature si deteriorano più in fretta di bacchette e anelli, ma esistono più modi per ripararle.
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	L'unico modo per ottenere una Pergamena dell'Annientamento è riceverla in dono dagli spiriti del dungeon.
+Choose language	Scegli la lingua
+Key bindings	Assegnazione tasti
+Switch to fullscreen	Passa a schermo intero
+Switch to windowed	Passa alla modalità finestra
+Reset To Defaults	Ripristina predefiniti
+<None>	<Nessuno>
+Press a key for "%s", or press %s to remove the binding.	Premi un tasto per «%s», oppure %s per rimuovere l'assegnazione.
+Hero Info	Informazioni eroe
+Wait	Attendi
+Search	Cerca
+Examine cell	Esamina casella
+Resume motion	Riprendi il movimento
+Backpack	Zaino
+Quickslot	Scorciatoia
+Attack	Attacca
+Visible Enemies	Nemici visibili
+Zoom In	Ingrandisci
+Zoom Out	Riduci
+Move North	Muovi a nord
+Move South	Muovi a sud
+Move West	Muovi a ovest
+Move East	Muovi a est
+Move NW	Muovi a NO
+Move NE	Muovi a NE
+Move SW	Muovi a SO
+Move SE	Muovi a SE
+Current Cell	Casella attuale
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Codice e grafica: Watabou\nMusica: Cube_Code\n\nQuesto gioco è ispirato a Brogue di Brian Walker. Provalo su Windows, Mac OS o Linux: è fantastico! ;)\n\nVisita il sito ufficiale per ulteriori informazioni:
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	Localizzazione: rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+Languages	Lingue
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	Questo minuscolo pesce traslucido si scorge a malapena nell'aria. Nell'acqua diventa praticamente invisibile.
+You can only wear two rings at a time. Unequip one of your equipped rings.	Puoi indossare solo due anelli alla volta. Togliti uno degli anelli che hai equipaggiato.
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	Questa pergamena può infondere in un'arma o in un'armatura un incantamento casuale, conferendole un potere speciale.
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	Leggi questa pergamena per scatenare l'ira degli spiriti del dungeon e uccidere ogni cosa su questo piano. Be', quasi ogni cosa: alcune creature più potenti potrebbero resistere.
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	Questa bacchetta versatile permette di afferrare oggetti a distanza e di scambiarsi di posto con i nemici. Le onde di forza magica che emette influenzano tutte le caselle attraversate: fanno scattare trappole, calpestano la vegetazione alta, aprono le porte chiuse e chiudono quelle aperte.
+broken %1$s :%2$d	%1$s rotto :%2$d
+a broken	rotto
+%1$s: "%2$s"	%1$s: "%2$s"
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	Questa creatura assomiglia al fantasma triste, ma è avvolta da un vortice d'oscurità. Sul suo volto è impressa la disperazione.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Salve, avventuriero... Un tempo ero come te: forte e sicuro di me... Ora sono morto... Ma non posso lasciare questo luogo, perché una terribile maledizione mi tiene prigioniero... Ti prego... Aiutami... _Spezza la maledizione_...
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Grazie, %s! La maledizione è spezzata e finalmente posso riposare... Prendi uno di questi oggetti: forse ti sarà utile durante il viaggio...
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, che piacevole sorpresa incontrare una persona perbene in un posto simile! Sono venuto qui per un ingrediente raro: un _pesce fantasma_. Puoi prenderlo a mani nude, ma nell'acqua è quasi impossibile scorgerlo. Con la magia so difendermi dai mostri del luogo, ma mi perdo in continuazione: che vergogna. Potresti aiutarmi? Sarei lieto di ricompensarti con una delle mie bacchette migliori.
+1	1

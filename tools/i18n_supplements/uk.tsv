@@ -1,0 +1,126 @@
+LibGDX port: Arcnor / Web port: nojus297	LibGDX-порт: Arcnor / вебпорт: nojus297
+Telegram port: @barboskich	Telegram-порт: @barboskich
+Say thanks	Подякувати
+Thank you!	Дякуємо!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Це добровільна подяка за Telegram-порт. Вона ніяк не впливає на ігровий процес.
+Support with Telegram Stars	Підтримати в Telegram Stars
+Open @barboskich	Відкрити @barboskich
+Sacrificial chamber	Жертовна зала
+Killed by an explosion of a bomb on level %d	Загибель від вибуху бомби на %d-му рівні
+Do you want to respec into %s?	Бажаєш змінити спеціалізацію на %s?
+Yes, I want to respec	Так, хочу змінити спеціалізацію
+Maybe later	Можливо, пізніше
+Language	Мова
+dodged	ухилився
+Because of frequent use, your %s has broken.	Через часте використання твій %s зламався.
+Because of frequent use, your %s is going to break soon.	Через часте використання твій %s скоро зламається.
+bomb	бомба
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	Це порівняно невелика бомба, наповнена чорним порохом. На щастя, її ґніт запалюється сам, коли бомбу кидають.
+You killed yourself with a bomb...	Ти підірвав себе бомбою...
+honeypot	горщик меду
+SHATTER	РОЗБИТИ
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	У цьому маленькому горщику небагато меду, зате всередині живе золота бджола, яка не хоче його покидати.
+%s of auto-repair	%s самовідновлення
+enchantment of viscosity	зачарування в'язкості
+The enchantment of viscosity killed you...	Зачарування в'язкості вбило тебе...
+phantom fish	примарна риба
+sheep	вівця
+broken %s	зламаний %s
+Unequip one ring	Зняти одну каблучку
+Scroll of Enchantment	Сувій Зачарування
+Select an enchantable item	Обери предмет для зачарування
+your %s glows in the dark	твій %s сяє в темряві
+Scroll of Wipe Out	Сувій Винищення
+You are now familiar enough with your %s.	Тепер ти вже достатньо добре знаєш свій %s.
+Wand of Reach	Паличка Досяжності
+shocking %s	громовий %s
+tempered %s	загартований %s
+grim %s	похмурий %s
+blazing %s	палаючий %s
+eldritch %s	потойбічний %s
+unstable %s	нестабільний %s
+vampiric %s	вампіричний %s
+lucky %s	щасливий %s
+stunning %s	приголомшливий %s
+venomous %s	отруйний %s
+chilling %s	крижаний %s
+"Your sacrifice is worthy..."	"Твоя жертва гідна..."
+"Your sacrifice is unworthy..."	"Твоя жертва негідна..."
+"Your sacrifice is worthy and so you are!"	"Твоя жертва гідна — як і ти!"
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	Тут палає жертовний вогонь. Кожна істота, якої він торкнеться, стає підношенням духам підземелля.
+Marked for sacrifice	Позначено для жертви
+Immune to gases	Невразливість до газів
+You are hungry.	Ти голодний.
+You are starving!	Ти вмираєш від голоду!
+Blinded with rage	Засліплено люттю
+Zeroed in	На прицілі
+echo of 	відлуння 
+curse personification	втілення прокляття
+DM-350	DM-350
+Goo	Ґу
+spawn of Goo	породження Ґу
+King of Dwarves	Король дворфів
+undead King of Dwarves	мертвий Король дворфів
+undead dwarf	мертвий дворф
+memory of Tengu	спогад про Тенґу
+echo of Yog-Dzewa	відлуння Йоґ-Дзеви
+Yog-Dzewa	Йоґ-Дзева
+rotting fist	гниючий кулак
+burning fist	палаючий кулак
+god's larva	личинка бога
+Yes, I will do it for you	Так, я зроблю це для тебе
+No, I can't help you	Ні, я не можу тобі допомогти
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Є успіхи з _примарною рибою_, %s? Спробуй пошукати її в одній із тутешніх водойм.
+As you try to read the sign it bursts into greenish flames.	Щойно ти намагаєшся прочитати напис, табличка спалахує зеленкуватим полум'ям.
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	Золото можна витрачати в крамницях на глибших рівнях підземелля. Перша з них — на 6-му рівні.
+If you are burning, you can't put out the fire in the water while levitating.	Якщо ти гориш, то не зможеш згасити полум'я у воді, доки левітуєш.
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	Зброя й обладунки зношуються швидше за палички та каблучки, зате полагодити їх можна більшою кількістю способів.
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	Єдиний спосіб отримати Сувій Винищення — заслужити його як дарунок від духів підземелля.
+Choose language	Виберіть мову
+Key bindings	Призначення клавіш
+Switch to fullscreen	Перейти на весь екран
+Switch to windowed	Перейти у віконний режим
+Reset To Defaults	Відновити типові
+<None>	<Немає>
+Press a key for "%s", or press %s to remove the binding.	Натисніть клавішу для «%s» або %s, щоб видалити призначення.
+Hero Info	Відомості про героя
+Wait	Чекати
+Search	Шукати
+Examine cell	Оглянути клітинку
+Resume motion	Продовжити рух
+Backpack	Рюкзак
+Quickslot	Швидкий слот
+Attack	Атакувати
+Visible Enemies	Видимі вороги
+Zoom In	Наблизити
+Zoom Out	Віддалити
+Move North	Рух на північ
+Move South	Рух на південь
+Move West	Рух на захід
+Move East	Рух на схід
+Move NW	Рух на ПнЗ
+Move NE	Рух на ПнС
+Move SW	Рух на ПдЗ
+Move SE	Рух на ПдС
+Current Cell	Поточна клітинка
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Код і графіка: Watabou\nМузика: Cube_Code\n\nЦю гру створено під впливом Brogue Браяна Вокера. Спробуйте її на Windows, Mac OS або Linux — вона чудова! ;)\n\nДокладнішу інформацію шукайте на офіційному сайті:
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	Локалізація: rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+%1$s hit %2$s	%1$s влучає в %2$s
+%1$s defeated %2$s	%1$s перемагає %2$s
+Languages	Мови
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	Цю крихітну напівпрозору рибку ледве видно навіть у повітрі. У воді вона стає практично невидимою.
+You can only wear two rings at a time. Unequip one of your equipped rings.	Одночасно можна носити лише дві каблучки. Зніміть одну з уже споряджених.
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	Цей сувій може накласти випадкові чари на зброю або обладунок, наділивши їх особливою силою.
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	Прочитайте цей сувій, щоб вивільнити лють духів підземелля й знищити все на поточному рівні. Ну, майже все: на деяких могутніх істот він може не подіяти.
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	Цей корисний жезл дає змогу притягувати предмети здалеку й мінятися місцями з ворогами. Хвилі магічної сили впливають на всі клітинки на своєму шляху: активують пастки, витоптують високу рослинність, відчиняють зачинені двері та зачиняють відчинені.
+broken %1$s :%2$d	зламаний %1$s :%2$d
+a broken	зламаний
+%1$s: "%2$s"	%1$s: «%2$s»
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	Ця істота схожа на сумного привида, але довкола неї вирує пітьма. На її обличчі застиг відчай.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Вітаю, мандрівнику... Колись я був таким, як ти: сильним і впевненим... А тепер я мертвий... Та не можу покинути це місце, бо мене тримає жахливе прокляття... Будь ласка... Допоможи мені... _Знищ прокляття_...
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Дякую, %s! Прокляття зруйновано, і тепер я нарешті можу спочити... Візьми один із цих предметів — можливо, він стане в пригоді у твоїй подорожі...
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	О, яка приємна несподіванка — зустріти порядну людину в такому місці! Я прийшов сюди по рідкісний складник — _примарну рибу_. Її можна зловити голими руками, але у воді майже неможливо помітити. Як маг, я цілком здатен захиститися від місцевих чудовиськ, та постійно гублюся — це дуже ніяково. Можливо, ти мені допоможеш? За послугу я охоче віддам один зі своїх найкращих жезлів.
+1	1

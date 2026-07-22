@@ -1,0 +1,105 @@
+LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port web: nojus297
+Telegram port: @barboskich	Port Telegram: @barboskich
+Say thanks	Ucapkan terima kasih
+Thank you!	Terima kasih!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Ini adalah dukungan sukarela untuk port Telegram. Tidak pernah memengaruhi permainan.
+Support with Telegram Stars	Dukung dengan Telegram Stars
+Open @barboskich	Buka @barboskich
+Sacrificial chamber	Ruang pengorbanan
+Killed by an explosion of a bomb on level %d	Tewas akibat ledakan bom di lantai %d
+Do you want to respec into %s?	Ingin mengganti spesialisasi menjadi %s?
+Yes, I want to respec	Ya, aku ingin mengganti spesialisasi
+Maybe later	Mungkin nanti
+Language	Bahasa
+Because of frequent use, your %s has broken.	Karena terlalu sering digunakan, %s milikmu rusak.
+Because of frequent use, your %s is going to break soon.	Karena terlalu sering digunakan, %s milikmu akan segera rusak.
+bomb	bom
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	Bom ini relatif kecil dan berisi bubuk hitam. Untungnya, sumbunya menyala otomatis saat bom dilempar.
+You killed yourself with a bomb...	Kau membunuh dirimu sendiri dengan bom...
+honeypot	guci madu
+SHATTER	PECAHKAN
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	Tak banyak madu di dalam guci kecil ini, tetapi ada seekor lebah emas yang tak mau meninggalkannya.
+%s of auto-repair	%s yang memperbaiki diri
+enchantment of viscosity	pesona kekentalan
+The enchantment of viscosity killed you...	Pesona kekentalan membunuhmu...
+phantom fish	ikan hantu
+broken %s	%s rusak
+Unequip one ring	Lepaskan satu cincin
+Scroll of Enchantment	Gulungan Pesona
+Select an enchantable item	Pilih benda yang dapat dipesona
+your %s glows in the dark	%s milikmu bersinar dalam gelap
+Scroll of Wipe Out	Gulungan Pemusnahan
+You are now familiar enough with your %s.	Sekarang kau sudah cukup mengenal %s milikmu.
+Wand of Reach	Tongkat Jangkauan
+shocking %s	%s penyetrum
+tempered %s	%s yang ditempa
+"Your sacrifice is worthy..."	"Pengorbananmu layak..."
+"Your sacrifice is unworthy..."	"Pengorbananmu tidak layak..."
+"Your sacrifice is worthy and so you are!"	"Pengorbananmu layak, begitu pula dirimu!"
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	Api pengorbanan menyala di sini. Setiap makhluk yang tersentuh api ini ditandai sebagai persembahan bagi roh-roh ruang bawah tanah.
+Marked for sacrifice	Ditandai untuk dikorbankan
+Immune to gases	Kebal terhadap gas
+Blinded with rage	Dibutakan amarah
+Zeroed in	Terkunci pada sasaran
+echo of 	gaung 
+curse personification	perwujudan kutukan
+DM-350	DM-350
+spawn of Goo	jelmaan Goo
+King of Dwarves	Raja Kurcaci
+undead King of Dwarves	Raja Kurcaci mayat hidup
+memory of Tengu	kenangan Tengu
+echo of Yog-Dzewa	gaung Yog-Dzewa
+Yes, I will do it for you	Ya, akan kulakukan untukmu
+No, I can't help you	Tidak, aku tak bisa membantumu
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Ada hasil dengan _ikan hantu_, %s? Cobalah mencarinya di salah satu kolam di sekitar sini.
+As you try to read the sign it bursts into greenish flames.	Saat kau mencoba membaca papan itu, tiba-tiba ia dilalap api kehijauan.
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	Kau dapat membelanjakan emas di toko-toko pada lantai yang lebih dalam. Toko pertama berada di lantai 6.
+If you are burning, you can't put out the fire in the water while levitating.	Jika sedang terbakar, kau tak bisa memadamkan api di air saat melayang.
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	Senjata dan zirah lebih cepat aus daripada tongkat dan cincin, tetapi ada lebih banyak cara untuk memperbaikinya.
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	Satu-satunya cara memperoleh Gulungan Pemusnahan adalah menerimanya sebagai hadiah dari roh-roh ruang bawah tanah.
+Choose language	Pilih bahasa
+Key bindings	Pemetaan tombol
+Switch to fullscreen	Beralih ke layar penuh
+Switch to windowed	Beralih ke mode jendela
+Reset To Defaults	Kembalikan bawaan
+<None>	<Tidak ada>
+Press a key for "%s", or press %s to remove the binding.	Tekan tombol untuk “%s”, atau tekan %s untuk menghapus pemetaan.
+Hero Info	Info pahlawan
+Wait	Tunggu
+Search	Cari
+Examine cell	Periksa petak
+Resume motion	Lanjutkan gerak
+Backpack	Ransel
+Quickslot	Slot cepat
+Attack	Serang
+Visible Enemies	Musuh terlihat
+Zoom In	Perbesar
+Zoom Out	Perkecil
+Move North	Bergerak ke utara
+Move South	Bergerak ke selatan
+Move West	Bergerak ke barat
+Move East	Bergerak ke timur
+Move NW	Bergerak ke barat laut
+Move NE	Bergerak ke timur laut
+Move SW	Bergerak ke barat daya
+Move SE	Bergerak ke tenggara
+Current Cell	Petak saat ini
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Kode & grafis: Watabou\nMusik: Cube_Code\n\nGame ini terinspirasi oleh Brogue karya Brian Walker. Cobalah di Windows, Mac OS, atau Linux — game itu luar biasa! ;)\n\nKunjungi situs resmi untuk informasi lebih lanjut:
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	Lokalisasi: rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+Languages	Bahasa
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	Ikan kecil tembus pandang ini nyaris tak terlihat di udara. Di dalam air, ikan ini benar-benar tak kasatmata.
+You can only wear two rings at a time. Unequip one of your equipped rings.	Kamu hanya bisa memakai dua cincin sekaligus. Lepaskan salah satu cincin yang sedang dipakai.
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	Gulungan ini dapat menanamkan sihir acak pada senjata atau zirah, memberinya kekuatan khusus.
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	Baca gulungan ini untuk melepaskan murka roh-roh dungeon dan membunuh semua yang ada di lantai ini. Yah, hampir semuanya. Beberapa makhluk yang lebih kuat mungkin tidak terpengaruh.
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	Tongkat serbaguna ini dapat mengambil benda dari kejauhan dan bertukar tempat dengan musuh. Gelombang tenaga sihirnya memengaruhi setiap petak yang dilalui: memicu jebakan, meratakan rerumputan tinggi, membuka pintu tertutup, dan menutup pintu yang terbuka.
+broken %1$s :%2$d	%1$s rusak :%2$d
+a broken	yang rusak
+%1$s: "%2$s"	%1$s: "%2$s"
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	Makhluk ini menyerupai hantu sedih, tetapi berpusar dalam kegelapan. Wajahnya menampakkan keputusasaan.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Halo, petualang... Dahulu aku sepertimu — kuat dan penuh keyakinan... Kini aku mati... Namun aku tak bisa meninggalkan tempat ini karena terikat kutukan mengerikan... Kumohon... Tolong aku... _Hancurkan kutukannya_...
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Terima kasih, %s! Kutukannya telah hancur dan akhirnya aku bisa beristirahat... Ambillah salah satu benda ini, mungkin akan berguna dalam perjalananmu...
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, sungguh menyenangkan bertemu orang baik di tempat seperti ini! Aku datang mencari bahan langka — seekor _ikan hantu_. Ikan itu bisa ditangkap dengan tangan kosong, tetapi sangat sulit terlihat di dalam air. Sebagai pengguna sihir aku mampu melindungi diri dari monster di sini, tetapi sebentar saja sudah tersesat—sungguh memalukan. Maukah kamu membantuku? Aku akan senang membayar jasamu dengan salah satu tongkat terbaikku.
+1	1

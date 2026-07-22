@@ -22,58 +22,116 @@ import com.watabou.input.NoosaInputProcessor;
 import com.watabou.noosa.*;
 import com.watabou.pixeldungeon.PixelDungeon;
 import com.watabou.pixeldungeon.effects.Flare;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.ui.Archs;
 import com.watabou.pixeldungeon.ui.ExitButton;
 import com.watabou.pixeldungeon.ui.Icons;
+import com.watabou.pixeldungeon.ui.RedButton;
 import com.watabou.pixeldungeon.ui.Window;
+import com.watabou.pixeldungeon.windows.WndOptions;
 
 public class AboutScene extends PixelScene {
 
-	private static final String TXT = 
-		"Original code & graphics: Watabou\n" +
-		"LibGDX port: Arcnor\n" +
-		"Web port: nojus297\n" +
+	private static final String TXT =
+		"Code & graphics: Watabou\n" +
 		"Music: Cube_Code\n\n" + 
 		"This game is inspired by Brian Walker's Brogue. " +
 		"Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\n" +
 		"Please visit official website for additional info:";
-	
+
+	private static final String TXT_PORTS = "LibGDX port: Arcnor / Web port: nojus297";
+	private static final String TXT_TELEGRAM_PORT = "Telegram port: @barboskich";
+	private static final String TXT_THANKS = "Say thanks";
+	private static final String TXT_THANK_YOU = "Thank you!";
+	private static final String TXT_VOLUNTARY =
+		"This is a voluntary tip for the Telegram port. It never affects gameplay.";
+	private static final String TXT_STARS = "Support with Telegram Stars";
+	private static final String TXT_AUTHOR = "Open @barboskich";
+
 	private static final String LNK = "pixeldungeon.watabou.ru";
+	private static final String AUTHOR_LNK = "https://t.me/barboskich";
 	
 	@Override
 	public void create() {
 		super.create();
 		
-		BitmapTextMultiline text = createMultiline( TXT, 8 );
-		text.maxWidth = Math.min( Camera.main.width, 120 );
+		final int contentWidth = Math.min( Camera.main.width - 12, PixelDungeon.landscape() ? 180 : 120 );
+
+		BitmapTextMultiline text = createMultiline( TXT, 7 );
+		text.maxWidth = contentWidth;
 		text.measure();
 		add( text );
-		
-		text.x = align( (Camera.main.width - text.width()) / 2 );
-		text.y = align( (Camera.main.height - text.height()) / 2 );
-		
-		BitmapTextMultiline link = createMultiline( LNK, 8 );
-		link.maxWidth = Math.min( Camera.main.width, 120 );
+
+		BitmapTextMultiline ports = createMultiline( TXT_PORTS, 7 );
+		ports.maxWidth = contentWidth;
+		ports.measure();
+		add( ports );
+
+		BitmapTextMultiline author = createMultiline( TXT_TELEGRAM_PORT, 8 );
+		author.maxWidth = contentWidth;
+		author.measure();
+		author.hardlight( Window.TITLE_COLOR );
+		add( author );
+
+		BitmapTextMultiline link = createMultiline( LNK, 7 );
+		link.maxWidth = contentWidth;
 		link.measure();
 		link.hardlight( Window.TITLE_COLOR );
 		add( link );
-		
-		link.x = text.x;
-		link.y = text.y + text.height();
-		
+
+		RedButton thanks = new RedButton( TXT_THANKS ) {
+			@Override
+			protected void onClick() {
+				showThanks();
+			}
+		};
+		thanks.setSize( Math.min( contentWidth, 112 ), 18 );
+		add( thanks );
+
+		Image wata = Icons.WATA.get();
+		float groupHeight = wata.height + 5 + text.height() + ports.height() +
+			author.height() + link.height() + thanks.height() + 12;
+		float top = Math.max( 4, (Camera.main.height - groupHeight) / 2 );
+
+		wata.x = align( (Camera.main.width - wata.width) / 2 );
+		wata.y = align( top );
+		add( wata );
+
+		float y = wata.y + wata.height + 5;
+		text.x = align( (Camera.main.width - text.width()) / 2 );
+		text.y = align( y );
+		y = text.y + text.height() + 2;
+
+		ports.x = align( (Camera.main.width - ports.width()) / 2 );
+		ports.y = align( y );
+		y = ports.y + ports.height() + 2;
+
+		author.x = align( (Camera.main.width - author.width()) / 2 );
+		author.y = align( y );
+		y = author.y + author.height() + 2;
+
+		link.x = align( (Camera.main.width - link.width()) / 2 );
+		link.y = align( y );
+		y = link.y + link.height() + 5;
+
+		thanks.setPos( align( (Camera.main.width - thanks.width()) / 2 ), align( y ) );
+
 		TouchArea hotArea = new TouchArea( link ) {
 			@Override
 			protected void onClick( NoosaInputProcessor.Touch touch ) {
-				Gdx.net.openURI("http://" + LNK);
+				Gdx.net.openURI("https://" + LNK);
 			}
 		};
 		add( hotArea );
-		
-		Image wata = Icons.WATA.get();
-		wata.x = align( (Camera.main.width - wata.width) / 2 );
-		wata.y = text.y - wata.height - 8;
-		add( wata );
-		
+
+		TouchArea authorHotArea = new TouchArea( author ) {
+			@Override
+			protected void onClick( NoosaInputProcessor.Touch touch ) {
+				Gdx.net.openURI( AUTHOR_LNK );
+			}
+		};
+		add( authorHotArea );
+
 		new Flare( 7, 64 ).color( 0x112233, true ).show( wata, 0 ).angularSpeed = +20;
 		
 		Archs archs = new Archs();
@@ -85,6 +143,19 @@ public class AboutScene extends PixelScene {
 		add( btnExit );
 		
 		fadeIn();
+	}
+
+	private void showThanks() {
+		add( new WndOptions( TXT_THANK_YOU, TXT_VOLUNTARY, TXT_STARS, TXT_AUTHOR ) {
+			@Override
+			protected void onSelect( int index ) {
+				if (index == 0) {
+					PixelDungeon.instance.getPlatformSupport().openDonation( Localization.language() );
+				} else if (index == 1) {
+					Gdx.net.openURI( AUTHOR_LNK );
+				}
+			}
+		} );
 	}
 	
 	@Override

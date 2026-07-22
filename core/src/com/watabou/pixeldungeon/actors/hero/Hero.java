@@ -563,7 +563,7 @@ public class Hero extends Char {
 	
 	private boolean actCook( HeroAction.Cook action ) {
 		int dst = action.dst;
-		if (Dungeon.visible[dst]) {
+		if (pos == dst) {
 
 			ready();
 			AlchemyPot.operate( this, dst );
@@ -848,6 +848,7 @@ public class Hero extends Char {
 					}
 					damage += wand.curCharges;
 				}
+				break;
 			case SNIPER:
 				if (rangedWeapon != null) {
 					Buff.prolong( this, SnipersMark.class, attackDelay() * 1.1f ).object = enemy.id();

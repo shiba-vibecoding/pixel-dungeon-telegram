@@ -1,0 +1,1185 @@
+Pixel Dungeon	Pixel Dungeon
+Play	Jugar
+Highscores	Puntuaciones
+About	Acerca
+LibGDX port: Arcnor / Web port: nojus297	Port para LibGDX: Arcnor / port web: nojus297
+Telegram port: @barboskich	Port para Telegram: @barboskich
+Say thanks	Dar las gracias
+Thank you!	¡Gracias!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Esta es una aportación voluntaria al port de Telegram. No afecta en absoluto a la partida.
+Support with Telegram Stars	Apoyar con Telegram Stars
+Open @barboskich	Abrir @barboskich
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Código & Gráficos: Watabou\nMúsica: Cube_Code\n\nEste juego está inspirado en Brian Walker's Brogue. Pruébalo en Windows, Mac OS or Linux - Es genial! ;)\n\nPara más información visita la web oficial:
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	Traducción: rodriformiga & TavoCello
+rodriformiga@gmail.com	rodriformiga@gmail.com
+Send E-Mail	E-Mail
+Top Rankings	Mejores puntuaciones
+Total games won/played: 	Total juegos ganados/jugados: 
+No games have been played yet.	Ningún juego se ha jugado todavía.
+No additional information	No hay información adicional
+Your Badges	Tus insignias
+Load Game	Cargar juego
+New Game	Nuevo juego
+Erase current game	Borrar partida actual
+Depth: %1$d, level: %2$d	Profund.: %1$d, level: %2$d
+Do you really want to start new game?	Realmente quieres borrar la partida actual?
+Your current game progress will be erased.	Tu progreso será eliminado.
+Yes, start new game	Si, empezar de nuevo
+No, return to main menu	No, volver al menú
+To unlock this character class, slay the 3rd boss with any other class	Para desbloquear esta clase, debes matar al tercer jefe con otra clase
+To unlock "Challenges", win the game with any character class.	Para desbloquear "Desafíos", termina el juego con una clase.
+Descending...	Descendiendo...
+Ascending...	Ascendiendo...
+Loading...	Cargando...
+Resurrecting...	Resucitando...
+Returning...	Volviendo...
+Falling...	Cayendo...
+File not found. For some reason...	Archivo no encontrado. Ni idea de por qué...
+Something went wrong...	Algo ha ido mal...
+Many heroes of all kinds ventured into the Dungeon before you. Some of them have returned with treasures and magical artifacts, most have never been heard of since. But none have succeeded in retrieving the Amulet of Yendor, which is told to be hidden in the depths of the Dungeon.\n\nYou consider yourself ready for the challenge, but most importantly, you feel that fortune smiles on you. It's time to start your own adventure!	Muchos héroes de todo tipo han entrado en la Pixel Dungeon antes que tu. Algunos han vuelto con riquezas, la mayoría de ellos no se les ha vuelto a ver. Pero ninguno ha conseguido traer el Amuleto de Yendor, el cual está escondido en la decadencia de la mazmorra.\n\nTe consideras listo para este reto, pero más aún sientes que la suerte está de tu parte. Es hora de empezar tu propia aventura!
+Let's call it a day	Estuvo bien mientras duró
+I'm not done yet	Aun no he terminado con esto
+You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	Por fin lo tienes en las manos, el amuleto de Yendor. Usando su poder puedes gobernar el mundo o traer paz a la gente o lo que sea. De cualquier manera, tu vida cambiará para siempre y ésta partida acabará aquí. O puedes quedarte aquí como un simple mortal algo más.
+Welcome to the level %d of Pixel Dungeon!	Bienvenido al nivel %d de Pixel Dungeon!
+Welcome back to the level %d of Pixel Dungeon!	Bienvenido de vuelta al nivel %d de Pixel Dungeon!
+Be cautious, since the dungeon is even more dangerous at night!	Ten cuidado, ya que la mazmorra es más peligrosa por la noche!
+Your steps echo across the dungeon.	Tus pasos producen eco a través de la mazmorra.
+You hear the water splashing around you.	Escuchas agua goteando alrededor tuya.
+The smell of vegetation is thick in the air.	La presencia de vegetación se siente en el aire.
+The atmosphere hints that this floor hides many secrets.	La atmósfera da indicios de que este nivel esconde muchos secretos.
+mob	mob
+%1$s hit %2$s	%1$s ha golpeado %2$s
+%1$s defeated %2$s	%1$s ha derrotado %2$s
+%1$s %2$s your attack	%1$s %2$s tu ataque
+%1$s %2$s %3$s's attack	%1$s %2$s el ataque de %3$s
+The pain snapped %s out of paralysis	El golpe de %s causó parálisis
+dodged	esquivado
+poisoned	envenenado
+amok	juerga
+slowed	desacelerado
+mind	mente
+vision	visión
+paralyzed	paralizado
+frightened	asustado
+rooted	arraigado
+crippled	lisiado
+bleeding	sangría
+dizzy	mareado
+invisible	invisible
+you	tu
+One does not simply leave Pixel Dungeon.	Uno no sale de Pixel Dungeon tan fácilmente.
+level up!	subiste de nivel!
+Welcome to level %d! Now you are healthier and more focused. It's easier for you to hit enemies and dodge their attacks.	Ahora eres nivel %d! Tienes más vitalidad y estás mas centrado. Ahora atacarás con más fuerza y evitarás con más frecuencia.
+You now have %s	Ahora tienes %s
+There is something else here	Hay algo más ahí
+This chest is locked and you don't have matching key	Este cofre está cerrado y no tienes una llave que encaje
+You don't have a matching key	No tienes una llave que encaje
+You noticed something	Has visto algo
+search	buscar
+You catch fire!	Estás ardiendo!
+You are paralyzed!	Estás paralizado!
+You are poisoned!	Estás envenenado!
+Caustic ooze eats your flesh. Wash away it!	El lodo tóxico esta deshaciendo tu piel. Límpialo!
+You can't move!	No te puedes mover!
+You feel weakened!	Te sientes debilitado!
+You are blinded!	Has sido cegado!
+You become furious!	Estás furioso!
+furious	furioso
+You are charmed!	Estás enamorado!
+You are crippled!	Te sientes incapacitado!
+You are bleeding!	Estás sangrando!
+Everything is spinning around you!	Todo da vueltas alrededor tuya!
+warrior	guerrero
+mage	mago
+rogue	bellaco
+huntress	cazadora
+Warriors start with 11 points of Strength.	Los guerreros empiezan con 11 puntos de fuerza.
+Warriors start with a unique short sword. This sword can be later "reforged" to upgrade another melee weapon.	Los guerreros cuentan con una espada corta. Esta espada puede ser "reforjada" para ser transformada en otro arma.
+Warriors are less proficient with missile weapons.	Los guerreros son menos eficientes con proyectiles.
+Any piece of food restores some health when eaten.	Cualquier consumición de comida le dará un poco de vida.
+Potions of Strength are identified from the beginning.	Las pociones de fuerza pueden ser identificados desde el principio.
+Mages start with a unique Wand of Magic Missile. This wand can be later "disenchanted" to upgrade another wand.	Los magos empiezan con una varita de Misil Mágico. Ésta varita puede ser "reencantada" para convertirla en otra.
+Mages recharge their wands faster.	Los mago recargan sus varitas más rápido.
+When eaten, any piece of food restores 1 charge for all wands in the inventory.	Al comer, añade una carga a todas la varitas que posee en su inventario.
+Mages can use wands as a melee weapon.	Los magos pueden usar las varitas como arma cuerpo a cuerpo.
+Scrolls of Identify are identified from the beginning.	Los pergaminos de Identificación pueden se identificados desde el principio.
+Rogues start with a Ring of Shadows+1.	Los bellacos empiezan con una anillo de las Sombras +1.
+Rogues identify a type of a ring on equipping it.	Los bellacos pueden identificar un anillo al ponérselo.
+Rogues are proficient with light armor, dodging better while wearing one.	Los bellacos son más eficientes con armaduras ligeras, aumentando la posibilidad de esquivar.
+Rogues are proficient in detecting hidden doors and traps.	Los bellacos son más eficientes detectando puertas ocultas y trampas.
+Rogues can go without food longer.	Los bellacos aguantan sin comer más tiempo.
+Scrolls of Magic Mapping are identified from the beginning.	Los pergaminos de Cartografía se identifican desde el principio.
+Huntresses start with 15 points of Health.	Las cazadoras empiezan con 15 puntos de vida.
+Huntresses start with a unique upgradeable boomerang.	Las cazadoras empiezan con un búmerang reforjable único.
+Huntresses are proficient with missile weapons and get a damage bonus for excessive strength when using them.	Las cazadoras son más eficientes con proyectiles y hacen daño extra si tienen exceso de fuerza al usar un ítem.
+Huntresses gain more health from dewdrops.	Las cazadoras ganan más vida de las gotas de rocío.
+Huntresses sense neighboring monsters even if they are hidden behind obstacles.	Las cazadoras perciben monstruos cercanos aunque estén escondidos tras paredes o obstáculos.
+gladiator	gladiador
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	Un ataque exitoso con un arma cuerpo a cuerpo permite al _Gladiador_ comience en combo, en el cual cada golpe exitoso inflinge más daño.
+berserker	furioso
+When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	Cuando está muy dañado, el _Furioso_ entra en un estado de furia salvaje, incrementando significantemente su daño.
+warlock	bruto
+After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	Después de matar un enemigo el _Bruto_ consume su alma. Ésta cura sus heridas y satisface su hambre.
+battlemage	bimago
+When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	Cuando se lucha con una varita en las manos, el _BiMago_ inflinge daño adicional dependiendo del número actual de cargas. Cada ataque exitoso añade una carga a su varita.
+assassin	asesino
+When performing a surprise attack, the _Assassin_ inflicts additional damage to his target.	Cuando inflinge una ataque sorpresa, el _Asesino_ añade daño adicional al enemigo.
+freerunner	corredor
+The _Freerunner_ can move almost twice faster, than most of the monsters. When he is running, the Freerunner is much harder to hit. For that he must be unencumbered and not starving.	El _Corredor_ se mueve casi el doble de rápidoque muchos de los monstruos. Cuando está corriendo es mucho más difícil de acertar. Para ello no debe tener un enemigo al lado ni tener mucha hambre.
+sniper	sniper
+_Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	Los _Snipers_ pueden detectar puntos débiles en la armadura de un enemigo, ignorándola al usar un proyectil.
+warden	guardian
+Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	Teniendo una conexión con las fuerzas de la naturaleza, el _Guardian_ posee la habilidad de coger gotas de rocío y semillas de las plantas. También pisar la hierba le da un bufo de armadura.
+Badge endorsed: %s	Insignia conseguida: %s
+New super badge: %s	Nueva súper insignia: %s
+New badge: %s	Nueva insignia: %s
+10 enemies slain	10 enemigos asesinados
+50 enemies slain	50 enemigos asesinados
+150 enemies slain	150 enemigos asesinados
+250 enemies slain	250 enemigos asesinados
+100 gold collected	100 monedas de oro robadas
+500 gold collected	500 monedas de oro robadas
+2500 gold collected	2500 monedas de oro robadas
+7500 gold collected	7500 monedas de oro robadas
+Level 6 reached	Alcanzado el nivel 6
+Level 12 reached	Alcanzado el nivel 12
+Level 18 reached	Alcanzado el nivel 18
+Level 24 reached	Alcanzado el nivel 24
+All potions identified	Todos las pociones identificados
+All scrolls identified	Todos los pergaminos identificados
+All rings identified	Todos los anillos identificados"
+All wands identified	Todos las varitas identificados"
+All potions, scrolls, rings & wands identified	Todas las Pociones, Pergaminos, Anillos & Varitas identificadas
+All bags bought	Todas las bolsas compradas
+Death from fire	Muerte quemado
+Death from poison	Muerte por veneno
+Death from toxic gas	Muerte por gas tóxico
+Death from hunger	Muerto de hambre
+Death from an enchantment	Muerto por encantamiento
+Death from falling down	Muerte por caída
+Death from fire, poison, toxic gas & hunger	Muerte por Fuego, Veneno, Gas Tóxico & Hambre
+1st boss slain	Primer jefe derrotado
+2nd boss slain	Segundo jefe derrotado
+3rd boss slain	Tercer jefe derrotado
+4th boss slain	Cuarto jefe derrotado
+1st boss slain by Warrior, Mage, Rogue & Huntress	Primer jefe derrotado por el Guerrero, Mago, Bellaco & Cazadora
+3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	Tercer jefe derrotado por el Gladiador, Furioso, Bruto, BiMago, Corredor, Asesino, Sniper & Guardian
+Ring of Haggler obtained	Anillo de Negociación obtenido
+Ring of Thorns obtained	Anillo de Espinas obtenido
+13 points of Strength attained	13 puntos de Fuerza adquiridos
+15 points of Strength attained	15 puntos de Fuerza adquiridos
+17 points of Strength attained	17 puntos de Fuerza adquiridos
+19 points of Strength attained	19 puntos de Fuerza adquiridos
+10 pieces of food eaten	10 trozos de comida consumidos
+20 pieces of food eaten	20 trozos de comida consumidos
+30 pieces of food eaten	30 trozos de comida consumidos
+40 pieces of food eaten	40 trozos de comida consumidos
+Item of level 3 acquired	Ítem de nivel 3 adquirido
+Item of level 6 acquired	Ítem de nivel 6 adquirido
+Item of level 9 acquired	Ítem de nivel 9 adquirido
+Item of level 12 acquired	Ítem de nivel 12 adquirido
+All rare monsters slain	Todos los monstruos raros mutilados
+Amulet of Yendor obtained	Amuleto de Yendor obtenido
+Amulet of Yendor obtained by Warrior, Mage, Rogue & Huntress	Amuleto de Yendor obtenido por Guerrero, Mago, Bellaco & Cazadora
+7-hit combo	7-hit combo
+3 potions cooked	3 pociones cocinadas
+6 potions cooked	6 pociones cocinadas
+9 potions cooked	9 pociones cocinadas
+12 potions cooked	12 pociones cocinadas
+Level completed without killing any monsters	Nivel completado sin matar ningún monstruo
+Monster killed by a Grim weapon	Monstruo matado con un arma Grim
+6 piranhas killed	Matadas 6 pirañas
+5 monsters killed at nighttime	5 Monstruos matados por la noche
+10 games played	Jugadas 10 partidas
+100 games played	Jugadas 100 partidas
+500 games played	Jugadas 500 partidas, tienes un problema grave
+2000 games played	Jugadas 2000 partidas, estás enfermo
+Happy end	Final feliz
+Challenge won	Desafío completado!
+Thanks for your support!	Gracias por tu ayuda!
+On diet	En dieta
+Faith is my armor	La fe es mi armadura
+Pharmacophobia	El miedo a las agujas
+Barren land	Tierra estéril
+Swarm intelligence	Inteligencia colectiva
+Into darkness	Oscuridad
+Forbidden runes	Runas prohibido
+Well of Health	Pozo de Vitalidad
+Well of Awareness	Pozo de la Conciencia
+Well of Transmutation	Pozo de Transmutación
+Sacrificial chamber	Cámara de Sacrificio
+Garden	Jardín
+Animated statue	Estatua animada
+Sad ghost	Fantasma melancólico
+Old wandmaker	Viejo artesano
+Troll blacksmith	Troll Herrero
+Ambitious imp	Diablillo Ambicioso
+Killed by %1$s on level %2$d	Asesinado por %1$s en el nivel %2$d
+Killed by your own %1$s on level %2$d	Asesinado por tu propio %1$s en el nivel %2$d
+Killed by the %1$s on level %2$d	Asesinado por %1$s en el nivel %2$d
+Killed by an explosion of a bomb on level %d	Asesinado por una explosión de una bomba en el nivel %d
+Killed by discharge of %1$s on level %2$d	Asesinado por descarga de %1$s en el nivel %2$d
+Burned to death on level %d	Quemado en el nivel %d
+Starved to death on level %d	Muerto de hambre en el nivel %d
+Died from poison on level %d	Muerto envenenado en el nivel %d
+Died from toxic gas on level %d	Muerto por gas tóxico en el nivel %d
+Bled to death on level %d	Rajado en el nivel %d
+Killed by a caustic ooze on level %d	Asesinado por el lodo cáustico en el nivel %d
+Fell to death on level %d	Muerte por caída en el nivel %d
+Obtained the Amulet of Yendor	Obtenido el Amuleto de Yendor
+OK, a deal is a deal, dat's what I can do for you: I can reforge 2 items and turn them into one of a better quality.	OK, un trato es un trato, esto es lo que puedo hacer por ti: Puedo forjar 2 ítems, sacando uno de mejor calidad.
+Select an item to reforge	Selecciona un ítem que reforjar
+Reforge them	Refórjalos
+Potions	Pociones
+Scrolls	Pergaminos
+Which way will you follow?	Qué camino seguiré?
+I'll decide later	Lo decidiré más tarde
+Do you want to respec into %s?	¿Quieres respec %s?
+Yes, I want to respec	Sí, quiero respec
+Maybe later	Tal vez después
+Mastery	Amaestrear
+ERROR	ERROR
+Settings	Opciones
+Rankings	Puntuaciones
+Start New Game	Empezar un nuevo juego
+Main Menu	Menú principal
+Exit Game	Salir del juego
+Return to Game	Volver al juego
+Buffs	Bufos
+Experience	Experiencia
+Catalogus	Catalogus
+Oh yes! You are my hero!\nRegarding your reward, I don't have cash with me right now, but I have something better for you. This is my family heirloom ring: my granddad took it off a dead paladin's finger.	Oh sí! Eres mi héroe!\nSobre lo de tu recompensa, No tengo dinero para darte, pero tengo algo mejor. Éste es mi anillo familiar: mi abuelo lo cogió del dedo de un paladín muerto.
+Take the ring	Coge el anillo
+There is nothing here.	No hay nada ahí.
+Chest	Cofre
+Locked chest	Cofre cerrado
+Crystal chest	Cofre de cristal
+Tomb	Tumba
+Skeletal remains	Huesos sueltos
+You won't know what's inside until you open it!	No sabrás lo que hay dentro hasta que lo abras!
+ But to open it you need a golden key.	 Pero para abrirlo necesitarás una llave dorada.
+You can see %s inside, but to open the chest you need a golden key.	Puedes ver %s dentro, pero para abrirlo necesitarás una llave dorada.
+This ancient tomb may contain something useful, but its owner will most certainly object to checking.	Esta tumba antigua puede contener algo, pero sea de quien sea no le va a gustar que le robes.
+This is all that's left from one of your predecessors. Maybe it's worth checking for any valuables.	Esto es todo lo que queda de uno de tus predecesores. A lo mejor vale la pena mirar qué es.
+Journal	Diario
+Languages	Idiomas
+Unable to load additional information	Imposible cargar información adicional
+Stats	Estadíst.
+Items	Ítems
+Badges	Insignias
+Level %1$d %2$s	Nivel %1$d %2$s
+Challenges	Retos
+Health	Vitalidad
+Strength	Fuerza
+Game Duration	Duración del juego
+Maximum Depth	Profundidad máxima
+Mobs Killed	Monstruos eliminados
+Gold Collected	Oro robado
+Food Eaten	Raciones consumidas
+Potions Cooked	Pociones cocinadas
+Ankhs Used	Ankhs Usados
+You died, but you were given another chance to win this dungeon. Will you take it?	Has muerto, pero se te ha dado otra oportunidad de ganar ésta mazmorra. Aceptarás?
+Yes, I will fight!	Sí, lucharé!
+No, I give up	No, me rindo
+Ghost's weapon	Arma del fantasma
+Ghost's armor	Armadura del fantasma
+Farewell, adventurer!	Adiós, aventurero!
++	+
+-	-
+Default Zoom	Zoom Default
+Scale up UI	Menús más grandes
+Immersive mode	Modo inmersivo
+Language	Idioma
+Music	Música
+Sound FX	Sonidos
+Brightness	Modo Brillo
+Second quickslot	Segundo QuickSlot
+Switch to portrait	Sin inclinación
+Switch to landscape	Modo tumbado
+The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	La mazmorra se encuentra justo debajo de la ciudad, sus niveles superiores constituyen el alcantarillado de la ciudad. Al ser parte de ella, éstos niveles no son peligrosos. Nadie los llamaría un lugar seguro, pero al menos no tienes que luchar contra magia malvada.
+Many years ago an underground prison was built here for the most dangerous criminals. At the time it seemed like a very clever idea, because this place indeed was very hard to escape. But soon dark miasma started to permeate from below, driving prisoners and guards insane. In the end the prison was abandoned, though some convicts were left locked up here.	Hace muchos años una prisión bajo tierra se contruyó aquí para los criminales más peligrosos. Entonces parecía una buena idea, ya que era difícil de salir, pero pronto miasma oscuro emmpezó a perpretar desde abajo, volviendo locos a los guardias y prisioneros. Al final la prisión fue abandonada, aunque algunos convictos se quedaron encerrados allí.
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	Las cuevas, que se extienden hacia abajo bajo la prisión abandonada, están escasamente pobladas. Se encuentran demasiado profundas para ser explotadas por el Ayuntamiento y que son demasiado pobres en minerales para interesar a los enanos. En el pasado había un puesto comercial en alguna parte aquí en la ruta entre estos dos estados, pero ha perecido desde el declive de los enanos Metropolis. Sólo gnolls omnipresentes y animales subterráneos moran aquí ahora.
+Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday the mechanized army of dwarves has successfully repelled the invasion of the old god and his demon army. But it is said, that the returning warriors have brought seeds of corruption with them, and that victory was the beginning of the end for the underground kingdom.	Dwarven Metropolis fue una vez el más grande de las ciudades-estado de los enanos. En su apogeo el ejército mecanizado de enanos había repeler la invasión del antiguo dios y su ejército de demonios. Pero se dice, que los guerreros que regresan han traído semillas de corrupción con ellos, y que la victoria fue el principio del fin para el reino subterráneo.
+In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	En el pasado, estos niveles eran las afueras de Metrópolis. Después de la costosa victoria en la guerra contra los viejos enanos Dios eran demasiado debilitado para borrarlos del resto de los demonios. Poco a poco, los demonios han endurecido su control sobre este lugar y ahora se llama Demon Halls.\n\nMuy pocos aventureros nunca han descendido hasta aquí...
+FOR SALE: %1$s - %2$dg	EN VENTA: %1$s - %2$dg
+Buy for %dg	Comprar para %dg
+Sell for %dg	Vender para 10 %dg
+Sell 1 for %dg	Vender 1 para %dg
+Sell all for %dg	Vender todo para %dg
+You've sold your %1$s for %2$dg	Has vendido tu %1$s para %2$dg
+You've bought %1$s for %2$dg	Has comprado %1$s para %2$dg
+Oh, I see you have succeeded! I do hope it hasn't troubled you too much. As I promised, you can choose one of my high quality wands.	Oh, ya veo que has conseguido! Yo espero que no se molesta demasiado. Como prometí, puede elegir una de mis varitas de alta calidad.
+Battle wand	Batalla varita
+Non-battle wand	Varita no batalla
+Good luck in your quest, %s!	Buena suerte en su búsqueda, %s!
+Select an item for the quickslot	Seleccione un elemento para la Quickslot
+smth	smth
+DROP	DEJAR
+THROW	TIRAR
+Your pack is too full for the %s	Su paquete es demasiado lleno para el %s
+Choose direction of throw	Elija la dirección de tiro
+Because of frequent use, your %s has broken.	Debido al uso frecuente, su %s se ha roto.
+Because of frequent use, your %s is going to break soon.	Debido al uso frecuente, su %s va a romper pronto.
+EQUIP	EQUIPAR
+UNEQUIP	DESEQUIPAR
+You can't remove cursed %s!	No se puede quitar %s maldito!
+Amulet of Yendor	Amuleto de Yendor
+END THE GAME	TERMINE EL JUEGO
+The Amulet of Yendor is the most powerful known artifact of unknown origin. It is said that the amulet is able to fulfill any wish if its owner's will-power is strong enough to "persuade" it to do it.	El Amuleto de Yendor es el más poderoso artefacto conocido de origen desconocido. Se dice que el amuleto es capaz de cumplir cualquier deseo si la fuerza de voluntad de su propietario es lo suficientemente fuerte para "persuadir" a hacerlo.
+Ankh	Ankh
+The ancient symbol of immortality grants an ability to return to life after death. Upon resurrection all non-equipped items are lost.	El antiguo símbolo de la inmortalidad concedió una capacidad de volver a la vida después de la muerte. Tras la resurrección todos los artículos no equipados se pierden.
+armor kit	kit de blindaje
+Using this kit of small tools and materials anybody can transform any armor into an "epic armor", which will keep all properties of the original armor, but will also provide its wearer a special ability depending on his class. No skills in tailoring, leatherworking or blacksmithing are required.	El uso de este kit de herramientas y materiales pequeños cualquiera puede transformar cualquier armadura en una "armadura épica", que mantendrá todas las propiedades de la armadura original, sino que también proporcionará a su portador una habilidad especial en función de su clase. No se requieren habilidades en la sastrería, peletería o herrería.
+Select an armor to upgrade	Seleccione una armadura para actualizar
+you applied the armor kit to upgrade your %s	se aplicó el kit de armadura para actualizar su %s
+bomb	bomba
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	Esta es una relativamente pequeña bomba, lleno de polvo negro. Convenientemente, la mecha se enciende automáticamente cuando se lanza la bomba.
+You killed yourself with a bomb...	Usted mismo mató con una bomba...
+dewdrop	gota de rocío
+A crystal clear dewdrop.	Un claro gota de rocío.
+dew vial	frasco de rócio
+You can store excess dew in this tiny vessel for drinking it later. If the vial is full, in a moment of deadly peril the dew will be consumed automatically.	Puede almacenar el exceso de rocío en este pequeño recipiente para beber después. Si el frasco está lleno, en un momento de peligro mortal el rocío será consumida de forma automática.
+The dew vial was emptied to heal your wounds.	El frasco de rocío se vació para sanar sus heridas.
+You collected a dewdrop into your dew vial.	Usted recibió una gota de rocío en su frasco de rocío.
+Your dew vial is full!	Su frasco está lleno de rocío!
+Your dew vial is empty!	Su frasco de rocío está vacía!
+This is a mimic!	Este es un imitador!
+honeypot	mielero
+SHATTER	ROMPER
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	No hay mucha miel en esta pequeña trampa, pero no es una abeja de oro allí y no quiere dejarlo.
+gold	oro
+Collect gold coins to spend them later in a shop.	Recoger las monedas de oro para pasar más tarde en una tienda.
+A pile of %d gold coins.	Una pila de %d monedas de oro.
+One gold coin.	Una moneda de oro.
+you wince as your grip involuntarily tightens around your %s	mueca de dolor como su agarre aprieta involuntariamente alrededor de su %s
+lloyd's beacon	faro de lloyd
+SET	ACTIVAR
+RETURN	RETORNO
+Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	Faro de Lloyd es un dispositivo mágico intrincada, que permite volver a un lugar que ya han sido.
+Strong magic aura of this place prevents you from using the lloyd's beacon!	Fuerte aura magia de este lugar no le permite usar el faro de la lloyd!
+Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Aura psíquica de las criaturas vecinos no le permite utilizar faro del Lloyd en este momento.
+The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Faro del lloyd se establece con éxito en su ubicación actual, ahora puedes volver aquí en cualquier momento.
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nEste faro se estableció en algún lugar en el nivel %d de Pixel Dungeon.
+Tome of Mastery	Tomo de Maestría
+Tome of Remastery	Tomo de Remaestría
+This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	Este libro de cuero gastado no es tan grueso, pero se siente de alguna manera, que puede reunir una gran cantidad de ella. Recuerde sin embargo que la lectura de este tomo puede requerir algún tiempo.
+You can't read while blinded	No se puede leer mientras cegado
+You have chosen the way of the %s!	Usted ha elegido el camino del %s!
+torch	antorcha
+LIGHT	LUZ
+It's an indispensable item in The Demon Halls, which are notorious for their poor ambient lighting.	Es un elemento indispensable en The Demon Salas, que son conocidos por su iluminación ambiental pobres.
+weightstone	piedra de peso
+APPLY	APLICAR
+Using a weightstone, you can balance your melee weapon to increase its speed or accuracy.	Utilizando una piedra de peso, puede equilibrar su arma cuerpo a cuerpo para aumentar su velocidad y precisión.
+Select a weapon to balance	Seleccionar un arma para equilibrar
+you balanced your %s to make it faster	usted equilibrados tu %s para hacerlo más rápido
+you balanced your %s to make it more accurate	usted equilibrados tu %s para que sea más precisa
+How would you like to balance your %s?	¿Cómo le gustaría a equilibrar su %s?
+For speed	Para la velocidad
+For accuracy	Para una precisión
+Never mind	No importa
+PLANT	PLANTA
+Throw this seed to the place where you want to grow %1$s.\n\n%2$s	Tire a esta semilla en el lugar donde desea crecer %1$s.\n\n%2$s
+seed of %s	semilla de %s
+Dreamweed	Dreamweed
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Al tocar un Dreamweed segrega una nube brillante de gas confuso.
+Earthroot	Earthroot
+When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Cuando una criatura toca un Earthroot, sus raíces crean una especie de armadura natural a su alrededor.
+Herbal armor	Armadura herbal
+Fadeleaf	Fadeleaf
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	Tocar una Fadeleaf se teletransportarse a cualquier criatura a un lugar al azar en el nivel actual.
+Firebloom	Firebloom
+When something touches a Firebloom, it bursts into flames.	Cuando algo toca una Firebloom, estalla en llamas.
+Icecap	Icecap
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Al tocar un Icecap excreta un polen, que congela todo en su vecindad.
+Rotberry	Rotberry
+Berries of this shrub taste like sweet, sweet death.	Las bayas de este arbusto saben a dulce, dulce muerte.
+The seed emits a roar that echoes throughout the dungeon!	La semilla emite un rugido que hace eco a lo largo de la mazmorra!
+Sorrowmoss	Sorrowmoss
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Un Sorrowmoss es una flor (no un musgo) con pétalos afilados, recubiertas de una de veneno mortal.
+Sungrass	Sungrass
+Sungrass is renowned for its sap's healing properties.	Sungrass es famoso por las propiedades curativas de su savia.
+Herbal healing	Curación herbaria
+your %s constricts around you painfully	tu %s constriñe a tu alrededor dolorosamente
+Interaction of different types of magic has erased the glyph on this armor!	Interacción de los diferentes tipos de magia ha borrado el glifo en esta armadura!
+\n\nThis %1$s provides damage absorption up to "%2$d"  points per attack.	\n\nEsta %1$s proporciona absorción de daño hasta puntos "%2$d" por el ataque.
+\n\nBecause of your inadequate strength your movement speed and defense skill is decreased. 	\n\nDebido a su fuerza inadecuada disminuye su velocidad de movimiento y la habilidad de defensa. 
+\n\nBecause of your inadequate strength wearing this armor will decrease your movement speed and defense skill.	\n\nDebido a su fuerza inadecuada vistiendo esta armadura disminuirá su velocidad de movimiento y la habilidad de defensa.
+\n\nTypical %1$s provides damage absorption up to %2$d points per attack and requires %3$d points of strength.	\n\n%1$s típica proporciona daños absorción de hasta %2$d puntos por ataque y requiere %3$d puntos de fuerza.
+Probably this armor is too heavy for you.	Probablemente esta armadura es demasiado pesado para usted.
+\n\nYou are wearing the %1$s%2$s.	\n\nUsted está usando el %1$s%2$s.
+\n\nYou can feel a malevolent magic lurking within the %s.	\n\nUsted puede sentir una magia malévola al acecho dentro de la %s.
+The thing looks awesome!	La cosa se ve impresionante!
+Your health is too low!	Su salud es demasiado bajo!
+You need to be wearing this armor to use its special power!	Necesitas estar usando esta armadura para usar su poder especial!
+cloth armor	armadura de paño
+This lightweight armor offers basic protection.	Esta armadura ligera ofrece una protección básica.
+huntress cloak	manto cazadora
+A huntress in such cloak can create a fan of spectral blades. Each of these blades will target a single enemy in the huntress's field of view, inflicting damage depending on her currently equipped melee weapon.	Una cazadora de tal capa puede crear un ventilador de aspas espectrales. Cada una de estas hojas se dirigirse a un solo enemigo en el campo de la cazadora de vista, infligiendo daños en función de su arma cuerpo a cuerpo actualmente equipada.
+SPECTRAL BLADES	BLADES ESPECTRALES
+No enemies in sight	No hay enemigos a la vista
+Only huntresses can use this armor!	Sólo cazadoras pueden utilizar esta armadura!
+leather armor	armadura de cuero
+Armor made from tanned monster hide. Not as light as cloth armor but provides better protection.	Armadura hecha de piel bronceada monstruo. No es tan ligero como armaduras de tela, pero proporciona una mejor protección.
+mage robe	túnica de mago
+Wearing this gorgeous robe, a mage can cast a spell of molten earth: all the enemies in his field of view will be set on fire and unable to move at the same time.	El uso de este magnífico manto, un mago puede lanzar un hechizo de tierra fundida: todos los enemigos en su campo de visión se prendió fuego e incapaz de moverse al mismo tiempo.
+MOLTEN EARTH	TIERRA FUNDIDO
+Only mages can use this armor!	Sólo los magos pueden usar esta armadura!
+mail armor	armaduras de malla
+Interlocking metal links make for a tough but flexible suit of armor.	Enclavamiento eslabones de metal para hacer un traje resistente pero flexible de la armadura.
+plate armor	armadura de placas
+Enormous plates of metal are joined together into a suit that provides unmatched protection to any adventurer strong enough to bear its staggering weight.	Enormes placas metálicas se unen en un traje que proporciona una protección incomparable a cualquier aventurero lo suficientemente fuerte como para soportar su peso asombrosa.
+rogue garb	ladrón traje
+Wearing this dark garb, a rogue can perform a trick, that is called "smoke bomb" (though no real explosives are used): he blinds enemies who could see him and jumps aside.	El uso de este atuendo oscuro, un pícaro puede realizar un truco, que se llama "bomba de humo" (aunque no se utilizan explosivos reales): le ciega enemigos que podían ver él y saltos a un lado.
+SMOKE BOMB	BOMBA DE HUMO
+Only rogues can use this armor!	Sólo los ladrones pueden utilizar esta armadura!
+You can only jump to an empty location in your field of view	Sólo se puede saltar a un lugar vacío en su campo de visión
+Choose a location to jump to	Elija un lugar para ir a
+scale armor	armadura de escamas
+The metal scales sewn onto a leather vest create a flexible, yet protective armor.	Las escamas de metal cosidas en un chaleco de cuero crean una armadura flexible pero protectora.
+warrior suit of armor	guerrero armadura
+While this armor looks heavy, it allows a warrior to perform heroic leap towards a targeted location, slamming down to stun all neighboring enemies.	Si bien esta armadura se ve pesado, que permite a un guerrero para realizar salto heroico hacia una ubicación de orientación, golpeando hacia abajo para aturdir a todos los enemigos cercanos.
+HEROIC LEAP	SALTO HEROICO
+Only warriors can use this armor!	Sólo guerreros pueden usar esta armadura!
+Choose direction to leap	Elija la dirección de saltar
+%s of affection	%s de afecto
+%s of anti-entropy	%s de antientropía
+%s of auto-repair	%s de auto-reparación
+%s of bounce	%s de rebote
+%s of displacement	%s de desplazamiento
+%s of entanglement	%s de enredo
+%s of metabolism	%s de metabolismo
+%s of multiplicity	%s de multiplicidad
+%s of potential	%s de potencial
+%s of stench	%s del hedor
+%s of viscosity	%s de viscosidad
+deferred %d	diferido %d
+enchantment of viscosity	encantamiento de la viscosidad
+Defered damage (%d)	daños defered (%d)
+The enchantment of viscosity killed you...	El encanto de la viscosidad que mató...
+OPEN	ABRIR
+key ring	llavero
+This is a copper key ring, that lets you keep all your keys separately from the rest of your belongings.	Esto es un llavero de cobre, que le permite mantener todas sus llaves por separado del resto de sus pertenencias.
+scroll holder	apoyo de pergamino
+You can place any number of scrolls into this tubular container. It saves room in your backpack and protects scrolls from fire.	Usted puede colocar cualquier número de rollos en este recipiente tubular. Se ahorra espacio en tu mochila y protege pergaminos del fuego.
+seed pouch	bolsa de semillas
+This small velvet pouch allows you to store any number of seeds in it. Very convenient.	Esta pequeña bolsa de terciopelo le permite almacenar cualquier número de semillas en el mismo. Muy conveniente.
+wand holster	funda de varita
+This slim holder is made of leather of some exotic animal. It allows to compactly carry up to %d wands.	Este delgado soporte está hecho de cuero de un animal exótico. Permite realizar de forma compacta hasta %d varitas.
+ration of food	ración de comida
+Nothing fancy here: dried meat, some biscuits - things like that.	Nada de lujos: carne seca, unas galletas - cosas como esas.
+That food tasted delicious!	Esa comida era deliciosa!
+chargrilled meat	carne a la brasa
+It looks like a decent steak.	Parece un bistec decente.
+frozen carpaccio	carpaccio congelada
+It's a piece of frozen raw meat. The only way to eat it is by cutting thin slices of it. And this way it's surprisingly good.	Es un pedazo de carne cruda congelada. La única manera de comer es cortando rebanadas delgadas de ella. Y de esta manera es sorprendentemente bueno.
+You feel your skin hardens!	Usted siente que su piel se endurece!
+Refreshing!	Refrescante!
+You feel better!	Te sientes mejor!
+mystery meat	carne misteriosa
+Eat at your own risk!	Coma en su propio riesgo!
+Oh it's hot!	Oh, es caliente!
+You can't feel your legs!	Usted no puede sentir sus piernas!
+You are not feeling well.	Usted no se siente bien.
+You are stuffed.	Usted está llenos.
+That food tasted... strange.	Esa comida era ... extraño.
+overpriced food ration	ración de comida cara
+It looks exactly like a standard ration of food but smaller.	Se ve exactamente como una ración estándar de la comida, pero más pequeño.
+That food tasted good.	Esa comida era buena.
+pasty	pasta
+This is authentic Cornish pasty with traditional filling of beef and potato.	Esto es auténtico pastel de Cornualles con relleno tradicional de carne de vacuno y la patata.
+golden key	llave de oro
+The notches on this golden key are tiny and intricate. Maybe it can open some chest lock?	Las muescas en esta llave de oro son pequeñas e intrincado. Tal vez puede abrir alguna cerradura pecho?
+iron key	llave de hierro
+The notches on this ancient iron key are well worn; its leather lanyard is battered by age. What door might it open?	Las muescas en esta llave de hierro antigua son bien gastado; su cordón de cuero es maltratada por la edad. ¿Qué puerta se puede abrir?
+iron key from depth %d	llave de hierro de profundidad %d
+skeleton key	llave maestra
+This key looks serious: its head is shaped like a skull. Probably it can open some serious door.	Esta clave parece serio: la cabeza tiene la forma de un cráneo. Probablemente se puede abrir alguna puerta serio.
+%s potion	poción %s
+This flask contains a swirling %s liquid. Who knows what it will do when drunk or thrown?	Este frasco contiene un líquido %s remolino. ¿Quién sabe lo que va a hacer cuando bebido o lanzado?
+DRINK	BEBIDA
+Harmful potion!	Poción Nocivo!
+Beneficial potion	Poción beneficioso
+Are you sure you want to drink it? In most cases you should throw such potions at your enemies.	¿Seguro que quieres beber? En la mayoría de los casos usted no debe tirar esas pociones a tus enemigos.
+Are you sure you want to throw it? In most cases it makes sense to drink it.	¿Seguro que quieres tirarlo? En la mayoría de los casos tiene sentido beber.
+The flask shatters and %s liquid splashes harmlessly	Los añicos matraz y líquido %s salpica inofensivamente
+turquoise	turquesa
+crimson	carmín
+azure	azur
+jade	jade
+golden	dorado
+magenta	magenta
+charcoal	gris
+ivory	marfil
+amber	ámbar
+bistre	marron oscuro
+indigo	añil
+silver	plata
+Potion of Experience	Poción de Experiencia
+The storied experiences of multitudes of battles reduced to liquid form, this draught will instantly raise your experience level.	Las experiencias pisos de multitud de batallas reducidos a forma líquida, este proyecto al instante elevar su nivel de experiencia.
+Potion of Frost	Poción de Escarcha
+Upon exposure to open air, this chemical will evaporate into a freezing cloud, causing any creature that contacts it to be frozen in place, unable to act and move.	Tras la exposición a abrir el aire, este producto químico se evaporará en una nube de congelación, haciendo que cualquier criatura que los contactos a congelarse en el lugar, incapaz de actuar y moverse.
+Potion of Healing	Poción de Curación
+An elixir that will instantly return you to full health and cure poison.	Un elixir que al instante que volver a la plena salud y curar veneno.
+Your wounds heal completely.	Sus heridas se curan completamente.
+Potion of Invisibility	Poción de Invisibilidad
+Drinking this potion will render you temporarily invisible. While invisible, enemies will be unable to see you. Attacking an enemy, as well as using a wand or a scroll before enemy's eyes, will dispel the effect.	Beber esta poción hará que usted temporalmente invisible. Aunque invisible, los enemigos no podrán verte. Atacar a un enemigo, así como usar una varita o un pergamino ante los ojos del enemigo, disipará el efecto.
+Potion of Levitation	Poción de Levitación
+Drinking this curious liquid will cause you to hover in the air, able to drift effortlessly over traps. Flames and gases fill the air, however, and cannot be bypassed while airborne.	Beber este curioso líquido hará que ciernen en el aire, capaz de desplazarse sin esfuerzo sobre trampas. Las llamas y los gases llenan el aire, sin embargo, y no pueden ser anuladas mientras el aire.
+You float into the air!	Flotas en el aire!
+Potion of Liquid Flame	Poción de la Llama Líquido
+This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	Este frasco contiene un compuesto inestable que va a estallar violentamente en llamas tras la exposición al aire libre.
+Potion of Might	Poción de Poderío
+This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	Este poderoso líquido curso a través de los músculos, de forma permanente aumento de su fuerza en un punto y la salud en cinco puntos.
++1 str, +5 ht	+1 str, +5 ht
+Potion of Mind Vision	Poción de la Mente Visión
+After drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls. Also this potion will permit you to see through nearby walls and doors.	Después de beber esto, tu mente se convertirá en sintonía con la firma psíquica de criaturas distantes, lo que le permite sentir presencias biológicos a través de paredes. También esta poción le permitirá ver a través de paredes y puertas cercanas.
+You can somehow feel the presence of other creatures' minds!	De alguna manera puede sentir la presencia de las mentes de otras criaturas!
+You can somehow tell that you are alone on this level at the moment.	Se puede decir de alguna manera que estás solo en este nivel en el momento.
+Potion of Paralytic Gas	Poción de Gas paralítico
+Upon exposure to open air, the liquid in this flask will vaporize into a numbing yellow haze. Anyone who inhales the cloud will be paralyzed instantly, unable to move for some time after the cloud dissipates. This item can be thrown at distant enemies to catch them within the effect of the gas.	Tras la exposición a abrir el aire, el líquido en este matraz se evapora en una neblina amarilla adormecedor. Cualquier persona que inhala la nube se paralizó al instante, incapaz de moverse durante algún tiempo después se disipa la nube. Este artículo se puede lanzar a los enemigos distantes para atraparlos en el efecto del gas.
+Potion of Purification	Poción de la Purificación
+This reagent will quickly neutralize all harmful gases in the area of effect. Drinking it will give you a temporary immunity to such gases.	Este reactivo neutralizará rápidamente todos los gases nocivos en el área de efecto. Beber le dará una inmunidad temporal a tales gases.
+You feel uncommon freshness in the air.	Se siente la frescura poco común en el aire.
+You've stopped sensing any smells!	Has dejado de detectar olores!
+Potion of Strength	Poción de Fuerza
+This powerful liquid will course through your muscles, permanently increasing your strength by one point.	Este poderoso líquido curso a través de los músculos, de forma permanente aumento de su fuerza por un punto.
+Newfound strength surges through your body.	Nueva fuerza surge a través de su cuerpo.
++1 str	+1 str
+Potion of Toxic Gas	Poción de Gas Tóxico
+Uncorking or shattering this pressurized glass will cause its contents to explode into a deadly cloud of toxic green gas. You might choose to fling this potion at distant enemies instead of uncorking it by hand.	El descorche o destrozando este vidrio a presión hará que su contenido a explotar en una nube mortal de gas verde tóxico. Usted puede optar por lanzar esta poción a los enemigos distantes en lugar de descorchar a mano.
+corpse dust	polvo de cadáver
+The ball of corpse dust doesn't differ outwardly from a regular dust ball. However, you know somehow that it's better to get rid of it as soon as possible.	La bola de polvo de cadáver no se diferencia exteriormente de una bola de polvo regular. Sin embargo, usted sabe de alguna manera que es mejor deshacerse de él tan pronto como sea posible.
+dark gold ore	mineral de oro oscuro
+This metal is called dark not because of its color (it doesn't differ from the normal gold), but because it melts under the daylight, making it useless on the surface.	Este metal se llama oscuro no a causa de su color (que no difiere de la de oro normal), pero debido a que se funde bajo la luz del día, lo que es inútil en la superficie.
+dried rose	rosa seca
+The rose has dried long ago, but it has kept all its petals somehow.	La rosa se ha secado hace mucho tiempo, pero se ha mantenido todos sus pétalos de alguna manera.
+dwarf token	símbolo enana
+Many dwarves and some of their larger creations carry these small pieces of metal of unknown purpose. Maybe they are jewelry or maybe some kind of ID. Dwarves are strange folk.	Muchos enanos y algunas de sus creaciones más grandes llevan estas pequeñas piezas de metal de propósito desconocido. Tal vez son de joyería o tal vez algún tipo de identificación. Los enanos son gente extraña.
+phantom fish	peces fantasma
+EAT	COMER
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	Apenas se puede ver este pequeño pez transparente en el aire. En el agua se convierte efectivamente invisible.
+You see your hands turn invisible!	Usted ve las manos se vuelven invisibles!
+pickaxe	pico
+This is a large and sturdy tool for breaking rocks. Probably it can be used as a weapon.	Esta es una herramienta grande y robusto para romper rocas. Probablemente que puede ser utilizado como un arma.
+MINE	MÍA
+There is no dark gold vein near you to mine	No es la veta de oro oscuro cerca de usted a la mía
+giant rat skull	cráneo rata gigante
+It could be a nice hunting trophy, but it smells too bad to place it on a wall.	Podría ser una buena caza de trofeos, pero huele demasiado mal para colocarlo en la pared.
+%s ring	anillo de %s
+This metal band is adorned with a large %s gem that glitters in the darkness. Who knows what effect it has when worn?	Esta banda metálica está adornado con una joya de %s de gran tamaño que brilla en la oscuridad. ¿Quién sabe qué efecto ha cuando se usa?
+broken %s	%s roto
+you are now familiar enough with your %1$s to identify it. It is %2$s.	Que ahora está lo suficientemente familiarizado con su %1$s para identificarlo. Es %2$s.
+Unequip one ring	Desequipamiento un anillo
+You can only wear two rings at a time. Unequip one of your equipped rings.	Sólo puede llevar dos anillos a la vez. Desequipamiento uno de sus anillos equipados.
+diamond	diamante
+opal	ópalo
+garnet	granate
+ruby	ruby
+amethyst	amatista
+topaz	topacio
+onyx	ónix
+tourmaline	turmalina
+emerald	esmeralda
+sapphire	zafiro
+quartz	cuarzo
+agate	ágata
+Your %s tightens around your finger painfully	Su %s se aprieta alrededor de su dedo dolorosamente
+%1$s\n\nThe %2$s is on your finger %3$s.	%1$s\n\nEl %2$s está en su dedo %3$s.
+, and because it is cursed, you are powerless to remove it	, y porque está maldito, eres incapaz de eliminarlo
+%1$s\n\nYou can feel a malevolent magic lurking within the %2$s.	%1$s\n\nUsted puede sentir una magia malévola acecho dentro del %2$s.
+This is a %s	Este es un %s
+Ring of Accuracy	Anillo de Precisión
+This ring increases your chance to hit the enemy.	Este anillo aumenta tu probabilidad de golpear al enemigo.
+Ring of Detection	Anillo de Detección
+Wearing this ring will allow the wearer to notice hidden secrets - traps and secret doors - without taking time to search. Degraded rings of detection will dull your senses, making it harder to notice secrets even when actively searching for them.	El uso de este anillo permitirá al usuario note secretos ocultos - trampas y puertas secretas - sin tener tiempo para buscar. Anillos Degradadas de detección serán apagados sus sentidos, por lo que es más difícil de notar secretos incluso cuando la búsqueda activa de ellos.
+Ring of Elements	Anillo de los Elementos
+This ring provides resistance to different elements, such as fire, electricity, gases etc. Also it decreases duration of negative effects.	Este anillo proporciona resistencia a diferentes elementos, tales como el fuego, la electricidad, los gases, etc. También disminuye la duración de los efectos negativos.
+Ring of Evasion	Anillo de la Evasión
+This ring increases your chance to dodge enemy attack.	Este anillo aumenta la probabilidad de esquivar ataques enemigos.
+Ring of Haggler	Anillo de Negociación
+In fact this ring doesn't provide any magic effect, but it demonstrates to shopkeepers and vendors, that the owner of the ring is a member of The Thieves' Guild. Usually they are glad to give a discount in exchange for temporary immunity guarantee. Upgrading this ring won't give any additional bonuses.	De hecho este anillo no proporciona ningún efecto mágico, pero demuestra que los comerciantes y vendedores, que el dueño del anillo es un miembro del Gremio de Ladrones. Por lo general, están contentos de dar un descuento a cambio de la garantía de inmunidad temporal. Actualización de este anillo no dará ningún bono adicional.
+Ring of Haste	Anillo de Prisa
+This ring accelerates the wearer's flow of time, allowing one to perform all actions a little faster.	Este anillo acelera el flujo del portador de tiempo, lo que permite una para llevar a cabo todas las acciones un poco más rápido.
+Ring of Herbalism	Anillo de las Hierbas
+This ring increases your chance to gather dew and seeds from trampled grass.	Este anillo aumenta la posibilidad de reunir el rocío y las semillas de la hierba pisoteada.
+Ring of Mending	Anillo de Regeneración
+This ring increases the body's regenerative properties, allowing one to recover lost health at an accelerated rate. Degraded rings will decrease or even halt one's natural regeneration.	Este anillo aumenta las propiedades regenerativas del cuerpo, permitiendo recuperar la salud perdida a un ritmo acelerado. Anillos Degradadas disminuirá o incluso detener la propia regeneración natural.
+Ring of Power	Anillo de Poder
+Your wands will become more powerful in the energy field that radiates from this ring. Degraded rings of power will instead weaken your wands.	Sus varitas serán más poderosa en el campo de la energía que irradia de este anillo. Anillos Degradadas de poder en lugar de otro debilitar sus varitas.
+Ring of Satiety	Anillo de Saciedad
+Wearing this ring you can go without food longer. Degraded rings of satiety will cause the opposite effect.	El uso de este anillo se puede ir sin alimentos por más tiempo. Anillos degradadas de saciedad harán que el efecto opuesto.
+Ring of Shadows	Anillo de las Sombras
+Enemies will be less likely to notice you if you wear this ring. Degraded rings of shadows will alert enemies who might otherwise not have noticed your presence.	Los enemigos serán menos propensos a notar que si usted usa este anillo. Anillos de las Sombras degradadas alertarán enemigos que de otra manera no se han dado cuenta de su presencia.
+Ring of Thorns	Anillo de Espinas
+Though this ring doesn't provide real thorns, an enemy that attacks you will itself be wounded by a fraction of the damage that it inflicts. Upgrading this ring won't give any additional bonuses.	Aunque este anillo no proporciona espinas reales, un enemigo que ataca a sí mismo se va herido por una fracción del daño que inflige. Actualización de este anillo no dará ningún bono adicional.
+scroll "%s"	pergamino "%s"
+This parchment is covered with indecipherable writing, and bears a title of rune %s. Who knows what it will do when read aloud?	Este pergamino está cubierto con la escritura indescifrable, y tiene un título de runa %s. ¿Quién sabe lo que va a hacer cuando se lee en voz alta?
+KAUNAN	KAUNAN
+SOWILO	SOWILO
+LAGUZ	LAGUZ
+YNGVI	YNGVI
+GYFU	GYFU
+RAIDO	RAIDO
+ISAZ	ISAZ
+MANNAZ	MANNAZ
+NAUDIZ	NAUDIZ
+BERKANAN	BERKANAN
+ODAL	ODAL
+TIWAZ	TIWAZ
+Select an item	Selecciona un ítem
+Do you really want to cancel this scroll usage? It will be consumed anyway.	¿Realmente deseas cancelar el uso del pergamino? Se consume de todos modos.
+Yes, I'm positive	Sí, ya sé lo que estoy haciendo
+Scroll of Challenge	Pergamino de Desafío
+When read aloud, this scroll will unleash a challenging roar that will awaken all monsters and alert them to the reader's location.	Cuando lea en voz alta, este pergamino va a desatar un rugido desafiante que despertará todos los monstruos y alertarlos sobre la ubicación del lector.
+The scroll emits a challenging roar that echoes throughout the dungeon!	El desplazamiento emite un rugido desafiante que hace eco a lo largo de la mazmorra!
+Scroll of Identify	Pergamino de Identificar
+Permanently reveals all of the secrets of a single item.	Permanentemente revela todos los secretos de un solo elemento.
+Select an item to identify	Seleccione un ítem para identificar
+It is %s	Este es un %s
+Scroll of Lullaby	Pergamino de Canción de Cuna
+A soothing melody will put all creatures in your field of view into a deep sleep, giving you a chance to flee or make a surprise attack on them.	Una melodía suave pondrá todas las criaturas en su campo de visión en un sueño profundo, que le da la oportunidad de huir o hacer un ataque sorpresa sobre ellos.
+The scroll utters a soothing melody.	El desplazamiento pronuncia una melodía relajante.
+The scroll utters a soothing melody and the %s falls asleep!	El desplazamiento pronuncia una melodía suave y el %s se duerme!
+The scroll utters a soothing melody and the monsters fall asleep!	El desplazamiento pronuncia una melodía suave y los monstruos se duerma!
+Scroll of Magic Mapping	Pergamino de Mapeo Mágica
+When this scroll is read, an image of crystal clarity will be etched into your memory, alerting you to the precise layout of the level and revealing all hidden secrets. The locations of items and creatures will remain unknown.	Cuando se lee este pergamino, una imagen de claridad cristalina quedará grabado en su memoria, alertando a la distribución precisa del nivel y revelando todos los secretos ocultos. Las ubicaciones de los elementos y criaturas seguirán siendo desconocido.
+You are now aware of the level layout.	Ahora eres consciente de la disposición de nivel.
+Scroll of Mirror Image	Pergamino de Imagen de Espejo
+The incantation on this scroll will create illusionary twins of the reader, which will chase his enemies.	El encantamiento de este pergamino creará gemelos ilusorias del lector, que perseguirá a sus enemigos.
+Scroll of Psionic Blast	Pergamino de Explosión Psiónica
+This scroll contains destructive energy, that can be psionically channeled to inflict a massive damage to all creatures within a field of view. An accompanying flash of light will temporarily blind everybody in the area of effect including the reader of the scroll.	Este pergamino contiene energía destructiva, que puede ser canalizada psiónicamente para infligir un daño masivo a todas las criaturas dentro de un campo de visión. Un flash que acompaña de la luz será cegar temporalmente a todo el mundo en el área de efecto que incluye el lector del pergamino.
+Scroll of Recharging	Pergamino de Recarga
+The raw magical power bound up in this parchment will, when released, recharge all of the reader's wands to full power.	El poder mágico prima ligada en este pergamino será, cuando se libera, recargar todas las varitas del lector a plena potencia.
+a surge of energy courses through your pack, recharging your wand	una oleada de cursos de energía a través de su paquete, recarga tu varita
+a surge of energy courses through your pack, recharging your wands	una oleada de cursos de energía a través de su paquete, recargando sus varitas
+a surge of energy courses through your pack, but nothing happens	una oleada de cursos de energía a través de su paquete, pero no pasa nada
+Scroll of Remove Curse	Pergamino de Remoción de Maldición
+The incantation on this scroll will instantly strip from the reader's weapon, armor, rings and carried items any evil enchantments that might prevent the wearer from removing them.	El encantamiento de el pergamino instantáneamente despojar de armas, armaduras, anillos del lector y artículos llevado ningún encantamientos malignos que pudieran impedir al usuario de la eliminación de ellos.
+Your pack glows with a cleansing light, and a malevolent energy disperses.	Su paquete se ilumina con una luz de limpieza, y una energía malévola dispersa.
+Your pack glows with a cleansing light, but nothing happens.	Su paquete se ilumina con una luz de limpieza, pero no pasa nada.
+Scroll of Teleportation	Pergamino de Teletransporte
+The spell on this parchment instantly transports the reader to a random location on the dungeon level. It can be used to escape a dangerous situation, but the unlucky reader might find himself in an even more dangerous place.	El hechizo en este pergamino transporta inmediatamente al lector a un lugar al azar en el nivel mazmorra. Puede ser utilizado para escapar de una situación peligrosa, pero el lector de mala suerte podría encontrarse en un lugar aún más peligroso.
+In a blink of an eye you were teleported to another location of the level.	En un abrir y cerrar de ojos estabas teletransportado a otro lugar del nivel.
+Strong magic aura of this place prevents you from teleporting!	Fuerte aura magia de este lugar le impide teletransportarse!
+Scroll of Terror	Pergamino de Terror
+A flash of red light will overwhelm all creatures in your field of view with terror, and they will turn and flee. Attacking a fleeing enemy will dispel the effect.	Un destello de luz roja se abrumar a todas las criaturas en su campo de visión con el terror, y ellos a su vez, y huir. Atacar a un enemigo que huye disipará el efecto.
+The scroll emits a brilliant flash of red light	El desplazamiento emite un brillante destello de luz roja
+The scroll emits a brilliant flash of red light and the %s flees!	El desplazamiento emite un brillante destello de luz roja y el %s huye!
+The scroll emits a brilliant flash of red light and the monsters flee!	El desplazamiento emite un brillante destello de luz roja y los monstruos huyen!
+Scroll of Upgrade	Pergamino de Actualización
+This scroll will upgrade a single item, improving its quality. A wand will increase in power and in number of charges; a weapon will inflict more damage or find its mark more frequently; a suit of armor will deflect additional blows; the effect of a ring on its wearer will intensify. Weapons and armor will also require less strength to use, and any curses on the item will be lifted.	Este pergamino actualizará un solo elemento, la mejora de su calidad. Una varita aumentará en el poder y en número de cargas; un arma infligirá más daño o encontrar su marca con mayor frecuencia; una armadura desviará golpes adicionales; el efecto de un anillo en su portador se intensificará. Armas y armaduras también requieren menos fuerza de usar, y cualquier maldición sobre el artículo será levantado.
+Select an item to upgrade	Seleccione un ítem para actualizar
+Scroll of Enchantment	Pergamino de Encantamiento
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	Este pergamino es capaz de imbuir un arma o una armadura con un encanto al azar, otorgándole un poder especial.
+Select an enchantable item	Seleccione un ítem incantable
+your %s glows in the dark	tu %s brilla en la oscuridad
+Scroll of Wipe Out	Pergamino de Limpieza
+READ	LEER
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	Lea este pergamino para dar rienda suelta a la ira de los espíritus de las mazmorras, matando todo en el nivel actual. Bueno, casi todo. Algunas de las criaturas más poderosas pueden no afectados.
+You can't read a scroll while blinded	No se puede leer un libro mientras cegado
+%s wand	varita de %s
+ZAP	ZAP
+This thin %s wand is warm to the touch. Who knows what it will do when used?	Esta delgada varita de %s es caliente al tacto. ¿Quién sabe lo que va a hacer cuando se usa?
+When this wand is used as a melee weapon, its average damage is %d points per hit.	Cuando se utiliza esta varita como un arma cuerpo a cuerpo, su daño promedio es de %d puntos por golpe.
+You can use this wand as a melee weapon.	Puede utilizar esta varita como un arma cuerpo a cuerpo.
+your wand fizzles; it must be out of charges for now	tu varita esfuma; debe estar fuera de los cargos por ahora
+You can't target yourself	No se puede apuntar a ti mismo
+Choose direction to zap	Elija la dirección de hacer zapping
+You are now familiar enough with your %s.	Ahora está lo suficientemente familiarizado con su %s.
+holly	acebo
+yew	tejo
+ebony	ébano
+cherry	cereza
+teak	teca
+rowan	serbal
+willow	sauce
+mahogany	caoba
+bamboo	bambú
+purpleheart	purpleheart
+oak	roble
+birch	abedul
+Wand of Amok	Varita de Furia
+The purple light from this wand will make the target run amok attacking random creatures in its vicinity.	La luz violeta de esta varita hará que el blanco fuera de control criaturas atacantes al azar en sus proximidades.
+Wand of Avalanche	Varita de la Avalancha
+When a discharge of this wand hits a wall (or any other solid obstacle) it causes an avalanche of stones, damaging and stunning all creatures in the affected area.	Cuando una descarga de esta varita golpea una pared (o cualquier otro obstáculo sólido) que provoca una avalancha de piedras, perjudiciales e impresionantes todas las criaturas en la zona afectada.
+You killed yourself with your own Wand of Avalanche...	Usted mismo mató con su propia Varita de Avalancha ...
+Wand of Blink	Varita de Flash
+This wand will allow you to teleport in the chosen direction. Creatures and inanimate obstructions will block the teleportation.	Esta varita le permitirá teletransportarse en la dirección elegida. Criaturas y obstáculos inanimados bloquearán la teletransportación.
+Wand of Disintegration	Varita de Desintegración
+This wand emits a beam of destructive energy, which pierces all creatures in its way. The more targets it hits, the more damage it inflicts to each of them.	Esta varita emite un haz de energía destructiva, que atraviesa todas las criaturas en su camino. Los más objetivos que impacta, más daño que inflige a cada uno de ellos.
+Wand of Firebolt	Varita de Saeta de Fuego
+This wand unleashes bursts of magical fire. It will ignite flammable terrain, and will damage and burn a creature it hits.	Esta varita desata ráfagas de fuego mágico. Se encenderá terreno inflamable y puede dañar y quemar una criatura que golpee.
+You killed yourself with your own Wand of Firebolt...	Usted mismo mató con su propia varita de Saeta de Fuego...
+Wand of Flock	Varita del Rebaño
+A flick of this wand summons a flock of magic sheep, creating temporary impenetrable obstacle.	Un movimiento de esta varita convoca a un rebaño de ovejas magia, creando obstáculo impenetrable temporal.
+sheep	oveja
+This is a magic sheep. What's so magical about it? You can't kill it. It will stand there until it magically fades away, all the while chewing cud with a blank stare.	Esta es una oveja magia. ¿Qué es tan mágico sobre él? No se puede acabar con él. Será permanecer allí hasta que por arte de magia desvanece, todo el bolo alimenticio al masticar con una mirada en blanco.
+Baa!	Baa!
+Baa?	Baa?
+Baa.	Baa.
+Baa...	Baa...
+Bee...	Bee...
+Ble...	Ble...
+Wand of Lightning	Vara del Rayo
+This wand conjures forth deadly arcs of electricity, which deal damage to several creatures standing close to each other.	Esta varita evoca sucesivamente arcos mortales de la electricidad, que se ocupan daños a varias criaturas de pie cerca uno del otro.
+You killed yourself with your own Wand of Lightning...	Usted mismo mató con su propia varita del Rayo...
+Wand of Magic Missile	Varita de Misil Mágico
+This wand launches missiles of pure magical energy, dealing moderate damage to a target creature.	Esta varita lanza misiles de energía mágica pura, haciendo daño moderado a una criatura objetivo.
+DISENCHANT	DESENCANTAR
+You killed yourself with your own Wand of Magic Missile...	Usted mismo mató con su propia Varita de Misil Mágico...
+Select a wand to upgrade	Seleccionar una varita para actualizar
+you disenchanted the Wand of Magic Missile and used its essence to upgrade your %s	usted desencantado la Varita de la magia de Misiles y utilizó su esencia actualizar su %s
+Wand of Poison	Varita de Veneno
+The vile blast of this twisted bit of wood will imbue its target with a deadly venom. A creature that is poisoned will suffer periodic damage until the effect ends. The duration of the effect increases with the level of the staff.	La explosión de este vil poco retorcida de madera se imbuir su objetivo con un veneno mortal. Una criatura que se envenenó sufrirá daño periódico hasta que termine el efecto. La duración del efecto aumenta con el nivel del personal.
+Wand of Regrowth	Varita de Brote
+"When life ceases new life always begins to grow... The eternal cycle always remains!"	"Cuando la vida deja nueva vida siempre empieza a crecer ... El ciclo eterno permanece siempre!"
+Wand of Slowness	Varita de la Lentitud
+This wand will cause a creature to move and attack at half its ordinary speed until the effect ends	Esta varita causará una criatura a moverse y atacar a la mitad de su velocidad normal hasta que los extremos de efecto
+Wand of Reach	Varita de Alcance
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	Esta varita utilidad se puede utilizar para agarrar objetos a distancia y para cambiar de lugar con los enemigos. Olas de fuerza mágica de esta varita afectarán todas las células en sus trampas manera desencadenantes, pisoteando vegetación alta, abriendo las puertas cerradas y el cierre de los abiertos.
+You have magically transported %s into your backpack	Usted ha transportado mágicamente %s en su mochila
+Wand of Teleportation	Varita de Teletransporte
+A blast from this wand will teleport a creature against its will to a random place on the current level.	Una explosión de esta varita se teletransportar una criatura contra su voluntad a un lugar al azar en el nivel actual.
+%1$s teleported %2$s to somewhere	%1$s hombre teletransportado %2$s a algún lugar
+nothing happened	no pasó nada
+You are now familiar enough with your %1$s to identify it. It is %2$s.	Que ahora está lo suficientemente familiarizado con su %1$s para identificarlo. Es %2$s
+Interaction of different types of magic has negated the enchantment on this weapon!	Interacción de los diferentes tipos de magia ha negado el encanto de esta arma!
+%1$s :%2$d	%1$s :%2$d
+broken %1$s :%2$d	%1$s roto :%2$d
+grim %s	%s sombría
+blazing %s	%s ardiente
+eldritch %s	%s misterioso
+unstable %s	%s inestable
+vampiric %s	%s vampírico
+lucky %s	%s suerte
+stunning %s	%s que aturde
+venomous %s	%s venenoso
+shocking %s	%s chocante
+chilling %s	%s escalofriante
+tempered %s	%s templado
+This %1$s is %2$s tier-%3$d melee weapon.	%1$s: Es un arma cuerpo a cuerpo %2$s en el nivel %3$d.
+a	
+a upgraded	mejorado
+an degraded	degrada
+a broken	rota
+Its average damage is %d points per hit.	Su daño promedio es de %d puntos por golpe.
+Its typical average damage is %1$d points per hit and usually it requires %2$d points of strength.	Su daño medio típico es %1$d puntos por golpe y por lo general requiere de %2$d puntos de fuerza.
+Probably this weapon is too heavy for you.	Probablemente esta arma es demasiado pesado para usted.
+This is a rather %s weapon.	Este es un arma bastante %s.
+fast	rápido
+slow	lento
+and	y
+but	pero
+accurate	preciso
+inaccurate	impreciso
+It was balanced to make it faster.	Fue equilibrado para hacerlo más rápido.
+It was balanced to make it more accurate.	Fue equilibrado para que sea más precisa.
+It is enchanted.	Está encantado.
+You hold the %1$s at the ready%2$s.	Usted sostiene el %1$s en ristre%2$s.
+, and because it is cursed, you are powerless to let go	, y porque está maldito, eres incapaz de dejar ir
+You can feel a malevolent magic lurking within %s.	Usted puede sentir una magia malévola al acecho dentro de %s.
+battle axe	hacha de batalla
+The enormous steel head of this battle axe puts considerable heft behind each stroke.	La enorme cabeza de acero de esta hacha de batalla pone considerable influencia detrás de cada golpe.
+dagger	daga
+A simple iron dagger with a well worn wooden handle.	Una daga de hierro simple con un mango de madera desgastada.
+glaive	glaive
+A polearm consisting of a sword blade on the end of a pole.	Un arma de asta que consiste en una hoja de la espada en el extremo de un poste.
+knuckleduster	puño de hierro
+A piece of iron shaped to fit around the knuckles.	Un pedazo de hierro en forma de encajar alrededor de los nudillos.
+longsword	espada larga
+This towering blade inflicts heavy damage by investing its heft into every cut.	Esta hoja se eleva inflige graves daños al invertir su peso en cada corte.
+mace	maza
+The iron head of this weapon inflicts substantial damage.	La cabeza de hierro de esta arma inflige un daño sustancial.
+quarterstaff	barra
+A staff of hardwood, its ends are shod with iron.	Un equipo de la madera dura, sus extremos están calzados con hierro.
+short sword	espada corta
+It is indeed quite short, just a few inches longer, than a dagger.	De hecho, es bastante corto, apenas unas pocas pulgadas más largo que una daga.
+REFORGE	REFORJAR
+Select a weapon to upgrade	Seleccionar un arma para actualizar
+you reforged the short sword to upgrade your %s	que reforjada la espada corta actualizar su %s
+you can't upgrade a boomerang this way	no se puede actualizar un boomerang de esta manera
+spear	lanza
+A slender wooden rod tipped with sharpened iron.	Una varilla de madera delgada con punta de hierro afilado.
+sword	espada
+The razor-sharp length of steel blade shines reassuringly.	La longitud afilado de la hoja de acero brilla tranquilizador.
+war hammer	martillo de guerra
+Few creatures can withstand the crushing blow of this towering mass of lead and steel, but only the strongest of adventurers can use it effectively.	Pocas criaturas pueden soportar el duro golpe de esta masa imponente de plomo y acero, pero sólo el más fuerte de los aventureros pueden utilizarla de manera eficaz.
+Missile weapon	arma de proyectiles
+Do you really want to equip it as a melee weapon?	¿De verdad quiere equipar como un arma cuerpo a cuerpo?
+\n\nAverage damage of this weapon equals to %d points per hit.	\n\nDaños media de esta arma es igual a %d puntos por golpe.
+Because of your inadequate strength the accuracy and speed of your attack with this %s is decreased.	Debido a su fuerza inadecuada disminuye la precisión y la velocidad de su ataque con este %s.
+Because of your excess strength the damage of your attack with this %s is increased.	A causa de su exceso de fuerza se aumenta el daño de tu ataque con este %s.
+\n\nYou hold the %s at the ready.	\n\nUsted lleva a cabo el %s en la mano.
+boomerang	bumerang
+Thrown to the enemy this flat curved wooden missile will return to the hands of its thrower.	Lanzado al enemigo este piso misiles madera curvada volverá a manos de su lanzador.
+curare dart	dardo venenoso
+These little evil darts don't do much damage but they can paralyze the target leaving it helpless and motionless for some time.	Estos pequeños dardos del maligno no hacen mucho daño, pero ellos pueden paralizar el objetivo dejándolo indefenso y sin moverse durante algún equipo.
+dart	dardo
+These simple metal spikes are weighted to fly true and sting their prey with a flick of the wrist.	Estas puntas de metal simples se ponderan a volar verdadera y pican a sus presas con un giro de muñeca.
+incendiary dart	dardos incendiarios
+The spike on each of these darts is designed to pin it to its target while the unstable compounds strapped to its length burst into brilliant flames.	El pico en cada uno de estos dardos está diseñado para fijarlo a su objetivo, mientras que los compuestos inestables atados a su longitud estallaron en llamas brillantes.
+javelin	jabalina
+This length of metal is weighted to keep the spike at its tip foremost as it sails through the air.	Esta longitud de metal se pondera para mantener la punta en la punta más importante, ya que navega por el aire.
+shuriken	shuriken
+Star-shaped pieces of metal with razor-sharp blades do significant damage when they hit a target. They can be thrown at very high rate.	Piezas en forma de estrella, de metal con cuchillas afiladas hacen daño significativo cuando golpean un objetivo. Ellos pueden ser lanzadas a muy alta velocidad.
+tomahawk	tomahawk
+This throwing axe is not that heavy, but it still requires significant strength to be used effectively.	Esta hacha de lanzamiento no es tan pesado, pero aún requiere de fuerza significativa para ser utilizado con eficacia.
+A cloud of confusion gas is swirling here.	Una nube de gas de la confusión está girando aquí.
+A fire is raging here.	Un incendio se está librando aquí.
+Shafts of light pierce the gloom of the underground garden.	Ejes de luz atraviesan la penumbra del jardín subterráneo.
+A cloud of paralytic gas is swirling here.	Una nube de gas paralizante está girando aquí.
+"Your sacrifice is worthy..."	"Su sacrificio es digna..."
+"Your sacrifice is unworthy..."	"Su sacrificio es indigno..."
+"Your sacrifice is worthy and so you are!"	"Su sacrificio es digna y por lo que son!"
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	Fuego del sacrificio quema aquí. Cada criatura tocada por este fuego se marca como una ofrenda para los espíritus de la mazmorra.
+Marked for sacrifice	Marcado para el sacrificio
+A greenish cloud of toxic gas is swirling here.	Una nube verdosa de gas tóxico se arremolinaba aquí.
+You died from a toxic gas..	Usted murió de un gas tóxico...
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	A medida que tome un sorbo, se siente el conocimiento vierte en su mente. Ahora que sabes todo acerca de sus objetos equipados. También usted detecta todos los artículos sobre el nivel y sabe todos sus secretos.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Poder de conocimiento se irradia desde el agua de este pozo. Tome un sorbo de ella para revelar todos los secretos de objetos equipados.
+Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	Poder de la salud se irradia desde el agua de este pozo. Tome un sorbo de él para sanar sus heridas y satisfacer el hambre.
+As you take a sip, you feel your wounds heal completely.	A medida que tome un sorbo, usted siente que sus heridas se curan completamente.
+Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	Poder de cambio se irradia desde el agua de este pozo. Tire a un artículo en el pozo para convertirlo en otra cosa.
+Everything is covered with a thick web here.	Todo está cubierto con una tela gruesa aquí.
+Amok	Louco
+Barkskin	Piel de corteza
+Bleeding	Sangrado
+You bled to death...	Usted se desangró hasta morir...
+Blinded	Cegado
+Burning	Quemar
+%s burns up!	%s quema!
+You burned to death...	Usted quemado hasta la muerte ...
+Charmed	Encantado
+Combo	Combo
+%d hit combo!	%d hit combo!
+Crippled	Lisiado
+Frozen	Congelado
+Fury	Furia
+Immune to gases	Inmune a los gases
+You are hungry.	Tienes hambre.
+You are starving!	Usted está muriendo de hambre!
+You starved to death...	Usted muerto de hambre...
+Hungry	Hambriento
+Starving	Muriendo de hambre
+Invisible	Invisible
+Levitating	Levitando
+Illuminated	Iluminado
+Mind vision	Visión de la mente
+Caustic ooze	Lodos tóxicos
+%s killed you...	%s que mata...
+Paralyzed	Paralizado
+Poisoned	Envenenado
+You died from poison...	Usted murió de veneno...
+Blinded with rage	Cegado por la rabia
+Rooted	Arraigados
+Shadowmelded	Bajo las sombras
+Slowed	Desacelerado
+Zeroed in	Puesto a cero
+Vertigo	Vértigo
+Weakened	Debilitado
+backpack	Mochila
+Real description is coming soon!	Descripción real viene pronto!
+You hear something died in the distance	Se oye a alguien morir.
+echo of 	eco de 
+%1$s: "%2$s"	%1$s: "%2$s"
+This %s is hunting	Este %s está cazando
+This %s is fleeing	Este %s está huyendo
+This %s is passive	Este %s es pasivo
+acidic scorpio	escorpión ácido
+albino rat	rata albina
+crazy bandit	bandido loco
+vampire bat	murciélago
+These brisk and tenacious inhabitants of cave domes may defeat much larger opponents by replenishing their health with each successful attack.	Estos habitantes enérgico y tenaz de las bóvedas de la cueva pueden derrotar a los oponentes mucho más grandes por la reposición de su salud con cada ataque exitoso.
+gnoll brute	gnoll Bruto
+Brutes are the largest, strongest and toughest of all gnolls. When severely wounded, they go berserk, inflicting even more damage to their enemies.	Brutos son los más grandes, más fuertes y más duro de todos los gnolls. Cuando gravemente herido, se vuelven locos, causando aún más daño a sus enemigos.
+%s becomes enraged!	%s se enfurece!
+enraged	enfurecido
+sewer crab	cangrejo de alcantarillado
+These huge crabs are at the top of the food chain in the sewers. They are extremely fast and their thick exoskeleton can withstand heavy blows.	Estas enormes cangrejos están en la cima de la cadena alimenticia en las alcantarillas. Son extremadamente rápido y su exoesqueleto grueso pueden soportar fuertes golpes.
+curse personification	encarnación maldito
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	Esta criatura se asemeja con la triste fantasma, pero remolinos en la oscuridad. Su cara tiene una expresión de la desesperación.
+DM-300	DM-300
+DM-350	DM-350
+This machine was created by the Dwarves several centuries ago. Later, Dwarves started to replace machines with golems, elementals and even demons. Eventually it led their civilization to the decline. The DM-300 and similar machines were typically used for construction and mining, and in some cases, for city defense.	Esta máquina ha sido creado por los enanos hace varios siglos. Más tarde, los enanos empezaron a reemplazar las máquinas con golems, elementales e incluso demonios. Con el tiempo se llevó su civilización a la disminución. La máquinas similares DM-300 y se utilizan normalmente para la construcción y la minería, y en algunos casos, para la defensa de la ciudad.
+DM-300 repairs itself!	DM-300 se autorrepara!
+Mission failed. Shutting down.	Mision fallida. Apagar.
+Unauthorized personnel detected.	Personal no autorizadas detectados.
+fire elemental	elemental de fuego
+Wandering fire elementals are a byproduct of summoning greater entities. They are too chaotic in their nature to be controlled by even the most powerful demonologist.	Elementales de fuego errantes son un subproducto de convocar mayores entidades. Son demasiado caótica en su naturaleza a ser controlado por el demonologist incluso más potente.
+evil eye	ojo maligno
+One of this demon's other names is "orb of hatred", because when it sees an enemy, it uses its deathgaze recklessly, often ignoring its allies and wounding them.	Uno de los otros nombres de este demonio es "orbe del odio", porque cuando se ve a un enemigo, utiliza su Mirada de la Muerte imprudentemente, a menudo ignorando sus aliados e hiriendo a ellos.
+%s's deathgaze killed you...	La Mirada de la Muerte de %s te mató...
+fetid rat	rata fétida
+This marsupial rat is much larger, than a regular one. It is surrounded by a foul cloud.	Esta rata marsupial es mucho más grande que uno normal. Está rodeado por una nube falta.
+gnoll scout	gnoll explorador
+Gnolls are hyena-like humanoids. They dwell in sewers and dungeons, venturing up to raid the surface from time to time. Gnoll scouts are regular members of their pack, they are not as strong as brutes and not as intelligent as shamans.	Los gnolls son humanoides-hiena similares. Viven en las alcantarillas y mazmorras, aventurarse hasta allanar la superficie de vez en cuando. Gnoll Exploradores son miembros regulares de su paquete, no son tan fuertes como los brutos y no tan inteligentes como los chamanes.
+golem	golem
+The Dwarves tried to combine their knowledge of mechanisms with their newfound power of elemental binding. They used spirits of earth as the "soul" for the mechanical bodies of golems, which were believed to be most controllable of all. Despite this, the tiniest mistake in the ritual could cause an outbreak.	Los enanos trataron de combinar su conocimiento de los mecanismos con su nuevo poder de elemental vinculante. Usaron espíritus de la tierra como el "alma" de los órganos mecánicos de golems, que se cree que son más controlables de todos. A pesar de esto, el error más pequeño en el ritual podría causar un brote.
+Goo	Goo
+spawn of Goo	crea de Goo
+Little known about The Goo. It's quite possible that it is not even a creature, but rather a conglomerate of substances from the sewers that gained rudiments of free will.	Poco conocido sobre The Goo. Es muy posible que ni siquiera es una criatura, sino más bien un conglomerado de sustancias de las alcantarillas Que rudimentos de la libre voluntad adquirida.
+Goo is pumping itself up!	Goo está bombeando a sí misma!
+glurp... glurp...	glurp... glurp...
+GLURP-GLURP!	GLURP-GLURP!
+!!!	!!!
+King of Dwarves	Rey de los Enanos
+undead King of Dwarves	Rey de los Enanos zombi
+The last king of dwarves was known for his deep understanding of processes of life and death. He has persuaded members of his court to participate in a ritual, that should have granted them eternal youthfulness. In the end he was the only one, who got it - and an army of undead as a bonus.	El último rey de los enanos era conocido por su profundo conocimiento de los procesos de la vida y la muerte. Ha convencido a los miembros de su corte para participar en un ritual, que debería haberles concedido la juventud eterna. Al final, él era el único que lo consiguió - y un ejército de muertos vivientes como un bono.
+You cannot kill me, %s... I am... immortal...	Usted no me puede matar, %s... Soy... Inmortal...
+Arise, slaves!	Levántate, esclavos!
+How dare you!	Cómo te atreves!
+undead dwarf	enana zombi
+These undead dwarves, risen by the will of the King of Dwarves, were members of his court. They appear as skeletons with a stunning amount of facial hair.	Estos enanos zombi, resucitados por la voluntad del Rey de los Enanos, eran miembros de su corte. Aparecen como esqueletos con una cantidad impresionante de vello facial.
+mimic	imitador
+Mimics are magical creatures which can take any shape they wish. In dungeons they almost always choose a shape of a treasure chest, because they know how to beckon an adventurer.	Imitadores son criaturas mágicas que pueden tomar cualquier forma que deseen. En mazmorras casi siempre eligen una forma de un cofre del tesoro, porque saben cómo atraen un aventurero.
+dwarf monk	monje enano
+These monks are fanatics, who devoted themselves to protecting their city's secrets from all aliens. They don't use any armor or weapons, relying solely on the art of hand-to-hand combat.	Estos monjes son fanáticos, que se dedicaron a la protección de los secretos de su ciudad desde todos los extranjeros. No utilizan ninguna armadura o armas, confiando únicamente en el arte de combate cuerpo a cuerpo.
+parried	repelido
+%1$s has knocked the %2$s from your hands!	%1$s golpeó %2$s de las manos!
+giant piranha	piraña gigante
+These carnivorous fish are not natural inhabitants of underground pools. They were bred specifically to protect flooded treasure vaults.	Estos peces carnívoros no son habitantes naturales de piscinas subterráneas. Fueron criados específicamente para proteger cámaras del tesoro inundadas.
+marsupial rat	rata marsupial
+Marsupial rats are aggressive, but rather weak denizens of the sewers. They can be dangerous only in big numbers.	Ratas marsupiales son habitantes agresivos, sino más bien débiles de las alcantarillas. Pueden ser peligrosos sólo en grandes números.
+scorpio	escorpión
+These huge arachnid-like demonic creatures avoid close combat by all means, firing crippling serrated spikes from long distances.	Estas enormes criaturas demoníacas son similares a los arácnidos y evitan combate cuerpo a cuerpo, disparando picos dentados paralizantes desde largas distancias
+senior monk	monje mayor
+gnoll shaman	gnoll chamán
+The most intelligent gnolls can master shamanistic magic. Gnoll shamans prefer battle spells to compensate for lack of might, not hesitating to use them on those who question their status in a tribe.	Los gnolls más inteligentes pueden dominar la magia chamánica. Gnoll Chamanes prefieren batalla hechizos para compensar la falta de fuerzas, no dudando en utilizar en los que cuestionan su estado en una tribu.
+%s's lightning bolt killed you...	Rayo de %s te mató...
+shielded brute	bruta blindado
+skeleton	esqueleto
+Skeletons are composed of corpses bones from unlucky adventurers and inhabitants of the dungeon, animated by emanations of evil magic from the depths below. After they have been damaged enough, they disintegrate in an explosion of bones.	Esqueletos están formados por huesos cadáveres de los aventureros y los habitantes de la mazmorra de mala suerte, animados por emanaciones de magia maligna de las profundidades. Después de que hayan sido dañados suficiente, se desintegran en una explosión de huesos.
+blocked	obstruido
+You were killed by the explosion of bones...	Usted fue matado por la explosión de los huesos...
+cave spinner	araña de la cueva
+These greenish furry cave spiders try to avoid direct combat, preferring to wait in the distance while their victim, entangled in the spinner's excreted cobweb, slowly dies from their poisonous bite.	Estas arañas peludas verdosos tratan de evitar el combate directo, prefiriendo esperar en la distancia mientras que su víctima, enredado en la telaraña excretado del hilandero, muere lentamente de su mordedura venenosa.
+animated statue	estatua animada
+You would think that it's just another ugly statue of this dungeon, but its red glowing eyes give itself away. While the statue itself is made of stone, the _%s_, it's wielding, looks real.	Se podría pensar que es sólo otra estatua feo de esta mazmorra, pero sus ojos brillantes rojos dan misma distancia. Mientras que la estatua está hecha de piedra, el _%s_, se maneja, parece real.
+succubus	súcubo
+The succubi are demons that look like seductive (in a slightly gothic way) girls. Using its magic, the succubus can charm a hero, who will become unable to attack anything until the charm wears off.	Los súcubos son demonios que parecen chicas seductoras (de una manera ligeramente gótico). A través de su magia, el súcubo puede encantar un héroe, que se convertirá incapaz de atacar nada hasta el encanto desaparece.
+swarm of flies	enjambre de moscas
+The deadly swarm of flies buzzes angrily. Every non-magical attack will split it into two smaller but equally dangerous swarms.	El enjambre mortal de moscas zumba con rabia. Cada ataque no mágico se dividirá en dos enjambres más pequeños pero igualmente peligrosas.
+Tengu	Tengu
+memory of Tengu	memoria del Tengu
+Tengu are members of the ancient assassins clan, which is also called Tengu. These assassins are noted for extensive use of shuriken and traps.	Tengu son miembros del clan asesinos antiguos, que también se llama Tengu. Estos asesinos son conocidos por el uso extensivo de shuriken y trampas.
+Free at last...	Libre al fin...
+Gotcha, %s!	Gotcha, %s!
+crazy thief	ladrón loco
+Deeper levels of the dungeon have always been a hiding place for all kinds of criminals. Not all of them could keep a clear mind during their extended periods so far from daylight. Long ago, these crazy thieves and bandits have forgotten who they are and why they steal.	Niveles más profundos de la mazmorra siempre han sido un lugar de escondite para todo tipo de delincuentes. No todos ellos podían mantener una mente clara durante sus largos períodos lejos de la luz del día. Hace mucho tiempo, estos ladrones y bandidos locos han olvidado quiénes son y por qué se roban.
+%1$s stole %2$s from you!	%1$s robó %2$s de usted!
+\n\n%1$s is carrying a _%2$s_. Stolen obviously.	\n\n%1$s está llevando _%2$s_. Es robado obviamente.
+dwarf warlock	hechicero enano
+When dwarves' interests have shifted from engineering to arcane arts, warlocks have come to power in the city. They started with elemental magic, but soon switched to demonology and necromancy.	Cuando los intereses enanos han cambiado desde la ingeniería a las artes arcanas, los brujos han llegado al poder en la ciudad. Comenzaron con la magia elemental, pero pronto cambió a la demonología y la nigromancia.
+%s's shadow bolt killed you...	El Tornillo de Sombra de %s te mató...
+wraith	fantasma
+A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Being an ethereal entity, it is very hard to hit with a regular weapon.	Un fantasma es un espíritu vengativo de un pecador, cuya tumba o la tumba fue molestado. Ser una entidad etérea, es muy difícil de golpear con un arma normal.
+Yog-Dzewa	Yog-Dzewa
+echo of Yog-Dzewa	eco de Yog-Dzewa
+Yog-Dzewa is an Old God, a powerful entity from the realms of chaos. A century ago, the ancient dwarves barely won the war against its army of demons, but were unable to kill the god itself. Instead, they then imprisoned it in the halls below their city, believing it to be too weak to rise ever again.	Yog-Dzewa es un Dios Antiguo, una entidad poderosa de los reinos del caos. Hace un siglo, los antiguos enanos apenas ganaron la guerra contra su ejército de demonios, pero no fueron capaces de matar al propio dios. En su lugar, a continuación, encarcelados en los pasillos por debajo de su ciudad, creyendo que era demasiado débil para levantarse nunca más.
+...	...
+Hope is an illusion...	La esperanza es una ilusión...
+rotting fist	puño putrefacción
+burning fist	puño quema
+god's larva	larva de Deus
+golden bee	abeja de oro
+Despite their small size, golden bees tend to protect their master fiercely. They don't live long though.	A pesar de su pequeño tamaño, las abejas de oro tienden a proteger a su amo con fiereza. Ellos no viven mucho tiempo sin embargo.
+This %s is wandering	Esta %s está vagando
+troll blacksmith	troll herrero
+This troll blacksmith looks like all trolls look: he is tall and lean, and his skin resembles stone in both color and texture. The troll blacksmith is tinkering with unproportionally small tools.	Este troll herrero se ve como todos los trolls ven: es alto y delgado, y su piel se asemeja a la piedra en color y textura. El herrero duende está jugando con desproporcionadamente pequeñas herramientas.
+Hey human! Wanna be useful, eh? Take dis pickaxe and mine me some _dark gold ore_, _15 pieces_ should be enough. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Hey humano! ¿Quieres ser útil, ¿eh? Tome este pico y me extraer un poco de _mineral de oro oscuro_, _15 piezas_ debería ser suficiente. ¿Qué quieres decir, ¿cómo voy a pagar? Usted es codicioso...\nOk, ok, no tengo dinero para pagar, pero puedo forjar para usted. Considérese afortunado, yo soy el único herrero alrededor.
+Hey human! Wanna be useful, eh? Take dis pickaxe and _kill a bat_ wit' it, I need its blood on the head. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Hey humano! ¿Quieres ser útil, ¿eh? Tome este pico y _matar a un murciélago_ con ella, necesito su sangre en la cabeza. ¿Qué quieres decir, ¿cómo voy a pagar? Usted es codicioso...\nOk, ok, no tengo dinero para pagar, pero puedo forjar para usted. Considérese afortunado, yo soy el único herrero alrededor.
+Are you kiddin' me? Where is my pickaxe?!	Me estás tomando el pelo? ¿Dónde está mi pico?!
+Dark gold ore. 15 pieces. Seriously, is it dat hard?	Mineral de oro oscuro. 15 piezas. En serio, ¿es tan difícil?
+I said I need bat blood on the pickaxe. Chop chop!	Dije que necesito del sangre de murciélago en el pico. Chop chop!
+Oh, you have returned... Better late dan never.	Oh, usted ha regresado... Mejor tarde que nunca.
+I'm busy. Get lost!	Estoy ocupado. Piérdete!
+your %s certainly looks better now	tu %s sin duda se ve mejor ahora
+Select 2 different items, not the same item twice!	Selecciona 2 itens diferentes, no el mismo item dos veces!
+Select 2 items of the same type!	Seleccione 2 itens del mismo tipo!
+I need to know what I'm working with, identify them first!	Necesito saber lo que estoy trabajando, identificarlos primero!
+I don't work with cursed items!	Yo no trabajo con los objetos malditos!
+It's a junk, the quality is too poor!	Es una basura, la calidad es muy pobre!
+I can't reforge these items!	No puedo reforjar estos artículos!
+sad ghost	fantasma triste
+The ghost is barely visible. It looks like a shapeless spot of faint light with a sorrowful face.	El fantasma es poco visible. Se ve como una mancha sin forma de luz tenue con una cara triste.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my _dried rose_... It's very important to me... Some monster stole it from my body...	Hola aventurero... Una vez yo era como tú - fuerte y seguro... Y ahora que estoy muerto... Pero no puedo dejar este lugar... No hasta que tenga mi _rosas secas_... Es muy importante para mí ... Algunos monstruo robó de mi cuerpo ...
+Please... Help me... _Find the rose_...	Por favor... Ayúdame... _Encuentra la rosa_...
+Yes! Yes!!! This is it! Please give it to me! And you can take one of these items, maybe they will be useful to you in your journey...	¡Sí! Sí!!! Esto es! Dámelo por favor! Y usted puede tomar uno de estos elementos, puede ser que le sea útil en su viaje...
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my revenge... Slay the _fetid rat_, that has taken my life...	Hola aventurero... Una vez yo era como tú - fuerte y seguro... Y ahora que estoy muerto... Pero no puedo dejar este lugar... No hasta que tenga mi venganza... Mata a la _rata fétida_, que ha tomado mi vida...
+Please... Help me... _Slay the abomination_...	Por favor... Ayúdame... _Mata a la abominación_...
+Yes! The ugly creature is slain and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	¡Sí! La criatura fea es asesinado y yo finalmente pueda descansar... Por favor, tome uno de estos elementos, puede ser que le sea útil en su viaje...
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Hola aventurero... Una vez yo era como tú - fuerte y seguro... Y ahora que estoy muerto... Pero no puedo dejar este lugar... Estoy obligado por una maldición horrible... Por favor... Ayúdame... _Destruye la maldición_...
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Gracias, %s! La maldición se ha roto y que finalmente puede descansar... Por favor, tome uno de estos elementos, puede ser que le sea útil en su viaje...
+Yes, I will do it for you	Sí, lo haré para usted
+No, I can't help you	No, yo no puedo ayudarte
+Imps are lesser demons. They are notable for neither their strength nor their magic talent, but they are quite smart and sociable. Many imps prefer to live among non-demons.	Diablillos son demonios menores. No son notables por su fuerza ni su talento mágico, pero son muy inteligente y sociable. Muchos diablillos prefieren vivir entre los no demonios.
+evaded	evadido
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _golems_ who need to be killed. You see, I'm going to start a little business here, but these stupid golems are bad for business! It's very hard to negotiate with wandering lumps of granite, damn them! So please, kill... let's say _6 of them_ and a reward is yours.	¿Eres un aventurero? Me encanta aventureros! Siempre se puede confiar en ellos si algo necesita ser matado. Estoy en lo cierto? Para una recompensa, por supuesto;)\nEn mi caso trata de _golems_ que necesitan para ser asesinados. Usted ve, yo voy a empezar un pequeño negocio aquí, pero estos golems estúpidos son malos para los negocios! Es muy difícil negociar con errante trozos de granito, malditos sean! Así que por favor, matar ... digamos _6 de ellos_ y una recompensa es suya.
+How is your golem safari going?	¿Cómo va su safari golem?
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _monks_ who need to be killed. You see, I'm going to start a little business here, but these lunatics don't buy anything themselves and will scare away other customers. So please, kill... let's say _8 of them_ and a reward is yours.	¿Eres un aventurero? Me encanta aventureros! Siempre se puede confiar en ellos si algo necesita ser matado. Estoy en lo cierto? Para una recompensa, por supuesto;)\nEn mi caso trata de _monjes_ que necesitan para ser asesinados. Usted ve, yo voy a empezar un pequeño negocio aquí, pero estos lunáticos no compran nada por sí mismos y se ahuyentar a otros clientes.  Así que por favor, matar ... digamos _8 de ellos_ y una recompensa es suya.
+Oh, you are still alive! I knew that your kung-fu is stronger ;) Just don't forget to grab these monks' tokens.	Oh, usted todavía está vivo! Sabía que su kung-fu es más fuerte;) Pero no se olvide de agarrar fichas estos monjes.
+See you, %s!	Nos vemos, %s!
+Psst, %s!	Psst, %s!
+ambitious imp	diablillo ambicioso
+Imps are lesser demons. They are notable for neither their strength nor their magic talent. But they are quite smart and sociable, and many of imps prefer to live and do business among non-demons.	Diablillos son demonios menores. No son notables por su fuerza ni su talento mágico, pero son muy inteligente y sociable, y muchos diablillos prefieren vivir y hacer negocios entre los no demonios.
+Hello, friend!	Hola amigo!
+mirror image	imagen de espejo
+This illusion bears a close resemblance to you, but it's paler and twitches a little.	Esta ilusión tiene un gran parecido a usted, pero es más pálida y retuerce un poco.
+rat king	rata rey
+This rat is a little bigger than a regular marsupial rat and it's wearing a tiny crown on its head.	Esta rata es un poco más grande que una rata marsupial regular y lleva una pequeña corona sobre su cabeza.
+I'm not sleeping!	No estoy durmiendo!
+What is it? I have no time for this nonsense. My kingdom won't rule itself!	Qué es? No tengo tiempo para estas tonterías. Mi reino no descarta en sí!
+shopkeeper	tendero
+This stout guy looks more appropriate for a trade district in some large city than for a dungeon. His prices explain why he prefers to do business here.	Este hombre robusto parece más apropiado para un distrito comercial de alguna gran ciudad que en un calabozo. Sus precios explican por qué prefiere hacer negocios aquí.
+Select an item to sell	Seleccione un ítem para vender
+old wandmaker	viejo fabricante de varitas
+This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	Este viejo pero sano caballero lleva una expresión un poco confundido. Él está protegido por un escudo mágico.
+absorbed	absorbido
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	¡Oh, qué agradable sorpresa conocer a una persona decente en tal lugar! Vine aquí para un ingrediente raro - una _semilla Rotberry_. Ser un usuario de magia, soy muy capaz de defenderme contra monstruos locales, pero me estoy perdido en muy poco tiempo, es muy embarazoso. Probablemente usted me podría ayudar? Yo estaría encantado de pagar por su servicio con una de mis mejores varitas.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Ha habido suerte con una _semilla Rotberry_, %s? ¿No? No te preocupes, yo no tengo prisa.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	¡Oh, qué agradable sorpresa conocer a una persona decente en tal lugar! Vine aquí para un ingrediente raro - _polvo de cadáver_. Puede ser obtenida de los restos óseos y hay un amplio número de ellos en el calabozo. Ser un usuario de magia, soy muy capaz de defenderme contra monstruos locales, pero me estoy perdido en muy poco tiempo, es muy embarazoso. Probablemente usted me podría ayudar? Yo estaría encantado de pagar por su servicio con una de mis mejores varitas.
+Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Ha habido suerte con _polvo de cadáver_, %s? Montones de hueso son los lugares más obvios para buscar.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	¡Oh, qué agradable sorpresa conocer a una persona decente en tal lugar! Vine aquí para un ingrediente raro - un _pez fantasma_. Usted puede coger con las manos desnudas, pero es muy difícil darse cuenta en el agua. Ser un usuario de magia, soy muy capaz de defenderme contra monstruos locales, pero me estoy perdido en muy poco tiempo, es muy embarazoso. Probablemente usted me podría ayudar? Yo estaría encantado de pagar por su servicio con una de mis mejores varitas.
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Ha habido suerte con el _pez fantasma_, %s? Usted puede intentar buscarlo en una de las piscinas locales.
+A hidden pressure plate clicks!	Una placa de presión oculta hace clic!
+Floor	Piso
+Grass	Hierba
+Water	Agua
+Wall	Pared
+Closed door	Puerta cerrada
+Open door	Puerta abierta
+Depth entrance	Entrada
+Depth exit	Salida
+Embers	Ascuas
+Locked door	Puerta bloqueada
+Pedestal	Pedestal
+Barricade	Barricada
+High grass	Hierba alta
+Locked depth exit	Salida bloqueada
+Unlocked depth exit	Salida desbloqueada
+Sign	Letrero
+Well	Pozo
+Empty well	Pozo vacío
+Statue	Estatua
+Toxic gas trap	Trampa de gas tóxico
+Fire trap	Trampa de fuego
+Paralytic gas trap	Trampa de gas paralítico
+Poison dart trap	Trampa de dardo venenoso
+Alarm trap	Trampa de alarma
+Lightning trap	Trampa de rayo
+Gripping trap	Trampa de agarrarte
+Summoning trap	Trampa de convocación
+Triggered trap	Trampa disparada
+Bookshelf	Estantería
+Alchemy pot	Alquimia olla
+\\?\\?\\?	\\?\\?\\?
+You can't see the bottom.	No se puede ver el fondo.
+In case of burning step into the water to extinguish the fire.	En caso de incendio, entrar en el agua para extinguir el fuego.
+Stairs lead up to the upper depth.	Las escaleras le llevará a la planta superior.
+Stairs lead down to the lower depth.	Las escaleras le llevará a una mayor profundidad.
+Embers cover the floor.	Ascuas cubren el suelo.
+Dense vegetation blocks the view.	Bloques de vegetación densa por delante.
+This door is locked, you need a matching key to unlock it.	Esta puerta está cerrada, se necesita una clave coincidente para desbloquearlo.
+Heavy bars block the stairs leading down.	Bares pesados bloquean las escaleras que conducen.
+The wooden barricade is firmly set but has dried over the years. Might it burn?	La barricada de madera se establece con firmeza pero se ha secado en los últimos años. Podría quemar?
+You can't read the text from here.	No se puede leer el texto de aquí.
+Stepping onto a hidden pressure plate will activate the trap.	Caminando sobre una placa de presión oculto activará la trampa.
+The trap has been triggered before and it's not dangerous anymore.	La trampa se ha activado antes y no es peligroso ya.
+Someone wanted to adorn this place, but failed, obviously.	Alguien quería adornar este lugar, pero no pudo, obviamente.
+Drop some seeds here to cook a potion.	Caída de algunas semillas para cocinar una poción.
+The well has run dry.	El pozo se ha secado.
+Fluorescent moss	Musgo fluorescente
+Fluorescent mushrooms	Hongos fluorescentes
+Freezing cold water.	Agua helada.
+The ladder leads up to the upper depth.	Las escaleras le llevará a la planta superior.
+The ladder leads down to the lower depth.	Las escaleras le llevará a una mayor profundidad.
+Huge mushrooms block the view.	Enormes hongos bloquean la vista.
+A vein of some ore is visible on the wall. Gold?	Una vena de algún mineral es visible en la pared. Oro?
+Who would need a bookshelf in a cave?	Quién necesitaría una Estantería en una cueva?
+A ramp leads down to the lower depth.	La rampa le llevará a una mayor profundidad.
+The statue depicts some dwarf standing in a heroic stance.	La estatua representa a algunos de pie enano en una postura heroica.
+The rows of books on different disciplines fill the bookshelf.	Las filas de libros sobre diferentes disciplinas llenar la estantería.
+Books in ancient languages smolder in the bookshelf.	Libros en idiomas antiguos arden en la estantería.
+Cold lava	Lava fría
+Embermoss	Musgo em brasas
+Emberfungi	Fungo em brasas
+Pillar	Pilar
+It looks like lava, but it's cold and probably safe to touch.	Parece que la lava, pero hace frío y probablemente puede tocar.
+The pillar is made of real humanoid skulls. Awesome.	El pilar está hecho de cráneos humanoides reales. Impresionante.
+Suspiciously colored water	Agua de color sospechosamente
+High blooming flowers	Flores de alta flor
+A ramp leads up to the upper depth.	La rampa le llevará a la planta superior.
+A ramp leads down to the Inferno.	La rampa le llevará a una mayor profundidad.
+Several tiles are missing here.	Varios azulejos faltan aquí.
+Thick carpet covers the floor.	Gruesa alfombra cubre el suelo.
+Dark cold water.	Agua fría oscura.
+There are old blood stains on the floor.	Hay viejas manchas de sangre en el suelo.
+This is probably a vestige of a prison library. Might it burn?	Esto es probablemente un vestigio de una biblioteca de la prisión. Podría quemar?
+Murky water	Agua turbia
+Wet yellowish moss covers the floor.	Un musgo húmedo amarillento cubre el suelo.
+The bookshelf is packed with cheap useless books. Might it burn?	La estantería está repleto de libros inútiles baratos. Podría quemar?
+Select a seed to throw	Seleccione una semilla para lanzar
+Chasm	Abismo
+Yes, I know what I'm doing	Sí, ya sé lo que estoy haciendo
+No, I changed my mind	No, he cambiado de opinión
+Do you really want to jump into the chasm? You can probably die.	¿De verdad quieres saltar al abismo? Usted probablemente puede morir.
+You fell to death...	Caíste a la muerte ...
+What are you doing here?!	Qué estás haciendo aquí?!
+As you try to read the sign it bursts into greenish flames.	Al tratar de leer el letrero que estalla en llamas verdosas.
+Don't overestimate your strength, use weapons and armor you can handle.	No sobreestimar su fuerza, el uso de armas y armaduras que puede manejar.
+Not all doors in the dungeon are visible at first sight. If you are stuck, search for hidden doors.	No todas las puertas en la mazmorra son visibles a primera vista. Si usted está atascado, buscar puertas ocultas.
+Remember, that raising your strength is not the only way to access better equipment. You can go the other way, lowering its strength requirement with Scrolls of Upgrade.	Recuerde, que el aumento de su fuerza no es la única forma de acceder a un mejor equipo. Usted puede ir a otro lado, la reducción de su requisito de resistencia con Pergaminos de actualización.
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	Usted puede pasar su oro en tiendas en los niveles más profundos de la mazmorra. El primero está en el sexto nivel.
+Beware of Goo!	Tenga cuidado con los Goo!
+Pixel-Mart. All you need for successful adventure!	Tienda Pixel. Todo lo que necesita para la aventura con éxito!
+Identify your potions and scrolls as soon as possible. Don't put it off to the moment when you actually need them.	Identifique sus pociones y pergaminos tan pronto como sea posible. No lo posponga hasta el momento en que realmente los necesita.
+Being hungry doesn't hurt, but starving does hurt.	Tener hambre no hace daño, pero muerto de hambre hace daño.
+Surprise attack has a better chance to hit. For example, you can ambush your enemy behind a closed door when you know it is approaching.	Ataque sorpresa tiene una mejor oportunidad de éxito. Por ejemplo, se puede tender una emboscada a tu enemigo detrás de una puerta cerrada cuando se sabe que se acerca.
+Don't let The Tengu out!	No deje el Tengu huir!
+Pixel-Mart. Spend money. Live longer.	Tienda Pixel. Gastar dinero. Vivir más tiempo.
+When you're attacked by several monsters at the same time, try to retreat behind a door.	Cuando eres atacado por varios monstruos al mismo tiempo, tratar de retirarse detrás de una puerta.
+If you are burning, you can't put out the fire in the water while levitating.	Si está quemando, no se puede apagar el fuego en el agua mientras levitando.
+There is no sense in possessing more than one Ankh at the same time, because you will lose them upon resurrecting.	No hay sentido en posesión de más de un Ankh, al mismo tiempo, debido a que los perderá a resucitar.
+DANGER! Heavy machinery can cause injury, loss of limbs or death!	PELIGRO! Maquinaria pesada puede causar lesiones, pérdida de extremidades o la muerte!
+Pixel-Mart. A safer life in dungeon.	Tienda Pixel. Una vida más segura en la prisión.
+When you upgrade an enchanted weapon, there is a chance to destroy that enchantment.	Al actualizar un arma encantada, hay una oportunidad de destruir ese encantamiento.
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	Armas y armaduras se deterioran más rápido que las varitas y anillos, pero hay más formas de arréglalo.
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	La única forma de obtener un Pergamino de Limpieza es para recibirlo como un regalo de los espíritus de las mazmorras.
+No weapons allowed in the presence of His Majesty!	No se permiten armas en presencia de Su Majestad!
+Pixel-Mart. Special prices for demon hunters!	Tienda Pixel. Precios especiales para cazadores de demonios!
+The trap emits a piercing sound that echoes throughout the dungeon!	La trampa emite un sonido penetrante que hace eco a lo largo de la mazmorra!
+lightning trap	trampa de rayo
+You were killed by a discharge of a lightning trap...	Usted fue matado por una descarga de una trampa de rayo ...
+You don't know what is there.	Usted no sabe lo que hay.
+Select a cell to examine	Seleccione una celda para examinar
+1	0
+Choose language	Elegir idioma
+Key bindings	Asignación de teclas
+Switch to fullscreen	Cambiar a pantalla completa
+Switch to windowed	Cambiar a modo ventana
+Reset To Defaults	Restablecer valores
+<None>	<Ninguna>
+Press a key for "%s", or press %s to remove the binding.	Pulsa una tecla para «%s» o pulsa %s para eliminar la asignación.
+Hero Info	Información del héroe
+Wait	Esperar
+Search	Buscar
+Examine cell	Examinar casilla
+Resume motion	Reanudar movimiento
+Backpack	Mochila
+Quickslot	Acceso rápido
+Attack	Atacar
+Visible Enemies	Enemigos visibles
+Zoom In	Acercar
+Zoom Out	Alejar
+Move North	Mover al norte
+Move South	Mover al sur
+Move West	Mover al oeste
+Move East	Mover al este
+Move NW	Mover al NO
+Move NE	Mover al NE
+Move SW	Mover al SO
+Move SE	Mover al SE
+Current Cell	Casilla actual
+This %s is sleeping	Este %s está durmiendo

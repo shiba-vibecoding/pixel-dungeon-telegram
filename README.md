@@ -7,6 +7,16 @@ This is a fork of Arcnor's GDX port pushed to *Pixel Dungeon* 1.9.2a. In additio
 
 This fork is focused on the desktop/html versions, therefore I don't intend to maintain the mobile versions and those are likely to be removed in future.
 
+Telegram / GitHub Pages
+-----------------------
+
+This fork includes a production Telegram Mini App wrapper, 15 languages,
+per-Telegram-user local saves, optional Telegram CloudStorage synchronization,
+Telegram Stars support and an automatic GitHub Pages deployment workflow.
+
+See [DEPLOY-GITHUB.md](DEPLOY-GITHUB.md) for the complete publishing guide and
+[TELEGRAM-MINIAPP.md](TELEGRAM-MINIAPP.md) for implementation details.
+
 Quickstart
 ----------
 Download the [latest jar](https://github.com/gnojus/pixel-dungeon-gdx/releases) or build it yourself. 

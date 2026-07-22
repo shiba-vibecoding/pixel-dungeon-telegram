@@ -1,0 +1,1185 @@
+Play	Oyna
+Highscores	Yüksek skorlar
+About	Hakkında
+LibGDX port: Arcnor / Web port: nojus297	LibGDX portu: Arcnor / web portu: nojus297
+Telegram port: @barboskich	Telegram portu: @barboskich
+Say thanks	Teşekkür et
+Thank you!	Teşekkürler!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Bu, Telegram portu için gönüllü bir destektir. Oynanışı hiçbir şekilde etkilemez.
+Support with Telegram Stars	Telegram Stars ile destekle
+Open @barboskich	@barboskich’i aç
+Send E-Mail	E-Posta Gönder
+Top Rankings	Yüksek Skorlar
+Total games won/played: 	Toplam oynanan oyun:
+No games have been played yet.	Hiç oyun oynanmadı.
+No additional information	Ek bilgi bulunmamakta
+Your Badges	Rozetlerin
+Load Game	Oyunu Yükle
+New Game	Yeni Oyun
+Erase current game	Şu anki oyunu sil
+Depth: %1$d, level: %2$d	Derinlik: %1$d\nSeviye: %2$d
+Do you really want to start new game?	Yeni oyun başlatmak istediğinizden emin misiniz?
+Your current game progress will be erased.	Şu anki ilerlemeniz silinecektir.
+Yes, start new game	Evet, yeni oyun başlat
+No, return to main menu	Hayır, ana menüye dön
+To unlock this character class, slay the 3rd boss with any other class	"Bu karakter sınıfını kilidini açmak için, herhangi bir diğer sınıfla DM-300 patronunu öldürün
+To unlock "Challenges", win the game with any character class.	"Düellolar"ı açmak için herhangi bir karakter türü ile oyunu bitir.
+Descending...	İniliyor...
+Ascending...	Çıkılıyor...
+Loading...	Yükleniyor...
+Resurrecting...	Yeniden canlandırılıyor...
+Returning...	Dönülüyor...
+Falling...	Düşülüyor...
+File not found. For some reason...	Dosya bulunamadı. Bir nedenden ötürü...
+Something went wrong...	Birşeyler ters gitti...
+Many heroes of all kinds ventured into the Dungeon before you. Some of them have returned with treasures and magical artifacts, most have never been heard of since. But none have succeeded in retrieving the Amulet of Yendor, which is told to be hidden in the depths of the Dungeon.\n\nYou consider yourself ready for the challenge, but most importantly, you feel that fortune smiles on you. It's time to start your own adventure!	Her türden kahraman senden önce bu zindana girmeye cesaret etti. Bazıları hazineler ve senin adını ile bilmediğin sihirli eserlerle geri döndüler. Ama kimse zindanın derinliklerinde olduğu söylenen Yendor'un Tılsımını almayı başaramadı. \n\n Kendinizi meydan okumaya hazır olarak görüyorsunuz, ama en önemlisi, bu talihin size gülümsediğini hissediyorsunuz. Şimdi kendi maceranıza başlama zamanı!
+Let's call it a day	Bugünlük bu kadar yeter
+I'm not done yet	Daha işim bitmedi
+You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	Sonunda ellerinde tutuyorsun, Yendor'un Tılsımı. Bu tılsımın gücüyle dünyayı ele geçirebilir veya insanlara falan barış ve refah getirebilirsin. Her neyse, hayatın sonsuza kadar değişecek ve oyun burada bitecek. Veya önemsiz bir ölümlü olarak biraz daha buralarda kalabilirsin.
+Welcome to the level %d of Pixel Dungeon!	Remixed Dungeon'ın %d numaralı seviyesine hoşgeldiniz!
+Welcome back to the level %d of Pixel Dungeon!	Remixed Dungeon'ın %d numaralı seviyesine tekrar hoşgeldiniz!
+Be cautious, since the dungeon is even more dangerous at night!	Zindan geceleri daha da tehlikeli olduğu için dikkatli olun!
+Your steps echo across the dungeon.	Adımların zindanda yankılanıyor.
+You hear the water splashing around you.	Etrafındaki su şarıltılarını duyuyorsun.
+The smell of vegetation is thick in the air.	Havada yoğun bir bitki örtüsü kokusu var.
+The atmosphere hints that this floor hides many secrets.	Atmosfer, bu katın pek çok sır sakladığını gösteriyor.
+mob	canavar
+%1$s hit %2$s	%1$s vurdu %2$s
+%1$s defeated %2$s	%1$s yendi %2$s
+%1$s %2$s your attack	%1$s %2$s saldırın
+%1$s %2$s %3$s's attack	%1$s %2$s %3$s'nın saldırısı
+The pain snapped %s out of paralysis	Ağrı %s'yı felçten uyandırdı
+dodged	kaçtı
+poisoned	zehirlendi
+amok	cinnet
+slowed	yavaşladı
+mind	zihin
+vision	görüş
+paralyzed	felçli
+frightened	korkmuş
+rooted	kök salmış
+crippled	sakat
+bleeding	kanama
+dizzy	sersem
+invisible	görünmez
+you	sen
+One does not simply leave Pixel Dungeon.	Hiç kimse Remixed Dungeon'dan basitçe ayrılamadı.
+level up!	seviye atladın!
+Welcome to level %d! Now you are healthier and more focused. It's easier for you to hit enemies and dodge their attacks.	%d. Seviyeye hoş geldiniz! Artık daha sağlıklı ve daha odaklanmışsın. Düşmanlara vurmak ve saldırılarından kaçmak senin için daha kolay.
+You now have %s	Artık %s var.
+There is something else here	Burada başka bir şey daha var
+This chest is locked and you don't have matching key	Bu sandık kilitli ve uygun anahtara sahip değilsin
+You don't have a matching key	Uygun anahtara sahip değilsin
+You noticed something	Bir şey farkettin
+search	ara
+You catch fire!	Tutuştun!
+You are paralyzed!	Felç oldun!
+You are poisoned!	Zehirlendin!
+Caustic ooze eats your flesh. Wash away it!	Yakıcı balçık etini yiyor. Hemen yıkan!
+You can't move!	Hareket edemiyorsun!
+You feel weakened!	Zayıfladığını hissediyorsun!
+You are blinded!	Kör oldun!
+You become furious!	Öfkelendin!
+furious	öfkeli
+You are charmed!	Büyülendin!
+You are crippled!	Sakatlandın!
+You are bleeding!	Kanaman var!
+Everything is spinning around you!	Her şey etrafında dönmeye başladı!
+warrior	savaşçı
+mage	büyücü
+rogue	haydut
+huntress	avcı kadın
+Warriors start with 11 points of Strength.	Savaşçılar 11 Güç Puanı İle Başlar.
+Warriors start with a unique short sword. This sword can be later "reforged" to upgrade another melee weapon.	Savaşçılar benzersiz bir kısa kılıçla başlar. Bu kılıç daha sonra başka bir yakın dövüş silahını yükseltmek için "yeniden dövülebilir".
+Warriors are less proficient with missile weapons.	Savaşçılar menzilli silahlar konusunda daha az beceriklidir.
+Any piece of food restores some health when eaten.	Herhangi bir yiyecek parçası yenildiğinde bir miktar sağlık geri kazandırır.
+Potions of Strength are identified from the beginning.	Güç İksirleri en başından itibaren tanımlanmıştır.
+Mages start with a unique Wand of Magic Missile. This wand can be later "disenchanted" to upgrade another wand.	Büyücüler benzersiz bir Sihirli Füze Asası ile başlar. Bu asa daha sonra başka bir asayı yükseltmek için "gözden çıkarılabilir".
+Mages recharge their wands faster.	Büyücüler asalarını daha çabuk şarj edebilir.
+When eaten, any piece of food restores 1 charge for all wands in the inventory.	Yiyeceğin herhangi bir parçası yenildiğinde, envanterindeki her asa 1 puan yenilenir.
+Mages can use wands as a melee weapon.	Büyücüler, asaları yakın dövüş silahı olarak kullanabilir. 
+Scrolls of Identify are identified from the beginning.	Büyücüler Element büyüleri yapmak için mana kullanır.
+Rogues start with a Ring of Shadows+1.	Düzenbazlar Gölgeler Yüzüğü+1 ile başlar.
+Rogues identify a type of a ring on equipping it.	Düzenbazlar bir yüzüğü kuşandıklarında yüzüğün türünü belirler.
+Rogues are proficient with light armor, dodging better while wearing one.	Düzenbazlar hafif zırh konusunda ustadır ve zırh giyerken daha iyi kaçarlar.
+Rogues are proficient in detecting hidden doors and traps.	Düzenbazlar gizli kapıları ve tuzakları tespit etmekte ustadır.
+Rogues can go without food longer.	Düzenbazlar daha uzun süre yiyeceksiz kalabilir.
+Scrolls of Magic Mapping are identified from the beginning.	Sihirli Haritalama Parşömenleri en baştan tanımlanmıştır.
+Huntresses start with 15 points of Health.	Avcı kadınlar 15 can puanıyla başlar.
+Huntresses start with a unique upgradeable boomerang.	Dişi avcılar benzersiz bir yükseltilebilir bumerang ile başlar.
+Huntresses are proficient with missile weapons and get a damage bonus for excessive strength when using them.	Avcı kadınlar menzilli silahlarda ustadır ve bunları kullanırken aşırı güç için bir hasar bonusu alırlar.
+Huntresses gain more health from dewdrops.	Avcı kadınlar çiy damlalarından daha fazla sağlık kazanır.
+Huntresses sense neighboring monsters even if they are hidden behind obstacles.	Avcılar, engellerin arkasına gizlenmiş olsalar bile komşu canavarları hissederler.
+gladiator	gladyatör
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	Yakın silah ile yapılan her başarılı vuruş _Gladyatör'ün_ kombo yapmasına olanak sağlar, her başarılı vuruş ek hasar verir.
+berserker	Vahşi Savaşçı
+When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	Ciddi şekilde yaralandığında, _Vahşi Savaşçı_ vahşi bir öfke durumuna girerek verdiği hasarı önemli ölçüde artırır.
+warlock	büyücü
+After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	Bir düşmanı öldürdükten sonra _Büyücü_ onun ruhunu tüketir. Bu onun yaralarını iyileştirir ve açlığını giderir.
+battlemage	savaş büyücüsü
+When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	_Savaş büyücüsü_ elinde bir asayla savaşırken, mevcut şarj sayısına bağlı olarak ek hasar verir. Her başarılı vuruş, bu asaya 1 şarj geri yükler.
+assassin	suikastçı
+When performing a surprise attack, the _Assassin_ inflicts additional damage to his target.	_Suikastçı_ sürpriz bir saldırı gerçekleştirirken hedefine ek hasar verir.
+freerunner	koşucu
+The _Freerunner_ can move almost twice faster, than most of the monsters. When he is running, the Freerunner is much harder to hit. For that he must be unencumbered and not starving.	_Koşucu_, çoğu canavardan neredeyse iki kat daha hızlı hareket edebilir. Koşarken, Koşucu'yu vurmak çok daha zordur. Bunun için yüksüz olmalı ve açlıktan ölmemelidir.
+sniper	keskin nişancı
+_Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	_Keskin Nişancı_ düşmanın zırhındaki zayıf noktayı tespit ederek menzilli silah kullanırken zırhı yok sayar.
+warden	gardiyan
+Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	Doğa güçleriyle güçlü bir bağa sahip olmak, _Gardiyanlara_ bitkilerden çiğ damlası ve tohum toplama yeteneği verir. Ayrıca yüksek bir otu çiğnemek onlara geçici bir zırh güçlendirmesi verir.
+Badge endorsed: %s	Rozet onaylandı: %s
+New super badge: %s	Yeni süper rozet: %s
+New badge: %s	Yeni rozet:  %s
+10 enemies slain	10 düşman kesildi
+50 enemies slain	50 düşman kesildi
+150 enemies slain	150 düşman kesildi
+250 enemies slain	250 düşman kesildi
+100 gold collected	100 altın toplandı
+500 gold collected	500 altın toplandı
+2500 gold collected	2500 altın toplandı
+7500 gold collected	7500 altın toplandı
+Level 6 reached	6. seviye geçildi
+Level 12 reached	12. seviye geçildi
+Level 18 reached	18. seviye geçildi
+Level 24 reached	24. seviye geçildi
+All potions identified	Tüm iksirler öğrenildi
+All scrolls identified	Tüm parşömenler öğrenildi
+All rings identified	Tüm yüzükler öğrenildi"
+All wands identified	Tüm asalar tanımlandı
+All potions, scrolls, rings & wands identified	Tüm iksirler, parşömenler, yüzükler ve asalar öğrenildi
+All bags bought	Tüm çantalar satın alındı
+Death from fire	Ateş yüzünden ölüm
+Death from poison	Zehir yüzünden ölüm
+Death from toxic gas	Zehirli gaz yüzünden ölüm
+Death from hunger	Açlıktan ölüm
+Death from an enchantment	Bir gliften kaynaklanan ölüm
+Death from falling down	Düşerek ölüm
+Death from fire, poison, toxic gas & hunger	Ateş, zehir, zehirli gaz ve açlık yüzünden ölüm
+1st boss slain	Goo kesidi
+2nd boss slain	Tengu kesildi
+3rd boss slain	DM-300 Öldürüldü 
+4th boss slain	Kral öldürüldü 
+1st boss slain by Warrior, Mage, Rogue & Huntress	Goo tüm karakter türleri ile kesildi
+3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	DM-300 tüm alt sınıflar tarafından öldürüldü
+Ring of Haggler obtained	Pazarlamacı Yüzüğü elde edildi
+Ring of Thorns obtained	Dikenli Yüzük elde edildi
+13 points of Strength attained	13 Güç puanına ulaşıldı
+15 points of Strength attained	15 Güç puanına ulaşıldı
+17 points of Strength attained	17 Güç puanına ulaşıldı
+19 points of Strength attained	19 Güç puanına ulaşıldı
+10 pieces of food eaten	10 parça yemek yenildi
+20 pieces of food eaten	20 parça yemek yenildi
+30 pieces of food eaten	30 parça yemek yenildi
+40 pieces of food eaten	40 parça yemek yenildi
+Item of level 3 acquired	3. Seviye eşya kazanıldı
+Item of level 6 acquired	6. Seviye eşya kazanıldı
+Item of level 9 acquired	9. Seviye eşya kazanıldı
+Item of level 12 acquired	12. Seviye eşya kazanıldı
+All rare monsters slain	Tüm nadir canavarlar kesildi
+Amulet of Yendor obtained	Yendor'un Tılsımı kazanıldı
+Amulet of Yendor obtained by Warrior, Mage, Rogue & Huntress	Yendor'un Tılsımı tüm karakter türleri tarafından kazanıldı
+7-hit combo	7li kombo
+3 potions cooked	3 iksir yapıldı
+6 potions cooked	6 iksir yapıldı
+9 potions cooked	9 iksir yapıldı
+12 potions cooked	12 iksir yapıldı
+Level completed without killing any monsters	Hiç canavar öldürmeden seviye geçildi
+Monster killed by a Grim weapon	Gaddar silahla canavar öldürüldü
+6 piranhas killed	6 pirana öldürüldü
+5 monsters killed at nighttime	Gece vaktinde 5 canavar öldürüldü
+10 games played	10 oyun oynandı
+100 games played	100 oyun oynandı
+500 games played	500 oyun oynandı
+2000 games played	2000 oyun oynandı
+Happy end	Mutlu son
+Challenge won	Düello kazanıldı
+Thanks for your support!	Desteğiniz için teşekkürler!
+On diet	Diyette
+Faith is my armor	İnanç benim zırhımdır
+Pharmacophobia	İlaç korkusu
+Barren land	Çorak topraklar
+Swarm intelligence	Sürü zekası
+Into darkness	Karanlığın içine
+Forbidden runes	Yasaklı Runikler
+Well of Health	Sağlık Kuyusu
+Well of Awareness	Farkındalık Kuyusu
+Well of Transmutation	Dönüşüm Kuyusu
+Garden	Bahçe
+Animated statue	Canlı Heykel
+Sad ghost	Üzgün Hayalet
+Old wandmaker	Yaşlı Asa Ustası
+Troll blacksmith	Troll Demirci
+Ambitious imp	Hırslı imp
+Killed by %1$s on level %2$d	%2$d. Seviyede %1$s tarafından öldürüldün
+Killed by your own %1$s on level %2$d	%2$d. Seviyede kendi %1$s ile öldün
+Killed by the %1$s on level %2$d	%2$d. seviyede %1$s tarafından öldürüldün
+Killed by discharge of %1$s on level %2$d	%2$d. seviyede %1$s deşarj olması ile öldün
+Burned to death on level %d	%d. seviyede ölümüne yandın
+Starved to death on level %d	%d. seviyede açlıktan öldün
+Died from poison on level %d	%d. seviyede zehirden öldün
+Died from toxic gas on level %d	%d. seviyede zehirli gazdan öldün
+Bled to death on level %d	%d. seviyede kan kaybından öldü.
+Killed by a caustic ooze on level %d	%d. seviyede kostik sızıntıdan öldürüldün
+Fell to death on level %d	%d. seviyede ölümüne düştün
+Obtained the Amulet of Yendor	Yendor'un Tılsımı edindin
+OK, a deal is a deal, dat's what I can do for you: I can reforge 2 items and turn them into one of a better quality.	Tamam, anlaşma anlaşmadır, senin için ne yapabileceğimi söyleyeyim: 2 eşyayı yeniden dövüp daha kaliteli bir hale getirebilirim.
+Select an item to reforge	Dönüştürülecek nesneleri seç
+Reforge them	Bunları dönüştür
+Potions	İksirler
+Scrolls	Parşömenler
+Which way will you follow?	Hangi yolu takip edeceksiniz?
+I'll decide later	Sonra karar veririm.
+Mastery	Uzmanlık
+ERROR	HATA
+Settings	Ayarlar
+Rankings	Sıralama
+Start New Game	Yeni Oyun
+Main Menu	Ana Menü
+Exit Game	Remixed Dungeon'dan Çık
+Return to Game	Oyuna Geri Dön
+Buffs	Takviyeler
+Experience	Deneyim
+Catalogus	Kataloglar
+Oh yes! You are my hero!\nRegarding your reward, I don't have cash with me right now, but I have something better for you. This is my family heirloom ring: my granddad took it off a dead paladin's finger.	Evet, sen benim kahramanımsın. Ödülüne gelince, şu anda üzerimde para yok ama daha iyi birşeyim var senin için.Bu ata yadigarı yüzüğü büyükbabam ölü bir paladinden almış.
+Take the ring	Yüzüğü al
+There is nothing here.	Burada bir şey yok.
+Chest	Sandık
+Locked chest	Kilitli sandık
+Crystal chest	Kristal sandık
+Tomb	Mezar
+Skeletal remains	İskelet Kalıntısı
+You won't know what's inside until you open it!	Açmadan içinde ne olduğunu bilemezsin!
+ But to open it you need a golden key.	 Açmak için altın anahtara ihtiyacın var.
+You can see %s inside, but to open the chest you need a golden key.	%s. içerisini görebilirsin ama açmak için altın anahtar lazım.
+This ancient tomb may contain something useful, but its owner will most certainly object to checking.	Bu antik mezarda işe yarar bir şeyler olabilir, ancak sahibi kesinlikle kontrol edilmesine karşı çıkacaktır.
+This is all that's left from one of your predecessors. Maybe it's worth checking for any valuables.	Senden öncekilerden kalan birşeyler. Değerli bir şey var mı diye kontrol etmende fayda olabilir.
+Journal	Dergi
+Unable to load additional information	Ek bilgiler yüklenemiyor
+Stats	İstatistikler
+Items	Eşyalar
+Badges	Rozetler
+Level %1$d %2$s	%1$d seviye %2$s
+Challenges	Meydan okumalar
+Health	Sağlık
+Strength	Güç
+Game Duration	Oyun Süresi
+Maximum Depth	Maksimum Derinlik
+Mobs Killed	Öldürülen Çeteler
+Gold Collected	Toplanan Altın
+Food Eaten	Yenilen Yemek
+Potions Cooked	Pişirilen İksirler
+Ankhs Used	Kullanılan Ankhlar
+You died, but you were given another chance to win this dungeon. Will you take it?	Öldünüz ama bu zindanı yenmek için size bir şans daha verildi. Kullanacak mısın?
+Yes, I will fight!	Evet, dövüşeceğim!
+No, I give up	Hayır, pes ediyorum
+Ghost's weapon	Hayaletin silahı
+Ghost's armor	Hayaletin zırhı
+Farewell, adventurer!	Hoşçakal, maceracı!
++	+
+-	-
+Default Zoom	Varsayılan Yakınlaştırma
+Scale up UI	Arayüzü ölçeklendir
+Immersive mode	Sürükleyici mod
+Music	Müzik
+Sound FX	Ses Efektleri
+Brightness	Parlaklık
+Second quickslot	İkincil Hızlı yuva
+Switch to portrait	Dikey moda geç
+Switch to landscape	Yatay moda geç
+The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	Zindan, Şehrin hemen altında yer alır ve üst katları aslında Şehrin kanalizasyon sistemini oluşturur. Nominal olarak Şehrin bir parçası olan bu seviyeler o kadar da tehlikeli değildir. Kimse buraya güvenli bir yer demeyecektir, ancak en azından burada çok fazla kötü büyüyle uğraşmanız gerekmeyecek.
+Many years ago an underground prison was built here for the most dangerous criminals. At the time it seemed like a very clever idea, because this place indeed was very hard to escape. But soon dark miasma started to permeate from below, driving prisoners and guards insane. In the end the prison was abandoned, though some convicts were left locked up here.	Yıllar önce burada en tehlikeli suçlular için bir yeraltı hapishanesi inşa edildi. O zamanlar bu çok akıllıca bir fikir gibi görünüyordu, çünkü buradan kaçmak gerçekten de çok zordu. Ancak çok geçmeden aşağıdan karanlık bir sis yayılmaya başladı ve hem mahkumları hem de gardiyanları çıldırttı. Sonunda hapishane terk edildi, ancak bazı mahkumlar burada kilitli kaldı.
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	Terk edilmiş hapishanenin altında uzanan mağaralar seyrek nüfusludur. Şehir tarafından sömürülmek için çok derinlerde yer alırlar ve cücelerin ilgisini çekmeyecek kadar da mineral bakımından fakirdirler. Geçmişte bu iki devlet arasındaki yol üzerinde bir ticaret karakolu vardı ama Cüce Metropolü'nün çöküşünden bu yana yok oldu. Artık burada sadece her yerde bulunan gnolller ve yeraltı hayvanları yaşıyor.
+Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday the mechanized army of dwarves has successfully repelled the invasion of the old god and his demon army. But it is said, that the returning warriors have brought seeds of corruption with them, and that victory was the beginning of the end for the underground kingdom.	Cüce Metropolü bir zamanlar cüce şehir devletlerinin en büyüğüydü. En parlak döneminde cücelerin mekanize ordusu, eski tanrı ve iblis ordusunun istilasını başarıyla püskürtmüştü. Ancak söylenenlere göre, geri dönen savaşçılar yanlarında yozlaşma tohumları da getirmişlerdi ve bu zafer yeraltı krallığı için sonun başlangıcıydı.
+In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	Geçmişte bu seviyeler Metropolis'in dış mahalleleriydi. Eski Tanrı ile yapılan savaşta kazanılan pahalı zaferden sonra cüceler kalan iblisleri temizleyemeyecek kadar zayıfladı. Yavaş yavaş iblisler buradaki hakimiyetlerini sıkılaştırdılar ve şimdi buraya İblis Salonları deniyor... \n\nÇok az maceracı buraya kadar inebildi...
+FOR SALE: %1$s - %2$dg	SATILIK: %1$s - %2$dg
+Buy for %dg	%da ile al
+Sell for %dg	%da karşılığında sat
+Sell 1 for %dg	Tekini %da karşılığında sat
+Sell all for %dg	Tümünü %dg karşılığında sat
+You've sold your %1$s for %2$dg	%2$da karşılığında %1$s eşyanızı sattınız
+You've bought %1$s for %2$dg	%2$da ile %1$s aldınız
+Oh, I see you have succeeded! I do hope it hasn't troubled you too much. As I promised, you can choose one of my high quality wands.	Oo, görüyorum ki başarılı olmuşsun! Umarım çok sıkıntılı geçmemiştir. Söz verdiğim gibi, yüksek kaliteli asalarımdan birini seçebilirsin.
+Battle wand	Savaş asası
+Non-battle wand	Yardımcı asa
+Good luck in your quest, %s!	Maceranda başarılar, %s!
+Select an item for the quickslot	Hızlı kullanım için bir nesne seçin
+smth	smth
+DROP	BIRAK
+THROW	FIRLAT
+Your pack is too full for the %s	%s için çantan dolu
+Choose direction of throw	Fırlatılacak yeri seçin
+EQUIP	KUŞAN
+UNEQUIP	ÇIKART
+You can't remove cursed %s!	Lanetli %s öğesini çıkartamıyorsun!
+Amulet of Yendor	Yendor Muskası
+END THE GAME	OYUNUN SONU
+The Amulet of Yendor is the most powerful known artifact of unknown origin. It is said that the amulet is able to fulfill any wish if its owner's will-power is strong enough to "persuade" it to do it.	Yendor Tılsımı, kaynağı bilinmeyen bilinen en güçlü eserdir. Tılsımın, sahibinin irade gücünün onu "ikna etmeye" yetecek kadar güçlü olması halinde herhangi bir dileği yerine getirebildiği söylenir.
+Ankh	Ankh
+The ancient symbol of immortality grants an ability to return to life after death. Upon resurrection all non-equipped items are lost.	Bu antik ölümsüzlük sembolü , taşıyana ölümden geri dönme gücü verir. Dirildiğinde kuşandığın ekipmanlar dışındaki tüm nesnelerin kaybolur.
+armor kit	zırh kiti
+Using this kit of small tools and materials anybody can transform any armor into an "epic armor", which will keep all properties of the original armor, but will also provide its wearer a special ability depending on his class. No skills in tailoring, leatherworking or blacksmithing are required.	Bu küçük alet ve malzeme setini kullanarak herkes herhangi bir zırhı, orijinal zırhın tüm özelliklerini koruyacak, ancak aynı zamanda kullanıcısına sınıfına bağlı olarak özel bir yetenek sağlayacak bir "destansı zırha" dönüştürebilir. Terzilik, deri işleme veya demircilik becerisi gerekmez.
+Select an armor to upgrade	Yükseltmek için bir zırh seçin
+you applied the armor kit to upgrade your %s	%s'ini yükseltmek için zırh kitini uyguladınız
+dewdrop	çiğ damlası
+A crystal clear dewdrop.	Kristal berraklığında bir çiy damlası.
+dew vial	çiy şişesi
+You can store excess dew in this tiny vessel for drinking it later. If the vial is full, in a moment of deadly peril the dew will be consumed automatically.	Fazla çiği daha sonra içmek için bu küçük kapta saklayabilirsiniz. Şişe doluysa, ölümcül bir tehlike anında çiy otomatik olarak tüketilecektir.
+The dew vial was emptied to heal your wounds.	Yaralarını iyileştirmek için tüm çiy damlaları tüketildi.
+You collected a dewdrop into your dew vial.	Şişede 1 adet çiy damlası topladın.
+Your dew vial is full!	Çiy damlası şişesi dolu!
+Your dew vial is empty!	Çiy damlası şişesi boş!
+This is a mimic!	Bu bir Mimik!
+gold	altın
+Collect gold coins to spend them later in a shop.	Daha sonra dükkanda harcamak için altınları topla.
+A pile of %d gold coins.	%d adet altın.
+One gold coin.	Bir adet altın sikke.
+you wince as your grip involuntarily tightens around your %s	Kavrayışınız istemsizce %s'inizin etrafında sıkılaşırken irkilirsiniz
+lloyd's beacon	lloyd'un feneri
+SET	AYARLA
+RETURN	GERİ DÖN
+Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	Lloyd'un feneri, daha önce bulunduğunuz bir yere geri dönmenizi sağlayan karmaşık bir sihirli cihazdır.
+Strong magic aura of this place prevents you from using the lloyd's beacon!	Bir çeşit güçlü ve sihirli aura Llody'un Fenerini kullanmanı engelliyor!
+Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Etraftaki yaratıkların psişik auorası Lloyd'un fenerini kullanmanı engelliyor
+The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Lloyd'un feneri başarıyla şu anki konuma ayarlandı.İstediğinde buraya geri dönebilirsin.
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nBu pastırma Zindanın %dkatında bir yerlerde duruyordu.
+Tome of Mastery	Ustalık Kitabı
+Tome of Remastery	Ustalık Kitabı
+This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	Bu yıpranmış deri kitap o kadar kalın değil, ama bir şekilde ondan çok şey toplayabileceğinizi hissediyorsunuz. Yine de bu kitabı okumanın biraz zaman gerektirebileceğini unutmayın.
+You can't read while blinded	Körken okuyamazsın
+You have chosen the way of the %s!	%s yolunu seçtin!
+torch	meşale
+LIGHT	YAK
+It's an indispensable item in The Demon Halls, which are notorious for their poor ambient lighting.	Zayıf ortam aydınlatmasıyla ünlü İblis Salonları'nda vazgeçilmez bir öğedir.
+weightstone	ağırlık taşı
+APPLY	UYGULA
+Using a weightstone, you can balance your melee weapon to increase its speed or accuracy.	Bir ağırlık taşı kullanarak yakın dövüş silahınızı dengeleyebilir, hızını veya isabet oranını artırabilirsiniz.
+Select a weapon to balance	Dengelemek için bir silah seçin
+you balanced your %s to make it faster	%s daha hızlı olması için ayarlandı
+you balanced your %s to make it more accurate	%s daha kesin olması için ayarlandı
+How would you like to balance your %s?	%s nasıl dengelemek istersiniz?
+For speed	Hız
+For accuracy	Kesinlik
+Never mind	Boşver
+PLANT	DİK
+Throw this seed to the place where you want to grow %1$s.\n\n%2$s	%1$s ekmek istediğin yere bu tohumu fırlat.\n\n%2$s
+seed of %s	%s tohumu
+Dreamweed	Rüya otu
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Bir Rüya otuna dokunulduğunda, ışıltılı ve kafa karıştırıcı bir gaz bulutu salgılar.
+Earthroot	Toprak kökü
+When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Bir yaratık Toprak Köküne dokunduğunda bu kökler etrafında doğal bir zırh oluşturur.
+Herbal armor	Bitkisel zırh
+Fadeleaf	Soluk yaprak
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	Bir Solma yaprağına dokunmak, herhangi bir yaratığı o anki seviyede rastgele bir yere ışınlar.
+Firebloom	Ateş Çiçeği
+When something touches a Firebloom, it bursts into flames.	Ateş Çiçeğine dokunan şey alev patlamaları içinde kalır.
+Icecap	Buzörtüsü
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Buz Başlığına dokunduğunda etraftaki herşeyi donduran polenler salgılar.
+Rotberry	çürük dut
+Berries of this shrub taste like sweet, sweet death.	Bu çalının meyvelerinin tadı tatlı, tatlı bir ölüm gibidir.
+The seed emits a roar that echoes throughout the dungeon!	Tohum tüm zindan yanklanan bir kükreme yayıyor!
+Sorrowmoss	Keder Yosunu
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Matem Yosunu bir aslında yosun değil keskin taç yaptakları ölümcül zehir içeren bir çişektir.
+Sungrass	Güneş Çimeni
+Sungrass is renowned for its sap's healing properties.	Güneşçimeni özündeki iyileştirici özelliği ile bilinen bir çiçektir.
+Herbal healing	Bitkisel tedavi
+your %s constricts around you painfully	%sın acı bir şekilde vücudunu sıkıştırıyor
+Interaction of different types of magic has erased the glyph on this armor!	Farklı büyü tipleri ile etkileşimin zırhtaki kabartmayı sildi!
+\n\nThis %1$s provides damage absorption up to "%2$d"  points per attack.	Bu %1$s aldığın her hasarın "%2$d" puanını emiyor.
+\n\nBecause of your inadequate strength your movement speed and defense skill is decreased. 	\n\n\nYetersiz gücünden dolayı hareket hızın ve savunma yeteneğin düştü.
+\n\nBecause of your inadequate strength wearing this armor will decrease your movement speed and defense skill.	\n\n\nYetersiz gücünden dolayı bu zırhı giymek hareket hızın ve savunma yeteneğini düşürecektir.
+\n\nTypical %1$s provides damage absorption up to %2$d points per attack and requires %3$d points of strength.	\n\n\nÖzgün %1$s alınan saldırı başı %2$d puanlık hasarı emer ve %3$d güç puanına ihtiyaç duyar.
+Probably this armor is too heavy for you.	Muhtemelen bu zırh senin için çok ağır.
+\n\nYou are wearing the %1$s%2$s.	\n\n\n%2$s%1$s giyiyorsun.
+\n\nYou can feel a malevolent magic lurking within the %s.	\n\nKötü niyetli bir büyünün %s içinde gizlendiğini hissediyorsun.
+The thing looks awesome!	Bu şey muhteşem görünüyor!
+Your health is too low!	Canın çok az!
+You need to be wearing this armor to use its special power!	Bu zırhın özel gücünü kullanabilmek için onu giymen gerekiyor!
+cloth armor	kumaş zırh
+This lightweight armor offers basic protection.	Bu hafif zırh temel koruma sağlar.
+huntress cloak	avcı pelerini
+A huntress in such cloak can create a fan of spectral blades. Each of these blades will target a single enemy in the huntress's field of view, inflicting damage depending on her currently equipped melee weapon.	Böyle bir pelerinin içindeki bir avcı hayali kılıç fanı yaratabilir. Her bir kılıç avcının görüşündeki tekil düşmanı hedef alır, avcının elindeki silaha bağlı olarak hasar verir.
+SPECTRAL BLADES	HAYALİ KILIÇLAR
+No enemies in sight	Görünürde düşman yok
+Only huntresses can use this armor!	Sadece avcılar bu zırhı kullanabilir!
+leather armor	deri zırh
+Armor made from tanned monster hide. Not as light as cloth armor but provides better protection.	Sertleştirilmiş canavar derisinden yapılmış zırh. Kumaş zırh kadar hafif değil fakat daha iyi koruma sağlar.
+mage robe	büyücü kaftanı
+Wearing this gorgeous robe, a mage can cast a spell of molten earth: all the enemies in his field of view will be set on fire and unable to move at the same time.	Bu gösterişli kaftanı giyen bir büyücü, erimiş yeryüzü büyüsünü yapabilir: görüşündeki tüm düşmanları ateşe verir ve aynı zamanda hareket edemez hale getirir.
+MOLTEN EARTH	ERİMİŞ TOPRAK
+Only mages can use this armor!	Sadece büyücüler bu zırhı kullanabilir!
+mail armor	metal örgü zırh
+Interlocking metal links make for a tough but flexible suit of armor.	İç içe geçen metal bağlantılar esnek ve güçlü bir zırh ortaya çıkarmış.
+plate armor	plaka zırh
+Enormous plates of metal are joined together into a suit that provides unmatched protection to any adventurer strong enough to bear its staggering weight.	Devasa metal parçaları biraraya gelerek ağırlığının taşıyabilen delikanlılara hakkını veren eşşiz bir zırh ortaya çıkarmış.
+rogue garb	haydut kıyafeti
+Wearing this dark garb, a rogue can perform a trick, that is called "smoke bomb" (though no real explosives are used): he blinds enemies who could see him and jumps aside.	Bu kara kıyafeti giyen bir casus, "sis bombası" (patlayıcı olmamasına rağmen) adındaki numarasını yapar; tüm düşmanlarını kör eder ve ortamdan uzaklaşır.
+SMOKE BOMB	SİS BOMBASI
+Only rogues can use this armor!	Bu zırhı sadece haydutlar kullanabilir!
+You can only jump to an empty location in your field of view	Sadece görüş alanındaki boş bir yere zıplayabilirsin
+Choose a location to jump to	Zıplamak için bir yer seç
+scale armor	pul zırh
+The metal scales sewn onto a leather vest create a flexible, yet protective armor.	Deri bir yelek üzerine dikilmiş metal pullar esnek ve koruyucu bir zırh oluşturmuş.
+warrior suit of armor	savaşçı zırhı
+While this armor looks heavy, it allows a warrior to perform heroic leap towards a targeted location, slamming down to stun all neighboring enemies.	Bu zırh ağır gözükürken, aynı zamanda savaşçıya belirtilen bölgeye doğru epik zıplama gerçekleştirmesini sağlar, zıplanılan yere bitişik tüm düşmanları sersemletir.
+HEROIC LEAP	KAHRAMANCA SIÇRAMA
+Only warriors can use this armor!	Sadece savaşçılar bu zırhı kullanabilir!
+Choose direction to leap	Sıçramak için yön seçin
+%s of affection	Çekiciliğin %sı
+%s of anti-entropy	Anti-entropik %sı
+%s of bounce	Sıçratan %sı
+%s of displacement	yer değiştirme %s
+%s of entanglement	dolaşıklığın %s'ı
+%s of metabolism	Metabolizmanın %sı
+%s of multiplicity	Çoğulculuğun %sı
+%s of potential	Potansiyel %s
+%s of stench	Kokuşmuş %s
+%s of viscosity	Ayırıcılığın %sı
+deferred %d	%d gecikmeli
+Defered damage (%d)	Ertelenmiş Hasar (%d)
+OPEN	AÇ
+key ring	Anahtarlık
+This is a copper key ring, that lets you keep all your keys separately from the rest of your belongings.	Bu bakır anahtarlık, tüm anahtarlarınızı diğer eşyalarınızdan ayrı olarak saklamanızı sağlar.
+scroll holder	Parşömen çantası
+You can place any number of scrolls into this tubular container. It saves room in your backpack and protects scrolls from fire.	Bu tüp şeklindeki çantaya parşömenlerini saklayarak çantanda boş yer açabilir ve yanmaya karşı korursun
+seed pouch	tohum kesesi
+This small velvet pouch allows you to store any number of seeds in it. Very convenient.	Bu küçük kadife kesede tohumlarını saklayabilirsin.
+wand holster	Asa çantası
+This slim holder is made of leather of some exotic animal. It allows to compactly carry up to %d wands.	Bu tuhaf hayvan derisinden yapılmış ince çanta ile %d asa taşıyabilirsiniz.
+ration of food	porsiyon
+Nothing fancy here: dried meat, some biscuits - things like that.	Pek büyütülecek bişey değil: kuru et, biraz bisküvi falan filan.
+That food tasted delicious!	Bu yemek lezzetliydi!
+chargrilled meat	kebap
+It looks like a decent steak.	Ortalama bir biftek gibi görünüyor.
+frozen carpaccio	donmuş italyan mezesi
+It's a piece of frozen raw meat. The only way to eat it is by cutting thin slices of it. And this way it's surprisingly good.	Donmuş et parçası. Yemenin tek yolu ince kesmek. Gurme değilim ama tadı enfes.
+You feel your skin hardens!	Vücudunun sertleştiğini hissediyorsun!
+Refreshing!	Ferahlatıcı!
+You feel better!	Daha iyi hissediyorsun!
+mystery meat	gizemli et
+Eat at your own risk!	Yemek ya da yememek, hepsi sana bağlı!
+Oh it's hot!	Sıcakmış lan!
+You can't feel your legs!	Bacaklarını hissetmiyorsun!
+You are not feeling well.	Kendini iyi hissetmiyorsun.
+You are stuffed.	Doydun.
+That food tasted... strange.	Bunun tadı... garipti.
+overpriced food ration	kazık fiyatlı porsiyon
+It looks exactly like a standard ration of food but smaller.	Standart porsiyon gibi görünüyor ama daha küçük.
+That food tasted good.	Bu yemek güzeldi.
+pasty	börek
+This is authentic Cornish pasty with traditional filling of beef and potato.	Bu üzeri geleneksel et ve patatesle dolu otantik etli börek.
+golden key	altın anahtar
+The notches on this golden key are tiny and intricate. Maybe it can open some chest lock?	Bu altın anahtar ile kilitli bir sandığı açabilirsin
+iron key	demir anahtar
+The notches on this ancient iron key are well worn; its leather lanyard is battered by age. What door might it open?	Bu anahtar ile bir kapıyı açabilirsin
+iron key from depth %d	%d . seviyeden demir anahtar
+skeleton key	iskelet anahtar
+This key looks serious: its head is shaped like a skull. Probably it can open some serious door.	Çok ağırbaşlı duruyor. Bununla önemli bir kapıyı açabilirsin.
+%s potion	%s iksiri
+This flask contains a swirling %s liquid. Who knows what it will do when drunk or thrown?	Bu şişe girdap gibi dönen %s sıvısıyla dolu. İçildiğinde veya fırlatıldığında ne olacağını kim bilir?
+DRINK	İÇ
+Harmful potion!	Zararlı iksir!
+Beneficial potion	Faydalı iksir
+Are you sure you want to drink it? In most cases you should throw such potions at your enemies.	İçmek istediğine emin misin? Genellikle bu tarz iksirleri düşmanlarına fırlatmalısın.
+Are you sure you want to throw it? In most cases it makes sense to drink it.	Fırlatmat istedğine emin misin? Genelde bu iksirleri içmek daha mantıklıdır.
+The flask shatters and %s liquid splashes harmlessly	Şişe kırıldı ve %s sıvı zararsızca etrafa sıçradı
+turquoise	turkuaz
+crimson	kızıl
+azure	gökmavisi
+jade	yeşim yeşili
+golden	altın sarısı
+magenta	eflatun
+charcoal	kara
+ivory	fildişi
+amber	kehribar rengi
+bistre	kahverengi
+indigo	çivit mavisi
+silver	gümüş rengi
+Potion of Experience	Deneyim İksiri
+The storied experiences of multitudes of battles reduced to liquid form, this draught will instantly raise your experience level.	Efsanevi savaşların deneyiminin sıvı formu, bu iksir deneyim puanını anında arttıracaktır.
+Potion of Frost	Don İksiri
+Upon exposure to open air, this chemical will evaporate into a freezing cloud, causing any creature that contacts it to be frozen in place, unable to act and move.	Açık havaya maruz kaldığında, bu kimyasal buharlaşarak dondurucu bir buluta dönüşür ve onunla temas eden herhangi bir canlının yerinde donmasına, hareket edememesine ve yerinden kıpırdayamamasına neden olur.
+Potion of Healing	İyileştirme İksiri
+An elixir that will instantly return you to full health and cure poison.	Sizi anında tam sağlığa kavuşturacak ve zehri iyileştirecek bir iksir.
+Your wounds heal completely.	Yaraların tamamen iyileşti.
+Potion of Invisibility	Görünmezlik İksiri
+Drinking this potion will render you temporarily invisible. While invisible, enemies will be unable to see you. Attacking an enemy, as well as using a wand or a scroll before enemy's eyes, will dispel the effect.	Bu iksiri içtiğinizde geçici olarak görünmez olursunuz. Görünmezken, düşmanlar sizi göremeyecektir. Bir düşmana saldırmanın yanı sıra düşmanın gözleri önünde bir asa veya parşömen kullanmak etkiyi ortadan kaldıracaktır.
+You see your hands turn invisible!	Ellerinin görünmez oluşunu görüyorsun!
+Potion of Levitation	Havaya Yükselme İksiri
+Drinking this curious liquid will cause you to hover in the air, able to drift effortlessly over traps. Flames and gases fill the air, however, and cannot be bypassed while airborne.	Bu ilginç sıvıyı içmek havada asılı kalmanıza ve tuzakların üzerinde zahmetsizce sürüklenmenize neden olur. Ancak alevler ve gazlar havayı doldurur ve havadayken atlanamaz.
+You float into the air!	Havada süzülüyorsun!
+Potion of Liquid Flame	Sıvı Alev İksiri
+This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	Bu şişe, açık havaya maruz kaldığında şiddetli bir şekilde alev alacak kararsız bir bileşik içermektedir.
+Potion of Might	Güç İksiri
+This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	Bu güçlü sıvı kaslarınızdan geçerek gücünüzü kalıcı olarak bir puan ve sağlığınızı beş puan artıracaktır.
++1 str, +5 ht	+1 güç, +5 can
+Potion of Mind Vision	Zihin Görme İksiri
+After drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls. Also this potion will permit you to see through nearby walls and doors.	Bunu içtikten sonra, zihniniz uzaktaki yaratıkların psişik imzasına uyum sağlayacak ve biyolojik varlıkları duvarlardan algılamanızı sağlayacaktır. Ayrıca bu iksir, yakındaki duvarların ve kapıların arkasını görmenizi sağlayacaktır.
+You can somehow feel the presence of other creatures' minds!	Bir şekilde diğer yaratıkların zihinlerini okuyabiliyorsun!
+You can somehow tell that you are alone on this level at the moment.	Şu anda bu seviyede yalnız olduğunu hissediyorsun.
+Potion of Paralytic Gas	Felç Edici Gaz İksiri
+Upon exposure to open air, the liquid in this flask will vaporize into a numbing yellow haze. Anyone who inhales the cloud will be paralyzed instantly, unable to move for some time after the cloud dissipates. This item can be thrown at distant enemies to catch them within the effect of the gas.	Açık havaya maruz kaldığında, bu şişedeki sıvı buharlaşarak uyuşturan sarı bir pus haline gelecektir. Bulutu soluyan herkes anında felç olur ve bulut dağıldıktan sonra bir süre hareket edemez. Bu eşya uzaktaki düşmanlara fırlatılarak onları gazın etkisi altına alabilir.
+Potion of Purification	Arınma İksiri
+This reagent will quickly neutralize all harmful gases in the area of effect. Drinking it will give you a temporary immunity to such gases.	Bu reaktif, etki alanındaki tüm zararlı gazları hızla nötralize edecektir. Bunu içmek size bu tür gazlara karşı geçici bir bağışıklık kazandıracaktır.
+You feel uncommon freshness in the air.	Havada alışılmadık bir tazelik hissediliyor.
+You've stopped sensing any smells!	Hiç bir kokuyu alamıyorsun!
+Potion of Strength	Güç İksiri
+This powerful liquid will course through your muscles, permanently increasing your strength by one point.	Bu güçlü sıvı kaslarınızdan geçerek gücünüzü kalıcı olarak bir puan artıracaktır.
+Newfound strength surges through your body.	Yeni keşfedilen güç vücudunuzda dalgalanır.
++1 str	+1 güç
+Potion of Toxic Gas	Zehirli Gaz İksiri
+Uncorking or shattering this pressurized glass will cause its contents to explode into a deadly cloud of toxic green gas. You might choose to fling this potion at distant enemies instead of uncorking it by hand.	Bu basınçlı bardağın tıpasını açmak veya kırmak, içindekilerin ölümcül bir zehirli yeşil gaz bulutu halinde patlamasına neden olur. Bu iksiri elle açmak yerine uzaktaki düşmanlara fırlatmayı tercih edebilirsiniz.
+corpse dust	ceset tozu
+The ball of corpse dust doesn't differ outwardly from a regular dust ball. However, you know somehow that it's better to get rid of it as soon as possible.	Ceset tozu , diğer toz topaklarından farklı görünmüyor. Belkide bir şekilde bundan kurtulman en iyisi
+dark gold ore	kara altın damarı
+This metal is called dark not because of its color (it doesn't differ from the normal gold), but because it melts under the daylight, making it useless on the surface.	Bu metal sadece renginden dolayı kara olarak anılmıyor, gün ışığında erimesinden dolayı yüzeyden tamamen kullanışsız
+dried rose	kuru gül
+The rose has dried long ago, but it has kept all its petals somehow.	Bu gül uzun zaman önce kurumuş, fakat nasıl olduysa tüm yaprakları üzerinde.
+dwarf token	cüce simgesi
+Many dwarves and some of their larger creations carry these small pieces of metal of unknown purpose. Maybe they are jewelry or maybe some kind of ID. Dwarves are strange folk.	Bir çok cüce bu metal parçasını bilinmeyen bir amaçlar üzerinde taşırdı.Bir mücevher veya kimlik olabilir, Cüceler çok garip bir halktır kimbilir ?.
+EAT	YE
+pickaxe	kazma
+This is a large and sturdy tool for breaking rocks. Probably it can be used as a weapon.	Bu büyük ve sağlam araç ile kayaları kırabilirsin.Bir silah olarakta kullanılabilir.
+MINE	KAZ
+There is no dark gold vein near you to mine	Yakında kazılacak bir kara altın damarı yok
+giant rat skull	dev sıçan kafatası
+It could be a nice hunting trophy, but it smells too bad to place it on a wall.	Güzel bir av ganimeti olabilir ama duvara asmak için çok kötü kokuyor.
+%s ring	%s yüzük
+This metal band is adorned with a large %s gem that glitters in the darkness. Who knows what effect it has when worn?	Metal halka üzerinde karanlıkta parlayan kocaman bir %s mücevheri duruyor. Kim bilir acaba giydiğinde ne etkileri olacak?
+you are now familiar enough with your %1$s to identify it. It is %2$s.	Artık %1$s'nü tanımlayabilecek kadar aşinasınız. Bu %2$s.
+diamond	elmas
+opal	opal
+garnet	lal
+ruby	yakut
+amethyst	ametist
+topaz	topaz
+onyx	oniks
+tourmaline	turmalin
+emerald	zümrüt
+sapphire	safir
+quartz	kuvars
+agate	akik
+Your %s tightens around your finger painfully	%s parmağınızı acıyla sıkıyor.
+%1$s\n\nThe %2$s is on your finger %3$s.	%1$s\n\n %2$s parmağında%3$s
+, and because it is cursed, you are powerless to remove it	ve lanetli olduğu için onu ortadan kaldıracak gücün yok.
+%1$s\n\nYou can feel a malevolent magic lurking within the %2$s.	%1$s\n\n%2$s üzerinde gizlenmiş kötü büyüyü hissediyorsun.
+This is a %s	Bu bir %s
+Ring of Accuracy	İsabet Yüzüğü
+This ring increases your chance to hit the enemy.	Bu yüzük rakibe vurma şansını arttırır.
+Ring of Detection	Bulma Yüzüğü
+Wearing this ring will allow the wearer to notice hidden secrets - traps and secret doors - without taking time to search. Degraded rings of detection will dull your senses, making it harder to notice secrets even when actively searching for them.	Bu yüzüğü takmak, takan kişinin gizli sırları - tuzakları ve gizli kapıları - aramaya zaman ayırmadan fark etmesini sağlar. Bozulmuş algılama yüzükleri duyularınızı köreltir ve aktif olarak ararken bile sırları fark etmenizi zorlaştırır.
+Ring of Elements	Elementler Yüzüğü
+This ring provides resistance to different elements, such as fire, electricity, gases etc. Also it decreases duration of negative effects.	Bu yüzük ateş, elektrik, gazlar gibi farklı elementlere karşı direnç sağlar. Ayrıca olumsuz etkilerin süresini azaltır.
+Ring of Evasion	Kaçınma Yüzüğü
+This ring increases your chance to dodge enemy attack.	Bu yüzük düşman saldırısından kaçma şansınızı artırır.
+Ring of Haggler	Pazarlamacı Yüzüğü
+In fact this ring doesn't provide any magic effect, but it demonstrates to shopkeepers and vendors, that the owner of the ring is a member of The Thieves' Guild. Usually they are glad to give a discount in exchange for temporary immunity guarantee. Upgrading this ring won't give any additional bonuses.	Aslında bu yüzük herhangi bir büyü etkisi sağlamaz, ancak dükkan sahiplerine ve satıcılara yüzük sahibinin Hırsızlar Loncası üyesi olduğunu gösterir. Genellikle geçici dokunulmazlık garantisi karşılığında indirim yapmaktan memnuniyet duyarlar. Bu yüzüğü yükseltmek herhangi bir ek bonus sağlamaz.
+Ring of Haste	Acele Yüzüğü
+This ring accelerates the wearer's flow of time, allowing one to perform all actions a little faster.	Bu yüzük takan kişinin zaman akışını hızlandırarak tüm eylemleri biraz daha hızlı gerçekleştirmesini sağlar.
+Ring of Herbalism	Şifalı Bitkiler Yüzüğü
+This ring increases your chance to gather dew and seeds from trampled grass.	Bu yüzük çiğnenmiş çimenlerden çiğ ve tohum toplama şansınızı artırır.
+Ring of Mending	Onarım Yüzüğü
+This ring increases the body's regenerative properties, allowing one to recover lost health at an accelerated rate. Degraded rings will decrease or even halt one's natural regeneration.	Bu yüzük vücudun yenileyici özelliklerini artırarak kişinin kaybettiği sağlığı daha hızlı bir şekilde geri kazanmasını sağlar. Bozulmuş yüzükler kişinin doğal yenilenmesini azaltır, hatta durdurur.
+Ring of Power	Güç Yüzüğü
+Your wands will become more powerful in the energy field that radiates from this ring. Degraded rings of power will instead weaken your wands.	Asaların bu yüzükten yayılan enerji alanında daha güçlü hale gelecektir. Bozulmuş güç yüzükleri bunun yerine asalarınızı zayıflatacaktır.
+Ring of Satiety	Tokluk Yüzüğü
+Wearing this ring you can go without food longer. Degraded rings of satiety will cause the opposite effect.	Bu yüzüğü taktığında yemek yemeden daha uzun süre dayanabilirsin. Bozulmuş Tokluk Yüzüğü ise bu etkinin tam tersine sebep olur.
+Ring of Shadows	Gölgeler Yüzüğü
+Enemies will be less likely to notice you if you wear this ring. Degraded rings of shadows will alert enemies who might otherwise not have noticed your presence.	Bu yüzüğü giydiğinde düşmanların seni daha zor fark eder. Bozulmuş Gölgeler Yüzüğü ise seni normalde fark edemeyecek düşmanların alarma geçmesine sebep olur.
+Ring of Thorns	Diken Yüzüğü
+Though this ring doesn't provide real thorns, an enemy that attacks you will itself be wounded by a fraction of the damage that it inflicts. Upgrading this ring won't give any additional bonuses.	Bu yüzüğü taktığında sana saldıran düşman kendiside zarar görecektir. Bu yüzüğü yükseltmek ek bir getiri sağlamaz.
+scroll "%s"	"%s" parşömen
+This parchment is covered with indecipherable writing, and bears a title of rune %s. Who knows what it will do when read aloud?	Bu parşömen çözülemeyen bir yazıyla kaplı ve rün %s başlığını taşıyor. Yüksek sesle okunduğunda ne yapacağını kim bilebilir?
+KAUNAN	KAUNAN
+SOWILO	SOWILO
+LAGUZ	LAGUZ
+YNGVI	YNGVI
+GYFU	GYFU
+RAIDO	RAIDO
+ISAZ	ISAZ
+MANNAZ	MANNAZ
+NAUDIZ	NAUDIZ
+BERKANAN	BARKUNA
+ODAL	ODAL
+TIWAZ	TIWAZ
+Select an item	Bir Eşya Seç
+Do you really want to cancel this scroll usage? It will be consumed anyway.	Bu parşömen kullanımını gerçekten iptal etmek istiyor musunuz? Her şekilde tüketilecektir.
+Yes, I'm positive	Evet, eminim.
+Scroll of Challenge	Meydan Okuma Parşömeni
+When read aloud, this scroll will unleash a challenging roar that will awaken all monsters and alert them to the reader's location.	Bu parşömen yüksek sesle okunduğunda, tüm canavarları uyandıracak ve onları okuyucunun konumuna karşı uyaracak zorlu bir kükreme çıkarır.
+The scroll emits a challenging roar that echoes throughout the dungeon!	Parşömen, zindan boyunca yankılanan zorlu bir kükreme yayar!
+Scroll of Identify	Tanımlama Parşömeni
+Permanently reveals all of the secrets of a single item.	Tek bir öğenin tüm sırlarını kalıcı olarak açığa çıkarır.
+Select an item to identify	Tanımlamak için bir öğe seçin
+It is %s	Bu %s
+Scroll of Lullaby	Ninni Parşömeni
+A soothing melody will put all creatures in your field of view into a deep sleep, giving you a chance to flee or make a surprise attack on them.	Rahatlatıcı bir melodi görüş alanınızdaki tüm yaratıkları derin bir uykuya sokarak size kaçma veya onlara sürpriz bir saldırı yapma şansı verir.
+The scroll utters a soothing melody.	Parşömen yatıştırıcı bir melodi söylüyor.
+The scroll utters a soothing melody and the %s falls asleep!	Parşömen yatıştırıcı bir melodi söyler ve %s uykuya dalar!
+The scroll utters a soothing melody and the monsters fall asleep!	Parşömen yatıştırıcı bir melodi söyler ve canavarlar uykuya dalar!
+Scroll of Magic Mapping	Sihirli Haritalama Parşömeni
+When this scroll is read, an image of crystal clarity will be etched into your memory, alerting you to the precise layout of the level and revealing all hidden secrets. The locations of items and creatures will remain unknown.	Bu parşömen okunduğunda, kristal netliğinde bir görüntü hafızanıza kazınacak, sizi seviyenin kesin düzeni konusunda uyaracak ve tüm gizli sırları açığa çıkaracaktır. Eşyaların ve yaratıkların yerleri bilinmez olarak kalacaktır.
+You are now aware of the level layout.	Artık kat düzeninin farkındasınız.
+Scroll of Mirror Image	Ayna Görüntüsü Parşömeni
+The incantation on this scroll will create illusionary twins of the reader, which will chase his enemies.	Bu parşömen üzerindeki büyü, okuyucunun düşmanlarını kovalayacak hayali ikizlerini yaratacaktır.
+Scroll of Psionic Blast	Psiyonik Patlama Parşömeni
+This scroll contains destructive energy, that can be psionically channeled to inflict a massive damage to all creatures within a field of view. An accompanying flash of light will temporarily blind everybody in the area of effect including the reader of the scroll.	Bu parşömen, görüş alanı içindeki tüm yaratıklara büyük bir hasar vermek için psiyonik olarak yönlendirilebilen yıkıcı enerji içerir. Eşlik eden bir ışık parıltısı, parşömeni okuyan kişi de dahil olmak üzere etki alanındaki herkesi geçici olarak kör eder.
+Scroll of Recharging	Yeniden Şarj Etme Parşömeni
+The raw magical power bound up in this parchment will, when released, recharge all of the reader's wands to full power.	Bu parşömende saklı olan ham büyülü güç, serbest bırakıldığında okuyucunun tüm asalarını tam güçle şarj edecektir.
+a surge of energy courses through your pack, recharging your wand	Bir enerji dalgası çantandan geçerek asanı şarj ediyor.
+a surge of energy courses through your pack, recharging your wands	Bir enerji dalgası çantanızdan geçerek asalarınızı şarj ediyor.
+a surge of energy courses through your pack, but nothing happens	bir enerji dalgası sürünüze doğru ilerliyor, ama hiçbir şey olmuyor
+Scroll of Remove Curse	Laneti Kaldırma Parşömeni
+The incantation on this scroll will instantly strip from the reader's weapon, armor, rings and carried items any evil enchantments that might prevent the wearer from removing them.	Bu parşömen üzerindeki büyü, okuyucunun silahından, zırhından, yüzüklerinden ve taşıdığı eşyalardan, kullanıcının bunları çıkarmasını engelleyebilecek her türlü kötü büyüyü anında çıkaracaktır.
+Your pack glows with a cleansing light, and a malevolent energy disperses.	Çantanız temizleyici bir ışıkla parlıyor ve kötü niyetli bir enerji dağılıyor.
+Your pack glows with a cleansing light, but nothing happens.	Çantanız temizleyici bir ışıkla parlıyor ama hiçbir şey olmuyor.
+Scroll of Teleportation	ışınlanma parşömeni
+The spell on this parchment instantly transports the reader to a random location on the dungeon level. It can be used to escape a dangerous situation, but the unlucky reader might find himself in an even more dangerous place.	Bu parşömen üzerindeki büyü, okuyucuyu anında zindan katında rastgele bir yere götürür. Tehlikeli bir durumdan kaçmak için kullanılabilir, ancak şanssız okuyucu kendini daha da tehlikeli bir yerde bulabilir.
+In a blink of an eye you were teleported to another location of the level.	Göz açıp kapayıncaya kadar seviyenin başka bir yerine ışınlandınız.
+Strong magic aura of this place prevents you from teleporting!	Bu yerin güçlü büyü aurası ışınlanmanızı engelliyor!
+Scroll of Terror	Dehşet Parşömeni
+A flash of red light will overwhelm all creatures in your field of view with terror, and they will turn and flee. Attacking a fleeing enemy will dispel the effect.	Kırmızı bir ışık parlaması, görüş alanınızdaki tüm yaratıkları dehşete düşürür ve dönüp kaçarlar. Kaçan bir düşmana saldırmak etkiyi yok eder.
+The scroll emits a brilliant flash of red light	Parşömen parlak bir kırmızı ışık yaydı
+The scroll emits a brilliant flash of red light and the %s flees!	Parşömen parlak bir kırmızı ışık yaydı ve %s kaçmaya başladı!
+The scroll emits a brilliant flash of red light and the monsters flee!	Parşömen parlak bir kırmızı ışık yaydı ve yaratıklar kaçmaya başladı!
+Scroll of Upgrade	Yükseltme Parşömeni
+This scroll will upgrade a single item, improving its quality. A wand will increase in power and in number of charges; a weapon will inflict more damage or find its mark more frequently; a suit of armor will deflect additional blows; the effect of a ring on its wearer will intensify. Weapons and armor will also require less strength to use, and any curses on the item will be lifted.	Bu parşömen tek bir eşyayı yükselterek kalitesini artırır. Bir asanın gücü ve şarj sayısı artacak; bir silah daha fazla hasar verecek veya hedefini daha sık bulacak; bir zırh daha fazla darbeyi saptıracak; bir yüzüğün takan üzerindeki etkisi yoğunlaşacak. Silahlar ve zırhlar ayrıca kullanmak için daha az güç gerektirecek ve eşyanın üzerindeki lanetler kalkacaktır.
+Select an item to upgrade	Geliştirmek için bir eşya seçin
+READ	OKU
+You can't read a scroll while blinded	Kör edilmişken bir parşömen okuyamazsın. 
+%s wand	%s  asa 
+ZAP	VUR
+This thin %s wand is warm to the touch. Who knows what it will do when used?	Bu ince %s asası eline sıcak bir his veriyor. Kullanıldığında ne etkisi olabileciğini kim bilebilir?
+When this wand is used as a melee weapon, its average damage is %d points per hit.	Bu asa yakın mesafede kullanıldığında, ortalama hasarı vuruş başı %d puandır.
+You can use this wand as a melee weapon.	Bu asayı yakın mesafede de kullanabilirsin.
+your wand fizzles; it must be out of charges for now	asandan vızıltılar geliyor; şarjı bitmiş olmalı
+You can't target yourself	Kendini hedef alamazsın.
+Choose direction to zap	Vurulacak yönü seçin
+holly	çobanpüsküllü
+yew	porsukağacı
+ebony	abanoz
+cherry	kiraz
+teak	tikağacı
+rowan	üvez
+willow	söğüt
+mahogany	maun
+bamboo	bambu
+purpleheart	purpleheart
+oak	meşe
+birch	huş
+Wand of Amok	Dehşet Asası
+The purple light from this wand will make the target run amok attacking random creatures in its vicinity.	Bu asadan çıkan mor ışık, hedefin etrafındaki rastgele yaratıklara saldırarak ortalığı birbirine katmasını sağlar.
+Wand of Avalanche	Çığ Asası
+When a discharge of this wand hits a wall (or any other solid obstacle) it causes an avalanche of stones, damaging and stunning all creatures in the affected area.	Bu asanın bir deşarjı bir duvara (veya başka bir katı engele) çarptığında, etkilenen alandaki tüm yaratıklara zarar veren ve sersemleten bir taş çığına neden olur.
+You killed yourself with your own Wand of Avalanche...	Çığ asası ile kendi kendini öldürdün...
+Wand of Blink	Işınlanma Asası
+This wand will allow you to teleport in the chosen direction. Creatures and inanimate obstructions will block the teleportation.	Bu asa seçilen yöne ışınlanmanızı sağlayacaktır. Yaratıklar ve cansız engeller ışınlanmayı engelleyecektir.
+Wand of Disintegration	Parçalama Asası
+This wand emits a beam of destructive energy, which pierces all creatures in its way. The more targets it hits, the more damage it inflicts to each of them.	Bu asa yokedici bir enerji ışını yayar. Bu enerji yolu üzerindeki tüm yaratıklara işler, ne kadar çok yaratık varsa verdiği hasar da o kadar artar.
+Wand of Firebolt	Ateştopu Asası
+This wand unleashes bursts of magical fire. It will ignite flammable terrain, and will damage and burn a creature it hits.	Bu asa yakıcı sihirli bir ateş patlatır. Yanabilir arazide  yangın çıkartır ve dokunduğu yaratığı yakar ve hasar verir.
+You killed yourself with your own Wand of Firebolt...	Ateş asası ile kendini öldürdün...
+Wand of Flock	Sürü Asası
+A flick of this wand summons a flock of magic sheep, creating temporary impenetrable obstacle.	Bu asanın şıklatılması sihirli bir koyun sürüsü yaratır ve bu sürü geçilmez bir engel oluşturur.
+sheep	koyun
+This is a magic sheep. What's so magical about it? You can't kill it. It will stand there until it magically fades away, all the while chewing cud with a blank stare.	Bu sihirli bir koyun. Ne mi bu kadar büyülü? Onu öldüremezsin. Büyülü bir şekilde yok olana kadar orda duracak, boş bir bakışla geviş getirerek.
+Baa!	Mee!
+Baa?	Mee?
+Baa.	Mee.
+Baa...	Mee...
+Bee...	Mee...
+Ble...	Mle...
+Wand of Lightning	Yıldırım Asası
+This wand conjures forth deadly arcs of electricity, which deal damage to several creatures standing close to each other.	Bu asa ölümcül bir elektrik akımı üretir.Birbirine yakın olan tüm yaratıklara etki eder.
+You killed yourself with your own Wand of Lightning...	Kendi yıldırım asanla kendini vurdun.
+Wand of Magic Missile	Sihirli Füze Asası
+This wand launches missiles of pure magical energy, dealing moderate damage to a target creature.	Bu asa saf büyü enerjisinden oklar fırlatır. Bu oklar orta seviye hasar verir.
+DISENCHANT	BÜYÜYÜ BOZ
+You killed yourself with your own Wand of Magic Missile...	Kendi Sihirli Füze Asanla kendini öldürdün.
+Select a wand to upgrade	Yükseltmek için bir asa seçin
+you disenchanted the Wand of Magic Missile and used its essence to upgrade your %s	Büyülü Füze Asasının büyüsünü bozdun ve özünü kendi %s eşyanı yükseltmek için kullandın
+Wand of Poison	Zehir Asası
+The vile blast of this twisted bit of wood will imbue its target with a deadly venom. A creature that is poisoned will suffer periodic damage until the effect ends. The duration of the effect increases with the level of the staff.	Bu bükülmüş tahta parçasından çıkan iğrenç patlama, hedefini ölümcül bir zehirle kaplar. Zehirlenen yaratık, etki sona erene kadar periyodik hasara maruz kalır. Etkinin süresi asanın seviyesiyle birlikte artar.
+Wand of Regrowth	Yeniden Büyütme Asası
+"When life ceases new life always begins to grow... The eternal cycle always remains!"	"Yaşam sona erdiğinde yeni yaşam her zaman büyümeye başlar... Sonsuz döngü her zaman devam eder!"
+Wand of Slowness	Yavaşlık Asası
+This wand will cause a creature to move and attack at half its ordinary speed until the effect ends	Bu asa etki süresi boyunca hedeflenen yaratığın hızını yarıya indirir
+You have magically transported %s into your backpack	%s nesnesini sihirli bir yolla çantan ışınladın
+Wand of Teleportation	Işınlanma Asası
+A blast from this wand will teleport a creature against its will to a random place on the current level.	Bu asadan çıkan ışın hedefini rastgele bir yere ışınlar.
+%1$s teleported %2$s to somewhere	%2$s, %1$s tarafından bir yere ışınlandı
+nothing happened	hiçbir şey olmadı
+You are now familiar enough with your %1$s to identify it. It is %2$s.	Artık %1$s'inizi tanımlayabilecek kadar aşinasınız. Bu %2$s.
+Interaction of different types of magic has negated the enchantment on this weapon!	Farklı sihirler ile yaptığı etkileşimler bu silahın efsununu bozdu!
+%1$s :%2$d	%1$s :%2$d
+grim %s	Gaddar %s
+blazing %s	Alevli %s
+eldritch %s	Korkunç %s
+unstable %s	Dengesiz %s
+vampiric %s	Vampir %s
+lucky %s	Şanslı %s
+stunning %s	Sersemletici %s
+venomous %s	Zehirli %s
+chilling %s	Üşütücü %s
+This %1$s is %2$s tier-%3$d melee weapon.	Bu %1$s, %2$s %3$d.seviye saldırı silahı.
+a	bir
+a upgraded	yükseltilmiş
+an degraded	indirgenmiş
+Its average damage is %d points per hit.	Her vuruşta ortalama %d puan hasar verir.
+Its typical average damage is %1$d points per hit and usually it requires %2$d points of strength.	Her vuruşta ortalama %1$d puan hasar verir ve genellikle kullanmak için %2$d güç puanı gerekir.
+Probably this weapon is too heavy for you.	Bu silah büyük ihtimalle senin için çok ağır.
+This is a rather %s weapon.	Bu oldukça %s bir silah.
+fast	hızlı
+slow	yavaş
+and	ve
+but	ama
+accurate	isabetli
+inaccurate	isabetsiz
+It was balanced to make it faster.	Daha hızlı olması için ayarlanmış.
+It was balanced to make it more accurate.	İsabetli olması için ayarlanmış.
+It is enchanted.	Büyülü.
+You hold the %1$s at the ready%2$s.	%1$s hazır %2$s'nin yanında tutuyorsun.
+, and because it is cursed, you are powerless to let go	, ve lanetli olduğu için, bırakmak için yeterli güce sahip değilsin
+You can feel a malevolent magic lurking within %s.	%s'in içinde kötü niyetli bir büyünün gizlendiğini hissedebilirsiniz.
+battle axe	savaş baltası
+The enormous steel head of this battle axe puts considerable heft behind each stroke.	Bu devasa çelik başlı balta her darbede arkasında büyük hasarlar bırakır.
+dagger	hançer
+A simple iron dagger with a well worn wooden handle.	Eskimiş tahta kulplu basit bir demir hançer.
+glaive	Glaive
+A polearm consisting of a sword blade on the end of a pole.	Ucunda kılıç ağzı bulunan bir sırık şeklindeki silah.
+knuckleduster	muşta
+A piece of iron shaped to fit around the knuckles.	Parmak eklemlerin uyacak şekilde şekillendirilmiş demirden bir parça.
+longsword	uzun kılıç
+This towering blade inflicts heavy damage by investing its heft into every cut.	Bu muazzam uzun kılıç her darbede arkasında büyük bir hasar bırakır.
+mace	topuz
+The iron head of this weapon inflicts substantial damage.	Bu silahın demir kafası büyük hasar verir.
+quarterstaff	çeyrek sopa
+A staff of hardwood, its ends are shod with iron.	Uçları demirle kaplı sert ağaçtan bir değnek.
+short sword	kısa kılıç
+It is indeed quite short, just a few inches longer, than a dagger.	Gerçekten kısa, bir hançerden birkaç santim daha uzundur herhalde.
+REFORGE	DÖV
+Select a weapon to upgrade	Geliştirmek için silah seç
+you reforged the short sword to upgrade your %s	kısa kılıcı döverek ,%s nesnesini yükseltin
+you can't upgrade a boomerang this way	Bumerang'ı bu şekilde yükseltemezsin
+spear	Mızrak
+A slender wooden rod tipped with sharpened iron.	Ucu sivriltilmiş demirle kaplı ince bir tahta çubuk.
+sword	kılıç
+The razor-sharp length of steel blade shines reassuringly.	Keskin ağzı ile bu uzun çelik silah güven verici şekilde parlıyor.
+war hammer	savaş çekici
+Few creatures can withstand the crushing blow of this towering mass of lead and steel, but only the strongest of adventurers can use it effectively.	Bu devasa kurşun ve çelik kütlesinin ezici darbesine çok az yaratık dayanabilir, ancak yalnızca en güçlü maceracılar onu etkili bir şekilde kullanabilir.
+Missile weapon	Menzilli silah
+Do you really want to equip it as a melee weapon?	Saldırı silahı olarak kullanmak istediğine emin misin?
+\n\nAverage damage of this weapon equals to %d points per hit.	\n\nBu silahın ortalama saldırı gücü %d puandır.
+Because of your inadequate strength the accuracy and speed of your attack with this %s is decreased.	Gücün %s için yetersiz olduğu için saldırı hızın ve isabetin düşük.
+Because of your excess strength the damage of your attack with this %s is increased.	Gücün çok fazla olduğu için ,%s ile yaptığın atakların hızı ve isabeti artıyor.
+\n\nYou hold the %s at the ready.	\n\n%1$s saldırı sırasında kullanmak için hazır.
+boomerang	bumerang
+Thrown to the enemy this flat curved wooden missile will return to the hands of its thrower.	Bu ağaçtan yapılmış bumerang düşmana attıktan sonra ellerine geri dönecek
+curare dart	zehirli ok
+These little evil darts don't do much damage but they can paralyze the target leaving it helpless and motionless for some time.	Bu küçük oklar fazla zarar vermese de rakibini hareketsiz ve savunmasız bırakabilir
+dart	dart
+These simple metal spikes are weighted to fly true and sting their prey with a flick of the wrist.	Bu metal oklar bir bilek hareketiyle havada süzülmesi için dizayn edilmiş
+incendiary dart	yakıcı ok
+The spike on each of these darts is designed to pin it to its target while the unstable compounds strapped to its length burst into brilliant flames.	Bu dartların her birinin üzerindeki sivri uç, uzunluğuna bağlı dengesiz bileşikler parlak alevlere dönüşürken onu hedefine sabitlemek için tasarlanmıştır.
+javelin	Cirit
+This length of metal is weighted to keep the spike at its tip foremost as it sails through the air.	Bu metal uzunluk, havada kurbanına doğru süzülürken sivri ucu en önde tutacak şekilde ağırlıklandırılmıştır
+shuriken	shuriken (Ninja Yıldızı)
+Star-shaped pieces of metal with razor-sharp blades do significant damage when they hit a target. They can be thrown at very high rate.	Jilet gibi keskin bıçaklara sahip yıldız şeklindeki metal parçaları hedeflerine önemli hasar verir. Çok yüksek hızda fırlatılabilirler.
+tomahawk	Kızılderili baltası
+This throwing axe is not that heavy, but it still requires significant strength to be used effectively.	Bu fırlatma baltası o kadar ağır olmasa da, yine de etkili bir şekilde kullanılması için önemli bir güç gerektirir.
+A cloud of confusion gas is swirling here.	Burada bir kafa karıştırıcı gaz bulutu dönüyor.
+A fire is raging here.	Burada bir yangın var.
+Shafts of light pierce the gloom of the underground garden.	Işık huzmeleri yeraltı bahçesinin kasvetini deliyor.
+A cloud of paralytic gas is swirling here.	Burada felç edici bir gaz bulutu dönüyor.
+A greenish cloud of toxic gas is swirling here.	Burada yeşilimsi bir zehirli gaz bulutu dönüyor.
+You died from a toxic gas..	Zehirli gazı soluyarak öldün.
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Bilginin gücü bu kuyunun suyundan yayılıyor. Donatılmış eşyalarınızın tüm sırlarını açığa çıkarmak için ondan bir yudum alın.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Bir yudum aldığınızda, bilginin zihninize aktığını hissediyorsunuz. Artık kuşandığınız eşyalar hakkında her şeyi biliyorsunuz. Ayrıca, seviyedeki tüm eşyaları hissediyor ve tüm sırlarını biliyorsunuz.
+Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	Kuyudan sağlık verici ışıltılar yayılıyor , bir yudum aldığında yaraların ve tüm açlığın yok oluyor.
+As you take a sip, you feel your wounds heal completely.	bir yudum aldığın gibi tüm yaraların iyileşti.
+Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	Kuyudan Sanş ışıltıları yayılıyor , Kuyuya bir nesne at ve başka bir şeye dönüşsün.
+Everything is covered with a thick web here.	Buradaki her şey kalın bir ağ tabakası ile kaplı.
+Amok	Cinnet
+Barkskin	Kabuk Derisi
+Bleeding	Kanaman var
+You bled to death...	Kan kaybından öldün.
+Blinded	Kör oldun
+Burning	Yakıcı
+%s burns up!	%s yanıyor
+You burned to death...	yanarak öldün...
+Charmed	Büyülenmiş
+Combo	Kombo
+%d hit combo!	%d Vuruş kombinasyonu!
+Crippled	kötürüm
+Frozen	Donmuş
+Fury	öfkeli
+You are hungry.	Acıkmaya başladın.
+You are starving!	Açlıktan ölüyorsun!
+You starved to death...	Açlıktan öldün...
+Hungry	Aç
+Starving	Çok aç
+Invisible	Görünmez
+Levitating	Uçuyor
+Illuminated	Aydınlanmış
+Mind vision	Zihin Görüşü
+Caustic ooze	Yakıcı balçık
+%s killed you...	%s seni öldürdü...
+Paralyzed	Felçli
+Poisoned	Zehirlenmiş
+You died from poison...	Zehirden öldün...
+Rooted	Kök Salmış
+Shadowmelded	Gölge Erimesi
+Slowed	Yavaşlamış
+Vertigo	Baş dönmesi
+Weakened	Zayıf
+backpack	sırt çantası
+Real description is coming soon!	Gerçek açıklama yakında gelecek!
+You hear something died in the distance	Uzakta birşeyin öldüğünü duydun
+This %s is sleeping	%s uyuyor
+This %s is hunting	%s avlanıyor
+This %s is fleeing	%s kaçıyor
+This %s is passive	%s pasif
+acidic scorpio	asidik akrep
+albino rat	albino sıçan
+crazy bandit	Çılgın Haydut
+vampire bat	vampir yarasa
+These brisk and tenacious inhabitants of cave domes may defeat much larger opponents by replenishing their health with each successful attack.	Bu mağara kubbeleri altında yaşayan inatçı ve hareketli yaratıklar kendilerinde çok büyük düşmanları başarılı her saldırılarında canlarını yenileyerek atl edebilir
+gnoll brute	gnoll kabadayı
+Brutes are the largest, strongest and toughest of all gnolls. When severely wounded, they go berserk, inflicting even more damage to their enemies.	Yabaniler en büyük ve güçlü gnoll türüdür.  Çok kötü yaralandıklarında çılgına döner ve düşmanlarına çok büyük zarar verebilir.
+%s becomes enraged!	%s öfkelendi!
+enraged	öfkeli
+sewer crab	lağım yengeci
+These huge crabs are at the top of the food chain in the sewers. They are extremely fast and their thick exoskeleton can withstand heavy blows.	Bu devasa yengeçler lağımlarda besin zincirinin başındadır.\nAşırı hızlılardır ve kalın dış iskeletleri ağır vuruşlara dayanabilir.
+DM-300	DM-300
+This machine was created by the Dwarves several centuries ago. Later, Dwarves started to replace machines with golems, elementals and even demons. Eventually it led their civilization to the decline. The DM-300 and similar machines were typically used for construction and mining, and in some cases, for city defense.	Bu makine birkaç yüzyıl önce Cüceler tarafından yapıldı. Sonra Cüceler golemleri, elementalleri ve hatta şeytanları makineler yerine kullanmaya başladı. Bu eninde sonunda onların uygarlıklarını düşüşe zorladı. DM-300 ve benzeri makineler genellikle inşaat ve madencilikte ve bazı durumlarda şehir savunmasında kullanıldı.
+DM-300 repairs itself!	DM-300 kendini onardı!
+Mission failed. Shutting down.	Görev başarısız. Kapatılıyor.
+Unauthorized personnel detected.	Yetkisiz personel tespit edildi.
+fire elemental	Ateş elementali
+Wandering fire elementals are a byproduct of summoning greater entities. They are too chaotic in their nature to be controlled by even the most powerful demonologist.	Gezgin ateş elementalleri daha büyük varlıkları çağırmanın bir yan ürünüdür. Doğaları gereği en güçlü iblisbilimciler tarafından bile kontrol edilemeyecek kadar kaotiktirler.
+evil eye	şeytani göz
+One of this demon's other names is "orb of hatred", because when it sees an enemy, it uses its deathgaze recklessly, often ignoring its allies and wounding them.	Bu iblisin diğer isimlerinden biri de "nefret küresi "dir, çünkü bir düşman gördüğünde ölüm bakışını pervasızca kullanır, genellikle müttefiklerini görmezden gelir ve onları yaralar.
+%s's deathgaze killed you...	%s ölümcül bakış ile seni öldürdü...
+fetid rat	kokuşmuş fare
+This marsupial rat is much larger, than a regular one. It is surrounded by a foul cloud.	Bu keseli sıçan diğerlerinden daha büyük. Kokuşmuş bir bulut ile çevrili.
+gnoll scout	izci gnoll
+Gnolls are hyena-like humanoids. They dwell in sewers and dungeons, venturing up to raid the surface from time to time. Gnoll scouts are regular members of their pack, they are not as strong as brutes and not as intelligent as shamans.	Gnoller sırtlan benzeri insansılardır.Lağımlar ve zindanlar yaşam alanlarıdır.Zaman zaman yüzeye saldırılar yapmayada cüret ederler. Gnoll izciler sürüleri içinde normal güçteki üyeleridir, vahşi gnoller kadar güçlü , şamanlar kadar zeki değillerdir.
+golem	golem
+The Dwarves tried to combine their knowledge of mechanisms with their newfound power of elemental binding. They used spirits of earth as the "soul" for the mechanical bodies of golems, which were believed to be most controllable of all. Despite this, the tiniest mistake in the ritual could cause an outbreak.	Cüceler elementler üzerinde yeni keşfettikleri bilgieri mekanik bilgileri ile birleştirmeyi denediklerinde , yerin ruhlarını mekanik vücutlar ile birleştirerek Golem'leri yarattılar.Bu ritueldeki en ufak bir hata bir isyan başlatabilirdi.
+Goo	Goo
+Little known about The Goo. It's quite possible that it is not even a creature, but rather a conglomerate of substances from the sewers that gained rudiments of free will.	Goo hakkında pek az şey bilinmektedir. Muhtemelen bir yaratık değil, kanalizasyondan gelen maddelerin özgür iradeye sahip rudimentler kazandığı bir birleşik yapıdır. Her halükarda, burada karanlık sihirin işaretleri açıktır.
+Goo is pumping itself up!	Goo kendini şişiriyor!
+glurp... glurp...	gluk gluk
+GLURP-GLURP!	GLUK-GLUK!
+!!!	!!!
+The last king of dwarves was known for his deep understanding of processes of life and death. He has persuaded members of his court to participate in a ritual, that should have granted them eternal youthfulness. In the end he was the only one, who got it - and an army of undead as a bonus.	Cücelerin son kralı , hayat ve ölüm üzerindeki büyük bilgisi ile tanınırdı.Sarayındaki tebasını sonsuz gençlik vaadi ile bu çalışmalarına katılmak için ikna etmişti. Bunun sonunda sadece kendisi bu ödülü kazandı, ek olarakta bir ölümsüzler ordusuna kavuştu.
+You cannot kill me, %s... I am... immortal...	Benim öldüremezsin, %s... Ben... ölümsüzüm...
+Arise, slaves!	Köleler, kalkın!
+How dare you!	Ne cüretle!
+These undead dwarves, risen by the will of the King of Dwarves, were members of his court. They appear as skeletons with a stunning amount of facial hair.	Bu ölümsüz cücler , Cüce Kralının çağrısı üzerne mezarlarından kalkmış. Hatırı sayılır bir sakal ve kemiklerden oluşan bir iskelet görünümündeler.
+mimic	Taklitçi
+Mimics are magical creatures which can take any shape they wish. In dungeons they almost always choose a shape of a treasure chest, because they know how to beckon an adventurer.	Taklit'ler istedikleri şeyin şeklini alabilen sihirli yaratıklardır. Maceracıların dikkatini çekmek için genellikle hazine sandığı şeklini alırlar;
+dwarf monk	cüce keşiş
+These monks are fanatics, who devoted themselves to protecting their city's secrets from all aliens. They don't use any armor or weapons, relying solely on the art of hand-to-hand combat.	Bu keşişler kendilerini şehirlerini korumaya adamış fanatiklerdir.Yakın dövüş yeteneklerine güvenir ve hiç bir zırh veya silah kullanmazlar.
+parried	savuşturdu
+%1$s has knocked the %2$s from your hands!	%1$s, %2$s eşyasını elinden aldı!
+giant piranha	dev pirana
+These carnivorous fish are not natural inhabitants of underground pools. They were bred specifically to protect flooded treasure vaults.	Bu etobur balıklar yeraltı sularının doğal canlıları değildir, hazineleri korumak için özel olarak üretilmişlerdir.
+marsupial rat	keseli sıçan
+Marsupial rats are aggressive, but rather weak denizens of the sewers. They can be dangerous only in big numbers.	Keseli sıçanlar lağımların sinirli ancak zayıf müdavimleridir.Çok fazla sayıda olduklarında tehlikeli olabilirler.
+scorpio	akrep
+These huge arachnid-like demonic creatures avoid close combat by all means, firing crippling serrated spikes from long distances.	Bu devasa örümcek benzeri yaratık her koşulda yakın dövüşten kaçınmasa ile ünlüdür.Uzaktan felce uğratan oklar fırlatarak düşmanı ile savaşır.
+senior monk	kıdemli keşiş
+gnoll shaman	gnoll şaman
+The most intelligent gnolls can master shamanistic magic. Gnoll shamans prefer battle spells to compensate for lack of might, not hesitating to use them on those who question their status in a tribe.	En zeki gnoller şaman büyülerinde uzmanlaşabilir. Gnoll şamanlar kabilelerinde onları sorgulayanlar üzerinde bu büyülerini kullanmaktan çekinmezler.
+%s's lightning bolt killed you...	%s'nın yıldırımı seni öldürdü.
+shielded brute	zırhlı vahşi
+skeleton	iskelet
+Skeletons are composed of corpses bones from unlucky adventurers and inhabitants of the dungeon, animated by emanations of evil magic from the depths below. After they have been damaged enough, they disintegrate in an explosion of bones.	İskeletler şansız maceracılar ve mağarının eski sakinlerinin kemiklerinin bir araya gelmesinden oluşur. Derinlerden fışkıran şeytani büyü sayesinde hayat bulurlar. Yeterince hasar görürlerse kemikler patlayarak iskelet yok olur.
+blocked	engellenmiş
+You were killed by the explosion of bones...	Kemiklerin patlaması ile öldün...
+cave spinner	nişancı mağara örümceği
+These greenish furry cave spiders try to avoid direct combat, preferring to wait in the distance while their victim, entangled in the spinner's excreted cobweb, slowly dies from their poisonous bite.	Bu öfkeli, yeşil örümcekler direkt dövüşten kaçınır, kurbanlarını ördükleri ağ ile tuzağa düşürerek zehirleyip öldürmeyi tercih ederler.
+animated statue	canlı heykel
+You would think that it's just another ugly statue of this dungeon, but its red glowing eyes give itself away. While the statue itself is made of stone, the _%s_, it's wielding, looks real.	Ne kadar çirkin bir heykel olduğunu düşünmeden edemiyorsun, sadece parlayan kırmızı gözleri değil , kim böyle bir şeyin üstüne _%s_ koyar.
+succubus	dişi şeytan
+The succubi are demons that look like seductive (in a slightly gothic way) girls. Using its magic, the succubus can charm a hero, who will become unable to attack anything until the charm wears off.	Succubi(Dişi şeytanlar ) baştan çıkarıcı (biraz gotik bir şekilde) kızlara benzeyen iblislerdir. Succubus, büyüsünü kullanarak bir kahramanı etkileyebilir ve kahraman, büyüsü geçene kadar hiçbir şeye saldıramaz hale gelir.
+swarm of flies	Sinek sürüsü
+The deadly swarm of flies buzzes angrily. Every non-magical attack will split it into two smaller but equally dangerous swarms.	Ölümcül sinek sürüzü aç bir şekilde vızıldıyor.Sihirli olmayan her atak onları daha küçük ama aynı boyutta tehlikeli iki parçaya bölecektir
+Tengu	Tengu
+Tengu are members of the ancient assassins clan, which is also called Tengu. These assassins are noted for extensive use of shuriken and traps.	Tengu, adı Tengu olan antik suikastçi klanının üyesidir, bu suikastçiler tuzakları ve ninja yıldızlarını kullanmaları ile ünlüdür.
+Free at last...	Sonunda özgürüm...
+Gotcha, %s!	yakaladım, %s!
+crazy thief	çılgın hırsız
+Deeper levels of the dungeon have always been a hiding place for all kinds of criminals. Not all of them could keep a clear mind during their extended periods so far from daylight. Long ago, these crazy thieves and bandits have forgotten who they are and why they steal.	Zindanın daha alt seviyeleri her zaman suçluların gizlenme yeri olmuştur. Bunlardan çok azı gün ışığından uzakta akıl sağlıklarını koruyabilmiştir. Uzun zaman önce çılgın hırsız ve eşkiyalar , kim olduklarını vr niye çaldıklarını unutmuşlardır.
+%1$s stole %2$s from you!	%1$s senden %2$s çaldı!
+\n\n%1$s is carrying a _%2$s_. Stolen obviously.	\n\n%1$s _%2$s_ üzerinde taşıyor. Çalıntı olduğu kesin.
+dwarf warlock	cüce büyücü
+When dwarves' interests have shifted from engineering to arcane arts, warlocks have come to power in the city. They started with elemental magic, but soon switched to demonology and necromancy.	 Cücelerin ilgi alanları mühendislikten gizemli sanatlara kaydıktan sonra büyücüler şehirde güçlendi. Önce element büyüleri ile başlamışlardı ama sonra şeytani ve ruhani büyülerle ilgilendiler.
+%s's shadow bolt killed you...	%s'in/un gölge yıldırımı seni öldürdü.
+wraith	Hayalet
+A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Being an ethereal entity, it is very hard to hit with a regular weapon.	Bir hortlak, mezarı veya türbesi rahatsız edilen bir günahkârın intikamcı ruhudur. Ruhani bir varlık olduğundan, normal bir silahla vurulması çok zordur.
+Yog-Dzewa	Yog-Dzewa
+Yog-Dzewa is an Old God, a powerful entity from the realms of chaos. A century ago, the ancient dwarves barely won the war against its army of demons, but were unable to kill the god itself. Instead, they then imprisoned it in the halls below their city, believing it to be too weak to rise ever again.	Yog-Dzewa eski bir tanrıdır.Kaos diyarının güçlü varlığı.Bir asır önce , antik cüceler zorla da olsa onun şeytani ordularını yenmişti, ancak tanrının kendisini öldürememişlerdi. Tekrar yükselmek için çok güçsüz olduğuna inanıp onu burad şehirlerinin altında hapsetmişlerdi.
+...	...
+Hope is an illusion...	Umarım bu bir hayaldir...
+rotting fist	köklü yumruk
+burning fist	yanan yumruk
+god's larva	Tanrı'nın Larvası
+golden bee	arı
+Despite their small size, golden bees tend to protect their master fiercely. They don't live long though.	Arılar küçük boyutlarına rağmen kovanlarını şiddetle koruma eğilimindedir. Yine de uzun yaşamazlar.
+This %s is wandering	%s geziniyor
+troll blacksmith	trol demirci
+This troll blacksmith looks like all trolls look: he is tall and lean, and his skin resembles stone in both color and texture. The troll blacksmith is tinkering with unproportionally small tools.	Bu trol demircisi tüm troller gibi görünüyor: uzun boylu ve zayıf, derisi hem renk hem de doku olarak taşı andırıyor. Trol demirci orantısız derecede küçük aletlerle uğraşıyor.
+Hey human! Wanna be useful, eh? Take dis pickaxe and mine me some _dark gold ore_, _15 pieces_ should be enough. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Hey insan! Yararlı olmak ister misin? Kazmanı al ve bana biraz _kara altın cevheri_ çıkar, _15 parça_ yeterli olur. Ne demek istiyorsun, nasıl ödeyeceğim? Seni açgözlü...\nTamam, ödeyecek param yok ama senin için biraz demircilik yapabilirim. Kendini şanslı say, etraftaki tek demirci benim.
+Hey human! Wanna be useful, eh? Take dis pickaxe and _kill a bat_ wit' it, I need its blood on the head. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Hey insan! Yararlı olmak ister misin? Bu kazmayı al ve onunla bir _yarasa_ öldür, kafasındaki kana ihtiyacım var. Ne demek istiyorsun, nasıl ödeyeceğim? Seni açgözlü...\nTamam, tamam, ödeyecek param yok ama senin için biraz demircilik yapabilirim. Kendini şanslı say, etraftaki tek demirci benim.
+Are you kiddin' me? Where is my pickaxe?!	Benimle dalga mı geçiyorsun? Kazmam nerede?!
+Dark gold ore. 15 pieces. Seriously, is it dat hard?	Kara altın madeni, 15 parça. Ciddi misin ? Bu bu kadar zor mu?
+I said I need bat blood on the pickaxe. Chop chop!	Sana bu kazma üstünde yarasa kanına ihtiyacım var dedim. Vurma sesleri !
+Oh, you have returned... Better late dan never.	Oh, geri döndün... Geç olsun güç olmasın.
+I'm busy. Get lost!	Meşgulüm. Uza!
+your %s certainly looks better now	%s şu anda çok daha iyi görünüyor
+Select 2 different items, not the same item twice!	2 farklı eşya seç, aynısını iki defa değil.
+Select 2 items of the same type!	Aynı 2 türden eşya seç.
+I need to know what I'm working with, identify them first!	Ne ile çalıştığımı bilmem gerek, getirmeden önce tanımla!
+I don't work with cursed items!	Lanetli eşyalarla çalışmam!
+It's a junk, the quality is too poor!	Çöp, kalitesi çok düşük.
+I can't reforge these items!	Bu malzemeleri dövemem
+sad ghost	üzgün hayalet
+The ghost is barely visible. It looks like a shapeless spot of faint light with a sorrowful face.	Hayalet zar zor görülebiliyor. Kederli bir yüzü olan şekilsiz, soluk bir ışık lekesine benziyor.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my _dried rose_... It's very important to me... Some monster stole it from my body...	Merhaba maceracı. Bir zamanlar ben de senin gibiydim - güçlü ve kendinden emin... Ve şimdi öldüm. Ama burayı terk edemem. _Kurutulmuş gülümü_ almadan olmaz. O benim için çok önemli. Bir canavar onu bedenimden çaldı.
+Please... Help me... _Find the rose_...	Lütfen... Bana yardım et... Gülü bul...
+Yes! Yes!!! This is it! Please give it to me! And you can take one of these items, maybe they will be useful to you in your journey...	Evet! Evet!!! İşte bu! Lütfen bana ver onu! Ayrıca bu nesnelerden istediğin birini alabilirsin, belki maceranda bir yardımı dokunur..
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my revenge... Slay the _fetid rat_, that has taken my life...	Merhaba maceracı. Bir zamanlar ben de senin gibiydim - güçlü ve kendinden emin... Ve şimdi öldüm. Ama burayı terk edemem. İntikamımı almadan olmaz. Hayatımı alan o _pis fareyi_ öldürmeden.
+Please... Help me... _Slay the abomination_...	Lütfen... Yardım et... Nefret ettiğim sıçanı öldür...
+Yes! The ugly creature is slain and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Evet ! O çirkin yaratık öldü artık dinlenebilirim... Maceranda yardımcı olacak bu nesnelerden birini seçebilirsin...
+Imps are lesser demons. They are notable for neither their strength nor their magic talent, but they are quite smart and sociable. Many imps prefer to live among non-demons.	Güç ve sihirli yetenekleri ile değil , akıllı ve sosyal olmaları ile tanınırlar.Birçokları şeytanlar ile yaşamayı tercih etmez
+evaded	savuşturdu
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _golems_ who need to be killed. You see, I'm going to start a little business here, but these stupid golems are bad for business! It's very hard to negotiate with wandering lumps of granite, damn them! So please, kill... let's say _6 of them_ and a reward is yours.	Sen bir maceracı mısın ? Maceracıları severim ! Eğer birşeyler öldürülmesi gerekiyorsa onlara güvenebilirsin. Haksız mıyım? Bir ödül karşılığında ;)\n Benim durumumda bu öldürülecek olanlar Golemler. Gördün mü , ufak bir iş başlatıyorum burada , ama bu aptal golemler iş için çok kötüler! Bu granit topağı göçebelerle anlaşmak imkansız, lanet olsun onlara ! Lütfen öldür onları... şöyle diyelim 6 tanesini öldür.
+How is your golem safari going?	Golem safarin ne alemde?
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _monks_ who need to be killed. You see, I'm going to start a little business here, but these lunatics don't buy anything themselves and will scare away other customers. So please, kill... let's say _8 of them_ and a reward is yours.	Sen bir maceracı mısın ? Maceracıları severim ! Eğer birşeyler öldürülmesi gerekiyorsa onlara güvenebilirsin. Haksız mıyım? Bir ödül karşılığında ;)\n Benim durumumda bu öldürülecek olanlar keşişler. Gördün mü , ufak bir iş başlatıyorum burada , ama bu deliler kendilerine bir şey almadıkları gibi müşterileri de korkutuyorlar. lanet olsun onlara ! Lütfen öldür onları... şöyle diyelim 8 tanesini öldür.
+Oh, you are still alive! I knew that your kung-fu is stronger ;) Just don't forget to grab these monks' tokens.	Ooo, hala hayattasın. Senin Kung-fu'nun kuvvetli olduğunu biliyordum ;) Keşiş simgelerini toplamayı unutma.
+See you, %s!	Görüşürüz, %s!
+Psst, %s!	Psst, %s!
+ambitious imp	Hırslı küçük şeytan
+Imps are lesser demons. They are notable for neither their strength nor their magic talent. But they are quite smart and sociable, and many of imps prefer to live and do business among non-demons.	Güç ve sihirli yetenekleri ile değil , akıllı ve sosyal olmaları ile tanınırlar.Birçokları şeytanlar ile yaşamayı tercih etmez.
+Hello, friend!	Merhaba, arkadaşım!
+mirror image	ayna görüntüsü
+This illusion bears a close resemblance to you, but it's paler and twitches a little.	Bu ilüzyon sana soluk olması ve hafif titreşmesi dışında oldukça benzer.
+rat king	fare kral
+This rat is a little bigger than a regular marsupial rat and it's wearing a tiny crown on its head.	Bu sıçan normal keseli sıçanlardan biraz daha büyük ve kafasında garip küçük bir taç var.
+I'm not sleeping!	Uyumuyorum!
+What is it? I have no time for this nonsense. My kingdom won't rule itself!	Bu nedir ? Bu anlamsız şeylerle uğraşamam, krallığım kendi kendini yönetemez!
+shopkeeper	dükkan sahibi
+This stout guy looks more appropriate for a trade district in some large city than for a dungeon. His prices explain why he prefers to do business here.	Bu sağlam adam bu zindan gibi yerler yerine büyük bir şehirde olmaya daha uygun görünüyor. Fiyatları neden burada olmak istediğini açıklıyor.
+Select an item to sell	Satmak için bir eşya seç
+old wandmaker	yaşlı asa ustası
+This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	Bu yaşlı ama dinç beyefendi biraz şaşkın bir ifade takınıyor. Sihirli bir kalkan tarafından korunuyor.
+absorbed	absorbe edildi
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oo, sizin gibi nazik biri ile bu gibi bir yerde karşılaşmak ne güzel bir sürpriz.Buraya zor bulunan bir malzeme için geldim : _Çürük Dut tohumu_. Bir büyücü olarak buradaki yaratıklara karşı kendimi savunabilirim, fakat zamanım çok kısıtlı. Muhtemelen bana yardım edebilirsin. Sana hizmetinin karşılığını en iyi asalarımdan biri ile ödeyebilirim.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Çürük dut tohumu bulabildin mi, %s? No? Üzülme acelem yok.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oo, sizin gibi nazik biri ile bu gibi bir yerde karşılaşmak ne güzel bir sürpriz.Buraya zor bulunan bir malzeme için geldim : _Ceset Tozu_. Bir büyücü olarak buradaki yaratıklara karşı kendimi savunabilirim, fakat zamanım çok kısıtlı. Muhtemelen bana yardım edebilirsin. Sana hizmetinin karşılığını en iyi asalarımdan biri ile ödeyebilirim.
+Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Ceset tozu araman nasıl gidiyor, %s? Kemik yığınları bakılması gereken en uygun yerler gibi duruyor.
+A hidden pressure plate clicks!	Gizli basınç plakasından "tık" sesi gelir!
+Floor	Zemin
+Grass	Çim
+Water	Su
+Wall	Duvar
+Closed door	Kapalı kapı
+Open door	Açık kapı
+Depth entrance	Derinliğin girişi
+Depth exit	Derinliğin çıkışı
+Embers	Köz
+Locked door	Kilitli kapı
+Pedestal	Temel
+Barricade	Barikat
+High grass	Uzun otlar
+Locked depth exit	Kilitli derinlik çıkışı
+Unlocked depth exit	Kilidi açılmış derinlik çıkışı
+Sign	Tabela
+Well	Kuyu
+Empty well	Boş kuyu
+Statue	Heykel
+Toxic gas trap	Zehirli gaz tuzağı
+Fire trap	Ateş tuzağı
+Paralytic gas trap	Felç eden gaz tuzağı
+Poison dart trap	Zehirli dart tuzağı
+Alarm trap	Alarm tuzağı
+Lightning trap	Yıldırım tuzağı
+Gripping trap	Kapan
+Summoning trap	Çağırıcı tuzak
+Triggered trap	Tetiklenmiş tuzak
+Bookshelf	Kitaplık
+Alchemy pot	Simya kabı
+\\?\\?\\?	\\?\\?\\?
+You can't see the bottom.	Aşağıyı göremezsin.
+In case of burning step into the water to extinguish the fire.	Yanma durumunda, ateşi söndürmek için suya girin.
+Stairs lead up to the upper depth.	Merdivenler bir üst derinliğe inmenizi sağlar.
+Stairs lead down to the lower depth.	Merdivenler bir alt derinliğe geçmenizi sağlar.
+Embers cover the floor.	Közler zemini kaplamış.
+Dense vegetation blocks the view.	Yoğun bitkiler görüşü engelliyor.
+This door is locked, you need a matching key to unlock it.	Bu kapı kilitli, açmak için eşleşen bi anahtara ihtiyacın var.
+Heavy bars block the stairs leading down.	Ağır Bir Obje Aşağıya İnen Merdivenleri Kapatıyor.
+The wooden barricade is firmly set but has dried over the years. Might it burn?	Ahşap barikat sıkı bir şekilde yerleştirilmiş ancak yıllar boyunca kurumuş. Yanabilir mi?
+You can't read the text from here.	Yazıyı buradan okuyamazsın.
+Stepping onto a hidden pressure plate will activate the trap.	Gizli bir baskı plakasına basmak tuzağı harekete geçirir.
+The trap has been triggered before and it's not dangerous anymore.	Tuzak daha önceden tetiklenmiş ve artık tehlikeli değil.
+Someone wanted to adorn this place, but failed, obviously.	Birileri burayı süsleme istemiş ama belli ki başarısız olmuş.
+Drop some seeds here to cook a potion.	İksir yapmak için buraya birkaç tohum bırak.
+The well has run dry.	Bu kuyu kurumaya yüz tutmuş.
+Fluorescent moss	Florasan yosun
+Fluorescent mushrooms	Florasan mantar
+Freezing cold water.	Dondurucu soğuk su.
+The ladder leads up to the upper depth.	Merdiven, bir üst derinliğe inmenizi sağlar.
+The ladder leads down to the lower depth.	Aşağı seviyelere inen bir merdiven.
+Huge mushrooms block the view.	Büyük mantarlar, görüntüyü engeller.
+A vein of some ore is visible on the wall. Gold?	Duvarda bir maden damarı gözüküyor, Altın olmasın?
+Who would need a bookshelf in a cave?	Kim bir mağarada kitaplığa ihtiyaç duyar ki?
+A ramp leads down to the lower depth.	Aşağıya inen bir rampa.
+The statue depicts some dwarf standing in a heroic stance.	Kahramanca poz vermiş cüceyi betimleyen bir heykel.
+The rows of books on different disciplines fill the bookshelf.	Çeşitli ilimler hakkında kitaplarla dolu bir kitaplık
+Books in ancient languages smolder in the bookshelf.	Antik dillerdeki kitaplar kitaplıkta yanar.
+Cold lava	Soğuk lav
+Embermoss	Köz yosunu
+Emberfungi	Köz mantarı
+Pillar	Sütun
+It looks like lava, but it's cold and probably safe to touch.	Görünüş olarak lava benziyor, ama bu soğuk, ve dokunmak için muhtemelen güvenli.
+The pillar is made of real humanoid skulls. Awesome.	Bu sütun gerçek insan kafatalarından yapılmış. Muhteşem.
+Suspiciously colored water	Şüpheli renkli su
+High blooming flowers	Çok açan çiçekler
+A ramp leads up to the upper depth.	Yukarıya çıkan bir rampa.
+A ramp leads down to the Inferno.	Cehenneme İnen Bir Rampa
+Several tiles are missing here.	Burada birkaç fayans eksik.
+Thick carpet covers the floor.	İpek Bir Halı Zemini Kaplıyor
+Dark cold water.	Karanlık soğuk su.
+There are old blood stains on the floor.	yerde eski kan lekeleri var.
+This is probably a vestige of a prison library. Might it burn?	Muhtelemen Bir hapishane kütüphanesinin kalıntıları acaba Yanabilir mi ?
+Murky water	Bulanık su
+Wet yellowish moss covers the floor.	Islak sarımsı yosun zemini kaplıyor
+The bookshelf is packed with cheap useless books. Might it burn?	Bu  kitaplık tamamen ucuz ve kullanışsız kitapla dolu acaba yanabilir mi ?
+Select a seed to throw	Fırlatmak için bir tohum seç
+Chasm	Uçurum
+Yes, I know what I'm doing	Evet, ne yaptığımı biliyorum
+No, I changed my mind	Hayır, fikrimi değiştirdim
+Do you really want to jump into the chasm? You can probably die.	Gerçekten uçuruma atlamak istiyor musun? Muhtemelen ölebilirsin.
+You fell to death...	la yavaş oğlum nidiyon lan! la ibo... *Düşüp öldün*
+What are you doing here?!	Burada ne yapıyorsun?! 
+Don't overestimate your strength, use weapons and armor you can handle.	Gücünüzü abartmayın, üstesinden gelebileceğiniz silahlar ve zırhlar kullanın.
+Not all doors in the dungeon are visible at first sight. If you are stuck, search for hidden doors.	Zindandaki tüm kapılar ilk bakışta görünmez. Eğer sıkışırsanız, gizli kapıları arayın.
+Remember, that raising your strength is not the only way to access better equipment. You can go the other way, lowering its strength requirement with Scrolls of Upgrade.	Daha iyi ekipmanlara erişmenin tek yolunun gücünüzü artırmak olmadığını unutmayın, Yükseltme Parşömenleri ile güç gereksinimini düşürerek diğer yoldan da gidebilirsiniz.
+Beware of Goo!	Goo'ya dikkat edin!
+Pixel-Mart. All you need for successful adventure!	Pixel-Market - başarılı bir macera için ihtiyacınız olan her şey!
+Identify your potions and scrolls as soon as possible. Don't put it off to the moment when you actually need them.	İksirlerinizi ve parşömenlerinizi mümkün olan en kısa sürede belirleyin. Onlara gerçekten ihtiyacınız olduğu ana ertelemeyin.
+Being hungry doesn't hurt, but starving does hurt.	Aç olmak acı vermez ama açlıktan ölmek acı verir.
+Surprise attack has a better chance to hit. For example, you can ambush your enemy behind a closed door when you know it is approaching.	Sürpriz saldırıların isabet şansı daha yüksektir. Örneğin, yaklaştığını bildiğiniz düşmanınızı kapalı bir kapının arkasında pusuya düşürebilirsiniz.
+Don't let The Tengu out!	Tengu'nun çıkmasına izin vermeyin!
+Pixel-Mart. Spend money. Live longer.	Pixel-Market. Para harca. Daha uzun yaşa.
+When you're attacked by several monsters at the same time, try to retreat behind a door.	Aynı anda birkaç canavar tarafından saldırıya uğradığınızda, bir kapının arkasına çekilmeye çalışın.
+There is no sense in possessing more than one Ankh at the same time, because you will lose them upon resurrecting.	Aynı anda birden fazla Ankh'a sahip olmanın bir anlamı yoktur, çünkü dirildiğinizde onları kaybedersiniz.\nEnvanterinizdeki eşyaları ölüp dirilmeden hemen önce yere atmayı deneyin!
+DANGER! Heavy machinery can cause injury, loss of limbs or death!	TEHLİKE! Ağır makineler yaralanmalara, uzuv kaybına veya ölüme neden olabilir!
+Pixel-Mart. A safer life in dungeon.	Pixel-Market. Zindanda daha güvenli bir hayat.
+When you upgrade an enchanted weapon, there is a chance to destroy that enchantment.	Büyülü bir silahı geliştirdiğinizde, o büyüyü yok etme şansınız vardır.
+No weapons allowed in the presence of His Majesty!	Majestelerinin huzurunda silaha izin yok!
+Pixel-Mart. Special prices for demon hunters!	Pixel-Market. İblis avcıları için özel fiyatlar!
+The trap emits a piercing sound that echoes throughout the dungeon!	Tuzağın çıkardığı kulak kanatan ses zindan boyunca yankılanıyor!
+lightning trap	yıldırım tuzağı
+You were killed by a discharge of a lightning trap...	Şimşek tuzağının çakmasıyla öldün...
+You don't know what is there.	Burada ne var bilmiyorsun.
+Select a cell to examine	Kontrol edilecek bir hücre seç
+Sacrificial chamber	Kurban odası
+Killed by an explosion of a bomb on level %d	%d. katta bir bombanın patlamasıyla öldün
+Do you want to respec into %s?	Uzmanlığını %s olarak değiştirmek istiyor musun?
+Yes, I want to respec	Evet, uzmanlığımı değiştirmek istiyorum
+Maybe later	Belki sonra
+Language	Dil
+Because of frequent use, your %s has broken.	Sık kullanımdan dolayı %s kırıldı.
+Because of frequent use, your %s is going to break soon.	Sık kullanımdan dolayı %s yakında kırılacak.
+bomb	bomba
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	Bu, kara barutla doldurulmuş küçükçe bir bomba. Neyse ki fırlatıldığında fitili kendiliğinden yanıyor.
+You killed yourself with a bomb...	Kendini bir bombayla öldürdün...
+honeypot	bal küpü
+SHATTER	PARÇALA
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	Bu küçük küpte pek bal yok, ama içindeki altın arı yuvasını terk etmek istemiyor.
+%s of auto-repair	kendini onaran %s
+enchantment of viscosity	viskozite büyüsü
+The enchantment of viscosity killed you...	Viskozite büyüsü seni öldürdü...
+phantom fish	hayalet balık
+broken %s	kırık %s
+Unequip one ring	Bir yüzüğü çıkar
+Scroll of Enchantment	Büyüleme Parşömeni
+Select an enchantable item	Büyülenebilecek bir eşya seç
+your %s glows in the dark	%s karanlıkta parlıyor
+Scroll of Wipe Out	Yok Etme Parşömeni
+You are now familiar enough with your %s.	Artık %s ile yeterince aşinasın.
+Wand of Reach	Uzanma Asası
+shocking %s	elektrikli %s
+tempered %s	tavlanmış %s
+"Your sacrifice is worthy..."	"Kurbanın buna layık..."
+"Your sacrifice is unworthy..."	"Kurbanın buna layık değil..."
+"Your sacrifice is worthy and so you are!"	"Kurbanın layık; sen de öylesin!"
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	Burada kurban ateşi yanıyor. Bu ateşe dokunan her yaratık, zindanın ruhlarına sunulmak üzere işaretlenir.
+Marked for sacrifice	Kurban olarak işaretlendi
+Immune to gases	Gazlara karşı bağışık
+Blinded with rage	Öfkeden gözü dönmüş
+Zeroed in	Hedefe kilitli
+echo of 	yankı: 
+curse personification	lanetin vücut bulmuş hâli
+DM-350	DM-350
+spawn of Goo	Goo'nun yavrusu
+King of Dwarves	Cüceler Kralı
+undead King of Dwarves	ölümsüz Cüceler Kralı
+undead dwarf	hortlak cüce
+memory of Tengu	Tengu'nun hatırası
+echo of Yog-Dzewa	Yog-Dzewa'nın yankısı
+Yes, I will do it for you	Evet, senin için yapacağım
+No, I can't help you	Hayır, sana yardım edemem
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	_Hayalet balığı_ bulabildin mi, %s? Buradaki su birikintilerinden birine bakmayı dene.
+As you try to read the sign it bursts into greenish flames.	Tabelayı okumaya çalıştığında yeşilimsi alevler içinde kalıyor.
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	Altınını zindanın daha derinlerindeki dükkânlarda harcayabilirsin. İlki 6. katta.
+If you are burning, you can't put out the fire in the water while levitating.	Yanıyorsan havada süzülürken suya girerek ateşi söndüremezsin.
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	Silahlar ve zırhlar, asalara ve yüzüklere göre daha çabuk yıpranır; ama onları onarmanın daha çok yolu vardır.
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	Yok Etme Parşömeni'ni elde etmenin tek yolu, onu zindan ruhlarından armağan olarak almaktır.
+Choose language	Dil seç
+Key bindings	Tuş atamaları
+Switch to fullscreen	Tam ekrana geç
+Switch to windowed	Pencere moduna geç
+Reset To Defaults	Varsayılanlara dön
+<None>	<Yok>
+Press a key for "%s", or press %s to remove the binding.	“%s” için bir tuşa bas veya atamayı kaldırmak için %s tuşuna bas.
+Hero Info	Kahraman bilgisi
+Wait	Bekle
+Search	Ara
+Examine cell	Hücreyi incele
+Resume motion	Harekete devam et
+Backpack	Sırt çantası
+Quickslot	Hızlı yuva
+Attack	Saldır
+Visible Enemies	Görünen düşmanlar
+Zoom In	Yakınlaştır
+Zoom Out	Uzaklaştır
+Move North	Kuzeye git
+Move South	Güneye git
+Move West	Batıya git
+Move East	Doğuya git
+Move NW	Kuzeybatıya git
+Move NE	Kuzeydoğuya git
+Move SW	Güneybatıya git
+Move SE	Güneydoğuya git
+Current Cell	Mevcut hücre
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Kod ve grafikler: Watabou\nMüzik: Cube_Code\n\nBu oyun Brian Walker'ın Brogue adlı eserinden ilham almıştır. Windows, Mac OS veya Linux'ta deneyin; harika bir oyundur! ;)\n\nDaha fazla bilgi için resmî siteyi ziyaret edin:
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	Yerelleştirme: rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+Languages	Diller
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	Bu küçük, yarı saydam balık havada bile güçlükle seçiliyor. Suyun içinde ise neredeyse tamamen görünmez oluyor.
+You can only wear two rings at a time. Unequip one of your equipped rings.	Aynı anda yalnızca iki yüzük takabilirsin. Takılı yüzüklerinden birini çıkar.
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	Bu parşömen bir silaha veya zırha rastgele bir büyü işleyerek ona özel bir güç kazandırabilir.
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	Bu parşömeni okuyarak zindan ruhlarının öfkesini serbest bırakabilir ve mevcut kattaki her şeyi öldürebilirsin. Daha doğrusu, neredeyse her şeyi. Güçlü yaratıkların bazıları etkilenmeyebilir.
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	Bu kullanışlı asa uzaktaki nesneleri çekmek ve düşmanlarla yer değiştirmek için kullanılabilir. Yaydığı büyülü kuvvet dalgaları geçtiği bütün hücreleri etkiler; tuzakları tetikler, uzun otları ezer, kapalı kapıları açar ve açık kapıları kapatır.
+broken %1$s :%2$d	kırık %1$s :%2$d
+a broken	kırık
+%1$s: "%2$s"	%1$s: “%2$s”
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	Bu yaratık üzgün hayalete benziyor, fakat çevresinde karanlık dönüp duruyor. Yüzünde umutsuz bir ifade var.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Merhaba maceracı... Bir zamanlar ben de senin gibiydim; güçlü ve kendime güvenen... Şimdiyse ölüyüm... Korkunç bir lanet beni buraya bağladığı için bu yeri terk edemiyorum... Lütfen... Bana yardım et... _Laneti yok et_...
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Teşekkür ederim, %s! Lanet bozuldu ve sonunda huzur bulabilirim... Lütfen bu eşyalardan birini al; yolculuğunda işine yarayabilir...
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Aa, böyle bir yerde düzgün birine rastlamak ne hoş bir sürpriz! Buraya nadir bir malzeme, bir _hayalet balığı_ bulmaya geldim. Onu çıplak elle yakalayabilirsin, ama suda fark etmek çok zordur. Büyü kullanabildiğim için buradaki canavarlara karşı kendimi koruyabiliyorum, fakat hemen yolumu kaybediyorum; doğrusu çok utanç verici. Belki bana yardım edebilirsin? Hizmetinin karşılığında en iyi asalarımdan birini memnuniyetle veririm.
+1	1

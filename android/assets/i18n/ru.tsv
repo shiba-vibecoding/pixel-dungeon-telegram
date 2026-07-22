@@ -1,0 +1,1185 @@
+Pixel Dungeon	Pixel Dungeon
+Play	Играть
+Highscores	Рекорды
+About	Об игре
+LibGDX port: Arcnor / Web port: nojus297	LibGDX-порт: Arcnor / веб-порт: nojus297
+Telegram port: @barboskich	Telegram-порт: @barboskich
+Say thanks	Сказать спасибо
+Thank you!	Спасибо!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Это добровольная благодарность за Telegram-порт. Она никак не влияет на игровой процесс.
+Support with Telegram Stars	Поддержать в Telegram Stars
+Open @barboskich	Открыть @barboskich
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Программирование & графика: Watabou\nМузыка: Cube_Code\n\nРазработчики этой игры вдохновлялись Brogue от Brian Walker. Вы можете сыграть в неё на Windows, Mac OS или Linux - она классная! ;)\n\nПосетите официальный сайт игры для дополнительной информации:
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	Перевод: Georgiy Danilov, Mikhael Danilov, rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com; nyrdsofficial@gmail.com
+Send E-Mail	Отправить E-Mail
+Top Rankings	Лучшие Результаты
+Total games won/played: 	Всего игр выигранные/сыгранные: 
+No games have been played yet.	Вы ещё ни разу не сыграли.
+No additional information	Дополнительная информация отсутствует
+Your Badges	Заработанные Значки
+Load Game	Загрузить Игру
+New Game	Новая Игра
+Erase current game	Стереть\nтекущую игру
+Depth: %1$d, level: %2$d	Глубина: %1$d\nУровень: %2$d
+Do you really want to start new game?	Вы точно хотите начать новую игру?
+Your current game progress will be erased.	Прогресс текущей игры будет потерян.
+Yes, start new game	Да, начать новую игру
+No, return to main menu	Нет, вернуться в меню
+To unlock this character class, slay the 3rd boss with any other class	Чтобы открыть этот класс персонажа, убейте 3-го босса любым другим классом
+To unlock "Challenges", win the game with any character class.	Чтобы открыть "Испытания", пройдите игру любым персонажем.
+Descending...	Спускаемся...
+Ascending...	Поднимаемся...
+Loading...	Загружаемся...
+Resurrecting...	Воскрешаемся...
+Returning...	Возвращаемся...
+Falling...	Падаем...
+File not found. For some reason...	Файл не найден. К чему бы это...
+Something went wrong...	Что-то пошло не так...
+Many heroes of all kinds ventured into the Dungeon before you. Some of them have returned with treasures and magical artifacts, most have never been heard of since. But none have succeeded in retrieving the Amulet of Yendor, which is told to be hidden in the depths of the Dungeon.\n\nYou consider yourself ready for the challenge, but most importantly, you feel that fortune smiles on you. It's time to start your own adventure!	Многие искатели приключений и путешественники спускались в Подземелье до тебя. Некоторые возвращались, наделённые несметными богатствами и волшебными артефактами, но большинство, попусту, сгинуло. Но, никому не удалось заполучить Амулет Эндора, согласно легендам, сокрытый в глубинах Подземелья.\n\nТы чувствуешь, что готов к этому испытанию и, что немаловажно, веришь, что удача на твоей стороне. Пришло время начать своё приключение!
+Let's call it a day	Моё дело, здесь, сделано
+I'm not done yet	Я, пожалуй, ещё осмотрюсь
+You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	Наконец-то, он в твоих руках, Амулет Эндора. Ты обретёшь могущество, позволяющее покорить всех и вся, или подаришь человечеству мир и процветание, или что-то типа того. В любом случае, твоя жизнь изменится навсегда, а игра на этом завершится. С другой стороны, ты можешь побыть жалким смертным ещё немного.
+Welcome to the level %d of Pixel Dungeon!	Добро пожаловать на %d уровень Pixel Dungeon!
+Welcome back to the level %d of Pixel Dungeon!	С возвращением на %d уровень Pixel Dungeon!
+Be cautious, since the dungeon is even more dangerous at night!	Будь начеку, ведь ночью подземелье куда опаснее!
+Your steps echo across the dungeon.	Каждый твой шаг раздаётся эхом по всему подземелью.
+You hear the water splashing around you.	Ты слышишь плеск воды поблизости.
+The smell of vegetation is thick in the air.	В воздухе витает растительный аромат.
+The atmosphere hints that this floor hides many secrets.	Атмосфера таинственности окутывает этот уровень, он полон секретов.
+mob	монстр
+%1$s hit %2$s	%1$s ударило %2$s
+%1$s defeated %2$s	%1$s одолело %2$s
+%1$s %2$s your attack	%1$s %2$s от твоей атаки
+%1$s %2$s %3$s's attack	%1$s %2$s от атаки монстра %3$s
+The pain snapped %s out of paralysis	Боль пробудила %s от паралича
+dodged	уклонилось
+poisoned	отравлен
+amok	буйствует
+slowed	замедлен
+mind	ясно
+vision	видение
+paralyzed	парализован
+frightened	испуган
+rooted	скован
+crippled	травмирован
+bleeding	кровотечение
+dizzy	ошеломлён
+invisible	невидимый
+you	ты
+One does not simply leave Pixel Dungeon.	Нельзя просто так взять и выйти из Pixel Dungeon.
+level up!	новый уровень!
+Welcome to level %d! Now you are healthier and more focused. It's easier for you to hit enemies and dodge their attacks.	Твой уровень поднялся до %d! Ты окрепчал, а может даже поумнел. Тебе стало проще попадать по врагам и уклоняться от их атак.
+You now have %s	Теперь у тебя есть %s
+There is something else here	Здесь есть что-то ещё
+This chest is locked and you don't have matching key	Сундук закрыт и у тебя нету подходящего ключа
+You don't have a matching key	У тебя нету подходящего ключа
+You noticed something	Ты что-то заметил
+search	поиск
+You catch fire!	Тебя охватил огонь!
+You are paralyzed!	Тебя парализовало!
+You are poisoned!	Ты отравлен!
+Caustic ooze eats your flesh. Wash away it!	Слизь разъедает твою плоть. Смой её!
+You can't move!	Ты не можешь сдвинутся!
+You feel weakened!	Тебя охватила слабость!
+You are blinded!	Тебя ослепили!
+You become furious!	Ты впал в ярость!
+furious	яростный
+You are charmed!	Ты зачарован!
+You are crippled!	Ты получил травму!
+You are bleeding!	У тебя кровотечение!
+Everything is spinning around you!	У тебя кружится голова!
+warrior	воин
+mage	маг
+rogue	разбойник
+huntress	охотница
+Warriors start with 11 points of Strength.	Воины начинают с 11 очками Силы.
+Warriors start with a unique short sword. This sword can be later "reforged" to upgrade another melee weapon.	Воины начинают с уникальным коротким мечом. Который, в дальнейшем, можно "перековать" для улучшения другого оружия ближнего боя.
+Warriors are less proficient with missile weapons.	Воины плохо приспособлены к оружию дальнего боя.
+Any piece of food restores some health when eaten.	Во время еды Воин восстанавливает немного здоровья.
+Potions of Strength are identified from the beginning.	Зелья Силы распознаны с самого начала.
+Mages start with a unique Wand of Magic Missile. This wand can be later "disenchanted" to upgrade another wand.	Маги начинают с уникальной Палочкой Волшебных Снарядов. Которую, в дальнейшем, можно "развоплотить" для улучшения другой палочки.
+Mages recharge their wands faster.	Маги быстрее восполняют заряды волшебных палочек.
+When eaten, any piece of food restores 1 charge for all wands in the inventory.	Во время еды, любая пища восстанавливает 1 заряд, для каждой палочки в инвентаре.
+Mages can use wands as a melee weapon.	Маги могут использовать волшебные палочки в ближнем бою.
+Scrolls of Identify are identified from the beginning.	Свитки Опознания распознаны с самого начала.
+Rogues start with a Ring of Shadows+1.	Разбойники начинают с Кольцом Теней+1.
+Rogues identify a type of a ring on equipping it.	Разбойники распознают тип кольца при надевании.
+Rogues are proficient with light armor, dodging better while wearing one.	Разбойники приспособлены к лёгкой броне, с ней они лучше уворачиваются от вражеских атак.
+Rogues are proficient in detecting hidden doors and traps.	Разбойники хороши в поиске скрытых дверей и ловушек.
+Rogues can go without food longer.	Разбойники могут дольше продержаться без еды.
+Scrolls of Magic Mapping are identified from the beginning.	Свитки Волшебной Разметки распознаны с самого начала.
+Huntresses start with 15 points of Health.	Охотницы начинают с 15 очками Здоровья.
+Huntresses start with a unique upgradeable boomerang.	Охотницы начинают с уникальным улучшаемым бумерангом.
+Huntresses are proficient with missile weapons and get a damage bonus for excessive strength when using them.	Охотницы хороши в обращении с оружием дальнего боя и получают бонус к урону за каждое очко Силы сверх требований этого оружия.
+Huntresses gain more health from dewdrops.	Охотницы восстанавливают больше здоровья от капель росы.
+Huntresses sense neighboring monsters even if they are hidden behind obstacles.	Охотницы чувствуют ближайших монстров даже если те скрыты за препятствиями.
+gladiator	гладиатор
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	Успешная атака ближнего боя позволяет, _Гладиатору_ начать серию комбо-ударов, в течении которой каждое последующее попадание наносит больше урона.
+berserker	берсерк
+When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	Будучи сильно раненым, _Берсерк_ впадает в состояние дикой ярости, значительно повышая его показатель урона.
+warlock	чернокнижник
+After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	После убийства врага _Чернокнижник_ поглощает его душу. Излечивая себя и утоляя голод.
+battlemage	боевой маг
+When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	Сражаясь с палочкой в руках, _Боевой Маг_ наносит дополнительный урон в зависящий от количества оставшихся зарядов. Каждое успешное попадание восстанавливает 1 заряд этой палочки.
+assassin	убийца
+When performing a surprise attack, the _Assassin_ inflicts additional damage to his target.	При совершении неожиданной атаки, _Убийца_ наносит его цели дополнительный урон.
+freerunner	бегун
+The _Freerunner_ can move almost twice faster, than most of the monsters. When he is running, the Freerunner is much harder to hit. For that he must be unencumbered and not starving.	_Бегун_ двигается почти вдвое быстрее большинства монстров. В движущегося, _Бегуна_ труднее попасть. Но лишь в тех случаях когда он сыт и не перегружен.
+sniper	снайпер
+_Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	_Снайперы_ способны заметить прорехи в броне противника, практически игнорируя её при использовании оружия дальнего боя.
+warden	Травница
+Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	За счёт своей близости к природе, _Травница_ может лучше собирать капли росы и семена с растений. Также контакт с высокой травой даёт ей временный бонус к броне.
+Badge endorsed: %s	Значок заработан: %s
+New super badge: %s	Новый супер значок: %s
+New badge: %s	Новый значок: %s
+10 enemies slain	10 врагов побеждено
+50 enemies slain	50 врагов побеждено
+150 enemies slain	150 врагов побеждено
+250 enemies slain	250 врагов побеждено
+100 gold collected	100 золота собрано
+500 gold collected	500 золота собрано
+2500 gold collected	2500 золота собрано
+7500 gold collected	7500 золота собрано
+Level 6 reached	Уровень 6 достигнут
+Level 12 reached	Уровень 12 достигнут
+Level 18 reached	Уровень 18 достигнут
+Level 24 reached	Уровень 24 достигнут
+All potions identified	Все зелья распознаны
+All scrolls identified	Все свитки распознаны
+All rings identified	Все кольца распознаны"
+All wands identified	Все палочки распознаны"
+All potions, scrolls, rings & wands identified	Все зелья, свитки, кольца & палочки распознаны
+All bags bought	Все сумки куплены
+Death from fire	Погиб в огне
+Death from poison	Погиб от яда
+Death from toxic gas	Погиб от токсичного газа
+Death from hunger	Погиб с голоду
+Death from an enchantment	Погиб от чары
+Death from falling down	Погиб от падения
+Death from fire, poison, toxic gas & hunger	Погибал от огня, яда, токсичного газа & голода
+1st boss slain	1-ый босс убит
+2nd boss slain	2-ой босс убит
+3rd boss slain	3-ий босс убит
+4th boss slain	4-ый босс убит
+1st boss slain by Warrior, Mage, Rogue & Huntress	1-ый босс убит Воином, Магом, Разбойником & Охотницей
+3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	Третий босс убит Гладиатором, Берсерком, Чернокнижником, Боевым Магом, Бегуном, Убийцей, Снайпером & Травницей
+Ring of Haggler obtained	Кольцо Торгаша получено
+Ring of Thorns obtained	Кольцо Шипов получено
+13 points of Strength attained	13 очков Силы достигнуто
+15 points of Strength attained	15 очков Силы достигнуто
+17 points of Strength attained	17 очков Силы достигнуто
+19 points of Strength attained	19 очков Силы достигнуто
+10 pieces of food eaten	10 кусков пищи съедено
+20 pieces of food eaten	20 кусков пищи съедено
+30 pieces of food eaten	30 кусков пищи съедено
+40 pieces of food eaten	40 кусков пищи съедено
+Item of level 3 acquired	Получен предмет 3 уровня
+Item of level 6 acquired	Получен предмет 6 уровня
+Item of level 9 acquired	Получен предмет 9 уровня
+Item of level 12 acquired	Получен предмет 12 уровня
+All rare monsters slain	Все редкие монстры побеждены
+Amulet of Yendor obtained	Амулет Эндора получен
+Amulet of Yendor obtained by Warrior, Mage, Rogue & Huntress	Амулет Эндора получен Воином, Магом, Разбойником & Охотницей
+7-hit combo	7 комбо ударов за серию
+3 potions cooked	3 зелья изготовлено
+6 potions cooked	6 зелий изготовлено
+9 potions cooked	9 зелий изготовлено
+12 potions cooked	12 зелий изготовлено
+Level completed without killing any monsters	Прошёл уровень не убив ни одного монстра
+Monster killed by a Grim weapon	Монстр убит Мрачным оружием
+6 piranhas killed	6 пираний убито
+5 monsters killed at nighttime	5 монстров убито ночью
+10 games played	10 игр сыграно
+100 games played	100 игр сыграно
+500 games played	500 игр сыграно
+2000 games played	2000 игр сыграно
+Happy end	Счастливый конец
+Challenge won	Испытание пройдено
+Thanks for your support!	Спасибо за поддержку!
+On diet	Без еды
+Faith is my armor	Без брони
+Pharmacophobia	Без зелий исцеления
+Barren land	Без росы и семян
+Swarm intelligence	Коллективный разум
+Into darkness	Тьма
+Forbidden runes	Запрещенные руны
+Well of Health	Источник Исцеления
+Well of Awareness	Источник Чутья
+Well of Transmutation	Источник Трансмутации
+Sacrificial chamber	Комната жертвоприношений
+Garden	Сад
+Animated statue	Ожившая статуя
+Sad ghost	Печальный призрак
+Old wandmaker	Старый мастер
+Troll blacksmith	Тролль-кузнец
+Ambitious imp	Амбициозный бес
+Killed by %1$s on level %2$d	Убит монстром: %1$s, на уровне %2$d
+Killed by your own %1$s on level %2$d	Убит собственной палочкой: %1$s, на уровне %2$d
+Killed by the %1$s on level %2$d	Убит глифом: %1$s, на уровне %2$d
+Killed by an explosion of a bomb on level %d	Погиб в результате взрыва бомбы на уровне %d
+Killed by discharge of %1$s on level %2$d	Убит ловушкой: %1$s, на уровне %2$d
+Burned to death on level %d	Сгорел живьём на уровне %d
+Starved to death on level %d	Помер с голоду на уровне %d
+Died from poison on level %d	Отравился на уровне %d
+Died from toxic gas on level %d	Погиб от токсичного газа на уровне %d
+Bled to death on level %d	Истёк кровью на уровне %d
+Killed by a caustic ooze on level %d	Убит едкой слизью на уровне %d
+Fell to death on level %d	Разбился насмерть об уровень %d
+Obtained the Amulet of Yendor	Заполучил Амулет Эндора
+OK, a deal is a deal, dat's what I can do for you: I can reforge 2 items and turn them into one of a better quality.	Окей, сделка есть сделка, расклад такой: я перекую тебе два предмета в один, но лучший качеством.
+Select an item to reforge	Выбери предмет для перековки
+Reforge them	Перековать
+Potions	Зелья
+Scrolls	Свитки
+Which way will you follow?	Какой дорогой последуешь?
+I'll decide later	Приму решение позже
+Do you want to respec into %s?	Ты хочешь переучится на  класс %s?
+Yes, I want to respec	Да, я хочу переучится
+Maybe later	Может быть позже
+Mastery	Мастерство
+ERROR	ОШИБКА
+Settings	Настройки
+Rankings	Рекорды
+Start New Game	Начать Новую Игру
+Main Menu	Главное Меню
+Exit Game	Выход игры
+Return to Game	Вернутся в Игру
+Buffs	Усиления
+Experience	Опыт
+Catalogus	Каталог
+Oh yes! You are my hero!\nRegarding your reward, I don't have cash with me right now, but I have something better for you. This is my family heirloom ring: my granddad took it off a dead paladin's finger.	О, да! Ты мой герой!\nНа счёт награды, наличных у меня при себе нет, но я могу предложить кое-что получше. Это кольцо - моя семейная реликвия: мой дедуля снял его с пальца мёртвого паладина.
+Take the ring	Взять кольцо
+There is nothing here.	Здесь ничего нет.
+Chest	Сундук
+Locked chest	Запертый сундук
+Crystal chest	Кристаллический сундук
+Tomb	Гробница
+Skeletal remains	Останки скелета
+You won't know what's inside until you open it!	Ты не узнаешь, что внутри, пока не откроешь!
+ But to open it you need a golden key.	 Но, чтобы открыть, тебе понадобится золотой ключ.
+You can see %s inside, but to open the chest you need a golden key.	Внутри ты видишь предмет - %s, но чтобы открыть сундук понадобится золотой ключ.
+This ancient tomb may contain something useful, but its owner will most certainly object to checking.	В этой древней гробнице может оказаться нечто полезное, но владелец вряд ли оценит твой энтузиазм.
+This is all that's left from one of your predecessors. Maybe it's worth checking for any valuables.	Это всё что осталось от твоего предшественника. Пожалуй стоит обыскать на предмет ценностей.
+Journal	Журнал
+Languages	Языки
+Unable to load additional information	Не удалось загрузить дополнительную информацию
+Stats	Параметры
+Items	Предметы
+Badges	Значки
+Level %1$d %2$s	Уровень %1$d %2$s
+Challenges	Испытания
+Health	Здоровье
+Strength	Сила
+Game Duration	Продолжительность Игры
+Maximum Depth	Максимальная Глубина
+Mobs Killed	Монстров Убито
+Gold Collected	Золота Собрано
+Food Eaten	Еды Употреблено
+Potions Cooked	Зелий Сварено
+Ankhs Used	Анхов Использовано
+You died, but you were given another chance to win this dungeon. Will you take it?	Ты погиб, но тебе дарован ещё один шанс покорить подземелье. Воспользуешься ли ты им?
+Yes, I will fight!	Да, я продолжу биться!
+No, I give up	Нет, я сдаюсь
+Ghost's weapon	Оружие призрака
+Ghost's armor	Доспехи призрака
+Farewell, adventurer!	Прощай, авантюрист!
++	+
+-	-
+Default Zoom	Масштаб по условию
+Scale up UI	Маcштабировать ГУИ
+Immersive mode	Режим "погружение"
+Language	язык
+Music	Музыка
+Sound FX	Звуковые эффекты
+Brightness	Яркость
+Second quickslot	Второй квик-слот
+Switch to portrait	Перейти в портретный режим
+Switch to landscape	Перейти в альбомный режим
+The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	Подземелье расположено точно под городом, верхние уровни фактически являются канализацией города. Будучи условно частью города, эти уровни не столь опасны. Конечно безопасными их тоже не назовёшь, но по крайней мере, здесь не приходится волноваться о зловещей магии.
+Many years ago an underground prison was built here for the most dangerous criminals. At the time it seemed like a very clever idea, because this place indeed was very hard to escape. But soon dark miasma started to permeate from below, driving prisoners and guards insane. In the end the prison was abandoned, though some convicts were left locked up here.	Много лет назад на этом месте возвели подземную тюрьму для содержания опаснейших преступников. Тогда это оказалось весьма недурственной идеей, поскольку побег оттуда был воистину проблематичен. Но вскоре чёрные испарения стали сочиться из глубин, лишая рассудка стражников и заключённых. В конце концов тюрьму забросили, оставив некоторых заключённых взаперти.
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	Пещеры, протянувшиеся под тюрьмой, вряд ли можно назвать обитаемыми. Они слишком глубоко, вне досягаемости Города и слишком бедны минералами, чтобы заинтересовать дворфов. В прошлом здесь располагалась торговая точка, на пути соединяющим две стороны, но она сгинула вместе с падением Дворфийской Метрополии. Теперь здесь есть лишь вездесущие гноллы и подземные твари.
+Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday the mechanized army of dwarves has successfully repelled the invasion of the old god and his demon army. But it is said, that the returning warriors have brought seeds of corruption with them, and that victory was the beginning of the end for the underground kingdom.	Дворфийская Метрополия была когда-то величайшим городом-государством подземного народа. В дни его расцвета механизированная армия дворфов смогла отбиться от вторжения старого бога и его армии демонов. Говорится, что вернувшиеся воины несли с собой семя разрушения, и что эта победа лишь ознаменовала кончину подземного царства.
+In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	В прошлом эти уровни считались задворками Метрополии. Победа над старым богом далась дворфам дорогой ценой, и они были не в силах зачистить местность от оставшихся демонов. Со временем демоны овладели этими местом, теперь оно зовётся Чертогом Демонов.\n\nЛишь немногие путешественники заходили так далеко...
+FOR SALE: %1$s - %2$dg	В ПРОДАЖЕ: %1$s - %2$dg
+Buy for %dg	Купить за %dg
+Sell for %dg	Продать за %dg
+Sell 1 for %dg	Продать 1 за %dg
+Sell all for %dg	Продать все за %dg
+You've sold your %1$s for %2$dg	Ты продал %1$s за %2$dg
+You've bought %1$s for %2$dg	Ты купил %1$s за %2$dg
+Oh, I see you have succeeded! I do hope it hasn't troubled you too much. As I promised, you can choose one of my high quality wands.	О, я вижу ты преуспел! Надеюсь это не доставило тебе особых хлопот. Как обещано, ты волен выбрать одну из моих лучших палочек.
+Battle wand	Боевая палочка
+Non-battle wand	Не боевая палочка
+Good luck in your quest, %s!	Удачи тебе в твоих свершениях, %s!
+Select an item for the quickslot	Выбери предмет для быстрой ячейки
+smth	предмет
+DROP	ВЫКИНУТЬ
+THROW	МЕТНУТЬ
+Your pack is too full for the %s	У тебя нету места для предмета %s
+Choose direction of throw	Выбери направление броска
+Because of frequent use, your %s has broken.	Из-за частого применения твой предмет %s сломался.
+Because of frequent use, your %s is going to break soon.	Из-за частого применения твой предмет %s скоро сломается.
+EQUIP	НАДЕТЬ
+UNEQUIP	СНЯТЬ
+You can't remove cursed %s!	Ты не можешь снять проклятый предмет %s!
+Amulet of Yendor	Амулет Эндора
+END THE GAME	ЗАВЕРШИТЬ ИГРУ
+The Amulet of Yendor is the most powerful known artifact of unknown origin. It is said that the amulet is able to fulfill any wish if its owner's will-power is strong enough to "persuade" it to do it.	Амулет Эндора, могущественнейший артефакт, неведомого происхождения. Считается, что он может исполнить любое желание, если воля его обладателя достаточно сильна, для того чтобы "убедить" амулет.
+Ankh	Анх
+The ancient symbol of immortality grants an ability to return to life after death. Upon resurrection all non-equipped items are lost.	Древний символ бессмертия дарующий возможность вернутся к жизни после смерти. При воскрешении все не надетые вещи теряются.
+armor kit	инструменты
+Using this kit of small tools and materials anybody can transform any armor into an "epic armor", which will keep all properties of the original armor, but will also provide its wearer a special ability depending on his class. No skills in tailoring, leatherworking or blacksmithing are required.	Используя этот набор маленьких инструментов и материалов любой способен превратить броню в "эпическую броню", сохраняя свойства прежней брони, но при этом давая носителю особую способность в завиости от класса персонажа. Не требует навыков вышивания, кожевника или кузница.
+Select an armor to upgrade	Выбери броню для улучшения
+you applied the armor kit to upgrade your %s	ты применил инструменты для улучшения предмета %s
+bomb	бомбить
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	Это относительно небольшая бомба, наполненный черным порохом. Удобно, его предохранитель горит автоматически, когда бомба брошена.
+You killed yourself with a bomb...	Ты убил себя с бомбой...
+dewdrop	капля росы
+A crystal clear dewdrop.	Кристально чистая капля росы.
+dew vial	флакончик росы
+You can store excess dew in this tiny vessel for drinking it later. If the vial is full, in a moment of deadly peril the dew will be consumed automatically.	Ты можешь сохранить лишнюю росу, поместив её в этот флакончик. Если он полон, в момент смертельной опасности, роса будет употреблена автоматически.
+The dew vial was emptied to heal your wounds.	Ты опустошил флакончик росы чтобы залечить раны.
+You collected a dewdrop into your dew vial.	Ты собрал капельку росы в свой флакончик росы.
+Your dew vial is full!	Флакончик росы заполнен!
+Your dew vial is empty!	Флакончик росы пуст!
+This is a mimic!	Это мимик!
+honeypot	горшок меда
+SHATTER	РАЗРУШАТЬ
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	Существует не так много меда в этой маленькой приманки, но есть золотое пчелы там и он не хочет, чтобы оставить его.
+gold	золото
+Collect gold coins to spend them later in a shop.	Собирай золотые монеты, чтобы позже торговать в магазине.
+A pile of %d gold coins.	Горсть из %d золотых монет.
+One gold coin.	Одна золотая монетка.
+you wince as your grip involuntarily tightens around your %s	ты не в силах разжать пальцы охватившие %s
+lloyd's beacon	маяк Ллойда
+SET	УСТАНОВКА
+RETURN	ВОЗВРАТ
+Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	Маяк Ллойда это интерактивное волшебное устройство, которое позволят вернутся в место где ты уже был.
+Strong magic aura of this place prevents you from using the lloyd's beacon!	Могучая магическая аура этого места не позволяет использовать маяк Ллойда!
+Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Психическая аура ближайших существ не позволяет тебе использовать маяк Ллойда сейчас.
+The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Маяк Ллойда успешно установлен на твоё текущее положение, теперь ты можешь вернуться сюда в любое время.
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nЭтот маяк был установлен где-то на %d уровне Pixel Dungeon.
+Tome of Mastery	Том Мастерства
+Tome of Remastery	Том Переобучения
+This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	Эта изношенная кожаная книга не так уж велика, но ты почему-то уверен, что она многому тебя научит. Но помни, чтение этого тома требует времени.
+You can't read while blinded	Нельзя читать будучи ослеплённым
+You have chosen the way of the %s!	Теперь ты %s!
+torch	факел
+LIGHT	ЗАЖЕЧЬ
+It's an indispensable item in The Demon Halls, which are notorious for their poor ambient lighting.	Это незаменимая вещь в Чертогах Демонов, известных своим скудным освящением.
+weightstone	грузило
+APPLY	ПРИМЕНИТЬ
+Using a weightstone, you can balance your melee weapon to increase its speed or accuracy.	При помощи грузила ты можешь сбалансировать ближнее оружие, увеличивая его скорость и меткость.
+Select a weapon to balance	Выбери оружие для балансировки
+you balanced your %s to make it faster	ты сбалансировал предмет %s сделав его быстрее
+you balanced your %s to make it more accurate	ты сбалансировал предмет %s сделав его точнее
+How would you like to balance your %s?	Как ты хочешь сбалансировать предмет %s?
+For speed	На скорость
+For accuracy	На меткость
+Never mind	Забудь об этом
+PLANT	ПОСАДИТЬ
+Throw this seed to the place where you want to grow %1$s.\n\n%2$s	Посади эти семена в то место где ты хочешь вырастить %1$s.\n\n%2$s
+seed of %s	семена растения %s
+Dreamweed	Дурман-трава
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	При прикосновении Дурман-трава испускает сияющее облачко ошеломляющего газа.
+Earthroot	Земляной Корень
+When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Когда существо касается Земляного Корня, его окутывает природная броня.
+Herbal armor	Растительная броня
+Fadeleaf	Бледнолист
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	Касание Бледнолиста телепортирует любое существо в случайную точку текущего уровня.
+Firebloom	Огнецвет
+When something touches a Firebloom, it bursts into flames.	Всё, что касается Огнецвета, охватывается огнём.
+Icecap	Ледовик
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	При касании Ледовик испускает пыльцу, которая замораживает всё на своём пути.
+Rotberry	Гниловика
+Berries of this shrub taste like sweet, sweet death.	Ягоды с этого куста имеют сладкий привкус смерти.
+The seed emits a roar that echoes throughout the dungeon!	Семя издаёт рёв, эхом проносящийся по подземелью!
+Sorrowmoss	Грустномох
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Грустномох это цветок (а не мох) с лепестками острыми как бритва, покрытыми смертельным ядом.
+Sungrass	Солнечник
+Sungrass is renowned for its sap's healing properties.	Солнечник славится целебными свойствами своего сока.
+Herbal healing	Растительное исцеление
+your %s constricts around you painfully	%s болезненно впивается в твою кожу
+Interaction of different types of magic has erased the glyph on this armor!	Взаимодействие несовместимых типов магии стёрли глиф с этой брони!
+\n\nThis %1$s provides damage absorption up to "%2$d"  points per attack.	%1$s обеспечивает поглощение урона вплоть до "%2$d" очков за удар.
+\n\nBecause of your inadequate strength your movement speed and defense skill is decreased. 	\n\nИз-за недостаточной силы твоя скорость передвижения и навык защиты понизились. 
+\n\nBecause of your inadequate strength wearing this armor will decrease your movement speed and defense skill.	\n\nИз-за недостаточной силы ношение этой брони понизит твою скорость передвижения и навык защиты.
+\n\nTypical %1$s provides damage absorption up to %2$d points per attack and requires %3$d points of strength.	\n\nКак правило %1$s обеспечивает поглощение урона вплоть до %2$d очков за удар и требует %3$d очков силы.
+Probably this armor is too heavy for you.	Судя по всему эта броня слишком тяжела для тебя.
+\n\nYou are wearing the %1$s%2$s.	\n\nТы носишь предмет %1$s%2$s.
+\n\nYou can feel a malevolent magic lurking within the %s.	\n\nТы чувствуешь зловещую силу затаившуюся в предмете %s.
+The thing looks awesome!	Вот это вещь!
+Your health is too low!	У тебя слишком мало здоровья!
+You need to be wearing this armor to use its special power!	Чтобы использовать особые свойства этой брони, её надо надеть!
+cloth armor	тканевый доспех
+This lightweight armor offers basic protection.	Эта лёгкая броня обеспечивает простейшую защиту.
+huntress cloak	охотничий плащ
+A huntress in such cloak can create a fan of spectral blades. Each of these blades will target a single enemy in the huntress's field of view, inflicting damage depending on her currently equipped melee weapon.	Подобный плащ позволяет охотнице выпустить веер призрачных клинков. Каждое из этих лезвий устремится к одной из целей находящихся в поле зрения охотницы, нанося урон зависящий от используемого оружия ближнего боя.
+SPECTRAL BLADES	ПРИЗРАЧНЫЕ КЛИНКИ
+No enemies in sight	Нету видимых целей
+Only huntresses can use this armor!	Этот доспех доступен лишь охотнице!
+leather armor	кожаный доспех
+Armor made from tanned monster hide. Not as light as cloth armor but provides better protection.	Доспех изготовленный из шкуры монстра. Не столь лёгок, как тканьевый доспех, но обеспечивает большую защиту.
+mage robe	волшебный балахон
+Wearing this gorgeous robe, a mage can cast a spell of molten earth: all the enemies in his field of view will be set on fire and unable to move at the same time.	Облачённый в эти роскошные одеяния, маг способен использовать заклятие Расплавленной Земли, поджигая и обездвиживая всех врагов в поле зрения.
+MOLTEN EARTH	РАСПЛАВЛЕННАЯ ЗЕМЛЯ
+Only mages can use this armor!	Этот доспех доступен лишь магу!
+mail armor	кольчужный доспех
+Interlocking metal links make for a tough but flexible suit of armor.	Сочленение металлических колец образует прочный, но, в тоже время, не сковывающий движения доспех.
+plate armor	латный доспех
+Enormous plates of metal are joined together into a suit that provides unmatched protection to any adventurer strong enough to bear its staggering weight.	Массивные металлические пластины обеспечивают непревзойдённую защиту, доступную лишь героям способным осилить эту тяжкую ношу.
+rogue garb	разбойничий комбинезон
+Wearing this dark garb, a rogue can perform a trick, that is called "smoke bomb" (though no real explosives are used): he blinds enemies who could see him and jumps aside.	Облачившись в эти чёрные одежды, разбойник способен провернуть фокус, называемый "дымовой шашкой": ослепляя заметивших его противников и отскакивая в сторону.
+SMOKE BOMB	ДЫМОВАЯ ШАШКА
+Only rogues can use this armor!	Этот доспех доступен лишь разбойнику!
+You can only jump to an empty location in your field of view	Ты можешь отскочить лишь в свободное место, в поле твоего зрения
+Choose a location to jump to	Выбери место для отскока
+scale armor	чешуйчатый доспех
+The metal scales sewn onto a leather vest create a flexible, yet protective armor.	Металлические пластинки, нашитые на кожаную основу обеспечивают достаточную подвижность и недурную защиту.
+warrior suit of armor	боевой доспех
+While this armor looks heavy, it allows a warrior to perform heroic leap towards a targeted location, slamming down to stun all neighboring enemies.	Не смотря на кажущуюся тяжесть, эта броня позволяет воину осуществлять рывок в указанное место, оглушая ближайший врагов ударной волной.
+HEROIC LEAP	БОГАТЫРСКИЙ РЫВОК
+Only warriors can use this armor!	Этот доспех доступен лишь воину!
+Choose direction to leap	Выбери направление рывка
+%s of affection	%s влечения
+%s of anti-entropy	%s антиэнтропии
+%s of auto-repair	%s само-ремонта
+%s of bounce	%s упругости
+%s of displacement	%s перемещения
+%s of entanglement	%s пут
+%s of metabolism	%s метаболизма
+%s of multiplicity	%s умножения
+%s of potential	%s потенциала
+%s of stench	%s зловония
+%s of viscosity	%s вязкости
+deferred %d	отложено %d
+enchantment of viscosity	зачарование вязкости
+Defered damage (%d)	Отложенный урон  (%d)
+The enchantment of viscosity killed you...	Зачарование вязкости убило тебя
+OPEN	ОТКРЫТЬ
+key ring	Кольцо для ключей
+This is a copper key ring, that lets you keep all your keys separately from the rest of your belongings.	Это кольцо для ключей меди, что позволяет сохранить все ваши ключи отдельно от остальных ваших вещей.
+scroll holder	футляр для свитков
+You can place any number of scrolls into this tubular container. It saves room in your backpack and protects scrolls from fire.	В этот футляр может поместиться любое количество свитков. Он освободит место в твоём рюкзаке и защитит свитки от огня.
+seed pouch	мешочек для семян
+This small velvet pouch allows you to store any number of seeds in it. Very convenient.	Этот маленький бархатный мешочек вмещает любое количество семян. Полезная вещь.
+wand holster	чехол для палочек
+This slim holder is made of leather of some exotic animal. It allows to compactly carry up to %d wands.	Изящное изделие, сработанное из кожи экзотического зверя, уместит в себе волшебные палочки в количестве до %d.
+ration of food	сухпаёк
+Nothing fancy here: dried meat, some biscuits - things like that.	Дёшево и сердито: вяленое мясо, немного печенек - и так далее.
+That food tasted delicious!	Вкуснечка!
+chargrilled meat	мясо приготовленное на углях
+It looks like a decent steak.	Выглядит достойно.
+frozen carpaccio	замороженный карпаччо
+It's a piece of frozen raw meat. The only way to eat it is by cutting thin slices of it. And this way it's surprisingly good.	Кусок сырого промороженного мяса. Съесть его можно лишь отрезая тоненькие ломтики. Которые получаются на удивление вкусными.
+You feel your skin hardens!	Ты чувствуешь как твоя кожа крепчает!
+Refreshing!	Освежает!
+You feel better!	Тебе похорошело!
+mystery meat	подозрительное мясо
+Eat at your own risk!	Съешь на свой страх и риск!
+Oh it's hot!	Оу, остренько!
+You can't feel your legs!	У тебя отнялись ноги!
+You are not feeling well.	Что-то тебе не хорошо.
+You are stuffed.	Ты объелся.
+That food tasted... strange.	Какой... подозрительный вкус.
+overpriced food ration	дорогущий сухпаёк
+It looks exactly like a standard ration of food but smaller.	От просто сухпайка отличается только меньшим размером.
+That food tasted good.	Достаточно вкусно.
+pasty	пирог
+This is authentic Cornish pasty with traditional filling of beef and potato.	Традиционный Корнуоллский пирог с начинкой из говядины и картофеля.
+golden key	золотой ключ
+The notches on this golden key are tiny and intricate. Maybe it can open some chest lock?	Засечки на этом ключе имеют миниатюрную, замысловатую форму. Наверное он подойдёт к какому-нибудь сундуку?
+iron key	железный ключ
+The notches on this ancient iron key are well worn; its leather lanyard is battered by age. What door might it open?	Засечки на этом древнем ключе износились; продетый в него кожаный ремень давно потрескался. Какую дверь им можно открыть?
+iron key from depth %d	железный ключ с %d этажа
+skeleton key	ключ-скелет
+This key looks serious: its head is shaped like a skull. Probably it can open some serious door.	Весьма внушительный ключ: с головкой в форме черепа. Пожалуй он смог бы открыть некую внушительную дверь.
+%s potion	%s зелье
+This flask contains a swirling %s liquid. Who knows what it will do when drunk or thrown?	В этом флаконе содержится  %s зелье. Кто знает, что станется, если её выпить или швырнуть?
+DRINK	ВЫПИТЬ
+Harmful potion!	Вредное зелье!
+Beneficial potion	Полезное зелье
+Are you sure you want to drink it? In most cases you should throw such potions at your enemies.	Ты уверен, что стоит это пить? Обычно такие зелья кидают во врагов.
+Are you sure you want to throw it? In most cases it makes sense to drink it.	Ты уверен, что стоит это кидать? Как правило подобные зелья выпивают.
+The flask shatters and %s liquid splashes harmlessly	Флакон разбивается и %s зелье безвредно растекается
+turquoise	голубое
+crimson	алое
+azure	синее
+jade	зелёное
+golden	золотое
+magenta	лиловое
+charcoal	чёрное
+ivory	белесое
+amber	янтарное
+bistre	коричневое
+indigo	фиолетовое
+silver	серебряное
+Potion of Experience	Зелье Опыта
+The storied experiences of multitudes of battles reduced to liquid form, this draught will instantly raise your experience level.	Опыт накопленный в неисчислимых битвах преобразован в форму зелья, такой напиток моментально повысит твой уровень опыта.
+Potion of Frost	Зелье Мороза
+Upon exposure to open air, this chemical will evaporate into a freezing cloud, causing any creature that contacts it to be frozen in place, unable to act and move.	При контакте с воздухом этот химикат испарится, образуя леденящее облачко, примораживающее к месту всякое существо, которое его коснётся, лишая того возможности пошевелится.
+Potion of Healing	Зелье Исцеления
+An elixir that will instantly return you to full health and cure poison.	Эликсир мгновенно восстановит твоё здоровье и излечит от яда.
+Your wounds heal completely.	Твои раны полностью затянулись.
+Potion of Invisibility	Зелье Невидимости
+Drinking this potion will render you temporarily invisible. While invisible, enemies will be unable to see you. Attacking an enemy, as well as using a wand or a scroll before enemy's eyes, will dispel the effect.	Выпив это зелье ты станешь временно невидимым. Враги не смогут увидеть тебя, но нападение на врага, также как использование палочки или свитка у них на глазах, сделает тебя видимым.
+Potion of Levitation	Зелье Левитации
+Drinking this curious liquid will cause you to hover in the air, able to drift effortlessly over traps. Flames and gases fill the air, however, and cannot be bypassed while airborne.	Выпив эту занятную субстанцию ты обретёшь способность парить над поверхностью, минуя ловушки. Но, поскольку огонь и газ заполняют воздух, их ты облететь не сможешь.
+You float into the air!	Ты воспарил над землёй!
+Potion of Liquid Flame	Зелье Жидкого Пламени
+This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	Эта фляга содержит мощный реагент, который мгновенно воспламенится при контакте с воздухом.
+Potion of Might	Зелье Могущества
+This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	Это сильнодействующее средство нальёт твои мышцы, перманентно повышая твою силу на 1, а здоровье на 5 очков.
++1 str, +5 ht	+1 сила, +5 здоровье
+Potion of Mind Vision	Зелье Ясновидения
+After drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls. Also this potion will permit you to see through nearby walls and doors.	Выпив это ты обретёшь способность улавливать мозговые волны удалённых существ, что позволит тебе чувствовать живые организмы сквозь стены. Также это зелье позволит тебе видеть сквозь ближайшие стены и двери.
+You can somehow feel the presence of other creatures' minds!	Ты каким-то образом почувствовал присутствие других разумных существ!
+You can somehow tell that you are alone on this level at the moment.	Что-то тебе подсказывает, что ты единственное живое существо на этом уровне.
+Potion of Paralytic Gas	Зелье Парализующего Газа
+Upon exposure to open air, the liquid in this flask will vaporize into a numbing yellow haze. Anyone who inhales the cloud will be paralyzed instantly, unable to move for some time after the cloud dissipates. This item can be thrown at distant enemies to catch them within the effect of the gas.	При контакте с воздухом эта жидкость испарится, образуя желтоватую дымку. Любой вдохнувший его будет мгновенно парализован и сможет двинуться лишь спустя некоторое время после испарения дымки. Этот предмет можно швырнуть во врагов, чтобы парализовать их.
+Potion of Purification	Зелье Очищения
+This reagent will quickly neutralize all harmful gases in the area of effect. Drinking it will give you a temporary immunity to such gases.	Этот реагент мгновенно нейтрализует все вредоносные газы в помещении. Выпив его ты временно получишь иммунитет к подобным газам.
+You feel uncommon freshness in the air.	Воздух внезапно посвежел.
+You've stopped sensing any smells!	Ты потерял обоняние!
+Potion of Strength	Зелье Силы
+This powerful liquid will course through your muscles, permanently increasing your strength by one point.	Это сильнодействующее средство нальёт твои мышцы, перманентно повышая твою силу на 1.
+Newfound strength surges through your body.	Новоприобретённая сила пульсирует в твоём теле.
++1 str	+1 сила
+Potion of Toxic Gas	Зелье Токсичного Газа
+Uncorking or shattering this pressurized glass will cause its contents to explode into a deadly cloud of toxic green gas. You might choose to fling this potion at distant enemies instead of uncorking it by hand.	При малейшем повреждении или попытке открыть этот сосуд, заполненный под давлением, приведёт к взрыву токсичного газа. Тебе стоит предпочесть метнуть его во врага, нежели пытаться это открыть.
+corpse dust	трупная пыль
+The ball of corpse dust doesn't differ outwardly from a regular dust ball. However, you know somehow that it's better to get rid of it as soon as possible.	Горстка трупной пыли неотличима от пыли обыкновенной. Хотя тебя не покидает чувство, что лучше от этого избавится, как можно скорее.
+dark gold ore	самородок мракозлата
+This metal is called dark not because of its color (it doesn't differ from the normal gold), but because it melts under the daylight, making it useless on the surface.	Этот металл зовётся мрачным не из-за его цвета (он не отличим от простого золота), а из-за того что он плавится от солнечного света, в связи с чем, его невозможно использовать на поверхности.
+dried rose	сухая роза
+The rose has dried long ago, but it has kept all its petals somehow.	Эта роза иссохла много лет тому назад, но, не смотря на это, сохранила каждый лепесток.
+dwarf token	дворфийский жетон
+Many dwarves and some of their larger creations carry these small pieces of metal of unknown purpose. Maybe they are jewelry or maybe some kind of ID. Dwarves are strange folk.	Многие дворфы и их наиболее массивные творения, носили эти маленькие металлические штучки. Для чего они нужны, остаётся загадкой . Может это были украшения или, своего рода, удостоверения. Дворфы - странный народец.
+phantom fish	призрачная рыба
+EAT	СЪЕСТЬ
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	Ты едва можешь разглядеть эту крошечную прозрачную рыбку в воздухе. В воде она практически невидима.
+You see your hands turn invisible!	Твои руки становятся невидимыми!
+pickaxe	кирка
+This is a large and sturdy tool for breaking rocks. Probably it can be used as a weapon.	Это крупное, крепкое орудие используется для раскалывания камней. Как простое оружие оно тоже может сгодится.
+MINE	ДОБЫВАТЬ
+There is no dark gold vein near you to mine	Ты не видишь ни одного месторождения мракозлата в зоне досягаемости
+giant rat skull	череп гигантской крысы
+It could be a nice hunting trophy, but it smells too bad to place it on a wall.	Это могло бы стать неплохим трофеем, о не хотелось бы вешать на стену нечто столь зловонное.
+%s ring	кольцо с %s
+This metal band is adorned with a large %s gem that glitters in the darkness. Who knows what effect it has when worn?	Это металлическое колечко украшено %s переливающимся на свету. Кто знает какой эффект оно может оказать при надевании?
+broken %s	Сломанный предмет %s
+you are now familiar enough with your %1$s to identify it. It is %2$s.	ты достаточно хорошо знаком с предметом %1$s чтобы его опознать. Это %2$s.
+Unequip one ring	Сними одно кольцо
+You can only wear two rings at a time. Unequip one of your equipped rings.	Ты можешь носить только два кольца сразу. Сними одно из надетых колец.
+diamond	бриллиантом
+opal	опалом
+garnet	гранатом
+ruby	рубином
+amethyst	аметистом
+topaz	топазом
+onyx	ониксом
+tourmaline	турмалином
+emerald	изумрудом
+sapphire	сапфиром
+quartz	кварцем
+agate	агатом
+Your %s tightens around your finger painfully	Проклятое %s не снять. Боль.
+%1$s\n\nThe %2$s is on your finger %3$s.	%1$s\n\n%2$s на твоём пальце %3$s
+, and because it is cursed, you are powerless to remove it	проклято, ты не в силах его снять.
+%1$s\n\nYou can feel a malevolent magic lurking within the %2$s.	%1$s\n\nТы чувствуешь зловещую магию затаившуюся внутри предмета %2$s.
+This is a %s	Это %s
+Ring of Accuracy	Кольцо Меткости
+This ring increases your chance to hit the enemy.	Это кольцо повысит твой шанс попадания по врагу.
+Ring of Detection	Кольцо Обнаружения
+Wearing this ring will allow the wearer to notice hidden secrets - traps and secret doors - without taking time to search. Degraded rings of detection will dull your senses, making it harder to notice secrets even when actively searching for them.	Это кольцо позволит тебе замечать такие секреты, как тайные двери и ловушки, не тратя время на поиски. Ослабленное кольцо обнаружения наоборот притупит твои чувства, усложнив поиск секретов.
+Ring of Elements	Кольцо Стихий
+This ring provides resistance to different elements, such as fire, electricity, gases etc. Also it decreases duration of negative effects.	Это кольцо обеспечит тебя сопротивляемостью к воздействию стихий, таких как огонь, электричество, газы и т.д. Также оно снизит время влияния негативных эффектов
+Ring of Evasion	Кольцо Уклонения
+This ring increases your chance to dodge enemy attack.	Это кольцо повысит твой шанс уклонится от вражеской атаки.
+Ring of Haggler	Кольцо Торгаша
+In fact this ring doesn't provide any magic effect, but it demonstrates to shopkeepers and vendors, that the owner of the ring is a member of The Thieves' Guild. Usually they are glad to give a discount in exchange for temporary immunity guarantee. Upgrading this ring won't give any additional bonuses.	Это кольцо не имеет волшебных эффектов, но торговцы и дельцы в курсе, что его может носить лишь член Гильдии Воров. Как правило они готовы предложить скидку, чтобы избежать проблем. Улучшение этого кольца не принесёт дополнительных бонусов.
+Ring of Haste	Кольцо Стремительности
+This ring accelerates the wearer's flow of time, allowing one to perform all actions a little faster.	Это кольцо ускорит течение времени своего владельца, в связи с чем от начнёт быстрее справятся со всевозможными задачами.
+Ring of Herbalism	Кольцо Травничества
+This ring increases your chance to gather dew and seeds from trampled grass.	Это кольцо увеличит шанс собрать росу и семена с вытоптанной травы.
+Ring of Mending	Кольцо Заживления
+This ring increases the body's regenerative properties, allowing one to recover lost health at an accelerated rate. Degraded rings will decrease or even halt one's natural regeneration.	Это кольцо увеличит регенеративные способности владельца, позволяю ему быстрее восполнять здоровье. Ослабленное кольцо снизит или может целиком остановить регенерацию организма.
+Ring of Power	Кольцо Власти
+Your wands will become more powerful in the energy field that radiates from this ring. Degraded rings of power will instead weaken your wands.	Мощь этого кольца усилит волшебные палочки владельца. Ослабленное кольцо окажет обратный эффект.
+Ring of Satiety	Кольцо Сытости
+Wearing this ring you can go without food longer. Degraded rings of satiety will cause the opposite effect.	Носитель кольца сможет дольше продержаться без еды. Ослабленное кольцо подстегнёт голод.
+Ring of Shadows	Кольцо Теней
+Enemies will be less likely to notice you if you wear this ring. Degraded rings of shadows will alert enemies who might otherwise not have noticed your presence.	Враги имеют меньший шанс заметить носителя этого кольца. Ослабленное кольцо наоборот привлечёт внимание врагов, которые в простой ситуации могли тебя и не заметить.
+Ring of Thorns	Кольцо Колючек
+Though this ring doesn't provide real thorns, an enemy that attacks you will itself be wounded by a fraction of the damage that it inflicts. Upgrading this ring won't give any additional bonuses.	Хоть само кольцо и не обладает колючками, всякий атакующий враг ощутит на своей шкуре часть нанесённого тебе урона. Улучшение этого кольца не принесёт дополнительных бонусов.
+scroll "%s"	свиток "%s"
+This parchment is covered with indecipherable writing, and bears a title of rune %s. Who knows what it will do when read aloud?	Этот свиток покрыт непонятными письменами и озаглавлен руной %s. Кто знает, что случится если его прочесть вслух?
+KAUNAN	КАУНАН
+SOWILO	СОВИЛОУ
+LAGUZ	ЛАГУЗ
+YNGVI	ВАЙНДЖИ
+GYFU	ГАЙФУ
+RAIDO	РАЙДО
+ISAZ	ИЗАС
+MANNAZ	МАННАЗ
+NAUDIZ	НАУДИЗ
+BERKANAN	БЕРКАНАН
+ODAL	ОДАЛ
+TIWAZ	ТИВАЗ
+Select an item	Выбери предмет
+Do you really want to cancel this scroll usage? It will be consumed anyway.	Ты уверен что хочешь отменить использование свитка? Он пропадёт в любом случае.
+Yes, I'm positive	Да, пусть так
+Scroll of Challenge	Свиток Вызова
+When read aloud, this scroll will unleash a challenging roar that will awaken all monsters and alert them to the reader's location.	При прочтении вслух этот свиток издаст бросающий вызов рёв, указывая место твоего положения всем монстрам на уровне.
+The scroll emits a challenging roar that echoes throughout the dungeon!	Свиток испускает бросающий вызов рёв, эхом проносящийся по подземелью!
+Scroll of Identify	Свиток Опознания
+Permanently reveals all of the secrets of a single item.	Раскрывает все секреты одного предмета.
+Select an item to identify	Выбери предмет для опознания
+It is %s	Это %s
+Scroll of Lullaby	Свиток Колыбельной
+A soothing melody will put all creatures in your field of view into a deep sleep, giving you a chance to flee or make a surprise attack on them.	Убаюкивающая мелодия, создаваемая свитком, усыпить всех существ в поле зрения, позволяя тебе сбежать или давая возможность нанести неожиданный удар.
+The scroll utters a soothing melody.	Свиток испускает убаюкивающую мелодию.
+The scroll utters a soothing melody and the %s falls asleep!	Свиток испускает убаюкивающую мелодию и %s засыпает!
+The scroll utters a soothing melody and the monsters fall asleep!	Свиток испускает убаюкивающую мелодию и монстры засыпают!
+Scroll of Magic Mapping	Свиток Волшебной Карты
+When this scroll is read, an image of crystal clarity will be etched into your memory, alerting you to the precise layout of the level and revealing all hidden secrets. The locations of items and creatures will remain unknown.	При прочтении свитка, в твоей памяти отчётливо выстроится картина, показывающая карту уровня и все его секреты. Но, расположение предметов и существ останется неизвестным.
+You are now aware of the level layout.	Теперь ты знаешь план уровня.
+Scroll of Mirror Image	Свиток Двойника
+The incantation on this scroll will create illusionary twins of the reader, which will chase his enemies.	Прочтение свитка создаст твоего иллюзорного близнеца, который устремится в погоню за врагами.
+Scroll of Psionic Blast	Свиток Ментального Удара
+This scroll contains destructive energy, that can be psionically channeled to inflict a massive damage to all creatures within a field of view. An accompanying flash of light will temporarily blind everybody in the area of effect including the reader of the scroll.	Этот свиток содержит разрушительную энергию, которая, по воле владельца, устремится ко всем врагам, в поле зрения, нанося им непомерный урон. Этот эффект сопровождается сильнейшей вспышкой, которая ослепит всех присутствующих, включая владельца.
+Scroll of Recharging	Свиток Перезарядки
+The raw magical power bound up in this parchment will, when released, recharge all of the reader's wands to full power.	Сырая магическая энергия, заточённая в этом свитке восстановит заряд всех волшебных палочек того, кто его прочтёт.
+a surge of energy courses through your pack, recharging your wand	поток энергии пробежал по твоему рюкзаку, перезарядив волшебную палочку
+a surge of energy courses through your pack, recharging your wands	поток энергии пробежал по твоему рюкзаку, перезарядив волшебные палочки
+a surge of energy courses through your pack, but nothing happens	поток энергии пробежал по твоему рюкзаку, но ничего не изменилось
+Scroll of Remove Curse	Свиток Снятия Проклятия
+The incantation on this scroll will instantly strip from the reader's weapon, armor, rings and carried items any evil enchantments that might prevent the wearer from removing them.	Прочитав этот свиток ты призовёшь волшебную силу, которая развеять проклятья со всех предметов, позволяя тебе их снять.
+Your pack glows with a cleansing light, and a malevolent energy disperses.	Очистительный свет пробежал по твоему рюкзаку, изгоняю зловещую силу.
+Your pack glows with a cleansing light, but nothing happens.	Очистительный свет пробежал по твоему рюкзаку, но ничего не изменилось.
+Scroll of Teleportation	Свиток Телепортации
+The spell on this parchment instantly transports the reader to a random location on the dungeon level. It can be used to escape a dangerous situation, but the unlucky reader might find himself in an even more dangerous place.	Этот свиток перенесёт заклинателя в случайную точку текущего уровня. Это может помочь сбежать из опасных ситуаций, хотя невезение может привести в место и похуже.
+In a blink of an eye you were teleported to another location of the level.	В мгновение ока, ты переместился в другую область уровня.
+Strong magic aura of this place prevents you from teleporting!	Могучая магическая аура этого места не позволяет тебе телепортироваться!
+Scroll of Terror	Свиток Ужаса
+A flash of red light will overwhelm all creatures in your field of view with terror, and they will turn and flee. Attacking a fleeing enemy will dispel the effect.	Красная вспышка повергнет всех видимых существ в ужас, обращая их в бегство. Атакуя убегающего врага ты снимешь с него заклятие.
+The scroll emits a brilliant flash of red light	Свиток испускает яркую вспышку красного света
+The scroll emits a brilliant flash of red light and the %s flees!	Свиток испускает яркую вспышку красного света и %s спасается бегством!
+The scroll emits a brilliant flash of red light and the monsters flee!	Свиток испускает яркую вспышку красного света и монстры спасаются бегством!
+Scroll of Upgrade	Свиток Улучшения
+This scroll will upgrade a single item, improving its quality. A wand will increase in power and in number of charges; a weapon will inflict more damage or find its mark more frequently; a suit of armor will deflect additional blows; the effect of a ring on its wearer will intensify. Weapons and armor will also require less strength to use, and any curses on the item will be lifted.	Этот свиток улучшить единственную вещь, повышая её качество. Сила и ёмкость палочки возрастёт; оружие получит больший урон или увеличит меткость; броня получит большую защиту; возможности кольца возрастут. Оружие и броня, также, потребуют меньше силы для использования, а любой проклятый предмет будет очищен.
+Select an item to upgrade	Выбери предмет для улучшения
+Scroll of Enchantment	Свиток Зачарования
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	Этот свиток наделит оружие или броню какими-нибудь чарами, кои наделят предмет особыми силами.
+Select an enchantable item	Выбери предмет для зачарования
+your %s glows in the dark	твой предмет %s мерцает во тьме
+Scroll of Wipe Out	Свиток Уничтожения
+READ	ЧИТАТЬ
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	Чтение этого свитка освободит гнев духов подземелья, убивая всё живое на уровне. Ну, почти всё. Некоторые, самые могучие существа могут избежать его воздействия.
+You can't read a scroll while blinded	Ты не можешь прочесть свиток, будучи ослеплённым
+%s wand	%s волшебная палочка
+ZAP	ВЗМАХНУТЬ
+This thin %s wand is warm to the touch. Who knows what it will do when used?	Эта тонкая %s палочка тепла на ощупь. Кто знает, на что она способна?
+When this wand is used as a melee weapon, its average damage is %d points per hit.	Используя эту палочку в качестве оружия ближнего боя, она нанесёт %d урона за удар.
+You can use this wand as a melee weapon.	Ты можешь использовать это палочку как оружие ближнего боя.
+your wand fizzles; it must be out of charges for now	твоя палочка издаёт потрескивание; наверное в ней кончились заряды
+You can't target yourself	Ты не можешь нацелится на себя
+Choose direction to zap	Выбери направление взмаха
+You are now familiar enough with your %s.	Теперь ты достаточно знаком с твоим предметом %s.
+holly	ясеневая
+yew	тисовая
+ebony	эбеновая
+cherry	вишнёвая
+teak	тиковая
+rowan	рябиновая
+willow	ивовая
+mahogany	сандаловая
+bamboo	бамбуковая
+purpleheart	лиловая
+oak	дубовая
+birch	берёзовая
+Wand of Amok	Палочка Буйства
+The purple light from this wand will make the target run amok attacking random creatures in its vicinity.	Лиловый свет, испускаемый этой палочкой, заставит цель впасть в буйство и, без разбора, атаковать любое существо в зоне досягаемости.
+Wand of Avalanche	Палочка Камнепада
+When a discharge of this wand hits a wall (or any other solid obstacle) it causes an avalanche of stones, damaging and stunning all creatures in the affected area.	Когда разряд палочки ударяет в стену (или другое твёрдое препятствие) он вызывает обвал камней, нанося урон и оглушая всех существ в области действия.
+You killed yourself with your own Wand of Avalanche...	Ты убился об собственную Палочку Камнепада...
+Wand of Blink	Палочка Скачка
+This wand will allow you to teleport in the chosen direction. Creatures and inanimate obstructions will block the teleportation.	Эта палочка позволит тебе телепортироваться в выбранное место. Существа и неодушевлённые предметы помешают телепортации.
+Wand of Disintegration	Палочка Дезинтеграции
+This wand emits a beam of destructive energy, which pierces all creatures in its way. The more targets it hits, the more damage it inflicts to each of them.	Эта палочка извергает луч разрушительной энергии, пронзающий всех существ на пути. Чем больше целей он поразит, тем больше урона получит каждая из них.
+Wand of Firebolt	Палочка Огнеплюя
+This wand unleashes bursts of magical fire. It will ignite flammable terrain, and will damage and burn a creature it hits.	Эта палочка выпускает сгусток волшебного пламени. Который может поджечь воспламеняющуюся среду, а также нанести урон и поджечь целевое существо.
+You killed yourself with your own Wand of Firebolt...	Ты погорел от собственной Палочки Огнеплюя...
+Wand of Flock	Палочка Стада
+A flick of this wand summons a flock of magic sheep, creating temporary impenetrable obstacle.	Взмах этой палочки призовёт стадо волшебных овец, которые образуют временное непреодолимое препятствие.
+sheep	овца
+This is a magic sheep. What's so magical about it? You can't kill it. It will stand there until it magically fades away, all the while chewing cud with a blank stare.	Это волшебная овца. Что в ней такого волшебного? Ты не сможешь её убить. Она будет стоять на месте, сосредоточенно что-то пережёвывая, пока волшебным образом не испарится.
+Baa!	Бее!
+Baa?	Бее?
+Baa.	Бее.
+Baa...	Бее...
+Bee...	Бээ...
+Ble...	Бваа...
+Wand of Lightning	Палочка Молний
+This wand conjures forth deadly arcs of electricity, which deal damage to several creatures standing close to each other.	Эта палочка испускает разряд молний поражающий несколько целей, стоящих рядом.
+You killed yourself with your own Wand of Lightning...	Ты спалился на собственной Палочке Молний...
+Wand of Magic Missile	Палочка Волшебных Зарядов
+This wand launches missiles of pure magical energy, dealing moderate damage to a target creature.	Эта палочка выпускает заряд волшебной энергии, нанося средний урон целевому существу.
+DISENCHANT	РАЗВОПЛОТИТЬ
+You killed yourself with your own Wand of Magic Missile...	Ты пришлёпнул себя, своей собственной Палочкой Волшебных Зарядов...
+Select a wand to upgrade	Выбери палочку для улучшения
+you disenchanted the Wand of Magic Missile and used its essence to upgrade your %s	ты развоплотил Палочку Волшебных Зарядов, использовав её энергию для улучшения предмета %s
+Wand of Poison	Палочка Яда
+The vile blast of this twisted bit of wood will imbue its target with a deadly venom. A creature that is poisoned will suffer periodic damage until the effect ends. The duration of the effect increases with the level of the staff.	Это порочный кусок древесины извергает сгусток яда, отравляющий твою цель. Отравленное существо получает периодический урон вплоть до окончания действия эффекта. Продолжительность эффекта возрастает с уровнем палочки.
+Wand of Regrowth	Палочка Роста
+"When life ceases new life always begins to grow... The eternal cycle always remains!"	"В окончании одной жизни, новая жизнь берёт своё начало... Бесконечный цикл нерушим!"
+Wand of Slowness	Палочка Замедления
+This wand will cause a creature to move and attack at half its ordinary speed until the effect ends	Эта палочка наложит на цель временный эффект, уменьшающий её скорость атаки и движения
+Wand of Reach	Палочка Досягаемости
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	Эту полезную палочку можно использовать чтобы захватывать предметы на расстоянии и меняться местами с врагом. Волны магической энергии что она испускает повлияет на все на её пути, заставляя ловушки срабатывать, приминая траву, открывая закрытые двери и закрывая открытые. 
+You have magically transported %s into your backpack	Ты волшебным образом переместил предмет %s в свой рюкзак
+Wand of Teleportation	Палочка Телепортации
+A blast from this wand will teleport a creature against its will to a random place on the current level.	Разряд этой палочки перенесёт целевое существо в случайную точку текущего уровня, хочет оно того или нет.
+%1$s teleported %2$s to somewhere	%1$s куда-то телепортировал %2$s
+nothing happened	ничего не произошло
+You are now familiar enough with your %1$s to identify it. It is %2$s.	Ты достаточно хорошо знаком с предметом %1$s чтобы его опознать. Это %2$s.
+Interaction of different types of magic has negated the enchantment on this weapon!	Взаимодействие несовместимых типов магии разрушили чары, наложенные на это оружие!
+%1$s :%2$d	%1$s :%2$d
+broken %1$s :%2$d	сломано %1$s :%2$d
+grim %s	морозный %s
+blazing %s	искрящий %s
+eldritch %s	жуткий %s
+unstable %s	нестабильный %s
+vampiric %s	вампирический %s
+lucky %s	счастливый %s
+stunning %s	ошеломляющий %s
+venomous %s	отравленный %s
+shocking %s	шокирующий %s
+chilling %s	морозный %s
+tempered %s	закаленный %s
+This %1$s is %2$s tier-%3$d melee weapon.	%1$s - %2$s оружие ближнего боя %3$d порядка.
+a	
+a upgraded	улучшенное
+an degraded	ослабленное
+a broken	сломан
+Its average damage is %d points per hit.	Средний урон %d единиц за удар.
+Its typical average damage is %1$d points per hit and usually it requires %2$d points of strength.	Типичный средний урон составляет %1$d единицы за удар и, как правило, требует %2$d очков силы.
+Probably this weapon is too heavy for you.	Судя по всему это оружие слишком тяжело для тебя.
+This is a rather %s weapon.	Это довольно %s оружие.
+fast	быстрое
+slow	медленное
+and	и
+but	но
+accurate	меткое
+inaccurate	неточное
+It was balanced to make it faster.	Оно было сбалансировано для повышения скорости.
+It was balanced to make it more accurate.	Оно было сбалансировано для повышения точности.
+It is enchanted.	Оно зачарованно.
+You hold the %1$s at the ready%2$s.	Ты держишь %1$s наготове %2$s.
+, and because it is cursed, you are powerless to let go	, поскольку оружие проклято ты не в силах выпустить его из рук
+You can feel a malevolent magic lurking within %s.	Ты чувствуешь зловещую магию затаившуюся в оружии %s.
+battle axe	боевой топор
+The enormous steel head of this battle axe puts considerable heft behind each stroke.	Вес огромного стального наконечника этого грозного оружия чувствуется в каждом взмахе.
+dagger	кинжал
+A simple iron dagger with a well worn wooden handle.	Простейший железный кинжал с удобной деревянной рукоятью.
+glaive	глефа
+A polearm consisting of a sword blade on the end of a pole.	Копьё с лезвием от меча на конце.
+knuckleduster	кастет
+A piece of iron shaped to fit around the knuckles.	Железная скоба, плотно охватывающая пальцы.
+longsword	длинный меч
+This towering blade inflicts heavy damage by investing its heft into every cut.	Массивный клинок наносит огромный урон обрушивая на врага свой вес.
+mace	булава
+The iron head of this weapon inflicts substantial damage.	Железный наконечник этого оружия способен наносить существенный урон.
+quarterstaff	боевой посох
+A staff of hardwood, its ends are shod with iron.	Посох из твёрдого дерева, его концы окованы железом.
+short sword	короткий меч
+It is indeed quite short, just a few inches longer, than a dagger.	Действительно короткий, буквально на несколько сантиметров длиннее кинжала.
+REFORGE	ПЕРЕКОВАТЬ
+Select a weapon to upgrade	Выбери оружие для улучшения
+you reforged the short sword to upgrade your %s	ты перековал короткий меч для улучшения оружия %s
+you can't upgrade a boomerang this way	ты не сможешь улучшить бумеранг таким образом
+spear	копьё
+A slender wooden rod tipped with sharpened iron.	Тонкое древко с острым железным наконечником.
+sword	меч
+The razor-sharp length of steel blade shines reassuringly.	Отблеск острого как бритва клинка внушает уверенность.
+war hammer	боевой молот
+Few creatures can withstand the crushing blow of this towering mass of lead and steel, but only the strongest of adventurers can use it effectively.	Очень не многие существа могут пережить удар такого оружия, но не каждому путешественнику под силу его использовать .
+Missile weapon	Оружие дальнего боя
+Do you really want to equip it as a melee weapon?	Ты уверен что хочешь использовать это в качестве оружия ближнего боя?
+\n\nAverage damage of this weapon equals to %d points per hit.	\n\nСредний урон от этого оружия составляет %d единиц за удар.
+Because of your inadequate strength the accuracy and speed of your attack with this %s is decreased.	Из-за твоей недостаточной силы, скорость и точность атаки оружием %s снижены.
+Because of your excess strength the damage of your attack with this %s is increased.	За счёт более чем достаточной силы, количество урона, от оружия %s, увеличено.
+\n\nYou hold the %s at the ready.	\n\nТы держишь %s наизготове.
+boomerang	бумеранг
+Thrown to the enemy this flat curved wooden missile will return to the hands of its thrower.	Брошенное во врага, это изогнутое деревянное оружие, вернётся в руку владельца.
+curare dart	дротик кураре
+These little evil darts don't do much damage but they can paralyze the target leaving it helpless and motionless for some time.	Эти маленькие зловещие дротики наносят немного урона, но они способны временно парализовать цель.
+dart	дротик
+These simple metal spikes are weighted to fly true and sting their prey with a flick of the wrist.	Эти простые металлические шипы идеально выверены, для того чтобы точно вонзиться в свою жертву.
+incendiary dart	воспламеняющий дротик
+The spike on each of these darts is designed to pin it to its target while the unstable compounds strapped to its length burst into brilliant flames.	Кончик дротика рассчитан на то, чтобы надёжно впиться в цель, в то время, как, состав которым он обработан, вспыхнет, окутывая жертву пламенем.
+javelin	метательное копьё
+This length of metal is weighted to keep the spike at its tip foremost as it sails through the air.	Это металлическое копьё тщательно сбалансировано, чтобы его острый наконечник неизменно стремился в цель, на протяжении всего полёта.
+shuriken	сюрикен
+Star-shaped pieces of metal with razor-sharp blades do significant damage when they hit a target. They can be thrown at very high rate.	Острые как бритва металлические звёздочки наносят существенный урон своим целям. Их можно метать с большой скоростью.
+tomahawk	томагавк
+This throwing axe is not that heavy, but it still requires significant strength to be used effectively.	Хоть этот метательный топор не столь тяжёл, но, тем не менее, для обращения с ним требуется ощутимая сила.
+A cloud of confusion gas is swirling here.	Здесь витает облако дурманящего газа.
+A fire is raging here.	Здесь бушует пламя.
+Shafts of light pierce the gloom of the underground garden.	Столб света пронзает мрак подземного сада.
+A cloud of paralytic gas is swirling here.	Здесь витает облако паралитического газа.
+"Your sacrifice is worthy..."	"Твоя жертва достойна..."
+"Your sacrifice is unworthy..."	"Твоя жертва недостойна..."
+"Your sacrifice is worthy and so you are!"	"Твоя жертва достойна как и ты!"
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	Жертвенный огонь пылает здесь. Каждый кто коснется его будет отмечен как подношение духам подземелья.
+Marked for sacrifice	Знак жертвы
+A greenish cloud of toxic gas is swirling here.	Здесь витает зеленоватое облако токсичного газа.
+You died from a toxic gas..	Ты захлебнулся токсичным газом..
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Сделав глоток, ты чувствуешь как знания насыщают твой разум. Теперь ты знаешь всё о надетых на тебя предметах. Ты также чувствуешь все предметы на этом уровне и знаешь всего его секреты.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Вода этого источника излучает силу знаний. Сделай глоток чтобы раскрыть все секреты своей экипировки.
+Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	Вода этого источника излучает силу здоровья. Сделай глоток чтобы залечить свои раны и утолить голод.
+As you take a sip, you feel your wounds heal completely.	Сделав глоток, ты чувствуешь как твои раны исцеляются.
+Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	Вода этого источника излучает силу перемен. Брось в воду предмет, чтобы он превратился в нечто иное.
+Everything is covered with a thick web here.	Здесь всё покрыто паутиной.
+Amok	Амок
+Barkskin	Кожа-кора
+Bleeding	Кровотечение
+You bled to death...	Ты истёк кровью...
+Blinded	Ослеплён
+Burning	В огне
+%s burns up!	%s в огне!
+You burned to death...	Ты сгорел заживо...
+Charmed	Зачарован
+Combo	Комбо
+%d hit combo!	%d-ударное комбо!
+Crippled	Травмирован
+Frozen	Заморожен
+Fury	В ярости
+Immune to gases	Иммунитет к газам
+You are hungry.	Ты голодено.
+You are starving!	Ты истощёно!
+You starved to death...	Тебя настигла смерть от голода.
+Hungry	Голоден
+Starving	Голодает
+Invisible	Невидимый
+Levitating	Левитирующий
+Illuminated	Светящийся
+Mind vision	Ясновидение
+Caustic ooze	Едкая слизь
+%s killed you...	%s сожрала тебя...
+Paralyzed	Парализован
+Poisoned	Отравлен
+You died from poison...	Ты умер от яда...
+Blinded with rage	Ослеплён яростью
+Rooted	Спутан
+Shadowmelded	Слился с тенью
+Slowed	Замедлен
+Zeroed in	Метка снайпера
+Vertigo	Завихрение
+Weakened	Ослаблен
+backpack	рюкзак
+Real description is coming soon!	Настоящее описание скоро появится!
+You hear something died in the distance	Что-то умерло в дали
+echo of 	эхо 
+%1$s: "%2$s"	%1$s: "%2$s"
+This %s is sleeping	%s спит
+This %s is hunting	%s охотится
+This %s is fleeing	%s спасается бегством
+This %s is passive	%s бездельничает
+acidic scorpio	кислотный скорпион
+albino rat	крыса-альбинос
+crazy bandit	бандит
+vampire bat	летучая мышь-вампир
+These brisk and tenacious inhabitants of cave domes may defeat much larger opponents by replenishing their health with each successful attack.	Эти шустрые, настойчивые обитатели пещер, способны одолеть более крупного соперника, за счёт того, что с каждым успешным ударом, они восполняют часть своего здоровья.
+gnoll brute	гнолл-громила
+Brutes are the largest, strongest and toughest of all gnolls. When severely wounded, they go berserk, inflicting even more damage to their enemies.	Громилы - самые большие, сильные и выносливые из всех гноллов. Будучи израненными, они впадают в неистовство, нанося увеличенный урон.
+%s becomes enraged!	%s впал в неистовство!
+enraged	неистовый
+sewer crab	сточный краб
+These huge crabs are at the top of the food chain in the sewers. They are extremely fast and their thick exoskeleton can withstand heavy blows.	Эти огромные крабы находятся на вершине пищевой цепочки канализации. Они поразительно быстры, а их прочный хитин способен выдерживать множество ударов.
+curse personification	воплощение проклятья
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	Это существо напоминает печального призрака, но окружено вихрем тьмы. На лице его печать отчаянья.
+DM-300	DM-300
+DM-350	DM-350
+This machine was created by the Dwarves several centuries ago. Later, Dwarves started to replace machines with golems, elementals and even demons. Eventually it led their civilization to the decline. The DM-300 and similar machines were typically used for construction and mining, and in some cases, for city defense.	Эта машина был создан Дворфами много веков назад. Позднее Дворфы стали заменять машины големами, элементалями и даже демонами. Что и привело к гибели их цивилизации. Машины подобные ДМ-300, в основном, выполняли строительные и шахтёрские функции, но в случае необходимости могли защищать город.
+DM-300 repairs itself!	ДМ-300 ремонтируется!
+Mission failed. Shutting down.	Миссия провалена. Отключаюсь.
+Unauthorized personnel detected.	Обнаружено несанкционированное проникновение.
+fire elemental	огненный элементаль
+Wandering fire elementals are a byproduct of summoning greater entities. They are too chaotic in their nature to be controlled by even the most powerful demonologist.	Огненные элементали являются побочным эффектом ритуалов призыва великих сущностей. Ввиду своей хаотичной природы, воля этих созданий не подвластна даже сильнейшим демонологам.
+evil eye	око зла
+One of this demon's other names is "orb of hatred", because when it sees an enemy, it uses its deathgaze recklessly, often ignoring its allies and wounding them.	Этот демон также известен как "шар ненависти", по-скольку при виде врага, он, не задумываясь, обращает на того "взгляд смерти", не обращая внимания на то, что может ранить союзников.
+%s's deathgaze killed you...	%s's убило тебя взглядом смерти...
+fetid rat	мерзкую крысу
+This marsupial rat is much larger, than a regular one. It is surrounded by a foul cloud.	Эта сумчатая крыса гораздо крупнее обычной. Вокруг неё витает тяжелое облако.
+gnoll scout	гнолл-следопыт
+Gnolls are hyena-like humanoids. They dwell in sewers and dungeons, venturing up to raid the surface from time to time. Gnoll scouts are regular members of their pack, they are not as strong as brutes and not as intelligent as shamans.	Гноллы, это гиенообразные гуманоиды. Они обитают в канализации и подземельях, периодически совершая набеги на поверхность. Гнолл-следопыт - типичный представитель стаи, он не столь силён, как громила и не так умён, как шаман.
+golem	голем
+The Dwarves tried to combine their knowledge of mechanisms with their newfound power of elemental binding. They used spirits of earth as the "soul" for the mechanical bodies of golems, which were believed to be most controllable of all. Despite this, the tiniest mistake in the ritual could cause an outbreak.	Продукт Дворфийских экспериментов по взаимоиспользованию их навыков машиностроении и новоприобретённых знаний о покорении стихий. Духи земли заменяли "душу" механического каркаса голема, считалось что их легче всего контролировать. Не смотря на это, малейшая оплошность в ритуале приводила к плачевным последствиям.
+Goo	жижа
+spawn of Goo	Отродье Жижы
+Little known about The Goo. It's quite possible that it is not even a creature, but rather a conglomerate of substances from the sewers that gained rudiments of free will.	Жижа - загадочная вещь. Скорее всего, что это даже не существо, а масса канализационных субстанций, обретшая зачатки сознания.
+Goo is pumping itself up!	Жижа начинает накачиваться!
+glurp... glurp...	хлюп... хлюп...
+GLURP-GLURP!	ХЛЮП-ХЛЮП!
+!!!	!!!
+King of Dwarves	Царь Дворфов
+undead King of Dwarves	зомби Царя Дворфов
+The last king of dwarves was known for his deep understanding of processes of life and death. He has persuaded members of his court to participate in a ritual, that should have granted them eternal youthfulness. In the end he was the only one, who got it - and an army of undead as a bonus.	Последний из дворфийских царей известен своими выдающимися познаниями о природе жизни и смерти. Он убедил придворную свиту принять участие в ритуале, обещавшим вечную молодость. В итоге её обрёл лишь он сам, заполучив армию нежити, в качестве бонуса.
+You cannot kill me, %s... I am... immortal...	Ты не в силах меня одолеть, %s... Я... бессмертен...
+Arise, slaves!	Восстаньте, слуги!
+How dare you!	Да как ты смеешь!
+undead dwarf	дворф-нежить
+These undead dwarves, risen by the will of the King of Dwarves, were members of his court. They appear as skeletons with a stunning amount of facial hair.	Эти мёртвые дворфы, восставшие по воле своего Царя, были некогда членами его придворной свиты. Внешне они выглядят как скелеты с внушительными бородами.
+mimic	мимик
+Mimics are magical creatures which can take any shape they wish. In dungeons they almost always choose a shape of a treasure chest, because they know how to beckon an adventurer.	Мимики - магические существа, которые могут принимать любую форму по желанию. В подземельях мимики почти всегда принимают форму сундуков, они ведь знают, как лучше всего привлечь искателя приключений.
+dwarf monk	дворф монах
+These monks are fanatics, who devoted themselves to protecting their city's secrets from all aliens. They don't use any armor or weapons, relying solely on the art of hand-to-hand combat.	Монахи, это фанатики, посветившие себя защите секретов их народа от чужаков. Они не полагаются на броню и оружие, доверившись искусству рукопашного боя.
+parried	отбился
+%1$s has knocked the %2$s from your hands!	%1$s выбил %2$s из твоих рук!
+giant piranha	огромная пиранья
+These carnivorous fish are not natural inhabitants of underground pools. They were bred specifically to protect flooded treasure vaults.	Эти плотоядные рыбы не являются исконными обитателями пещерных водоёмов. Они были выведены специально для защиты затопленных сокровищниц.
+marsupial rat	сумчатая крыса
+Marsupial rats are aggressive, but rather weak denizens of the sewers. They can be dangerous only in big numbers.	Сумчатые крысы - агрессивные, но довольно слабые обитатели канализации. Тем не менее, в больших количествах, они могут представлять опасность.
+scorpio	скорпион
+These huge arachnid-like demonic creatures avoid close combat by all means, firing crippling serrated spikes from long distances.	Эти огромные членистоногие создания стараются избегать ближнего боя, выстреливая ядовитые иглы с большого расстояния.
+senior monk	старший монах
+gnoll shaman	гнолл-шаман
+The most intelligent gnolls can master shamanistic magic. Gnoll shamans prefer battle spells to compensate for lack of might, not hesitating to use them on those who question their status in a tribe.	Умнейшие из гноллов способны освоить шаманизм. Гнолл-шаман охотно использует боевые заклятия, компенсируя недостаток физической силы, а также, чтобы обезопасить свой высокий статус в обществе.
+%s's lightning bolt killed you...	%s достал тебя разрядом молнии...
+shielded brute	громила-щитоносец
+skeleton	скелет
+Skeletons are composed of corpses bones from unlucky adventurers and inhabitants of the dungeon, animated by emanations of evil magic from the depths below. After they have been damaged enough, they disintegrate in an explosion of bones.	Скелеты, состоящие из костей павших путешественников, восстали под воздействием отголосков зловещей магии таящейся в глубине подземелья. Будучи достаточно повреждёнными, они разлетаются на костяные осколки.
+blocked	прикрылся
+You were killed by the explosion of bones...	Тебя пробило костяным осколком...
+cave spinner	пещерный паук
+These greenish furry cave spiders try to avoid direct combat, preferring to wait in the distance while their victim, entangled in the spinner's excreted cobweb, slowly dies from their poisonous bite.	Эти пушистые зелёные пауки стараются избегать прямых столкновений, предпочитая выжидать в дали, пока их жертва, запутанная в паутине, медленно гибнет от яда.
+animated statue	ожившая статуя
+You would think that it's just another ugly statue of this dungeon, but its red glowing eyes give itself away. While the statue itself is made of stone, the _%s_, it's wielding, looks real.	Может показаться, что это просто очередная неприметная статуя, но красные светящиеся глаза выдают её намерения. Хоть статуя и сработана из камня, её _%s_, выглядит настоящим.
+succubus	суккуб
+The succubi are demons that look like seductive (in a slightly gothic way) girls. Using its magic, the succubus can charm a hero, who will become unable to attack anything until the charm wears off.	Суккубы, это демоны, принимающие вид соблазнительных (в слегка готическом стиле) девушек. Своим колдовством, они могут зачаровать героя, лишая его возможности атаковать, до того, как эффект пройдёт.
+swarm of flies	рой мух
+The deadly swarm of flies buzzes angrily. Every non-magical attack will split it into two smaller but equally dangerous swarms.	Смертоносный рой мух злобно жужжит. Каждая не магическая атака разобьёт его на два роя поменьше, каждый из которых не менее опасен чем полноценный рой.
+Tengu	тенгу
+memory of Tengu	память о Тенгу
+Tengu are members of the ancient assassins clan, which is also called Tengu. These assassins are noted for extensive use of shuriken and traps.	Тенгу, это члены древнего клана наёмных убийц, который также зовётся Тенгу. Они известны страстью к сюрикенам и ловушкам.
+Free at last...	Наконец-то, свобода...
+Gotcha, %s!	Попался, %s!
+crazy thief	свихнувшийся вор
+Deeper levels of the dungeon have always been a hiding place for all kinds of criminals. Not all of them could keep a clear mind during their extended periods so far from daylight. Long ago, these crazy thieves and bandits have forgotten who they are and why they steal.	Глубинные уровни подземелья всегда служили хорошим укрытием для всякого преступника. Но не всякий преступник мог сохранить рассудок, будучи отлучённым от дневного света на долгое время. Давным-давно, эти безумные бандиты и воры позабыли кто они и зачем совершают преступления.
+%1$s stole %2$s from you!	%1$s украл у тебя %2$s!
+\n\n%1$s is carrying a _%2$s_. Stolen obviously.	\n\n%1$s носит _%2$s_. Добро, конечно, краденое.
+dwarf warlock	дворф-чернокнижник
+When dwarves' interests have shifted from engineering to arcane arts, warlocks have come to power in the city. They started with elemental magic, but soon switched to demonology and necromancy.	Когда интерес дворфов перекочевал с технологий на магию, чернокнижники стали новой элитой. Начиная с магии стихий, вскоре они перешли на некромантию и демонологию.
+%s's shadow bolt killed you...	%s's уничтожил тебя стрелой теней...
+wraith	фантом
+A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Being an ethereal entity, it is very hard to hit with a regular weapon.	Фантом это мстительный дух грешника, чья могила была потревожена. Нематериальное создание крайне сложно победить простым оружием.
+Yog-Dzewa	Йог-Джева
+echo of Yog-Dzewa	эхо Йог-Джевы
+Yog-Dzewa is an Old God, a powerful entity from the realms of chaos. A century ago, the ancient dwarves barely won the war against its army of demons, but were unable to kill the god itself. Instead, they then imprisoned it in the halls below their city, believing it to be too weak to rise ever again.	Йог-Джева, это старый Бог, могучая сущность из мира хаоса. В минувшие века, древние дворфы с трудом одолели его армию демонов, но одолеть бога им было не под силу. Они заточили его в глубинах своего города, веря, что он слишком ослаблен, чтобы когда-либо вырваться на свободу.
+...	...
+Hope is an illusion...	Я надеюсь мне это почудилось...
+rotting fist	гниющий кулак
+burning fist	пылающий кулак
+god's larva	личинка бога
+golden bee	золотая пчела
+Despite their small size, golden bees tend to protect their master fiercely. They don't live long though.	Несмотря на малый размер, золотые пчелы яростно защищают своего хозяина. Однако живут они недолго.
+This %s is wandering	%s рыщет
+troll blacksmith	тролль-кузнец
+This troll blacksmith looks like all trolls look: he is tall and lean, and his skin resembles stone in both color and texture. The troll blacksmith is tinkering with unproportionally small tools.	Этот тролль-кузнец ничем не отличим от прочих троллей: высокий и сутулый, кожа его подобна камню. Тролль-кузнец орудует непропорционально маленькими инструментами.
+Hey human! Wanna be useful, eh? Take dis pickaxe and mine me some _dark gold ore_, _15 pieces_ should be enough. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Эй человечек! Хочешь принести пользу, а? Возьми ка эт кирку, да копни мне _самородков мракозлата_, _штук 15_ хватит. Чё значит, сколько я заплачу? Ах ты жадный...\nЛадно, ладно, нету у меня денег, но я могу предложить тебе своё ремесло. Ты, считай, везунчик, нашёл единственного кузнеца в округе.
+Hey human! Wanna be useful, eh? Take dis pickaxe and _kill a bat_ wit' it, I need its blood on the head. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Эй человечек! Хочешь принести пользу, а? Возьми ка эт кирку, чё-бы ей _прихлопнуть летучую мышь_,  мне нужно чёбы наконечник был в крови. Чё значит, сколько я заплачу? Ах ты жадный...\nЛадно, ладно, нету у меня денег, но я могу предложить тебе своё ремесло. Ты, считай, везунчик, нашёл единственного кузнеца в округе.
+Are you kiddin' me? Where is my pickaxe?!	Ты чё, стебёшься? Где моя кирка?!
+Dark gold ore. 15 pieces. Seriously, is it dat hard?	Самородки Мракозлата. 15 ошмётков. Чё те, трудно чёли?
+I said I need bat blood on the pickaxe. Chop chop!	Я сказал, чё кирка должна быть покрыта кровью. Шуруй, шуруй!
+Oh, you have returned... Better late dan never.	Ой же, вернулся... Лучше поздно чем никогда.
+I'm busy. Get lost!	Я занят. Отвали!
+your %s certainly looks better now	твой предмет %s теперь выглядит лучше
+Select 2 different items, not the same item twice!	Выбери 2 разных предмета, нельзя выбрать один и тот же дважды!
+Select 2 items of the same type!	Выбери 2 предмета одного типа!
+I need to know what I'm working with, identify them first!	Я чё те, справочное бюро? Распознай свои предметы, чтобы я мог с ними работать!
+I don't work with cursed items!	Э, ты чё, я с проклятыми штуками не работаю!
+It's a junk, the quality is too poor!	Чё эт за барахло? Уж больно эта штука низкокачественная!
+I can't reforge these items!	Я эт перековать не могу!
+sad ghost	печальное приведение
+The ghost is barely visible. It looks like a shapeless spot of faint light with a sorrowful face.	Приведение еле заметно. Оно похоже на бесформенную дымку с грустным лицом.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my _dried rose_... It's very important to me... Some monster stole it from my body...	Здравствуй путешественник... Когда-то я был таким же как и ты - сильным, уверенным... А теперь я мёртв... Но я не могу покинуть это место... Пока ко мне не вернётся _сухая роза_... Это очень важная для меня вещь...  Чудище стащило её с моего бездыханного тела...
+Please... Help me... _Find the rose_...	Прошу... Помоги... _Найди розу_...
+Yes! Yes!!! This is it! Please give it to me! And you can take one of these items, maybe they will be useful to you in your journey...	Да! Да!!! То что нужно! Прошу, отдай её мне! И можешь взять любой из этих предметов, они могут тебе пригодится...
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my revenge... Slay the _fetid rat_, that has taken my life...	Здравствуй путешественник... Когда-то я был таким же как и ты - сильным, уверенным... А теперь я мёртв... Но я не могу покинуть это место... Пока моя месть не осуществится... Одолей _мерзкую крысу_, которая лишила меня жизни...
+Please... Help me... _Slay the abomination_...	Прошу... Помоги... _Одолей эту тварь_...
+Yes! The ugly creature is slain and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Да! Мерзкое создание пало, наконец-то я могу упокоиться с миром... Прошу возьми любой их этих предметов, они могут тебе пригодится...
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Здравствуй путешественник... Когда-то я был таким же как и ты - сильным, уверенным... А теперь я мёртв... Но я не могу покинуть это место ибо я связан ужасным проклятьем... Прошу... Помоги... _Разрушь проклятье_...
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Спасибо, %s! Проклятье разбито и я могу наконец-то отдохнуть...Возьми одну из этих вещей, они могут пригодится в твоем путешествии...
+Yes, I will do it for you	Да, я сделаю это для тебя
+No, I can't help you	Нет, я не могу тебе помочь
+Imps are lesser demons. They are notable for neither their strength nor their magic talent, but they are quite smart and sociable. Many imps prefer to live among non-demons.	Бесы, это низшие демоны. Они не славятся своей силой или магической мощью, но они достаточно умны и общительны. Многие бесы предпочитают жить с теми, кто не является демонами.
+evaded	увернулась
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _golems_ who need to be killed. You see, I'm going to start a little business here, but these stupid golems are bad for business! It's very hard to negotiate with wandering lumps of granite, damn them! So please, kill... let's say _6 of them_ and a reward is yours.	Ты путешественник? Я обожаю путешественников! На них всегда можно положится, если требуется чего-нибудь убить. Правда, а? За плату конечно ;)\nВ нашем случае _големы_ нуждаются в убийстве. Видишь ли, я хотел начать здесь дельце, но эти дурацкие големы спутали мне все карты! Ходячие куски гранита не шибко коммуникабельны, однако! Так что, прошу прихлопни... скажем _6 големов_ и я в долгу не останусь.
+How is your golem safari going?	Как там наше големово сафари?
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _monks_ who need to be killed. You see, I'm going to start a little business here, but these lunatics don't buy anything themselves and will scare away other customers. So please, kill... let's say _8 of them_ and a reward is yours.	Ты путешественник? Я обожаю путешественников! На них всегда можно положится, если требуется чего-нибудь убить. Правда, а? За плату конечно ;)\nВ нашем случае _монахи_ нуждаются в убийстве. Видишь ли, я хотел начать здесь дельце, но эти шизики сами ничего не купят и остальных покупателей распугают. Так что, прошу прихлопни... скажем _8 монахов_ и я в долгу не останусь.
+Oh, you are still alive! I knew that your kung-fu is stronger ;) Just don't forget to grab these monks' tokens.	О, да ты не умер! Я знал что твоё кунг-фу сильнее ;) Только не забудь собрать, с этих монахов, жетоны.
+See you, %s!	Увидимся, %s!
+Psst, %s!	Пссс, эй %s!
+ambitious imp	амбициозный бес
+Imps are lesser demons. They are notable for neither their strength nor their magic talent. But they are quite smart and sociable, and many of imps prefer to live and do business among non-demons.	Бесы, это низшие демоны. Они не славятся своей силой или магической мощью, но они достаточно умны и общительны. Многие бесы предпочитают жить с теми, кто не является демонами.
+Hello, friend!	Привет, друг!
+mirror image	двойник
+This illusion bears a close resemblance to you, but it's paler and twitches a little.	Эта иллюзия весьма на тебя похожа, хотя слегка бледновата и посверкивает.
+rat king	крысиный король
+This rat is a little bigger than a regular marsupial rat and it's wearing a tiny crown on its head.	Эта крыса слегка крупнее обычной. На её голове виднеется малюсенькая корона.
+I'm not sleeping!	Я не сплю!
+What is it? I have no time for this nonsense. My kingdom won't rule itself!	Это ещё что? У меня нету времени на всякую ерунду. Королевство само собой править не будет!
+shopkeeper	торговец
+This stout guy looks more appropriate for a trade district in some large city than for a dungeon. His prices explain why he prefers to do business here.	Этот тучный индивидуум больше подходит для торговли в городском квартале, нежели в подземелье. Хотя судя по ценам, здесь ему тоже не плохо.
+Select an item to sell	Выбери предмет для продажи
+old wandmaker	Старый мастер
+This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	Этот старый, но крепенький мужчина, выглядит немного озадаченным. Он окружён магическим щитом.
+absorbed	отмахнулся
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	О, какой приятный сюрприз, встретить достойного человека в таком месте! Я пришёл сюда в поисках редкого ингредиента _семян Гниловики_. Как человек осведомлённый в магии, я вполне справляюсь с местными монстрами, но заблудиться для меня, - раз плюнуть, стыдоба, честное слово. Не поможешь старику? Я с радостью оплачу твои старания одной из своих лучших волшебных палочек.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Как поиски _семян Гниловики_, %s? Глухо? Не переживай, я не тороплюсь.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	О, какой приятный сюрприз, встретить достойного человека в таком месте! Я пришёл сюда в поисках редкого ингредиента - _трупной пыли_. Её можно собрать с костяных останков, которыми изобилует подземелье. Как человек осведомлённый в магии, я вполне справляюсь с местными монстрами, но заблудиться для меня, - раз плюнуть, стыдоба, честное слово. Не поможешь старику? Я с радостью оплачу твои старания одной из своих лучших волшебных палочек.
+Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Как наши _пыльные делишки_, %s? Я бы первым делом осмотрел кучки костей.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	О, какой приятный сюрприз, встретить достойного человека в таком месте! Я пришёл сюда в поисках редкого ингредиента - _призрачной рыбы_. Ты можешь поймать её голыми руками, но ох как трудно разглядеть её в воде. Как человек осведомлённый в магии, я вполне справляюсь с местными монстрами, но заблудиться для меня, - раз плюнуть, стыдоба, честное слово. Не поможешь старику? Я с радостью оплачу твои старания одной из своих лучших волшебных палочек.
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Как дела с _призрачной рыбой_, %s? Может стоит поискать её в одном из прудов поблизости?
+A hidden pressure plate clicks!	Прижимная плита щёлкнула!
+Floor	Пол
+Grass	Трава
+Water	Вода
+Wall	Стена
+Closed door	Закрытая дверь
+Open door	Открытая дверь
+Depth entrance	Подъём
+Depth exit	Спуск
+Embers	Тлеющие угли
+Locked door	Запертая дверь
+Pedestal	Пьедестал
+Barricade	Баррикада
+High grass	Высокая трава
+Locked depth exit	Запертая лестница вниз
+Unlocked depth exit	Открытая лестница вниз
+Sign	Знак
+Well	Источник
+Empty well	Пустой источник
+Statue	Статуя
+Toxic gas trap	Ловушка с токсичным газом
+Fire trap	Огненная ловушка
+Paralytic gas trap	Ловушка с паралитическим газом
+Poison dart trap	Ловушка с ядовитыми дротиками
+Alarm trap	Сигнальная ловушка
+Lightning trap	Электрическая ловушка
+Gripping trap	Хватающая ловушка
+Summoning trap	Призывающая ловушка
+Triggered trap	Разряженная ловушка
+Bookshelf	Шкаф
+Alchemy pot	Алхимический котёл
+\\?\\?\\?	\\?\\?\\?
+You can't see the bottom.	Дна не видать.
+In case of burning step into the water to extinguish the fire.	Если загоришься зайди в воду, чтобы потушится.
+Stairs lead up to the upper depth.	Эти ступеньки ведут наверх.
+Stairs lead down to the lower depth.	Эти ступеньки ведут в глубь подземелья.
+Embers cover the floor.	Пол усыпан углями.
+Dense vegetation blocks the view.	Густая растительность закрывает обзор.
+This door is locked, you need a matching key to unlock it.	Эта дверь заперта, тебе нужен подходящий ключ.
+Heavy bars block the stairs leading down.	Проход закрыт тяжёлой решёткой.
+The wooden barricade is firmly set but has dried over the years. Might it burn?	Деревянная баррикада ладно сработана, но обветшала от времени. Интересно загорится?
+You can't read the text from here.	Ты не можешь рассмотреть текст от сюда.
+Stepping onto a hidden pressure plate will activate the trap.	Встав на прижимную плиту, ты активируешь ловушку.
+The trap has been triggered before and it's not dangerous anymore.	Ловушка уже сработала однажды, теперь она безопасна.
+Someone wanted to adorn this place, but failed, obviously.	Декоратор, у этого места, не самый лучший.
+Drop some seeds here to cook a potion.	Закинь сюда семян, чтобы сварить зелья.
+The well has run dry.	Источник иссяк.
+Fluorescent moss	Светящийся мох
+Fluorescent mushrooms	Светящиеся грибы
+Freezing cold water.	Ледяная вода.
+The ladder leads up to the upper depth.	Лестница ведёт вниз.
+The ladder leads down to the lower depth.	Лестница ведёт наверх.
+Huge mushrooms block the view.	Огромный гриб закрывает обзор.
+A vein of some ore is visible on the wall. Gold?	На стене виднеется месторождения какой-то руды. Золото?
+Who would need a bookshelf in a cave?	Кому, в подземелье, мог понадобится книжный шкаф?
+A ramp leads down to the lower depth.	Пролёт, ведущий наверх.
+The statue depicts some dwarf standing in a heroic stance.	Статуя изображает Дворфа в героической позе.
+The rows of books on different disciplines fill the bookshelf.	Полки уставлены разнообразными учебниками.
+Books in ancient languages smolder in the bookshelf.	Книги, написанные мёртвыми языками, заполняют это шкаф.
+Cold lava	Холодная лава
+Embermoss	Углемох
+Emberfungi	Углегриб
+Pillar	Столб
+It looks like lava, but it's cold and probably safe to touch.	Это подозрительно похоже на лаву. Но она холодна на ощупь и, судя по всему, не представляет опасности.
+The pillar is made of real humanoid skulls. Awesome.	Этот столб составлен из настоящих гуманоидных черепов. Прикольно.
+Suspiciously colored water	Подозрительно окрашенная вода
+High blooming flowers	Большой, цветущий куст
+A ramp leads up to the upper depth.	Лестница в преисподнюю.
+A ramp leads down to the Inferno.	Пролёт, ведущий наверх.
+Several tiles are missing here.	Здесь недостаёт нескольких плиток.
+Thick carpet covers the floor.	Пол укрыт плотным ковром.
+Dark cold water.	Тёмная холодная вода.
+There are old blood stains on the floor.	Пол заляпан кровью.
+This is probably a vestige of a prison library. Might it burn?	Похоже на останки тюремной библиотеки. Интересно загорится?
+Murky water	Мутная вода
+Wet yellowish moss covers the floor.	Влажный желтоватый мох растянулся по полу.
+The bookshelf is packed with cheap useless books. Might it burn?	Полки заставлены дешёвыми, бесполезными книгами. Интересно загорится?
+Select a seed to throw	Выбери семена
+Chasm	Пропасть
+Yes, I know what I'm doing	Да, я знаю, что делаю
+No, I changed my mind	Нет, я передумал
+Do you really want to jump into the chasm? You can probably die.	Ты уверен, что хочешь спрыгнуть вниз, ты можешь разбиться.
+You fell to death...	Ты разбился...
+What are you doing here?!	Что ты здесь делаешь?!
+As you try to read the sign it bursts into greenish flames.	Как вы попробуйте прочитать знак это врывается в зеленоватых огня.
+Don't overestimate your strength, use weapons and armor you can handle.	Не будь самоуверенным, используй доступные тебе оружие и броню.
+Not all doors in the dungeon are visible at first sight. If you are stuck, search for hidden doors.	Не всякая дверь в подземелье заметна с первого взгляда. Если не знаешь куда идти, попробуй поискать тайные двери.
+Remember, that raising your strength is not the only way to access better equipment. You can go the other way, lowering its strength requirement with Scrolls of Upgrade.	Помни, что повышение силы - не единственный способ использовать лучшее снаряжение, ты можешь пойти другим путём, понижая требования предмета с помощью Свитка Улучшения.
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	Золото можно тратить в магазинах в глубине подземелья. Первый встречается на уровне 6.
+Beware of Goo!	Берегись Жижи!
+Pixel-Mart. All you need for successful adventure!	Pixel магазин. всё, что нужно для успешного приключения!
+Identify your potions and scrolls as soon as possible. Don't put it off to the moment when you actually need them.	Распознавай свитки и зелья как можно раньше. Не откладывай до того момента, когда они могут тебе понадобится.
+Being hungry doesn't hurt, but starving does hurt.	Голод не наносит урона, чего нельзя сказать об истощении.
+Surprise attack has a better chance to hit. For example, you can ambush your enemy behind a closed door when you know it is approaching.	Неожиданная атака имеет больший шанс на попадание. Например, ты можешь подстеречь врага у закрытой двери, будучи уверенным, что он приближается.
+Don't let The Tengu out!	Не выпускай Тенгу!
+Pixel-Mart. Spend money. Live longer.	Pixel магазин. Больше потратишь. Дольше проживёшь.
+When you're attacked by several monsters at the same time, try to retreat behind a door.	Если на тебя нападают несколько монстров, попробуй отступить за дверь.
+If you are burning, you can't put out the fire in the water while levitating.	Если тебя подожгут, пока ты в состоянии левитации, ты не сможешь потушить огонь, зайдя в воду.
+There is no sense in possessing more than one Ankh at the same time, because you will lose them upon resurrecting.	Нет смысла держать при себе более одного Анха, они все исчезнут при воскрешении.
+DANGER! Heavy machinery can cause injury, loss of limbs or death!	ОПАСНОСТЬ! Тяжёлая техника может послужить причиной травм, потери конечностей и смерти!
+Pixel-Mart. A safer life in dungeon.	Pixel магазин. Обезопась свою жизнь в подземелье.
+When you upgrade an enchanted weapon, there is a chance to destroy that enchantment.	При улучшении зачарованного оружия есть вероятность, что оно лишится волшебных свойств.
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	Оружие и броня приходит в негодность быстрее чем палочки и кольца, но и способ их починить найти проще.
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	Единственный способ добыть Свиток Уничтожения - получить его в подарок от духов подземелья.
+No weapons allowed in the presence of His Majesty!	Ношение оружия недопустимо в присутствии его Величества!
+Pixel-Mart. Special prices for demon hunters!	Pixel магазин. Охотникам на демонов скидки!
+The trap emits a piercing sound that echoes throughout the dungeon!	Ловушка издаёт пронзающий звук, разносящийся по подземелью!
+lightning trap	электрическая ловушка
+You were killed by a discharge of a lightning trap...	Тебя пришибло разрядом электрической ловушки...
+You don't know what is there.	Ты не знаешь что там.
+Select a cell to examine	Выбери ячейку, для изучения
+1	0
+Choose language	Выберите язык
+Key bindings	Настройка клавиш
+Switch to fullscreen	На весь экран
+Switch to windowed	В оконный режим
+Reset To Defaults	Сбросить настройки
+<None>	<Нет>
+Press a key for "%s", or press %s to remove the binding.	Нажмите клавишу для действия «%s» или нажмите %s, чтобы удалить привязку.
+Hero Info	Сведения о герое
+Wait	Ждать
+Search	Искать
+Examine cell	Осмотреть клетку
+Resume motion	Продолжить движение
+Backpack	Рюкзак
+Quickslot	Быстрый слот
+Attack	Атака
+Visible Enemies	Видимые враги
+Zoom In	Приблизить
+Zoom Out	Отдалить
+Move North	Идти на север
+Move South	Идти на юг
+Move West	Идти на запад
+Move East	Идти на восток
+Move NW	Идти на СЗ
+Move NE	Идти на СВ
+Move SW	Идти на ЮЗ
+Move SE	Идти на ЮВ
+Current Cell	Текущая клетка

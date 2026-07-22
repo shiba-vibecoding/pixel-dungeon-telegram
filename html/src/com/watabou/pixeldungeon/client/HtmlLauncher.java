@@ -45,9 +45,28 @@ public class HtmlLauncher extends GwtApplication {
 			super(version, basePath, inputProcessor);
 		}
 
-		static Preferences files() {
-			return Gdx.app.getPreferences("pd-files");
+		Preferences files() {
+			return Gdx.app.getPreferences(preferencesName("pd-files"));
 		}
+
+		@Override
+		public String preferencesName(String baseName) {
+			String scope = telegramStorageScope();
+			return scope.length() == 0 ? baseName : baseName + "-" + scope;
+		}
+
+		private static native String telegramStorageScope() /*-{
+			try {
+				var tg = $wnd.Telegram && $wnd.Telegram.WebApp;
+				var user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+				var id = user && user.id != null ? String(user.id) : "";
+				if (tg && tg.initData && /^[0-9]+$/.test(id)) {
+					return "tg-" + id;
+				}
+			} catch (e) {
+			}
+			return "";
+		}-*/;
 
 		@Override
 		public byte[] readFile(String fileName) throws IOException {
@@ -102,6 +121,24 @@ public class HtmlLauncher extends GwtApplication {
 		public boolean musicDefault() {
 			return false;
 		}
+
+		@Override
+		public void openDonation(String language) {
+			if (!openTelegramDonation(language)) {
+				super.openDonation(language);
+			}
+		}
+
+		private static native boolean openTelegramDonation(String language) /*-{
+			try {
+				var bridge = $wnd.PixelDungeonTelegram;
+				if (bridge && typeof bridge.openDonation === 'function') {
+					return bridge.openDonation(language) !== false;
+				}
+			} catch (e) {
+			}
+			return false;
+		}-*/;
 
 		public PDThread newThread(Runnable runnable) {
 			return new HtmlThread(runnable);

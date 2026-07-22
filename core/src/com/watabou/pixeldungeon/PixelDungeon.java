@@ -25,6 +25,7 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.input.GameAction;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.scenes.GameScene;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.scenes.TitleScene;
@@ -128,6 +129,7 @@ public class PixelDungeon extends Game<GameAction> {
 	
 	@Override
 	public void create() {
+		Localization.setup( language() );
 		super.create();
 		
 		boolean landscape = Gdx.graphics.getWidth() > Gdx.graphics.getHeight();
@@ -314,6 +316,18 @@ public class PixelDungeon extends Game<GameAction> {
 	
 	public static boolean intro() {
 		return Preferences.INSTANCE.getBoolean( Preferences.KEY_INTRO, true );
+	}
+
+	public static void language( String value ) {
+		value = Localization.normalize( value );
+		Preferences.INSTANCE.put( Preferences.KEY_LANGUAGE, value );
+		Localization.setup( value );
+		switchScene( TitleScene.class );
+	}
+
+	public static String language() {
+		return Localization.normalize( Preferences.INSTANCE.getString(
+			Preferences.KEY_LANGUAGE, Localization.defaultLanguage() ) );
 	}
 	
 	

@@ -648,7 +648,7 @@ public class GameScene extends PixelScene {
             return;
         }
 
-        if (cell < 0 || cell > Level.LENGTH || (!Dungeon.level.visited[cell] && !Dungeon.level.mapped[cell])) {
+        if (cell < 0 || cell >= Level.LENGTH || (!Dungeon.level.visited[cell] && !Dungeon.level.mapped[cell])) {
             GameScene.show( new WndMessage( "You don't know what is there." ) ) ;
             return;
         }

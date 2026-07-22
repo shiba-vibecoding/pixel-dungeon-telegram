@@ -1,0 +1,106 @@
+LibGDX port: Arcnor / Web port: nojus297	LibGDX 移植：Arcnor / 网页移植：nojus297
+Telegram port: @barboskich	Telegram 移植：@barboskich
+Say thanks	表示感谢
+Thank you!	谢谢！
+This is a voluntary tip for the Telegram port. It never affects gameplay.	这是对 Telegram 移植版的自愿赞助，绝不会影响游戏体验。
+Support with Telegram Stars	使用 Telegram Stars 支持
+Open @barboskich	打开 @barboskich
+Sacrificial chamber	献祭密室
+Killed by an explosion of a bomb on level %d	死于第%d层的炸弹爆炸
+Do you want to respec into %s?	要转职为%s吗？
+Yes, I want to respec	是的，我要重新转职
+Maybe later	以后再说
+Language	语言
+Because of frequent use, your %s has broken.	由于频繁使用，你的%s已经损坏。
+Because of frequent use, your %s is going to break soon.	由于频繁使用，你的%s即将损坏。
+bomb	炸弹
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	这是一枚装满黑火药的小型炸弹。很方便的是，投出炸弹时引线会自动点燃。
+You killed yourself with a bomb...	你被自己的炸弹炸死了……
+honeypot	蜂蜜罐
+SHATTER	打碎
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	这个小罐里没剩多少蜂蜜，不过里面住着一只不愿离开的金色蜜蜂。
+%s of auto-repair	自动修复%s
+enchantment of viscosity	粘滞附魔
+The enchantment of viscosity killed you...	粘滞附魔杀死了你……
+phantom fish	幻影鱼
+broken %s	损坏的%s
+Unequip one ring	摘下一枚戒指
+Scroll of Enchantment	附魔卷轴
+Select an enchantable item	选择一件可附魔的物品
+your %s glows in the dark	你的%s在黑暗中泛起微光
+Scroll of Wipe Out	灭绝卷轴
+You are now familiar enough with your %s.	你已经完全熟悉了自己的%s。
+Wand of Reach	牵引法杖
+shocking %s	电击%s
+tempered %s	淬炼%s
+vampiric %s	吸血%s
+"Your sacrifice is worthy..."	“你的祭品很有价值……”
+"Your sacrifice is unworthy..."	“你的祭品毫无价值……”
+"Your sacrifice is worthy and so you are!"	“你的祭品很有价值，而你也是！”
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	献祭之火在此燃烧。任何触碰火焰的生物都会被标记，成为献给地牢之灵的祭品。
+Marked for sacrifice	献祭标记
+Immune to gases	免疫气体
+Blinded with rage	怒火遮眼
+Zeroed in	锁定目标
+echo of 	回响·
+curse personification	诅咒化身
+DM-350	DM-350
+spawn of Goo	黏咕的造物
+King of Dwarves	矮人国王
+undead King of Dwarves	亡灵矮人国王
+memory of Tengu	天狗的记忆
+echo of Yog-Dzewa	Yog-Dzewa的回响
+Yes, I will do it for you	好，我会帮你
+No, I can't help you	不，我帮不了你
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	找到_幻影鱼_了吗，%s？你可以去附近的水池里找找。
+As you try to read the sign it bursts into greenish flames.	你刚想阅读告示，它便燃起了幽绿色的火焰。
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	你可以在地牢深处的商店里花费金币。第一家商店位于第6层。
+If you are burning, you can't put out the fire in the water while levitating.	燃烧时若处于漂浮状态，就无法用水灭火。
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	武器和护甲比法杖与戒指损耗得更快，不过修复它们的方法也更多。
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	获得灭绝卷轴的唯一方法，是接受地牢之灵的馈赠。
+Choose language	选择语言
+Key bindings	按键设置
+Switch to fullscreen	切换至全屏
+Switch to windowed	切换至窗口模式
+Reset To Defaults	恢复默认设置
+<None>	<无>
+Press a key for "%s", or press %s to remove the binding.	请为“%s”按下一个按键，或按%s移除绑定。
+Hero Info	英雄信息
+Wait	等待
+Search	搜索
+Examine cell	查看格子
+Resume motion	继续移动
+Backpack	背包
+Quickslot	快捷栏
+Attack	攻击
+Visible Enemies	可见敌人
+Zoom In	放大
+Zoom Out	缩小
+Move North	向北移动
+Move South	向南移动
+Move West	向西移动
+Move East	向东移动
+Move NW	向西北移动
+Move NE	向东北移动
+Move SW	向西南移动
+Move SE	向东南移动
+Current Cell	当前格子
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	代码与美术：Watabou\n音乐：Cube_Code\n\n本游戏受到 Brian Walker 的 Brogue 启发。你可以在 Windows、Mac OS 或 Linux 上体验它，真的很棒！ ;)\n\n更多信息请访问官方网站：
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	本地化：rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+Languages	语言
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	这条半透明的小鱼在空气中都很难看清，到了水里更是几乎完全隐形。
+You can only wear two rings at a time. Unequip one of your equipped rings.	你一次只能佩戴两枚戒指。先取下一枚已装备的戒指。
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	这张卷轴能为武器或护甲附加一种随机魔法，赋予其特殊力量。
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	阅读这张卷轴即可释放地牢众灵的怒火，杀死当前楼层的一切。好吧，是几乎一切——某些更强大的生物可能不受影响。
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	这根实用的魔杖可以隔空抓取物品，也能与敌人交换位置。它释放的魔力波会影响沿途所有格子：触发陷阱、踏平高草、打开关着的门，并关上敞开的门。
+broken %1$s :%2$d	损坏的%1$s：%2$d
+a broken	损坏的
+%1$s: "%2$s"	%1$s：“%2$s”
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	这个生物看起来像悲伤幽灵，但周身翻涌着黑暗。它的脸上写满了绝望。
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	你好，冒险者……我也曾像你一样强大而自信……可如今我已经死了……一条可怕的诅咒把我束缚在这里，无法离开……求你……帮帮我……_摧毁这个诅咒_……
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	谢谢你，%s！诅咒终于被打破，我也能安息了……请从这些物品中挑一件带走吧，也许它能在旅途中帮到你……
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	哦，真没想到能在这种地方遇见一位正派人！我来这里是为了寻找一种稀有材料——_幻影鱼_。它可以徒手抓住，但在水中极难发现。身为法师，我对付本地怪物倒不成问题，可我总是很快迷路，实在难为情。你愿意帮我吗？我很乐意拿一根最好的魔杖作为报酬。
+1	1

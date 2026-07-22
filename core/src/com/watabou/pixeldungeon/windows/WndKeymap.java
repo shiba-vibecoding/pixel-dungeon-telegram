@@ -13,6 +13,7 @@ import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.ui.RedButton;
 import com.watabou.pixeldungeon.ui.ScrollPane;
 import com.watabou.pixeldungeon.ui.Window;
+import com.watabou.pixeldungeon.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -223,9 +224,10 @@ public class WndKeymap extends Window {
 			}
 
 			final boolean defaultKey = x < width * 3 / 4;
-			final String message =
-				"Press a key for \"" + gameAction.getDescription() + "\", or press " +
-				Input.Keys.toString(PDInputProcessor.MODIFIER_KEY) + " to remove the binding.";
+			final String message = Utils.format(
+				"Press a key for \"%s\", or press %s to remove the binding.",
+				gameAction.getDescription(),
+				Input.Keys.toString(PDInputProcessor.MODIFIER_KEY) );
 
 			Game.scene().add( new WndMessage( message ) {
 				@Override

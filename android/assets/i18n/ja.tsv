@@ -1,0 +1,1185 @@
+Play	Play
+Highscores	ハイスコア
+About	About
+LibGDX port: Arcnor / Web port: nojus297	LibGDX移植: Arcnor / Web移植: nojus297
+Telegram port: @barboskich	Telegram移植: @barboskich
+Say thanks	感謝を伝える
+Thank you!	ありがとう！
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Telegram移植版への任意の応援です。ゲーム内容には一切影響しません。
+Support with Telegram Stars	Telegram Starsで応援
+Open @barboskich	@barboskichを開く
+Send E-Mail	E-Mail を送る
+Top Rankings	トップランキング
+Total games won/played: 	プレイしたゲームの合計:
+No games have been played yet.	まだゲームをプレイしていません。
+No additional information	追加情報はありません
+Your Badges	あなたのバッジ
+Load Game	Load Game
+New Game	New Game
+Erase current game	進行中のゲームを消去
+Depth: %1$d, level: %2$d	階層: %1$d\nレベル: %2$d
+Do you really want to start new game?	本当に新しいゲームを始めたいですか？
+Your current game progress will be erased.	現在進行中のゲームが消去されます。
+Yes, start new game	はい、新しいゲームを始めます
+No, return to main menu	いいえ、メインメニューに戻ります
+To unlock this character class, slay the 3rd boss with any other class	このキャラクタークラスをアンロックするには、他のクラスでDM-300を倒す必要があります。
+To unlock "Challenges", win the game with any character class.	"挑戦"をアンロックするには、いずれかのキャラクタークラスでゲームをクリアする必要があります。
+Descending...	下層へ...
+Ascending...	上層へ...
+Loading...	ロード中...
+Resurrecting...	復活中...
+Returning...	帰還中...
+Falling...	落下中...
+File not found. For some reason...	何らかの理由でファイルが見つかりません...
+Something went wrong...	何かが違っています...
+Many heroes of all kinds ventured into the Dungeon before you. Some of them have returned with treasures and magical artifacts, most have never been heard of since. But none have succeeded in retrieving the Amulet of Yendor, which is told to be hidden in the depths of the Dungeon.\n\nYou consider yourself ready for the challenge, but most importantly, you feel that fortune smiles on you. It's time to start your own adventure!	ダンジョンには様々な冒険者が先陣を切って進入した。そして、そのうちの何人かは財宝や魔法のアーティファクトを持って帰ってきた。しかし、ダンジョンの奥深くに隠されているという "イェンダーの魔除け"の奪還に成功した者はいない。あなたは挑戦の準備はできていると考えているが、最も重要なのは、幸運があなたに微笑んでいると感じていることだ。さあ、冒険の始まりだ！
+Let's call it a day	今日はこれで終わりにしよう
+I'm not done yet	まだ終わっていない
+You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	あなたはついにイェンダーの魔除けを手にした。その力を使えば、世界を征服することも、人々に平和と繁栄をもたらすことも、何でもできる。いずれにせよ、あなたの人生は永遠に変わり、このゲームはここで終わる。あるいは、もう少しだけただの人間のままでいることもできる。
+Welcome to the level %d of Pixel Dungeon!	ようこそ！ここはRemixed Dungeonの%d階層です！
+Welcome back to the level %d of Pixel Dungeon!	おかえり！ここはRemixed Dungeonの %d 階層です！
+Be cautious, since the dungeon is even more dangerous at night!	夜のダンジョンはさらに危険なので、用心すること！
+Your steps echo across the dungeon.	あなたの足音がダンジョンに響き渡る。
+You hear the water splashing around you.	あなたは水の撥ねる音を聞いた。
+The smell of vegetation is thick in the air.	草木の匂いが濃い。
+The atmosphere hints that this floor hides many secrets.	このフロアには多くの秘密が隠されていそうな雰囲気がある。
+mob	敵
+%1$s hit %2$s	%1$s は %2$s を攻撃した
+%1$s defeated %2$s	%1$s は %2$s を倒した
+%1$s %2$s your attack	%1$s %2$sあなたの攻撃
+%1$s %2$s %3$s's attack	%1$s %2$s %3$s の攻撃
+The pain snapped %s out of paralysis	痛みが%sを麻痺から解き放った
+dodged	回避
+poisoned	毒化
+amok	逆上
+slowed	遅滞
+mind	精神
+vision	透視
+paralyzed	麻痺化
+frightened	恐怖
+rooted	根付き
+crippled	鈍化
+bleeding	出血
+dizzy	目眩
+invisible	透明
+you	あなた
+One does not simply leave Pixel Dungeon.	Remixed Dungeonから簡単に出ることはできない。
+level up!	レベルアップ！
+Welcome to level %d! Now you are healthier and more focused. It's easier for you to hit enemies and dodge their attacks.	レベル %d へようこそ！\n今、あなたはより健康で、より集中している。敵に攻撃を当てたり、回避するのがより簡単になった。
+You now have %s	%s を手に入れた
+There is something else here	ここには何かがある
+This chest is locked and you don't have matching key	箱には鍵がかかっているが、合う鍵を持っていない。
+You don't have a matching key	一致する鍵を持っていない
+You noticed something	あなたは何かに気づいた
+search	探す
+You catch fire!	あなたに引火した！
+You are paralyzed!	あなたは麻痺した！
+You are poisoned!	あなたは毒を受けた！
+Caustic ooze eats your flesh. Wash away it!	侵食性の粘液は肉を溶かす。洗い流せ！
+You can't move!	動けない！
+You feel weakened!	弱くなったように感じる
+You are blinded!	失明した！
+You become furious!	あなたは激怒した！
+furious	激怒
+You are charmed!	あなたは魅了された！
+You are crippled!	あなたは鈍化した！
+You are bleeding!	出血している！
+Everything is spinning around you!	すべてはあなたの周りを回っている！
+warrior	ウォリアー
+mage	メイジ
+rogue	ローグ
+huntress	ハントレス
+Warriors start with 11 points of Strength.	ウォリアーはスタート時に11ポイントの力がある。
+Warriors start with a unique short sword. This sword can be later "reforged" to upgrade another melee weapon.	ウォリアーは、後で「鍛え直す」ことで、別の近接武器をアップグレードできるユニークなショートソードを持ってスタートする。
+Warriors are less proficient with missile weapons.	ウォリアーは遠隔武器の扱いが苦手だ。
+Any piece of food restores some health when eaten.	どんな食べ物でも、食べればいくらかの体力を回復することができる。
+Potions of Strength are identified from the beginning.	力のポーションは最初から特定されている。
+Mages start with a unique Wand of Magic Missile. This wand can be later "disenchanted" to upgrade another wand.	メイジは、後で「魔法解除」して別の杖をアップグレードすることができるユニークな魔弾の杖を持ってスタートする。
+Mages recharge their wands faster.	メイジは杖のリチャージが早い。
+When eaten, any piece of food restores 1 charge for all wands in the inventory.	食品を食べると、インベントリ内のすべての杖のチャージが1回復する。
+Mages can use wands as a melee weapon.	メイジは杖を近接武器として使うことができる。
+Scrolls of Identify are identified from the beginning.	メイジは元素呪文を唱えるためにマナを使う。
+Rogues start with a Ring of Shadows+1.	ローグはスタート時に影のリング+1を持っている。
+Rogues identify a type of a ring on equipping it.	ローグは装着時にリングの種類を特定する。
+Rogues are proficient with light armor, dodging better while wearing one.	ローグは軽い鎧の扱いに習熟しており、軽い鎧を着用しているときはよりうまく身をかわすことができる。
+Rogues are proficient in detecting hidden doors and traps.	ローグは隠された扉や罠を発見することに長けている。
+Rogues can go without food longer.	ローグは食料がなくても長く過ごせる。
+Scrolls of Magic Mapping are identified from the beginning.	魔法の地図のスクロールは最初から特定されている。
+Huntresses start with 15 points of Health.	ハントレスはスタート時に15ポイントの体力がある。
+Huntresses start with a unique upgradeable boomerang.	ハントレスはスタート時にアップグレード可能な特殊なブーメランを持つ。
+Huntresses are proficient with missile weapons and get a damage bonus for excessive strength when using them.	ハントレスは遠隔武器の扱いに長けており、遠隔武器を使用する際には過剰な力に応じたダメージボーナスを得る。
+Huntresses gain more health from dewdrops.	ハントレスは雫からより多くの体力を得られる。
+Huntresses sense neighboring monsters even if they are hidden behind obstacles.	ハントレスは、たとえモンスターが障害物の陰に隠れていても、それを感知することができる。
+gladiator	グラディエーター
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	近接武器による攻撃に成功すると、「グラディエーター」はコンボを開始することができ、次の攻撃が成功するたびにダメージが増加する。
+berserker	バーサーカー
+When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	重傷を負うと、「バーサーカー」は野生の怒り状態になり、ダメージ量が大幅に増加する。
+warlock	ウォーロック
+After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	敵を倒した時、「ウォーロック」はその魂を使い、傷を癒し、空腹を満たす。
+battlemage	バトルメイジ
+When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	杖を手に戦っている時、「バトルメイジ」は現在のチャージ数に応じて追加ダメージを与える。攻撃が命中するたびに、この杖のチャージは1回復する。
+assassin	アサシン
+When performing a surprise attack, the _Assassin_ inflicts additional damage to his target.	奇襲攻撃をした時、「アサシン」は追加ダメージを与える。
+freerunner	フリーランナー
+The _Freerunner_ can move almost twice faster, than most of the monsters. When he is running, the Freerunner is much harder to hit. For that he must be unencumbered and not starving.	「フリーランナー」はほとんどのモンスターよりも2倍近く速く移動できる。彼が走っている時に攻撃を当てるのは困難だろう。ただそのためには、フリーランナーは動き続けなければならず、飢餓状態であってはならない。
+sniper	スナイパー
+_Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	「スナイパー」は敵の装甲の弱点を探知することができ、遠隔兵器を使用する際、装甲を効果的に無視することができる。
+warden	ウォーデン
+Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	自然の力との強い結びつきを持つ「ウォーデン」には、植物から雫や種を集める能力がある。また、高い草に触れることで、一時的に防御力を高める効果を得ることが出来る。
+Badge endorsed: %s	獲得したバッジ: %s
+New super badge: %s	新しいスーパーバッジ: %s
+New badge: %s	新しいバッジ: %s
+10 enemies slain	敵を10体倒した
+50 enemies slain	敵を50体倒した
+150 enemies slain	敵を150体倒した
+250 enemies slain	敵を250体倒した
+100 gold collected	100ゴールド集めた
+500 gold collected	500ゴールド集めた
+2500 gold collected	2500ゴールド集めた
+7500 gold collected	7500ゴールド集めた
+Level 6 reached	レベル6に達した
+Level 12 reached	レベル12に達した
+Level 18 reached	レベル18に達した
+Level 24 reached	レベル24に達した
+All potions identified	すべてのポーションを識別した
+All scrolls identified	すべてのスクロールを識別した
+All rings identified	すべてのリングを識別した
+All wands identified	すべての杖を識別した
+All potions, scrolls, rings & wands identified	すべてのポーション、スクロール、リング、杖を識別した
+All bags bought	すべてのバッグを買った
+Death from fire	火災による死亡
+Death from poison	毒による死亡
+Death from toxic gas	毒ガスによる死亡
+Death from hunger	飢え死に
+Death from an enchantment	刻印による死亡
+Death from falling down	落下による死亡
+Death from fire, poison, toxic gas & hunger	火災、毒、毒ガス、飢餓による死亡
+1st boss slain	グゥを殺した
+2nd boss slain	天狗を殺した
+3rd boss slain	DM-300を壊した
+4th boss slain	ドワーフの王を殺した
+1st boss slain by Warrior, Mage, Rogue & Huntress	すべてのクラスでグゥを殺した
+3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	すべてのクラスでDM-300を壊した
+Ring of Haggler obtained	値切りのリングを得た
+Ring of Thorns obtained	いばらのリングを得た
+13 points of Strength attained	力が13ポイントに達した
+15 points of Strength attained	力が15ポイントに達した
+17 points of Strength attained	力が17ポイントに達した
+19 points of Strength attained	力が19ポイントに達した
+10 pieces of food eaten	食品を10個食べた
+20 pieces of food eaten	食品を20個食べた
+30 pieces of food eaten	食品を30個食べた
+40 pieces of food eaten	食品を40個食べた
+Item of level 3 acquired	レベル3のアイテムを得た
+Item of level 6 acquired	レベル6のアイテムを得た
+Item of level 9 acquired	レベル9のアイテムを得た
+Item of level 12 acquired	レベル12のアイテムを得た
+All rare monsters slain	すべてのレアモンスターを倒した
+Amulet of Yendor obtained	イェンダーの魔除けを得た
+Amulet of Yendor obtained by Warrior, Mage, Rogue & Huntress	すべてのクラスでイェンダーの魔除けを得た
+7-hit combo	7ヒットコンボ
+3 potions cooked	ポーションを3個作った
+6 potions cooked	ポーションを6個作った
+9 potions cooked	ポーションを9個作った
+12 potions cooked	ポーションを12個作った
+Level completed without killing any monsters	すべてのモンスターを倒すことなくレベル上限に達した
+Monster killed by a Grim weapon	致命の武器でモンスターを倒した
+6 piranhas killed	ピラニアを6匹倒した
+5 monsters killed at nighttime	夜間にモンスターを5倒した
+10 games played	ゲームを10プレイした
+100 games played	ゲームを100プレイした
+500 games played	ゲームを500プレイした
+2000 games played	ゲームを2000プレイした
+Happy end	Happy end
+Challenge won	Challenge won
+Thanks for your support!	ご協力ありがとうございました！
+On diet	ダイエット中
+Faith is my armor	信仰は鎧となる
+Pharmacophobia	薬物恐怖症
+Barren land	不毛の土地
+Swarm intelligence	集団知識
+Into darkness	暗闇の中へ
+Forbidden runes	禁断のルーン
+Well of Health	再生の井戸
+Well of Awareness	意識の井戸
+Well of Transmutation	変異の井戸
+Garden	庭園
+Animated statue	生ける彫像
+Sad ghost	悲しいゴースト
+Old wandmaker	年老いたワンドメーカー
+Troll blacksmith	トロールの鍛冶屋
+Ambitious imp	野心的なインプ
+Killed by %1$s on level %2$d	%2$d 階層で %1$s に殺された
+Killed by your own %1$s on level %2$d	%2$d 階層で、あなたの %1$s に殺された
+Killed by the %1$s on level %2$d	%2$d 階層で %1$s に殺された
+Killed by discharge of %1$s on level %2$d	%2$d 階層で、%1$s によって殺された
+Burned to death on level %d	%d 階層で焼死した
+Starved to death on level %d	%d 階層で餓死した
+Died from poison on level %d	%d 階層で毒で死亡した
+Died from toxic gas on level %d	%d 階層で毒ガスで死亡した
+Bled to death on level %d	%d 階層で出血死した
+Killed by a caustic ooze on level %d	%d 階層で苛性粘液で死亡した
+Fell to death on level %d	%d 階層で落下死した
+Obtained the Amulet of Yendor	イェンダーの魔除けを手に入れた
+OK, a deal is a deal, dat's what I can do for you: I can reforge 2 items and turn them into one of a better quality.	いいだろう、契約は契約だ。では、2つのアイテムを鍛え直して、より良い品質の物に変えてやろう。
+Select an item to reforge	鍛え直すアイテムを選択
+Reforge them	それらを鍛え直す
+Potions	ポーション
+Scrolls	スクロール
+Which way will you follow?	あなたはどちらの道を行く？
+I'll decide later	後で決める
+Mastery	習熟
+ERROR	エラー
+Settings	設定
+Rankings	ランキング
+Start New Game	新しいゲームを始める
+Main Menu	メインメニュー
+Exit Game	Remixed Dungeonを終了する
+Return to Game	ゲームに戻る
+Buffs	バフ
+Experience	経験
+Catalogus	カタログ
+Oh yes! You are my hero!\nRegarding your reward, I don't have cash with me right now, but I have something better for you. This is my family heirloom ring: my granddad took it off a dead paladin's finger.	おぉ！やった！あんたはオイラのヒーローだ！報酬についてだけど、あいにくオイラは現金は持ってないんだ。だけど、良い物があるぞ。これは家宝のリングで、オイラの爺ちゃんが死んだパラディンの指から取ったものなんだ。
+Take the ring	リングを受け取る
+There is nothing here.	ここには何もない。
+Chest	箱
+Locked chest	鍵付き箱
+Crystal chest	クリスタルの箱
+Tomb	墓
+Skeletal remains	白骨
+You won't know what's inside until you open it!	中身は開けてみるまでわからない！
+ But to open it you need a golden key.	それを開けるには金の鍵が必要だ。
+You can see %s inside, but to open the chest you need a golden key.	中に %s が見えるが、開けるためには金の鍵が必要だ。
+This ancient tomb may contain something useful, but its owner will most certainly object to checking.	この古い墓には使えるものがあるかもしれないが、持ち主は間違いなく確認することに反対するだろう。
+This is all that's left from one of your predecessors. Maybe it's worth checking for any valuables.	これが先代の遺品だ。貴重品がないか調べてみる価値はあるかもしれない。
+Journal	日記
+Unable to load additional information	追加情報を読み込むことができない
+Stats	統計
+Items	アイテム
+Badges	バッヂ
+Level %1$d %2$s	レベル %1$d %2$s
+Challenges	挑戦
+Health	体力
+Strength	力
+Game Duration	ゲームプレイ時間
+Maximum Depth	到達最下層
+Mobs Killed	殺した敵
+Gold Collected	集めたゴールド
+Food Eaten	食べた食料
+Potions Cooked	作ったポーション
+Ankhs Used	使ったアンク
+You died, but you were given another chance to win this dungeon. Will you take it?	あなたは死んだが、ダンジョン攻略の別の機会を与えられた。受け入れるか？
+Yes, I will fight!	もちろんだ、私は戦う！
+No, I give up	もう無理だ、諦める
+Ghost's weapon	幽霊の武器
+Ghost's armor	幽霊の鎧
+Farewell, adventurer!	さようなら、冒険者！
++	+
+-	-
+Default Zoom	既定の拡大率
+Scale up UI	UIを拡大
+Immersive mode	没入モード
+Music	音楽
+Sound FX	効果音
+Brightness	明るさ調整
+Second quickslot	二番目のクイックスロット
+Switch to portrait	縦向きへ変更
+Switch to landscape	横向きへ変更
+The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	ダンジョンは都市の真下に位置していて、その上層は都市の下水システムになっている。建前上は都市の一部となっていて、この階層はそこまで危険ではない。誰にとっても安全というわけではないが、少なくともここでは多くの邪悪な魔法に対処する必要はないだろう。
+Many years ago an underground prison was built here for the most dangerous criminals. At the time it seemed like a very clever idea, because this place indeed was very hard to escape. But soon dark miasma started to permeate from below, driving prisoners and guards insane. In the end the prison was abandoned, though some convicts were left locked up here.	何年も前、ここに最も危険な犯罪者のための地下刑務所が作られた。当時はとても賢いアイデアに思えた。なぜなら、この場所は確かに脱獄が非常に困難だったからだ。しかし、やがて地下から暗い瘴気が充満し始め、囚人や看守を狂わせた。結局、何人かの囚人をここに閉じ込めたまま、刑務所は放棄された。
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	放棄された監獄の地下に広がる洞窟は、人影もまばらだ。都市開発には深すぎるし、ドワーフが興味を持つには鉱物が乏しすぎる。かつてはこの２つを繋ぐ交易の前哨基地があったが、ドワーフのメトロポリスが衰退したことで消滅してしまった。今は、ノールと地底動物だけが棲息している。
+Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday the mechanized army of dwarves has successfully repelled the invasion of the old god and his demon army. But it is said, that the returning warriors have brought seeds of corruption with them, and that victory was the beginning of the end for the underground kingdom.	ドワーフのメトロポリスは、かつてドワーフ最大の都市国家だった。最盛期には、ドワーフの機械化された軍隊が旧神とその悪魔の軍隊の侵略を見事に撃退した。しかし、帰還した戦士たちは腐敗の種を持ち帰り、その勝利が地下王国の終わりの始まりだったと言われている。
+In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	昔、これらの階層はメトロポリスの郊外だった。旧神との戦いに勝利した後、ドワーフは弱体化し、残った魔物を一掃することができなくなってしまった。結果、徐々に魔物たちの支配力が強まり、今では悪魔の広間と呼ばれている。ここまで降りてきた冒険者はほとんどいない...
+FOR SALE: %1$s - %2$dg	売り物: %1$s - %2$dg
+Buy for %dg	%dg で買う
+Sell for %dg	%dg で売る
+Sell 1 for %dg	%dg で1つ売る
+Sell all for %dg	%dg ですべて売る
+You've sold your %1$s for %2$dg	あなたは %2$dg で %1$s を売った
+You've bought %1$s for %2$dg	あなたは %2$dg で %1$s を買った
+Oh, I see you have succeeded! I do hope it hasn't troubled you too much. As I promised, you can choose one of my high quality wands.	ああ、成功したんだな！安心したよ、ありがとう！約束通り、私の高品質な作品を１本差し上げようじゃないか。さぁ、選んでくれ。
+Battle wand	戦闘用の杖
+Non-battle wand	補助的な杖
+Good luck in your quest, %s!	あなたの探索に幸運を、%s！
+Select an item for the quickslot	クイックスロットへ登録するアイテムを選択
+smth	何か
+DROP	落とす
+THROW	投げる
+Your pack is too full for the %s	あなたの荷物は一杯で%sは入らない。
+Choose direction of throw	投げる方向を選ぶ
+EQUIP	装備する
+UNEQUIP	装備解除
+You can't remove cursed %s!	呪われた %s は外すことが出来ない！
+Amulet of Yendor	イェンダーの魔除け
+END THE GAME	ゲーム終了
+The Amulet of Yendor is the most powerful known artifact of unknown origin. It is said that the amulet is able to fulfill any wish if its owner's will-power is strong enough to "persuade" it to do it.	イェンダーの魔除けは起源不明の最も強力なアーティファクトとして知られている。この魔除けは、持ち主が十分に強い意志の力で"説得"することが出来れば、どんな願いでも叶えることができると言われている。
+Ankh	アンク
+The ancient symbol of immortality grants an ability to return to life after death. Upon resurrection all non-equipped items are lost.	この古代の不死のシンボルは、死後に蘇る能力を与える。復活すると、装備していないアイテムはすべて失われる。
+armor kit	アーマーキット
+Using this kit of small tools and materials anybody can transform any armor into an "epic armor", which will keep all properties of the original armor, but will also provide its wearer a special ability depending on his class. No skills in tailoring, leatherworking or blacksmithing are required.	この小さなツールと材料キットを使えば、誰でもどんな鎧でも "エピック・アーマー "に作り変えることができる。"エピック・アーマー "は元の鎧の特性はそのままに、着用者のクラスに応じて特別な能力を発揮する。仕立てや革細工、鍛冶の技術は必要ない。
+Select an armor to upgrade	強化する鎧を選択
+you applied the armor kit to upgrade your %s	あなたは、アーマーキットで %s を強化した
+dewdrop	雫
+A crystal clear dewdrop.	澄み切った雫。
+dew vial	雫用の瓶
+You can store excess dew in this tiny vessel for drinking it later. If the vial is full, in a moment of deadly peril the dew will be consumed automatically.	この小さな容器に余分な雫を貯めておけば、後で飲むことができる。小瓶が満杯であれば、死に瀕した時、雫は自動的に消費される。
+The dew vial was emptied to heal your wounds.	雫用の瓶は、あなたの傷を癒やして空になった。
+You collected a dewdrop into your dew vial.	あなたは雫を瓶に集めた。
+Your dew vial is full!	雫用の瓶は満杯だ！
+Your dew vial is empty!	雫用の瓶は空っぽだ！
+This is a mimic!	ミミックだ！
+gold	ゴールド
+Collect gold coins to spend them later in a shop.	金貨を集めて後で商店で使おう。
+A pile of %d gold coins.	%dゴールドコインの山
+One gold coin.	ゴールド1枚
+you wince as your grip involuntarily tightens around your %s	思わず %sのグリップを握り締め、身震いした。
+lloyd's beacon	ロイドのビーコン
+SET	セット
+RETURN	リターン
+Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	ロイドのビーコンは複雑な魔法の装置で、あながが予めセットしておいた場所に戻ることができる。
+Strong magic aura of this place prevents you from using the lloyd's beacon!	何らかの強力な魔法のオーラが、ロイドのビーコンを使うことを妨げた！
+Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	近くにいる生き物の精神的なオーラのせいで、今はロイドのビーコンを使うことができない。
+The lloyd's beacon is successfully set at your current location, now you can return here anytime.	ロイドのビーコンに現在地がセットされ、いつでもここに戻れるようになった。
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	このビーコンはRemixed Dungeonの%d階層のどこかに設置されている。
+Tome of Mastery	習熟の学術本
+Tome of Remastery	習熟の学術本
+This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	この使い古された革の本はそれほど分厚くはないが、何となく、そこから多くのことを得られるような気がする。しかし、この本を読むには時間がかかるだろう。
+You can't read while blinded	あなたは盲目なため読むことが出来ない
+You have chosen the way of the %s!	あなたは %sの道を選んだ
+torch	たいまつ
+LIGHT	点火する
+It's an indispensable item in The Demon Halls, which are notorious for their poor ambient lighting.	このアイテムは悪名高い悪魔の広間を照らす照明として必需品だ。
+weightstone	重石
+APPLY	適応する
+Using a weightstone, you can balance your melee weapon to increase its speed or accuracy.	重石を使うことで、近接武器のバランスを整えて速度や精度を高めることが出来る。
+Select a weapon to balance	バランスをとる武器を選択
+you balanced your %s to make it faster	あなたの %s を速くするためにバランスをとった
+you balanced your %s to make it more accurate	あなたの %s をより正確にするためにバランスをとった
+How would you like to balance your %s?	あなたは %s の何を重視する？
+For speed	速さを
+For accuracy	正確さを
+Never mind	なにも重視しない
+PLANT	植える
+Throw this seed to the place where you want to grow %1$s.\n\n%2$s	この種を%1$sを育てたい場所に投げる。%2$s
+seed of %s	%s の種
+Dreamweed	ドリームウィード
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	ドリームウィードに触れると、混乱させるガスのきらめく雲を分泌する。
+Earthroot	アースルート
+When a creature touches an Earthroot, its roots create a kind of natural armor around it.	生き物がアースルートに触れると、その根はその周囲に自然の鎧のようなものを作り出す。
+Herbal armor	ハーバルアーマー
+Fadeleaf	フェードリーフ
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	フェードリーフに触れると、どの生き物も現在の階層上のランダムな場所にテレポートする。
+Firebloom	ファイアーブルーム
+When something touches a Firebloom, it bursts into flames.	ファイアーブルームに何かが触れると、炎が燃え上がる。
+Icecap	アイスキャップ
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	アイスキャップは触れると花粉を吐き出し、周囲のものを凍らせる。
+Rotberry	ロットベリー
+Berries of this shrub taste like sweet, sweet death.	この低木の実は、甘い甘い死の味がする。
+The seed emits a roar that echoes throughout the dungeon!	種はダンジョン全体に響き渡る轟音を発した！
+Sorrowmoss	ソロウモス
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	ソロウモスはカミソリのような鋭い花びらを持つ花（コケではない）で、猛毒でコーティングされている。
+Sungrass	サングラス
+Sungrass is renowned for its sap's healing properties.	サングラスは、その樹液にヒーリング効果があることで有名だ。
+Herbal healing	ハーバルヒーリング
+your %s constricts around you painfully	 %s があなたを痛いくらい締め付けた
+Interaction of different types of magic has erased the glyph on this armor!	異なる種類の魔法の相互作用によって、この鎧の刻印は消されてしまった！
+\n\nThis %1$s provides damage absorption up to "%2$d"  points per attack.	この %1$s は攻撃ごとに "%2$d" のダメージを防ぐ。
+\n\nBecause of your inadequate strength your movement speed and defense skill is decreased. 	あなたの力が不足しているため、移動速度と防御スキルが低下する。
+\n\nBecause of your inadequate strength wearing this armor will decrease your movement speed and defense skill.	あなたの力が不足しているため、この鎧を着用すると移動速度と防御スキルが低下する。
+\n\nTypical %1$s provides damage absorption up to %2$d points per attack and requires %3$d points of strength.	一般的な%1$sは、1回の攻撃につき%2$d点までのダメージを防ぐ事ができ、%3$dの力を必要とする。
+Probably this armor is too heavy for you.	この鎧はあなたには重すぎるようだ。
+\n\nYou are wearing the %1$s%2$s.	あなたは %1$s%2$s を着用している。
+\n\nYou can feel a malevolent magic lurking within the %s.	あなたは %s に潜んでいる邪悪な魔力を感じることが出来る。
+The thing looks awesome!	アイテムがよく見える！
+Your health is too low!	あなたは不健康だ！
+You need to be wearing this armor to use its special power!	この鎧をつけるとあなたはパワーアップするだろう。
+cloth armor	布製の鎧
+This lightweight armor offers basic protection.	この軽い鎧は普通の性能だ。
+huntress cloak	ハントレスのマント
+A huntress in such cloak can create a fan of spectral blades. Each of these blades will target a single enemy in the huntress's field of view, inflicting damage depending on her currently equipped melee weapon.	このようなマントをまとったハントレスは、スペクトラルブレードの扇を作り出すことができる。これらの刃はそれぞれ、彼女の視界内にいる敵1体を対象とし、現在装備している近接武器に応じてダメージを与える。
+SPECTRAL BLADES	スペクトルブレード
+No enemies in sight	敵は見当たらない
+Only huntresses can use this armor!	この鎧を使えるのはハントレスだけだ！
+leather armor	レザーアーマー
+Armor made from tanned monster hide. Not as light as cloth armor but provides better protection.	なめしたモンスターの皮で作った鎧。布の鎧ほど軽くはないが、防御力は高い。
+mage robe	魔術師のローブ
+Wearing this gorgeous robe, a mage can cast a spell of molten earth: all the enemies in his field of view will be set on fire and unable to move at the same time.	このゴージャスなローブを身にまとったメイジは、大地の怒りの魔法を唱えることができる。この魔法は視界内のすべての敵を炎上させ、同時に身動きを取れなくする。
+MOLTEN EARTH	大地の怒り
+Only mages can use this armor!	この鎧を使えるのはメイジだけだ！
+mail armor	チェインメイル
+Interlocking metal links make for a tough but flexible suit of armor.	金属製の輪が連動することで、頑丈でありながらも柔軟な鎧に仕上がっている。
+plate armor	プレートアーマー
+Enormous plates of metal are joined together into a suit that provides unmatched protection to any adventurer strong enough to bear its staggering weight.	巨大な金属板をつなぎ合わせた鎧は、その驚異的な重量に耐えられるだけの強さを持つ冒険者に、比類なき防御力を提供する。
+rogue garb	ローグの服
+Wearing this dark garb, a rogue can perform a trick, that is called "smoke bomb" (though no real explosives are used): he blinds enemies who could see him and jumps aside.	この暗い衣装を身にまとったローグは、"スモークボム"と呼ばれるトリックを繰り出すことができ、敵の目をくらまし、脇をすり抜ける。（ただし、本物の爆薬は使用しない）
+SMOKE BOMB	スモークボム
+Only rogues can use this armor!	ローグだけがこの鎧を使うことができます！
+You can only jump to an empty location in your field of view	あなたは跳んでフィールドを眺めることができます。
+Choose a location to jump to	跳ぶ場所を選んでください。
+scale armor	スケイルアーマー
+The metal scales sewn onto a leather vest create a flexible, yet protective armor.	革製のベストに縫い付けられた金属製の鱗が、柔軟でありながら防御力の高い鎧を作り出している。
+warrior suit of armor	ウォリアーの鎧
+While this armor looks heavy, it allows a warrior to perform heroic leap towards a targeted location, slamming down to stun all neighboring enemies.	この鎧は重そうに見えるが、戦士が狙った場所に向かって勇壮なる跳躍を行い、叩きつけることで隣接するすべての敵を気絶させることができる。
+HEROIC LEAP	英雄の跳躍
+Only warriors can use this armor!	この鎧を使えるのはウォリアーだけだ！
+Choose direction to leap	跳躍する方向を選んでください。
+%s of affection	愛情の%s
+%s of anti-entropy	反エントロピーの%s
+%s of bounce	弾性の %s
+%s of displacement	追放の %s
+%s of entanglement	根付く %s
+%s of metabolism	代謝の %s
+%s of multiplicity	多重の %s
+%s of potential	感電の %s
+%s of stench	悪臭の %s
+%s of viscosity	遅延の %s
+deferred %d	遅延%d
+Defered damage (%d)	遅延ダメージ（%d）
+OPEN	開ける
+key ring	キーホルダー
+This is a copper key ring, that lets you keep all your keys separately from the rest of your belongings.	これは銅製のキーホルダーで、すべての鍵を他の持ち物とは別に保管できる。
+scroll holder	スクロールホルダー
+You can place any number of scrolls into this tubular container. It saves room in your backpack and protects scrolls from fire.	この筒状の容器には、巻物を何枚でも入れることが出来る。バックパックの場所を取らず、入れた巻物を火から守ることも出来る。
+seed pouch	シードポーチ
+This small velvet pouch allows you to store any number of seeds in it. Very convenient.	この小さなベルベットのポーチは、いくつでも種をいれることが出来る。とても便利だ。
+wand holster	ワンドホルスター
+This slim holder is made of leather of some exotic animal. It allows to compactly carry up to %d wands.	エキゾチックな動物の革を使用したスリムなホルダー。 %d 本までの杖をコンパクトに収納することが出来る。
+ration of food	糧食
+Nothing fancy here: dried meat, some biscuits - things like that.	乾燥肉、ビスケット、そんなものだ。
+That food tasted delicious!	とても美味しい！
+chargrilled meat	炭火焼肉
+It looks like a decent steak.	まともなステーキに見える。
+frozen carpaccio	冷凍カルパッチョ
+It's a piece of frozen raw meat. The only way to eat it is by cutting thin slices of it. And this way it's surprisingly good.	冷凍の生肉だ。薄く切って食べるしかない。そしてこの食べ方が意外にうまい。
+You feel your skin hardens!	あなたは肌が硬く感じる！
+Refreshing!	爽やかだ！
+You feel better!	あなたは気分が良くなった！
+mystery meat	謎の肉
+Eat at your own risk!	食べるのは自己責任で！
+Oh it's hot!	熱い！
+You can't feel your legs!	あなたは足の感覚がなくなった！
+You are not feeling well.	あなたは体調が良くない。
+You are stuffed.	あなたは満腹だ。
+That food tasted... strange.	奇妙な味がした...
+overpriced food ration	高品質な糧食
+It looks exactly like a standard ration of food but smaller.	見た目は標準的な糧食にそっくりだが、もっと小さい。
+That food tasted good.	味はまあまあだった。
+pasty	パスティ
+This is authentic Cornish pasty with traditional filling of beef and potato.	伝統的なビーフとポテトのフィリングが入った本格的なコーニッシュパスティ。
+golden key	金の鍵
+The notches on this golden key are tiny and intricate. Maybe it can open some chest lock?	この金の鍵の切り込みは小さく、複雑だ。もしかしたら、どこかのチェストの鍵を開けることができるかもしれない。
+iron key	鉄の鍵
+The notches on this ancient iron key are well worn; its leather lanyard is battered by age. What door might it open?	この古びた鉄の鍵の刻み目はよく磨り減り、革のヒモは年季が入ってボロボロになっている。どんなドアを開けるのだろう？
+iron key from depth %d	%d 階層の鉄の鍵
+skeleton key	骸骨の鍵
+This key looks serious: its head is shaped like a skull. Probably it can open some serious door.	これは厳粛な鍵だ: 頭がドクロの形をしている。おそらく、何か重大なドアを開けることができるのだろう。
+%s potion	%s のポーション
+This flask contains a swirling %s liquid. Who knows what it will do when drunk or thrown?	このフラスコには渦巻く%sの液体が入っている。飲んだり投げたりしてどうなるかは誰にもわからない。
+DRINK	飲む
+Harmful potion!	有害なポーション！
+Beneficial potion	有益なポーション
+Are you sure you want to drink it? In most cases you should throw such potions at your enemies.	本当に飲むのか？ほとんどの場合、このようなポーションは敵に投げつけるべきだ。
+Are you sure you want to throw it? In most cases it makes sense to drink it.	本当に投げるのか？ほとんどの場合、このようなポーションは飲むことに意味がある。
+The flask shatters and %s liquid splashes harmlessly	フラスコが砕け、%sの液体が無害に飛び散る。
+turquoise	空色
+crimson	紅色
+azure	紺碧色
+jade	翡翠色
+golden	金色
+magenta	赤紫色
+charcoal	炭色
+ivory	象牙色
+amber	琥珀色
+bistre	褐色
+indigo	藍色
+silver	銀色
+Potion of Experience	経験値のポーション
+The storied experiences of multitudes of battles reduced to liquid form, this draught will instantly raise your experience level.	幾多の戦いの経験を液体にしたこの飲み物は、あなたの経験値を一気に引き上げてくれるだろう。
+Potion of Frost	冷気のポーション
+Upon exposure to open air, this chemical will evaporate into a freezing cloud, causing any creature that contacts it to be frozen in place, unable to act and move.	外気に触れると、この化学物質は蒸発して凍結雲となり、接触した生物はその場に凍りつき、行動も移動もできなくなる。
+Potion of Healing	治癒のポーション
+An elixir that will instantly return you to full health and cure poison.	即座に完全な健康状態に戻し、毒を治す万能薬。
+Your wounds heal completely.	あなたの傷は完全に癒やされた。
+Potion of Invisibility	不可視のポーション
+Drinking this potion will render you temporarily invisible. While invisible, enemies will be unable to see you. Attacking an enemy, as well as using a wand or a scroll before enemy's eyes, will dispel the effect.	このポーションを飲むと、一時的に透明になる。透明になっている間、敵はあなたを見ることができなくなる。敵を攻撃したり、敵の目の前で杖や巻物を使用すると、この効果は解除される。
+Potion of Levitation	浮遊のポーション
+Drinking this curious liquid will cause you to hover in the air, able to drift effortlessly over traps. Flames and gases fill the air, however, and cannot be bypassed while airborne.	この不思議な液体を飲むと宙に浮き、罠の上を軽々と漂うことができる。ただし、炎やガスは空中に充満するため、避けることはできない。
+You float into the air!	あなたは浮き上がった！
+Potion of Liquid Flame	炎のポーション
+This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	このフラスコには不安定な化合物が含まれており、外気に触れると激しく燃え上がる。
+Potion of Might	強靭のポーション
+This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	この強力な液体は筋肉を巡り、力を1ポイント、体力を5ポイント 永久的に増加させる。
++1 str, +5 ht	力 +1、体力+5
+Potion of Mind Vision	透視のポーション
+After drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls. Also this potion will permit you to see through nearby walls and doors.	この薬を飲むと、遠くの生き物の精神に同調し、壁越しに生物の気配を感じることができるようになる。また、この薬を飲むと、近くの壁や扉を見通すことができるようになる。
+You can somehow feel the presence of other creatures' minds!	あなたはぼんやりと他の生き物の気配を感じるようになった！
+You can somehow tell that you are alone on this level at the moment.	今のところ、この階層にいるのは自分ひとりだということがなんとなくわかる。
+Potion of Paralytic Gas	麻痺ガスのポーション
+Upon exposure to open air, the liquid in this flask will vaporize into a numbing yellow haze. Anyone who inhales the cloud will be paralyzed instantly, unable to move for some time after the cloud dissipates. This item can be thrown at distant enemies to catch them within the effect of the gas.	外気に触れると、フラスコ内の液体が気化し、痺れる黄色い靄が発生する。この霧を吸い込んだ者は即座に麻痺し、霧が消えた後もしばらく身動きが取れなくなる。このアイテムは遠くの敵に投げつけて、ガスの効果内に捕らえることができる。
+Potion of Purification	浄化のポーション
+This reagent will quickly neutralize all harmful gases in the area of effect. Drinking it will give you a temporary immunity to such gases.	この試薬は、効果範囲内のすべての有害なガスを素早く中和する。これを飲むと、そのようなガスに対する一時的な免疫が得られる。
+You feel uncommon freshness in the air.	空気中にただならぬ新鮮さを感じる。
+You've stopped sensing any smells!	匂いを感じなくなった！
+Potion of Strength	力のポーション
+This powerful liquid will course through your muscles, permanently increasing your strength by one point.	この強力な液体は筋肉を巡り、力を1ポイント永久的に増加させる。
+Newfound strength surges through your body.	新たな力が全身を駆け巡る。
++1 str	力 +1
+Potion of Toxic Gas	毒ガスのポーション
+Uncorking or shattering this pressurized glass will cause its contents to explode into a deadly cloud of toxic green gas. You might choose to fling this potion at distant enemies instead of uncorking it by hand.	この加圧ガラスの栓を抜いたり、砕いたりすると、中身が爆発して有毒な緑色のガスが発生する。手で栓を抜く代わりに、このポーションを遠くの敵に投げつけることもできる。
+corpse dust	コープスダスト
+The ball of corpse dust doesn't differ outwardly from a regular dust ball. However, you know somehow that it's better to get rid of it as soon as possible.	コープスダストの玉は、外見上は普通のダストの玉と変わらない。しかし、一刻も早く手放した方がいいことは何となくわかる。
+dark gold ore	影金鉱石
+This metal is called dark not because of its color (it doesn't differ from the normal gold), but because it melts under the daylight, making it useless on the surface.	この金属が影と呼ばれるのは、見た目からではなく（見た目は普通の金と変わらない）、日光の下で溶けてしまい、外では役に立たないからである。
+dried rose	乾燥したバラ
+The rose has dried long ago, but it has kept all its petals somehow.	このバラはずいぶん前に枯れてしまったが、どういうわけか花びらはすべて整っている。
+dwarf token	ドワーフトークン
+Many dwarves and some of their larger creations carry these small pieces of metal of unknown purpose. Maybe they are jewelry or maybe some kind of ID. Dwarves are strange folk.	多くのドワーフたちと、彼らの大きな創造物の中には、このような用途不明の小さな金属片を持っている者もいる。宝石なのかもしれないし、身分証明書なのかもしれない。ドワーフは奇妙な民族だ。
+EAT	食べる
+You see your hands turn invisible!	あなたはあなたの手が透明になるのを見た！
+pickaxe	つるはし
+This is a large and sturdy tool for breaking rocks. Probably it can be used as a weapon.	岩を砕くための大きくて頑丈な道具。武器としても使えないことはないだろう。
+MINE	掘る
+There is no dark gold vein near you to mine	あなたの近くに採掘できる影金鉱脈はない
+giant rat skull	巨大なネズミの頭蓋骨
+It could be a nice hunting trophy, but it smells too bad to place it on a wall.	狩猟のトロフィーにはいいかもしれないが、壁に飾るには臭すぎる。
+%s ring	%s リング
+This metal band is adorned with a large %s gem that glitters in the darkness. Who knows what effect it has when worn?	この金属の環は暗闇で輝く大きな %s の宝石で飾られている。身につけるとどんな効果があるのかは、誰にもわからない。
+you are now familiar enough with your %1$s to identify it. It is %2$s.	あなたは今 %1$s を識別するために十分に精通した。これは %2$s だ。
+diamond	ダイアモンド
+opal	オパール
+garnet	ガーネット
+ruby	ルビー
+amethyst	アメジスト
+topaz	トパーズ
+onyx	オニキス
+tourmaline	トルマリン
+emerald	エメラルド
+sapphire	サファイア
+quartz	クォーツ
+agate	アガット
+Your %s tightens around your finger painfully	%s があなたの指を痛いくらい締め付けた
+%1$s\n\nThe %2$s is on your finger %3$s.	%1$s\n\nあなたの指に%3$s %2$s がある。
+, and because it is cursed, you are powerless to remove it	それは呪われているため、取り除くことが出来ない
+%1$s\n\nYou can feel a malevolent magic lurking within the %2$s.	%1$sあなたは %2$s の中に潜む邪悪な魔力を感じることが出来る。
+This is a %s	これは %s だ
+Ring of Accuracy	命中のリング
+This ring increases your chance to hit the enemy.	このリングは、あなたの攻撃の命中率を増加させる。
+Ring of Detection	探知のリング
+Wearing this ring will allow the wearer to notice hidden secrets - traps and secret doors - without taking time to search. Degraded rings of detection will dull your senses, making it harder to notice secrets even when actively searching for them.	このリングを身につけると、隠された秘密、つまり罠や秘密の扉に、時間をかけて探すことなく気づくことができるようになる。劣化した探知のリングは感覚を鈍らせ、積極的に探しても秘密に気づきにくくなる。
+Ring of Elements	元素のリング
+This ring provides resistance to different elements, such as fire, electricity, gases etc. Also it decreases duration of negative effects.	このリングは、炎、雷、ガスなど、さまざまな要素に対する耐性を与える。また、マイナス効果の持続時間を減少させる。
+Ring of Evasion	回避のリング
+This ring increases your chance to dodge enemy attack.	このリングは、敵の攻撃を回避する確率を上昇させる。
+Ring of Haggler	値切りのリング
+In fact this ring doesn't provide any magic effect, but it demonstrates to shopkeepers and vendors, that the owner of the ring is a member of The Thieves' Guild. Usually they are glad to give a discount in exchange for temporary immunity guarantee. Upgrading this ring won't give any additional bonuses.	このリングには魔法の効果はないが、店主や行商人にリングの持ち主が盗賊ギルドのメンバーであることを示すことができる。彼らは店を守るために喜んで値引きをしてくれるだろう。このリングをアップグレードしても、追加のボーナスは得られない。
+Ring of Haste	加速のリング
+This ring accelerates the wearer's flow of time, allowing one to perform all actions a little faster.	このリングは、装着者の時間の流れを加速させ、あらゆる行動を少し速く行えるようにする。
+Ring of Herbalism	草学のリング
+This ring increases your chance to gather dew and seeds from trampled grass.	このリングは、草を踏みつけた時の、雫や種子を得られる確率を増加させる。
+Ring of Mending	再生のリング
+This ring increases the body's regenerative properties, allowing one to recover lost health at an accelerated rate. Degraded rings will decrease or even halt one's natural regeneration.	このリングは身体の再生能力を高め、失われた体力を加速度的に回復させる。劣化したリングは自然再生を減少させ、あるいは停止させる。
+Ring of Power	威力のリング
+Your wands will become more powerful in the energy field that radiates from this ring. Degraded rings of power will instead weaken your wands.	このリングから放射されるエネルギーフィールドの中で、あなたの杖はより強力になる。劣化した威力のリングは、逆にあなたの杖を弱める。
+Ring of Satiety	満腹のリング
+Wearing this ring you can go without food longer. Degraded rings of satiety will cause the opposite effect.	このリングを身に着けていれば、より長く食べずにいられる。劣化した満腹のリングは効果が逆転する。
+Ring of Shadows	影のリング
+Enemies will be less likely to notice you if you wear this ring. Degraded rings of shadows will alert enemies who might otherwise not have noticed your presence.	このリングを身に着けていると、敵に気づかれにくくなる。劣化した影のリングは、あなたの存在に気づいていない敵に警告を発する。
+Ring of Thorns	いばらのリング
+Though this ring doesn't provide real thorns, an enemy that attacks you will itself be wounded by a fraction of the damage that it inflicts. Upgrading this ring won't give any additional bonuses.	このリングには本物の棘はないが、攻撃してきた敵へダメージの何割かを返すことが出来る。このリングをアップグレードしても、追加のボーナスは得られない。
+scroll "%s"	スクロール "%s"
+This parchment is covered with indecipherable writing, and bears a title of rune %s. Who knows what it will do when read aloud?	この羊皮紙には解読不能な文字が書かれており、%sのルーン文字がタイトルに記されている。声に出して読んだらどうなるかは誰にもわからない。
+KAUNAN	のちなみちみ
+SOWILO	とらてにりら
+LAGUZ	りちきなつ
+YNGVI	んみきひに
+GYFU	きんはな
+RAIDO	すちにしら
+ISAZ	にとちつ
+MANNAZ	もちみみちつ
+NAUDIZ	みちなしにつ
+BERKANAN	こいすのちみちみ
+ODAL	らしちり
+TIWAZ	かてちつ
+Select an item	アイテムを選択
+Do you really want to cancel this scroll usage? It will be consumed anyway.	本当にこのスクロールの使用をキャンセルするのですか？キャンセルしてもスクロールは消費はされます。
+Yes, I'm positive	ああ、問題ない
+Scroll of Challenge	挑戦のスクロール
+When read aloud, this scroll will unleash a challenging roar that will awaken all monsters and alert them to the reader's location.	このスクロールを声に出して読むと、すべてのモンスターを目覚めさせ、読み手の居場所を知らせる挑戦的な咆哮を放つ。
+The scroll emits a challenging roar that echoes throughout the dungeon!	スクロールは、ダンジョン全体に響き渡る挑戦的な轟音を発した！
+Scroll of Identify	識別のスクロール
+Permanently reveals all of the secrets of a single item.	1つのアイテムの秘密を永久に明らかにする。
+Select an item to identify	識別するアイテムを選択
+It is %s	これは %s だ
+Scroll of Lullaby	子守唄のスクロール
+A soothing melody will put all creatures in your field of view into a deep sleep, giving you a chance to flee or make a surprise attack on them.	心地よいメロディが視界内の生き物を深い眠りに誘い、逃走や奇襲を仕掛けるチャンスを与えてくれる。
+The scroll utters a soothing melody.	スクロールが心地よいメロディーを奏でる。
+The scroll utters a soothing melody and the %s falls asleep!	スクロールは心地よいメロディを発し、 %s は眠りに落ちた！
+The scroll utters a soothing melody and the monsters fall asleep!	スクロールは心地よいメロディを発し、モンスターは眠りに落ちた！
+Scroll of Magic Mapping	魔法の地図のスクロール
+When this scroll is read, an image of crystal clarity will be etched into your memory, alerting you to the precise layout of the level and revealing all hidden secrets. The locations of items and creatures will remain unknown.	このスクロールを読むと、鮮明なイメージがあなたの記憶に刻まれ、この階層の正確な構造と隠された秘密がすべて明らかになる。ただしアイテムや生き物の位置まではわからない。
+You are now aware of the level layout.	これでこの階層の構造が理解できただろう。
+Scroll of Mirror Image	鏡像のスクロール
+The incantation on this scroll will create illusionary twins of the reader, which will chase his enemies.	このスクロールに書かれた呪文は、読み手の幻影の双子を作り出し、幻影は敵を追いかける。
+Scroll of Psionic Blast	精神のスクロール
+This scroll contains destructive energy, that can be psionically channeled to inflict a massive damage to all creatures within a field of view. An accompanying flash of light will temporarily blind everybody in the area of effect including the reader of the scroll.	このスクロールには破壊的なエネルギーが含まれており、それを精神領域に流すことで、視界内のすべての生き物に大ダメージを与えることができる。それに伴う閃光により、スクロールを読んだ者を含む効果範囲内の全ての者の目が一時的に盲目となる。
+Scroll of Recharging	再充填のスクロール
+The raw magical power bound up in this parchment will, when released, recharge all of the reader's wands to full power.	この羊皮紙に封じ込められた未加工の魔力は、解き放たれたとき、読み手の持つすべての杖をフルパワーに充填する。
+a surge of energy courses through your pack, recharging your wand	エネルギーの波がパックを通り抜け、杖を充填する。
+a surge of energy courses through your pack, recharging your wands	エネルギーの波がパックを通り抜け、杖を充填する。
+a surge of energy courses through your pack, but nothing happens	エネルギーの波がパックを駆け抜けるが、何も起こらなかった。
+Scroll of Remove Curse	解呪のスクロール
+The incantation on this scroll will instantly strip from the reader's weapon, armor, rings and carried items any evil enchantments that might prevent the wearer from removing them.	このスクロールに書かれた呪文を唱えれば、武器、鎧、リング、その他の所持アイテムから、身につける者を妨げる邪悪な呪いを即座に取り除くことができる。
+Your pack glows with a cleansing light, and a malevolent energy disperses.	パックが浄化の光で輝き、邪悪なエネルギーが散っていく。
+Your pack glows with a cleansing light, but nothing happens.	パックが浄化の光で輝くが、何も起こらなかった。
+Scroll of Teleportation	転移のスクロール
+The spell on this parchment instantly transports the reader to a random location on the dungeon level. It can be used to escape a dangerous situation, but the unlucky reader might find himself in an even more dangerous place.	この羊皮紙に書かれた呪文は、読み手を階層内のランダムな場所に瞬時に移動させる。危険な状況から逃れるために使うこともできるが、運の悪い読み手はさらに危険な場所に身を置くことになるかもしれない。
+In a blink of an eye you were teleported to another location of the level.	瞬く間に、あなたは階層の別の場所にテレポートされた。
+Strong magic aura of this place prevents you from teleporting!	この場所の強い魔法のオーラは、テレポートを妨げる！
+Scroll of Terror	恐怖のスクロール
+A flash of red light will overwhelm all creatures in your field of view with terror, and they will turn and flee. Attacking a fleeing enemy will dispel the effect.	赤い閃光は視界にいるすべての生き物を恐怖で圧倒し、彼らは一目散に逃げ去るだろう。逃げ惑う敵を攻撃すると、この効果は解除される。
+The scroll emits a brilliant flash of red light	スクロールは鮮やかな赤い閃光を発した
+The scroll emits a brilliant flash of red light and the %s flees!	スクロールは鮮やかな赤い閃光を発して、 %s は逃げ出した！
+The scroll emits a brilliant flash of red light and the monsters flee!	スクロールは鮮やかな赤い閃光を発して、モンスターは逃げ出した！
+Scroll of Upgrade	強化のスクロール
+This scroll will upgrade a single item, improving its quality. A wand will increase in power and in number of charges; a weapon will inflict more damage or find its mark more frequently; a suit of armor will deflect additional blows; the effect of a ring on its wearer will intensify. Weapons and armor will also require less strength to use, and any curses on the item will be lifted.	このスクロールは1つのアイテムを強化し、その品質を向上させる。杖は威力とチャージ回数が増加し、武器はより多くのダメージを与えたり、より正確に攻撃出来るようになり、鎧はより多くの打撃をそらすようになり、リングは着用者に与える効果が強くなる。また、武器や防具を使用するのに必要な筋力も少なくなり、アイテムにかけられた呪いも解ける。
+Select an item to upgrade	強化するアイテムを選択
+READ	読む
+You can't read a scroll while blinded	あなたは盲目なためスクロールを読むことが出来ない
+%s wand	%s の杖
+ZAP	振る
+This thin %s wand is warm to the touch. Who knows what it will do when used?	この細い %s の杖は触れると温かい。使ったらどうなるかは誰にもわからない。
+When this wand is used as a melee weapon, its average damage is %d points per hit.	この杖を近接武器として使用する場合、その平均ダメージは1ヒットにつき%dである。
+You can use this wand as a melee weapon.	あなたは近接武器としてこの杖を使用することができる。
+your wand fizzles; it must be out of charges for now	あなたの杖はプシューと鳴った; 今は充填しなければならない
+You can't target yourself	自分自身をターゲットにすることはできない
+Choose direction to zap	振る方向を選ぶ
+holly	柊
+yew	イチイ
+ebony	黒檀
+cherry	桜
+teak	チーク
+rowan	ナナカマド
+willow	柳
+mahogany	マホガニー
+bamboo	竹
+purpleheart	紫御殿
+oak	樫
+birch	樺
+Wand of Amok	逆上の杖
+The purple light from this wand will make the target run amok attacking random creatures in its vicinity.	この杖から放たれる紫色の光は対象を暴走させ、周囲のランダムな生き物を攻撃させる。
+Wand of Avalanche	崩落の杖
+When a discharge of this wand hits a wall (or any other solid obstacle) it causes an avalanche of stones, damaging and stunning all creatures in the affected area.	この杖の力が壁（または他の固い障害物）に当たると、石の崩落を引き起こし、影響を受けた領域にいるすべての生き物にダメージを与え、気絶させる。
+You killed yourself with your own Wand of Avalanche...	あなたは、あなたの崩落の杖に殺された...
+Wand of Blink	転移の杖
+This wand will allow you to teleport in the chosen direction. Creatures and inanimate obstructions will block the teleportation.	この杖を使うと、選んだ方向にテレポートすることができる。生き物や障害物はテレポートを妨害する。
+Wand of Disintegration	分解の杖
+This wand emits a beam of destructive energy, which pierces all creatures in its way. The more targets it hits, the more damage it inflicts to each of them.	この杖は破壊的なエネルギーの光線を放ち、邪魔な生き物すべてを貫く。当たる対象が多ければ多いほど、それぞれに与えるダメージも大きくなる。
+Wand of Firebolt	火矢の杖
+This wand unleashes bursts of magical fire. It will ignite flammable terrain, and will damage and burn a creature it hits.	この杖は魔法の炎を放つ。燃えやすい地形を発火させ、当たった生き物にダメージを与え、火傷を負わせる。
+You killed yourself with your own Wand of Firebolt...	あなたは、あなたの火矢の杖に殺された...
+Wand of Flock	群集の杖
+A flick of this wand summons a flock of magic sheep, creating temporary impenetrable obstacle.	この杖を一振りすると、魔法の羊の群れが召喚され、一時的に侵入不可能な障害物を作り出す。
+sheep	羊
+This is a magic sheep. What's so magical about it? You can't kill it. It will stand there until it magically fades away, all the while chewing cud with a blank stare.	これは魔法の羊だ。これの何が不思議かって？あなたはこれを殺すことができない。魔法のように消えるまで、その場に立ち尽くすのだ。
+Baa!	メェー！
+Baa?	メェー？
+Baa.	メェー
+Baa...	メェー...
+Bee...	ヴェー...
+Ble...	ヴェ...
+Wand of Lightning	稲妻の杖
+This wand conjures forth deadly arcs of electricity, which deal damage to several creatures standing close to each other.	この杖は致命的な電撃を呼び起こし、近くに立っている複数の生き物にダメージを与える。
+You killed yourself with your own Wand of Lightning...	あなたは、あなたの稲妻の杖に殺された...
+Wand of Magic Missile	魔弾の杖
+This wand launches missiles of pure magical energy, dealing moderate damage to a target creature.	この杖は純粋な魔法のエネルギー弾を発射し、標的に中程度のダメージを与える。
+DISENCHANT	魔法を解く
+You killed yourself with your own Wand of Magic Missile...	あなたは、あなたの魔弾の杖に殺された...
+Select a wand to upgrade	強化する杖を選択
+you disenchanted the Wand of Magic Missile and used its essence to upgrade your %s	あなたは魔弾の杖の魔法を解き、そのエッセンスを使って%s を強化した。
+Wand of Poison	毒の杖
+The vile blast of this twisted bit of wood will imbue its target with a deadly venom. A creature that is poisoned will suffer periodic damage until the effect ends. The duration of the effect increases with the level of the staff.	このねじれた木片からの下劣な爆風は、対象を致命的な毒で覆う。毒に冒された生き物は効果が終了するまで持続ダメージを受け続ける。効果時間は杖のレベルに応じて増加する。
+Wand of Regrowth	萌芽の杖
+"When life ceases new life always begins to grow... The eternal cycle always remains!"	"生命が絶えるとき、常に新しい生命が芽生え始める...。永遠のサイクルは常に続いている"
+Wand of Slowness	鈍化の杖
+This wand will cause a creature to move and attack at half its ordinary speed until the effect ends	この杖の効果が終了するまで、対象とした生き物の移動と攻撃を通常の半分の速度にする。
+You have magically transported %s into your backpack	あなたは %s を荷物の中に魔法のように運びこんだ。
+Wand of Teleportation	追放の杖
+A blast from this wand will teleport a creature against its will to a random place on the current level.	この杖からの一吹きは、生き物の意思を無視して、現在の階層のランダムな場所へテレポートさせる。
+%1$s teleported %2$s to somewhere	%1$s は %2$s をどこかへテレポートさせた
+nothing happened	何も起こらなかった
+You are now familiar enough with your %1$s to identify it. It is %2$s.	あなたは今 %1$s を識別するために十分精通している。これは %2$s だ。
+Interaction of different types of magic has negated the enchantment on this weapon!	異なる種類の魔法の相互作用によって、この武器のエンチャントは無効化された！
+%1$s :%2$d	%1$s :%2$d
+grim %s	致命の %s
+blazing %s	烈火の %s
+eldritch %s	不気味な %s
+unstable %s	不安定な %s
+vampiric %s	吸血の %s
+lucky %s	幸運の %s
+stunning %s	衝撃の %s
+venomous %s	猛毒の %s
+chilling %s	冷却の %s
+This %1$s is %2$s tier-%3$d melee weapon.	この %1$s は %2$s ランク-%3$d の近接武器だ。
+a	普通の
+a upgraded	強化された
+an degraded	劣化した
+Its average damage is %d points per hit.	平均ダメージは %d ポイントだ。
+Its typical average damage is %1$d points per hit and usually it requires %2$d points of strength.	平均ダメージは %1$d ポイントで、%2$d の力が必要だ。
+Probably this weapon is too heavy for you.	この武器はあなたには重すぎるようだ。
+This is a rather %s weapon.	これはかなり %s な武器だ。
+fast	迅速
+slow	遅い
+and	と
+but	だが
+accurate	正確
+inaccurate	不正確
+It was balanced to make it faster.	これは速さを重視して作られている。
+It was balanced to make it more accurate.	これは正確さを重視して作られている。
+It is enchanted.	これは魔術がかかっている。
+You hold the %1$s at the ready%2$s.	%1$sを %2$s構えた。
+, and because it is cursed, you are powerless to let go	、それは呪われているため、手放すことが出来ない
+You can feel a malevolent magic lurking within %s.	あなたは %s に潜んでいる邪悪な魔力を感じることが出来る。
+battle axe	バトルアックス
+The enormous steel head of this battle axe puts considerable heft behind each stroke.	 この巨大な鋼鉄のバトルアックスは、攻撃後のスキが大きくなるだろう。
+dagger	ダガー
+A simple iron dagger with a well worn wooden handle.	使い古された木の柄がついたシンプルな鉄の短剣だ。
+glaive	グレイブ
+A polearm consisting of a sword blade on the end of a pole.	棒の先に剣の刃をつけた柄の長い武器。
+knuckleduster	ナックルダスター
+A piece of iron shaped to fit around the knuckles.	拳を覆うように作られた鉄の武器。
+longsword	ロングソード
+This towering blade inflicts heavy damage by investing its heft into every cut.	この長い刃はすべての斬撃で高いダメージを与える。
+mace	メイス
+The iron head of this weapon inflicts substantial damage.	この武器の鉄の頭はかなりのダメージを与える。
+quarterstaff	クォータースタッフ
+A staff of hardwood, its ends are shod with iron.	この硬い木の棒は、先端が鉄で覆われている。
+short sword	ショートソード
+It is indeed quite short, just a few inches longer, than a dagger.	ダガーより数センチ長いだけで、かなり短い剣。
+REFORGE	鍛え直す
+Select a weapon to upgrade	強化する武器を選択
+you reforged the short sword to upgrade your %s	%s を強化するため、ショートソードを鍛え直した
+you can't upgrade a boomerang this way	この方法ではブーメランを強化できない
+spear	スピアー
+A slender wooden rod tipped with sharpened iron.	先端に研いだ鉄をつけた細長い木の棒。
+sword	ソード
+The razor-sharp length of steel blade shines reassuringly.	カミソリのように鋭利な鋼鉄の刃が安心感を与える輝きを放っている
+war hammer	ウォーハンマー
+Few creatures can withstand the crushing blow of this towering mass of lead and steel, but only the strongest of adventurers can use it effectively.	鉛と鋼鉄の塊がそびえ立つこの一撃に耐えられる生き物は少ないが、これを効果的に使えるのは屈強な冒険者だけだ。
+Missile weapon	飛び道具
+Do you really want to equip it as a melee weapon?	本当にそれを近接武器として装備するのか？
+\n\nAverage damage of this weapon equals to %d points per hit.	この武器の平均ダメージは、1ヒットにつき%dポイントに等しい。
+Because of your inadequate strength the accuracy and speed of your attack with this %s is decreased.	あなたの力が不足しているため、この %s の正確さと攻撃速度が低下している。
+Because of your excess strength the damage of your attack with this %s is increased.	あなたの力が十分なので、この %s のダメージが増加する。
+\n\nYou hold the %s at the ready.	あなたは %s を構えている。
+boomerang	ブーメラン
+Thrown to the enemy this flat curved wooden missile will return to the hands of its thrower.	この平たく曲がった木製の投擲武器を敵に投げると、投げた人の手に戻る。
+curare dart	クラーレダーツ
+These little evil darts don't do much damage but they can paralyze the target leaving it helpless and motionless for some time.	この邪悪な小さなダーツは大したダメージは与えないが、標的を麻痺させ、しばらくの間無力化することができる。
+dart	ダーツ
+These simple metal spikes are weighted to fly true and sting their prey with a flick of the wrist.	このシンプルな金属製のクギは、獲物を正確に貫くために理想的な重さになっている。
+incendiary dart	焼夷性ダーツ
+The spike on each of these darts is designed to pin it to its target while the unstable compounds strapped to its length burst into brilliant flames.	このダーツは、取り付けられた不安定な化合物が鮮やかな炎を上げる間、ターゲットに固定されるように設計されている。
+javelin	ジャベリン
+This length of metal is weighted to keep the spike at its tip foremost as it sails through the air.	この金属の長さは、犠牲者に向かって宙を舞うとき、その先端が必ず前を向くように重みが加えられている。
+shuriken	手裏剣
+Star-shaped pieces of metal with razor-sharp blades do significant damage when they hit a target. They can be thrown at very high rate.	カミソリのような鋭い刃を持つ星形の金属片で、標的に大きなダメージを与える。非常に高い速度で投げることができる。
+tomahawk	トマホーク
+This throwing axe is not that heavy, but it still requires significant strength to be used effectively.	この投げ斧はそれほど重くはないが、それでも効果的に使うにはかなりの力が必要だ。
+A cloud of confusion gas is swirling here.	混乱のガスが渦巻いている。
+A fire is raging here.	ここで炎が燃え盛っている。
+Shafts of light pierce the gloom of the underground garden.	地下の庭の暗がりを光線が貫いている。
+A cloud of paralytic gas is swirling here.	麻痺のガスが渦巻いている。
+A greenish cloud of toxic gas is swirling here.	緑がかった有毒のガスが渦巻いている。
+You died from a toxic gas..	あなたは有毒のガスを吸って死んだ。
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	この井戸の水からは知識の力が放たれている。一口飲めば、装備したアイテムの秘密がすべて明らかになるだろう。
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	一口飲むと、知識が頭の中に流れ込んでくるのを感じる。あなたは今、装備しているアイテムのすべてを知っている。また、あなたはこの階層にあるすべてのアイテムを感知し、その秘密のすべてを知っている。
+Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	この井戸の水からは再生の力が放たれている。一口飲めばあなたの傷を癒やし、空腹を満たしてくれるだろう。
+As you take a sip, you feel your wounds heal completely.	一口飲むと、傷が完全に癒えていくのを感じる。
+Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	この井戸の水からは変化の力が放たれている。アイテムを井戸に投げ入れると、別のものに変わるだろう。
+Everything is covered with a thick web here.	ここではすべてが分厚い蜘蛛の巣で覆われている。
+Amok	逆上
+Barkskin	樹皮の肌
+Bleeding	出血
+You bled to death...	あなたは出血死した...
+Blinded	盲目
+Burning	炎上
+%s burns up!	%s は燃え上がった！
+You burned to death...	あなたは炎上死した...
+Charmed	魅了
+Combo	コンボ
+%d hit combo!	%d ヒットコンボ！
+Crippled	鈍化
+Frozen	凍結
+Fury	激怒
+You are hungry.	お腹が空いた
+You are starving!	飢え死にしそうだ！
+You starved to death...	あなたは餓死した...
+Hungry	空腹
+Starving	飢餓
+Invisible	透明
+Levitating	浮上
+Illuminated	点灯
+Mind vision	千里眼
+Caustic ooze	苛性粘液
+%s killed you...	%s はあなたを殺した...
+Paralyzed	麻痺
+Poisoned	毒化
+You died from poison...	あなたは毒で死んだ...
+Rooted	根付き
+Shadowmelded	影歩き
+Slowed	遅滞
+Vertigo	目眩
+Weakened	弱体化
+backpack	バックパック
+Real description is coming soon!	本当の説明は近日公開！
+You hear something died in the distance	あなたは何かが死ぬ音を聞いた
+This %s is sleeping	%s は眠っている
+This %s is hunting	%s は狩りをしている
+This %s is fleeing	%s は逃げている
+This %s is passive	%s は消極的だ
+acidic scorpio	酸サソリ
+albino rat	アルビノネズミ
+crazy bandit	狂った盗賊
+vampire bat	吸血コウモリ
+These brisk and tenacious inhabitants of cave domes may defeat much larger opponents by replenishing their health with each successful attack.	この活発で粘り強い洞窟の住人は、吸血によって攻撃のたびに体力を補充することで、はるかに大きな敵を倒すことがある。
+gnoll brute	ノールブルート
+Brutes are the largest, strongest and toughest of all gnolls. When severely wounded, they go berserk, inflicting even more damage to their enemies.	ブルートはノールの中で最も大きく、強く、タフである。重傷を負うと凶暴化し、敵にさらなるダメージを与える。
+%s becomes enraged!	%s は激怒した！
+enraged	激怒
+sewer crab	下水カニ
+These huge crabs are at the top of the food chain in the sewers. They are extremely fast and their thick exoskeleton can withstand heavy blows.	この巨大なカニは下水道の食物連鎖の頂点にいる。彼らは非常に速く、その分厚い外骨格は激しい打撃にも耐えることができる。
+DM-300	DM-300
+This machine was created by the Dwarves several centuries ago. Later, Dwarves started to replace machines with golems, elementals and even demons. Eventually it led their civilization to the decline. The DM-300 and similar machines were typically used for construction and mining, and in some cases, for city defense.	この機械は数世紀前にドワーフによって作られた。その後、ドワーフは機械をゴーレムやエレメンタル、さらには悪魔に置き換え始め、やがてそれが彼らの文明を衰退へと導いた。DM-300と同様の機械は通常、建設や採掘に使われ、場合によっては都市の防衛にも使われた。
+DM-300 repairs itself!	DM-300は自己修復した！
+Mission failed. Shutting down.	ミッション失敗。シャットダウン。
+Unauthorized personnel detected.	侵入者発見。
+fire elemental	火のエレメンタル
+Wandering fire elementals are a byproduct of summoning greater entities. They are too chaotic in their nature to be controlled by even the most powerful demonologist.	放浪する火のエレメンタルは、大いなる存在を召喚する際の副産物である。彼らはその性質があまりに混沌としているため、最も強力な悪魔研究者でさえ制御できない。
+evil eye	イビルアイ
+One of this demon's other names is "orb of hatred", because when it sees an enemy, it uses its deathgaze recklessly, often ignoring its allies and wounding them.	この悪魔の別名に "憎悪のオーブ "があるが、これは敵を見つけるとデスゲイズを無謀に使い、しばしば味方を無視して負傷させるからである。
+%s's deathgaze killed you...	%s のデスゲイズがあなたを殺した...
+fetid rat	腐ったネズミ
+This marsupial rat is much larger, than a regular one. It is surrounded by a foul cloud.	この有袋ネズミは普通のネズミよりずっと大きい。その周囲は不潔な雲に覆われている。
+gnoll scout	ノールスカウト
+Gnolls are hyena-like humanoids. They dwell in sewers and dungeons, venturing up to raid the surface from time to time. Gnoll scouts are regular members of their pack, they are not as strong as brutes and not as intelligent as shamans.	ノールはハイエナに似た人型種である。下水道や地下牢に住み、時折地上に出て襲撃を行う。ノールスカウトは彼らの群れの一般的なメンバーであり、ブルートほど強くはなく、シャーマンほど知的でもない。
+golem	ゴーレム
+The Dwarves tried to combine their knowledge of mechanisms with their newfound power of elemental binding. They used spirits of earth as the "soul" for the mechanical bodies of golems, which were believed to be most controllable of all. Despite this, the tiniest mistake in the ritual could cause an outbreak.	ドワーフたちは、彼らの機械に関する知識と、新たに発見した元素結合の力を組み合わせようとした。彼らはゴーレムの機械体の "魂 "として、最も制御しやすいと考えた大地の精霊を使ったが、儀式にほんのわずかなミスがあれば、大災害を引き起こす可能性もあった。
+Goo	グゥ
+Little known about The Goo. It's quite possible that it is not even a creature, but rather a conglomerate of substances from the sewers that gained rudiments of free will.	グゥについてはほとんど知られていない。生き物ですらなく、なぜか自由意志を得た下水道内の物質の集合体である可能性が高い。いずれにせよ、闇の魔法が働いているのは明らかだ。
+Goo is pumping itself up!	グゥは自らを奮い立たせている！
+glurp... glurp...	グプン...グプン...
+GLURP-GLURP!	グプン-グプン！
+!!!	!!!
+The last king of dwarves was known for his deep understanding of processes of life and death. He has persuaded members of his court to participate in a ritual, that should have granted them eternal youthfulness. In the end he was the only one, who got it - and an army of undead as a bonus.	ドワーフの最後の王は、生と死のプロセスを深く理解していることで知られていた。彼は宮廷の人々に永遠の若さを与える儀式に参加するよう説得したが、結局、彼だけがそれを手に入れた。アンデッドの軍勢とともに。
+You cannot kill me, %s... I am... immortal...	%s、お前は私を殺せない...私は...不滅...
+Arise, slaves!	いでよ、奴隷たち！
+How dare you!	さあ、どうする！
+undead dwarf	アンデッドドワーフ
+These undead dwarves, risen by the will of the King of Dwarves, were members of his court. They appear as skeletons with a stunning amount of facial hair.	ドワーフの王の意志によって蘇ったアンデッドのドワーフで、王の宮廷の一員だった。驚くほどにヒゲが生えた骸骨として現れる。
+mimic	ミミック
+Mimics are magical creatures which can take any shape they wish. In dungeons they almost always choose a shape of a treasure chest, because they know how to beckon an adventurer.	ミミックはどんな姿にもなれる魔法生物である。しかし冒険者が訪れるダンジョンでは、ほとんどの場合、宝箱の形を選ぶ。
+dwarf monk	ドワーフモンク
+These monks are fanatics, who devoted themselves to protecting their city's secrets from all aliens. They don't use any armor or weapons, relying solely on the art of hand-to-hand combat.	このモンクたちは狂信的で、あらゆる侵略者から自分たちの街の秘密を守ることに専念している。彼らは鎧や武器を一切使わず、手刀による戦闘術のみに頼っている。
+parried	受け流し
+%1$s has knocked the %2$s from your hands!	%1$s はあなたの手から %2$s を叩き落とした！
+giant piranha	巨大ピラニア
+These carnivorous fish are not natural inhabitants of underground pools. They were bred specifically to protect flooded treasure vaults.	この肉食の魚は、地下プールに自然に生息しているわけではない。浸水した宝物庫を守るために特別に飼育されたのだ。
+marsupial rat	有袋ネズミ
+Marsupial rats are aggressive, but rather weak denizens of the sewers. They can be dangerous only in big numbers.	有袋ネズミは攻撃的だが、どちらかというと弱い下水道の住人だ。しかし数が多くなると危険である。
+scorpio	サソリ
+These huge arachnid-like demonic creatures avoid close combat by all means, firing crippling serrated spikes from long distances.	この巨大なクモのような悪魔のような生き物は、あらゆる手段を使って接近戦を避け、遠距離から致命的な鋸歯状のトゲを放つ。
+senior monk	上級モンク
+gnoll shaman	ノールシャーマン
+The most intelligent gnolls can master shamanistic magic. Gnoll shamans prefer battle spells to compensate for lack of might, not hesitating to use them on those who question their status in a tribe.	最も知能の高いノールはシャーマンの魔法を使いこなすことができる。ノールシャーマンは力不足を補うために戦闘魔法を好み、部族内での地位に疑問を抱く者には躊躇なく使用する。
+%s's lightning bolt killed you...	%s のライトニングボルトがあなたを殺した...
+shielded brute	盾持ちのノールブルート
+skeleton	スケルトン
+Skeletons are composed of corpses bones from unlucky adventurers and inhabitants of the dungeon, animated by emanations of evil magic from the depths below. After they have been damaged enough, they disintegrate in an explosion of bones.	スケルトンは、不運な冒険者やダンジョンの住人の死体の骨で構成され、地下からの邪悪な魔力によって動いている。彼らは十分なダメージを受けると、骨の爆発によって崩壊する。
+blocked	ブロックした
+You were killed by the explosion of bones...	あなたは骨の爆散によって倒された...
+cave spinner	ケイヴスパイダー
+These greenish furry cave spiders try to avoid direct combat, preferring to wait in the distance while their victim, entangled in the spinner's excreted cobweb, slowly dies from their poisonous bite.	この緑がかった毛むくじゃらのクモは直接の戦闘を避けようとし、被害者がクモの巣に絡まり、毒に噛まれてゆっくりと死んでいく間、遠くで待つことを好む。
+animated statue	生ける彫像
+You would think that it's just another ugly statue of this dungeon, but its red glowing eyes give itself away. While the statue itself is made of stone, the _%s_, it's wielding, looks real.	このダンジョンにある醜い彫像のひとつかと思いきや、赤く光る目がそうではないと物語っている。像自体は石でできているが、振り回している「%s」は本物のように見える。
+succubus	サキュバス
+The succubi are demons that look like seductive (in a slightly gothic way) girls. Using its magic, the succubus can charm a hero, who will become unable to attack anything until the charm wears off.	サキュバスは魅惑的な（少しゴシック風の）少女のような姿をした悪魔である。サキュバスは魔法を使ってヒーローを魅了することができ、魅了が切れるまでヒーローは相手を攻撃できなくなる。
+swarm of flies	ハエの群れ
+The deadly swarm of flies buzzes angrily. Every non-magical attack will split it into two smaller but equally dangerous swarms.	致命的なハエの大群が怒り狂ったように唸る。魔法以外の攻撃はすべて、より小さいが同様に危険な2つの群れに分裂させる。
+Tengu	天狗
+Tengu are members of the ancient assassins clan, which is also called Tengu. These assassins are noted for extensive use of shuriken and traps.	天狗は古代の暗殺者一族の一員である。この暗殺者たちは手裏剣と罠を多用することで知られている。
+Free at last...	ついに自由に...
+Gotcha, %s!	かかったな、%s！
+crazy thief	狂った泥棒
+Deeper levels of the dungeon have always been a hiding place for all kinds of criminals. Not all of them could keep a clear mind during their extended periods so far from daylight. Long ago, these crazy thieves and bandits have forgotten who they are and why they steal.	ダンジョンの深い階層は、常にあらゆる犯罪者の隠れ場所だった。日の光から遠く離れている間、平静を保てる者ばかりではない。とっくの昔に、この狂った泥棒や盗賊たちは、自分たちが何者で、なぜ盗むのかを忘れてしまっている。
+%1$s stole %2$s from you!	%1$s はあなたから %2$s を盗んだ！
+\n\n%1$s is carrying a _%2$s_. Stolen obviously.	%1$s は「%2$s」 を持っている。明らかに盗まれたものだ。
+dwarf warlock	ドワーフウォーロック
+When dwarves' interests have shifted from engineering to arcane arts, warlocks have come to power in the city. They started with elemental magic, but soon switched to demonology and necromancy.	ドワーフの関心が工学から魔術に移ると、ウォーロックが都市で権力を握るようになった。彼らは元素魔法から始めたが、やがて悪魔学と死霊術に転向した。
+%s's shadow bolt killed you...	%s のシャドウボルトがあなたを殺した...
+wraith	レイス
+A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Being an ethereal entity, it is very hard to hit with a regular weapon.	レイスとは、墓を荒らされた罪人の復讐心に燃えた霊のことである。幽体であるため、通常の武器で攻撃するのは非常に難しい。
+Yog-Dzewa	ヨグ＝ゼーヴァ
+Yog-Dzewa is an Old God, a powerful entity from the realms of chaos. A century ago, the ancient dwarves barely won the war against its army of demons, but were unable to kill the god itself. Instead, they then imprisoned it in the halls below their city, believing it to be too weak to rise ever again.	ヨグ＝ゼーヴァは混沌の領域からやってきた強力な存在で、古の神である。100年前、古代のドワーフたちは悪魔の軍勢との戦いにかろうじて勝利したが、神そのものを殺すことはできなかった。しかし、その代わりに、彼らはヨグ＝ゼーヴァを自分たちの都市の地下に閉じ込めた。もう二度と立ち上がれないと信じて。
+...	...
+Hope is an illusion...	希望など幻想だ...
+rotting fist	腐った拳
+burning fist	燃える拳
+god's larva	神の幼生
+golden bee	ハチ
+Despite their small size, golden bees tend to protect their master fiercely. They don't live long though.	ミツバチは小さいにもかかわらず、巣を激しく守る傾向がある。しかし、長生きはしない。
+This %s is wandering	%s は彷徨っている
+troll blacksmith	トロールの鍛冶屋
+This troll blacksmith looks like all trolls look: he is tall and lean, and his skin resembles stone in both color and texture. The troll blacksmith is tinkering with unproportionally small tools.	このトロールの鍛冶屋は、トロールが皆そうであるように、背が高くて痩せていて、肌の色も質感も石に似ている。トロールの鍛冶屋は不釣り合いなほど小さな道具をいじっている。
+Hey human! Wanna be useful, eh? Take dis pickaxe and mine me some _dark gold ore_, _15 pieces_ should be enough. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	おい、人間！ちと手伝ってくれんか？つるはしで影金鉱石を掘って来て欲しい。15個もあれば十分なんだが。なに？いくら払うかだと？...まったく、強欲者め...わかった。払う金はないが、お前のために鍛冶をしてやろう。この辺に鍛冶屋は俺だけだぞ。それで良いだろう？ほら、つるはしは貸してやろう。
+Hey human! Wanna be useful, eh? Take dis pickaxe and _kill a bat_ wit' it, I need its blood on the head. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	おい、人間！ちと手伝ってくれんか？このつるはしでコウモリを殺して来て欲しい。やつらの血が必要なんだ。なに？いくら払うかだと？...まったく、強欲者め...わかった。払う金はないが、お前のために鍛冶をしてやろう。この辺に鍛冶屋は俺だけだぞ。それで良いだろう？さぁ、このつるはしで頼む。
+Are you kiddin' me? Where is my pickaxe?!	冗談だろ？俺のつるはしをどこにやった？
+Dark gold ore. 15 pieces. Seriously, is it dat hard?	影金鉱石を15個だ。そんなに難しいか？
+I said I need bat blood on the pickaxe. Chop chop!	つるはしでコウモリを殺してくれと言っただろう。つるはしに血が必要なんだ。刺せ、刺せ！
+Oh, you have returned... Better late dan never.	おぉ、戻ってきたか...遅くも早くもなかったな。
+I'm busy. Get lost!	俺は忙しいんだ。失せろ！
+your %s certainly looks better now	あなたの %s は良くなったように見える
+Select 2 different items, not the same item twice!	2つのアイテムを選べ。同じアイテムを2回ではないぞ。
+Select 2 items of the same type!	いくら俺でも違う種類では無理だ。同じ種類のアイテムで2つ選んでくれ。
+I need to know what I'm working with, identify them first!	そりゃ何だ？よくわからん物は扱えん。先に識別してくれ！
+I don't work with cursed items!	おいおい、そいつは呪われてるじゃないか。それは無理だ！
+It's a junk, the quality is too poor!	こりゃゴミだな。品質が悪すぎる！
+I can't reforge these items!	おっと、すまんがそいつを鍛え直すのは無理だ！
+sad ghost	悲しいゴースト
+The ghost is barely visible. It looks like a shapeless spot of faint light with a sorrowful face.	ゴーストはかろうじて見える。それは悲しい顔をしてぼんやりと光っている。
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my _dried rose_... It's very important to me... Some monster stole it from my body...	こんにちは、冒険家...かつての私はあなたのように強く、自信に満ちていた...そして死んでしまった...でもここを離れることができない...「乾燥したバラ」を手に入れるまでは...大切なバラなのに...あるモンスターに盗まれてしまった...
+Please... Help me... _Find the rose_...	お願い...助けて...バラを見つけて...
+Yes! Yes!!! This is it! Please give it to me! And you can take one of these items, maybe they will be useful to you in your journey...	そう！そう！！！これです！これを私にください！代わりにこれらの中から1つアイテムを譲りましょう。多分あなたの旅に有用なものだと思うのですが...
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my revenge... Slay the _fetid rat_, that has taken my life...	こんにちは、冒険家...かつての私はあなたのように強く、自信に満ちていた...そして死んでしまった...でもここを離れることができない...復讐を果たすまでは...私の命を奪ったあの腐ったネズミに...
+Please... Help me... _Slay the abomination_...	お願い...助けて...私の代わりにあいつを殺して...
+Yes! The ugly creature is slain and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	やった！醜い生き物が死んでやっと休めます... これらの中から1つアイテムを受け取ってください。多分あなたの旅に有用なものだと思うのですが...
+Imps are lesser demons. They are notable for neither their strength nor their magic talent, but they are quite smart and sociable. Many imps prefer to live among non-demons.	インプは小悪魔である。強さも魔法の才能も特筆すべきものではないが、非常に賢く社交的である。多くのインプは非魔族の中で暮らすことを好む。
+evaded	回避した
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _golems_ who need to be killed. You see, I'm going to start a little business here, but these stupid golems are bad for business! It's very hard to negotiate with wandering lumps of granite, damn them! So please, kill... let's say _6 of them_ and a reward is yours.	あんた冒険者かい？冒険者は大好きだ！何か殺さなければならないとき、彼らはいつでも頼りになるんだ。そうだろ？もちろん、賞金目当てだろうけどね ;)　オイラはこれから商売を始めるんだけど、「ゴーレム」のようなバカは商売にならないんだ！彷徨う花崗岩の塊と交渉するのは流石のオイラでもちょっと難しいわけさ！ということで、ちょいと殺して来てくれないかい？......そうだな...\n「6体」くらい殺してくれれば、報酬をあげるよ。
+How is your golem safari going?	ゴーレム狩りはどうなった？
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _monks_ who need to be killed. You see, I'm going to start a little business here, but these lunatics don't buy anything themselves and will scare away other customers. So please, kill... let's say _8 of them_ and a reward is yours.	あんた冒険者かい？冒険者は大好きだ！何か殺さなければならないとき、彼らはいつでも頼りになるんだ。そうだろ？もちろん、賞金目当てだろうけどね ;)　オイラはこれから商売を始めるんだけど、ここの「モンク」たちは自分では何も買わないし、他のお客さんを怖がらせてしまうしで、本当に邪魔なんだよね。ということで、ちょいと殺して来てくれないかい？......そうだな....\n「8人」くらい殺してくれたら、報酬をあげるよ。
+Oh, you are still alive! I knew that your kung-fu is stronger ;) Just don't forget to grab these monks' tokens.	ああ、まだ生きていたんだね！やっぱり君のカンフーは強いな ;)　あ、ちゃんとモンクのトークンを手に入れるのを忘れないでね。
+See you, %s!	またね、%s ！
+Psst, %s!	ちょっと、%s ！
+ambitious imp	野心的なインプ
+Imps are lesser demons. They are notable for neither their strength nor their magic talent. But they are quite smart and sociable, and many of imps prefer to live and do business among non-demons.	インプは小悪魔である。その強さも魔法の才能も特筆すべきものではない。しかし、彼らは非常に賢く社交的で、インプの多くは非魔族の中で生活し、ビジネスを行うことを好む。
+Hello, friend!	やあ、友よ！
+mirror image	鏡像
+This illusion bears a close resemblance to you, but it's paler and twitches a little.	この幻影はあなたにとても良く似ているが、青白く少し震えている。
+rat king	ネズミの王
+This rat is a little bigger than a regular marsupial rat and it's wearing a tiny crown on its head.	このネズミは普通の有袋ネズミより少し大きく、頭に小さな冠をかぶっている。
+I'm not sleeping!	寝てないよ！
+What is it? I have no time for this nonsense. My kingdom won't rule itself!	もう、なんなんだい？くだらないことに付き合ってる暇なんかないんだけど。王様は忙しいんだ！もう辞めたいよ！
+shopkeeper	店主
+This stout guy looks more appropriate for a trade district in some large city than for a dungeon. His prices explain why he prefers to do business here.	このがっしりした男は、ダンジョンというより、どこかの大都市の貿易街に似合いそうだ。彼がなぜここでの商売を好むのかは、商品の値段が説明している。
+Select an item to sell	売却するアイテムを選択
+old wandmaker	年老いたワンドメーカー
+This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	この年老いた、しかし矍鑠とした紳士は、少し困惑した表情を浮かべている。彼は魔法の盾で守られているようだ。
+absorbed	吸収された
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	ああ、こんなところでまともな人に会えるなんて、なんと嬉しい驚きだろうか！私は希少材料である「ロットベリーの種」を採りに来たんだ。魔法の使い手だから、そこらのモンスターから身を守ることはできるんだが、恥ずかしながら、あっという間に道に迷ってしまってね。どうにも探索は苦手だ。すまないが代わりに探してきてはくれないだろうか？そうしたらお礼に私の杖を1本差し上げよう。
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	ロットベリーの種はあったかい、%s ？見つからないか？まぁ、急ぎではないから安心してくれ。
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	ああ、こんなところでまともな人に会えるなんて、なんと嬉しい驚きだろうか！私は希少材料である「コープスダスト」を採りに来たんだ。骸骨から採れるのだが、このダンジョンならたくさんあるからね。魔法の使い手だから、そこらのモンスターから身を守ることはできるんだが、恥ずかしながら、あっという間に道に迷ってしまってね。どうにも探索は苦手だ。すまないが代わりに探してきてはくれないだろうか？そうしたらお礼に私の最高の杖を1本差し上げよう。
+Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	コープスダストはあったかな、%s ？骨の山は、見ればすぐわかるだろう。
+A hidden pressure plate clicks!	隠された感圧板がカチッと音を立てる！
+Floor	床
+Grass	草
+Water	水
+Wall	壁
+Closed door	閉じている扉
+Open door	開いている扉
+Depth entrance	深層の入り口
+Depth exit	深層の出口
+Embers	熾火
+Locked door	鍵のかかった扉
+Pedestal	台座
+Barricade	バリケード
+High grass	高い草
+Locked depth exit	鍵の掛かった深層の出口
+Unlocked depth exit	鍵の開いた深層の出口
+Sign	看板
+Well	井戸
+Empty well	空っぽの井戸
+Statue	像
+Toxic gas trap	毒ガスの罠
+Fire trap	火炎の罠
+Paralytic gas trap	麻痺ガスの罠
+Poison dart trap	毒矢の罠
+Alarm trap	警報の罠
+Lightning trap	電撃の罠
+Gripping trap	グリッピングトラップ
+Summoning trap	召喚の罠
+Triggered trap	トリガートラップ
+Bookshelf	本棚
+Alchemy pot	錬金釜
+\\?\\?\\?	\\?\\?\\?
+You can't see the bottom.	底が見えない。
+In case of burning step into the water to extinguish the fire.	燃えた場合は、水の中に入って消火する。
+Stairs lead up to the upper depth.	階段は上層階まで続いている。
+Stairs lead down to the lower depth.	階段は下層階まで続いている。
+Embers cover the floor.	熾火が床を覆っている。
+Dense vegetation blocks the view.	密生した凍った植物が視界を遮る。
+This door is locked, you need a matching key to unlock it.	この扉には鍵がかかっている。開けるにはこの扉にあう鍵が必要だ。
+Heavy bars block the stairs leading down.	重い鉄格子が下へ続く階段をふさいでいる。
+The wooden barricade is firmly set but has dried over the years. Might it burn?	木製のバリケードはしっかりと固定されているが、長い年月で乾燥しているようだ。燃えるのでは？
+You can't read the text from here.	ここからでは読むことが出来ない。
+Stepping onto a hidden pressure plate will activate the trap.	隠された感圧板を踏むと、罠が作動する。
+The trap has been triggered before and it's not dangerous anymore.	発動済みの罠は、もう危険ではない。
+Someone wanted to adorn this place, but failed, obviously.	誰かがこの場所を飾りたかったようだが、明らかに失敗している。
+Drop some seeds here to cook a potion.	ここに種を3つ落とすとポーションを作ることができる。
+The well has run dry.	井戸は涸れてしまった。
+Fluorescent moss	光る苔
+Fluorescent mushrooms	光るキノコ
+Freezing cold water.	凍りつくほど冷たい水
+The ladder leads up to the upper depth.	はしごは上層階まで続いている。
+The ladder leads down to the lower depth.	はしごは下層階まで続いている。
+Huge mushrooms block the view.	巨大なキノコが視界を遮る。
+A vein of some ore is visible on the wall. Gold?	壁に鉱脈が見える。金か？
+Who would need a bookshelf in a cave?	洞窟に本棚が必要だろうか？
+A ramp leads down to the lower depth.	スロープが下層階まで続いている。
+The statue depicts some dwarf standing in a heroic stance.	この像は、英雄的な姿勢で立つドワーフを象っている。
+The rows of books on different disciplines fill the bookshelf.	さまざまな分野の本が本棚いっぱいに並んでいる。
+Books in ancient languages smolder in the bookshelf.	本棚には古代の言語で書かれた本がある。
+Cold lava	冷たい溶岩
+Embermoss	熾火苔
+Emberfungi	熾火茸
+Pillar	柱
+It looks like lava, but it's cold and probably safe to touch.	溶岩のように見えるが、冷たくて触っても安全だろう。
+The pillar is made of real humanoid skulls. Awesome.	なんと、この柱は本物の頭蓋骨でできているようだ。
+Suspiciously colored water	怪しい色の水
+High blooming flowers	高貴な花
+A ramp leads up to the upper depth.	スロープが上層階まで続いている。
+A ramp leads down to the Inferno.	スロープが焦熱地獄まで続いている。
+Several tiles are missing here.	ここにはいくつかのタイルが欠けている。
+Thick carpet covers the floor.	厚手のカーペットが床を覆っている。
+Dark cold water.	暗く冷たい水。
+There are old blood stains on the floor.	床には古い血痕がある。
+This is probably a vestige of a prison library. Might it burn?	これはおそらく刑務所の図書館の名残だろう。燃えるのでは？
+Murky water	濁った水
+Wet yellowish moss covers the floor.	濡れた黄色っぽい苔が床を覆っている。
+The bookshelf is packed with cheap useless books. Might it burn?	本棚には安くて役に立たない本がぎっしり。燃えるのでは？
+Select a seed to throw	投げる種を選択
+Chasm	割れ目
+Yes, I know what I'm doing	ああ、自分が何をしているかは分かっている
+No, I changed my mind	いや、気が変わった
+Do you really want to jump into the chasm? You can probably die.	本当に裂け目に飛び込みたいのか？おそらく死ぬだろうが。
+You fell to death...	あなたは落下死した...
+What are you doing here?!	ここで何をしているんだ？！
+Don't overestimate your strength, use weapons and armor you can handle.	自分の力を過信せず、自分が扱える武器や防具を使うこと。
+Not all doors in the dungeon are visible at first sight. If you are stuck, search for hidden doors.	ダンジョン内のすべての扉が初めから見えているわけではない。行き詰まったら、隠し扉を探そう。
+Remember, that raising your strength is not the only way to access better equipment. You can go the other way, lowering its strength requirement with Scrolls of Upgrade.	力を上げることだけが、より良い装備への唯一の道ではないことを覚えておこう。
+Beware of Goo!	グゥにご用心！
+Pixel-Mart. All you need for successful adventure!	Pixel-Mart - 冒険を成功させるために必要なものすべて！
+Identify your potions and scrolls as soon as possible. Don't put it off to the moment when you actually need them.	ポーションや巻物はできるだけ早く確認すること。実際に必要なときまで先延ばしにしてはいけない。
+Being hungry doesn't hurt, but starving does hurt.	空腹は苦痛ではないが、飢餓は苦痛だ。
+Surprise attack has a better chance to hit. For example, you can ambush your enemy behind a closed door when you know it is approaching.	奇襲攻撃は命中率が高い。例えば、敵が近づいてくるのがわかっているときに、閉ざされた扉の陰で待ち伏せすることができる。
+Don't let The Tengu out!	天狗を外に出すな！
+Pixel-Mart. Spend money. Live longer.	お金を使う。長生きする。 -ピクセル商会-
+When you're attacked by several monsters at the same time, try to retreat behind a door.	複数のモンスターに同時に襲われたときは、扉の後ろに退避するようにしよう。
+There is no sense in possessing more than one Ankh at the same time, because you will lose them upon resurrecting.	複数のアンクを同時に所有する意味はない。復活時にすべて失ってしまうからだ。
+DANGER! Heavy machinery can cause injury, loss of limbs or death!	危険！重機は怪我をしたり、手足を失ったり、死亡する恐れがあります！
+Pixel-Mart. A safer life in dungeon.	ダンジョンでより安全な生活を。-ピクセル商会-
+When you upgrade an enchanted weapon, there is a chance to destroy that enchantment.	エンチャントされた武器を強化すると、そのエンチャントが破壊される可能性がある。
+No weapons allowed in the presence of His Majesty!	陛下の前では武器は禁止！
+Pixel-Mart. Special prices for demon hunters!	デーモンハンターのための特別価格！ -ピクセル商会-
+The trap emits a piercing sound that echoes throughout the dungeon!	罠はダンジョン全体に響き渡る鋭い音を発した！
+lightning trap	電撃の罠
+You were killed by a discharge of a lightning trap...	あなたは電撃の罠の放電で死んだ...。
+You don't know what is there.	そこに何があるかわからない。
+Select a cell to examine	調べる場所を選択
+Sacrificial chamber	生贄の間
+Killed by an explosion of a bomb on level %d	%d階で爆弾の爆発に巻き込まれて死亡
+Do you want to respec into %s?	専門を%sに変更しますか？
+Yes, I want to respec	はい、専門を変更する
+Maybe later	また後で
+Language	言語
+Because of frequent use, your %s has broken.	使い込みすぎて、%sは壊れてしまった。
+Because of frequent use, your %s is going to break soon.	使い込みすぎて、%sはもうすぐ壊れそうだ。
+bomb	爆弾
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	黒色火薬を詰めた、比較的小さな爆弾だ。ありがたいことに、投げると導火線へ自動で火がつく。
+You killed yourself with a bomb...	自分の爆弾で自爆した…
+honeypot	蜂蜜壺
+SHATTER	叩き割る
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	小さな壺に蜂蜜はあまり残っていないが、金色の蜂が一匹、ここを離れまいとしている。
+%s of auto-repair	自己修復の%s
+enchantment of viscosity	粘性の付与魔法
+The enchantment of viscosity killed you...	粘性の付与魔法に殺された…
+phantom fish	幻影魚
+broken %s	壊れた%s
+Unequip one ring	指輪を一つ外す
+Scroll of Enchantment	付与の巻物
+Select an enchantable item	魔法を付与するアイテムを選択
+your %s glows in the dark	%sが闇の中で輝いた
+Scroll of Wipe Out	殲滅の巻物
+You are now familiar enough with your %s.	%sの扱いにはもう十分慣れた。
+Wand of Reach	引き寄せの杖
+shocking %s	電撃の%s
+tempered %s	鍛錬された%s
+"Your sacrifice is worthy..."	「その生贄には価値がある…」
+"Your sacrifice is unworthy..."	「その生贄には価値がない…」
+"Your sacrifice is worthy and so you are!"	「その生贄には価値がある。お前自身にもな！」
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	ここには生贄の炎が燃えている。この炎に触れた者は皆、ダンジョンの精霊への供物として印を刻まれる。
+Marked for sacrifice	生贄の印
+Immune to gases	気体への耐性
+Blinded with rage	怒りで我を忘れている
+Zeroed in	照準済み
+echo of 	残響・
+curse personification	呪いの化身
+DM-350	DM-350
+spawn of Goo	グゥの落とし子
+King of Dwarves	ドワーフの王
+undead King of Dwarves	不死のドワーフ王
+memory of Tengu	天狗の記憶
+echo of Yog-Dzewa	ヨグ＝ゼーヴァの残響
+Yes, I will do it for you	ああ、君のためにやろう
+No, I can't help you	いや、力にはなれない
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	_幻影魚_は見つかったか、%s？ この辺りの水溜まりを探してみるといい。
+As you try to read the sign it bursts into greenish flames.	看板を読もうとした瞬間、緑がかった炎に包まれた。
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	さらに深い階層の店でゴールドを使える。最初の店は6階だ。
+If you are burning, you can't put out the fire in the water while levitating.	空中浮遊中は、燃えていても水で火を消すことはできない。
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	武器と鎧は杖や指輪より早く傷むが、修理する手段も多い。
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	殲滅の巻物を得る唯一の方法は、ダンジョンの精霊から褒美として授かることだ。
+Choose language	言語を選択
+Key bindings	キー設定
+Switch to fullscreen	フルスクリーンに切り替え
+Switch to windowed	ウィンドウ表示に切り替え
+Reset To Defaults	初期設定に戻す
+<None>	<なし>
+Press a key for "%s", or press %s to remove the binding.	「%s」に割り当てるキーを押してください。%sで割り当てを解除します。
+Hero Info	勇士の情報
+Wait	待機
+Search	探索
+Examine cell	マスを調べる
+Resume motion	移動を再開
+Backpack	バックパック
+Quickslot	クイックスロット
+Attack	攻撃
+Visible Enemies	見えている敵
+Zoom In	拡大
+Zoom Out	縮小
+Move North	北へ移動
+Move South	南へ移動
+Move West	西へ移動
+Move East	東へ移動
+Move NW	北西へ移動
+Move NE	北東へ移動
+Move SW	南西へ移動
+Move SE	南東へ移動
+Current Cell	現在のマス
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	コード・グラフィック：Watabou\n音楽：Cube_Code\n\nこのゲームはBrian WalkerのBrogueに着想を得ています。Windows、Mac OS、Linuxで遊べる素晴らしい作品です！ ;)\n\n詳しくは公式サイトをご覧ください：
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	ローカライズ：rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+Languages	言語
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	この小さな半透明の魚は、空中でもかろうじて見える程度だ。水中ではほとんど完全に見えなくなる。
+You can only wear two rings at a time. Unequip one of your equipped rings.	同時に装備できる指輪は二つまでだ。装備中の指輪を一つ外そう。
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	この巻物は武器か防具に無作為な魔法を宿し、特別な力を与えることができる。
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	この巻物を読むとダンジョンの精霊たちの怒りが解き放たれ、現在の階にいるすべてを死滅させる。もっとも、ほぼすべてだ。強大な生物の中には効かないものもいる。
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	この便利な杖は、離れた物を引き寄せたり、敵と位置を入れ替えたりできる。放たれた魔力の波は通り道のすべてのマスに作用し、罠を作動させ、背の高い草を踏み倒し、閉じた扉を開け、開いた扉を閉じる。
+broken %1$s :%2$d	壊れた%1$s：%2$d
+a broken	壊れた
+%1$s: "%2$s"	%1$s：「%2$s」
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	この生物は悲しげな幽霊に似ているが、その周囲では闇が渦巻いている。顔には絶望の色が浮かんでいる。
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	こんにちは、冒険者よ… 私もかつては君のように強く、自信に満ちていた… だが今は死んでいる… 恐ろしい呪いに縛られ、この場所を離れられない… 頼む… 助けてくれ… _呪いを解いてくれ_…
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	ありがとう、%s！ 呪いは解け、ようやく安らかに眠れる… この品のどちらかを受け取ってくれ。旅の役に立つかもしれない…
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	おお、こんな場所でまともな人に会えるとは嬉しい驚きだ！ 私は珍しい素材、_幻影魚_を探しに来た。素手で捕まえられるが、水中ではほとんど見えない。魔法使いだからこの辺りの怪物から身を守ることはできるのだが、すぐ道に迷ってしまってね。実に恥ずかしい。手を貸してくれないか？ お礼に私の最高の杖を一本差し上げよう。
+1	1

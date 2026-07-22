@@ -124,7 +124,7 @@ public class BitmapText extends Visual {
 			RectF rect = font.get( text.charAt( i ) );
 	
 			if (rect == null) {
-				rect=null;
+				rect = font.get( '?' );
 			}
 			float w = font.width( rect );
 			float h = font.height( rect );
@@ -182,6 +182,9 @@ public class BitmapText extends Visual {
 		int length = text.length();
 		for (int i=0; i < length; i++) {
 			RectF rect = font.get( text.charAt( i ) );
+			if (rect == null) {
+				rect = font.get( '?' );
+			}
 	
 			float w = font.width( rect );
 			float h = font.height( rect );
@@ -219,12 +222,29 @@ public class BitmapText extends Visual {
 	}
 	
 	public static class Font extends TextureFilm {
+
+		public static final String SPECIAL_CHAR =
+			"àáâäãąèéêëęìíîïòóôöõùúûüñńçćłśźż";
+
+		public static final String SPECIAL_CHAR_UPPER =
+			"ÀÁÂÄÃĄÈÉÊËĘÌÍÎÏÒÓÔÖÕÙÚÛÜÑŃÇĆŁŚŹŻºß";
 		
 		public static final String LATIN_UPPER = 
 			" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		
 		public static final String LATIN_FULL = 
 			" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u007F";
+
+		private static final String LATIN_EXTENDED =
+			" !¡\"#$%&'()*+,-./0123456789:;<=>?¿@ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+			"[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u007F";
+
+		// Cyrillic letters that cannot be reused from visually identical Latin
+		// glyphs.  The remaining letters are mapped in get(char).
+		public static final String CYRILLIC_UPPER = "БГДЖЗИЙЛПУФЦЧШЩЪЫЬЭЮЯ";
+		public static final String CYRILLIC_LOWER = "бвгджзийлмнптуфцчшщъыьэюя";
+		public static final String ALL_CHARS = LATIN_EXTENDED + SPECIAL_CHAR +
+			SPECIAL_CHAR_UPPER + CYRILLIC_UPPER + CYRILLIC_LOWER;
 		
 		public SmartTexture texture;
 		
@@ -273,61 +293,131 @@ public class BitmapText extends Visual {
 			
 			lineHeight = baseLine = height;
 		}
+
+		private Font( SmartTexture tx, int cellWidth, int cellHeight,
+				String chars, String widthData ) {
+			super( tx );
+			texture = tx;
+
+			String[] widths = widthData.split( "," );
+			float left = 0;
+			float top = 0;
+			float cellU = (float)cellWidth / tx.width;
+			float cellV = (float)cellHeight / tx.height;
+			for (int i = 0; i < chars.length(); i++) {
+				int glyphWidth = i < widths.length ? Integer.parseInt( widths[i] ) : cellWidth;
+				add( chars.charAt( i ), new RectF(
+					left, top, left + (float)glyphWidth / tx.width, top + cellV ) );
+				left += cellU;
+				if (left >= 0.9999f) {
+					left = 0;
+					top += cellV;
+				}
+			}
+			lineHeight = baseLine = cellHeight;
+		}
+
+		public static Font grid( GdxTexture bmp, int cellWidth, int cellHeight,
+				String chars, String widthData ) {
+			return new Font( TextureCache.get( bmp ), cellWidth, cellHeight,
+				chars, widthData );
+		}
 		
 		protected void splitBy( GdxTexture bitmap, int height, int color, String chars ) {
-			
+
 			autoUppercase = chars.equals( LATIN_UPPER );
 			int length = chars.length();
-			
 			int width = bitmap.getWidth();
-			float vHeight = (float)height / bitmap.getHeight();
-			
-			int pos;
-
+			int bitmapHeight = bitmap.getHeight();
 
 			TextureData td = bitmap.getTextureData();
 			if (!td.isPrepared()) {
 				td.prepare();
 			}
 			final Pixmap pixmap = td.consumePixmap();
-		spaceMeasuring:
-			for (pos=0; pos <  width; pos++) {
-				for (int j=0; j < height; j++) {
-					if (colorNotMatch(pixmap, pos, j, color)) break spaceMeasuring;
+
+			int charsProcessed = 0;
+			int lineTop = 0;
+			while (lineTop < bitmapHeight && charsProcessed < length) {
+				while (lineTop < bitmapHeight && isRowEmpty( pixmap, lineTop, color )) {
+					lineTop++;
 				}
-			}
-			add( ' ', new RectF( 0, 0, (float)pos / width, vHeight ) );
-			
-			for (int i=0; i < length; i++) {
-				
-				char ch = chars.charAt( i );
-				if (ch == ' ') {
-					continue;
-				} else {
-					
-					boolean found;
-					int separator = pos;
-					
-					do {
-						if (++separator >= width) {
-							break;
-						}
-						found = true;
-						for (int j=0; j < height; j++) {
-							if (colorNotMatch(pixmap, separator, j, color)) {
-								found = false;
-								break;
-							}
-						}
-					} while (!found);
-					
-					add( ch, new RectF( (float)pos / width, 0, (float)separator / width, vHeight ) );
-					pos = separator + 1;
+				if (lineTop >= bitmapHeight) {
+					break;
 				}
+
+				int lineBottom = lineTop;
+				while (lineBottom < bitmapHeight && !isRowEmpty( pixmap, lineBottom, color )) {
+					lineBottom++;
+				}
+
+				int column = 0;
+				while (column < width && charsProcessed < length) {
+					int empty = findEmptyColumn( pixmap, column + 1, lineTop, lineBottom, color );
+					int next = findFilledColumn( pixmap, empty, lineTop, lineBottom, color );
+					boolean endOfRow = next >= width;
+					int charBorder = endOfRow ? empty - 1 : next - 1;
+
+					char ch = chars.charAt( charsProcessed++ );
+					int glyphRight = charBorder;
+					if (ch != ' ') {
+						while (glyphRight > column + 1 &&
+							isColumnEmpty( pixmap, glyphRight, lineTop, lineBottom, color )) {
+							glyphRight--;
+						}
+						glyphRight++;
+					}
+
+					add( ch, new RectF(
+						(float)column / width,
+						(float)lineTop / bitmapHeight,
+						(float)glyphRight / width,
+						(float)lineBottom / bitmapHeight ) );
+
+					if (endOfRow) {
+						break;
+					}
+					column = charBorder;
+				}
+				lineTop = lineBottom + 1;
 			}
 			pixmap.dispose();
 			
 			lineHeight = baseLine = height( frames.get( chars.charAt( 0 ) ) );
+		}
+
+		private boolean isRowEmpty( Pixmap pixmap, int y, int color ) {
+			for (int x = 0; x < pixmap.getWidth(); x++) {
+				if (colorNotMatch( pixmap, x, y, color )) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		private boolean isColumnEmpty( Pixmap pixmap, int x, int top, int bottom, int color ) {
+			for (int y = top; y < bottom; y++) {
+				if (colorNotMatch( pixmap, x, y, color )) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		private int findEmptyColumn( Pixmap pixmap, int start, int top, int bottom, int color ) {
+			int x = start;
+			while (x < pixmap.getWidth() && !isColumnEmpty( pixmap, x, top, bottom, color )) {
+				x++;
+			}
+			return x;
+		}
+
+		private int findFilledColumn( Pixmap pixmap, int start, int top, int bottom, int color ) {
+			int x = start;
+			while (x < pixmap.getWidth() && isColumnEmpty( pixmap, x, top, bottom, color )) {
+				x++;
+			}
+			return x;
 		}
 
 		private boolean colorNotMatch(Pixmap pixmap, int x, int y, int color) {
@@ -351,7 +441,30 @@ public class BitmapText extends Visual {
 		}
 		
 		public RectF get( char ch ) {
-			return super.get( autoUppercase ? Character.toUpperCase( ch ) : ch );
+			// Reuse Latin glyphs for visually identical Cyrillic characters.
+			switch (ch) {
+			case 'А': ch = 'A'; break; case 'а': ch = 'a'; break;
+			case 'В': ch = 'B'; break;
+			case 'Е': ch = 'E'; break; case 'е': ch = 'e'; break;
+			case 'Ё': ch = 'Ë'; break; case 'ё': ch = 'ë'; break;
+			case 'К': ch = 'K'; break; case 'к': ch = 'k'; break;
+			case 'М': ch = 'M'; break;
+			case 'Н': ch = 'H'; break;
+			case 'О': ch = 'O'; break; case 'о': ch = 'o'; break;
+			case 'Р': ch = 'P'; break; case 'р': ch = 'p'; break;
+			case 'С': ch = 'C'; break; case 'с': ch = 'c'; break;
+			case 'Т': ch = 'T'; break;
+			case 'Х': ch = 'X'; break; case 'х': ch = 'x'; break;
+			}
+
+			RectF result = super.get( autoUppercase ? Character.toUpperCase( ch ) : ch );
+			if (result == null) {
+				result = super.get( '?' );
+			}
+			if (result == null) {
+				result = super.get( ' ' );
+			}
+			return result;
 		}
 	}
 }

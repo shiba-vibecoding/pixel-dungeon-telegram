@@ -1,0 +1,1185 @@
+Play	Main
+Highscores	Nilai Tertinggi
+About	Tentang
+LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port web: nojus297
+Telegram port: @barboskich	Port Telegram: @barboskich
+Say thanks	Ucapkan terima kasih
+Thank you!	Terima kasih!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Ini adalah dukungan sukarela untuk port Telegram. Tidak pernah memengaruhi permainan.
+Support with Telegram Stars	Dukung dengan Telegram Stars
+Open @barboskich	Buka @barboskich
+Send E-Mail	Kirim E-Mail
+Top Rankings	Peringkat Teratas
+Total games won/played: 	Total bermain:
+No games have been played yet.	Belum ada permainan di mainkan.
+No additional information	Tidak ada informasi tambahan
+Your Badges	Medali Anda
+Load Game	Muat Permainan
+New Game	Permainan Baru
+Erase current game	Hapus permainan saat ini
+Depth: %1$d, level: %2$d	Kedalaman: %1$d\nTingkat: %2$d
+Do you really want to start new game?	Apa anda yakin memulai permainan baru?
+Your current game progress will be erased.	Permainan kamu saat ini akan di hapus.
+Yes, start new game	Iya, mulai permainan baru
+No, return to main menu	tidak, kembali ke menu utama
+To unlock this character class, slay the 3rd boss with any other class	Untuk membuka kelas karakter ini, bunuh bos DM-300 dengan kelas lainnya
+To unlock "Challenges", win the game with any character class.	Untuk membuka "Tantangan", menangkan permainan dengan karakter kelas apapun
+Descending...	Menurun...
+Ascending...	Memanjat...
+Loading...	Memuat...
+Resurrecting...	Membangkitkan...
+Returning...	Kembali...
+Falling...	Jatuh...
+File not found. For some reason...	Berkas tidak di temukan. Untuk beberapa alasan...
+Something went wrong...	Ada yang salah...
+Many heroes of all kinds ventured into the Dungeon before you. Some of them have returned with treasures and magical artifacts, most have never been heard of since. But none have succeeded in retrieving the Amulet of Yendor, which is told to be hidden in the depths of the Dungeon.\n\nYou consider yourself ready for the challenge, but most importantly, you feel that fortune smiles on you. It's time to start your own adventure!	Banyak pahlawan dari semua jenis berkelana ke Dungeon sebelum Anda. Beberapa dari mereka telah kembali dengan harta karun dan artefak magis, sebagian besar tidak pernah terdengar lagi sejak itu. Tapi tidak ada yang berhasil mengambil Jimat Yendor, yang diceritakan tersembunyi di kedalaman Dungeon.\n\nAnda menganggap diri Anda siap untuk tantangan, tetapi yang paling penting, Anda merasa keberuntungan tersenyum pada Anda. Saatnya untuk memulai petualangan Anda sendiri!
+Let's call it a day	Selesai sudah
+I'm not done yet	Saya belum selesai
+You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	Anda akhirnya mendapatkannya di tangan Anda, Jimat Yendor. Menggunakan kekuatannya Anda dapat mengambil alih dunia atau membawa damai dan kemakmuran ke orang-orang atau apapun juga. Lagipula, hidup Anda akan berubah selamanya dan permainan ini berakhir di sini. Atau Anda dapat tinggal di sini lebih lama sedikit.
+Welcome to the level %d of Pixel Dungeon!	Selamat datang ditingkat %d dari Remixed Dungeon!
+Welcome back to the level %d of Pixel Dungeon!	Selamat datang kembali ditingkat %ddari Remixed Dungeon!
+Be cautious, since the dungeon is even more dangerous at night!	Hati-hati, karena Dungeon akan lebih berbahaya di malam hari!
+Your steps echo across the dungeon.	Langkah Anda bergema melintasi di Dungeon.
+You hear the water splashing around you.	Anda mendengar air bercipratan di sekitar Anda.
+The smell of vegetation is thick in the air.	Bau dari tumbuhan tebal di udara.
+The atmosphere hints that this floor hides many secrets.	Suasana di sini memberitahu Anda bahwa lantai ini memiliki banyak rahasia.
+mob	monster
+%1$s hit %2$s	%1$s mengenai %2$s
+%1$s defeated %2$s	%1$s mengalahkan %2$s
+%1$s %2$s your attack	%1$s %2$s serangan Anda
+%1$s %2$s %3$s's attack	%1$s %2$s serangan %3$s
+The pain snapped %s out of paralysis	Rasa sakit mengeluarkan %s dari kelumpuhan
+dodged	menghindari
+poisoned	keracunan
+amok	amukan
+slowed	diperlambat
+mind	pikiran
+vision	penglihatan
+paralyzed	terlumpuhkan
+frightened	takut
+rooted	berakar
+crippled	terkilir
+bleeding	berdarah
+dizzy	pusing
+invisible	tidak terlihat
+you	Anda
+One does not simply leave Pixel Dungeon.	Seseorang tidak begitu saja meninggalkan Remixed Dungeon.
+level up!	naik level!
+Welcome to level %d! Now you are healthier and more focused. It's easier for you to hit enemies and dodge their attacks.	Selamat datang di level %d! Sekarang anda lebih segar dan fokus. Lebih mudah untuk anda mengenai musuh dan menghindari serangan mereka.
+You now have %s	Sekarang Anda punya %s
+There is something else here	Ada sesuatu lagi di sini
+This chest is locked and you don't have matching key	Peti ini terkunci dan anda tidak punya kunci yang cocok
+You don't have a matching key	Anda tidak punya kunci yang cocok
+You noticed something	Anda menyadari sesuatu
+search	cari
+You catch fire!	Anda terbakar!
+You are paralyzed!	Anda terlumpuhkan!
+You are poisoned!	Anda keracunan!
+Caustic ooze eats your flesh. Wash away it!	Lumpur membakar memakan daging Anda. Cucilah lumpur itu!
+You can't move!	Anda tidak dapat bergerak!
+You feel weakened!	Anda merasa melemah!
+You are blinded!	Anda dibutakan!
+You become furious!	Anda sangat marah!
+furious	sangat marah
+You are charmed!	Anda terpesona!
+You are crippled!	Anda terkilir!
+You are bleeding!	Anda berdarah!
+Everything is spinning around you!	Semuanya berputar di sekeliling Anda!
+warrior	pejuang
+mage	penyihir
+rogue	penjahat
+huntress	pemburu
+Warriors start with 11 points of Strength.	Pejuang mulai dengan 11 poin Kekuatan.
+Warriors start with a unique short sword. This sword can be later "reforged" to upgrade another melee weapon.	Pejuang mulai dengan pedang pendek unik. Pedang ini dapat "dilebur" nanti untuk memperbaharui senjata jarak pendek lain .
+Warriors are less proficient with missile weapons.	Pejuang kurang pandai menggunakan senjata jarak jauh .
+Any piece of food restores some health when eaten.	Jenis makanan apapun memulihkan nyawa saat dimakan.
+Potions of Strength are identified from the beginning.	Ramuan Kekuatan sudah diketahui dari awal.
+Mages start with a unique Wand of Magic Missile. This wand can be later "disenchanted" to upgrade another wand.	Penyihir mulai dengan Rudal Tongkat Sihir yang unik. Tongkat ini nantinya bisa "digunakan" untuk mengupgrade tongkat lain.
+Mages recharge their wands faster.	Penyihir mengisi ulang tongkat mereka lebih cepat.
+When eaten, any piece of food restores 1 charge for all wands in the inventory.	Saat dimakan, setiap makanan mengembalikan 1 cas untuk semua tongkat di inventaris.
+Mages can use wands as a melee weapon.	Penyihir dapat menggunakan tongkat sihir sebagai senjata jarak dekat.
+Scrolls of Identify are identified from the beginning.	Penyihir menggunakan mana untuk mengeluarkan mantra Elemental.
+Rogues start with a Ring of Shadows+1.	Penjahat mulai dengan cincin kegelapan+1.
+Rogues identify a type of a ring on equipping it.	Penjahat dapat mengetahui cincin secara langsung saat memakainya.
+Rogues are proficient with light armor, dodging better while wearing one.	Penjahat handal saat menggunakan zirah ringan, menghindari lebih baik saat memakainya.
+Rogues are proficient in detecting hidden doors and traps.	Penjahat handal dalam mendeteksi pintu dan jebakan tersembunyi.
+Rogues can go without food longer.	Penjahat dapat menahan lapar lebih lama.
+Scrolls of Magic Mapping are identified from the beginning.	Gulungan Pemetaan Sihir sudah diketahui dari awal.
+Huntresses start with 15 points of Health.	Pemburu mulai dengan 15 poin Nyawa.
+Huntresses start with a unique upgradeable boomerang.	Pemburu mulai dengan bumerang unik yang dapat ditingkatkan.
+Huntresses are proficient with missile weapons and get a damage bonus for excessive strength when using them.	Pemburu handal menggunakan senjata jarak jauh dan mendapat bonus serangan untuk kekuatan yang berlebihan saat menggunakannya.
+Huntresses gain more health from dewdrops.	Pemburu mendapat lebih banyak nyawa dari tetesan air.
+Huntresses sense neighboring monsters even if they are hidden behind obstacles.	Pemburu dapat merasakan monster di sekitar walaupun mereka ada di belakang ringtangan.
+gladiator	gladiator
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	Serangan berhasil dengan senjata jarak dekat memperbolehkan _Gladiator_ untuk memulai sebuah kombo, dengan setiap serangan berhasil mengakibatkan serangan lebih kuat.
+berserker	pengamuk
+When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	Saat terluka parah, _Pengamuk_ akan masuk ke status sangat marah yang akan meningkatkan serangannya.
+warlock	dukun
+After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	Setelah membunuh musuh _Dukun_ akan mengambil roh musuh tersebut. Roh itu akan menyembuhkan luka dukun dan memuaskan kelaparannya.
+battlemage	ahli sihir
+When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	Saat bertarung dengan tongkat di tangannya, _Ahli sihir_ akan mengakibatkan serangan tambahan tergantung pada sisa energi tongkat. Setiap serangan yang berhasil mengecas 1 poin energi ke tongkat itu.
+assassin	pembunuh
+When performing a surprise attack, the _Assassin_ inflicts additional damage to his target.	Saat melakukan serangan tiba-tiba, _Pembunuh_ akan mengakibatkan serangan lebih besar ke targetnya.
+freerunner	pelari
+The _Freerunner_ can move almost twice faster, than most of the monsters. When he is running, the Freerunner is much harder to hit. For that he must be unencumbered and not starving.	_Pelari_ dapat bergerak hampir dua kali lipat lebih cepat daripada kebanyakan monster. Saat dia berlari, Pelari jadi lebih susah untuk dipukul. Untuk melakukan itu dia tidak boleh keberatan dan kelaparan.
+sniper	penembak jitu
+_Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	_Penembak jitu_ dapat mendeteksi titik kelemahan di zirah musuh, sangat efektif mengabaikan zirah musuh itu dengan senjata jarak jauh.
+warden	sipir
+Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	Memiliki hubungan kuat dengan kekuatan alam memberikan _Sipir_ keahlian untuk mengumpulkan tetesan air dan biji dari tanaman. Juga saat menginjak rumput tinggi memberikan mereka tambahan zirah sementara.
+Badge endorsed: %s	Medali yang sudah didapat: %s
+New super badge: %s	Medali super baru: %s
+New badge: %s	Medali baru: %s
+10 enemies slain	10 musuh dibunuh
+50 enemies slain	50 musuh dibunuh
+150 enemies slain	150 musuh dibunuh
+250 enemies slain	250 musuh dibunuh
+100 gold collected	100 emas didapat
+500 gold collected	500 emas didapat
+2500 gold collected	2500 emas didapat
+7500 gold collected	7500 emas didapat
+Level 6 reached	Mencapai level 6
+Level 12 reached	Mencapai level 12
+Level 18 reached	Mencapai level 18
+Level 24 reached	Mencapai level 24
+All potions identified	Mengetahui semua ramuan
+All scrolls identified	Mengetahui semua gulungan
+All rings identified	Semua cincin diidentifikasi
+All wands identified	Semua tongkat diidentifikasi
+All potions, scrolls, rings & wands identified	Semua ramuan, gulungan, cincin &amp; tongkat diketahui
+All bags bought	Semua tas dibeli
+Death from fire	Mati karena api
+Death from poison	Mati karena ramuan
+Death from toxic gas	Mati karena gas beracun
+Death from hunger	Mati kelaparan
+Death from an enchantment	Kematian dari glif
+Death from falling down	Mati karena jatuh
+Death from fire, poison, toxic gas & hunger	Mati karena api, ramuan, gas beracun &amp; kelaparan
+1st boss slain	Goo telah dibunuh
+2nd boss slain	Tengu telah terbunuh
+3rd boss slain	DM-300 telah dibunuh
+4th boss slain	Raja telah dibunuh 
+1st boss slain by Warrior, Mage, Rogue & Huntress	Goo telah dibunuh oleh semua kelas
+3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	DM-300 telah dibunuh oleh semua subkelas
+Ring of Haggler obtained	Mendapat Cincin Haggler
+Ring of Thorns obtained	Mendapat Cincin Thorn
+13 points of Strength attained	Mendapat 13 poin kekuatan
+15 points of Strength attained	Mendapat 15 poin kekuatan
+17 points of Strength attained	Mendapat 17 poin kekuatan
+19 points of Strength attained	Mendapat 19 poin kekuatan
+10 pieces of food eaten	10 makanan dimakan
+20 pieces of food eaten	20 makanan dimakan
+30 pieces of food eaten	30 makanan dimakan
+40 pieces of food eaten	40 makanan dimakan
+Item of level 3 acquired	Item level 3 didapat
+Item of level 6 acquired	Item level 6 didapat
+Item of level 9 acquired	Item level 9 didapat
+Item of level 12 acquired	Item level 12 didapat
+All rare monsters slain	Semua monster langka dibunuh
+Amulet of Yendor obtained	Mendapat Jimat Yendor
+Amulet of Yendor obtained by Warrior, Mage, Rogue & Huntress	Jimat Yendor diperoleh oleh semua kelas
+7-hit combo	Mendapat kombo 7-pukulan
+3 potions cooked	Memasak 3 ramuan
+6 potions cooked	Memasak 6 ramuan
+9 potions cooked	Memasak 9 ramuan
+12 potions cooked	Memasak 12 ramuan
+Level completed without killing any monsters	Menyelesaikan level tanpa membunuh monster
+Monster killed by a Grim weapon	Monster dibunuh oleh senjata Grim
+6 piranhas killed	Membunuh 6 piranha
+5 monsters killed at nighttime	Membunuh 5 monster di malam hari
+10 games played	Bermain 10 kali
+100 games played	Bermain 100 kali
+500 games played	Bermain 500 kali
+2000 games played	Bermain 2000 kali
+Happy end	Akhir bahagia
+Challenge won	Memenangkan tantangan
+Thanks for your support!	Terima kasih atas bantuan anda!
+On diet	Sedang diet
+Faith is my armor	Iman adalah armor saya
+Pharmacophobia	Farmakofobia
+Barren land	Tanah tandus
+Swarm intelligence	Kecerdasan kawanan
+Into darkness	Ke dalam kegelapan
+Forbidden runes	Rune Terlarang
+Well of Health	Sumur Penyembuhan
+Well of Awareness	Sumur Kewaspadaan
+Well of Transmutation	Sumur Transmutasi
+Garden	Taman
+Animated statue	Patung tersihir
+Sad ghost	Hantu sedih
+Old wandmaker	Pembuat tongkat tua
+Troll blacksmith	Troll pandai besi
+Ambitious imp	Setan ambisius
+Killed by %1$s on level %2$d	Dibunuh oleh %1$s pada level %2$d
+Killed by your own %1$s on level %2$d	Dibunuh oleh %1$s Anda pada level %2$d
+Killed by the %1$s on level %2$d	Dibunuh oleh %1$s pada level %2$d
+Killed by discharge of %1$s on level %2$d	Dibunuh oleh pelepasan %1$s di level %2$d
+Burned to death on level %d	Mati terbakar pada level %d
+Starved to death on level %d	Mati kelaparan pada level %d
+Died from poison on level %d	Mati keracunan pada level %d
+Died from toxic gas on level %d	Mati karena gas beracun pada level %d
+Bled to death on level %d	Mati kehabisan darah pada level %d
+Killed by a caustic ooze on level %d	Dibunuh oleh lumpur membakar pada level %d
+Fell to death on level %d	Mati karena jatuh pada level %d
+Obtained the Amulet of Yendor	Mendapatkan Jimat Yendor
+OK, a deal is a deal, dat's what I can do for you: I can reforge 2 items and turn them into one of a better quality.	OK, tawaran adalah tawaran, itu yang dapat saya lakukan untukmu: saya dapat menempa ulang 2 item dan mengubah mereka menjadi satu dengan kualitas lebih baik.
+Select an item to reforge	Pilih item untuk ditempat ulang
+Reforge them	Tempa ulang mereka
+Potions	Ramuan
+Scrolls	Gulungan
+Which way will you follow?	Jalan mana yang Anda ingin ikuti?
+I'll decide later	Saya akan pilih nanti
+Mastery	Penguasaan
+ERROR	ERROR
+Settings	Pengaturan
+Rankings	Papan Peringkat
+Start New Game	Mulai Permainan Baru
+Main Menu	Menu Utama
+Exit Game	Keluar Remixed Dungeon
+Return to Game	Kembali ke Permainan
+Buffs	Buffer
+Experience	Pengalaman
+Catalogus	Katalog
+Oh yes! You are my hero!\nRegarding your reward, I don't have cash with me right now, but I have something better for you. This is my family heirloom ring: my granddad took it off a dead paladin's finger.	Oh ya! Kau pahlawanku!\nMengenai hadiahmu, saya tidak punya uang sekarang, tapi saya akan memberikanmu sesuatu yang lebih baik. Ini adalah cincin milik keluargaku: kakekku mengambilnya dari jari ksatria yang telah mati.
+Take the ring	Ambil cincinnya
+There is nothing here.	Tak ada apa-apa di sini.
+Chest	Peti
+Locked chest	Peti terkunci
+Crystal chest	Peti Kristal
+Tomb	Kuburan
+Skeletal remains	Tulang belulang
+You won't know what's inside until you open it!	Anda tidak akan tahu apa di dalamnya sampai Anda membukanya!
+ But to open it you need a golden key.	Tapi untuk membukanya Anda butuh kunci emas.
+You can see %s inside, but to open the chest you need a golden key.	Anda dapat melihat %s di dalamnya, tapi untuk membukanya Anda butuh kunci emas.
+This ancient tomb may contain something useful, but its owner will most certainly object to checking.	Kuburan kuno ini mungkin menyimpan sesuatu yang berguna, tapi penunggunya adalah sesuatu yang harus diperiksa.
+This is all that's left from one of your predecessors. Maybe it's worth checking for any valuables.	Inilah yang tersisa dari salah satu pendahulu Anda. Mungkin layak diperiksa untuk barang berharga.
+Journal	Jurnal
+Unable to load additional information	Tidak dapat membuka informasi tambahan
+Stats	Statistik
+Items	Item
+Badges	Medali
+Level %1$d %2$s	Tingkat %1$d %2$s
+Challenges	Tantangan
+Health	Nyawa
+Strength	Kekuatan
+Game Duration	Durasi Permainan
+Maximum Depth	Tingkat Maksimal
+Mobs Killed	Monster Terbunuh
+Gold Collected	Emas Terkumpul
+Food Eaten	Makanan Dimakan
+Potions Cooked	Ramuan Dimasak
+Ankhs Used	Ankh Dipakai
+You died, but you were given another chance to win this dungeon. Will you take it?	Anda telah mati, tapi Anda diberikan kesempatan lain untuk mengalahkan dungeon ini. Apakah Anda akan mengambilnya?
+Yes, I will fight!	Ya, saya akan berjuang!
+No, I give up	Tidak, saya menyerah
+Ghost's weapon	Senjata hantu
+Ghost's armor	Zirah hantu
+Farewell, adventurer!	Selamat tinggal, petualang!
++	+
+-	-
+Default Zoom	Zoom Standar
+Scale up UI	Meningkatkan UI
+Immersive mode	Mode yang lebih mendalam
+Music	Musik
+Sound FX	Suara FX
+Brightness	Kecerahan
+Second quickslot	Slot kedua
+Switch to portrait	Beralih ke potret
+Switch to landscape	Beralih ke lanskap
+The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	Dungeon terletak tepat di bawah Kota, tingkat atasnya sebenarnya merupakan sistem saluran pembuangan Kota. Menjadi bagian dari Kota, level ini tidak terlalu berbahaya. Tidak ada yang akan menyebutnya tempat yang aman, tapi setidaknya Anda tidak perlu berurusan dengan banyak sihir jahat di sini.
+Many years ago an underground prison was built here for the most dangerous criminals. At the time it seemed like a very clever idea, because this place indeed was very hard to escape. But soon dark miasma started to permeate from below, driving prisoners and guards insane. In the end the prison was abandoned, though some convicts were left locked up here.	Bertahun-tahun yang lalu sebuah penjara bawah tanah dibangun di sini untuk penjahat paling berbahaya. Pada saat itu sepertinya ide yang sangat cerdas, karena tempat ini memang sangat sulit untuk melarikan diri. Tapi segera racun gelap mulai merembes dari bawah, membuat para tahanan dan penjaga menjadi gila. Pada akhirnya penjara itu ditinggalkan, meskipun beberapa narapidana dibiarkan terkunci di sini.
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	Gua-gua, yang membentang di bawah penjara yang ditinggalkan, berpenduduk jarang. Mereka terletak terlalu dalam untuk dieksploitasi oleh Kota dan mereka terlalu miskin mineral untuk menarik minat para kurcaci. Di masa lalu ada pos perdagangan di suatu tempat di sini di rute antara kedua negara bagian ini, tetapi telah musnah sejak penurunan Metropolis Kurcaci. Hanya gnoll dan hewan bawah tanah yang ada di mana-mana yang tinggal di sini sekarang.
+Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday the mechanized army of dwarves has successfully repelled the invasion of the old god and his demon army. But it is said, that the returning warriors have brought seeds of corruption with them, and that victory was the beginning of the end for the underground kingdom.	Metropolis Kurcaci pernah menjadi negara kota kurcaci terbesar. Di masa kejayaannya, pasukan mekanik kurcaci telah berhasil mengusir invasi dewa tua dan pasukan iblisnya. Tetapi dikatakan, bahwa para pejuang yang kembali telah membawa benih-benih korupsi bersama mereka, dan kemenangan itu adalah awal dari akhir kerajaan bawah tanah.
+In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	Di masa lalu tingkat ini adalah pinggiran Metropolis. Setelah kemenangan mahal dalam perang dengan dewa tua, para kurcaci terlalu lemah untuk membersihkan mereka dari iblis yang tersisa. Perlahan-lahan para iblis mempererat cengkeraman mereka di tempat ini dan sekarang disebut Aula Iblis.\n\nSangat sedikit petualang yang pernah turun sejauh ini...
+FOR SALE: %1$s - %2$dg	DIJUAL: %1$s - %2$de
+Buy for %dg	Beli seharga %de
+Sell for %dg	Jual untuk %de
+Sell 1 for %dg	Jual 1 untuk %de
+Sell all for %dg	Jual semua untuk %de
+You've sold your %1$s for %2$dg	Anda telah menjual %1$s Anda untuk %2$de
+You've bought %1$s for %2$dg	Anda telah membeli %1$s seharga %2$de
+Oh, I see you have succeeded! I do hope it hasn't troubled you too much. As I promised, you can choose one of my high quality wands.	Oh, saya melihat Anda telah berhasil! Saya berharap hal ini tidak menyusahkan Anda terlalu banyak. Seperti janji saya, Anda dapat memilih salah satu tongkat berkualitas tinggi saya.
+Battle wand	Tongkat Perang
+Non-battle wand	Tongkat utilitas
+Good luck in your quest, %s!	Semoga beruntung di misi Anda, %s!
+Select an item for the quickslot	Pilih item untuk slot cepat
+smth	smth
+DROP	LETAKKAN
+THROW	LEMPAR
+Your pack is too full for the %s	Tas Anda terlalu penuh untuk %s
+Choose direction of throw	Pilih arah melempar
+EQUIP	GUNAKAN
+UNEQUIP	SIMPAN
+You can't remove cursed %s!	Anda tidak dapat melepaskan %s terkutuk!
+Amulet of Yendor	Jimat Yendor
+END THE GAME	AKHIRI PERMAINAN
+The Amulet of Yendor is the most powerful known artifact of unknown origin. It is said that the amulet is able to fulfill any wish if its owner's will-power is strong enough to "persuade" it to do it.	Jimat Yendor adalah harta terkenal terkuat dengan asal muasal yang tidak diketahui. Dikatakan bahwa jimat ini dapat memenuhi semua permintaan jika kekuatan keinginan pemiliknya cukup kuat untuk "menarik"nya melakukan hal itu.
+Ankh	Ankh
+The ancient symbol of immortality grants an ability to return to life after death. Upon resurrection all non-equipped items are lost.	Simbol kuno tentang hidup abadi memberikan kehebatan untuk hidup kembali setelah mati. Saat pembangkitan semua item yang tidak dipakai hilang.
+armor kit	Perlengkapan zirah
+Using this kit of small tools and materials anybody can transform any armor into an "epic armor", which will keep all properties of the original armor, but will also provide its wearer a special ability depending on his class. No skills in tailoring, leatherworking or blacksmithing are required.	Menggunakan kit alat dan bahan kecil ini, siapa pun dapat mengubah baju besi apa pun menjadi "baju besi epik", yang akan menyimpan semua properti dari baju besi asli, tetapi juga akan memberikan pemakainya kemampuan khusus tergantung pada kelasnya. Tidak diperlukan keahlian menjahit, pengerjaan kulit, atau pandai besi.
+Select an armor to upgrade	Pilih zirah untuk ditingkatkan
+you applied the armor kit to upgrade your %s	Anda mengaplikasikan perlengkapan zirah untuk meningkatkan %s Anda
+dewdrop	tetesan air
+A crystal clear dewdrop.	Sebuah tetesan air yang sangat jernih.
+dew vial	penyimpanan tetesan air
+You can store excess dew in this tiny vessel for drinking it later. If the vial is full, in a moment of deadly peril the dew will be consumed automatically.	Anda dapat menyimpan tetesan air berlebih di dalam botol kecil ini untuk diminum nanti. JIka botol penuh, di saat masalah besar tetesan air akan digunakan otomatis.
+The dew vial was emptied to heal your wounds.	Tabung dew sudah kosong untuk menyembuhkan lukamu.
+You collected a dewdrop into your dew vial.	Anda mengumpulkan setetes air ke boto tetesan air.
+Your dew vial is full!	Botol tetesan air Anda penuh!
+Your dew vial is empty!	Botol tetesan air Anda kosong!
+This is a mimic!	Ini adalah mimik!
+gold	emas
+Collect gold coins to spend them later in a shop.	Kumpulkan koin emas untuk dipakai di toko nanti.
+A pile of %d gold coins.	Sebuah tumpukan %d koin emas.
+One gold coin.	Satu koin emas.
+you wince as your grip involuntarily tightens around your %s	Anda meringis sebagai pegangan Anda tanpa sadar mengencangkan sekitar %s Anda
+lloyd's beacon	lloyd's beacon
+SET	SIAPKAN
+RETURN	KEMBALI
+Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	Suar Lloyd adalah perangkat ajaib yang rumit, yang memungkinkan Anda kembali ke tempat yang pernah Anda kunjungi.
+Strong magic aura of this place prevents you from using the lloyd's beacon!	Suatu aura sihir yang kuat yang ada di sini mencegah Anda menggunakan lloyd's beacon!
+Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Aura psikis dari makhluk disekitar tidak memungkinkan Anda untuk menggunakan lloyd beacon pada saat ini.
+The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Lloyd beacon berhasil ditetapkan di lokasi Anda saat ini, sekarang Anda dapat kembali ke sini kapan saja.
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	Suar ini dipasang di suatu tempat pada level %d dari Remixed Dungeon.
+Tome of Mastery	Buku tentang Penguasaan
+Tome of Remastery	Buku tentang Penguasaan
+This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	Buku kulit usang ini tidak terlalu tebal, tetapi entah bagaimana Anda merasa, bahwa Anda dapat mengumpulkan banyak hal darinya. Ingatlah bahwa membaca kali ini mungkin memerlukan waktu.
+You can't read while blinded	Kamu tidak bisa membaca saat buta
+You have chosen the way of the %s!	Kamu telah memilih jalan menjadi %s !
+torch	obor
+LIGHT	CAHAYA
+It's an indispensable item in The Demon Halls, which are notorious for their poor ambient lighting.	Ini adalah item yang sangat diperlukan di The Demon Halls, yang terkenal dengan pencahayaan ambient yang buruk.
+weightstone	pemberat
+APPLY	TERAPKAN
+Using a weightstone, you can balance your melee weapon to increase its speed or accuracy.	Dengan pemberat, kamu dapat menyeimbangkan senjata jarak dekatmu untuk meningkatkan kecepatan atau akurasinya
+Select a weapon to balance	Pilih senjata yang akan diseimbangkan
+you balanced your %s to make it faster	kamu menyeimbangkan %s mu membuatnya lebih cepat
+you balanced your %s to make it more accurate	kamu menyeimbangkan %s mu membuatnya lebih akurat
+How would you like to balance your %s?	Bagaimana Anda ingin menyeimbangkan %s Anda?
+For speed	Untuk kecepatan
+For accuracy	Untuk akurasi
+Never mind	Lupakan
+PLANT	TANAM
+Throw this seed to the place where you want to grow %1$s.\n\n%2$s	Lempar biji ini ke tempat dimana Anda ingin menanamnya %1$s.\n\n%2$s
+seed of %s	biji dari %s
+Dreamweed	Dreamweed
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Saat menyentuh Dreamweed akan muncul awan gas membingungkan yang berkilau.
+Earthroot	akar tanah
+When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Saat sebuah makhluk menyentuh akar tanah, akarnya akan membentuk semacam zirah alami di sekitarnya.
+Herbal armor	Zirah alami
+Fadeleaf	Fadeleaf
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	Menyentuh tanaman Fadeleaf akan menteleportasikan makhluk apapun ke tempat acak di level itu.
+Firebloom	Firebloom
+When something touches a Firebloom, it bursts into flames.	Saat sesuatu menyentuh Firebloom, tanaman ini akan berubah menjadi api.
+Icecap	Icecap
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Saat menyentuh setangkai Icecap akan keluar serbuk sari, yang akan membekukan semuanya yang ada dekatnya.
+Rotberry	Murbei
+Berries of this shrub taste like sweet, sweet death.	Buah beri dari semak ini rasanya seperti kematian yang manis dan manis.
+The seed emits a roar that echoes throughout the dungeon!	Benih itu mengeluarkan raungan yang bergema di seluruh ruang bawah tanah!
+Sorrowmoss	Sorrowmoss
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Sorrowmoss adalah sebuah bunga (bukan lumut) dengan daun bunga tajam sekali, yang ditutupi dengan racun mematikan.
+Sungrass	Sungrass
+Sungrass is renowned for its sap's healing properties.	Sungrass dikenal karena getahnya dapat menyembuhkan.
+Herbal healing	Penyembuhan alami
+your %s constricts around you painfully	 %s anda mengencangkan dirinya di sekeliling anda dengan menyakitkan
+Interaction of different types of magic has erased the glyph on this armor!	Interaksi dari berbagai tipe sihir telah menghapuskan sihir di zirah ini!
+\n\nThis %1$s provides damage absorption up to "%2$d"  points per attack.	 %1$s menyediakan pengurangan serangan musuh yang didapat sampai dengan "%2$d"  poin per serangan musuh.
+\n\nBecause of your inadequate strength your movement speed and defense skill is decreased. 	\n\n\nKarena kekuatan yang tidak memadai kecepatan gerak Anda dan keterampilan pertahanan berkurang. 
+\n\nBecause of your inadequate strength wearing this armor will decrease your movement speed and defense skill.	\n\n\nKarena kekuatan yang tidak memadai untuk memakai zirah ini kecepatan gerak Anda dan keterampilan pertahanan berkurang. 
+\n\nTypical %1$s provides damage absorption up to %2$d points per attack and requires %3$d points of strength.	\n\n\n %1$s umum menyediakan pengurangan serangan musuh yang didapat sampai dengan %2$d poin per serangan dan membutuhkan %3$d poin kekuatan.
+Probably this armor is too heavy for you.	Mungkin zirah ini terlalu berat untuk Anda.
+\n\nYou are wearing the %1$s%2$s.	\n\n\nAnda sedang memakai %1$s%2$s.
+\n\nYou can feel a malevolent magic lurking within the %s.	\n\n\nAnda dapat merasakan sihir jahat meliputi %s ini.
+The thing looks awesome!	Benda ini terlihat hebat!
+Your health is too low!	Nyawa Anda terlalu rendah!
+You need to be wearing this armor to use its special power!	Anda harus memakai zirah ini untuk mengunakan kekuatan spesialnya!
+cloth armor	zirah kain
+This lightweight armor offers basic protection.	Zirah ringan ini memberikan pertahanan dasar.
+huntress cloak	jubah pemburu
+A huntress in such cloak can create a fan of spectral blades. Each of these blades will target a single enemy in the huntress's field of view, inflicting damage depending on her currently equipped melee weapon.	Pemburu dengan jubah seperti itu dapat membuat kipas dari bilah spektral. Masing-masing bilah ini akan menargetkan satu musuh di bidang pandang pemburu, menimbulkan kerusakan tergantung pada senjata jarak dekat yang digunakannya saat ini.
+SPECTRAL BLADES	Pedang Spektral
+No enemies in sight	Tidak ada musuh di pandangan
+Only huntresses can use this armor!	Hanya pemburu yang dapat menggunakan zirah ini!
+leather armor	zirah kulit
+Armor made from tanned monster hide. Not as light as cloth armor but provides better protection.	Zirah yang dibuat dari samakan kulit monster. Tidak seringan zirah kain tapi memberikan pertahanan lebih kuat.
+mage robe	jubah penyihir
+Wearing this gorgeous robe, a mage can cast a spell of molten earth: all the enemies in his field of view will be set on fire and unable to move at the same time.	Jika menggunakan jubah indah ini, seorang penyihir dapat mengeluarkan mantra dari dunia cair: semua musuh di pandangannya akan terbakar dan tidak dapat bergerak di waktu yang sama.
+MOLTEN EARTH	DUNIA CAIR
+Only mages can use this armor!	Hanya penyihir yang dapat menggunakan zirah ini!
+mail armor	zirah rantai
+Interlocking metal links make for a tough but flexible suit of armor.	Sambungan logam-logam yang terkait sebagai zirah yang kuat dan fleksibel.
+plate armor	Lempeng zirah
+Enormous plates of metal are joined together into a suit that provides unmatched protection to any adventurer strong enough to bear its staggering weight.	Lempeng-lempeng logam yang besar digabungkan menjadi sebuah terusan yang memberikan pertahanan tak tertandingi untuk semua petualang yang cukup kuat menanggung beratnya.
+rogue garb	pakaian penjahat
+Wearing this dark garb, a rogue can perform a trick, that is called "smoke bomb" (though no real explosives are used): he blinds enemies who could see him and jumps aside.	Saat mengenakan pakaian gelap ini, seorang penjahat dapat melakukan sebuah trik, yang dinamakan "bom asap" (walaupun tidak ada peledak asli yang digunakan): dia dapat membutakan musuh yang dapat melihatnya dan pergi menghindari.
+SMOKE BOMB	BOM ASAP
+Only rogues can use this armor!	Hanya penjahat yang dapat menggunakan zirah ini!
+You can only jump to an empty location in your field of view	Anda hanya dapat melompat ke tempat yang kosong di pandangan Anda
+Choose a location to jump to	Pilih tempat untuk melompat
+scale armor	zirah sisik
+The metal scales sewn onto a leather vest create a flexible, yet protective armor.	Sisik-sisik logam dibentuk pada rompi kulit untuk membuat zirah kuat dan fleksibel.
+warrior suit of armor	zirah untuk pejuang
+While this armor looks heavy, it allows a warrior to perform heroic leap towards a targeted location, slamming down to stun all neighboring enemies.	Walaupun zirahnya kelihatan berat, zirah ini memperbolehkan pejuang untuk melakukan lompatan heroik ke lokasi yang ditargetkan, menghantam ke bawah untuk memusingkan musuh.
+HEROIC LEAP	LOMPATAN HEROIK
+Only warriors can use this armor!	Hanya pejuang yang dapat menggunakan zirah ini!
+Choose direction to leap	Pilih arah untuk melompat
+%s of affection	%s ketertarikan
+%s of anti-entropy	%santi-entropi
+%s of bounce	%s pemantulan
+%s of displacement	%s pemindahan
+%s of entanglement	%s ketersangkutan
+%s of metabolism	%s metabolisme
+%s of multiplicity	%s penggandaan
+%s of potential	%sledakan
+%s of stench	%s kebusukan
+%s of viscosity	%s kelekatan
+deferred %d	penundaan %d
+Defered damage (%d)	Kerusakan Ditangguhkan (%d)
+OPEN	BUKA
+key ring	gantungan kunci
+This is a copper key ring, that lets you keep all your keys separately from the rest of your belongings.	Ini adalah gantungan kunci tembaga, yang memungkinkan Anda menyimpan semua kunci Anda secara terpisah dari barang-barang Anda yang lain.
+scroll holder	tempat gulungan kertas
+You can place any number of scrolls into this tubular container. It saves room in your backpack and protects scrolls from fire.	Anda dapat menempatkan sejumlah gulungan ke dalam wadah tubular ini. Ini menghemat ruang di ransel Anda dan melindungi gulungan dari api.
+seed pouch	kantong benih
+This small velvet pouch allows you to store any number of seeds in it. Very convenient.	Kantong beludru kecil ini memungkinkan Anda menyimpan sejumlah biji di dalamnya. Sangat mudah.
+wand holster	sarung tongkat
+This slim holder is made of leather of some exotic animal. It allows to compactly carry up to %d wands.	Pemegang ramping ini terbuat dari kulit beberapa hewan eksotis. Ini memungkinkan untuk membawa hingga %d tongkat secara kompak.
+ration of food	ransum makanan
+Nothing fancy here: dried meat, some biscuits - things like that.	Tidak ada yang berkualitas tinggi disini: daging kering, beberapa biskuit - sesuatu seperti itu.
+That food tasted delicious!	Makanan itu terasa lezat!
+chargrilled meat	daging bakar
+It looks like a decent steak.	Terlihat seperti daging sapi layak makan.
+frozen carpaccio	carpaccio beku
+It's a piece of frozen raw meat. The only way to eat it is by cutting thin slices of it. And this way it's surprisingly good.	Ini adalah sepotong daging mentah beku. Satu-satunya cara untuk memakannya adalah memotongnya menjadi potongan tipis. Dan cara ini sangat bagus.
+You feel your skin hardens!	Anda merasa kulit anda mengeras!
+Refreshing!	Menyegarkan!
+You feel better!	Anda merasa lebih baik!
+mystery meat	daging misterius
+Eat at your own risk!	Makan dan tanggung risiko anda sendiri!
+Oh it's hot!	Oh ini panas!
+You can't feel your legs!	Anda tidak dapat merasakan kaki anda!
+You are not feeling well.	Anda tidak merasa baik.
+You are stuffed.	Anda kenyang.
+That food tasted... strange.	Makanan itu terasa... aneh.
+overpriced food ration	ransum makanan mahal
+It looks exactly like a standard ration of food but smaller.	Terlihat sama seperti ransum makanan standar tapi lebih kecil.
+That food tasted good.	Makanan itu terasa lumayan.
+pasty	pastel
+This is authentic Cornish pasty with traditional filling of beef and potato.	Ini adalah pastel jagung autentik dengan isi tradisional berupa daging sapi dan kentang.
+golden key	kunci emas
+The notches on this golden key are tiny and intricate. Maybe it can open some chest lock?	Takik pada kunci emas ini kecil dan rumit. Mungkin itu bisa membuka peti yang di kunci?
+iron key	kunci besi
+The notches on this ancient iron key are well worn; its leather lanyard is battered by age. What door might it open?	Takik pada kunci besi kuno ini sudah usang; tali kulitnya rusak dimakan usia. Pintu apa yang mungkin terbuka?
+iron key from depth %d	Kunci besi dari kedalaman %d
+skeleton key	kunci tengkorak
+This key looks serious: its head is shaped like a skull. Probably it can open some serious door.	Kunci ini terlihat serius: kepalanya berbentuk seperti tengkorak. Mungkin itu bisa membuka pintu yang serius.
+%s potion	Ramuan %s
+This flask contains a swirling %s liquid. Who knows what it will do when drunk or thrown?	Botol ini terisi dengan cairan %s yang berputar-putar. Siapa yang tahu apa yang akan terjadi saat diminum atau dilempar?
+DRINK	MINUM
+Harmful potion!	Ramuan berbahaya!
+Beneficial potion	Ramuan bermanfaat
+Are you sure you want to drink it? In most cases you should throw such potions at your enemies.	Apa Anda yakin untuk meminum ini? Di kebanyakan keadaan Anda harusnya melemparkan ramuan seperti ini ke musuh Anda.
+Are you sure you want to throw it? In most cases it makes sense to drink it.	Apakah Anda yakin untuk melempar ini? Di kebanyakan keadaan lebih masuk akal untuk meminum ini.
+The flask shatters and %s liquid splashes harmlessly	Botolnya pecah dan cairan %s terpercik dengan tidak membahayakan
+turquoise	toska
+crimson	crimson
+azure	azure
+jade	giok
+golden	emas
+magenta	magenta
+charcoal	charcoal
+ivory	ivory
+amber	amber
+bistre	bistre
+indigo	nila
+silver	perak
+Potion of Experience	Ramuan Pengalaman
+The storied experiences of multitudes of battles reduced to liquid form, this draught will instantly raise your experience level.	Pengalaman panjang dari berbagai perang dibentuk menjadi bentuk cair, tegukan ramuan ini akan meningkatkan tingkat pengalaman Anda secara instan.
+Potion of Frost	Ramuan Pembekuan
+Upon exposure to open air, this chemical will evaporate into a freezing cloud, causing any creature that contacts it to be frozen in place, unable to act and move.	Saat terkena dengan udara luar, ramuan ini akan menguap menjadi awan dingin, menyebabkan semua makhluk yang menyentuhnya menjadi beku di tempat, dan tidak dapat melakukan sesuatu dan bergerak.
+Potion of Healing	Ramuan Penyembuhan
+An elixir that will instantly return you to full health and cure poison.	Ramuan yang secara instan akan mengembalikan semua nyawa Anda dan menyembuhkan racun.
+Your wounds heal completely.	Luka Anda sembuh total.
+Potion of Invisibility	Ramuan Tidak Terlihat
+Drinking this potion will render you temporarily invisible. While invisible, enemies will be unable to see you. Attacking an enemy, as well as using a wand or a scroll before enemy's eyes, will dispel the effect.	Meminum ramuan ini akan membuat Anda tidak terlihat sementara. Selama tidak terlihat, musuh tidak dapat melihat Anda. Menyerang musuh, dan juga mengunakan tongkat atau gulungan di hadapan mata musuh, akan menghilangkan efeknya.
+Potion of Levitation	Ramuan Pengangkat
+Drinking this curious liquid will cause you to hover in the air, able to drift effortlessly over traps. Flames and gases fill the air, however, and cannot be bypassed while airborne.	Meminum cairan aneh ini akan membuat Anda melayang-layang di udara, mampu melayang dengan mudah di atas perangkap. Api dan gas mengisi udara, bagaimanapun, dan tidak dapat dilewati saat mengudara.
+You float into the air!	Anda melayang di udara!
+Potion of Liquid Flame	Ramuan Api Cair
+This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	Botol ini berisi campuran yang tidak stabil yang akan terbakar saat bersentuhan dengan udara luar.
+Potion of Might	Ramuan Kehebatan
+This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	Ramuan kuat ini akan bergerak melalui otot Anda, secara permanen meningkatkan kekuatan Anda sebanyak satu poin dan nyawa sebanyak lima poin.
++1 str, +5 ht	+1 kekuatan, +5 nyawa
+Potion of Mind Vision	Ramuan Pandangan Jernih
+After drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls. Also this potion will permit you to see through nearby walls and doors.	Setelah meminum ini, pikiran Anda akan terbuka dengan ciri fisik dari makhluk di sekitar, memperbolehkan Anda untuk merasakan keberadaan makhluk di balik tembok. Ramuan ini juga memperbolehkan Anda untuk melihat menembus tembok dan pintu di dekat Anda.
+You can somehow feel the presence of other creatures' minds!	Anda seperti dapat merasakan keberadaan pikiran makhluk lain.
+You can somehow tell that you are alone on this level at the moment.	Anda seperti dapat memberitahukan bahwa Anda sendirian di tingkat ini sekarang.
+Potion of Paralytic Gas	Ramuan Gas Melumpuhkan
+Upon exposure to open air, the liquid in this flask will vaporize into a numbing yellow haze. Anyone who inhales the cloud will be paralyzed instantly, unable to move for some time after the cloud dissipates. This item can be thrown at distant enemies to catch them within the effect of the gas.	Saat terkena dengan udara luar, cairan di botol ini akan menguap menjadi asap kuning yang melumpuhkan. Semuanya yang terkena asap ini akan terlumpuhkan secara instan, tak dapat bergerak untuk beberapa waktu setelah asapnya menghilang. Item ini dapat dilemparkan ke musuh terdekat untuk memberikan mereka efek gas tersebut.
+Potion of Purification	Ramuan Pemurnian
+This reagent will quickly neutralize all harmful gases in the area of effect. Drinking it will give you a temporary immunity to such gases.	Bahan ini akan langsung menghilangkan semua gas mematikan di suatu area. Meminum ini akan memberikan Anda kekebalan sementara dari gas seperti itu.
+You feel uncommon freshness in the air.	Anda merasakan kesegaran tak biasa di udara.
+You've stopped sensing any smells!	Anda telah berhenti merasakan bau apapun!
+Potion of Strength	Ramuan Kekuatan
+This powerful liquid will course through your muscles, permanently increasing your strength by one point.	Ramuan kuat ini akan bergerak melalui otot Anda, secara permanen meningkatkan kekuatan Anda sebanyak satu poin.
+Newfound strength surges through your body.	Kekuatan yang baru ditemukan mengalir di tubuh Anda.
++1 str	+1 kekuatan
+Potion of Toxic Gas	Ramuan Gas Beracun
+Uncorking or shattering this pressurized glass will cause its contents to explode into a deadly cloud of toxic green gas. You might choose to fling this potion at distant enemies instead of uncorking it by hand.	Membuka atau memecahkan botol bertekanan ini akan menyebabkan isinya meledak menjadi asap hijau beracun yang mematikan. Anda dapat memilih untuk melemparkan ramuan ini ke musuh terdekat daripada membuka ramuan ini dengan tangan.
+corpse dust	debu mayat
+The ball of corpse dust doesn't differ outwardly from a regular dust ball. However, you know somehow that it's better to get rid of it as soon as possible.	Bola debu mayat tidak berbeda secara lahiriah dari bola debu biasa. Namun, entah bagaimana Anda tahu bahwa lebih baik menyingkirkannya sesegera mungkin.
+dark gold ore	biji emas gelap
+This metal is called dark not because of its color (it doesn't differ from the normal gold), but because it melts under the daylight, making it useless on the surface.	Logam ini disebut gelap bukan karena warnanya (tidak berbeda dengan emas biasa), tetapi karena meleleh di bawah sinar matahari, sehingga tidak berguna di permukaan.
+dried rose	mawar kering
+The rose has dried long ago, but it has kept all its petals somehow.	Mawar ini sudah lama kering, namun entah bagaimana semua kelopaknya utuh.
+dwarf token	koin kurcaci
+Many dwarves and some of their larger creations carry these small pieces of metal of unknown purpose. Maybe they are jewelry or maybe some kind of ID. Dwarves are strange folk.	Banyak kurcaci dan ciptaannya yang lebih besar membawa metal kecil ini tanpa tujuan yang jelas. Mungkin ini perhiasan atau seperti tanda pengenal mereka. Kurcaci adalah kaum yang aneh.
+EAT	MAKAN
+You see your hands turn invisible!	Anda melihat tangan anda menjadi tidak terlihat!
+pickaxe	beliung
+This is a large and sturdy tool for breaking rocks. Probably it can be used as a weapon.	Ini adalah alat yang besar dan kokoh untuk memecahkan batu. Itu mungkin bisa digunakan sebagai senjata.
+MINE	TAMBANG
+There is no dark gold vein near you to mine	Tidak ada emas gelap disekitarmu yang bisa digali
+giant rat skull	tengkorak tikus raksasa
+It could be a nice hunting trophy, but it smells too bad to place it on a wall.	Ini bisa menjadi piala berburu yang bagus, tetapi baunya terlalu buruk untuk diletakkan di dinding.
+%s ring	%s cincin
+This metal band is adorned with a large %s gem that glitters in the darkness. Who knows what effect it has when worn?	Cincin besi ini berhiaskan permata %s besar yang berkilauan di kegelapan. Siapa yang tau apa efeknya ketika permata itu mati
+you are now familiar enough with your %1$s to identify it. It is %2$s.	sekarang Anda sudah mengenal %1$s Anda dengan cukup baik untuk mengenalinya. Ini adalah %2$s.
+diamond	berlian
+opal	opal
+garnet	batu delima
+ruby	permata
+amethyst	kecubung
+topaz	Topaz
+onyx	oniks
+tourmaline	turmalin
+emerald	zamrud
+sapphire	safir
+quartz	kuarsa
+agate	batu akik
+Your %s tightens around your finger painfully	%s mu menyempit disekitar jarimu serasa menyakitkan
+%1$s\n\nThe %2$s is on your finger %3$s.	%1$s\n\n %2$s sedang di jarimu %3$s
+, and because it is cursed, you are powerless to remove it	Dan karena benda itu terkutuk, kamu kurang kuat untuk melepaskannya
+%1$s\n\nYou can feel a malevolent magic lurking within the %2$s.	%1$s\n\n kamu dapat merasakan sihir jahat yang mengintai di dalam%2$s
+This is a %s	Ini adalah %s
+Ring of Accuracy	Cincin Akurasi
+This ring increases your chance to hit the enemy.	Cincin ini meningkatkan peluangmu untuk mengenai musuh.
+Ring of Detection	Cincin deteksi
+Wearing this ring will allow the wearer to notice hidden secrets - traps and secret doors - without taking time to search. Degraded rings of detection will dull your senses, making it harder to notice secrets even when actively searching for them.	Memakai cincin ini akan membolehkan pemakainya menyadari rahasia tersembunyi - jebakan dan pintu rahasia - tanpa memakan waktu untuk mencarinya. cincin deteksi yang berkualitas buruk akan menumpulkan perasaanmu, membuatmu sulit menyadari sebuah rahasia bahkan ketika secara aktif mencari mereka.
+Ring of Elements	Cincin Elemen
+This ring provides resistance to different elements, such as fire, electricity, gases etc. Also it decreases duration of negative effects.	Cincin ini memberikan ketahanan terhadap bermacam elemen, seperti api, listrik, gas dll. Juga mengurangi durasi dari efek negatif.
+Ring of Evasion	Cincin penghindaran
+This ring increases your chance to dodge enemy attack.	Cincin ini meningkatkan peluangmu untuk menghindari serangan musuh.
+Ring of Haggler	Cincin Tawar Menawar
+In fact this ring doesn't provide any magic effect, but it demonstrates to shopkeepers and vendors, that the owner of the ring is a member of The Thieves' Guild. Usually they are glad to give a discount in exchange for temporary immunity guarantee. Upgrading this ring won't give any additional bonuses.	Faktanya cincin ini tidak memberikan efek magis apapun, tapi ini berlaku untuk penjaga toko dan pedagang keliling, pemilik dari cincin ini adalah anggota dari serikat pencuri. biasanya mereka dengan senang hati memberikan diskon untuk ditukar dengan jaminan kekebalan sementara. meningkatkan cincin ini tidak akan memberikan bonus tambahan
+Ring of Haste	Cincin Gegabah
+This ring accelerates the wearer's flow of time, allowing one to perform all actions a little faster.	Cincin ini mempercepat jalannya waktu si pemakai, memperbolehkan seseorang melakukan semua aksi sedikit lebih cepat
+Ring of Herbalism	Cincin Herbal
+This ring increases your chance to gather dew and seeds from trampled grass.	Cincin ini meningkatkan peluangmu untuk mengambil embun dan biji dari rumput yang terinjak.
+Ring of Mending	Cincin Perbaikan
+This ring increases the body's regenerative properties, allowing one to recover lost health at an accelerated rate. Degraded rings will decrease or even halt one's natural regeneration.	Cincin ini meningkatkan efek regenerasi tubuh, memperbolehkan seseorang untuk mengembalikan nyawa hilang di tingkat yang dipercepat.
+Ring of Power	Cincin kekuatan
+Your wands will become more powerful in the energy field that radiates from this ring. Degraded rings of power will instead weaken your wands.	tongkat sihirmu akan menjadi lebih kuat didalam kolom energi yang dipancarkan dari Cincin ini. Cincin kekuatan tingkat rendah akan melemahkan tongkat sihirmu.
+Ring of Satiety	Cincin Rasa Kenyang
+Wearing this ring you can go without food longer. Degraded rings of satiety will cause the opposite effect.	Kamu bisa bertahan lebih lama tanpa makan dengan cincin ini. Cincin rasa kenyang yang rusak berdampak sebaliknya.
+Ring of Shadows	Cincin Bayangan
+Enemies will be less likely to notice you if you wear this ring. Degraded rings of shadows will alert enemies who might otherwise not have noticed your presence.	Musuh semakin jarang menyadarimu dengan cincin ini. Cincin Bayangan rusak akan membuat musuh sadar posisimu meski biasanya tidak.
+Ring of Thorns	Cincin Berduri
+Though this ring doesn't provide real thorns, an enemy that attacks you will itself be wounded by a fraction of the damage that it inflicts. Upgrading this ring won't give any additional bonuses.	Meski tidak punya duri sungguhan, musuh yang akan terkena sebagian dampak serangan mereka. Mengembangkan cincin ini tidak memberi bonus tambahan.
+scroll "%s"	Gulungan "%s"
+This parchment is covered with indecipherable writing, and bears a title of rune %s. Who knows what it will do when read aloud?	Perkamen ini ditutupi dengan tulisan tak terbaca, dan menyandang gelar rune %s. Siapa yang tahu apa yang akan dilakukannya ketika dibacakan?
+KAUNAN	KAUNAN
+SOWILO	SOWILO
+LAGUZ	LAGUZ
+YNGVI	YNGVI
+GYFU	GYFU
+RAIDO	RAIDO
+ISAZ	ISAZ
+MANNAZ	MANNAZ
+NAUDIZ	NAUDIZ
+BERKANAN	BERKANAN
+ODAL	ODAL
+TIWAZ	TIWAZ
+Select an item	Pilih item
+Do you really want to cancel this scroll usage? It will be consumed anyway.	Apakah Anda benar-benar ingin membatalkan penggunaan gulungan ini? Bagaimanapun juga akan dikonsumsi.
+Yes, I'm positive	Ya, saya positif
+Scroll of Challenge	Gulungan tantangan
+When read aloud, this scroll will unleash a challenging roar that will awaken all monsters and alert them to the reader's location.	Saat dibacakan, gulungan ini akan mengeluarkan raungan menantang yang akan membangunkan semua monster dan mengingatkan mereka ke lokasi pembaca.
+The scroll emits a challenging roar that echoes throughout the dungeon!	Gulungan itu mengeluarkan raungan menantang yang bergema di seluruh ruang bawah tanah!
+Scroll of Identify	Gulungan identifikasi
+Permanently reveals all of the secrets of a single item.	Secara permanen mengungkapkan semua rahasia dari satu item.
+Select an item to identify	Pilih item untuk diidentifikasi
+It is %s	Ini adalah %s
+Scroll of Lullaby	Gulungan Nina Bobo
+A soothing melody will put all creatures in your field of view into a deep sleep, giving you a chance to flee or make a surprise attack on them.	Melodi yang menenangkan akan membuat semua makhluk di bidang pandang Anda tertidur lelap, memberi Anda kesempatan untuk melarikan diri atau melakukan serangan mendadak pada mereka.
+The scroll utters a soothing melody.	Gulungan itu mengucapkan melodi yang menenangkan.
+The scroll utters a soothing melody and the %s falls asleep!	Gulungan mengucapkan melodi yang menenangkan dan %s tertidur!
+The scroll utters a soothing melody and the monsters fall asleep!	Gulungan itu mengucapkan melodi yang menenangkan dan monster-monster itu tertidur!
+Scroll of Magic Mapping	Gulungan Pemetaan Sihir
+When this scroll is read, an image of crystal clarity will be etched into your memory, alerting you to the precise layout of the level and revealing all hidden secrets. The locations of items and creatures will remain unknown.	Saat gulungan ini dibaca, gambar kejernihan kristal akan terukir ke dalam memori Anda, mengingatkan Anda tentang tata letak level yang tepat dan mengungkapkan semua rahasia tersembunyi. Lokasi item dan makhluk akan tetap tidak diketahui.
+You are now aware of the level layout.	Anda sekarang mengetahui tata letak level.
+Scroll of Mirror Image	Gulungan Bayangan cermin
+The incantation on this scroll will create illusionary twins of the reader, which will chase his enemies.	Mantra pada gulungan ini akan menciptakan kembaran ilusi dari pembaca, yang akan mengejar musuh-musuhnya.
+Scroll of Psionic Blast	Gulungan Ledakan Psionik
+This scroll contains destructive energy, that can be psionically channeled to inflict a massive damage to all creatures within a field of view. An accompanying flash of light will temporarily blind everybody in the area of effect including the reader of the scroll.	Gulungan ini mengandung energi destruktif, yang dapat disalurkan secara psikis untuk menimbulkan kerusakan besar pada semua makhluk dalam bidang pandang. Kilatan cahaya yang menyertainya akan membutakan sementara semua orang di area efek termasuk pembaca gulungan.
+Scroll of Recharging	Gulungan isi ulang
+The raw magical power bound up in this parchment will, when released, recharge all of the reader's wands to full power.	Kekuatan magis mentah yang terikat dalam perkamen ini, ketika dilepaskan, akan mengisi ulang semua tongkat pembaca dengan kekuatan penuh.
+a surge of energy courses through your pack, recharging your wand	gelombang aliran energi melalui paket Anda, mengisi ulang tongkat Anda
+a surge of energy courses through your pack, recharging your wands	gelombang aliran energi melalui paket Anda, mengisi ulang tongkat Anda
+a surge of energy courses through your pack, but nothing happens	gelombang aliran energi melalui paket Anda, tetapi tidak ada yang terjadi
+Scroll of Remove Curse	Gulungan Penghilang Kutukan
+The incantation on this scroll will instantly strip from the reader's weapon, armor, rings and carried items any evil enchantments that might prevent the wearer from removing them.	Mantra pada gulungan ini akan langsung melepaskan dari senjata pembaca, baju besi, cincin dan membawa item mantra jahat apa pun yang mungkin mencegah pemakainya untuk melepaskannya.
+Your pack glows with a cleansing light, and a malevolent energy disperses.	Paket Anda bersinar dengan cahaya pembersih, dan energi jahat menyebar.
+Your pack glows with a cleansing light, but nothing happens.	Paket Anda bersinar dengan cahaya pembersih, tetapi tidak ada yang terjadi.
+Scroll of Teleportation	Gulungan Teleportasi
+The spell on this parchment instantly transports the reader to a random location on the dungeon level. It can be used to escape a dangerous situation, but the unlucky reader might find himself in an even more dangerous place.	Mantra pada perkamen ini langsung membawa pembaca ke lokasi acak di tingkat penjara bawah tanah. Ini dapat digunakan untuk melarikan diri dari situasi berbahaya, tetapi pembaca yang tidak beruntung mungkin menemukan dirinya di tempat yang lebih berbahaya.
+In a blink of an eye you were teleported to another location of the level.	Dalam sekejap mata Anda diteleportasi ke lokasi lain dari level tersebut.
+Strong magic aura of this place prevents you from teleporting!	Aura sihir yang kuat dari tempat ini mencegahmu dari teleportasi!
+Scroll of Terror	Gulungan Teror
+A flash of red light will overwhelm all creatures in your field of view with terror, and they will turn and flee. Attacking a fleeing enemy will dispel the effect.	Kilatan lampu merah akan membanjiri semua makhluk di bidang pandang Anda dengan teror, dan mereka akan berbalik dan melarikan diri. Menyerang musuh yang melarikan diri akan menghilangkan efeknya.
+The scroll emits a brilliant flash of red light	Gulungan itu memancarkan kilatan cahaya merah yang cemerlang
+The scroll emits a brilliant flash of red light and the %s flees!	Gulungan memancarkan kilatan cahaya merah yang cemerlang dan %s melarikan diri!
+The scroll emits a brilliant flash of red light and the monsters flee!	Gulungan itu memancarkan kilatan cahaya merah yang cemerlang dan monster-monster itu melarikan diri!
+Scroll of Upgrade	Gulungan peningkatan
+This scroll will upgrade a single item, improving its quality. A wand will increase in power and in number of charges; a weapon will inflict more damage or find its mark more frequently; a suit of armor will deflect additional blows; the effect of a ring on its wearer will intensify. Weapons and armor will also require less strength to use, and any curses on the item will be lifted.	gulungan ini akan meningkatkan satu item, meningkatkan kualitasnya. Sebuah tongkat akan meningkatkan kekuatan dan jumlahnya dari casnya ; senjata menimbulkan lebih banyak kerusakan atau menemukan tandanya lebih sering;zirah akan menangkis pukulan tambahan; efek cincin pada nya pemakainya akan meningkat. senjata dan zirah juga akan membutuhkan lebih sedikit kekuatan untuk digunakan, dan kutukan apa pun pada item itu akan diangkat.
+Select an item to upgrade	Pilih item untuk ditingkatkan
+READ	BACA
+You can't read a scroll while blinded	Anda tidak dapat membaca gulungan saat dibutakan
+%s wand	%s Tongkat
+ZAP	TEMBAK
+This thin %s wand is warm to the touch. Who knows what it will do when used?	Tongkat tipis %s ini hangat saat disentuh. siapa yang tahu apa yang akan dilakukan ketika digunakan?
+When this wand is used as a melee weapon, its average damage is %d points per hit.	Saat tongkat ini digunakan sebagai senjata jarak dekat, kerusakan rata-ratanya adalah %d poin per hit.
+You can use this wand as a melee weapon.	Anda Dapat Menggunakan Tongkat Ini Sebagai senjata jarak dekat.
+your wand fizzles; it must be out of charges for now	Tongkat anda berdesis; mungkin untuk sekarang kehabisan cas
+You can't target yourself	Anda tidak dapat menargetkan diri sendiri
+Choose direction to zap	Pilih arah untuk menembak
+holly	holly
+yew	yew
+ebony	kayu hitam
+cherry	ceri
+teak	kayu jati
+rowan	rowan
+willow	willow
+mahogany	mahoni
+bamboo	bambu
+purpleheart	hati ungu
+oak	ek
+birch	birch
+Wand of Amok	Tongkat Amuk
+The purple light from this wand will make the target run amok attacking random creatures in its vicinity.	Cahaya ungu dari tongkat ini akan membuat target mengamuk, menyerang makhluk acak di sekitarnya.
+Wand of Avalanche	Tongkat Longsor
+When a discharge of this wand hits a wall (or any other solid obstacle) it causes an avalanche of stones, damaging and stunning all creatures in the affected area.	Ketika pelepasan tongkat ini mengenai dinding (atau rintangan padat lainnya) itu menyebabkan longsoran batu, merusak dan membuat semua makhluk di area yang terkena dampak stun.
+You killed yourself with your own Wand of Avalanche...	Kamu menghancurkan dirimu sendiri dengan tongkat Longsor milikmu sendiri
+Wand of Blink	tongkat teleportasi
+This wand will allow you to teleport in the chosen direction. Creatures and inanimate obstructions will block the teleportation.	Tongkat ini akan memungkinkan Anda untuk berteleportasi ke arah yang dipilih makhluk dan benda mati yang terhalang akan memblokir teleportasi.
+Wand of Disintegration	Tongkat Kehacuran
+This wand emits a beam of destructive energy, which pierces all creatures in its way. The more targets it hits, the more damage it inflicts to each of them.	Tongkat ini memancarkan sinar energi penghancur, yang menembus semua makhluk di jalannya. Semakin banyak target yang terkena, semakin banyak kerusakan yang ditimbulkannya pada masing-masing dari mereka.
+Wand of Firebolt	Tongkat Api
+This wand unleashes bursts of magical fire. It will ignite flammable terrain, and will damage and burn a creature it hits.	Tongkat sihir ini melepaskan semburan api magis. Ini akan menyalakan medan yang mudah terbakar, dan akan merusak dan membakar makhluk yang terkena.
+You killed yourself with your own Wand of Firebolt...	Kau membakar dirimu sendiri dengan tongkat apimu sendiri...
+Wand of Flock	Tongkat kawanan
+A flick of this wand summons a flock of magic sheep, creating temporary impenetrable obstacle.	Jentikan tongkat ini memanggil sekawanan domba ajaib menciptakan hambatan sementara yang tidak dapat ditembus.
+sheep	domba
+This is a magic sheep. What's so magical about it? You can't kill it. It will stand there until it magically fades away, all the while chewing cud with a blank stare.	Ini domba ajaib. Apa yang begitu ajaib tentang itu? Anda tidak dapat membunuhnya. Itu akan berdiri di tempatnya sampai secara ajaib menghilang, sambil mengunyah makanan dengan tatapan kosong.
+Baa!	Baa!
+Baa?	mbek?
+Baa.	mbek.
+Baa...	Baa...
+Bee...	Bee...
+Ble...	Ble...
+Wand of Lightning	tongkat petir
+This wand conjures forth deadly arcs of electricity, which deal damage to several creatures standing close to each other.	Tongkat ini memunculkan busur listrik yang mematikan, yang akan memberikan kerusakan pada beberapa makhluk yang berdiri berdekatan satu sama lain.
+You killed yourself with your own Wand of Lightning...	Kau menyerang dirimu sendiri dengan Tongkat Petirmu sendiri...
+Wand of Magic Missile	Tongkat Rudal Ajaib
+This wand launches missiles of pure magical energy, dealing moderate damage to a target creature.	Tongkat ini meluncurkan rudal energi magis murni, memberikan kerusakan sedang pada target.
+DISENCHANT	NONSIHIR
+You killed yourself with your own Wand of Magic Missile...	Anda membunuh diri sendiri dengan Rudal Tongkat Sihir Anda sendiri...
+Select a wand to upgrade	pilih tongkat untuk di tingkatkan
+you disenchanted the Wand of Magic Missile and used its essence to upgrade your %s	Anda mengnonsihirkan Tongkat Sihir Rudal dan menggunakan esensinya untuk meningkatkan %s
+Wand of Poison	Tongkat Racun
+The vile blast of this twisted bit of wood will imbue its target with a deadly venom. A creature that is poisoned will suffer periodic damage until the effect ends. The duration of the effect increases with the level of the staff.	Ledakan keji dari potongan kayu yang bengkok ini akan melapisi targetnya dengan racun yang mematikan. Makhluk yang diracuni akan mengalami kerusakan berkala sampai efeknya berakhir. Durasi efeknya meningkat seiring dengan level tongkat.
+Wand of Regrowth	Tongkat Pertumbuhan Kembali
+"When life ceases new life always begins to grow... The eternal cycle always remains!"	"Ketika kehidupan berhenti, kehidupan baru selalu mulai tumbuh ... Siklus abadi selalu tetap!"
+Wand of Slowness	Tongkat Kelambatan
+This wand will cause a creature to move and attack at half its ordinary speed until the effect ends	Tongkat ini akan menyebabkan makhluk bergerak dan menyerang dengan kecepatan setengah dari biasanya sampai efeknya berakhir
+You have magically transported %s into your backpack	Anda telah secara ajaib memindahkan %s ke dalam ransel Anda
+Wand of Teleportation	tongkat teleportasi
+A blast from this wand will teleport a creature against its will to a random place on the current level.	Ledakan dari tongkat ini akan memindahkan makhluk di luar kehendaknya ke tempat acak pada level saat ini.
+%1$s teleported %2$s to somewhere	%1$s teleportasi %2$s ke suatu tempat
+nothing happened	tidak terjadi apa-apa
+You are now familiar enough with your %1$s to identify it. It is %2$s.	Sekarang Anda sudah cukup kenal %1$s Anda untuk mengenalinya. Ini adalah %2$s.
+Interaction of different types of magic has negated the enchantment on this weapon!	Interaksi dari berbagai tipe sihir telah mantra di senjata ini!
+%1$s :%2$d	%1$s :%2$d
+grim %s	Suram %s
+blazing %s	Berkobar %s
+eldritch %s	Eldritch %s
+unstable %s	%s tidak stabil
+vampiric %s	Vampir %s
+lucky %s	beruntung %s
+stunning %s	Melumpuhkan %s
+venomous %s	%s berbisa
+chilling %s	Menakutkan %s
+This %1$s is %2$s tier-%3$d melee weapon.	%1$s ini adalah senjata jarak dekat %2$s tingkat%3$d .
+a	a
+a upgraded	telah ditingkatkan
+an degraded	telah diturunkan
+Its average damage is %d points per hit.	Serangan biasanya %d poin tiap pukulan.
+Its typical average damage is %1$d points per hit and usually it requires %2$d points of strength.	Serangan biasanya %1$d poin tiap pukulan dan membutuhkan %2$d poin kekuatan.
+Probably this weapon is too heavy for you.	Senjata ini terlalu berat untuk Anda.
+This is a rather %s weapon.	Ini adalah senjata yang %s.
+fast	cepat
+slow	lambat
+and	dan
+but	tapi
+accurate	akurat
+inaccurate	tidak akurat
+It was balanced to make it faster.	Ini telah diseimbangkan untuk membuatnya lebih cepat.
+It was balanced to make it more accurate.	Ini telah diseimbangkan untuk membuatnya lebih akurat.
+It is enchanted.	Ini telah disihir
+You hold the %1$s at the ready%2$s.	Anda memegang %1$s di %2$s siap.
+, and because it is cursed, you are powerless to let go	, dan karena telah dikutuk, Anda tidak dapat melepaskannya
+You can feel a malevolent magic lurking within %s.	Anda dapat merasakan sihir jahat meliputi %s ini.
+battle axe	kapak perang
+The enormous steel head of this battle axe puts considerable heft behind each stroke.	Ujung baja besar dari kapak perang ini memberikan berat yang banyak dari tiap serangan.
+dagger	pisau
+A simple iron dagger with a well worn wooden handle.	Sebilah pisau besi dengan gagang kayu yang baik.
+glaive	glaive
+A polearm consisting of a sword blade on the end of a pole.	Sebatang tongkat dengan mata pedang di ujungnya.
+knuckleduster	knuckle
+A piece of iron shaped to fit around the knuckles.	Sepotong besi berbentuk untuk muat di lipatan jari.
+longsword	pedang panjang
+This towering blade inflicts heavy damage by investing its heft into every cut.	Pedang panjang ini menyebabkan serangan berat dengan meletakan bebannya di tiap sabetan.
+mace	gada
+The iron head of this weapon inflicts substantial damage.	Ujung besi dari senjata ini menyebabkan serangan besar.
+quarterstaff	tongkat kuat
+A staff of hardwood, its ends are shod with iron.	Tongkat dari kayu yang kuat, ujungnya ditutupi besi.
+short sword	pedang pendek
+It is indeed quite short, just a few inches longer, than a dagger.	Ini memang lumayan pendek, hanya beberapa inci lebih panjang, dari sebilah pisau.
+REFORGE	TEMPA ULANG
+Select a weapon to upgrade	Pilih senjata untuk ditingkatkan
+you reforged the short sword to upgrade your %s	Anda menempa ulang pedang pendek Anda untuk meningkatkan %s Anda
+you can't upgrade a boomerang this way	Anda tidak dapat meningkatkan sebuah bumerang dengan cara ini
+spear	tombak
+A slender wooden rod tipped with sharpened iron.	Tongkat kayu ramping berujung dengan besi yang tajam.
+sword	pedang
+The razor-sharp length of steel blade shines reassuringly.	Panjang mata pedang baja yang sangat tajam ini berkilau dengan meyakinkan.
+war hammer	palu perang
+Few creatures can withstand the crushing blow of this towering mass of lead and steel, but only the strongest of adventurers can use it effectively.	Hanya sedikit makhluk yang dapat bertahan dari serangan meremukan kumpulan timah dan baja tinggi ini, tapi hanya petualang terkuat yang dapat menggunakan ini dengan efektif.
+Missile weapon	Senjata jarak jauh
+Do you really want to equip it as a melee weapon?	Apakah Anda yakin akan menggunakan ini sebagai senjata jarak dekat?
+\n\nAverage damage of this weapon equals to %d points per hit.	\n\n\nSerangan biasanya dari senjata ini adalah %d poin tiap pukulan.
+Because of your inadequate strength the accuracy and speed of your attack with this %s is decreased.	Karena kekuatan yang tidak memadai akurasi dan kecepatan serangan menggunakan ini %s berkurang.
+Because of your excess strength the damage of your attack with this %s is increased.	Karena kekuatan yang lebih serangan Anda menggunakan ini %s bertambah.
+\n\nYou hold the %s at the ready.	\n\n\nAnda memegang %s dengan siap.
+boomerang	bumerang
+Thrown to the enemy this flat curved wooden missile will return to the hands of its thrower.	Saat dilempar ke arah musuh senjata jarak jauh kayu gepeng, melengkung, ini akan kembali ke tangan pelemparnya.
+curare dart	curare dart
+These little evil darts don't do much damage but they can paralyze the target leaving it helpless and motionless for some time.	Anak panah kecil yang jahat ini tidak memberikan banyak kerusakan, tetapi mereka dapat melumpuhkan target sehingga membuatnya tidak berdaya dan tidak bergerak untuk beberapa waktu.
+dart	dart
+These simple metal spikes are weighted to fly true and sting their prey with a flick of the wrist.	Duri logam sederhana ini telah dibuat untuk terbang lurus dan menusuk mangsa mereka dengan kibasan dari pergelangan tangan.
+incendiary dart	dart membakar
+The spike on each of these darts is designed to pin it to its target while the unstable compounds strapped to its length burst into brilliant flames.	Lonjakan pada masing-masing anak panah ini dirancang untuk menjepitnya ke targetnya sementara senyawa tidak stabil yang diikatkan pada panjangnya meledak menjadi nyala api yang cemerlang.
+javelin	lembing
+This length of metal is weighted to keep the spike at its tip foremost as it sails through the air.	Sebatang logam ini telah diseimbangkan untuk menahan ujungnya di depan saat melayang melewati udara.
+shuriken	piau
+Star-shaped pieces of metal with razor-sharp blades do significant damage when they hit a target. They can be thrown at very high rate.	Potongan-potongan logam berbentuk bintang dengan mata pisau yang sangat tajam menyebabkan serangan berarti saat mereka menyentuh target. Mereka dapat dilempar dengan sangat cepat.
+tomahawk	kapak
+This throwing axe is not that heavy, but it still requires significant strength to be used effectively.	Kapak lempar ini tidak terlalu berat, tapi tetap membutuhkan kekuatan berarti untuk digunakan secara efektif.
+A cloud of confusion gas is swirling here.	Awan gas kebingungan berputar-putar di sini.
+A fire is raging here.	Api berkobar di sini.
+Shafts of light pierce the gloom of the underground garden.	Poros cahaya menembus kegelapan taman bawah tanah.
+A cloud of paralytic gas is swirling here.	Awan gas lumpuh berputar-putar di sini.
+A greenish cloud of toxic gas is swirling here.	Awan beracun kehijauan berputar-putar di sini.
+You died from a toxic gas..	Kamu mati karena menghirup gas beracun...
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	 The power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of your equipped items.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Saat Anda menyesapnya, Anda merasakan pengetahuan mengalir ke dalam pikiran Anda. Anda sekarang tahu segalanya tentang item yang dilengkapi. Juga, Anda merasakan semua item pada level dan mengetahui semua rahasianya.
+Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	Kekuatan kesehatan terpancar dari air sumur ini. Minumlah sedikit untuk menyembuhkan luka Anda dan memuaskan rasa lapar.
+As you take a sip, you feel your wounds heal completely.	Saat Anda menyesapnya, Anda merasakan luka Anda sembuh total.
+Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	Kekuatan perubahan terpancar dari air sumur ini. Lempar item ke dalam sumur untuk mengubahnya menjadi sesuatu yang lain.
+Everything is covered with a thick web here.	Semua disini tertutup sarang laba-laba tebal
+Amok	Amuk
+Barkskin	kulit kayu
+Bleeding	Pendarahan
+You bled to death...	Kamu berdarah hingga mati...
+Blinded	Buta
+Burning	Terbakar
+%s burns up!	%s hangus terbakar!
+You burned to death...	Kamu terbakar hingga mati...
+Charmed	terpesona
+Combo	Kombo
+%d hit combo!	%d combo pukulan
+Crippled	Terkilir
+Frozen	Beku
+Fury	Kemarahan
+You are hungry.	Kamu lapar.
+You are starving!	Anda kelaparan!
+You starved to death...	Kamu kelaparan hingga mati...
+Hungry	Lapar
+Starving	Kelaparan
+Invisible	Tak terlihat
+Levitating	Melayang
+Illuminated	diterangi
+Mind vision	penglihatan pikiran
+Caustic ooze	cairan kaustik
+%s killed you...	%s membunuhmu...
+Paralyzed	Lumpuh
+Poisoned	Keracunan
+You died from poison...	Kamu mati karena keracunan...
+Rooted	Berakar
+Shadowmelded	 Dilebur bayangan
+Slowed	Melambat
+Vertigo	Pusing
+Weakened	Melemah
+backpack	Tas punggung
+Real description is coming soon!	Deskripsi sebenarnya akan datang!
+You hear something died in the distance	Anda mendengar ada sesuatu mati di kejauhan
+This %s is sleeping	 %s ini sedang tidur
+This %s is hunting	 %s ini sedang berburu
+This %s is fleeing	 %s ini sedang melarikan diri
+This %s is passive	 %s ini sedang pasif
+acidic scorpio	skorpio beracun
+albino rat	tikus albino
+crazy bandit	penjahat gila
+vampire bat	kelelawar vampir
+These brisk and tenacious inhabitants of cave domes may defeat much larger opponents by replenishing their health with each successful attack.	Makhluk cepat dan gigih ini adalah penghuni dari gua yang dapat mengalahkan musuh yang lebih besar dengan cara mengisi nyawa mereka dengan tiap serangan sukses mereka.
+gnoll brute	gnoll besar
+Brutes are the largest, strongest and toughest of all gnolls. When severely wounded, they go berserk, inflicting even more damage to their enemies.	Gnoll besar adalah yang terbesar, terkuat dan tertangguh dari gnoll lainnya. Saat sedikit terluka, mereka akan mengamuk, menyebabkan serangan lebih besar ke musuh mereka.
+%s becomes enraged!	%s menjadi marah!
+enraged	marah
+sewer crab	kepiting saluran
+These huge crabs are at the top of the food chain in the sewers. They are extremely fast and their thick exoskeleton can withstand heavy blows.	Kepiting besar ini adalah puncak rantai makanan di saluran bawah tanah. Mereka sangat cepat dan tulang tebal mereka dapat menahan serangan berat.
+DM-300	DM-300
+This machine was created by the Dwarves several centuries ago. Later, Dwarves started to replace machines with golems, elementals and even demons. Eventually it led their civilization to the decline. The DM-300 and similar machines were typically used for construction and mining, and in some cases, for city defense.	Mesin ini dibuat oleh para kurcaci beberapa abad yang lalu. Lalu, setelah para kurcaci mulai mengganti mesin dengan monster batu, elemental dan setan. Itu membuat peradaban mereka mengarah ke penolakan. DM-300 dan mesin lainnya digunakan untuk konstruksi dan menambang, dan dalam keadaan tertentu, untuk pertahanan kota.
+DM-300 repairs itself!	DM-300 membetulkan diri sendiri!
+Mission failed. Shutting down.	Misi gagal. Mematikan.
+Unauthorized personnel detected.	Personil tak terautorisasi terditeksi.
+fire elemental	elemental api
+Wandering fire elementals are a byproduct of summoning greater entities. They are too chaotic in their nature to be controlled by even the most powerful demonologist.	Elemental api pengembara adalah produk sampingan dari pemanggilan entitas yang lebih besar. Sifat mereka terlalu kacau untuk dikendalikan bahkan oleh ahli demonologi yang paling kuat sekalipun.
+evil eye	mata jahat
+One of this demon's other names is "orb of hatred", because when it sees an enemy, it uses its deathgaze recklessly, often ignoring its allies and wounding them.	Nama lain dari setan ini adalah "bola kebencian", karena saat dia melihat musuh, dia menggunakan tatapan mematikannya dengan sembrono, kadang tidak mempedulikan sekutunya dan melukai mereka.
+%s's deathgaze killed you...	Tatapan kematian %s membunuh Anda...
+fetid rat	Tikus busuk
+This marsupial rat is much larger, than a regular one. It is surrounded by a foul cloud.	Tikus berkantung ini jauh lebih besar dari tikus biasa. Itu dikelilingi oleh awan busuk.
+gnoll scout	gnoll pengintai
+Gnolls are hyena-like humanoids. They dwell in sewers and dungeons, venturing up to raid the surface from time to time. Gnoll scouts are regular members of their pack, they are not as strong as brutes and not as intelligent as shamans.	Gnoll adalah manusia setengah hyena. Mereka tinggal di saluran dan dugeon, mencoba menyerang permukaan dari waktu ke waktu. Gnoll pengintai adalah anggota biasa dari kelompok mereka, mereka tak sekuat gnoll besar dan tak sepintar dukun.
+golem	monster batu
+The Dwarves tried to combine their knowledge of mechanisms with their newfound power of elemental binding. They used spirits of earth as the "soul" for the mechanical bodies of golems, which were believed to be most controllable of all. Despite this, the tiniest mistake in the ritual could cause an outbreak.	Para kurcaci mencoba menggabungkan pengetahuan mereka tentang mekanisme dengan kekuatan elemental baru mereka. Mereka menggunakan roh bumi sebagai jiwa yang memasuki tubuh monster batu itu. Meskipun, kesalahan terkecil dalam ritual dapat menyebabkan kekacauan.
+Goo	Lendir
+Little known about The Goo. It's quite possible that it is not even a creature, but rather a conglomerate of substances from the sewers that gained rudiments of free will.	Tidak banyak yang diketahui tentang Goo. Sangat mungkin bahwa ia bukanlah makhluk, melainkan gabungan zat dari saluran pembuangan yang mendapatkan dasar-dasar kehendak bebas. Apa pun itu, jelas sekali bahwa sihir gelap bekerja di sini.
+Goo is pumping itself up!	Lendir sedang memompa diri!
+glurp... glurp...	glurp... glurp...
+GLURP-GLURP!	GLURP-GLURP!
+!!!	!!!
+The last king of dwarves was known for his deep understanding of processes of life and death. He has persuaded members of his court to participate in a ritual, that should have granted them eternal youthfulness. In the end he was the only one, who got it - and an army of undead as a bonus.	Raja terakhir dari kurcaci terkenal akan pengertian mendalamnya tentang proses hidup dan mati. Dia telah membujuk makhamahnya untuk mengikuti sebuah ritual, yang akan memberikan mereka hidup muda abadi. Akhirnya dia hanya satu-satunya yang mendapatkannya - dan mendapat sebuah pasukan mayat hidup sebagai bonus.
+You cannot kill me, %s... I am... immortal...	Kau tidak dapat membunuhku, %s... aku... abadi...
+Arise, slaves!	Bangkitlah, budakku!
+How dare you!	Beraninya kau!
+undead dwarf	mayat hidup kurcaci
+These undead dwarves, risen by the will of the King of Dwarves, were members of his court. They appear as skeletons with a stunning amount of facial hair.	Mayat hidup kurcaci ini, dihidupkan oleh kemauan dari Raja Kurcaci, dulunya anggota dari makhamahnya. Mereka terlihat sebagai tulang belulang dengan rambut palsu yang menarik perhatian.
+mimic	mimik
+Mimics are magical creatures which can take any shape they wish. In dungeons they almost always choose a shape of a treasure chest, because they know how to beckon an adventurer.	Mimik adalah makhluk ajaib yang dapat merubah bentuk ke bentuk apapun yang mereka mau. Di dungeon mereka selalu memilih bentuk peti harta karun, karena mereka tahu cara menarik perhatian petualang.";
+dwarf monk	biksu kurcaci
+These monks are fanatics, who devoted themselves to protecting their city's secrets from all aliens. They don't use any armor or weapons, relying solely on the art of hand-to-hand combat.	Biksu ini adalah fanatik, yang membaktikan diri mereka untuk menjaga rahasia kota mereka dari semua makhluk asing. Mereka tidak menggunakan pengaman atau senjata, hanya mengandalkan seni dari pertempuran tangan.
+parried	tertangkis
+%1$s has knocked the %2$s from your hands!	%1$s telah menjatuhkan %2$s dari tangan Anda!
+giant piranha	piranha raksasa
+These carnivorous fish are not natural inhabitants of underground pools. They were bred specifically to protect flooded treasure vaults.	Ikan karnivora ini tidak alami penghuni dari kolam bawah tanah. Mereka dibesarkan secara khusus untuk menjaga ruang harta karun tergenang.
+marsupial rat	tikus marsupialia
+Marsupial rats are aggressive, but rather weak denizens of the sewers. They can be dangerous only in big numbers.	Tikus marsupialia bersifat agresif, tapi penghuni lemah di saluran bawah tanah. Mereka dapat menjadi berbahaya dalam jumlah banyak.
+scorpio	skorpio
+These huge arachnid-like demonic creatures avoid close combat by all means, firing crippling serrated spikes from long distances.	Arakhinida raksasa ini adalah makhluk yang menghindari serangan jarak dekat dengan segala cara, menembak duri bergerigi yang melumpuhkan dari jarak jauh.
+senior monk	biksu senior
+gnoll shaman	dukun gnoll
+The most intelligent gnolls can master shamanistic magic. Gnoll shamans prefer battle spells to compensate for lack of might, not hesitating to use them on those who question their status in a tribe.	Gnoll paling pintar dapat menguasai sihir perdukunan. Dukun gnoll memilih untuk bertarung dengan mantra perang untuk mengimbangi kekuatannya yang lemah, tidak ragu untuk mereka yang mempertanyakan status mereka di suku mereka.
+%s's lightning bolt killed you...	sambaran petir %s membunuh Anda...
+shielded brute	gnoll berperisai
+skeleton	tulang belulang
+Skeletons are composed of corpses bones from unlucky adventurers and inhabitants of the dungeon, animated by emanations of evil magic from the depths below. After they have been damaged enough, they disintegrate in an explosion of bones.	Tulang belulang terbuat dari tulang mayat petualang dan penghuni dugeon yang tidak beruntung, dirasuki oleh sihir jahat dari bawah. Setelah mereka cukup terluka, mereka akan hancur dalam ledakan tulang.
+blocked	tertahan
+You were killed by the explosion of bones...	Anda terbunuh karena ledakan tulang...
+cave spinner	laba-laba gua
+These greenish furry cave spiders try to avoid direct combat, preferring to wait in the distance while their victim, entangled in the spinner's excreted cobweb, slowly dies from their poisonous bite.	Laba-laba gua kehijauan berbulu ini mencoba untuk menghindari pertarungan langsung, memilih untuk menunggu agak jauh saat korban mereka, terlilit di dalam jaring laba-laba, perlahan akan mati karena gigitan beracunnya.
+animated statue	patung tersihir
+You would think that it's just another ugly statue of this dungeon, but its red glowing eyes give itself away. While the statue itself is made of stone, the _%s_, it's wielding, looks real.	Anda akan berpikir ini hanyalah patung jelek lainnya dari dungeon ini, tapi mata merah berkilaunya membuka kedoknya. Walaupun patungnya sendiri terbuat dari batu,  _%s_, yang dipegannya, terlihat nyata.
+succubus	succubus
+The succubi are demons that look like seductive (in a slightly gothic way) girls. Using its magic, the succubus can charm a hero, who will become unable to attack anything until the charm wears off.	Para succubus adalah setan perempuan yang terlihat menarik (dengan cara yang agak gotik). Menggunakan sihirnya, succubus dapat mempesona pahlawan, sehingga tidak menyerang apapun sampai efeknya hilang.
+swarm of flies	gerombolan lalat
+The deadly swarm of flies buzzes angrily. Every non-magical attack will split it into two smaller but equally dangerous swarms.	Gerombolan lalat yang mematikan berdengung dengan marah. Semua serang non-sihir akan membelahnya menjadi dua gerombolan lebih kecil yang sama bahayanya.
+Tengu	Tengu
+Tengu are members of the ancient assassins clan, which is also called Tengu. These assassins are noted for extensive use of shuriken and traps.	Tengu adalah anggota dari klan pembunuh kuno, yang juga bernama Tengu. Pembunuh ini dikenal atas penggunaan jebakan dan shuriken yang banyak.
+Free at last...	Bebas akhirnya...
+Gotcha, %s!	Tertangkap, %s!
+crazy thief	pencuri gila
+Deeper levels of the dungeon have always been a hiding place for all kinds of criminals. Not all of them could keep a clear mind during their extended periods so far from daylight. Long ago, these crazy thieves and bandits have forgotten who they are and why they steal.	Tingkat lebih dalam dari Dungeon selalu menjadi persembunyian berbagai macam kriminal. Tidak semuanya dapat memiliki pikiran jernih di waktu yang lebih lama jauh dari sinar matahari. Dahulu, pencuri dan penjahat gila ini telah lupa siapa mereka dan mengapa mereka mencuri.
+%1$s stole %2$s from you!	%1$s mencuri %2$s dari Anda!
+\n\n%1$s is carrying a _%2$s_. Stolen obviously.	\n\n\n%1$s sedang membawa _%2$s_. Dicuri pastinya.
+dwarf warlock	penyihir kurcaci
+When dwarves' interests have shifted from engineering to arcane arts, warlocks have come to power in the city. They started with elemental magic, but soon switched to demonology and necromancy.	Saat minat para kurcaci berpindah dari teknik mesin ke seni batin, para penyihir muncul di kota. Mereka mulai dengan sihir elemental, tapi akan berubah ke demonologi dan nekromansi.
+%s's shadow bolt killed you...	Sambaran kegelapan %s membunuh Anda...
+wraith	hantu
+A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Being an ethereal entity, it is very hard to hit with a regular weapon.	Hantu adalah roh pendosa yang penuh balas dendam, dimana liang kuburnya atau kuburannya telah diganggu. Karena merupakan makhluk halus, makhluk ini sangat susah dipukul dengan senjata biasa.
+Yog-Dzewa	Yog-Dzewa
+Yog-Dzewa is an Old God, a powerful entity from the realms of chaos. A century ago, the ancient dwarves barely won the war against its army of demons, but were unable to kill the god itself. Instead, they then imprisoned it in the halls below their city, believing it to be too weak to rise ever again.	Yog-Dzewa adalah Dewa Tua, sebuah makhluk kuat dari dunia khaos. Satu abad yang lalu, para kurcaci kuno memenangkan peperangan melawan pasukan setannya, tapi mereka tidak dapat mengalahkan dewa itu sendiri. Sebaliknya, mereka kemudian memenjarakan dewa itu di sebuah ruangan di bawah kota mereka, mereka percaya dewa itu sudah terlalu lemah untuk bangkit lagi.
+...	...
+Hope is an illusion...	Harapan adalah ilusi...
+rotting fist	tinjuan pembusukan
+burning fist	tinjuan api
+god's larva	larva dewa
+golden bee	lebah
+Despite their small size, golden bees tend to protect their master fiercely. They don't live long though.	Meskipun ukurannya kecil, lebah cenderung melindungi sarangnya dengan keras. Mereka tidak hidup lama sekalipun.
+This %s is wandering	 %s ini sedang berkelana
+troll blacksmith	troll pandai besi
+This troll blacksmith looks like all trolls look: he is tall and lean, and his skin resembles stone in both color and texture. The troll blacksmith is tinkering with unproportionally small tools.	Troll pandai besi ini terlihat sama dengan troll lainnya. Ia pendek dan kurus, dan kulitnya menyerupai baru baik warna maupun teksturnya. Ia sedang mengutak-atik dengan alat kecil yang tidak proporsional.
+Hey human! Wanna be useful, eh? Take dis pickaxe and mine me some _dark gold ore_, _15 pieces_ should be enough. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Hei manusia! Kau ingin berguna, kan? Ambil kapak ini dan carikan aku _Biji emas hitam_, _15 buah_sudah cukup harusnya. Apa maksudmu, bagaimana saya membayarnya? Kau rakus...\nOk, ok, aku tidak punya uang untuk membayarmu, tapi aku bisa membuatkan sesuatu untukmu. Anggap saja kau beruntung, aku satu-satunya pandai besi didaerah ini.
+Hey human! Wanna be useful, eh? Take dis pickaxe and _kill a bat_ wit' it, I need its blood on the head. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Hei manusia! Kau ingin berguna, kan? Ambil kapak ini dan _Bunuh kalelawar_ dengan itu, Aku butuh darahnya pada mata pisaunya. Apa maksudmu, bagaimana saya membayarnya? Kau rakus...\nOk, ok, aku tidak punya uang untuk membayarmu, tapi aku bisa membuatkan sesuatu untukmu. Anggap saja kau beruntung, aku satu-satunya pandai besi didaerah ini.
+Are you kiddin' me? Where is my pickaxe?!	Apa kau bercanda? Dimana kapak ku?!
+Dark gold ore. 15 pieces. Seriously, is it dat hard?	Biji emas hitam. 15 buah. Serius, sesusah itukah?
+I said I need bat blood on the pickaxe. Chop chop!	Aku bilang aku butuh darah kalelawar di kapakku. Chop chop!
+Oh, you have returned... Better late dan never.	Oh, Anda telah kembali... Lebih baik terlambat daripada tidak sama sekali.
+I'm busy. Get lost!	Saya sedang sibuk. Pergilah!
+your %s certainly looks better now	Anda 1%s lebih terlihat membaik sekarang
+Select 2 different items, not the same item twice!	Pilih 2 item yang berbeda, tidak item yang sama dua kali!
+Select 2 items of the same type!	Pilih 2 item yang sama tipenya!
+I need to know what I'm working with, identify them first!	Aku harus tahu aku akan mengerjakan apa, identifikasi itu dulu.
+I don't work with cursed items!	Saya tidak bekerja dengan benda terkutuk!
+It's a junk, the quality is too poor!	Ini adalah sampah, kualitasnya terlalu buruk!
+I can't reforge these items!	Saya tidak dapat menenmpa ulang barang ini!
+sad ghost	hantu sedih
+The ghost is barely visible. It looks like a shapeless spot of faint light with a sorrowful face.	Hantu itu hampir tidak terlihat. Itu terlihat seperti titik cahaya redup tak berbentuk dengan wajah sedih.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my _dried rose_... It's very important to me... Some monster stole it from my body...	Halo petualang... Dulu aku sama seperti Anda - kuat dan percaya diri... tapi sekarang saya sudah mati... Tapi saya tidak bisa meninggalkan tempat ini... Tidak sampai aku menemukan _bunga rose keringku_... Itu sangat berguna untukku... Beberapa monster mencurinya dari tubuhku...
+Please... Help me... _Find the rose_...	Tolong... Bantu saya... Carikan bunga itu...
+Yes! Yes!!! This is it! Please give it to me! And you can take one of these items, maybe they will be useful to you in your journey...	Ya! Ya!!! Ini dia! Mohon berikan padaku! Dan Anda boleh mengambil salah satu item ini, mungkin mereka akan berguna di petualangan Anda.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my revenge... Slay the _fetid rat_, that has taken my life...	Halo petualang... Saat saya sepertimu - kuat dan percaya diri... dan sekarang aku mati... Tapi aku tidak bisa meninggalkan tempat ini... Tidak sampai saya balas dendam.... Bunuh...Tikus Busuk_, yang telah mengambil nyawaku...
+Please... Help me... _Slay the abomination_...	Tolong... Tolong aku... Bunuh mahluk itu...
+Yes! The ugly creature is slain and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Ya! Makhluk buruk itu telah terbunuh dan saya akhirnya dapat beristirahat... Mohon ambil salah satu item ini, mungkin mereka akan berguna di petualangan Anda.
+Imps are lesser demons. They are notable for neither their strength nor their magic talent, but they are quite smart and sociable. Many imps prefer to live among non-demons.	Imp adalah iblis yang lebih rendah. Mereka terkenal baik karena kekuatan maupun bakat sihir mereka, tetapi mereka cukup pintar dan mudah bergaul. Banyak imp lebih suka hidup di antara non-iblis.
+evaded	menghindar
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _golems_ who need to be killed. You see, I'm going to start a little business here, but these stupid golems are bad for business! It's very hard to negotiate with wandering lumps of granite, damn them! So please, kill... let's say _6 of them_ and a reward is yours.	Apakah Anda seorang petualang? Saya suka petualang! Anda selalu dapat mengandalkan mereka jika ada sesuatu yang perlu dibunuh. Apakah saya benar? Untuk bounty tentunya ;)\nDalam kasus saya ini adalah _golems_ yang harus dibunuh. Anda tahu, saya akan memulai bisnis kecil di sini, tetapi golem bodoh ini buruk untuk bisnis! Sangat sulit untuk bernegosiasi dengan bongkahan granit yang berkeliaran, sial! Jadi tolong, bunuh... katakanlah _6 dari mereka_ dan hadiah menjadi milikmu.
+How is your golem safari going?	Bagaimana perjalanan golem safari Anda?
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _monks_ who need to be killed. You see, I'm going to start a little business here, but these lunatics don't buy anything themselves and will scare away other customers. So please, kill... let's say _8 of them_ and a reward is yours.	Apakah Anda seorang petualang? Saya suka petualang! Anda selalu dapat mengandalkan mereka jika ada sesuatu yang perlu dibunuh. Apakah saya benar? Untuk hadiah, tentu saja ;)\nDalam kasus saya ini adalah _monks_ yang perlu dibunuh. Anda tahu, saya akan memulai bisnis kecil di sini, tetapi orang gila ini tidak membeli apa pun sendiri dan akan menakuti pelanggan lain. Jadi tolong, bunuh... katakanlah _8 dari mereka_ dan hadiah menjadi milikmu.
+Oh, you are still alive! I knew that your kung-fu is stronger ;) Just don't forget to grab these monks' tokens.	Ah, kamu masih hidup! Saya tahu bahwa kung-fu Anda lebih kuat ;) Jangan lupa untuk mengambil token biksu ini.
+See you, %s!	Sampai jumpa, %s!
+Psst, %s!	Psst, %s!
+ambitious imp	imp ambisius
+Imps are lesser demons. They are notable for neither their strength nor their magic talent. But they are quite smart and sociable, and many of imps prefer to live and do business among non-demons.	Imp adalah iblis yang lebih rendah. Mereka terkenal baik karena kekuatan maupun bakat sihir mereka. Tapi mereka cukup pintar dan mudah bergaul, dan banyak dari imp lebih suka hidup dan berbisnis di antara non-iblis.
+Hello, friend!	Hai, teman!
+mirror image	Bayangan cermin
+This illusion bears a close resemblance to you, but it's paler and twitches a little.	Ilusi ini sangat mirip dengan Anda, tetapi lebih pucat dan sedikit berkedut.
+rat king	raja tikus
+This rat is a little bigger than a regular marsupial rat and it's wearing a tiny crown on its head.	Tikus ini lebih besar dari tikus marsupial dan memakai mahkota kecil di kepalanya.
+I'm not sleeping!	Saya tidak tidur!
+What is it? I have no time for this nonsense. My kingdom won't rule itself!	Apa ini? Saya tidak punya waktu untuk ini. Kerajaanku tidak berjalan dengan sendirinya.
+shopkeeper	penjaga toko
+This stout guy looks more appropriate for a trade district in some large city than for a dungeon. His prices explain why he prefers to do business here.	Pria kekar ini terlihat lebih cocok untuk distrik perdagangan di beberapa kota besar daripada untuk penjara bawah tanah. Harganya menjelaskan mengapa dia lebih suka berbisnis di sini.
+Select an item to sell	Pilih barang untuk dijual
+old wandmaker	pembuat tongkat tua
+This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	Pria tua tapi sehat ini memasang ekspresi sedikit bingung. Dia dilindungi oleh perisai ajaib.
+absorbed	terserap
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, kejutan yang menyenangkan bertemu orang yang baik di tempat seperti itu! Saya datang ke sini untuk bahan langka - _Benih Rotberry_. Menjadi pengguna sihir, aku cukup bisa membela diri melawan monster lokal, tapi aku tersesat dalam waktu singkat, itu sangat memalukan. Mungkin Anda bisa membantu saya? Saya akan dengan senang hati membayar layanan Anda dengan salah satu tongkat terbaik saya.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Adakah keberuntungan dengan benih Rotberry, %s? Tidak? Jangan khawatir, saya tidak terburu-buru.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, kejutan yang menyenangkan bertemu orang yang baik di tempat seperti itu! Saya datang ke sini untuk bahan langka - _debu mayat_. Itu dapat dikumpulkan dari sisa-sisa kerangka dan ada banyak dari mereka di ruang bawah tanah. Menjadi pengguna sihir, aku cukup bisa membela diri melawan monster lokal, tapi aku tersesat dalam waktu singkat, itu sangat memalukan. Mungkin Anda bisa membantu saya? Saya akan dengan senang hati membayar layanan Anda dengan salah satu tongkat terbaik saya.
+Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Apakah Anda beruntung dengan debu mayat, %s ? Tumpukan tulang adalah tempat yang paling jelas untuk dilihat.
+A hidden pressure plate clicks!	Tombol tak terlihat terpencet!
+Floor	Lantai
+Grass	Rumput
+Water	Air
+Wall	Tembok
+Closed door	Pintut tertutup
+Open door	Pintu terbuka
+Depth entrance	Pintu masuk tingkat
+Depth exit	Pintu keluar tingkat
+Embers	Bara api
+Locked door	Pintu terkunci
+Pedestal	Pedestal
+Barricade	Penghalang
+High grass	Rumput tinggi
+Locked depth exit	Pintu keluar tingkat terkunci
+Unlocked depth exit	Pintu keluar tingkat terbuka
+Sign	Tanda
+Well	Sumur
+Empty well	Sumur kosong
+Statue	Patung
+Toxic gas trap	Jebakan gas beracun
+Fire trap	Jebakan api
+Paralytic gas trap	Jebakan gas pelumpuh
+Poison dart trap	Jebakan panah beracun
+Alarm trap	Jebakan alarm
+Lightning trap	Jebakan petir
+Gripping trap	Perangkap jepit
+Summoning trap	Jebakan memanggil
+Triggered trap	Jebakan yang sudah terpicu
+Bookshelf	Rak buku
+Alchemy pot	Panci alkimia
+\\?\\?\\?	\\?\\?\\?
+You can't see the bottom.	Anda tidak dapat melihat dasarnya.
+In case of burning step into the water to extinguish the fire.	Saat terbakar injak air untuk memadamkan api.
+Stairs lead up to the upper depth.	Tangga yang membawa ke tempat yang lebih tinggi.
+Stairs lead down to the lower depth.	Tangga yang membawa ke tempat yang lebih dalam.
+Embers cover the floor.	Bara api menutupi lantai.
+Dense vegetation blocks the view.	Tumbuhan tebal menghalangi pandangan.
+This door is locked, you need a matching key to unlock it.	Pintu ini terkunci, anda butuh kunci yang cocok untuk membukanya.
+Heavy bars block the stairs leading down.	Jeruji berat menutupi tangga ke bawah.
+The wooden barricade is firmly set but has dried over the years. Might it burn?	Penghalang kayu ini dipasang dengan kuat tapi telah kering selama berjalan waktu. Mungkinkah terbakar?
+You can't read the text from here.	Anda tidak dapat membaca tulisan itu dari sini.
+Stepping onto a hidden pressure plate will activate the trap.	Menginjak tombol tidak terlihat akan mengaktivasi jebakan.
+The trap has been triggered before and it's not dangerous anymore.	Jebakan ini telah dipicu sebelumnya dan tidak berbahaya lagi.
+Someone wanted to adorn this place, but failed, obviously.	Seseorang ingin menghias tempat ini, tapi gagal, yang pastinya.
+Drop some seeds here to cook a potion.	Letakkan beberapa biji di sini untuk membuat ramuan.
+The well has run dry.	Sumur ini sudah kering.
+Fluorescent moss	Lumut berpijar
+Fluorescent mushrooms	Jamur berpijar
+Freezing cold water.	Air yang sangat dingin.
+The ladder leads up to the upper depth.	Tangga yang membawa ke tempat yang lebih tinggi.
+The ladder leads down to the lower depth.	Tangga yang membawa ke tempat yang lebih dalam.
+Huge mushrooms block the view.	Jamur besar menghalangi pandangan.
+A vein of some ore is visible on the wall. Gold?	Kilauan dari beberapa logam terlihat pada tembok. Emas?
+Who would need a bookshelf in a cave?	Siapa yang butuh rak buku di gua?
+A ramp leads down to the lower depth.	Tanjakan yang membawa ke tempat yang lebih dalam.
+The statue depicts some dwarf standing in a heroic stance.	Patung ini menggambarkan seorang kurcaci berdiri dengan pose heroik.
+The rows of books on different disciplines fill the bookshelf.	Jejeran buku-buku dari disiplin ilmu yang berbeda mengisi rak buku.
+Books in ancient languages smolder in the bookshelf.	Buku dengan bahasa kuno membara di dalam rak buku.
+Cold lava	Lava dingin
+Embermoss	Lumut berbara
+Emberfungi	Jamur berbara
+Pillar	Tiang
+It looks like lava, but it's cold and probably safe to touch.	Itu terlihat seperti lava, tapi itu dingin dan mungkin aman disentuh.
+The pillar is made of real humanoid skulls. Awesome.	Tiang ini dibuat dari tengkorak manusia sungguhan. Menakjubkan.
+Suspiciously colored water	Air berwarna mencurigakan
+High blooming flowers	Bunga mekar tinggi
+A ramp leads up to the upper depth.	Tanjakan yang membawa ke tempat yang lebih tinggi.
+A ramp leads down to the Inferno.	Tanjakan yang membawa ke tempat yang lebih dalam.
+Several tiles are missing here.	Beberapa ubin copot di sini.
+Thick carpet covers the floor.	Karpet tebal menutupi lantai.
+Dark cold water.	Air gelap yang dingin.
+There are old blood stains on the floor.	Ada ceceran darah di atas lantai.
+This is probably a vestige of a prison library. Might it burn?	Ini mungkin sisa-sisa perpustakaan penjara. Mungkinkah itu terbakar?
+Murky water	Air kotor
+Wet yellowish moss covers the floor.	Lumut basah kekuningan menutupi lantai ini.
+The bookshelf is packed with cheap useless books. Might it burn?	Rak buku ini menyimpan buku murah tidak berguna. Mungkinkah terbakar?
+Select a seed to throw	Pilih biji untuk dilempar
+Chasm	Jurang
+Yes, I know what I'm doing	Ya, aku yakin apa yang kulakukan
+No, I changed my mind	Tidak, aku berubah pikiran
+Do you really want to jump into the chasm? You can probably die.	Apakah anda yakin akan melompat ke dalam jurang? Anda mungkin dapat mati.
+You fell to death...	Anda jatuh hingga mati...
+What are you doing here?!	Apakah yang Anda lakukan di sini?!
+Don't overestimate your strength, use weapons and armor you can handle.	Jangan melebih-lebihkan kekuatan Anda, gunakan senjata dan baju besi yang bisa Anda tangani.
+Not all doors in the dungeon are visible at first sight. If you are stuck, search for hidden doors.	Tidak semua pintu di dungeon terlihat pada pandangan pertama. Jika Anda terjebak, cari pintu tersembunyi.
+Remember, that raising your strength is not the only way to access better equipment. You can go the other way, lowering its strength requirement with Scrolls of Upgrade.	Ingat bahwa meningkatkan kekuatan Anda bukan satu-satunya cara untuk mengakses peralatan yang lebih baik, Anda dapat pergi ke arah lain dengan menurunkan persyaratan kekuatannya dengan Gulungan peningkatan.
+Beware of Goo!	Waspadalah terhadap Goo!
+Pixel-Mart. All you need for successful adventure!	Pixel-Mart - semua yang Anda butuhkan untuk petualangan yang sukses!
+Identify your potions and scrolls as soon as possible. Don't put it off to the moment when you actually need them.	Identifikasi ramuan dan gulungan Anda sesegera mungkin. Jangan menundanya pada saat Anda benar-benar membutuhkannya.
+Being hungry doesn't hurt, but starving does hurt.	Lapar tidak ada salahnya, tapi kelaparan memang menyakitkan.
+Surprise attack has a better chance to hit. For example, you can ambush your enemy behind a closed door when you know it is approaching.	Serangan kejutan memiliki peluang lebih baik untuk menyerang. Misalnya, Anda dapat menyergap musuh Anda di balik pintu tertutup ketika Anda tahu itu mendekat.
+Don't let The Tengu out!	Jangan biarkan Tengu keluar!
+Pixel-Mart. Spend money. Live longer.	Pixel-Mart. Menghabiskan uang. Hidup lebih lama.
+When you're attacked by several monsters at the same time, try to retreat behind a door.	Saat Anda diserang oleh beberapa monster secara bersamaan, cobalah untuk mundur di balik pintu.
+There is no sense in possessing more than one Ankh at the same time, because you will lose them upon resurrecting.	Tidak ada gunanya memiliki lebih dari satu Ankh pada saat yang sama, karena Anda akan kehilangan mereka saat dibangkitkan.
+DANGER! Heavy machinery can cause injury, loss of limbs or death!	BAHAYA! Mesin berat dapat menyebabkan cedera, kehilangan anggota badan atau kematian!
+Pixel-Mart. A safer life in dungeon.	Pixel-Mart. Kehidupan yang lebih aman di penjara bawah tanah.
+When you upgrade an enchanted weapon, there is a chance to destroy that enchantment.	Saat Anda mengupgrade senjata yang tersihir, ada peluang untuk menghancurkan sihir itu.
+No weapons allowed in the presence of His Majesty!	Tidak ada senjata yang diizinkan di hadapan Yang Mulia!
+Pixel-Mart. Special prices for demon hunters!	Pixel-Mart. Harga khusus untuk pemburu iblis!
+The trap emits a piercing sound that echoes throughout the dungeon!	Perangkap itu mengeluarkan suara menusuk yang bergema di seluruh dungeons ini!
+lightning trap	jebakan petir
+You were killed by a discharge of a lightning trap...	Anda tersambar hingga terbunuh oleh jebakan petir...
+You don't know what is there.	Anda tidak tahu ada apa disana
+Select a cell to examine	Pilih sel yang diperiksa
+Sacrificial chamber	Ruang pengorbanan
+Killed by an explosion of a bomb on level %d	Tewas akibat ledakan bom di lantai %d
+Do you want to respec into %s?	Ingin mengganti spesialisasi menjadi %s?
+Yes, I want to respec	Ya, aku ingin mengganti spesialisasi
+Maybe later	Mungkin nanti
+Language	Bahasa
+Because of frequent use, your %s has broken.	Karena terlalu sering digunakan, %s milikmu rusak.
+Because of frequent use, your %s is going to break soon.	Karena terlalu sering digunakan, %s milikmu akan segera rusak.
+bomb	bom
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	Bom ini relatif kecil dan berisi bubuk hitam. Untungnya, sumbunya menyala otomatis saat bom dilempar.
+You killed yourself with a bomb...	Kau membunuh dirimu sendiri dengan bom...
+honeypot	guci madu
+SHATTER	PECAHKAN
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	Tak banyak madu di dalam guci kecil ini, tetapi ada seekor lebah emas yang tak mau meninggalkannya.
+%s of auto-repair	%s yang memperbaiki diri
+enchantment of viscosity	pesona kekentalan
+The enchantment of viscosity killed you...	Pesona kekentalan membunuhmu...
+phantom fish	ikan hantu
+broken %s	%s rusak
+Unequip one ring	Lepaskan satu cincin
+Scroll of Enchantment	Gulungan Pesona
+Select an enchantable item	Pilih benda yang dapat dipesona
+your %s glows in the dark	%s milikmu bersinar dalam gelap
+Scroll of Wipe Out	Gulungan Pemusnahan
+You are now familiar enough with your %s.	Sekarang kau sudah cukup mengenal %s milikmu.
+Wand of Reach	Tongkat Jangkauan
+shocking %s	%s penyetrum
+tempered %s	%s yang ditempa
+"Your sacrifice is worthy..."	"Pengorbananmu layak..."
+"Your sacrifice is unworthy..."	"Pengorbananmu tidak layak..."
+"Your sacrifice is worthy and so you are!"	"Pengorbananmu layak, begitu pula dirimu!"
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	Api pengorbanan menyala di sini. Setiap makhluk yang tersentuh api ini ditandai sebagai persembahan bagi roh-roh ruang bawah tanah.
+Marked for sacrifice	Ditandai untuk dikorbankan
+Immune to gases	Kebal terhadap gas
+Blinded with rage	Dibutakan amarah
+Zeroed in	Terkunci pada sasaran
+echo of 	gaung 
+curse personification	perwujudan kutukan
+DM-350	DM-350
+spawn of Goo	jelmaan Goo
+King of Dwarves	Raja Kurcaci
+undead King of Dwarves	Raja Kurcaci mayat hidup
+memory of Tengu	kenangan Tengu
+echo of Yog-Dzewa	gaung Yog-Dzewa
+Yes, I will do it for you	Ya, akan kulakukan untukmu
+No, I can't help you	Tidak, aku tak bisa membantumu
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Ada hasil dengan _ikan hantu_, %s? Cobalah mencarinya di salah satu kolam di sekitar sini.
+As you try to read the sign it bursts into greenish flames.	Saat kau mencoba membaca papan itu, tiba-tiba ia dilalap api kehijauan.
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	Kau dapat membelanjakan emas di toko-toko pada lantai yang lebih dalam. Toko pertama berada di lantai 6.
+If you are burning, you can't put out the fire in the water while levitating.	Jika sedang terbakar, kau tak bisa memadamkan api di air saat melayang.
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	Senjata dan zirah lebih cepat aus daripada tongkat dan cincin, tetapi ada lebih banyak cara untuk memperbaikinya.
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	Satu-satunya cara memperoleh Gulungan Pemusnahan adalah menerimanya sebagai hadiah dari roh-roh ruang bawah tanah.
+Choose language	Pilih bahasa
+Key bindings	Pemetaan tombol
+Switch to fullscreen	Beralih ke layar penuh
+Switch to windowed	Beralih ke mode jendela
+Reset To Defaults	Kembalikan bawaan
+<None>	<Tidak ada>
+Press a key for "%s", or press %s to remove the binding.	Tekan tombol untuk “%s”, atau tekan %s untuk menghapus pemetaan.
+Hero Info	Info pahlawan
+Wait	Tunggu
+Search	Cari
+Examine cell	Periksa petak
+Resume motion	Lanjutkan gerak
+Backpack	Ransel
+Quickslot	Slot cepat
+Attack	Serang
+Visible Enemies	Musuh terlihat
+Zoom In	Perbesar
+Zoom Out	Perkecil
+Move North	Bergerak ke utara
+Move South	Bergerak ke selatan
+Move West	Bergerak ke barat
+Move East	Bergerak ke timur
+Move NW	Bergerak ke barat laut
+Move NE	Bergerak ke timur laut
+Move SW	Bergerak ke barat daya
+Move SE	Bergerak ke tenggara
+Current Cell	Petak saat ini
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Kode & grafis: Watabou\nMusik: Cube_Code\n\nGame ini terinspirasi oleh Brogue karya Brian Walker. Cobalah di Windows, Mac OS, atau Linux — game itu luar biasa! ;)\n\nKunjungi situs resmi untuk informasi lebih lanjut:
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	Lokalisasi: rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+Languages	Bahasa
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	Ikan kecil tembus pandang ini nyaris tak terlihat di udara. Di dalam air, ikan ini benar-benar tak kasatmata.
+You can only wear two rings at a time. Unequip one of your equipped rings.	Kamu hanya bisa memakai dua cincin sekaligus. Lepaskan salah satu cincin yang sedang dipakai.
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	Gulungan ini dapat menanamkan sihir acak pada senjata atau zirah, memberinya kekuatan khusus.
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	Baca gulungan ini untuk melepaskan murka roh-roh dungeon dan membunuh semua yang ada di lantai ini. Yah, hampir semuanya. Beberapa makhluk yang lebih kuat mungkin tidak terpengaruh.
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	Tongkat serbaguna ini dapat mengambil benda dari kejauhan dan bertukar tempat dengan musuh. Gelombang tenaga sihirnya memengaruhi setiap petak yang dilalui: memicu jebakan, meratakan rerumputan tinggi, membuka pintu tertutup, dan menutup pintu yang terbuka.
+broken %1$s :%2$d	%1$s rusak :%2$d
+a broken	yang rusak
+%1$s: "%2$s"	%1$s: "%2$s"
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	Makhluk ini menyerupai hantu sedih, tetapi berpusar dalam kegelapan. Wajahnya menampakkan keputusasaan.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Halo, petualang... Dahulu aku sepertimu — kuat dan penuh keyakinan... Kini aku mati... Namun aku tak bisa meninggalkan tempat ini karena terikat kutukan mengerikan... Kumohon... Tolong aku... _Hancurkan kutukannya_...
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Terima kasih, %s! Kutukannya telah hancur dan akhirnya aku bisa beristirahat... Ambillah salah satu benda ini, mungkin akan berguna dalam perjalananmu...
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, sungguh menyenangkan bertemu orang baik di tempat seperti ini! Aku datang mencari bahan langka — seekor _ikan hantu_. Ikan itu bisa ditangkap dengan tangan kosong, tetapi sangat sulit terlihat di dalam air. Sebagai pengguna sihir aku mampu melindungi diri dari monster di sini, tetapi sebentar saja sudah tersesat—sungguh memalukan. Maukah kamu membantuku? Aku akan senang membayar jasamu dengan salah satu tongkat terbaikku.
+1	1

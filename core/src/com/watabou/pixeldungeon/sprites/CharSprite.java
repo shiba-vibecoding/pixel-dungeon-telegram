@@ -50,7 +50,9 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	public static final int WARNING		= 0xFF8800;
 	public static final int NEUTRAL		= 0xFFFF00;
 	
-	private static final float MOVE_INTERVAL	= 0.1f;
+	// A slightly brisker step keeps chained path movement responsive while the
+	// turn-based timing and combat balance remain completely unchanged.
+	private static final float MOVE_INTERVAL	= 0.09f;
 	private static final float FLASH_INTERVAL	= 0.05f;	
 	
 	public enum State {

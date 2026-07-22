@@ -1,0 +1,1185 @@
+Play	시작
+Highscores	최고 점수
+About	정보
+LibGDX port: Arcnor / Web port: nojus297	LibGDX 포팅: Arcnor / 웹 포팅: nojus297
+Telegram port: @barboskich	Telegram 포팅: @barboskich
+Say thanks	감사 전하기
+Thank you!	감사합니다!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Telegram 포팅을 위한 자발적인 후원입니다. 게임 플레이에는 전혀 영향을 주지 않습니다.
+Support with Telegram Stars	Telegram Stars로 후원
+Open @barboskich	@barboskich 열기
+Send E-Mail	Send E-Mail
+Top Rankings	최고 랭킹
+Total games won/played: 	총 플레이 회수.
+No games have been played yet.	한번도 플레이 하지 않음.
+No additional information	정보 없음
+Your Badges	당신의 뱃지들
+Load Game	불러 오기
+New Game	새 게임
+Erase current game	현재 게임 삭제
+Depth: %1$d, level: %2$d	진행 깊이: %1$d\n층 수: %2$d
+Do you really want to start new game?	정말 게임을 새로 시작 하시겠습니까?
+Your current game progress will be erased.	현재 게임 진행 상황은 지워집니다.
+Yes, start new game	네, 새로운 게임 시작
+No, return to main menu	아니오, 메인 메뉴로
+To unlock this character class, slay the 3rd boss with any other class	이 캐릭터 직업을 해금하기 위해서는 아무 직업으로 DM-300을 처치하세요.
+To unlock "Challenges", win the game with any character class.	"도전"을 해제하려면, 아무 직업으로 게임을 클리어 하세요.
+Descending...	내려가는중...
+Ascending...	올라가는중...
+Loading...	로딩중...
+Resurrecting...	부활중...
+Returning...	돌아오는중...
+Falling...	떨어지는중...
+File not found. For some reason...	파일을 찾지 못함. 어떠한 이유로...
+Something went wrong...	무언가 잘못 되었다...
+Many heroes of all kinds ventured into the Dungeon before you. Some of them have returned with treasures and magical artifacts, most have never been heard of since. But none have succeeded in retrieving the Amulet of Yendor, which is told to be hidden in the depths of the Dungeon.\n\nYou consider yourself ready for the challenge, but most importantly, you feel that fortune smiles on you. It's time to start your own adventure!	수많은 영웅들이 당신 이전에 던전으로 모험을 떠났습니다. 몇몇은 보물이나 마법 장비와 함께 돌아오기도 했지만, 대부분은 그 이후로 소식이 끊겼습니다. 하지만 그 누구도 던전 가장 아래에 숨겨져 있다고 하는 옌도르의 아뮬렛을 손에 넣는데 성공한 사람은 없죠.\n\n당신은 이제 도전을 받아들일 준비가 되었습니다. 무엇보다도 행운의 여신이 당신에게 미소짓고 있다고 생각하기 때문이죠. 자, 이제 당신만의 모험을 떠날 시간입니다!
+Let's call it a day	여기서 끝내기로 하지
+I'm not done yet	아직 끝내긴 일러
+You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	당신은 마침내 옌더의 아뮬렛을 거머쥐었습니다. 이 힘을 이용해서 당신은 세상을 손에 넣거나 아니면 평화와 번영을 가져다 주는 등 여러 가지 일을 할 수 있습니다. 어쨌든, 당신의 인생은 완전히 바뀔 것이고, 게임은 여기서 끝날 겁니다. 아니면, 아주 잠시 필멸자로 남을 수도 있고요.
+Welcome to the level %d of Pixel Dungeon!	리믹스드 던전 %d층에 오신 걸 환영합니다!
+Welcome back to the level %d of Pixel Dungeon!	리믹스드 던전 %d층에 돌아오신 걸 환영합니다!
+Be cautious, since the dungeon is even more dangerous at night!	조심하세요, 던전은 밤 중에 보다 더 위험하답니다.
+Your steps echo across the dungeon.	당신의 발자국 소리가 던전에 울려 퍼집니다.
+You hear the water splashing around you.	물 소리가 당신 주위에서 들려옵니다.
+The smell of vegetation is thick in the air.	풀 냄새가 공기 중에 가득합니다.
+The atmosphere hints that this floor hides many secrets.	이 곳의 분위기가 현재 층에 많은 비밀이 숨겨져 있음을 말해줍니다.
+mob	무리
+%1$s hit %2$s	%1$s 이/가 %2$s을/를 때렸습니다.
+%1$s defeated %2$s	%1$s이(가) %2$s를 죽였다.
+%1$s %2$s your attack	%1$s %2$s 당신의 공격
+%1$s %2$s %3$s's attack	%1$s %2$s %3$s의 공격
+The pain snapped %s out of paralysis	고통이 %s를 마비로부터 벗어나게 했습니다
+dodged	회피
+poisoned	중독
+amok	광란
+slowed	감속
+mind	마음
+vision	비전
+paralyzed	마비
+frightened	공포
+rooted	구속
+crippled	불구
+bleeding	출혈
+dizzy	현기증
+invisible	투명화
+you	당신
+One does not simply leave Pixel Dungeon.	누구도 쉽사리 리믹스드 던전을 빠져나가지 못한다.
+level up!	레벨 업!
+Welcome to level %d! Now you are healthier and more focused. It's easier for you to hit enemies and dodge their attacks.	레벨 %d이 된걸 축하합니다! 이제 당신은 보다 더 건강해지고 집중력이 높아졌습니다. 적을 맞추거나 공격을 회피하기 쉬워졌습니다.
+You now have %s	%s을/를 얻었다.
+There is something else here	여기에 다른 무언가가 있다.
+This chest is locked and you don't have matching key	이 상자는 잠겨 있고, 당신에게는 맞는 열쇠가 없다.
+You don't have a matching key	당신에게는 맞는 열쇠가 없다.
+You noticed something	당신은 무언가를 눈치챘다.
+search	탐색
+You catch fire!	당신에게 불이 붙었다!
+You are paralyzed!	당신은 마비되었다!
+You are poisoned!	당신은 중독되었다!
+Caustic ooze eats your flesh. Wash away it!	부식성 점액이 당신의 살점을 녹이고 있다. 씻어야 한다!
+You can't move!	당신은 움직일 수 없다!
+You feel weakened!	당신은 약화되었다!
+You are blinded!	당신은 눈이 멀었다!
+You become furious!	당신은 광란에 빠졌다!
+furious	광란
+You are charmed!	당신은 매혹되었다!
+You are crippled!	당신은 불구가 되었다!
+You are bleeding!	당신은 피를 흘리고 있다!
+Everything is spinning around you!	주변이 빙글빙글 돈다!
+warrior	전사
+mage	마법사
+rogue	도적
+huntress	사냥꾼
+Warriors start with 11 points of Strength.	전사는 11의 힘을 가지고 시작합니다.
+Warriors start with a unique short sword. This sword can be later "reforged" to upgrade another melee weapon.	전사는 특별한 단검을 가지고 시작합니다. 이 무기는 나중에 재련하여 다른 근접 무기를 업그레이드하는데 쓸 수 있습니다.
+Warriors are less proficient with missile weapons.	전사는 원거리 무기에 숙련되지 못합니다.
+Any piece of food restores some health when eaten.	전사는 어떤 음식이든 먹으면 약간의 체력을 회복합니다.
+Potions of Strength are identified from the beginning.	전사는 힘의 물약을 식별한 채로 시작한다. 
+Mages start with a unique Wand of Magic Missile. This wand can be later "disenchanted" to upgrade another wand.	마법사는 특별한 마탄의 지팡이를 가지고 시작합니다. 이 지팡이는 나중에 다른 지팡이를 강화하기 위해 "마법 해체"를 사용할 수 있습니다.
+Mages recharge their wands faster.	마법사는 지팡이가 더 빨리 충전됩니다.
+When eaten, any piece of food restores 1 charge for all wands in the inventory.	음식을 먹으면, 가방 안에 있는 모든 지팡이가 1스택 충전됩니다.
+Mages can use wands as a melee weapon.	마법사는 지팡이를 근접무기로 사용할 수 있습니다.
+Scrolls of Identify are identified from the beginning.	마법사는 마나를 소모하여 원소 마법을 사용할 수 있습니다.
+Rogues start with a Ring of Shadows+1.	도적은 그림자의 반지+1을 가지고 시작한다.
+Rogues identify a type of a ring on equipping it.	도적은 반지를 착용하자마자 그 반지의 종류를 알아낼 수 있다.
+Rogues are proficient with light armor, dodging better while wearing one.	도적은 가벼운 방어구에 숙련되어 있어, 착용하는 동안 회피율이 상승한다.
+Rogues are proficient in detecting hidden doors and traps.	도적은숨겨진 함정이나 문을 찾아낼 확률이 높다.
+Rogues can go without food longer.	도적은 음식 없이 더 오래 버틸 수 있다.
+Scrolls of Magic Mapping are identified from the beginning.	마법 지도 주문서를 식별한 채로 시작한다.
+Huntresses start with 15 points of Health.	사냥꾼은 15의 최대 체력을 가지고 시작합니다.
+Huntresses start with a unique upgradeable boomerang.	사냥꾼은 강화 가능한 특별한 부메랑을 가지고 시작합니다.
+Huntresses are proficient with missile weapons and get a damage bonus for excessive strength when using them.	사냥꾼은 투척무기에 숙련되어, 자신의 현재 힘이 투척무기의 요구치보다 높을 경우 데미지에 보너스를 받습니다.
+Huntresses gain more health from dewdrops.	사냥꾼은 이슬로부터 더 많은 양의 체력을 회복합니다.
+Huntresses sense neighboring monsters even if they are hidden behind obstacles.	사냥꾼은 근처에 있는 적이 장애물 뒤에 숨어 있어도 인식할 수 있습니다.
+gladiator	검투사
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	근접 무기를 이용한 공격에 성공하면 _검투사_는 연타를 시작하고, 다음 공격이 성공할 때마다 추가로 데미지를 입힌다.
+berserker	광전사
+When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	부상이 심하면, _광전사_는 광분 상태가 되며 공격력이 크게 상승한다.
+warlock	흑마법사
+After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	적을 죽이면, _흑마법사_는 적의 영혼을 흡수하여, 상처를 치료하고 허기를 채운다.
+battlemage	전투 마법사
+When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	 _전투 마법사_는 지팡이를 들고 싸울 때 착용 중인 지팡이의 충전량에 비례한 추가 데미지를 입힙니다. 공격이 성공할 때 마다 착용 중인 지팡이의 충전량이 1씩 회복됩니다.
+assassin	암살자
+When performing a surprise attack, the _Assassin_ inflicts additional damage to his target.	기습 공격을 할 경우, _암살자_는 대상에게 추가 데미지를 가합니다.
+freerunner	프리러너
+The _Freerunner_ can move almost twice faster, than most of the monsters. When he is running, the Freerunner is much harder to hit. For that he must be unencumbered and not starving.	_프리러너_는 대부분의 몬스터보다 거의 두 배 가까이 빠르게 달릴 수 있습니다. 프리러너가 달리는 중에는 회피율이 크게 증가하지만, 그 조건으로 힘에 맞는 장비를 착용 중이며 굶주린 상태가 아니어야 합니다.
+sniper	저격수
+_Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	_저격수_는 적의 갑옷의 취약점을 파악할 수 있어, 원거리 무기를 사용할 시 적의 방어를 효과적으로 무시할 수 있습니다.
+warden	숲지기
+Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	자연의 힘과 밀접한 교감은 _숲지기_에게 식물로부터 이슬과 씨앗을 수확할 수 있는 능력을 줍니다. 또한, 높게 자란 풀 위에 올라서면 일시적인 방어력 버프를 부여받습니다.
+Badge endorsed: %s	  %s 뱃지를 획득했다.
+New super badge: %s	새로운 슈퍼 뱃지 획득 : %s
+New badge: %s	새로운 뱃지 획득 : %s
+10 enemies slain	적 10마리 처치
+50 enemies slain	적 50 마리 처치
+150 enemies slain	적 150 마리 처치
+250 enemies slain	적 250 마리 처치
+100 gold collected	100 금화를 수집함
+500 gold collected	500 금화를 수집함
+2500 gold collected	2500 금화를 수집함
+7500 gold collected	7500 골드를 수집함
+Level 6 reached	레벨 6 달성
+Level 12 reached	레벨 12 달성
+Level 18 reached	레벨 18 달성
+Level 24 reached	레벨 24 달성
+All potions identified	모든 물약 감정됨
+All scrolls identified	모든 주문서 감정됨
+All rings identified	모든 반지 감정됨
+All wands identified	모든 마법봉을 식별함"
+All potions, scrolls, rings & wands identified	모든 물약,두루마리, 반지,완드를 식별했습니다
+All bags bought	모든 가방 구매
+Death from fire	불로 인해 사망
+Death from poison	독에 중독되어 사망
+Death from toxic gas	독가스로 인해 사망
+Death from hunger	굶주림으로 인해 사망
+Death from an enchantment	방어구의 상형문자로 인해 사망
+Death from falling down	추락 데미지로 인해 사망
+Death from fire, poison, toxic gas & hunger	불, 중독, 독가스, 굶주림으로 인해 사망
+1st boss slain	구가 살해되었다
+2nd boss slain	텐구가 살해되었다
+3rd boss slain	DM-300이 살해되었다
+4th boss slain	왕이 살해되었다
+1st boss slain by Warrior, Mage, Rogue & Huntress	Goo has been slain by all classes
+3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	Boss dikalahkan
+Ring of Haggler obtained	흥정꾼의 반지 획득
+Ring of Thorns obtained	가시의 반지 획득
+13 points of Strength attained	힘 수치 13 달성
+15 points of Strength attained	힘 수치 15 달성
+17 points of Strength attained	힘 수치 17 달성
+19 points of Strength attained	힘 수치 19 달성
+10 pieces of food eaten	음식 10개 섭취
+20 pieces of food eaten	음식 20개 섭취
+30 pieces of food eaten	음식 30개 섭취
+40 pieces of food eaten	음식 40개 섭취
+Item of level 3 acquired	아이템 레벨 3 달성
+Item of level 6 acquired	아이템 레벨 6 달성
+Item of level 9 acquired	아이템 레벨 9 달성
+Item of level 12 acquired	아이템 레벨 12 달성
+All rare monsters slain	모든 희귀 몬스터 처치
+Amulet of Yendor obtained	옌더의 아뮬렛 획득
+Amulet of Yendor obtained by Warrior, Mage, Rogue & Huntress	모든 직업으로 옌더의 아뮬렛 획득
+7-hit combo	7연타 달성
+3 potions cooked	물약 3개 제조
+6 potions cooked	물약 6개 제조
+9 potions cooked	물약 9개 제조
+12 potions cooked	물약 12개 제조
+Level completed without killing any monsters	아무 몬스터도 처치하지 않고 층을 클리어
+Monster killed by a Grim weapon	음침한 무기로 몬스터 처치
+6 piranhas killed	피라냐 6마리 처치
+5 monsters killed at nighttime	밤에 몬스터 5마리 처치
+10 games played	게임 10회 플레이
+100 games played	게임 100회 플레이
+500 games played	게임 500회 플레이
+2000 games played	게임 2000회 플레이
+Happy end	행복한 결말
+Challenge won	도전 성공
+Thanks for your support!	도움에 감사드립니다!
+On diet	다이어트 중
+Faith is my armor	믿음이 나의 방패라
+Pharmacophobia	의약공포증
+Barren land	황무지
+Swarm intelligence	집단 지성
+Into darkness	어둠 속으로
+Forbidden runes	금지된 룬
+Well of Health	회복의 우물
+Well of Awareness	지식의 우물
+Well of Transmutation	변환의 우물
+Garden	정원
+Animated statue	살아 움직이는 조각상
+Sad ghost	슬픈 유령
+Old wandmaker	지팡이 깎는 노인
+Troll blacksmith	트롤 대장장이
+Ambitious imp	야심만만한 임프
+Killed by %1$s on level %2$d	%2$d층에서 %1$s에게 죽었습니다.
+Killed by your own %1$s on level %2$d	%2$d 층에서 당신의 %1$s에 의해서 사망
+Killed by the %1$s on level %2$d	%2$d층에서 %1$s에게 죽었습니다.
+Killed by discharge of %1$s on level %2$d	진행 깊이: %1$s \n층 수: %2$d
+Burned to death on level %d	%d 층에서 불에 타죽었습니다.
+Starved to death on level %d	%d 층에서 굶어 죽었습니다.
+Died from poison on level %d	%d 층에서 독에 의해 죽었습니다.
+Died from toxic gas on level %d	%d 층에서 독가스에 의해 죽었습니다.
+Bled to death on level %d	%d 층에서 출혈에 의해 죽었습니다.
+Killed by a caustic ooze on level %d	%d 층에서 부식성 점액에 의해 죽었습니다.
+Fell to death on level %d	%d 층에서 낙사 하였습니다.
+Obtained the Amulet of Yendor	옌더의 아뮬렛을 획득하였습니다.
+OK, a deal is a deal, dat's what I can do for you: I can reforge 2 items and turn them into one of a better quality.	알았다구, 약속은 약속이니깐, 내가 해줄 수 있는 건 이거야:  아이템 2개를 재련해서 더 나은 하나로 만들어주지.
+Select an item to reforge	재련할 아이템을 선택하세요
+Reforge them	재련한다
+Potions	물약
+Scrolls	두루마리
+Which way will you follow?	어느 길을 걸으시겠습니까?
+I'll decide later	나중에 결정할게
+Mastery	마스터리
+ERROR	오류
+Settings	설정
+Rankings	랭킹
+Start New Game	새 게임 시작
+Main Menu	메인 메뉴
+Exit Game	리믹스드 던전 종료
+Return to Game	게임으로 돌아가기
+Buffs	버프
+Experience	경험치
+Catalogus	카탈로그
+Oh yes! You are my hero!\nRegarding your reward, I don't have cash with me right now, but I have something better for you. This is my family heirloom ring: my granddad took it off a dead paladin's finger.	오 좋아! 큰 신세를 졌어!\n당장 줄 돈은 없지만, 그것보다 더 좋은 게 있어. 이 반지는 우리 집안의 가보인데, 울 할아버지가 죽은 성기사의 손가락에서 빼내온 거라고 해.
+Take the ring	반지를 가져간다
+There is nothing here.	여긴 아무것도 없습니다.
+Chest	보물 상자
+Locked chest	잠긴 보물 상자
+Crystal chest	수정 보물 상자
+Tomb	무덤
+Skeletal remains	뼈 무더기
+You won't know what's inside until you open it!	열어보기 전까지는 뭐가 안에 들었는지 알 길이 없다.
+ But to open it you need a golden key.	하지만 열어보려면 황금 열쇠가 필요하다.
+You can see %s inside, but to open the chest you need a golden key.	당신은 안에 들어있는 %s를 볼 수 있지만, 보물 상자를 열려면 황금 열쇠가 필요하다. 
+This ancient tomb may contain something useful, but its owner will most certainly object to checking.	이 고대의 무덤에는 뭔가 쓸만한게 들어 있겠지만, 그 주인은 당연히 열어보는걸 매우 싫어할 것이다.
+This is all that's left from one of your predecessors. Maybe it's worth checking for any valuables.	이것은 당신의 선조들 중 하나가 남긴 것일 뿐이다. 귀한게 있는지 조사해 볼 가치가 있을지도 모른다.
+Journal	일지
+Unable to load additional information	추가 정보를 로드하지 못했음
+Stats	스탯
+Items	아이템
+Badges	업적
+Level %1$d %2$s	Level %1$d %2$s
+Challenges	도전
+Health	체력
+Strength	힘
+Game Duration	플레이 시간
+Maximum Depth	최대 깊이
+Mobs Killed	죽인 몬스터
+Gold Collected	획득한 금화
+Food Eaten	먹은 음식
+Potions Cooked	제조된 물약
+Ankhs Used	사용한 앙크
+You died, but you were given another chance to win this dungeon. Will you take it?	당신은 죽었지만, 이 던전을 정복하기 위한 기회가 한 번 더 주어졌습니다. 받아들이겠습니까?
+Yes, I will fight!	그래, 난 싸우겠어!
+No, I give up	아니, 포기할래
+Ghost's weapon	유령의 무기
+Ghost's armor	유령의 갑옷
+Farewell, adventurer!	잘가요, 모험가님!
++	+
+-	-
+Default Zoom	기본 배율
+Scale up UI	확대 UI
+Immersive mode	실감 모드
+Music	음악
+Sound FX	Sound FX
+Brightness	밝기
+Second quickslot	두 번째 퀵 슬롯
+Switch to portrait	세로 모드로 전환
+Switch to landscape	가로 모드로 전환
+The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	던전은 도시 아래 위치하고 있습니다. 실제로 상위 레벨은 도시의 하수 시스템이 구성되어 있습니다. 명목상 도시의 일부이기 때문에 이 수준은 위험하지 않습니다. 아무도 이곳을 안전하게 요청하지 않았기 때문에 당신은 여기에 모든 사악한 마법을 전부 처리 할 필요는 없습니다.
+Many years ago an underground prison was built here for the most dangerous criminals. At the time it seemed like a very clever idea, because this place indeed was very hard to escape. But soon dark miasma started to permeate from below, driving prisoners and guards insane. In the end the prison was abandoned, though some convicts were left locked up here.	몇 년 전 위험한 범죄자들을 가두기 위해 지하감옥이 여기에 세워졌습니다. 이곳은 매우 탈출하기 어려웠기때문에 당시에는 좋은 생각처럼 보였습니다. 그러나 곧 어두운 독기가 간수와 죄수들에게 침투해 그들이 미치기 시작했습니다. 결국 일부 죄수가 남아있었지만 지하감옥은 버려졌습니다.
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	그 동굴은, 버려진 지하감옥 밑에 있었습니다. 그들이 이용하기에 너무 깊은 곳에 있었고 미네랄에 관심이 있는 드워프들은 가난했습니다. 과거에 두 도시사이에 무역전초 기지가 있었지만 드워프의 도시가 쇠퇴한뒤에 사라졌습니다. 그곳엔 아직 놀과 지하동물들이 있습니다.
+Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday the mechanized army of dwarves has successfully repelled the invasion of the old god and his demon army. But it is said, that the returning warriors have brought seeds of corruption with them, and that victory was the beginning of the end for the underground kingdom.	드워프 메트로폴리스는 한때 드워프의 도시국가중 제일 거대했다. 전성기에 드워프의 기계화 군대가 고대신과 악마군대의 침공을 성공적으로 물리쳤다. 그러나 돌아온 전사들은 타락했고 그 승리가 지하왕국의 종말의 시작이라고 말하고 있다.
+In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	과거에 이러한 수준은 대도시의 외곽정도였다. 이전에 드워프와 고대신과의 전쟁에서 승리한 후 비용이 너무 많이 드는 나머지, 남은 약화된 악마들을 소탕하지 않았다. 그러자 점차 악마들은 점차 지역을 지배하고 악마들을 소환하기 시작했다. 극소수의 모험가의 후손들에게만 전해져...
+FOR SALE: %1$s - %2$dg	할인 : %1$s - %2$dg
+Buy for %dg	구매 %dg
+Sell for %dg	판매 %dg
+Sell 1 for %dg	판매 1개당 %dg
+Sell all for %dg	모두 판매 %dg
+You've sold your %1$s for %2$dg	%1$s 을/를 %2$dg 에 판매했습니다.
+You've bought %1$s for %2$dg	%1$s 을/를 %2$dg 에 구매했습니다.
+Oh, I see you have succeeded! I do hope it hasn't troubled you too much. As I promised, you can choose one of my high quality wands.	오, 성공했군! 자네를 너무 귀찮게 하지 않았기를 바라네. 약속한 대로, 내 질 좋은 마법 막대들 중 하나를 선택하게나.
+Battle wand	전투용 마법 막대
+Non-battle wand	보조용 마법 막대
+Good luck in your quest, %s!	자네의 임무에 행운을 빌겠네, %s!
+Select an item for the quickslot	퀵슬롯에 등록할 아이템을 선택하세요.
+smth	어떤것
+DROP	버리기
+THROW	던지기
+Your pack is too full for the %s	가방이 가득차서 %s을/를 넣을 수 없습니다.
+Choose direction of throw	던질 방향을 선택하세요
+EQUIP	장착
+UNEQUIP	해제
+You can't remove cursed %s!	%s 은/는 저주로 인해 해제 할 수 없습니다!
+Amulet of Yendor	옌더의 부적
+END THE GAME	END THE GAME
+The Amulet of Yendor is the most powerful known artifact of unknown origin. It is said that the amulet is able to fulfill any wish if its owner's will-power is strong enough to "persuade" it to do it.	옌더의 부적은 정체불명의 가장 강력한 유물입니다. 이 부적은 소유자의 의지가 충분하다면 어떤 소원이든 성취할 수 있다고 합니다.
+Ankh	앙크
+The ancient symbol of immortality grants an ability to return to life after death. Upon resurrection all non-equipped items are lost.	영생을 상징하는 고대의 물건으로 소유자의 생명을 되살릴 수 있는 능력이 있습니다. 부활할 시 장착하지 않은 모든 아이템은 손실됩니다.
+armor kit	방어구 키트
+Using this kit of small tools and materials anybody can transform any armor into an "epic armor", which will keep all properties of the original armor, but will also provide its wearer a special ability depending on his class. No skills in tailoring, leatherworking or blacksmithing are required.	이 키트를 사용하면 기존 방어구의 모든 속성을 유지한 상태로 "에픽 방어구"로 변환할 수 있습니다. 이 키트를 사용하면 자신의 직업에 따른 특별한 기능을 제공하며,  여기에 재봉술이나 무두질 또는 대장장이 기술 같은 능력은 필요하지 않습니다.
+Select an armor to upgrade	강화할 방어구를 선택하세요.
+you applied the armor kit to upgrade your %s	%s 에 방어구 키트를 적용했습니다.
+dewdrop	이슬
+A crystal clear dewdrop.	수정처럼 맑은 이슬입니다.
+dew vial	이슬병
+You can store excess dew in this tiny vessel for drinking it later. If the vial is full, in a moment of deadly peril the dew will be consumed automatically.	이 작은 병에 넘치는 이슬을 저장할 수 있습니다. 나중에 병이 가득 차면, 치명적인 위험이 닥친 순간에 이슬이 자동으로 소비됩니다.
+The dew vial was emptied to heal your wounds.	이슬병이 당신의 상처를 치유하기 위해 비워졌습니다.
+You collected a dewdrop into your dew vial.	이슬을 이슬병에 모았습니다.
+Your dew vial is full!	이슬병이 가득 찼습니다.
+Your dew vial is empty!	이슬병이 비어있습니다.
+This is a mimic!	이것은 미믹이다!
+gold	금화
+Collect gold coins to spend them later in a shop.	나중에 상점에서 사용할 수 있는 금화를 수집하세요.
+A pile of %d gold coins.	%d개의 금화더미
+One gold coin.	금화 한 개.
+you wince as your grip involuntarily tightens around your %s	%s 주위로 몰려드는 강한 느낌에 당신은 잠시 주춤했습니다.
+lloyd's beacon	로이드의 신호기
+SET	위치 설정
+RETURN	돌아가기
+Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	로이드의 신호기는 저장된 위치로 귀환할 수 있는 복잡한 마법 장치 입니다.
+Strong magic aura of this place prevents you from using the lloyd's beacon!	이곳의 강력한 마력이 로이드의 신호기를 사용하지 못하게 막고 있습니다!
+Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	주변 생물의 영향력 때문에 로이드의 신호기를 사용할 수 없습니다.
+The lloyd's beacon is successfully set at your current location, now you can return here anytime.	로이드의 신호기가 귀환 위치를 설정하는데 성공했습니다. 이제 언제든지 당신은 여기로 귀환할 수 있습니다.
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\n이 신호기는 리믹스드 던전 %d층 어딘가에 귀환 위치를 설정하였습니다.
+Tome of Mastery	전직의 서
+Tome of Remastery	전직의 서
+This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	두껍지 않지만 가죽으로 마감된 이 책은 읽는데 시간이 좀 걸리겠지만 당신에게 많은 영감을 줄 수 있다는 걸 명심하세요.
+You can't read while blinded	눈이 먼 상태에서는 읽을 수 없습니다.
+You have chosen the way of the %s!	%s의 길을 선택했습니다.
+torch	횃불
+LIGHT	발광
+It's an indispensable item in The Demon Halls, which are notorious for their poor ambient lighting.	이건 어두침침한 악마의 회랑 에서는 필수적인 아이템입니다.
+weightstone	무게추
+APPLY	적용
+Using a weightstone, you can balance your melee weapon to increase its speed or accuracy.	무게추를 사용해 근접 무기의 무게중심을 조절하여 무기의 공격 속도나 정확성을 높일 수 있습니다.
+Select a weapon to balance	무게중심을 조절할 무기를 선택하세요.
+you balanced your %s to make it faster	%s의 무게중심을 공격 속도에 맞췄다.
+you balanced your %s to make it more accurate	%s의 무게중심을 정확성에 맞췄다.
+How would you like to balance your %s?	%s 의 무게중심을 어떻게 조절하시겠습니까?
+For speed	공격 속도
+For accuracy	정확성
+Never mind	나중에
+PLANT	심기
+Throw this seed to the place where you want to grow %1$s.\n\n%2$s	 %1$s를 심고 싶은 곳에 이 씨앗을 던지십시오.\n\n%2$s
+seed of %s	%s 의 씨앗
+Dreamweed	꿈결초
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	꿈결초를 만진다면 반짝이는 혼란 가스를 뿜어낼 것이다.
+Earthroot	뱀뿌리
+When a creature touches an Earthroot, its roots create a kind of natural armor around it.	생명체가 뱀뿌리를 만든다면, 뱀뿌리의 뿌리가 그 생명체의 주위에 자연의 갑옷을 만들어 줄 것이다.
+Herbal armor	자연의 갑옷
+Fadeleaf	미명초
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	미명초를 만지면 현재 층의 무작위 위치로 보낼 것이다. 
+Firebloom	화염초
+When something touches a Firebloom, it bursts into flames.	어떤 것이든 화염초를 건드린다면, 화염에 휩싸일 것이다.
+Icecap	얼음송이
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	얼음송이를 만진다면 근처의 모든 것을 얼려버리는 꽃가루를 뿜어낼 것이다.
+Rotberry	썩은딸기의 씨
+Berries of this shrub taste like sweet, sweet death.	이 나무 열매의 맛은 달콤하다- 달콤한 죽음.
+The seed emits a roar that echoes throughout the dungeon!	그 씨앗은 으르렁하는 소리를 내었고, 그 소리는 던전 전체로 퍼져나갔다.
+Sorrowmoss	슬픔이끼
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	슬픔이끼는 면도날처럼 날카롭고 치명적인 독이 묻은 꽃잎으로된 꽃이다(이끼가 아님).
+Sungrass	태양초
+Sungrass is renowned for its sap's healing properties.	태양초는  그 수액의 회복 효과로 유명하다.
+Herbal healing	약초 요법
+your %s constricts around you painfully	당신의 %s 이/가 몸을 고통스럽게 조여온다
+Interaction of different types of magic has erased the glyph on this armor!	서로 다른 마법간의 상호작용으로 갑옷의 각인이 지워져 버렸다!
+\n\nThis %1$s provides damage absorption up to "%2$d"  points per attack.	이 %1$s 은/는 공격 당 최대  "%2$d" 데미지를 흡수할 수 있다
+\n\nBecause of your inadequate strength your movement speed and defense skill is decreased. 	\n\n힘이 부족하여 움직임이 느려지고 방어능력이 떨어졌습니다.
+\n\nBecause of your inadequate strength wearing this armor will decrease your movement speed and defense skill.	\n\n이 갑옷을 입기 위한 힘이 부족하여 착용하면 움직임이 느려지고 방어 능력이 떨어질 것이다.
+\n\nTypical %1$s provides damage absorption up to %2$d points per attack and requires %3$d points of strength.	\n\n일반적인 %1$s 은/는 최대 %2$d 데미지를 흡수하고 힘 %3$d을 필요로 한다.
+Probably this armor is too heavy for you.	아마 당신에게는 갑옷이 너무 무거워 보인다.
+\n\nYou are wearing the %1$s%2$s.	\n\n당신은 %1$s%2$s 을/를 착용하고 있다.
+\n\nYou can feel a malevolent magic lurking within the %s.	\n\n %s안에 해로운 마법이 숨어있음을 느낄 수 있다.
+The thing looks awesome!	굉장해 보이는군!
+Your health is too low!	쓰러지기 일보 직전입니다!
+You need to be wearing this armor to use its special power!	갑옷의 특별한 힘을 이용하기 위해서는 입고 있어야 합니다.
+cloth armor	천 갑옷
+This lightweight armor offers basic protection.	이 가벼운 갑옷은 기본적인 방어력을 제공한다.
+huntress cloak	사냥꾼의 망토
+A huntress in such cloak can create a fan of spectral blades. Each of these blades will target a single enemy in the huntress's field of view, inflicting damage depending on her currently equipped melee weapon.	이 망토를 착용한 사냥꾼은 귀검 부채를 만들어낼 수 있다.각 칼날 하나마다 시야에 들어온 적 하나씩을 노리고, 착용중인 근접 무기의 공격력에 따라 피해를 준다.
+SPECTRAL BLADES	귀검
+No enemies in sight	시야 내에 적이 없다.
+Only huntresses can use this armor!	이 갑옷은 사냥꾼만 착용 가능하다.
+leather armor	가죽 갑옷
+Armor made from tanned monster hide. Not as light as cloth armor but provides better protection.	몬스터의 가죽을 무두질해 만든 갑옷. 천 갑옷만큼 가볍지는 않지만 더 나은 방어력을 제공한다.
+mage robe	마법사의 로브
+Wearing this gorgeous robe, a mage can cast a spell of molten earth: all the enemies in his field of view will be set on fire and unable to move at the same time.	이 화려한 로브를 입고있는 마법사는 용암 분출 주문을 사용할 수 있다; 시야 내 모든 적에게 불을 붙이고 움직일 수 없게 한다.
+MOLTEN EARTH	용암 분출
+Only mages can use this armor!	이 갑옷은 마법사만 착용 가능하다
+mail armor	사슬 갑옷
+Interlocking metal links make for a tough but flexible suit of armor.	갑옷을 단단하면서도 유연하게 하기 위하여 쇠사슬을 엮어 만들었다.
+plate armor	판금 갑옷
+Enormous plates of metal are joined together into a suit that provides unmatched protection to any adventurer strong enough to bear its staggering weight.	많은 철판들을 서로 연결해 한 벌로 만들어, 이 엄청난 무게를 견딜 수 있는 모험자들에게 어마어마한 방어력을 제공한다.
+rogue garb	도적의 의복
+Wearing this dark garb, a rogue can perform a trick, that is called "smoke bomb" (though no real explosives are used): he blinds enemies who could see him and jumps aside.	이 어둠의 의복을 입는다면, 로그는 "연막탄" 이라는 기술를 부릴 수 있게 된다 (폭발물을 사용하진 않지만): 적들의 눈을 멀게 하고 옆으로 회피한다.
+SMOKE BOMB	연막탄
+Only rogues can use this armor!	이 갑옷은 도적만 착용 가능하다
+You can only jump to an empty location in your field of view	시야 내의 빈 위치에만 이동할 수 있다.
+Choose a location to jump to	이동할 위치 선택
+scale armor	미늘 갑옷
+The metal scales sewn onto a leather vest create a flexible, yet protective armor.	가죽 조끼 표면에 철판을 꿰메어 유연하면서도 방어력이 강한 갑옷을 만들었다.
+warrior suit of armor	전사의 갑주
+While this armor looks heavy, it allows a warrior to perform heroic leap towards a targeted location, slamming down to stun all neighboring enemies.	이 갑옷이 보기엔 무거워 보일지 모르나 착용한 전사에게 영웅의 도약을 가능케 한다. 영웅의 도약으로 목표 지점을 강하게 내리치며 주변의 모든 적을 기절시킬 수 있다.
+HEROIC LEAP	영웅의 도약
+Only warriors can use this armor!	이 갑옷은 전사만 착용 가능하다.
+Choose direction to leap	도약할 방향을 선택하라.
+%s of affection	매혹의 %s 
+%s of anti-entropy	반 엔트로피의 %s
+%s of bounce	탄력의 %s
+%s of displacement	이동의 %s
+%s of entanglement	속박 %s
+%s of metabolism	신진대사의 %s
+%s of multiplicity	다중성의 %s
+%s of potential	전격의 %s
+%s of stench	악취의 %s
+%s of viscosity	점성의의 %s
+deferred %d	지속적으로 %d
+OPEN	열기
+key ring	열쇠고리
+This is a copper key ring, that lets you keep all your keys separately from the rest of your belongings.	이것은 열쇠들이 가방에서 자리를 차지하지 않도록, 따로 보관할 수 있는 구리로 된 열쇠고리 입니다.
+scroll holder	두루마리 보관함
+You can place any number of scrolls into this tubular container. It saves room in your backpack and protects scrolls from fire.	이 관 형태의 보관함에 두루마리를 보관할 수 있습니다. 이 보관함은 공간을 절약하고 화재로부터 두루마리를 보호합니다.
+seed pouch	씨앗 주머니
+This small velvet pouch allows you to store any number of seeds in it. Very convenient.	이 작은 벨벳 주머니는 씨앗들을 저장할 수 있습니다. 매우 편리합니다.
+wand holster	마법 막대 보관함
+This slim holder is made of leather of some exotic animal. It allows to compactly carry up to %d wands.	이 얇은 마법 막대 보관함은 이국적인 동물의 가죽으로 만들었습니다. 이것은 당신에게 %d개의 마법 막대를 보관할 수 있게 해줍니다.
+ration of food	비상 식량
+Nothing fancy here: dried meat, some biscuits - things like that.	말린 고기, 비스킷 몇 개 등의 특별할 것 없는 식량입니다.
+That food tasted delicious!	그 음식은 맛있었습니다!
+chargrilled meat	익힌 고기
+It looks like a decent steak.	괜찮은 스테이크처럼 구워졌다.
+frozen carpaccio	얼린 생고기
+It's a piece of frozen raw meat. The only way to eat it is by cutting thin slices of it. And this way it's surprisingly good.	냉동시킨 고기 조각. 이걸 먹는 방법은 고기를 얇게 썰어서 먹는 것이다. 그리고 이렇게 먹으면 아주 맛이 좋다.
+You feel your skin hardens!	당신은 피부가 단단해 지는게 느껴진다.
+Refreshing!	상쾌하군!
+You feel better!	당신은 기분이 좋아졌다
+mystery meat	알 수 없는 고기
+Eat at your own risk!	상했을 수 있습니다
+Oh it's hot!	으, 뜨거워!
+You can't feel your legs!	다리에 감각이 느껴지지 않는다!
+You are not feeling well.	당신은 기분이 좋지 않다.
+You are stuffed.	당신은 배가 부르다.
+That food tasted... strange.	이 음식.... 맛이 이상하군.
+overpriced food ration	비싼 비상 식량
+It looks exactly like a standard ration of food but smaller.	일반적인 비상 식량과 똑같이 생겼지만 크기가 좀 더 작습니다.
+That food tasted good.	맛이 좋습니다.
+pasty	파스티
+This is authentic Cornish pasty with traditional filling of beef and potato.	소고기와 감자를 넣어 전통 방법으로 요리한 영국식 파스티이다.
+golden key	황금 열쇠
+The notches on this golden key are tiny and intricate. Maybe it can open some chest lock?	이 황금 열쇠는 작고 복잡한 홈이 있습니다. 아마 어떤 상자의 잠금 장치를 열 수 있지 않을까요?
+iron key	열쇠
+The notches on this ancient iron key are well worn; its leather lanyard is battered by age. What door might it open?	열쇠에 있는 홈이 많이 닳아있고 가죽끈은 오래 써서 낡아 보입니다. 이걸로 어떤 문을 열 수 있을까요?
+iron key from depth %d	이 열쇠는 %d층 열쇠 입니다.
+skeleton key	해골 열쇠
+This key looks serious: its head is shaped like a skull. Probably it can open some serious door.	이 열쇠는 중요해 보입니다. 열쇠 머리 부분이 해골 모양입니다. 아마도 중요한 문을 열 수 있을 것 같습니다.
+%s potion	%s 물약
+This flask contains a swirling %s liquid. Who knows what it will do when drunk or thrown?	이 플라스크는 속에 출렁이는 %s 액체를 담고 있습니다. 마시거나 던지면 과연 무슨 일이 일어날까요?
+DRINK	마시기
+Harmful potion!	해로운 물약!
+Beneficial potion	이로운 물약
+Are you sure you want to drink it? In most cases you should throw such potions at your enemies.	정말 마실건가요? 대부분의 상황에서 이런 물약들은 당신의 적들에게 던지는 용도로 사용해야 합니다.
+Are you sure you want to throw it? In most cases it makes sense to drink it.	정말 던질건가요? 대부분의 경우에서 이런 물약들은 마시는 것이 타당할 것입니다.
+The flask shatters and %s liquid splashes harmlessly	플라스크가 산산조각나고 %s 액체가 무해하게 사방으로 튀었습니다.
+turquoise	청록색
+crimson	진홍색
+azure	하늘색
+jade	비취색
+golden	금색
+magenta	자홍색
+charcoal	암회색
+ivory	상아색
+amber	호박색
+bistre	암갈색
+indigo	남색
+silver	은색
+Potion of Experience	경험의 물약
+The storied experiences of multitudes of battles reduced to liquid form, this draught will instantly raise your experience level.	이야기속에 나오는 수많은 전투 경험들이 액체 형태로 축약된  물건으로,이 물약은  당신의 경험치 레벨을  즉시 올려줄 것입니다.
+Potion of Frost	서리의 물약
+Upon exposure to open air, this chemical will evaporate into a freezing cloud, causing any creature that contacts it to be frozen in place, unable to act and move.	바깥에 노출시킨다면, 이 화학물은 냉기 구름으로 기화되어서 닿는 생물체들을 그 자리에서 얼려버려서, 움직이는 것을 불가능하게 만들 것입니다.
+Potion of Healing	회복의 물약 
+An elixir that will instantly return you to full health and cure poison.	순식간에 체력을 완전히 회복시켜주고 중독을 치료하는 묘약이다.
+Your wounds heal completely.	상처가 완전히 회복되었다.
+Potion of Invisibility	투명화의 물약
+Drinking this potion will render you temporarily invisible. While invisible, enemies will be unable to see you. Attacking an enemy, as well as using a wand or a scroll before enemy's eyes, will dispel the effect.	이 물약을 마시면 잠시동안 당신의 모습을 투명하게  만들어 줄 것입니다. 투명화된 동안 적들은 당신을 볼 수 없을 것입니다.적의 시야에서 적을 공격하거나 마법봉 또는 두루마리를 사용하면 효과가 풀릴 것입니다.
+You see your hands turn invisible!	당신의 손이 눈앞에서 투명하게 변했습니다!
+Potion of Levitation	공중부양의 물약
+Drinking this curious liquid will cause you to hover in the air, able to drift effortlessly over traps. Flames and gases fill the air, however, and cannot be bypassed while airborne.	이 흥미로운 액체를 마시게되면 몸이 공중에 뜨게되어, 함정 위를 수월하게 지나갈 수 있을 것입니다. 하지만 가스나 화염은 대기를 채우기 때문에 공중에 떠 있는 중이라도 무시하고 건너갈 수 없을 것입니다.
+You float into the air!	공기 중으로 두둥실 떴다!
+Potion of Liquid Flame	액체화염의 물약
+This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	플라스크는 외부에 노출되면 폭발하며 화염을 일으키는 불안정한 혼합물로 가득차 있습니다.
+Potion of Might	용력의 물약
+This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	이 강력한 액체는 당신의 근육으로 퍼져, 영구적으로 당신에게 1의 힘과 5의 체력을 증가시켜 줄 것입니다.
++1 str, +5 ht	+1 힘, +5 체력
+Potion of Mind Vision	심안의 물약
+After drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls. Also this potion will permit you to see through nearby walls and doors.	이걸 마신 후에는, 당신의 마음이 멀리 떨어진 생명체의 정신신호와 공명하게 되어, 생물의 존재감을 벽너머로도 감지할 수 있을 것입니다. 또한 이 물약은 가까이 있는 벽과 문 너머를 볼 수 있는 능력을 줄 것입니다.
+You can somehow feel the presence of other creatures' minds!	당신은 왠지 다른 생물들의 존재를 느낄 수 있게 되었다!
+You can somehow tell that you are alone on this level at the moment.	당신은 어떻게든 지금 이 순간 이 층에는 당신 혼자 뿐이란걸 느낄 수 있게 되었다.
+Potion of Paralytic Gas	마비가스의 물약
+Upon exposure to open air, the liquid in this flask will vaporize into a numbing yellow haze. Anyone who inhales the cloud will be paralyzed instantly, unable to move for some time after the cloud dissipates. This item can be thrown at distant enemies to catch them within the effect of the gas.	이 플라스크 안의 액체가 공기에 닿으면,  증발하여 마비를 일으키는 노란 안개로 바뀐다. 누구든 이 증기를 흡입하게되면 순간적으로 마비를 일으키고, 안개가 가신 후에도 얼마동안은 움직일 수 없게된다. 멀리있는 적에게 이 아이템을 던져서 적을 가스속에 가둘 수 있다.
+Potion of Purification	정화의 물약
+This reagent will quickly neutralize all harmful gases in the area of effect. Drinking it will give you a temporary immunity to such gases.	이 시약은 유효 범위내의 모든 해로운 가스들을 빠르게 정화한다. 마셨을 땐 그런 가스들에 대해 면역이 잠시동안 생긴다.
+You feel uncommon freshness in the air.	비범한 상쾌함이 공기에서 느껴진다.
+You've stopped sensing any smells!	잠시동안 아무런 냄새도 맡을 수 없게 되었다!
+Potion of Strength	힘의 물약
+This powerful liquid will course through your muscles, permanently increasing your strength by one point.	이 강력한 액체는 근육으로 퍼져 영구적으로 힘을 1 증가시킨다.
+Newfound strength surges through your body.	새로운 힘이 당신 몸속으로 밀려든다.
++1 str	+1 힘
+Potion of Toxic Gas	독가스의 물약
+Uncorking or shattering this pressurized glass will cause its contents to explode into a deadly cloud of toxic green gas. You might choose to fling this potion at distant enemies instead of uncorking it by hand.	이 유리병을 열거나 충격을 가하면 치명적인 독성의 녹색 가스가 폭발합니다. 선택하세요. 당신의 손으로 열거나 적에게 던지거나 당신 마음입니다.
+corpse dust	시체 먼지
+The ball of corpse dust doesn't differ outwardly from a regular dust ball. However, you know somehow that it's better to get rid of it as soon as possible.	이 시체 먼지 덩어리는 다른 먼지 덩어리랑 별 차이 없어 보입니다. 하지만 당신은 사악한 에너지가 이것을 감싸고 있는 것을 느낍니다.\n\n가능한 한 빨리 없애 버리는 게 좋을 것입니다.
+dark gold ore	어두운 금 원석
+This metal is called dark not because of its color (it doesn't differ from the normal gold), but because it melts under the daylight, making it useless on the surface.	이 금속이 이러한 이름이 붙은 이유는 사실 평범한 금과 별로 달라 보이지 않지만, 태양빛 아래에 두면 녹아버려 쓸모가 없어져 버리기 때문입니다.
+dried rose	매마른 장미
+The rose has dried long ago, but it has kept all its petals somehow.	긴 시간 동안 매마른 장미이지만, 어째선지 모든 꽃잎을 유지하고 있습니다.
+dwarf token	드워프 주화
+Many dwarves and some of their larger creations carry these small pieces of metal of unknown purpose. Maybe they are jewelry or maybe some kind of ID. Dwarves are strange folk.	많은 드워프들은 자신들의 작품을 가지고 다니지만, 그 중 일부는 목적을 알 수 없는 작은 조각을 지니고 있습니다. 어쩌면 보석이거나 신분증을 대신하는 그런 종류 같습니다. 드워프는 조금 별나군요.
+EAT	먹기
+pickaxe	곡괭이
+This is a large and sturdy tool for breaking rocks. Probably it can be used as a weapon.	이 크고 튼튼한 도구는 바위를 파괴하기 위한 도구입니다. 아마 무기로도 사용할 수 있을꺼 같네요.
+MINE	광산
+There is no dark gold vein near you to mine	근처에 캘 수 있는 어두운 금 원석이 없습니다.
+giant rat skull	거대 쥐의 두개골
+It could be a nice hunting trophy, but it smells too bad to place it on a wall.	아주 좋은 사냥 기념품이 될 수 있겠지만...벽에 걸어놓기에는 악취가 너무 심합니다.
+%s ring	%s 반지
+This metal band is adorned with a large %s gem that glitters in the darkness. Who knows what effect it has when worn?	이 금속 고리는 어둠 속에서 빛나는 커다란 %s 보석으로 장식되어 있습니다. 착용했을 때 어떤 효과가 나타날까요?
+you are now familiar enough with your %1$s to identify it. It is %2$s.	당신은 %1$s 에 충분히 친숙해져서 그것의 정체를 알게 되었다. 그것은 %2$s이다.
+diamond	다이아몬드
+opal	오팔
+garnet	가넷
+ruby	루비
+amethyst	자수정
+topaz	토파즈
+onyx	줄마노
+tourmaline	토르말린
+emerald	에메랄드
+sapphire	사파이어
+quartz	석영
+agate	마노
+Your %s tightens around your finger painfully	%s 이/가 당신의 손가락을 고통스럽게 조여옵니다.
+%1$s\n\nThe %2$s is on your finger %3$s.	%1$s\n\n %2$s 은/는 당신의 손가락 %3$s에 있습니다.
+, and because it is cursed, you are powerless to remove it	그리고 저주로 인해, 당신은 그것을 벗을 수가 없습니다
+%1$s\n\nYou can feel a malevolent magic lurking within the %2$s.	%1$s\n\n당신의 %2$s안에 숨어있는 마법의 기운을 느낄 수 있습니다.
+This is a %s	이것은 %s 입니다.
+Ring of Accuracy	명중의 반지
+This ring increases your chance to hit the enemy.	이 반지는 당신의 공격이 적중할 확률을 높여줍니다.
+Ring of Detection	감지의 반지
+Wearing this ring will allow the wearer to notice hidden secrets - traps and secret doors - without taking time to search. Degraded rings of detection will dull your senses, making it harder to notice secrets even when actively searching for them.	이 반지를 착용시 검색에 턴을 소모하지 않고 함정과 비밀의 문을 발견할 수 있습니다. 역강화된 반지는 당신의 감각을 둔화시켜 함정과 비밀의 문을 찾기 위해 검색해도 발견하기 어렵게 만듭니다.
+Ring of Elements	원소의 반지
+This ring provides resistance to different elements, such as fire, electricity, gases etc. Also it decreases duration of negative effects.	이 반지는 부정적인 효과의 지속시간을 감소시키고 화염, 전격, 가스 등에 대한 저항력을 높여줍니다.
+Ring of Evasion	회피의 반지
+This ring increases your chance to dodge enemy attack.	이 반지는 적의 공격을 회피할 확률을 상승시켜 줍니다.
+Ring of Haggler	흥정꾼의 반지
+In fact this ring doesn't provide any magic effect, but it demonstrates to shopkeepers and vendors, that the owner of the ring is a member of The Thieves' Guild. Usually they are glad to give a discount in exchange for temporary immunity guarantee. Upgrading this ring won't give any additional bonuses.	사실, 이 반지는 어떤 마법적 효과도 지니고 있지 않습니다. 그러나 이 반지의 소유주가 도둑길드 소속이라는 것을 상점주인에게 알리는 역할을 합니다. 그들은 이 반지에 대한 보증으로 할인을 제공합니다. 이 반지는 강화해도 추가 보너스를 제공하지 않습니다.
+Ring of Haste	가속의 반지
+This ring accelerates the wearer's flow of time, allowing one to perform all actions a little faster.	이 반지는 착용자의 시간의 흐름을 가속해 더 많은 행동을 할 수 있도록 합니다.
+Ring of Herbalism	약초의 반지
+This ring increases your chance to gather dew and seeds from trampled grass.	이 반지는 수풀에서 이슬과 씨앗을 발견할 확률을 높여줍니다.
+Ring of Mending	회복의 반지
+This ring increases the body's regenerative properties, allowing one to recover lost health at an accelerated rate. Degraded rings will decrease or even halt one's natural regeneration.	이 반지는 신체의 재생속도를 증가시켜 빠르게 체력을 회복합니다. 역강화된 반지는 자연재생을 감소시키거나 중지시킵니다.
+Ring of Power	힘의 반지
+Your wands will become more powerful in the energy field that radiates from this ring. Degraded rings of power will instead weaken your wands.	당신의 마법봉이 이 반지에서 나오는 힘의 장막에 의해 더 강해질 것입니다. 역강화된 반지는 당신의 마법봉의 힘을 약화시킵니다.
+Ring of Satiety	포만의 반지
+Wearing this ring you can go without food longer. Degraded rings of satiety will cause the opposite effect.	이 반지는 당신이 음식없이 오랫동안 행동할 수 있게 해줍니다. 역강화된 반지는 반대의 효과를 줍니다.
+Ring of Shadows	은신의 반지
+Enemies will be less likely to notice you if you wear this ring. Degraded rings of shadows will alert enemies who might otherwise not have noticed your presence.	이 반지를 착용하면 적들이 당신을 발견할 확률을 줄여 줍니다. 역강화된 반지는 당신의 존재를 적들에게 알려줍니다.
+Ring of Thorns	가시의 반지
+Though this ring doesn't provide real thorns, an enemy that attacks you will itself be wounded by a fraction of the damage that it inflicts. Upgrading this ring won't give any additional bonuses.	이 반지는 실제로 가시를 돋아나게 하지는 않습니다. 그러나 적이 공격하는 피해의 일부분을 다시 적에게 되돌려줍니다. 이 반지는 강화해도 추가 보너스를 제공하지 않습니다.
+scroll "%s"	"%s" 두루마리
+This parchment is covered with indecipherable writing, and bears a title of rune %s. Who knows what it will do when read aloud?	이 양피지는 판독할 수 없는 룬 문자 %s로 덮여있습니다. 누가 이것을 소리내어 읽을때 어떤 일이 일어날까요?
+KAUNAN	카우난
+SOWILO	소윌로
+LAGUZ	라구즈
+YNGVI	잉그비
+GYFU	가이푸
+RAIDO	라이도
+ISAZ	이사즈
+MANNAZ	만나즈
+NAUDIZ	나우디즈
+BERKANAN	버카난
+ODAL	오쌀란
+TIWAZ	티와즈
+Select an item	아이템을 선택하세요.
+Do you really want to cancel this scroll usage? It will be consumed anyway.	정말 이 두루마리의 사용을 취소 하시겠습니까? 그래도 두루마리는 소모될 것입니다.
+Yes, I'm positive	응, 괜찮아.
+Scroll of Challenge	도전의 두루마리
+When read aloud, this scroll will unleash a challenging roar that will awaken all monsters and alert them to the reader's location.	도전의 두루마리를 소리내어 읽을때,이 두루마리는 모든 몬스터를 깨우고 모든 몬스터가 읽은 사람의 위치로 모여들게 만드는 함성을 지를 것입니다.
+The scroll emits a challenging roar that echoes throughout the dungeon!	두루마리가 던전을  꿰뚫는 도전적인 표효를 방출했습니다!
+Scroll of Identify	식별의 두루마리
+Permanently reveals all of the secrets of a single item.	영구적으로 아이템의 비밀을 보여줍니다.
+Select an item to identify	식별할 아이템을 선택하세요.
+It is %s	이것은 %s 입니다.
+Scroll of Lullaby	자장가의 두루마리
+A soothing melody will put all creatures in your field of view into a deep sleep, giving you a chance to flee or make a surprise attack on them.	이 부드러운 멜로디는 시야안에 있는 모든 생물에게 깊은 잠에 빠지게 합니다. 당신은 도망가거나 이들에게 기습공격를 가할 수 있습니다.
+The scroll utters a soothing melody.	두루마리에서 부드러운 멜로디가 흘러나옵니다.
+The scroll utters a soothing melody and the %s falls asleep!	두루마리가  %s 에게  잠이 오게 하는 부드러운 멜로디를 들려주었습니다!
+The scroll utters a soothing melody and the monsters fall asleep!	두루마리에서 부드러운 멜로디가 흘러나와 몬스터들이 깊은 잠에 빠졌습니다!!
+Scroll of Magic Mapping	마법 지도의 두루마리
+When this scroll is read, an image of crystal clarity will be etched into your memory, alerting you to the precise layout of the level and revealing all hidden secrets. The locations of items and creatures will remain unknown.	이 두루마리를 읽는 순간 이 층의 배치도의 수정만큼 깔끔한 모습이 기억 속에 각인되어 모든 숨겨진 비밀들을 알려줄 것입니다. 물건과 생명체들의 위치는 여전히 불명으로 남을 것입니다.
+You are now aware of the level layout.	이제 현재층의 모든 지형을 파악했습니다.
+Scroll of Mirror Image	거울상의 두루마리
+The incantation on this scroll will create illusionary twins of the reader, which will chase his enemies.	이 두루마리에 걸려진 마법은 두루마리를 읽은 자의 적들을 추적할 쌍둥이들을 만들어낼 것입니다.
+Scroll of Psionic Blast	정신 폭발의 두루마리
+This scroll contains destructive energy, that can be psionically channeled to inflict a massive damage to all creatures within a field of view. An accompanying flash of light will temporarily blind everybody in the area of effect including the reader of the scroll.	이 두루마리는 시야에 보이는 모든 생물체에게 강력한 정신적인 피해를 가하는 파괴적인 힘을 포함하고 있습니다.  이 과정에서 동반되는 빛은 일시적으로 두루마리를 읽은 사람을 포함한 모두의 시야를 멀게 만들 것입니다.
+Scroll of Recharging	재충전의 두루마리
+The raw magical power bound up in this parchment will, when released, recharge all of the reader's wands to full power.	이 가공되지 않은 마법의 힘이 봉인된 양피지는 해방되었을 때 두루마리를 읽은 사람의 마법봉을 모두 최대로 충전시켜 줄 것입니다.
+a surge of energy courses through your pack, recharging your wand	폭발하는 힘이 당신의 가방을 지나가며 당신의 마법봉을 충전시킵니다.
+a surge of energy courses through your pack, recharging your wands	폭발하는 힘이 당신의 가방을 지나가며 당신의 마법봉들을 충전시킵니다.
+a surge of energy courses through your pack, but nothing happens	가방에서 에너지가 급증하였지만 아무일도 일어나지 않았습니다.
+Scroll of Remove Curse	저주제거의 두루마리
+The incantation on this scroll will instantly strip from the reader's weapon, armor, rings and carried items any evil enchantments that might prevent the wearer from removing them.	 이 두루마리에 걸린 마법은 즉시 읽은 자의 무기와 방어구, 그리고 반지와 가지고 있는 모든 물건들을 해제하는 것을 막는 사악한 마법을 해제해 줄 것입니다.
+Your pack glows with a cleansing light, and a malevolent energy disperses.	가방에서 정화의 빛이 빛나며 악의 에너지가 분산되고 있습니다.
+Your pack glows with a cleansing light, but nothing happens.	가방에서 정화의 빛이 빛났지만 아무일도 일어나지 않았습니다.
+Scroll of Teleportation	순간이동의 두루마리
+The spell on this parchment instantly transports the reader to a random location on the dungeon level. It can be used to escape a dangerous situation, but the unlucky reader might find himself in an even more dangerous place.	이 두루마리에 적힌 마법은 시전자를 즉시 같은층의 무작위 장소로 이동시켜 줄 것입니다. 이것은 위험한 상황에서 탈출하는데 사용할 수도 있지만 불운한 경우에는 시전자를 더 위험한 장소로 이동시킬 수도 있습니다.
+In a blink of an eye you were teleported to another location of the level.	순식간에 다른장소로 순간이동 했습니다.
+Strong magic aura of this place prevents you from teleporting!	이곳의 강력한 마법장이 순간이동을 못하게 막고 있습니다!
+Scroll of Terror	공포의 두루마리
+A flash of red light will overwhelm all creatures in your field of view with terror, and they will turn and flee. Attacking a fleeing enemy will dispel the effect.	붉은 빛의 플래시의 공포가 시야의 모든 생물을 압도하며 모두 도망칩니다. 달아나는 적을 공격하면 공포효과가 풀립니다.
+The scroll emits a brilliant flash of red light	두루마리가 붉은 빛을 밝게 방출하였습니다.
+The scroll emits a brilliant flash of red light and the %s flees!	스크롤에서 붉은 빛을 밝게 방출하였고 %s이/가 달아납니다!
+The scroll emits a brilliant flash of red light and the monsters flee!	스크롤에서 붉은 빛을 밝게 방출하였고, 몬스터들이 달아납니다!
+Scroll of Upgrade	강화의 두루마리
+This scroll will upgrade a single item, improving its quality. A wand will increase in power and in number of charges; a weapon will inflict more damage or find its mark more frequently; a suit of armor will deflect additional blows; the effect of a ring on its wearer will intensify. Weapons and armor will also require less strength to use, and any curses on the item will be lifted.	이 두루마리는 한가지 물건을 강화하여 물건의 질을 상승시켜 줄 것입니다. 마법봉은 충전량이 증가할 것이며, 무기는 피해량이 증가할 것이고, 갑옷은 막을수 있는 피해량이 증가 합니다. 그리고 반지는 착용자가 얻을 반지의 효과가 강화될 것이며, 무기와 갑옷을 사용하는데 드는 힘의 요구량이 적어지며 물건의 어떠한 저주도 해제 할 것입니다.
+Select an item to upgrade	업그레이드 할 아이템을 선택하세요.
+READ	읽기
+You can't read a scroll while blinded	눈이 먼 상태에서는 두루마리를 읽을 수 없습니다.
+%s wand	%s 마법봉
+ZAP	발동
+This thin %s wand is warm to the touch. Who knows what it will do when used?	이 가는 %s 마법 막대는 오래된 것 같습니다. 사용했을 때 어떤 일이 일어날까요?
+When this wand is used as a melee weapon, its average damage is %d points per hit.	이 마법 막대를 근접무기로 사용할때 평균 데미지는 타격당 %d 입니다.
+You can use this wand as a melee weapon.	당신은 이 마법 막대를 근접 무기로 사용할 수 있습니다.
+your wand fizzles; it must be out of charges for now	당신의 마법 막대가 지글거리는 것을 보아 충전량이 바닥난 것 같습니다.
+You can't target yourself	자신을 목표로 할 수 없습니다.
+Choose direction to zap	공격할 방향을 선택하세요.
+holly	호랑가시나무
+yew	주목나무
+ebony	흑단
+cherry	벚나무
+teak	티크나무
+rowan	마가목
+willow	버드나무
+mahogany	마호가니
+bamboo	대나무
+purpleheart	베니어재
+oak	오크나무
+birch	자작나무
+Wand of Amok	광란의 마법 막대
+The purple light from this wand will make the target run amok attacking random creatures in its vicinity.	마법 막대에서 나오는 보라색 빛은 대상을 광란에 빠트려 시야에 보이는 무작위 생명체를 공격하게 할 것입니다.
+Wand of Avalanche	낙석의 마법 막대
+When a discharge of this wand hits a wall (or any other solid obstacle) it causes an avalanche of stones, damaging and stunning all creatures in the affected area.	마법 막대의 발사체가 벽(또는 다른 물체)에 적중한다면 낙석을 일으킬 것이고, 영향을 받는 지역의 모든 생물에게 피해와 기절을 초래할 것입니다.
+You killed yourself with your own Wand of Avalanche...	낙석의 마법 막대로 자기 자신을 죽여버렸습니다...
+Wand of Blink	점멸의 마법 막대
+This wand will allow you to teleport in the chosen direction. Creatures and inanimate obstructions will block the teleportation.	이 마법 막대는 당신이 선택한 방향으로 순간이동 할 수 있게 해 줄 것입니다. 생물과 멈춰있는 장애물은 순간이동을 방해할 것입니다.
+Wand of Disintegration	분해의 마법 막대
+This wand emits a beam of destructive energy, which pierces all creatures in its way. The more targets it hits, the more damage it inflicts to each of them.	이 마법 막대는 파괴적인 힘을 지닌 광선을 내뿜어 경로 상의 모든 생물을 꿰뚫을 것입니다. 많은 대상이 맞을수록, 더 많은 피해를 줄 것입니다. 
+Wand of Firebolt	화염 화살의 마법 막대
+This wand unleashes bursts of magical fire. It will ignite flammable terrain, and will damage and burn a creature it hits.	이 마법 막대는 마법의 화염 폭발을 일으킵니다. 가연성 지형에 불을 붙일 것이며, 맞은 생명체는 피해와 함께 불에 타오를 것입니다.
+You killed yourself with your own Wand of Firebolt...	화염 화살의 마법 막대로 자기 자신을 죽였습니다...
+Wand of Flock	양떼의 마법 막대
+A flick of this wand summons a flock of magic sheep, creating temporary impenetrable obstacle.	이 마법 막대는 마법 양떼를 소환해서 잠시 동안 지나갈 수 없는 장애물을 만들 것입니다.
+sheep	양
+This is a magic sheep. What's so magical about it? You can't kill it. It will stand there until it magically fades away, all the while chewing cud with a blank stare.	이 양은 마법 양입니다. 어떤 마법이 있냐고요? 당신은 그 양을 죽일 수 없습니다. 그 양은 멍한 눈으로 되새김질이나 하면서, 마법이 없어질 때까지 계속 있을 겁니다.
+Baa!	매애!
+Baa?	매애?
+Baa.	매애.
+Baa...	매애...
+Bee...	미애...
+Ble...	믜애애애...
+Wand of Lightning	번개의 마법 막대
+This wand conjures forth deadly arcs of electricity, which deal damage to several creatures standing close to each other.	이 마법 막대는 주변의 적들에 피해를 주며 앞으로 나아가는 치명적인 번개를 뿜어낼 것입니다.
+You killed yourself with your own Wand of Lightning...	번개의 마법 막대로 자살했습니다...
+Wand of Magic Missile	마탄의 마법 막대
+This wand launches missiles of pure magical energy, dealing moderate damage to a target creature.	이 마법 막대는 순수한 마력 에너지를 발사하여, 대상 생명체에게 평범한 피해를 입힐 것입니다.
+DISENCHANT	마법 분해
+You killed yourself with your own Wand of Magic Missile...	마탄의 마법 막대로 자기 자신을 죽였습니다...
+Select a wand to upgrade	강화시킬 마법 막대를 선택하세요.
+you disenchanted the Wand of Magic Missile and used its essence to upgrade your %s	마탄의 마법 막대에 부여된 마법을 분해하고 그것의 정수로 당신의 %s를 강화시켰습니다.
+Wand of Poison	맹독의 마법 막대
+The vile blast of this twisted bit of wood will imbue its target with a deadly venom. A creature that is poisoned will suffer periodic damage until the effect ends. The duration of the effect increases with the level of the staff.	비틀린 나뭇가지의 사악한 저주는 목표물에 맹독이 스며들게 합니다. 맹독에 걸린 생물은 효과가 끝날 때까지 지속적인 중독 피해를 입게 됩니다. 효과의 지속 시간은 지팡이의 레벨에 따라 늘어납니다.
+Wand of Regrowth	재성장의 마법 막대
+"When life ceases new life always begins to grow... The eternal cycle always remains!"	"한 생명이 죽으면 또 다른 생명이 태어나는 법... 그리고 영원한 순환은 언제나 계속될지니!"
+Wand of Slowness	둔화의 마법 막대
+This wand will cause a creature to move and attack at half its ordinary speed until the effect ends	이 마법 막대는 생물체의 공격 속도와 이동 속도를 효과가 끝날 때까지 절반으로 줄여버릴 것입니다.
+You have magically transported %s into your backpack	당신은 마법으로 %s 를 당신의 가방에 넣었다.
+Wand of Teleportation	순간이동의 마법 막대
+A blast from this wand will teleport a creature against its will to a random place on the current level.	이 마법 막대에서 나온 광선은 생물체의 의지와 상관없이 현재 층의 무작위 장소로 순간이동시킬 것입니다
+%1$s teleported %2$s to somewhere	 %1$s이/가  %2$s를 어딘가로 순간이동시켰습니다.
+nothing happened	아무 일도 일어나지 않았다
+You are now familiar enough with your %1$s to identify it. It is %2$s.	당신은 이제 %1$s 에 충분히 익숙해졌기 때문에 그 정체를 알게 되었습니다. 이것은 %2$s 입니다. 
+Interaction of different types of magic has negated the enchantment on this weapon!	서로 다른 종류의 마법들이 작용하여 무기에 부여된 마법이 지워져 버렸다!
+%1$s :%2$d	%1$s :%2$d
+grim %s	음침한 %s
+blazing %s	불타는 %s
+eldritch %s	섬뜩한 %s
+unstable %s	불안정한 %s
+vampiric %s	흡혈의 %s
+lucky %s	행운의 %s
+stunning %s	기절시키는 %s
+venomous %s	독성 %s
+chilling %s	냉기의 %s
+This %1$s is %2$s tier-%3$d melee weapon.	이 %1$s 은/는 %2$s %3$d차 근접 무기입니다.-업그레이드시 +차수 데미지-
+a	일반
+a upgraded	향상된
+an degraded	하향된
+Its average damage is %d points per hit.	평균 데미지는 타격당 %d입니다.
+Its typical average damage is %1$d points per hit and usually it requires %2$d points of strength.	일반적으로 평균 데미지는 타격 당 %1$d입니다 . 이것을 사용하기 위해서는 힘이 %2$d가 필요합니다.
+Probably this weapon is too heavy for you.	아무래도 이 무기는 당신한테 너무 무겁습니다.
+This is a rather %s weapon.	이 무기는 보다 %s 무기입니다.
+fast	빠른
+slow	느린
+and	그리고
+but	하지만
+accurate	정확한
+inaccurate	부정확한
+It was balanced to make it faster.	밸런스를 속도에 맞췄다.
+It was balanced to make it more accurate.	밸런스를 정확도에 맞췄다.
+It is enchanted.	인챈트 되어 있음.
+You hold the %1$s at the ready%2$s.	당신이 쥐고 있는 %1$s의 준비가 완료되었습니다.%2$s
+, and because it is cursed, you are powerless to let go	, 그리고 이 저주때문에 당신은 전혀 움직일 수 없습니다.
+You can feel a malevolent magic lurking within %s.	당신은 %s 안에 숨어있는 악의적인 마법을 느낄 수 있습니다.
+battle axe	배틀 엑스
+The enormous steel head of this battle axe puts considerable heft behind each stroke.	이 전투 도끼의 엄청난 스틸 헤드는 각각의 스트로크 뒤에 상당한 영향력을 줍니다.
+dagger	대거
+A simple iron dagger with a well worn wooden handle.	낡은 나무 손잡이가 달린 단순한 단검입니다.
+glaive	글레이브
+A polearm consisting of a sword blade on the end of a pole.	이 폴암은 막대기 끝에 날이 달려있는 구조 입니다.
+knuckleduster	너클더스터
+A piece of iron shaped to fit around the knuckles.	이 너클은 쇠로된 조각이 주먹에 꼭 맞도록 만들어져 있습니다.
+longsword	롱소드
+This towering blade inflicts heavy damage by investing its heft into every cut.	이 우뚝 솟은 칼날은 모든 동작에 그 무게를 실어 큰 피해를 입힙니다.
+mace	메이스
+The iron head of this weapon inflicts substantial damage.	이 무기의 아이언 헤드는 상당한 피해를 입힙니다.
+quarterstaff	쿼터스태프
+A staff of hardwood, its ends are shod with iron.	이 단단한 나무 스태프의 끝에는 철이 덧씌워져 있습니다.
+short sword	숏 소드
+It is indeed quite short, just a few inches longer, than a dagger.	이건 엄청 짧은데 단검보다도 몇 인치 짧습니다.
+REFORGE	재주조
+Select a weapon to upgrade	업그레이드할 무기를 고르세요
+you reforged the short sword to upgrade your %s	다시 제련해서 당신의 %s 를 숏소드로 업그레이드 합니다.
+you can't upgrade a boomerang this way	이 방법으로 부메랑을 업그레이드 할 수 없습니다.
+spear	스피어
+A slender wooden rod tipped with sharpened iron.	가느다란 나무 막대 끝에  날카로운 쇠조각을 덧댔습니다.
+sword	소드
+The razor-sharp length of steel blade shines reassuringly.	그 금속칼날이 날카롭게 빛나는 동안은 안심이 된다.
+war hammer	워 해머
+Few creatures can withstand the crushing blow of this towering mass of lead and steel, but only the strongest of adventurers can use it effectively.	몇몇 생물들은 이 납과 철로 우뚝솓아있는 무게감있는 타격을 버틸 수 있겠지만, 강인한 모험가는 이걸 효과적으로 사용할 수 있다.
+Missile weapon	원거리 무기
+Do you really want to equip it as a melee weapon?	정말로 이걸 근접 무기로 장착하시겠습니까?
+\n\nAverage damage of this weapon equals to %d points per hit.	\n평균 데미지는 타격당 %d 포인트와 같다.
+Because of your inadequate strength the accuracy and speed of your attack with this %s is decreased.	당신의 부족한 힘 수치 때문에 %s 의 정확도와 공격속도가 감소됩니다.
+Because of your excess strength the damage of your attack with this %s is increased.	당신의 초과한 힘 수치 만큼 %s 의 데미지가 증가합니다.
+\n\nYou hold the %s at the ready.	\n당신이 쥐고 있는 %s 의 준비가 완료되었습니다.
+boomerang	부메랑
+Thrown to the enemy this flat curved wooden missile will return to the hands of its thrower.	곡선의 나무 미사일 - 부메랑 - 을 적에게 던지면, 던진사람에게 다시 돌아옵니다.
+curare dart	큐라레 다트
+These little evil darts don't do much damage but they can paralyze the target leaving it helpless and motionless for some time.	이 작고 사악한 다트는 많은 피해를 주지 않지만 대상을 마비켜서 잠시동안 무력화되게 할 수 있습니다.
+dart	다트
+These simple metal spikes are weighted to fly true and sting their prey with a flick of the wrist.	이 간단한 금속 스파이크는 사실 날리기 부담스러운 무게지만 맞은 사람을 괴롭게 한다.
+incendiary dart	방화 다트
+The spike on each of these darts is designed to pin it to its target while the unstable compounds strapped to its length burst into brilliant flames.	이 다트끝에 있는 스파이크는 목표물에 도달하면 화려한 불꽃을 내며 폭발하도록 설계되어 있습니다.
+javelin	자벨린
+This length of metal is weighted to keep the spike at its tip foremost as it sails through the air.	이 금속이 스파이크를 유지하며 날아가도록 한다.
+shuriken	수리검
+Star-shaped pieces of metal with razor-sharp blades do significant damage when they hit a target. They can be thrown at very high rate.	목표에 명중 할 때 높은 확률로 별모양 금속과 날카로운 칼날이 상당한피해를 입힌다.
+tomahawk	토마호크
+This throwing axe is not that heavy, but it still requires significant strength to be used effectively.	이 던지는 도끼는 무겁진 않지만 사용하는데 꽤 많은 힘이 필요하다.
+A cloud of confusion gas is swirling here.	혼란을 주는 가스 구름이 소용돌이 칩니다.
+A fire is raging here.	불꽃이 맹렬하게 타오릅니다.
+Shafts of light pierce the gloom of the underground garden.	빛의 기둥이 지하정원의 어둠을 관통합니다.
+A cloud of paralytic gas is swirling here.	마비가스의 구름이 소용돌이 칩니다.
+A greenish cloud of toxic gas is swirling here.	녹색 독성 가스구름이 소용돌이 치고 있습니다.
+You died from a toxic gas..	당신은 유독가스 흡입으로 사망하였습니다...
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	지식의 힘이 우물에서 흘러나옵니다. 한모금 마시면 당신이 장착한 아이템의 모든 정보를 알게 됩니다.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	한모금 마시자, 머리속이 맑아지며 지식이 쏟아져 들어옵니다. 이제 장착아이템에 대한 모든정보를 알게됩니다. 또 현재 층에 있는 모든 아이템과 비밀을 알수있게 되었습니다.
+Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	좋은 물에서 힘의 원천이 나옵니다. 상처를 치유하고 굶주림을 채우기 위해 거기서 한모금 가져가세요.
+As you take a sip, you feel your wounds heal completely.	한 모금 마시자, 당신의 모든 상처가 완전히 회복되는 것을 느낍니다.
+Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	변화의 힘이 우물에서 흘러나옵니다. 뭔가를 그 안으로 던져넣어 보세요.
+Everything is covered with a thick web here.	모든것이 두꺼운 거미줄로 덮여 있습니다.
+Amok	착란
+Barkskin	나무스킨
+Bleeding	출혈
+You bled to death...	출혈로 인해 사망하였습니다.
+Blinded	실명
+Burning	불타는
+%s burns up!	%s 이/가 불탔습니다!
+You burned to death...	불에 타죽었습니다...
+Charmed	매혹
+Combo	콤보
+%d hit combo!	%d 연타 콤보
+Crippled	불구
+Frozen	얼어붙은
+Fury	격노
+You are hungry.	당신은 배가 고픕니다.
+You are starving!	당신은 굶주리고 있습니다!
+You starved to death...	굶어 죽었습니다.
+Hungry	배고프다
+Starving	굶주린
+Invisible	투명
+Levitating	공중부양
+Illuminated	섬광
+Mind vision	심안
+Caustic ooze	Kaustik Rüzgar
+%s killed you...	%s 이/가 당신을 죽였습니다...
+Paralyzed	마비됨
+Poisoned	중독
+You died from poison...	독으로 죽었습니다...
+Rooted	묶임
+Shadowmelded	그림자숨기
+Slowed	느려짐
+Vertigo	어지러움
+Weakened	쇠약해짐
+backpack	가방
+Real description is coming soon!	진짜 설명은 곧 나올 예정입니다!
+You hear something died in the distance	당신은 저 멀리서 무언가가 죽는 소리를 들었습니다.
+This %s is sleeping	이 %s 은/는 자고 있습니다.
+This %s is hunting	이 %s 은/는 사냥중 입니다
+This %s is fleeing	이 %s 은/는 혼비백산하고 있습니다.
+This %s is passive	이 %s 은/는 소극적입니다
+acidic scorpio	산성 전갈
+albino rat	알비노 쥐
+crazy bandit	미친 강도
+vampire bat	흡혈 박쥐
+These brisk and tenacious inhabitants of cave domes may defeat much larger opponents by replenishing their health with each successful attack.	이 민첩하고 끈질긴 동굴 천장의 주민은 공격에 성공할 때마다 흡혈을 해서 자기보다 훨씬 큰 상대도 제압할 수 있다.
+gnoll brute	놀 정예병
+Brutes are the largest, strongest and toughest of all gnolls. When severely wounded, they go berserk, inflicting even more damage to their enemies.	놀 정예병은 놀 중에서도 가장 크고 강하며 터프한 녀석이다. 큰 상처를 입게 되면, 녀석은 격분하면서 적에게 보다 큰 피해를 준다.
+%s becomes enraged!	%s 은/는 격분에 빠졌다!
+enraged	격분
+sewer crab	하수구 게
+These huge crabs are at the top of the food chain in the sewers. They are extremely fast and their thick exoskeleton can withstand heavy blows.	이 거대한 게는 하수구 먹이 사슬의 최상위 포식자다. 녀석은 매우 빠르고 녀석의 딱딱한 껍질은 큰 충격을 견딜 수 있다.
+DM-300	DM-300
+This machine was created by the Dwarves several centuries ago. Later, Dwarves started to replace machines with golems, elementals and even demons. Eventually it led their civilization to the decline. The DM-300 and similar machines were typically used for construction and mining, and in some cases, for city defense.	이 기계는 드워프에 의해 수세기 전에 만들어 졌다. 시대가 흐르며 이들은 골렘, 정령, 심지어는 악마들로 교체되어 갔고, 이 때문에 드워프의 문명은 쇠퇴하게 되었다. DM-300 및 이와 유사한 기계는 건설, 채광, 또는 도시 방어를 위해 사용되었다.
+DM-300 repairs itself!	DM-300이 스스로 자신을 수리했다!
+Mission failed. Shutting down.	임무 실패. 작동을 정지합니다.
+Unauthorized personnel detected.	무단 침입 감지.
+fire elemental	불 정령
+Wandering fire elementals are a byproduct of summoning greater entities. They are too chaotic in their nature to be controlled by even the most powerful demonologist.	방황하는 불 정령은 고위 괴물 소환의 부산물입니다. 녀석은 너무나 혼돈스러운 본능을 가지고 있어서 최고의 악마학자마저 조종할 수 없습니다.
+evil eye	눈알 악마
+One of this demon's other names is "orb of hatred", because when it sees an enemy, it uses its deathgaze recklessly, often ignoring its allies and wounding them.	이 악마의 또다른 이름은 "증오의 구슬"이다. 왜냐하면 한 번 적을 본 녀석은 주변에 아군이 있든 말든 무시하고 죽음의 광선을 사용하여 아군도 상처 입히기 때문이다.
+%s's deathgaze killed you...	%s의 죽음의 광선이 당신을 죽였다...
+fetid rat	악취나는 쥐
+This marsupial rat is much larger, than a regular one. It is surrounded by a foul cloud.	이 주머니 쥐는 보통 녀석들 보다 훨씬 몸집이 크다.  악취나는 구름에 뒤덮혀 있다.
+gnoll scout	놀 정찰병
+Gnolls are hyena-like humanoids. They dwell in sewers and dungeons, venturing up to raid the surface from time to time. Gnoll scouts are regular members of their pack, they are not as strong as brutes and not as intelligent as shamans.	놀은 하이에나처럼 생긴 인간형 괴수이다. 녀석은 하수구나 던전에 살면서 때때로 지상을 습격한다. 놀 정찰병은 그들 무리의 일반 구성원이다. 녀석은 놀 정예병만큼 강하지도 않고 놀 주술사만큼 똑똑하지도 않다.
+golem	골렘
+The Dwarves tried to combine their knowledge of mechanisms with their newfound power of elemental binding. They used spirits of earth as the "soul" for the mechanical bodies of golems, which were believed to be most controllable of all. Despite this, the tiniest mistake in the ritual could cause an outbreak.	드워프는 그들의 기계에 대한 지식과 새로 발견한 정령의 힘을 서로 융합하려고 하였다. 그들은 토양의 정기를 "영혼"으로 이용하여 골렘의 기계로 된 몸체에 넣었고, 이를 조종할 수 있을 거라고 믿어 의심치 않았다. 그럼에도 불구하고, 의식 도중에 아주 사소한 실수라도 재앙을 초래할 수 있다.
+Goo	블랙 푸딩
+Little known about The Goo. It's quite possible that it is not even a creature, but rather a conglomerate of substances from the sewers that gained rudiments of free will.	구에 대해서 알려진 것은 많지 않습니다. 아마도 구는 원래 생물체가 아니며, 하수구에 있던 유독한 물질들이 모여서 아주 기초적인 지성을 얻게 된 것 같습니다. 방법이야 어찌 되었든, 어두운 마법의 힘이 구를 존재하게 하는 것은 틀림없어 보입니다.
+Goo is pumping itself up!	블랙 푸딩이 부풀어 오르기 시작했다!
+glurp... glurp...	꾸룩...꾸룩....
+GLURP-GLURP!	꾸룩-꾸룩!
+!!!	!!!
+The last king of dwarves was known for his deep understanding of processes of life and death. He has persuaded members of his court to participate in a ritual, that should have granted them eternal youthfulness. In the end he was the only one, who got it - and an army of undead as a bonus.	드워프의 마지막 왕은 생명과 죽음의 원리에 대해 깊은 지식을 가진 것으로 잘 알려져 있다. 그는 의회의 의원들을 영원한 젊음을 얻을 수 있다고 설득하여 의식에 참여하게 하였다. 마지막에 그걸 얻은건 왕 혼자 뿐이었다. 그리고 그는 덤으로 언데드 군대도 얻었다.
+You cannot kill me, %s... I am... immortal...	넌 나를 죽일 수 없다, %s... 나는... 불사신이다...
+Arise, slaves!	일어나라, 노예들아!
+How dare you!	네가 감히!
+undead dwarf	언데드 드워프
+These undead dwarves, risen by the will of the King of Dwarves, were members of his court. They appear as skeletons with a stunning amount of facial hair.	드워프 왕의 의지에 의해 살아난 언데드 드워프는 왕의 의회의 구성원이었다. 녀석은 해골의 형상에 얼굴에는 수염이 엄청 많이 붙어있다.
+mimic	미믹
+Mimics are magical creatures which can take any shape they wish. In dungeons they almost always choose a shape of a treasure chest, because they know how to beckon an adventurer.	미믹은 자기가 원하는 어떤 형상으로도 변할 수 있는 마법 생물이다. 던전에서 어떻게 해야 모험가를 유인할 수 있는지 잘 알기 때문에 녀석은 거의 보물상자 형상을 하고 있다.
+dwarf monk	드워프 수도승
+These monks are fanatics, who devoted themselves to protecting their city's secrets from all aliens. They don't use any armor or weapons, relying solely on the art of hand-to-hand combat.	외부 침략자로부터 자신의 도시의 비밀을 지키는데 헌신하는 이 수도승은 광기에 빠져 있다. 녀석은 아무런 갑옷도 무기도 사용하지 않고, 오직 맨 주먹에 의지하여 싸운다.
+parried	막음
+%1$s has knocked the %2$s from your hands!	%1$s 이  %2$s 을/를 당신 손에서 떨어 뜨렸다!
+giant piranha	거대 피라냐
+These carnivorous fish are not natural inhabitants of underground pools. They were bred specifically to protect flooded treasure vaults.	이 식인 물고기는 지하 웅덩이의 자연적인 생물이 아니다. 녀석은 물에 잠긴 보물 창고를 지키기 위해 특별히 사육된 녀석이다.
+marsupial rat	주머니 쥐
+Marsupial rats are aggressive, but rather weak denizens of the sewers. They can be dangerous only in big numbers.	거대 주머니 쥐는 포악하지만 비교적 약한 하수구 거주자다. 많은 수가 모이지 않으면 그다지 위험하지 않다.
+scorpio	거대 전갈
+These huge arachnid-like demonic creatures avoid close combat by all means, firing crippling serrated spikes from long distances.	이 거대한 거미류의 악마같은 생물은 근접전을 최대한 피하고, 멀리서 불구로 만들어 버릴 수 있는 톱니 가시를 발사한다.
+senior monk	고위 드워프 수도승
+gnoll shaman	놀 주술사
+The most intelligent gnolls can master shamanistic magic. Gnoll shamans prefer battle spells to compensate for lack of might, not hesitating to use them on those who question their status in a tribe.	아주 지능이 뛰어난 놀만이 주술사의 주술을 익힐 수 있다. 놀 주술사는 힘이 약하기 때문에 전투 마법 사용을 좋아하며, 부족에서 자신의 지위를 의심하는 자에게는 이를 사용하길 꺼리지 않습니다.
+%s's lightning bolt killed you...	%s의 번개 화살이 당신을 죽였다...
+shielded brute	방패 놀 정예병
+skeleton	해골
+Skeletons are composed of corpses bones from unlucky adventurers and inhabitants of the dungeon, animated by emanations of evil magic from the depths below. After they have been damaged enough, they disintegrate in an explosion of bones.	해골은 운 없는 모험가들이나 던전에 사는 생물의 시체에서 나온 뼈로 이루어져 있고, 저 깊은 곳으로부터 뿜어나오는 악마의 주문에 의해 살아 움직인다. 어느 이상 손상되면 뼈가 폭발하며 산산조각 난다.
+blocked	막음
+You were killed by the explosion of bones...	당신은 폭발한 뼈에 맞아 죽었다...
+cave spinner	동굴 거미
+These greenish furry cave spiders try to avoid direct combat, preferring to wait in the distance while their victim, entangled in the spinner's excreted cobweb, slowly dies from their poisonous bite.	이 초록색 털복숭이 동굴 거미는 직접 전투를 꺼려 하는 대신, 녀석의 희생자가 독에 물린채 녀석이 뿜어 놓은 거미줄에 걸려 서서히 죽어가는 것을 멀리서 지켜보는 걸 좋아한다.
+animated statue	살아있는 조각상
+You would think that it's just another ugly statue of this dungeon, but its red glowing eyes give itself away. While the statue itself is made of stone, the _%s_, it's wielding, looks real.	당신은 이 조각상을 던전에 있는 못생긴 여느 조각상과 다를바 없다고 생각 할 수도 있겠지만, 붉게 빛나는 눈이 그런 생각을 사라지게 합니다. 조각상 자체는 돌로 만들어져 있지만, 착용한  _%s_는 진짜 같습니다.
+succubus	서큐버스
+The succubi are demons that look like seductive (in a slightly gothic way) girls. Using its magic, the succubus can charm a hero, who will become unable to attack anything until the charm wears off.	서큐버스는 유혹하는 여자(약간 고전적인 방식으로)처럼 생긴 악마다. 그녀는 마법을 써서 영웅을 매혹에 빠뜨리고 그 저주가 풀리기 전까지는 아무런 공격도 하지 못하게 만들어 버린다.
+swarm of flies	파리 떼
+The deadly swarm of flies buzzes angrily. Every non-magical attack will split it into two smaller but equally dangerous swarms.	죽음의 파리 떼가 매섭게 윙윙 거린다. 물리 공격을 받을 때마다 더 작은 두 무리로 나뉘지만 똑같이 위험하다.
+Tengu	텐구
+Tengu are members of the ancient assassins clan, which is also called Tengu. These assassins are noted for extensive use of shuriken and traps.	텐구는 고대 암살단의 일원이다. 이들 암살자는 수리검과 함정을 다루는 데 능하다.
+Free at last...	드디어 해방이로구나...
+Gotcha, %s!	잡았다, %s!
+crazy thief	미친 도둑
+Deeper levels of the dungeon have always been a hiding place for all kinds of criminals. Not all of them could keep a clear mind during their extended periods so far from daylight. Long ago, these crazy thieves and bandits have forgotten who they are and why they steal.	던전 깊이 들어가면 갈수록 언제나 오만 가지의 범죄자들이 숨는 소굴이 있습니다. 햇빛을 제대로 보지 못했기 때문에 정신을 차리고 있는 자들은 몇 되지 않습니다. 오래 전부터 이 정신나간 도둑들은 자신이 누구이며 도둑질을 하는 이유조차 잊어버렸습니다 .
+%1$s stole %2$s from you!	%1$s 이 당신한테서 %2$s 을/를 훔쳤다!
+\n\n%1$s is carrying a _%2$s_. Stolen obviously.	\n\n%1$s 이 _%2$s_를 들고 있다. 훔친 것이 분명하다.
+dwarf warlock	드워프 흑마법사
+When dwarves' interests have shifted from engineering to arcane arts, warlocks have come to power in the city. They started with elemental magic, but soon switched to demonology and necromancy.	드워프들의 관심이 기술에서 비밀스런 마법으로 옮겨갔을 때, 흑마법사들이 도시에서 힘을 얻기 시작했습니다. 그들은 원소 마법으로 시작했지만, 얼마 지나지 않아 악마술과 사령술에 손을 뻗었습니다.
+%s's shadow bolt killed you...	%s의 암흑 화살이 당신을 죽였다...
+wraith	유령
+A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Being an ethereal entity, it is very hard to hit with a regular weapon.	그들의 묘지의 유령들은 복수심에 불타는 죄인의 영혼이다. 영체로 이루어져 있기 때문에 일반 무기로 맞추기가 매우 어렵다.
+Yog-Dzewa	요그-제바
+Yog-Dzewa is an Old God, a powerful entity from the realms of chaos. A century ago, the ancient dwarves barely won the war against its army of demons, but were unable to kill the god itself. Instead, they then imprisoned it in the halls below their city, believing it to be too weak to rise ever again.	요그-제바는 혼돈의 왕국의 강력한 고대의 신이다. 한 세기 전, 고대 드워프들은 악마의 군대와 싸워 간신히 이겼지만, 신을 죽이지 못했다. 그 대신, 그들은 자신들의 도시 아래에 있는 홀에 이 신을 가두고는, 그가 다시는 일어서지 못할 정도로 약해지기를 바랬다.
+...	...
+Hope is an illusion...	희망은 환상에 불과하리...
+rotting fist	썩어가는 주먹
+burning fist	불타는 주먹
+god's larva	신의 애벌레
+golden bee	벌
+Despite their small size, golden bees tend to protect their master fiercely. They don't live long though.	작은 크기에도 불구하고, 벌들은 자신의 둥지를 치열하게 지키려는 경향이 있다. 하지만 오래 살지는 못한다.
+This %s is wandering	이 %s 은/는 방랑중 입니다
+troll blacksmith	트롤 대장장이
+This troll blacksmith looks like all trolls look: he is tall and lean, and his skin resembles stone in both color and texture. The troll blacksmith is tinkering with unproportionally small tools.	트롤 대장장이는  큰 키에 여윈 몸을 가지고 있고, 피부는 색이든 질감이든 돌을 연상시키는 일반적인 트롤같이 생겼다. 트롤 대장장이는 덩치에 어울리지 않는 작은 도구들을 가지고 땜질을 하고 있다.
+Hey human! Wanna be useful, eh? Take dis pickaxe and mine me some _dark gold ore_, _15 pieces_ should be enough. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	이봐 인간! 쓸만해지고 싶나, 응? 이 곡괭이를 가져다가 이걸로 _어두운 금 원석_을 좀 캐다 줘, _15개_ 면 충분하겠네. 보상은 뭐냐고? 이 탐욕스러운... \n알았어, 알았다고, 내가 보상해줄 돈은 없지만 아이템 제련은 해줄 수 있지. 운 좋은 줄 알아, 이 근처에 대장장이는 나밖에 없으니.
+Hey human! Wanna be useful, eh? Take dis pickaxe and _kill a bat_ wit' it, I need its blood on the head. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	이봐 인간! 쓸만해지고 싶나, 어? 이 곡괭이를 가져다가 이걸로 _박쥐를 잡아서_ 박쥐 피를 묻혀와. 보상은 뭐냐고? 이 탐욕스러운... \n 알았어, 알았다고, 내가 돈은 없지만 아이템 제련은 해줄 수 있지. 운 좋은 줄 알아, 이 근처에 대장장이는 나밖에 없으니.
+Are you kiddin' me? Where is my pickaxe?!	지금 장난해? 내 곡괭이 어디 갔어?!
+Dark gold ore. 15 pieces. Seriously, is it dat hard?	어두운 금 원석. 15개. 솔직히 그게 그렇게 어렵냐?
+I said I need bat blood on the pickaxe. Chop chop!	박쥐 피 묻혀오라고 했잖아. 빨리 빨리!
+Oh, you have returned... Better late dan never.	오, 돌아오긴 했네... 늦는 게 안 오는 것보단 낫지.
+I'm busy. Get lost!	꺼져, 난 바쁘다고!
+your %s certainly looks better now	당신의 %s는(은) 확실히 좋아진것같다.
+Select 2 different items, not the same item twice!	똑같은 아이템 두 번 고르지 말고, 다른 아이템 2개를 고르라고!
+Select 2 items of the same type!	2개의 똑같은 종류의 아이템을 고르라니까!
+I need to know what I'm working with, identify them first!	내가 뭐 가지고 작업하는 지 알아야 하니까, 식별부터 해!
+I don't work with cursed items!	저주받은 아이템 가지곤 작업 안 해!
+It's a junk, the quality is too poor!	이건 그냥 쓰레기야, 질이 너무 구리다고!
+I can't reforge these items!	이런 아이템은 제련 못 해!
+sad ghost	슬픈 유령
+The ghost is barely visible. It looks like a shapeless spot of faint light with a sorrowful face.	이 유령은 거의 보이지 않는다. 그것은 슬픈 얼굴을 한 희미한 빛으로 된 형상없는 얼룩 같이 보인다.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my _dried rose_... It's very important to me... Some monster stole it from my body...	반갑네 모험가여... 한때는 나도 당신과 같았다네 - 강하고 자신감이 넘쳤지... 하지만 지금은 죽었어... 하지만 난 이곳을 떠날수 없네... 내 _마른 장미_를 찾기 전까지는 말야... 나한텐 매우 중요한 것이네... 어떤 몬스터가 내게서 훔쳐갔어...
+Please... Help me... _Find the rose_...	제발... 도와주게... 장미를 찾아 주시게...
+Yes! Yes!!! This is it! Please give it to me! And you can take one of these items, maybe they will be useful to you in your journey...	네! 네!! 바로 그거에요! 제발 그걸 제게 주세요! 그리고 이 중에 하나를 고르세요, 아마 당신의 여정에 도움이 될 거에요...
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my revenge... Slay the _fetid rat_, that has taken my life...	반갑게 모험가여... 한때는 나도 당신과 같았다네 - 강하고 자신감이 넘쳤지... 하지만 지금은 죽었어... 하지만 난 이곳을 떠날수 없네... 복수하기 전까지는 말야... 내 목숨을 앗아간, _악취나는 쥐_를 없애 주게...
+Please... Help me... _Slay the abomination_...	제발... 도와주게...그 끔찍한 놈을 없애 주게...
+Yes! The ugly creature is slain and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	좋았어! 그 추한 괴물이 죽었으니 드디어 쉴 수 있겠군요... 이 중에 하나를 가져가세요. 아마 당신의 여정에 도움이 될 거에요...
+Imps are lesser demons. They are notable for neither their strength nor their magic talent, but they are quite smart and sociable. Many imps prefer to live among non-demons.	임프들은 하급 데몬들이다. 그들이 유명한건 힘도 마법 재능도 아닌, 영리함과 사회성 때문이다. 많은 임프들은 데몬이 아닌 것들과 살아가는 것을 좋아한다.
+evaded	회피
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _golems_ who need to be killed. You see, I'm going to start a little business here, but these stupid golems are bad for business! It's very hard to negotiate with wandering lumps of granite, damn them! So please, kill... let's say _6 of them_ and a reward is yours.	모험가이신가요? 전 모험가들이 좋아요! 누군가를 죽이고 싶을땐 언제나 그들에게 믿고 맡길 수 있죠. 내 말이 맞죠? 당연히 댓가도 드리죠. :)\n제 경우엔 _골렘_을 죽이고 싶어요. 보세요. 여기서 조그만한 사업을 하나 시작하려고 하는데요, 이놈의 멍청한 골렘들이 골치예요. 돌아다니는 화강암 덩어리인 녀석들과는 도무지 협상이 안되요, 제길! 그러니 제발, 좀 죽여줘요... 한.._6 마리_정도면 보상하겠습니다.
+How is your golem safari going?	골렘 사파리는 잘되가고 있나요?
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _monks_ who need to be killed. You see, I'm going to start a little business here, but these lunatics don't buy anything themselves and will scare away other customers. So please, kill... let's say _8 of them_ and a reward is yours.	모험가이신가요? 전 모험가들이 좋아요! 누군가를 죽이고 싶을땐 언제나 그들에게 믿고 맡길 수 있죠. 내 말이 맞죠? 당연히 댓가도 드리죠. :)\n제 경우엔 _수도승_을 죽이고 싶어요. 보세요. 여기서 조그만한 사업을 하나 시작하려고 하는데요, 이 미치광이들은 아무 것도 안 살 거고 손님들만 겁줘서 쫒아낼 거에요. 그러니 제발, 좀 죽여줘요... 한.._8 마리_정도면 보상하겠습니다.
+Oh, you are still alive! I knew that your kung-fu is stronger ;) Just don't forget to grab these monks' tokens.	오, 당신 아직 살아 있네요! 역시 당신의 쿵푸가 더 강할줄 알았아요 :) 드워프 토큰 챙기는거 잊지 마요.
+See you, %s!	나중에 봐요, %s!
+Psst, %s!	저기요, %s!
+ambitious imp	야망있는 임프
+Imps are lesser demons. They are notable for neither their strength nor their magic talent. But they are quite smart and sociable, and many of imps prefer to live and do business among non-demons.	임프들은 하급 데몬들이다. 그들이 유명한건 힘도 마법 재능도 아닌, 영리함과 사회성 때문이다. 많은 임프들은 데몬이 아닌 것들과 살아가는 것을 좋아한다.
+Hello, friend!	안녕, 친구!
+mirror image	거울상
+This illusion bears a close resemblance to you, but it's paler and twitches a little.	이 환영은 당신과 빼닮은 형상을 하고 있지만, 좀 더 창백하고 조금씩 아른거린다.
+rat king	쥐 대왕
+This rat is a little bigger than a regular marsupial rat and it's wearing a tiny crown on its head.	이 쥐는 평범한 다른 주머니 쥐보다 조금 더 크고, 조그만한 왕관을 머리에 쓰고 있다.
+I'm not sleeping!	나 안 자고 있어!
+What is it? I have no time for this nonsense. My kingdom won't rule itself!	뭐냐? 쓸데없는 일로 낭비할 시간이 없다! 내 왕국은 저절로 돌아가지 않는단 말이다!
+shopkeeper	상점 주인
+This stout guy looks more appropriate for a trade district in some large city than for a dungeon. His prices explain why he prefers to do business here.	이 통통한 남자는 던전보다는 어딘가 큰 도시의 상가나 있을 법하지만, 그가 제시하는 가격을 들어보면 왜 여기서 장사하는 걸 더 좋아하는지 이해가 된다.
+Select an item to sell	판매할 아이템을 선택 하세요
+old wandmaker	마법봉 만드는 노인
+This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	이 노인은 살짝 혼란스런 표정을 하고 있다. 그는 마법 보호막에 의해 보호받고 있다.
+absorbed	흡수
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	오, 이런 장소에서 이렇게 괜찮은 사람을 만나서 기쁘네! 난 여기 희귀한 재료를 찾으러 왔어 - _썩은딸기의 씨_라네. 마법을 사용하는 사람으로서, 마법 사용자로서 여기의 몬스터로부터 자기보호는 할 수 있지만 부끄럽게도 길을 잃어버렸다네. 날 도와주지 않겠나? 날 도와 준다면 내 최고의 마법봉으로 기꺼이 보상하겠네.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	썩은딸기의 씨를 찾는건 잘되어가는가, %s? 잘 안되어가나? 괜찮다네, 급한건 아니니까.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	오, 이런 장소에서 이렇게 괜찮은 사람을 만나서 기쁘네! 난 여기 희귀한 재료를 찾으러 왔어 - _시체 먼지_라네. 던전에 널려 있는 시체 더미에서 얻을 수 있다네. 마법 사용자로서 여기의 몬스터로부터 자기보호는 할 수 있지만 부끄럽게도 길을 잃어버렸다네. 날 도와주지 않겠나? 날 도와 준다면 내 최고의 마법봉으로 기꺼이 보상하겠네.
+Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	시체 먼지를 찾는 건 잘되어가는가, %s? 가장 먼저 찾아봐야 할 장소는 뼈 무더기라네.
+A hidden pressure plate clicks!	숨겨진 발판이 눌렸다!
+Floor	바닥
+Grass	잔디
+Water	물
+Wall	벽
+Closed door	닫긴 문
+Open door	열린 문
+Depth entrance	층 입구
+Depth exit	층 출구
+Embers	잿더미
+Locked door	잠긴 문
+Pedestal	받침대
+Barricade	바리케이드
+High grass	높게 자란 풀
+Locked depth exit	잠긴 층 출구
+Unlocked depth exit	열린 층 출구
+Sign	표지판
+Well	우물
+Empty well	빈 우물
+Statue	조각상
+Toxic gas trap	독가스 함정
+Fire trap	화염 함정
+Paralytic gas trap	마비가스 함정
+Poison dart trap	맹독다트 함정
+Alarm trap	경보 함정
+Lightning trap	번개 함정
+Gripping trap	속박 함정
+Summoning trap	소환 함정
+Triggered trap	발동된 함정
+Bookshelf	책장
+Alchemy pot	연금솥
+\\?\\?\\?	\\?\\?\\?
+You can't see the bottom.	바닥이 보이지 않습니다.
+In case of burning step into the water to extinguish the fire.	불이 붙었다면, 물 속에 들어가 불을 끄세요.
+Stairs lead up to the upper depth.	계단은 위를 향하고 있다.
+Stairs lead down to the lower depth.	계단은 아래를 향하고 있다.
+Embers cover the floor.	바닥 전체가 잿더미다
+Dense vegetation blocks the view.	빽빽한 초목이 시야를 방해한다.
+This door is locked, you need a matching key to unlock it.	이 문은 잠겨 있습니다. 열기 위해서는 맞는 열쇠가 필요합니다.
+Heavy bars block the stairs leading down.	무거운 빗장이 아래로 내려가는 계단을 가로막고 있다.
+The wooden barricade is firmly set but has dried over the years. Might it burn?	나무 바리케이드가 단단히 가로막고 있지만 수년동안 바짝 말라 있다. 불에 탈까?
+You can't read the text from here.	여기서는 글씨가 보이지 않습니다.
+Stepping onto a hidden pressure plate will activate the trap.	숨겨진 발판을 디디면 함정이 발동한다.
+The trap has been triggered before and it's not dangerous anymore.	함정이 이미 발동해서 더 이상 위험하지 않다.
+Someone wanted to adorn this place, but failed, obviously.	누군가 이곳을 꾸미고 싶어했지만, 당연히 던전의 분위기를 바꾸진 못했다.
+Drop some seeds here to cook a potion.	여기에 씨앗을 떨어뜨려 물약을 제조할 수 있습니다.
+The well has run dry.	우물은 말라있다.
+Fluorescent moss	형광 이끼
+Fluorescent mushrooms	형광 버섯
+Freezing cold water.	한기가 들 정도로 차가운 물.
+The ladder leads up to the upper depth.	사다리는 위를 향하고 있다.
+The ladder leads down to the lower depth.	사다리는 아래를 향하고 있다.
+Huge mushrooms block the view.	거대한 버섯들이 시야를 방해한다.
+A vein of some ore is visible on the wall. Gold?	어떤 광물의 광맥이 벽에 보인다. 금인가?
+Who would need a bookshelf in a cave?	동굴에 책장이 대체 왜 필요한 거지?
+A ramp leads down to the lower depth.	경사로는 아래를 향하고 있다.
+The statue depicts some dwarf standing in a heroic stance.	이 조각상은 영웅적인 풍채로 서 있는 어떤 드워프를 묘사하고 있다.
+The rows of books on different disciplines fill the bookshelf.	다양한 학문과 관련된 책들이 책장을 채우고 있다.
+Books in ancient languages smolder in the bookshelf.	고대의 언어로 쓰여진 책들이 책장에 가득하다.
+Cold lava	차가운 용암
+Embermoss	화롯불이끼
+Emberfungi	화롯불버섯
+Pillar	기둥
+It looks like lava, but it's cold and probably safe to touch.	용암처럼 보인다. 하지만 차갑고, 아마 만져도 괜찮을 것이다.
+The pillar is made of real humanoid skulls. Awesome.	이 기둥은 진짜 사람 해골로 만들어져 있다. 대박.
+Suspiciously colored water	수상한 색의 물
+High blooming flowers	높이 피어있는 꽃들
+A ramp leads up to the upper depth.	위 층으로 향하는 경사로
+A ramp leads down to the Inferno.	아래의 지옥불로 향하는 경사로.
+Several tiles are missing here.	타일 이가 여기저기 빠져 있다.
+Thick carpet covers the floor.	두터운 카펫이 복도를 덮고 있다.
+Dark cold water.	검고 차가운 물
+There are old blood stains on the floor.	복도에 오래된 핏자국이 남아 있다.
+This is probably a vestige of a prison library. Might it burn?	이건 아마 감옥 도서관의 흔적일 것이다. 불에 탈 것 같은데?
+Murky water	탁한 물
+Wet yellowish moss covers the floor.	축축하고 누르스름한 이끼들이 복도를 뒤덮고 있다.
+The bookshelf is packed with cheap useless books. Might it burn?	책장이 쓸모없는 싸구려 책들로 가득차있다. 불에 탈 것 같은데?
+Select a seed to throw	던져넣을 씨앗을 고르세요
+Chasm	틈
+Yes, I know what I'm doing	네, 내가 뭘 하려는지 잘 알고 있습니다.
+No, I changed my mind	아니요, 생각을 바꿨습니다.
+Do you really want to jump into the chasm? You can probably die.	정말로 이 틈 아래로 뛰어 들겠습니까? 죽을 수도 있습니다.
+You fell to death...	추락하여 사망했습니다...
+What are you doing here?!	당신 여기서 뭐하시는 겁니까?!
+Don't overestimate your strength, use weapons and armor you can handle.	당신의 힘을 과대평가하지 마세요. 제대로 다룰 수 있는 무기와 방어구를 사용하세요.
+Not all doors in the dungeon are visible at first sight. If you are stuck, search for hidden doors.	던전에 있는 모든 문이 처음부터 다 보이지는 않습니다. 진행이 막혔을 땐 탐색으로 숨겨진 문을 찾아보세요.
+Remember, that raising your strength is not the only way to access better equipment. You can go the other way, lowering its strength requirement with Scrolls of Upgrade.	힘 수치를 올리는 방법 뿐만 아니라 강화의 두루마리를 사용해 장비의 힘 요구치를 낮추는 방법으로도 더 좋은 장비를 쓸 수 있다는 것을 기억하세요.
+Beware of Goo!	구를 조심하세요!
+Pixel-Mart. All you need for successful adventure!	픽셀-마트 - 여정에 성공하기 위해 필요한 모든 것!
+Identify your potions and scrolls as soon as possible. Don't put it off to the moment when you actually need them.	당신이 가진 물약과 두루마리를 가능한 빨리 감정하세요. 정작 필요한 상황이 올 때까지 내버려둬선 안 됩니다.
+Being hungry doesn't hurt, but starving does hurt.	배고픔은 피해를 주지 않지만, 굶주림은 피해를 줍니다.
+Surprise attack has a better chance to hit. For example, you can ambush your enemy behind a closed door when you know it is approaching.	기습 공격을 하면 공격을 맞출 확률이 더 높아집니다. 예를 들면, 적이 다가오는 것을 알고 있다면, 닫힌 문 뒤에 숨어있다가 기습 공격을 할 수 있습니다.
+Don't let The Tengu out!	절대 텐구를 내보내지 마!
+Pixel-Mart. Spend money. Live longer.	픽셀-마트. 돈을 쓰세요. 오래 살아남으세요.
+When you're attacked by several monsters at the same time, try to retreat behind a door.	여러 몬스터에게 동시에 공격을 받는 상황이라면, 문 뒤로 후퇴하세요.
+There is no sense in possessing more than one Ankh at the same time, because you will lose them upon resurrecting.	앙크를 둘 이상 소지하는 것은 낭비입니다. 부활하게 되면 장착 중인 장비 외의 물건들은 전부 잃어버리기 때문입니다.
+DANGER! Heavy machinery can cause injury, loss of limbs or death!	경고! 이 육중한 기계는 부상, 사지 절단, 혹은 죽음을 유발할 수 있습니다!
+Pixel-Mart. A safer life in dungeon.	픽셀-마트. 던전 안의 목숨줄.
+When you upgrade an enchanted weapon, there is a chance to destroy that enchantment.	마법이 부여된 무기를 강화할 경우, 부여된 마법이 사라질 가능성이 있습니다.
+No weapons allowed in the presence of His Majesty!	폐하의 앞에서는 어떠한 무기도 소지할 것을 허락하지 않는다!
+Pixel-Mart. Special prices for demon hunters!	픽셀 마트. 악마 사냥꾼들에게 특가 판매중!
+The trap emits a piercing sound that echoes throughout the dungeon!	함정이 날카로운 소리를 냈고 던전 전체에 울려퍼졌다!
+lightning trap	번개 함정
+You were killed by a discharge of a lightning trap...	당신은 번개 함정의 방전으로 사망했습니다...
+You don't know what is there.	그곳에 무엇이 있는지 알 수 없습니다.
+Select a cell to examine	검사할 타일을 선택하세요.
+Sacrificial chamber	희생의 방
+Killed by an explosion of a bomb on level %d	%d층에서 폭탄 폭발로 사망
+Do you want to respec into %s?	%s(으)로 전직을 바꾸겠습니까?
+Yes, I want to respec	네, 전직을 바꾸겠습니다
+Maybe later	나중에
+Language	언어
+Because of frequent use, your %s has broken.	너무 자주 사용해서 %s이(가) 부서졌다.
+Because of frequent use, your %s is going to break soon.	너무 자주 사용해서 %s이(가) 곧 부서질 것 같다.
+bomb	폭탄
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	흑색 화약이 든 비교적 작은 폭탄이다. 편리하게도 던지면 도화선에 자동으로 불이 붙는다.
+You killed yourself with a bomb...	자신의 폭탄에 목숨을 잃었다…
+honeypot	꿀단지
+SHATTER	깨뜨린다
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	이 작은 단지에는 꿀이 별로 없지만, 황금빛 벌 한 마리가 이곳을 떠나려 하지 않는다.
+%s of auto-repair	자동 수리의 %s
+enchantment of viscosity	점성의 마법
+The enchantment of viscosity killed you...	점성의 마법이 당신을 죽였다…
+Defered damage (%d)	지연된 피해 (%d)
+phantom fish	유령 물고기
+broken %s	부서진 %s
+Unequip one ring	반지 하나를 해제
+Scroll of Enchantment	마법 부여의 주문서
+Select an enchantable item	마법을 부여할 물건을 선택
+your %s glows in the dark	%s이(가) 어둠 속에서 빛난다
+Scroll of Wipe Out	말살의 주문서
+You are now familiar enough with your %s.	이제 %s을(를) 충분히 익혔다.
+Wand of Reach	손길의 마법 막대
+shocking %s	전격의 %s
+tempered %s	단련된 %s
+"Your sacrifice is worthy..."	"네 희생은 가치가 있다…"
+"Your sacrifice is unworthy..."	"네 희생은 가치가 없다…"
+"Your sacrifice is worthy and so you are!"	"네 희생은 가치가 있다. 너 역시 그러하다!"
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	이곳에는 희생의 불꽃이 타오른다. 불꽃에 닿은 모든 생명은 던전의 정령에게 바칠 제물로 낙인찍힌다.
+Marked for sacrifice	희생의 표식
+Immune to gases	가스 면역
+Blinded with rage	분노에 눈이 멀음
+Zeroed in	조준 완료
+echo of 	메아리치는 
+curse personification	저주의 화신
+DM-350	DM-350
+spawn of Goo	구의 분신
+King of Dwarves	드워프의 왕
+undead King of Dwarves	언데드 드워프 왕
+memory of Tengu	텐구의 기억
+echo of Yog-Dzewa	요그제바의 메아리
+Yes, I will do it for you	그래, 널 위해 해 주지
+No, I can't help you	아니, 도와줄 수 없어
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	_유령 물고기_는 찾았나, %s? 근처 웅덩이들을 뒤져 보는 게 좋을 거야.
+As you try to read the sign it bursts into greenish flames.	표지판을 읽으려는 순간, 녹색을 띤 불길에 휩싸였다.
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	던전 깊은 층의 상점에서 골드를 쓸 수 있다. 첫 상점은 6층에 있다.
+If you are burning, you can't put out the fire in the water while levitating.	공중에 떠 있는 동안에는 물에 들어가도 몸에 붙은 불을 끌 수 없다.
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	무기와 방어구는 마법 막대나 반지보다 빨리 닳지만, 수리할 방법도 더 많다.
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	말살의 주문서를 얻는 유일한 방법은 던전의 정령에게 선물로 받는 것이다.
+Choose language	언어 선택
+Key bindings	키 설정
+Switch to fullscreen	전체 화면으로 전환
+Switch to windowed	창 모드로 전환
+Reset To Defaults	기본값으로 복원
+<None>	<없음>
+Press a key for "%s", or press %s to remove the binding.	“%s”에 지정할 키를 누르거나, %s 키를 눌러 지정을 해제하세요.
+Hero Info	영웅 정보
+Wait	대기
+Search	탐색
+Examine cell	칸 조사
+Resume motion	이동 재개
+Backpack	배낭
+Quickslot	빠른 슬롯
+Attack	공격
+Visible Enemies	보이는 적
+Zoom In	확대
+Zoom Out	축소
+Move North	북쪽으로 이동
+Move South	남쪽으로 이동
+Move West	서쪽으로 이동
+Move East	동쪽으로 이동
+Move NW	북서쪽으로 이동
+Move NE	북동쪽으로 이동
+Move SW	남서쪽으로 이동
+Move SE	남동쪽으로 이동
+Current Cell	현재 칸
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	코드 및 그래픽: Watabou\n음악: Cube_Code\n\n이 게임은 Brian Walker의 Brogue에서 영감을 받았습니다. Windows, Mac OS, Linux에서 즐겨 보세요. 정말 멋진 게임입니다! ;)\n\n자세한 정보는 공식 웹사이트를 방문해 주세요:
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	현지화: rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+Languages	언어
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	이 작고 반투명한 물고기는 공중에서도 간신히 보인다. 물속에서는 사실상 완전히 보이지 않는다.
+You can only wear two rings at a time. Unequip one of your equipped rings.	반지는 한 번에 두 개까지만 착용할 수 있다. 착용 중인 반지 하나를 빼야 한다.
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	이 주문서는 무기나 방어구에 무작위 마법을 부여해 특별한 힘을 갖게 한다.
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	이 주문서를 읽으면 던전 정령들의 분노가 해방되어 현재 층의 모든 것을 죽인다. 뭐, 거의 모든 것이다. 강력한 생물 중 일부는 영향을 받지 않을 수도 있다.
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	이 다용도 마법봉은 멀리 있는 물건을 끌어오거나 적과 자리를 바꾸는 데 쓸 수 있다. 마법봉이 내뿜는 힘의 파동은 지나가는 모든 칸에 영향을 주어 함정을 발동시키고, 키 큰 풀을 짓밟고, 닫힌 문을 열며 열린 문을 닫는다.
+broken %1$s :%2$d	망가진 %1$s :%2$d
+a broken	망가진
+%1$s: "%2$s"	%1$s: “%2$s”
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	이 생물은 슬픈 유령을 닮았지만 주위로 어둠이 소용돌이친다. 얼굴에는 절망이 서려 있다.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	안녕, 모험가여… 한때 나도 너처럼 강하고 자신감이 넘쳤지… 하지만 이제 난 죽었다… 끔찍한 저주에 묶여 이곳을 떠날 수도 없어… 제발… 나를 도와줘… _저주를 없애 줘_…
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	고맙다, %s! 저주가 풀렸으니 마침내 쉴 수 있겠어… 이 물건들 중 하나를 가져가 줘. 네 여정에 도움이 될지도 몰라…
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	오, 이런 곳에서 멀쩡한 사람을 만나다니 반가운 일이군! 나는 희귀한 재료인 _유령 물고기_를 찾으러 왔네. 맨손으로 잡을 수는 있지만 물속에서는 거의 보이지 않지. 마법사라 이곳의 괴물에게서 몸을 지키는 건 어렵지 않지만, 금세 길을 잃어 버려서 정말 부끄럽군. 혹시 나를 도와주겠나? 수고의 대가로 내 최고의 마법봉 중 하나를 기꺼이 주겠네.
+1	1

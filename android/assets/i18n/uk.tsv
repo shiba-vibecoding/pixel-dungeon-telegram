@@ -1,0 +1,1185 @@
+Play	Грати
+Highscores	Рекорди
+About	Про гру
+LibGDX port: Arcnor / Web port: nojus297	LibGDX-порт: Arcnor / вебпорт: nojus297
+Telegram port: @barboskich	Telegram-порт: @barboskich
+Say thanks	Подякувати
+Thank you!	Дякуємо!
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Це добровільна подяка за Telegram-порт. Вона ніяк не впливає на ігровий процес.
+Support with Telegram Stars	Підтримати в Telegram Stars
+Open @barboskich	Відкрити @barboskich
+Send E-Mail	Відправити E-Mail
+Top Rankings	Кращі результати
+Total games won/played: 	Всього ігор зіграно:
+No games have been played yet.	Жодної гри ще не зіграно.
+No additional information	Додаткова інформація відсутня
+Your Badges	Твої значки
+Load Game	Завантажити гру
+New Game	Нова гра
+Erase current game	Стерти поточну гру
+Depth: %1$d, level: %2$d	Глибина: %1$d\nРівень: %2$d
+Do you really want to start new game?	Ти справді бажаєш розпочати нову гру?
+Your current game progress will be erased.	Твій поточний ігровий прогрес буде втрачено.
+Yes, start new game	Так, розпочати нову гру
+No, return to main menu	Ні, повернутися до головного меню
+To unlock this character class, slay the 3rd boss with any other class	Щоб розблокувати цей клас персонажа, переможи боса DM-300 будь-яким іншим класом
+To unlock "Challenges", win the game with any character class.	Щоб відкрити "Випробування", пройдіть гру будь-яким персонажем.
+Descending...	Спускаємося...
+Ascending...	Піднімаємося...
+Loading...	Завантажуємося...
+Resurrecting...	Воскрешаємося...
+Returning...	Повертаємося...
+Falling...	Падаємо...
+File not found. For some reason...	Файл не знайдено. До чого б це...
+Something went wrong...	Щось пішло не так...
+Many heroes of all kinds ventured into the Dungeon before you. Some of them have returned with treasures and magical artifacts, most have never been heard of since. But none have succeeded in retrieving the Amulet of Yendor, which is told to be hidden in the depths of the Dungeon.\n\nYou consider yourself ready for the challenge, but most importantly, you feel that fortune smiles on you. It's time to start your own adventure!	Багато шукачів пригод та мандрівників спускалися у підземелля до тебе. Деякі поверталися, наділені незліченими багатствами й чарівними артефактами, але більшість даремно загинула. Але нікому не вдалося здобути Амулет Ендора, за легендами, прихований у глибинах підземелля.\n\nТи відчуваєш, що готовий до цього іспиту та й, що досить важливо, ти віриш, що удача на твоєму боці. Настав час почати свою пригоду!
+Let's call it a day	Мою справу тут зроблено.
+I'm not done yet	Я, мабуть, ще оглянуся навколо.
+You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	Нарешті він у твоїх руках, Амулет Ендора. Ти отримаєш могутність, яка дозволить підкорити всіх і вся, чи подаруєш людству мир та процвітання, чи щось схоже на це. У будь-якому разі, твоє життя зміниться назавжди, а гра на цьому закінчиться. З іншого боку, ти маєш можливість ще трохи побути жалюгідним смертним.
+Welcome to the level %d of Pixel Dungeon!	Ласкаво просимо на %d рівні Remixed Dungeon!
+Welcome back to the level %d of Pixel Dungeon!	З поверненням на %d рівень Remixed Dungeon!
+Be cautious, since the dungeon is even more dangerous at night!	Будь напоготові, адже вночі підземелля набагато небезпечніше!
+Your steps echo across the dungeon.	Кожний твій крок лунає по всьому підземеллю.
+You hear the water splashing around you.	Ти чуєш плескіт води поблизу.
+The smell of vegetation is thick in the air.	У повітрі відчувається запах рослин.
+The atmosphere hints that this floor hides many secrets.	Атмосфера таємничості огортає цей поверх, він сповнений таємниць.
+mob	монстр
+%1$s %2$s your attack	%1$s %2$s від твоєї атаки
+%1$s %2$s %3$s's attack	%1$s %2$s від атаки монстра %3$s
+The pain snapped %s out of paralysis	Біль звільняє %s від паралічу
+poisoned	отруєний
+amok	буяє
+slowed	сповільнений
+mind	ясно
+vision	бачення
+paralyzed	паралізований
+frightened	зляканий
+rooted	пустив коріння
+crippled	травмований
+bleeding	кровотеча
+dizzy	приголомшений
+invisible	невидимий
+you	ти
+One does not simply leave Pixel Dungeon.	Не так просто залишити Remixed Dungeon.
+level up!	новий рівень!
+Welcome to level %d! Now you are healthier and more focused. It's easier for you to hit enemies and dodge their attacks.	Тепер твій рівень: %d! Твоя сила зросла, покращилась витривалість та вправність. Стало легше ухилятися від ворогів, а також влучати по них.
+You now have %s	Отримано предмет: %s
+There is something else here	Тут є ще щось
+This chest is locked and you don't have matching key	Ця скриня замкнена, і в тебе немає ключа
+You don't have a matching key	В тебе немає відповідного ключа.
+You noticed something	Ти щось помітив
+search	пошук
+You catch fire!	Тебе охопив вогонь!
+You are paralyzed!	Тебе паралізовано!
+You are poisoned!	Тебе отруєно!
+Caustic ooze eats your flesh. Wash away it!	Їдкий мул роз'їдає твою плоть. Змий його!
+You can't move!	Ти не здатен поворухнутись!
+You feel weakened!	Тебе послаблено!
+You are blinded!	Тебе осліплено!
+You become furious!	Тебе розлютили!
+furious	лють
+You are charmed!	Тебе зачаровано!
+You are crippled!	Тебе скалічено!
+You are bleeding!	Ти спливаєш кров'ю!
+Everything is spinning around you!	У тебе паморочиться в голові!
+warrior	воїн
+mage	маг
+rogue	крадій
+huntress	мисливиця
+Warriors start with 11 points of Strength.	Воїни починають з 11 балами сили.
+Warriors start with a unique short sword. This sword can be later "reforged" to upgrade another melee weapon.	Воїни починають з унікальним коротким мечем. Який, в майбутньому, можна "перекувати" для покращення іншої зброї ближнього бою.
+Warriors are less proficient with missile weapons.	Воїни погано пристосовані до зброї дальнього бою.
+Any piece of food restores some health when eaten.	Під час їжі воїн відновлює трохи здоров'я.
+Potions of Strength are identified from the beginning.	Зілля сили розпізнані з самого початку.
+Mages start with a unique Wand of Magic Missile. This wand can be later "disenchanted" to upgrade another wand.	Маги починають з унікальною паличкою "Магічних снарядів". Пізніше цю паличку можна "зачарувати" для покращення іншої палички.
+Mages recharge their wands faster.	Маги швидше перезаряджають свої палички.
+When eaten, any piece of food restores 1 charge for all wands in the inventory.	Під час їжі, одна порція поновлює 1 заряд кожної палички в інвентарі.
+Mages can use wands as a melee weapon.	Маги можуть використовувати палички в ближньому бою.
+Scrolls of Identify are identified from the beginning.	Маги використовують ману для створення стихійних заклять.
+Rogues start with a Ring of Shadows+1.	Крадії починають з кільцем тіней +1.
+Rogues identify a type of a ring on equipping it.	Крадії ідентифікують кільця одразу, як тільки одягають їх.
+Rogues are proficient with light armor, dodging better while wearing one.	Крадії добре вправляються з легкою бронею, вони краще ухиляються в ній.
+Rogues are proficient in detecting hidden doors and traps.	Крадії є майстрами в пошуку прихованих дверей та пасток.
+Rogues can go without food longer.	Крадії можуть довше можуть триматися без їжі.
+Scrolls of Magic Mapping are identified from the beginning.	Сувої "магічної карти" ідентифіковані з самого початку.
+Huntresses start with 15 points of Health.	Мисливиці починають із 15 одиницями здоров'я.
+Huntresses start with a unique upgradeable boomerang.	Мисливиці починають з унікальним бумерангом, який можна покращувати.
+Huntresses are proficient with missile weapons and get a damage bonus for excessive strength when using them.	Мисливиці чудово володіють зброєю дальнього бою і отримують бонус пошкодження за кожну одиниці сили понад вимоги зброї.
+Huntresses gain more health from dewdrops.	Мисливиці отримують більше одиниць здоров'я з краплин роси.
+Huntresses sense neighboring monsters even if they are hidden behind obstacles.	Мисливиці відчувають монстрів, що поряд, навіть якщо вони ховаються за перешкодами.
+gladiator	гладіатор
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	Вдала атака ближнього бою дозволяє _Гладіатору_ почати серію комбо-ударів, на протязі яких кожне наступне вдале попадання наносить більше шкоди.
+berserker	берсеркер
+When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	Будучі сильно пораненим, _Берсеркер_ впадає в стан несамовитої люті, значно збільшуючи свої показники нанесення шкоди.
+warlock	чорнокнижник
+After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	Після вбивства ворога, _Чорнокнижник_ поглинає його душу, лікуючи себе та вгамовуючи голод.
+battlemage	бойовий маг
+When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	Бід час бою з паличкою в руках, _Бойовий маг_ наносить додаткову шкоду, яка залежить від кількості зарядів. Кожне вдале попадання поновлює заряд палички на 1.
+assassin	душогуб
+When performing a surprise attack, the _Assassin_ inflicts additional damage to his target.	Під час несподіваної атаки _Душогуб_ завдає додаткової шкоди.
+freerunner	бігун
+The _Freerunner_ can move almost twice faster, than most of the monsters. When he is running, the Freerunner is much harder to hit. For that he must be unencumbered and not starving.	_Бігун_ може пересуватися в двічі швидше за багатьох монстрів. В бігуна тяжче поцілити під час руху. Але лише тоді, коли він не голодний і не перевантажений.
+sniper	снайпер
+_Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	_Снайпери_ здатні помітити вади у ворожій броні, практично ігноруючи її при використанні зброї дальнього бою.
+warden	травниця
+Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	В наслідок своєї близькості до природи, _Травниця_ може ліпше збирати краплі роси та насіння з рослин. Також контакт з високою травою дає тимчасовий бонус до броні.
+Badge endorsed: %s	Отримано значок: %s
+New super badge: %s	Новий супер значок: %s
+New badge: %s	Новий значок: %s
+10 enemies slain	Здолано 10 ворогів
+50 enemies slain	Здолано 50 ворогів
+150 enemies slain	Здолано 150 ворогів
+250 enemies slain	Здолано 250 ворогів
+100 gold collected	Зібрано 100 золотих
+500 gold collected	Зібрано 500 золотих
+2500 gold collected	Зібрано 2500 золотих
+7500 gold collected	Зібрано 7500 золотих
+Level 6 reached	Досягнуто 6-го рівня
+Level 12 reached	Досягнуто 12-го рівня
+Level 18 reached	Досягнуто 18-го рівня
+Level 24 reached	Досягнуто 24-го рівня
+All potions identified	Усі зілля ідентифіковано
+All scrolls identified	Усі сувої ідентифіковано
+All rings identified	Усі кільця ідентифіковано
+All wands identified	Усі чарівні палички ідентифіковано
+All potions, scrolls, rings & wands identified	Усі зілля, сувої, кільця та чарівні палички ідентифіковано
+All bags bought	Всі торби придбано
+Death from fire	Смерть від вогню
+Death from poison	Смерть від отрути
+Death from toxic gas	Смерть від токсичних газів
+Death from hunger	Смерть від голоду
+Death from an enchantment	Смерть від гліфа
+Death from falling down	Смерть від падіння
+Death from fire, poison, toxic gas & hunger	Смерть від вогню, отрути, токсичного газу та голоду
+1st boss slain	Слизь побеждена
+2nd boss slain	Тенгу переможено
+3rd boss slain	ДМ-300 повалено
+4th boss slain	Король повержений
+1st boss slain by Warrior, Mage, Rogue & Huntress	Жижу вбито всіма класами
+3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	ДМ-300 убито всіма підкласами
+Ring of Haggler obtained	Отримано перстень Торговця
+Ring of Thorns obtained	Отримано перстень Шипів
+13 points of Strength attained	Отримано 13 очок сили
+15 points of Strength attained	Отримано 15 очок сили
+17 points of Strength attained	Отримано 17 очок сили
+19 points of Strength attained	Отримано 19 очок сили
+10 pieces of food eaten	Вжито 10 порцій їжі
+20 pieces of food eaten	Вжито 20 порцій їжі
+30 pieces of food eaten	Вжито 30 порцій їжі
+40 pieces of food eaten	Вжито 40 порцій їжі
+Item of level 3 acquired	Отримано предмет 3-го рівня
+Item of level 6 acquired	Отримано предмет 6-го рівня
+Item of level 9 acquired	Отримано предмет 9-го рівня
+Item of level 12 acquired	Отримано предмет 12-го рівня
+All rare monsters slain	Переможені всі рідкісні монстри
+Amulet of Yendor obtained	Отримано Амулет Ендора 
+Amulet of Yendor obtained by Warrior, Mage, Rogue & Huntress	Отримано Амулет Ендора кожним класом
+7-hit combo	7 комбо-ударів за серію
+3 potions cooked	Приготовлено 3 зілля
+6 potions cooked	Приготовлено 6 зіль
+9 potions cooked	Приготовлено 9 зіль
+12 potions cooked	Приготовлено 12 зіль
+Level completed without killing any monsters	Рівень завершено без жодного вбитого монстра
+Monster killed by a Grim weapon	Монстр убитий Зловісною зброєю
+6 piranhas killed	Вбито 6 пірань
+5 monsters killed at nighttime	5 монстрів вбито вночі
+10 games played	Зіграно 10 ігор
+100 games played	Зіграно 100 ігор
+500 games played	Зіграно 500 ігор
+2000 games played	Зіграно 2000 ігор
+Happy end	Щасливий кінець
+Challenge won	Випробування пройдено
+Thanks for your support!	Дякуємо за підтримку!
+On diet	На дієті
+Faith is my armor	Віра замінить мені обладунки
+Pharmacophobia	Ніяких ліків!
+Barren land	Пустеля
+Swarm intelligence	Колективний розум
+Into darkness	У темряві
+Forbidden runes	Заборонені руни
+Well of Health	Колодязь зцілення
+Well of Awareness	Колодязь обізнаності
+Well of Transmutation	Колодязь трансмутації
+Garden	Сад
+Animated statue	Ожила статуя
+Sad ghost	Сумний привид
+Old wandmaker	Старий майстер
+Troll blacksmith	Троль-коваль
+Ambitious imp	Амбітний біс
+Killed by %1$s on level %2$d	Вбитий монстром "%1$s" на %2$d рівні
+Killed by your own %1$s on level %2$d	Вбитий своєю ж паличкою "%1$s" на %2$d рівні
+Killed by the %1$s on level %2$d	Вбитий "%1$s" на %2$d рівні
+Killed by discharge of %1$s on level %2$d	Вбитий пасткою "%1$s" на рівні %2$d
+Burned to death on level %d	Згорів заживо на рівні %d
+Starved to death on level %d	Заморився голодом на рівні %d
+Died from poison on level %d	Отруївся на рівні %d
+Died from toxic gas on level %d	Загинув від токсичного газу на рівні %d
+Bled to death on level %d	Стік кров'ю на рівні %d
+Killed by a caustic ooze on level %d	Вбитий їдким слизом на рівні %d 
+Fell to death on level %d	Розбився на рівні %d
+Obtained the Amulet of Yendor	Отримав амулет Ендора
+OK, a deal is a deal, dat's what I can do for you: I can reforge 2 items and turn them into one of a better quality.	Гаразд, угода є угода, розклад такій: я перекую тобі 2 речі у одну, але кращу за якістю.
+Select an item to reforge	Обери предмет для кування
+Reforge them	Перекувати
+Potions	Зілля
+Scrolls	Сувої
+Which way will you follow?	Яким шляхом підеш?
+I'll decide later	Вирішу пізніше
+Mastery	Майстерність
+ERROR	ПОМИЛКА
+Settings	Налаштування
+Rankings	Рекорди
+Start New Game	Почати нову гру
+Main Menu	Головне меню
+Exit Game	Вийти з Remixed Dungeon
+Return to Game	Повернутися до гри
+Buffs	Ефекти
+Experience	Досвід
+Catalogus	Каталог
+Oh yes! You are my hero!\nRegarding your reward, I don't have cash with me right now, but I have something better for you. This is my family heirloom ring: my granddad took it off a dead paladin's finger.	О, так! Ти мій герой!\nЩодо нагороди, готівки я при собі не маю, але я можу запропонувати дещо краще. Цей перстень - моя сімейна реліквія: мій дідусь зняв його з пальця мертвого паладина.
+Take the ring	Узяти перстень
+There is nothing here.	Тут нічого нема.
+Chest	Скриня
+Locked chest	Замкнена скриня
+Crystal chest	Кришталева скриня
+Tomb	Гробниця
+Skeletal remains	Рештки скелета
+You won't know what's inside until you open it!	Ти не дізнаєшся, що всередині, доки не відкриєш!
+ But to open it you need a golden key.	Але, щоб відкрити, тобі потрібен золотий ключ.
+You can see %s inside, but to open the chest you need a golden key.	У середині ти бачиш предмет %s, але, щоб відкрити скриню, потрібен золотий ключ.
+This ancient tomb may contain something useful, but its owner will most certainly object to checking.	У цій старовинній гробниці може бути щось корисне, але власник навряд чи оцінить твій ентузіазм.
+This is all that's left from one of your predecessors. Maybe it's worth checking for any valuables.	Це усе що залишилося від твого попередника. Мабуть, варто обшукати на предмет цінностей.
+Journal	Журнал
+Unable to load additional information	Не вдалося завантажити додаткову інформацію.
+Stats	Герой
+Items	Речі
+Badges	Значки
+Level %1$d %2$s	Рівень %1$d %2$s
+Challenges	Випробування
+Health	Здоров'я
+Strength	Сила
+Game Duration	Рухів зроблено
+Maximum Depth	Максимальна глибина
+Mobs Killed	Вбито монстрів
+Gold Collected	Золота зібрано
+Food Eaten	Їжі вжито
+Potions Cooked	Приготовлено зілля
+Ankhs Used	Анкхів використано
+You died, but you were given another chance to win this dungeon. Will you take it?	Ти загинув, але тобі дарований ще один шанс підкорити підземелля.\nЧи скористаєшся ти ним?
+Yes, I will fight!	Так, я продовжу боротися!
+No, I give up	Ні, я здаюся
+Ghost's weapon	Зброя привида
+Ghost's armor	Обладунки привида
+Farewell, adventurer!	Прощавай, шукач пригод!
++	+
+-	-
+Default Zoom	Типовий масштаб
+Scale up UI	Масштабувати GUI
+Immersive mode	Режим занурення
+Music	Музика
+Sound FX	Звуки
+Brightness	Яскравість
+Second quickslot	Другий слот
+Switch to portrait	Портретний режим
+Switch to landscape	Альбомний режим
+The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	Підземелля розташовано точно під містом, верхні поверхи фактично є його каналізацією. Являючи собою, умовно, частину міста, ці поверхи не настільки небезпечні. Звичайно, безпечними їх теж не назвеш, але принаймні тут можна не боятися темної магії.
+Many years ago an underground prison was built here for the most dangerous criminals. At the time it seemed like a very clever idea, because this place indeed was very hard to escape. But soon dark miasma started to permeate from below, driving prisoners and guards insane. In the end the prison was abandoned, though some convicts were left locked up here.	Багато років тому на цьому місці звели підземну в'язницю для утримання особливо небезпечних злочинців. Тоді це вважалося розумною ідеєю, оскільки втеча звідти була дійсно проблематичною. Але згодом випари чорної магії стали просочуватись з глибин, лишаючи розуму вартових та в'язнів. Врешті-решт в'язницю покинули, лишивши кількох злочинців замкненими в середині.
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	Печери, які йшли під в'язницею навряд можна було назвати жилими. Вони занадто глибоко, поза межі досяжності міста і занадто бідні мінералами, аби зацікавити Дворфів. В минулому тут розташовувалась торгова точка, на шляху поєднання двох сторін, але вона згинула разом із падінням Дворфської метрополії. Тепер тут лишилися повсюдні гнолли та підземельні тварюки.
+Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday the mechanized army of dwarves has successfully repelled the invasion of the old god and his demon army. But it is said, that the returning warriors have brought seeds of corruption with them, and that victory was the beginning of the end for the underground kingdom.	Дворфська метрополія була колись величним містом-державою підземного народу. В часи його розквіту механізована армія могла відбитися від старого бога та його армії демонів. Казали, що воїни, що поверталися, несли на собі сім'я розрухи, і що ця перемога лише відзначила кінець підземного царства.
+In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	В минулому ці рівні вважалися задвірками метрополії. Перемога над старим богом далася дворфам дорогою ціною, і вони не мали сил зачистити місцевість від демонів, що лишилися. З часом демони оволоділи цим місцем, тепер воно зветься Залою Демонів.\n\nЛише мала кількість шукачів пригод заходили так далеко...
+FOR SALE: %1$s - %2$dg	НА ПРОДАЖ: %1$s - %2$dз
+Buy for %dg	Придбати за %dз
+Sell for %dg	Продати за %dз
+Sell 1 for %dg	Продати 1 за %dз
+Sell all for %dg	Продати все за %dз
+You've sold your %1$s for %2$dg	Ти продав %1$s за %2$dз
+You've bought %1$s for %2$dg	Ти придбав %1$s за %2$dз
+Oh, I see you have succeeded! I do hope it hasn't troubled you too much. As I promised, you can choose one of my high quality wands.	О, я бачу, ти впорався! Сподіваюся це не завдало тобі особливих клопотів Як і обіцяв, ти можеш обрати одну з моїх найкращих паличок.
+Battle wand	Бойова паличка
+Non-battle wand	Не бойова паличка
+Good luck in your quest, %s!	Щасти тобі в твоїх пригодах, %s!
+Select an item for the quickslot	Обери предмет для комірки швидкого доступу
+smth	предмет
+DROP	ВИКЛАСТИ
+THROW	КИНУТИ
+Your pack is too full for the %s	Тобі бракує місця для предмета: %s
+Choose direction of throw	Обери напрям для кидка
+EQUIP	ОДЯГТИ
+UNEQUIP	ЗНЯТИ
+You can't remove cursed %s!	Ти не можеш зняти проклятий предмет %s!
+Amulet of Yendor	Амулет Ендора
+END THE GAME	ЗАВЕРШИТИ ГРУ
+The Amulet of Yendor is the most powerful known artifact of unknown origin. It is said that the amulet is able to fulfill any wish if its owner's will-power is strong enough to "persuade" it to do it.	Амулет Ендора - могутній артефакт, невідомого походження. Вважається, що він може виконати будь-яке бажання, якщо воля власника буде достатньо сильною, аби "вмовити" амулет виконати його.
+Ankh	Анкх
+The ancient symbol of immortality grants an ability to return to life after death. Upon resurrection all non-equipped items are lost.	Древній символ безсмертя, який дарує можливість повернення після смерті. При воскресінні всі одягнуті речі губляться.
+armor kit	інструменти
+Using this kit of small tools and materials anybody can transform any armor into an "epic armor", which will keep all properties of the original armor, but will also provide its wearer a special ability depending on his class. No skills in tailoring, leatherworking or blacksmithing are required.	Використовуючи цей набір матеріалів та інструментів, будь-хто може переробити свою броню в "епічну", зберігаючи попередні властивості, ще й додаючи особливу здібність, яка залежить від класу героя. Жодних навичок шиття, коваля чи кожум'яки не потребується.
+Select an armor to upgrade	Оберіть броню для покращення
+you applied the armor kit to upgrade your %s	Ти застосував набір інструментів для покращення свого предмета %s
+dewdrop	крапля роси
+A crystal clear dewdrop.	Кристально чиста крапля роси
+dew vial	фіал для роси
+You can store excess dew in this tiny vessel for drinking it later. If the vial is full, in a moment of deadly peril the dew will be consumed automatically.	Ти можеш зберегти надлишок роси, помістивши в цю фіалу. Якщо він повний, то роса буде споживатися автоматична під час смертельної небезпеки.
+The dew vial was emptied to heal your wounds.	Ти спустошив фіал з росою, аби загоїти рани.
+You collected a dewdrop into your dew vial.	Ти зібрав краплину роси до фіала.
+Your dew vial is full!	Твоя фіала повна!
+Your dew vial is empty!	Твоя фіала порожня!
+This is a mimic!	Це мімік!
+gold	золото
+Collect gold coins to spend them later in a shop.	Збирай золоті монети, аби пізніше витратити їх в торговця.
+A pile of %d gold coins.	Жменя із %d золотих монет.
+One gold coin.	Одна золота монета.
+you wince as your grip involuntarily tightens around your %s	Ти ладен розтиснути пальці, які охопили %s
+lloyd's beacon	маяк Лойда
+SET	ВСТАНОВИТИ
+RETURN	ЗАБРАТИ
+Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	Маяк Лойда - це інтерактивний магічний пристрій, який дозволить повернутися в місце його встановлення.
+Strong magic aura of this place prevents you from using the lloyd's beacon!	Могутня магічна аура не дозволяє тобі скористатися маяком!
+Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Психічна аура істот поряд не дозволяє тобі скористатися маяком в даний момент.
+The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Маяк Лойда успішно встановлено. Тепер ти можеш повернутися сюди в будь-яку мить.
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nЦей маяк було встановлено десь на рівні %d Remixed Dungeon.
+Tome of Mastery	Том майстерності
+Tome of Remastery	Том майстерності
+This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	Ця зношена шкіряна книга не така вже й товста, але ти чомусь усвідомлюєш, що вона здатна тебе багато чому навчити. Але пам'ятай, на те, щоб прочитати її знадобиться час.
+You can't read while blinded	Ти не можеш читати, поки ти осліплений
+You have chosen the way of the %s!	Ти обрав шлях і тепер ти %s!
+torch	смолоскип
+LIGHT	ЗАПАЛИТИ
+It's an indispensable item in The Demon Halls, which are notorious for their poor ambient lighting.	Це дуже корисна річ в залах демонів, які відомі своїм недостатнім освітленням.
+weightstone	грузило
+APPLY	ЗАСТОСУВАТИ
+Using a weightstone, you can balance your melee weapon to increase its speed or accuracy.	За допомогою грузила ти можеш збалансувати свою зброю, збільшуючи його швидкість чи влучність.
+Select a weapon to balance	Обери зброю для балансування
+you balanced your %s to make it faster	ти збалансував %s на швидкість
+you balanced your %s to make it more accurate	ти збалансував %s на влучність
+How would you like to balance your %s?	Як ти бажаєш збалансувати предмет %s?
+For speed	На швидкість
+For accuracy	На влучність
+Never mind	Я передумав
+PLANT	ПОСАДИТИ
+Throw this seed to the place where you want to grow %1$s.\n\n%2$s	Кинь насінину туди, де хочеш виростити %1$s.\n\n%2$s
+seed of %s	насінину рослини %s
+Dreamweed	Дурман
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Доторк до Дурману випускає хмару спантеличуючого газу
+Earthroot	Дубокорінь
+When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Кожного, хто торкнеться Дубокореня, оповиває природний захист.
+Herbal armor	Природний захист
+Fadeleaf	Порталець
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	Доторк до Портальця перенесе тебе у випадкове місце цього рівня
+Firebloom	Драконка
+When something touches a Firebloom, it bursts into flames.	Кожен, хто торкнеться Драконки, загориться.
+Icecap	Льодовик
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Доторк до Льодовика змушує його випускати пилок, який заморожує все довкола.
+Rotberry	Гнилівка
+Berries of this shrub taste like sweet, sweet death.	Ягоди з цього куща мають солодкуватий присмак, присмак смерті.
+The seed emits a roar that echoes throughout the dungeon!	Насіння випускає рев, який луною несеться по підземеллю!
+Sorrowmoss	Моховик
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Моховик - це трава, (а не гриб) з гострим отруйним листям.
+Sungrass	Сонях
+Sungrass is renowned for its sap's healing properties.	Сонях славиться своїми лікувальними властивостями.
+Herbal healing	Природне зцілення
+your %s constricts around you painfully	%s боляче впивається в твою шкіру
+Interaction of different types of magic has erased the glyph on this armor!	Взаємодія різних видів магії затерла зачарування на цій броні!
+\n\nThis %1$s provides damage absorption up to "%2$d"  points per attack.	Ця %1$s забезпечує поглинання шкоди до %2$d очок за атаку.
+\n\nBecause of your inadequate strength your movement speed and defense skill is decreased. 	\nЧерез вашу недостатньо велику силу, швидкість переміщення та навички захисту зменшуються.
+\n\nBecause of your inadequate strength wearing this armor will decrease your movement speed and defense skill.	\n\nЧерез вашу недостатньо велику силу, при одягнені цієї броні зменшаться швидкість переміщення та навички захисту. 
+\n\nTypical %1$s provides damage absorption up to %2$d points per attack and requires %3$d points of strength.	\n\nТипова %1$s забезпечує поглинання шкоди до %2$d очок за атаку та вимагає %3$d очок сили.
+Probably this armor is too heavy for you.	Скоріше за всього, ця броня занадто тяжка для тебе.
+\n\nYou are wearing the %1$s%2$s.	\n\nНа тобі зараз %1$s%2$s.
+\n\nYou can feel a malevolent magic lurking within the %s.	\n\nТи можеш відчути злісну магію, приховану у %s.
+The thing looks awesome!	Ця річ виглядає прекрасно!
+Your health is too low!	Тобі не вистачає здоров'я!
+You need to be wearing this armor to use its special power!	Ти маєш одягнути цю броню, щоб використати особливе вміння!
+cloth armor	ткана броня
+This lightweight armor offers basic protection.	Ця легка броня забезпечує невеликий захист.
+huntress cloak	мисливський плащ
+A huntress in such cloak can create a fan of spectral blades. Each of these blades will target a single enemy in the huntress's field of view, inflicting damage depending on her currently equipped melee weapon.	Мисливиця з таким плащем можете створити вихор спектральних клинків. Кожен з цих клинків буде спрямований на одного ворога в поле зору мисливиці, завдаючи шкоди залежно від вдягнутої нею зброї ближнього бою.
+SPECTRAL BLADES	СПЕКТРАЛЬНІ КЛИНКИ
+No enemies in sight	Ворогів у полі зору немає.
+Only huntresses can use this armor!	Тільки мисливиці можуть використовувати цю броню!
+leather armor	шкіряна броня
+Armor made from tanned monster hide. Not as light as cloth armor but provides better protection.	Броня з висушеної шкіри монстра. Не така легка, як ткана броня, але захищає краще.
+mage robe	роба мага
+Wearing this gorgeous robe, a mage can cast a spell of molten earth: all the enemies in his field of view will be set on fire and unable to move at the same time.	Одягнувши цю чудову робу, маг може викликати заклинання розплавленої землі: усі вороги в його полі зору почнуть палати та не зможуть зрушити з місця.
+MOLTEN EARTH	РОЗПЛАВЛЕНА ЗЕМЛЯ
+Only mages can use this armor!	Тільки маги можуть використовувати цю броню!
+mail armor	кольчуга
+Interlocking metal links make for a tough but flexible suit of armor.	Переплетені металеві ланки роблять міцний, але гнучкий обладунок.
+plate armor	лати
+Enormous plates of metal are joined together into a suit that provides unmatched protection to any adventurer strong enough to bear its staggering weight.	Величезні металеві плити з'єднуються разом в костюмі, який забезпечує неперевершений захист будь-якого шукача пригод, що зможе підняти гігантську вагу цих лат.
+rogue garb	одяг крадія
+Wearing this dark garb, a rogue can perform a trick, that is called "smoke bomb" (though no real explosives are used): he blinds enemies who could see him and jumps aside.	Одягнувши цей темний одяг, крадій може виконати трюк, який називається "димова бомба" (хоча ніякі реальні вибухові речовини не використовуються): він засліплює ворогів, які могли бачити його і відскакує.
+SMOKE BOMB	ДИМОВА БОМБА
+Only rogues can use this armor!	Тільки крадії можуть використовувати цю броню!
+You can only jump to an empty location in your field of view	Ти можеш стрибнути тільки на порожнє місце в полі зору.
+Choose a location to jump to	Вибери місце для стрибка
+scale armor	луската броня
+The metal scales sewn onto a leather vest create a flexible, yet protective armor.	Металеві луски, зшиті на шкіряному жилеті створюють гнучкі обладунки, що прекрасно захищають.
+warrior suit of armor	воїнський обладунок
+While this armor looks heavy, it allows a warrior to perform heroic leap towards a targeted location, slamming down to stun all neighboring enemies.	У той час як цей обладунок виглядає важким, він дозволяє виконувати воїну героїчний стрибок до цільового місця, при цьому оглушуючи всіх сусідніх ворогів  на місці приземлення.
+HEROIC LEAP	ГЕРОЇЧНИЙ СТРИБОК
+Only warriors can use this armor!	Тільки воїни можуть використовувати цю броню!
+Choose direction to leap	Вибери напрям для стрибка
+%s of affection	%s пристрасті
+%s of anti-entropy	%s анти-ентропії
+%s of bounce	%s пружності
+%s of displacement	%s переміщення
+%s of entanglement	%s сплутування
+%s of metabolism	%s метаболізму
+%s of multiplicity	%s помноження
+%s of potential	%s потенціалу
+%s of stench	%s смороду
+%s of viscosity	%s в'язкості
+deferred %d	відкладено %d
+Defered damage (%d)	Відкладений урон (%d)
+OPEN	ВІДКРИТИ
+key ring	зв'язка для ключів
+This is a copper key ring, that lets you keep all your keys separately from the rest of your belongings.	Ця мідна зв'язка для ключів дозволить зберігати всі твої ключі окремо від інших речей.
+scroll holder	футляр для сувоїв
+You can place any number of scrolls into this tubular container. It saves room in your backpack and protects scrolls from fire.	Футляр вмістить будь-яку кількість сувоїв, розвантажуючи рюкзак та захищаючи їх від вогню.
+seed pouch	мішечок для насіння
+This small velvet pouch allows you to store any number of seeds in it. Very convenient.	Маленький оксамитовий мішечок вмістить велику кількість насіння. Дуже корисна річ.
+wand holster	пенал для паличок
+This slim holder is made of leather of some exotic animal. It allows to compactly carry up to %d wands.	Це - тонкий пенал зі шкіри екзотичної тварини. Він дозволяє компактно тримати до %d паличок.
+ration of food	сухий пайок
+Nothing fancy here: dried meat, some biscuits - things like that.	Нічого цікавого: сушене м'ясо, трохи печива - тощо.
+That food tasted delicious!	Їжа була смачною!
+chargrilled meat	смажене м'ясо
+It looks like a decent steak.	Виглядає як пристойний біфштекс.
+frozen carpaccio	заморожене карпачо
+It's a piece of frozen raw meat. The only way to eat it is by cutting thin slices of it. And this way it's surprisingly good.	Це шматок замороженого сирого м'яса. Єдиний спосіб з'їсти карпачо - нарізати тонких скибочок з нього. І це, як не дивно, доволі смакує.
+You feel your skin hardens!	Ти відчуваєш, як твоя шкіра затверділа!
+Refreshing!	Освіжає!
+You feel better!	Ти почуваєш себе краще!
+mystery meat	таємниче м'ясо
+Eat at your own risk!	Скуштуй на свій острах!
+Oh it's hot!	Ох, воно гаряче!
+You can't feel your legs!	Ти не відчуваєш своїх ніг!
+You are not feeling well.	Ти почуваєш себе не дуже добре.
+You are stuffed.	Ти об'ївся.
+That food tasted... strange.	Ця їжа на смак... дивна.
+overpriced food ration	дорогий сухий пайок
+It looks exactly like a standard ration of food but smaller.	Він виглядає так само, як і стандартний сухий пайок, але менший.
+That food tasted good.	Ця їжа добра на смак.
+pasty	пиріг з м'ясом
+This is authentic Cornish pasty with traditional filling of beef and potato.	Це традиційний Корнуоллський пиріг з начинкою яловичини і картоплі
+golden key	золотий ключ
+The notches on this golden key are tiny and intricate. Maybe it can open some chest lock?	Насічки на ключі мають дрібну та заплутану форму. Можливо цей ключ підійде до якоїсь скрині?
+iron key	залізний ключ
+The notches on this ancient iron key are well worn; its leather lanyard is battered by age. What door might it open?	Насічки на древньому ключі майже стерлися; шкіряний мотузок розсипався від часу. Які двері він може відкрити?
+iron key from depth %d	залізний ключ від рівня %d
+skeleton key	ключ-скелет
+This key looks serious: its head is shaped like a skull. Probably it can open some serious door.	Цей ключ виглядає досить вагомо: тримач вирізьблено у формі черепа. Можливо він відмикає якісь важливі двері.
+%s potion	%s зілля
+This flask contains a swirling %s liquid. Who knows what it will do when drunk or thrown?	Ця колба містить %s зілля, що обертається в середині. Хто знає що трапиться, якщо це випити або кинути?
+DRINK	ПИТИ
+Harmful potion!	Шкідливе зілля!
+Beneficial potion	Корисне зілля
+Are you sure you want to drink it? In most cases you should throw such potions at your enemies.	Ви впевнені, що хочете випити це? Зазвичай такі зілля кидають в своїх ворогів.
+Are you sure you want to throw it? In most cases it makes sense to drink it.	Ви впевнені, що хочете кинути це зілля? Зазвичай такі зілля випивають.
+The flask shatters and %s liquid splashes harmlessly	Колба розбилася і %s зілля розливається, не завдаючи шкоди.
+turquoise	бірюзове
+crimson	малинове
+azure	лазурне
+jade	нефритове
+golden	золоте
+magenta	пурпурове
+charcoal	вугляне
+ivory	блідо-жовте
+amber	бурштинове
+bistre	коричневе
+indigo	індигове
+silver	срібне
+Potion of Experience	Зілля досвіду
+The storied experiences of multitudes of battles reduced to liquid form, this draught will instantly raise your experience level.	Історичний досвід битв безлічі людей зводиться до рідкої форми, це негайно підійме твій рівень досвіду.
+Potion of Frost	Зілля морозу
+Upon exposure to open air, this chemical will evaporate into a freezing cloud, causing any creature that contacts it to be frozen in place, unable to act and move.	При контакті з повітрям цей хімікат випарується, утворюючи жахливу хмарку, приморожуючи до місця усіх істот, кого торкнеться, позбавляючи можливості поворухнутися.
+Potion of Healing	Зілля лікування
+An elixir that will instantly return you to full health and cure poison.	Еліксир, який миттєво вилікує тебе і звільнить від дії отрути.
+Your wounds heal completely.	Твої рани загоїлись.
+Potion of Invisibility	Зілля невидимості
+Drinking this potion will render you temporarily invisible. While invisible, enemies will be unable to see you. Attacking an enemy, as well as using a wand or a scroll before enemy's eyes, will dispel the effect.	Якщо випити цей напій ти станеш тимчасово невидимим. Доки ти невидимий, вороги не зможуть помітити тебе. Атака ворога, а також використання палички або сувою перед очима супротивника, розсіює ефект.
+Potion of Levitation	Зілля левітації
+Drinking this curious liquid will cause you to hover in the air, able to drift effortlessly over traps. Flames and gases fill the air, however, and cannot be bypassed while airborne.	Ця рідина змусить тебе зависати в повітрі, ти зможеш дрейфувати без особливих зусиль над пастками. Полум'я і гази наповнюють повітря, тому, і не вийде їх оминути, коли ти перебуваєш в повітрі.
+You float into the air!	Ти літаєш у повітрі!
+Potion of Liquid Flame	Зілля рідкого вогню
+This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	Цей флакон містить нестійке з'єднання, яке вибухне полум'ям при контакті з  повітрям.
+Potion of Might	Зілля могутності
+This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	Ця могутня рідина буде курсувати через твої м'язи, збільшуючи сили на одне очко і здоров'я на п'ять.
++1 str, +5 ht	+1 сили, +5 здоров'я
+Potion of Mind Vision	Зілля ясного бачення
+After drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls. Also this potion will permit you to see through nearby walls and doors.	Випивши його, ти отримаєш здатність вловлювати мозкові хвилі віддалених істот, що дозволить тобі відчувати живі організми крізь стіни. Також це зілля дозволить тобі бачити крізь найближчі стіни і двері.
+You can somehow feel the presence of other creatures' minds!	Ти відчуваєш присутність інших істот на цьому рівні.
+You can somehow tell that you are alone on this level at the moment.	Тобі щось підказує що ти єдиний на цьому рівні.
+Potion of Paralytic Gas	Зілля паралізуючого газу
+Upon exposure to open air, the liquid in this flask will vaporize into a numbing yellow haze. Anyone who inhales the cloud will be paralyzed instantly, unable to move for some time after the cloud dissipates. This item can be thrown at distant enemies to catch them within the effect of the gas.	При контакті з повітрям ця рідина випарується, утворюючи жовтуватий серпанок. Будь-хто вдихнув його буде миттєво паралізований і зможе рушити лише через деякий час після випаровування димки. Цей предмет можна жбурнути у ворогів, щоб паралізувати їх.
+Potion of Purification	Зілля очищення
+This reagent will quickly neutralize all harmful gases in the area of effect. Drinking it will give you a temporary immunity to such gases.	Цей реагент миттєво нейтралізує всі шкідливі гази в приміщенні. Випивши його, ти тимчасово отримаєш імунітет до подібних газів.
+You feel uncommon freshness in the air.	Ти відчуваєш прибуття свіжості в повітрі.
+You've stopped sensing any smells!	Ти перестав відчувати будь-який запах!
+Potion of Strength	Зілля сили
+This powerful liquid will course through your muscles, permanently increasing your strength by one point.	Ця могутня рідина збільшить твою силу на 1 пункт.
+Newfound strength surges through your body.	Новонабрана сила пульсує в твоєму тілі.
++1 str	+1 сили
+Potion of Toxic Gas	Зілля токсичного газу
+Uncorking or shattering this pressurized glass will cause its contents to explode into a deadly cloud of toxic green gas. You might choose to fling this potion at distant enemies instead of uncorking it by hand.	Найменше пошкодження або спроба відкрити цю посудину призведе до вибуху закачаного під тиском токсичного газу. Тобі краще жбурнути його у ворога, ніж намагатися відкрити.
+corpse dust	трупна пилюка
+The ball of corpse dust doesn't differ outwardly from a regular dust ball. However, you know somehow that it's better to get rid of it as soon as possible.	Жменя трупної пилюки не відрізняється від звичайної. Хоча не покидає відчуття, що від неї треба скоріше позбутися.
+dark gold ore	темна золота руда
+This metal is called dark not because of its color (it doesn't differ from the normal gold), but because it melts under the daylight, making it useless on the surface.	Цей метал зветься темним не через його колір (він не відрізняється від звичайного золота), а через те, що він тане на сонячному світлі. Через що ним не можливо користуватися на поверхні.
+dried rose	посохла роза
+The rose has dried long ago, but it has kept all its petals somehow.	Ця троянда посохла багато років тому, але попри все, збереглася кожна пелюстка.
+dwarf token	дворфський жетон
+Many dwarves and some of their larger creations carry these small pieces of metal of unknown purpose. Maybe they are jewelry or maybe some kind of ID. Dwarves are strange folk.	Багато хто з дворфів та їхні масивні витвори носили при собі ці маленькі металеві штучки. Яку роль вони грали, так і лишилося загадкою. Чи може це була прикраса, чи щось схоже на перепустку. Дворфи дивний народ.
+EAT	З'ЇСТИ
+You see your hands turn invisible!	Ти побачив, як твої руки зникли!
+pickaxe	кірка
+This is a large and sturdy tool for breaking rocks. Probably it can be used as a weapon.	Це великий та міцний інструмент для розколювання каміння. Як зброю теж можна використовувати.
+MINE	ДОБУТИ
+There is no dark gold vein near you to mine	Ти не бачиш жодного родовища чорного золота поблизу.
+giant rat skull	череп гігантського щура
+It could be a nice hunting trophy, but it smells too bad to place it on a wall.	Він міг бути непоганим трофеєм, але не має жодного бажання вішати на стіну предмет від якого так тхне.
+%s ring	перстень з %s
+This metal band is adorned with a large %s gem that glitters in the darkness. Who knows what effect it has when worn?	Цей металічний перстень прикрашено %s, що переливається на світлі. Хто знає, який ефект він може проявити, якщо одягти його?
+you are now familiar enough with your %1$s to identify it. It is %2$s.	%1$s достатньо добре тобі відомий, аби ідентифікувати його. Це %2$s.
+diamond	діамантом
+opal	опалом
+garnet	гранатом
+ruby	рубіном
+amethyst	аметистом
+topaz	топазом
+onyx	оніксом
+tourmaline	турмаліном
+emerald	смарагдом
+sapphire	сапфіром
+quartz	кварцом
+agate	агатом
+Your %s tightens around your finger painfully	Проклятий %s не зняти. Боляче.
+%1$s\n\nThe %2$s is on your finger %3$s.	%1$s\n\n%2$s на твоєму пальці%3$s
+, and because it is cursed, you are powerless to remove it	 проклято, ти не в змозі зняти його.
+%1$s\n\nYou can feel a malevolent magic lurking within the %2$s.	%1$s\n\nТи відчуваєш зловісну магію, що прокралась в %2$s.
+This is a %s	Це %s
+Ring of Accuracy	Перстень влучності
+This ring increases your chance to hit the enemy.	Цей перстень покращить твій шанс попасти по ворогу.
+Ring of Detection	Перстень виявлення
+Wearing this ring will allow the wearer to notice hidden secrets - traps and secret doors - without taking time to search. Degraded rings of detection will dull your senses, making it harder to notice secrets even when actively searching for them.	Цей перстень дозволить тобі краще помічати приховане, таке як пастки та потаємні двері, не витрачаючи час на пошуки. Послаблений перстень навпаки, затьмарить твою пильність, ускладнюючи пошук секретів.
+Ring of Elements	Перстень стихій
+This ring provides resistance to different elements, such as fire, electricity, gases etc. Also it decreases duration of negative effects.	Цей перстень забезпечує додатковим захистом від стихійних проявів сили, такі як вогонь, електрика, газу і т.п. Також він знижує час дії негативних ефектів.
+Ring of Evasion	Перстень ухиляння
+This ring increases your chance to dodge enemy attack.	Цей перстень збільшить твій шанс ухилитися від ворожої атаки.
+Ring of Haggler	Перстень торговця
+In fact this ring doesn't provide any magic effect, but it demonstrates to shopkeepers and vendors, that the owner of the ring is a member of The Thieves' Guild. Usually they are glad to give a discount in exchange for temporary immunity guarantee. Upgrading this ring won't give any additional bonuses.	Цей перстень не має чарівних ефектів, проте воно показує всім торговцям, що перед ними член гільдії злодіїв. Як правило, вони готові надати знижку, аби не мати проблем із гільдією. Покращення даного персня не принесе додаткової користі.
+Ring of Haste	Перстень поспіху
+This ring accelerates the wearer's flow of time, allowing one to perform all actions a little faster.	Перстень прискорить плин часу для свого володаря, завдяки чому той зможе швидше справлятися з поточними справами.
+Ring of Herbalism	Перстень травник
+This ring increases your chance to gather dew and seeds from trampled grass.	Цей перстень збільшить твій шанс отримати росу чи насіння з витоптаної трави.
+Ring of Mending	Перстень регенерації
+This ring increases the body's regenerative properties, allowing one to recover lost health at an accelerated rate. Degraded rings will decrease or even halt one's natural regeneration.	Цей перстень покращить регенеративні здібності володаря, дозволяючи швидше поновлювати здоров'я. Послаблений перстень навпаки, погіршує і може повністю зупинити регенерацію.
+Ring of Power	Перстень сили
+Your wands will become more powerful in the energy field that radiates from this ring. Degraded rings of power will instead weaken your wands.	Цей перстень посилює чарівні здатності палички володаря. Послаблений, має обернений ефект.
+Ring of Satiety	Перстень ситості
+Wearing this ring you can go without food longer. Degraded rings of satiety will cause the opposite effect.	Носій персня може довше протриматись без їжі. Послаблений перстень посилює голод.
+Ring of Shadows	Перстень тіней
+Enemies will be less likely to notice you if you wear this ring. Degraded rings of shadows will alert enemies who might otherwise not have noticed your presence.	Вороги мають менший шанс помітити власника персня. Послаблений перстень навпаки, приверне зайву увагу, якої можна було б уникнути.
+Ring of Thorns	Перстень шипів
+Though this ring doesn't provide real thorns, an enemy that attacks you will itself be wounded by a fraction of the damage that it inflicts. Upgrading this ring won't give any additional bonuses.	Самий перстень не вкрито шипами, але кожен хто торкнеться його власника відчує на власній шкурі частину нанесеної тобі шкоди. Покращення персні не додасть додаткової користі.
+scroll "%s"	сувій "%s"
+This parchment is covered with indecipherable writing, and bears a title of rune %s. Who knows what it will do when read aloud?	Цей сувій покрито незрозумілими символами та позначений руною %s. Хто знає, що станеться якщо прочитати його вголос.
+KAUNAN	КАУНАН
+SOWILO	СОУІЛО
+LAGUZ	ЛАГУЗ
+YNGVI	ЙІНГВІ
+GYFU	ГІУФУ
+RAIDO	РАІДО
+ISAZ	ІСАЗ
+MANNAZ	МАННАЗ
+NAUDIZ	НАУДІЗ
+BERKANAN	БЕРКАНАН
+ODAL	ОДАЛ
+TIWAZ	ТІУАЗ
+Select an item	Обери предмет
+Do you really want to cancel this scroll usage? It will be consumed anyway.	Сувій буде втрачено в будь-якому випадку. Ти справді бажаєш перервати його використання?
+Yes, I'm positive	Так, я підтверджую
+Scroll of Challenge	Сувій виклику
+When read aloud, this scroll will unleash a challenging roar that will awaken all monsters and alert them to the reader's location.	Під час читання цього свитку в голос, він видає рев, кидаючи виклик всім монстрам на рівні та вказуючи їм твоє розташування.
+The scroll emits a challenging roar that echoes throughout the dungeon!	Свиток випускає рев виклику, який луною несеться по підземеллю.
+Scroll of Identify	Сувій розпізнавання
+Permanently reveals all of the secrets of a single item.	Повністю відкриває всі секрети одного предмету.
+Select an item to identify	Обери предмет для розпізнавання
+It is %s	Це %s
+Scroll of Lullaby	Сувій колискової
+A soothing melody will put all creatures in your field of view into a deep sleep, giving you a chance to flee or make a surprise attack on them.	Колискова мелодія, що генерую свиток. заколихує всіх монстрів в полі зору, даючи можливість утекти чи завдати несподіваного удару.
+The scroll utters a soothing melody.	Сувій видає заспокійливу колискову.
+The scroll utters a soothing melody and the %s falls asleep!	Сувій видає заспокійливу колискову і %s засинає!
+The scroll utters a soothing melody and the monsters fall asleep!	Сувій видає заспокійливу колискову і монстри засинають!
+Scroll of Magic Mapping	Сувій магічної карти
+When this scroll is read, an image of crystal clarity will be etched into your memory, alerting you to the precise layout of the level and revealing all hidden secrets. The locations of items and creatures will remain unknown.	Коли читаєш сувій, в твоїй голові чітко проявиться картина, яка вкаже карту рівня та всі його секрети. Проте положення предметів та монстрів залишиться невідомим.
+You are now aware of the level layout.	Тепер ти маєш план рівня.
+Scroll of Mirror Image	Сувій двійника
+The incantation on this scroll will create illusionary twins of the reader, which will chase his enemies.	Читання сувою призведе до створення твоїх двійників, який помчать за ворогами.
+Scroll of Psionic Blast	Сувій ментального удару
+This scroll contains destructive energy, that can be psionically channeled to inflict a massive damage to all creatures within a field of view. An accompanying flash of light will temporarily blind everybody in the area of effect including the reader of the scroll.	Цей сувій містить руйнівну енергію, яка за примхою власника, прямує до всіх ворогів в полі зору, та спричиняє їм значної шкоди. Ефект супроводжується сильним спалахом, який осліплює всіх навкруги разом із власником сувою.
+Scroll of Recharging	Сувій перезарядження
+The raw magical power bound up in this parchment will, when released, recharge all of the reader's wands to full power.	Сира магічна енергія, яка замкнена в сувої, миттєво відновить заряди магічних паличок власника сувою.
+a surge of energy courses through your pack, recharging your wand	потік сирої магічної енергії проминув по твоєму рюкзаку та перезарядив магічну паличку.
+a surge of energy courses through your pack, recharging your wands	потік сирої магічної енергії проминув по твоєму рюкзаку та перезарядив магічні палички.
+a surge of energy courses through your pack, but nothing happens	потік сирої магічної енергії проминув по твоєму рюкзаку, але нічого не сталося.
+Scroll of Remove Curse	Сувій зняття прокляття
+The incantation on this scroll will instantly strip from the reader's weapon, armor, rings and carried items any evil enchantments that might prevent the wearer from removing them.	Прочитавши цей сувій, ти прикличеш чарівну силу, яка вижене зі зброї, броні, кілець чи інших речей будь яке зло, дозволяючи користуватись цим предметами.
+Your pack glows with a cleansing light, and a malevolent energy disperses.	Твій рюкзак освітлює світлом очищення, і зловісна енергія покидає його.
+Your pack glows with a cleansing light, but nothing happens.	Твій рюкзак освітлює світлом очищення, але нічого не трапилося.
+Scroll of Teleportation	Сувій перенесення
+The spell on this parchment instantly transports the reader to a random location on the dungeon level. It can be used to escape a dangerous situation, but the unlucky reader might find himself in an even more dangerous place.	Сувій перенесе заклинача у випадкову точку на рівні. Це може допомогти уникнути небезпечної ситуації, проте вдача може перенести тебе в місце де буде ще гірше.
+In a blink of an eye you were teleported to another location of the level.	Не моргнувши й оком, тебе перенесло в іншу точку рівня.
+Strong magic aura of this place prevents you from teleporting!	Могутня магічна аура даного місце не дозволяє тобі перенестися.
+Scroll of Terror	Сувій жаху
+A flash of red light will overwhelm all creatures in your field of view with terror, and they will turn and flee. Attacking a fleeing enemy will dispel the effect.	Червоний спалах закляття викликає жах у ворогів, які починають тікати. Атакуючи ворога, що утікає, ти знімаєш закляття.
+The scroll emits a brilliant flash of red light	Сувій випускає спалах червоного світла.
+The scroll emits a brilliant flash of red light and the %s flees!	Сувій випускає спалах червоного світла і %s тікає!
+The scroll emits a brilliant flash of red light and the monsters flee!	Сувій випускає спалах червоного світла і монстри тікають!
+Scroll of Upgrade	Сувій покращення
+This scroll will upgrade a single item, improving its quality. A wand will increase in power and in number of charges; a weapon will inflict more damage or find its mark more frequently; a suit of armor will deflect additional blows; the effect of a ring on its wearer will intensify. Weapons and armor will also require less strength to use, and any curses on the item will be lifted.	Цей сувій покращує одну єдину річ, збільшуючи її якість. Сила та місткість палички зростає; зброя наносить більшої шкоди чи покращує влучність; броня отримує більший захист; можливості кілець зростуть. Зброя та броня потребуватимуть меншої сили для використання, а будь-який предмет очищено.
+Select an item to upgrade	Обери предмет для покращення
+READ	ЧИТАТИ
+You can't read a scroll while blinded	Ти не можеш читати, поки ти осліплений
+%s wand	паличку %s
+ZAP	ВИСТРЕЛИТИ
+This thin %s wand is warm to the touch. Who knows what it will do when used?	Ця тоненька паличка %s тепла на дотик. Хто знає, що трапиться, якщо махнути нею.
+When this wand is used as a melee weapon, its average damage is %d points per hit.	Під час ближнього бою ця паличка нанесе %d одиниць шкоди.
+You can use this wand as a melee weapon.	Ти не можеш використовувати цю паличку як зброю ближнього бою.
+your wand fizzles; it must be out of charges for now	твоя паличка потріскує; схоже закінчився магічний заряд
+You can't target yourself	Ти не можеш поцілити в себе
+Choose direction to zap	Обери напрям для пострілу
+holly	з гостролисту
+yew	з тису
+ebony	з ебоніту
+cherry	з вишні
+teak	з тика
+rowan	з горобини
+willow	з верби
+mahogany	з червоного дерева
+bamboo	з бамбука
+purpleheart	з амаранту
+oak	з дуба
+birch	з берези
+Wand of Amok	Паличка шаленості
+The purple light from this wand will make the target run amok attacking random creatures in its vicinity.	Багрове світло з палички вимушує вказану істоту поводитись несамовито, без розбору нападаючи на всіх істот довкола.
+Wand of Avalanche	Паличка обвалу
+When a discharge of this wand hits a wall (or any other solid obstacle) it causes an avalanche of stones, damaging and stunning all creatures in the affected area.	Коли розряд палички вдаряє в стіну (чи іншу тверду перепону), він викликає обвал, який наносить значну шкоду по навколишнім ворогам та приголомшуючи їх.
+You killed yourself with your own Wand of Avalanche...	Ти вбився власною паличкою обвалу...
+Wand of Blink	Паличка стрибку
+This wand will allow you to teleport in the chosen direction. Creatures and inanimate obstructions will block the teleportation.	Паличка дозволить тобі пересуватися в просторі. Істоти та неживі предмети будуть заважати перенесенню.
+Wand of Disintegration	Паличка дезінтеграції
+This wand emits a beam of destructive energy, which pierces all creatures in its way. The more targets it hits, the more damage it inflicts to each of them.	Ця паличка генерує руйнівний промінь енергії, який проникає крізь всіх істот на своєму шляху. Чим більше цілей він пройде, тим більше шкоди завдасть кожній з них.
+Wand of Firebolt	Паличка вогнеплюй
+This wand unleashes bursts of magical fire. It will ignite flammable terrain, and will damage and burn a creature it hits.	Паличка випускає згусток чарівного полум'я, який здатний підпалити що-небудь, а також завдати шкоду ворогу, підпаливши його.
+You killed yourself with your own Wand of Firebolt...	Ти спалив сам себе своєю ж паличкою...
+Wand of Flock	Паличка отари
+A flick of this wand summons a flock of magic sheep, creating temporary impenetrable obstacle.	Паличка прикликає отару овець, які утворюють тимчасову перешкоду, яку неможливо подолати.
+This is a magic sheep. What's so magical about it? You can't kill it. It will stand there until it magically fades away, all the while chewing cud with a blank stare.	Це магічна вівця. Що такого магічного? Ти не можеш її вбити. Вона стоятиме на місці та сумлінно щось жувати, аж доки магічним образом не зникне.
+Baa!	Беее!
+Baa?	Беее?
+Baa.	Бе.
+Baa...	Бее...
+Bee...	Бе...
+Ble...	Бвее...
+Wand of Lightning	Паличка блискавки
+This wand conjures forth deadly arcs of electricity, which deal damage to several creatures standing close to each other.	Ця паличка випускає розряд блискавки який вдаряє кілька цілей, що стоять поруч.
+You killed yourself with your own Wand of Lightning...	Тебе спалило твоєю ж паличкою блискавки...
+Wand of Magic Missile	Паличка магічних снарядів
+This wand launches missiles of pure magical energy, dealing moderate damage to a target creature.	Паличка випускає розряд магічної енергії, що наносить середню шкоду.
+DISENCHANT	РОЗЧАРУВАТИ
+You killed yourself with your own Wand of Magic Missile...	Ти вбив сам себе своєю паличкою магічних снарядів...
+Select a wand to upgrade	Обери паличку для покращення
+you disenchanted the Wand of Magic Missile and used its essence to upgrade your %s	ти розчарував паличку магічних снарядів та використав для оновлення предмету %s
+Wand of Poison	Паличка отрути
+The vile blast of this twisted bit of wood will imbue its target with a deadly venom. A creature that is poisoned will suffer periodic damage until the effect ends. The duration of the effect increases with the level of the staff.	Цей міцний кусень деревини випускає згусток отрути, що отруює ціль. Отруєна істота отримує періодичну шкоду на протязі дії ефекту. Час дії залежить від сили палички.
+Wand of Regrowth	Паличка росту
+"When life ceases new life always begins to grow... The eternal cycle always remains!"	"Коли обривається життя, нове починає зростати... Безкінечний цикл не перервати!"
+Wand of Slowness	Паличка сповільнення
+This wand will cause a creature to move and attack at half its ordinary speed until the effect ends	Паличка накладає тимчасовий ефект, сповільнюючи ціль та швидкість атаки.
+You have magically transported %s into your backpack	Ти магічним образом перемістив %s в свій рюкзак
+Wand of Teleportation	Паличка перенесення
+A blast from this wand will teleport a creature against its will to a random place on the current level.	Постріл з цієї палички може перенести вказану істоту у випадкове місце цього рівня, хоче воно того чи ні.
+%1$s teleported %2$s to somewhere	%1$s переніс %2$s невідомо куди
+nothing happened	нічого не трапилося
+You are now familiar enough with your %1$s to identify it. It is %2$s.	Ти достатньо ознайомився з предметом: %1$s, аби ідентифікувати. Це %2$s.
+Interaction of different types of magic has negated the enchantment on this weapon!	Взаємодія несумісних типів магії зняло зачарування з зброї!
+%1$s :%2$d	%1$s :%2$d
+This %1$s is %2$s tier-%3$d melee weapon.	%1$s - %2$s зброя ближнього бою %3$d рангу.
+a	 
+a upgraded	покращена
+an degraded	послаблена
+Its average damage is %d points per hit.	Середня шкода становить %d одиниць за удар.
+Its typical average damage is %1$d points per hit and usually it requires %2$d points of strength.	Типова середня шкода становить %1$d одиниць за удар і, зазвичай, потребує %2$d одиниць сили.
+Probably this weapon is too heavy for you.	Судячи зі всього, ця зброя заважка для тебе.
+This is a rather %s weapon.	Це досить %s зброя.
+fast	швидка
+slow	повільна
+and	та
+but	але
+accurate	влучна
+inaccurate	невлучна
+It was balanced to make it faster.	Вона збалансована для підвищеної швидкості.
+It was balanced to make it more accurate.	Вона збалансована для більшої влучності.
+It is enchanted.	Ця зброя зачарована
+You hold the %1$s at the ready%2$s.	Ти тримаєш %1$s готовим до бійки%2$s
+, and because it is cursed, you are powerless to let go	, оскільки зброя проклята, ти не можеш кинути її з рук
+You can feel a malevolent magic lurking within %s.	Ти відчуваєш зловісну магію, що зачаїлася в зброї %s.
+battle axe	бойова сокира
+The enormous steel head of this battle axe puts considerable heft behind each stroke.	В кожному помаху цієї грізної зброї відчувається вага сталевого леза.
+dagger	кинджал
+A simple iron dagger with a well worn wooden handle.	Простий залізний кинджал з зручною рукояткою
+glaive	глефа
+A polearm consisting of a sword blade on the end of a pole.	Древкова зброя з лезом мечем на кінцівці.
+knuckleduster	кастет
+A piece of iron shaped to fit around the knuckles.	Залізна скоба, щільно прилягає до пальців.
+longsword	довгий меч
+This towering blade inflicts heavy damage by investing its heft into every cut.	Цей масивний клинок завдає великої шкоди, завалюючи на ворога всю свою вагу.
+mace	булава
+The iron head of this weapon inflicts substantial damage.	Залізний набалдашник цієї зброї здатний нанести великої шкоди.
+quarterstaff	патериця
+A staff of hardwood, its ends are shod with iron.	Посох з твердої деревини, обидва кінці якого оббиті залізом.
+short sword	короткий меч
+It is indeed quite short, just a few inches longer, than a dagger.	Дійсно короткий, буквально на кілька сантиметрів довший за кинджал.
+REFORGE	ПЕРЕКУВАТИ
+Select a weapon to upgrade	Обери зброю для покращення
+you reforged the short sword to upgrade your %s	ти перекував короткий меч для покращення %s
+you can't upgrade a boomerang this way	ти не можеш покращити бумеранг в цей спосіб
+spear	спис
+A slender wooden rod tipped with sharpened iron.	Тоненьке ратище із залізним вістрям.
+sword	меч
+The razor-sharp length of steel blade shines reassuringly.	Блиск гострого як бритва леза вселяє впевненість.
+war hammer	бойовий молот
+Few creatures can withstand the crushing blow of this towering mass of lead and steel, but only the strongest of adventurers can use it effectively.	Не багато істот можуть пережити удар такої зброї, але і не кожному мандрівнику під силу його підняти.
+Missile weapon	Зброя дальнього бою
+Do you really want to equip it as a melee weapon?	Ти впевнений, що хочеш використовувати це в якості зброї ближнього бою?
+\n\nAverage damage of this weapon equals to %d points per hit.	\n\nСередня шкода від даної зброї складає %d одиниць за удар.
+Because of your inadequate strength the accuracy and speed of your attack with this %s is decreased.	Через брак твоєї сили, швидкість та точність атаки зброєю %s знижено.
+Because of your excess strength the damage of your attack with this %s is increased.	За рахунок більш ніж достатньої сили, кількість шкоди, від зброї %s, збільшено.
+\n\nYou hold the %s at the ready.	\n\nТи тримаєш %s готовим до битви.
+boomerang	бумеранг
+Thrown to the enemy this flat curved wooden missile will return to the hands of its thrower.	Ця дерев'яна вигнута зброя, кинута у ворога, повертається до руки власника.
+curare dart	дротик з кураре
+These little evil darts don't do much damage but they can paralyze the target leaving it helpless and motionless for some time.	Ці маленькі зловісні дротики не здатні завдати значної шкоди, проте можуть тимчасово паралізувати ворога.
+dart	дротик
+These simple metal spikes are weighted to fly true and sting their prey with a flick of the wrist.	Це прості металеві шипи, ідеально підігнане для того, аби попадати в ціль.
+incendiary dart	вогняний дротик
+The spike on each of these darts is designed to pin it to its target while the unstable compounds strapped to its length burst into brilliant flames.	Кінчик дротика розрахований на те, аби надійно впитися в ціль, в той час як суміш, якою він змащений, охопить жертву полум'ям.
+javelin	метальний спис
+This length of metal is weighted to keep the spike at its tip foremost as it sails through the air.	Цей довгий метальний спис збалансовано так, аби його гостре вістря обов'язково потрапляв в ціль на протязі всього польоту.
+shuriken	сюрикен
+Star-shaped pieces of metal with razor-sharp blades do significant damage when they hit a target. They can be thrown at very high rate.	Гострі як бритва металеві зірки завдають суттєвої шкоди своїм цілям. Їх можна кидати з великою швидкістю.
+tomahawk	томагавк
+This throwing axe is not that heavy, but it still requires significant strength to be used effectively.	Хоча ця сокира і не сильно і важка, проте все одно потребує значно сили для ефективного використання.
+A cloud of confusion gas is swirling here.	Тут крутиться хмара збентежуючого газу.
+A fire is raging here.	Тут вирує полум'я.
+Shafts of light pierce the gloom of the underground garden.	Стовп світла пронизує морок підземного саду.
+A cloud of paralytic gas is swirling here.	Тут крутиться хмара з паралітичним газом.
+A greenish cloud of toxic gas is swirling here.	Тут крутиться зелена хмара токсичного газу.
+You died from a toxic gas..	Ти отруївся токсичним газом...
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Вода цієї криниці випромінює силу знання. Зроби ковток, аби розкрити секрети свого спорядження.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Зробивши ковток, ти відчуваєш, як знання сповнюють твій розум. Тепер ти знаєш все про речі, які одягнуті на тобі. Також ти відчуваєш всі предмети на рівні, та знаєш його секрети.
+Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	Вода цього колодязя випромінює силу здоров'я. Зроби ковток, аби залікувати свої рани та вгамувати голод.
+As you take a sip, you feel your wounds heal completely.	Зробивши ковток твої відчуваєш як твої рани повністю загоїлися.
+Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	Вода цього колодязя випромінює силу змін. Кинь в нього предмет, аби змінити його на дещо інше.
+Everything is covered with a thick web here.	Все навкруги покрито павутинням.
+Amok	Шалений
+Barkskin	Шкіра-кора
+Bleeding	Кровотеча
+You bled to death...	Твоя кровотеча призвела до смерті...
+Blinded	Засліплений
+Burning	У вогні
+%s burns up!	%s горить!
+You burned to death...	Ти згорів заживо...
+Charmed	Зачарований
+Combo	Комбо
+%d hit combo!	%d ударів комбо!
+Crippled	Травмований
+Frozen	Заморожений
+Fury	Розлючений
+You starved to death...	Ти помер від виснаження...
+Hungry	Голодний
+Starving	Виснажений
+Invisible	Невидимий
+Levitating	Левітуєш
+Illuminated	Світишся
+Mind vision	Думковий зір
+Caustic ooze	Каустична Смола
+%s killed you...	%s вбив тебе...
+Paralyzed	Паралізований
+Poisoned	Отруєний
+You died from poison...	Ти помер від отруєння...
+Rooted	Сплутаний
+Shadowmelded	Злився з тінню
+Slowed	Сповільнений
+Vertigo	Запаморочений
+Weakened	Послаблений
+backpack	рюкзак
+Real description is coming soon!	Справжній опис буде пізніше!
+You hear something died in the distance	Ти чуєш, що щось померло в далечі
+This %s is sleeping	%s спить
+This %s is hunting	%s полює
+This %s is fleeing	%s рятується
+This %s is passive	%s байдикує
+acidic scorpio	кислотний скорпіон
+albino rat	щур-альбінос
+crazy bandit	божевільний злочинець
+vampire bat	кажан-вампір
+These brisk and tenacious inhabitants of cave domes may defeat much larger opponents by replenishing their health with each successful attack.	Ці шустрі надокучливі мешканці печер здатні подолати більш крупного супротивника за рахунок того, що з кожним укусом вони поновлюють своє здоров'я.
+gnoll brute	гнолл громила
+Brutes are the largest, strongest and toughest of all gnolls. When severely wounded, they go berserk, inflicting even more damage to their enemies.	Громили - найбільші, найсильніші та найвитриваліші з усіх гноллів. Маючи значні пошкодження, вони здатні впадати в лють, завдаючи значної шкоди супротивнику.
+%s becomes enraged!	%s розлютився!
+enraged	розлючений
+sewer crab	стоковий краб
+These huge crabs are at the top of the food chain in the sewers. They are extremely fast and their thick exoskeleton can withstand heavy blows.	Ці великі краби розташувалися на верхівці харчової ланки в каналізації. Вони надзвичайно швидкі, а їхній хітин здатний витримати велику кількість ударів.
+DM-300	DM-300
+This machine was created by the Dwarves several centuries ago. Later, Dwarves started to replace machines with golems, elementals and even demons. Eventually it led their civilization to the decline. The DM-300 and similar machines were typically used for construction and mining, and in some cases, for city defense.	Цю машину створено дворфами багато століть тому. Згодом вони почали замінювати машини големами, елементалями й навіть демонами. Що й призвело до загибелі їхньої цивілізації. Машини, на кшталт DM-300, призначені для будівельних та шахтарських функцій, проте, в разі необхідності, могли захищати місто.
+DM-300 repairs itself!	DM-300 ремонтує сам себе!
+Mission failed. Shutting down.	Місію провалено. Вимикаюсь.
+Unauthorized personnel detected.	Виявлено неавторизовану персону.
+fire elemental	вогняний елементаль
+Wandering fire elementals are a byproduct of summoning greater entities. They are too chaotic in their nature to be controlled by even the most powerful demonologist.	Вогняні елементалі - це побічний продукт прикликання великих сутностей. Через свою хаотичну природу, воля цих створінь не піддається підкоренню навіть видатним демонологам.
+evil eye	зле око
+One of this demon's other names is "orb of hatred", because when it sees an enemy, it uses its deathgaze recklessly, often ignoring its allies and wounding them.	Одне з імен цього демона: шар ненависті, оскільки при потраплянні ворога в полі зору, той звертає на нього свій погляд смерті, не беручі до уваги, що може завдати шкоди союзникам.
+%s's deathgaze killed you...	%s вбиває тебе поглядом смерті...
+fetid rat	смердючий щур
+This marsupial rat is much larger, than a regular one. It is surrounded by a foul cloud.	Цей сумчастий щур більший ніж звичайний, і він оточений смердючою хмарою.
+gnoll scout	гнолл розвідник
+Gnolls are hyena-like humanoids. They dwell in sewers and dungeons, venturing up to raid the surface from time to time. Gnoll scouts are regular members of their pack, they are not as strong as brutes and not as intelligent as shamans.	Гнолли - гієноподібні гуманоїди. Вони проживають в підземеллях, каналізаціях, періодично роблячи набіги на поверхню. Гнолл-розвідник - типовий представник зграї, він не настільки сильний, як громила, і не настільки розумний, як шаман.
+golem	голем
+The Dwarves tried to combine their knowledge of mechanisms with their newfound power of elemental binding. They used spirits of earth as the "soul" for the mechanical bodies of golems, which were believed to be most controllable of all. Despite this, the tiniest mistake in the ritual could cause an outbreak.	Дворфи намагалися поєднати механізми зі ново-отриманими знаннями про природу стихій. Духи землі замінювали "душу" механічного каркаса голема, вважалось, що їх легше контролювати. Попри це, найдрібніша неточність в ритуалі могла призвести до нищівних наслідків.
+Little known about The Goo. It's quite possible that it is not even a creature, but rather a conglomerate of substances from the sewers that gained rudiments of free will.	Про Жижу відомо небагато. Цілком можливо, що це навіть не істота, а конгломерат речовин з каналізації, який набув зачатків вільної волі. У будь-якому разі, очевидно, що тут діє темна магія.
+Goo is pumping itself up!	Жижа нагнічує себе!
+glurp... glurp...	хлюп... хлюп...
+GLURP-GLURP!	ХЛЮП-ХЛЮП!
+!!!	!!!
+The last king of dwarves was known for his deep understanding of processes of life and death. He has persuaded members of his court to participate in a ritual, that should have granted them eternal youthfulness. In the end he was the only one, who got it - and an army of undead as a bonus.	Останній король дворфів мав глибокі пізнання в областях життя та смерті. Він переконав придворну свиту взяти участь в ритуалі, який обіцяв вічну молодість. В результаті її отримав лише сам король, отримавши армію нежиті в якості бонусу.
+You cannot kill me, %s... I am... immortal...	Ти не можеш вбити мене, %s... Я... безсмертний...
+Arise, slaves!	Відродіться, слуги!
+How dare you!	Як ти наважився!
+These undead dwarves, risen by the will of the King of Dwarves, were members of his court. They appear as skeletons with a stunning amount of facial hair.	Ці мертві дворфи, які повстали по волі свого царя, буди колись частиною його придворної свити. Ззовні вони виглядають як скелети з значними бородами.
+mimic	мімік
+Mimics are magical creatures which can take any shape they wish. In dungeons they almost always choose a shape of a treasure chest, because they know how to beckon an adventurer.	Міміки - магічні істоти, які здатні набувати будь-якої форми за бажанням. В підземеллях вони, зазвичай, набувають форму скринь, адже саме вони приваблюють шукачів пригод.
+dwarf monk	дворф-монах
+These monks are fanatics, who devoted themselves to protecting their city's secrets from all aliens. They don't use any armor or weapons, relying solely on the art of hand-to-hand combat.	Монахи - це фанатики, які присвятили себе захисту секретів свого народу від чужинців. Вони не покладаються на броню чи зброю, надаючи перевагу битися вручну.
+parried	відбився
+%1$s has knocked the %2$s from your hands!	%1$s вибив %2$s з твоїх рук!
+giant piranha	велика піранья
+These carnivorous fish are not natural inhabitants of underground pools. They were bred specifically to protect flooded treasure vaults.	Ці м'ясоїдні рибки не є звичайними мешканцями підземелля, вони були спеціально виведені для захисту затоплених скарбниць.
+marsupial rat	сумчастий щур
+Marsupial rats are aggressive, but rather weak denizens of the sewers. They can be dangerous only in big numbers.	Сумчасті щури агресивні, але на надто сильні мешканці каналізації. Проте у великій кількості становлять значну загрозу.
+scorpio	скорпіон
+These huge arachnid-like demonic creatures avoid close combat by all means, firing crippling serrated spikes from long distances.	Ці величезні членистоногі намагаються уникати ближнього бою, стріляючи отруйними голками з великої відстані.
+senior monk	старший монах
+gnoll shaman	гнолл шаман
+The most intelligent gnolls can master shamanistic magic. Gnoll shamans prefer battle spells to compensate for lack of might, not hesitating to use them on those who question their status in a tribe.	Найрозумніші з гноллів здатні пізнати магію шаманів. Гнолли шамани залюбки користується будь-якими закляттями, компенсуючи брак фізичної сили, а також аби убезпечити свій статус в суспільстві.
+%s's lightning bolt killed you...	%s вбиває тебе розрядом блискавки...
+shielded brute	громила-щитовик
+skeleton	скелет
+Skeletons are composed of corpses bones from unlucky adventurers and inhabitants of the dungeon, animated by emanations of evil magic from the depths below. After they have been damaged enough, they disintegrate in an explosion of bones.	Скелети - це залишки загиблих мандрівників, які повстали під дією відгуків зловісної магії з глибин підземелля. Через те, що вони вже і так понівечені, вони можуть розлетітися на гострі уламки.
+blocked	прикрився
+You were killed by the explosion of bones...	Тебе пробило кістяним уламком...
+cave spinner	печерний павук
+These greenish furry cave spiders try to avoid direct combat, preferring to wait in the distance while their victim, entangled in the spinner's excreted cobweb, slowly dies from their poisonous bite.	Ці пухнасті зелені павуки намагаються уникати прямих сутичок, даючи перевагу очікуванню, доки їхня жертва, заплутана в павутинні, повільно загине від отрути.
+animated statue	жива статуя
+You would think that it's just another ugly statue of this dungeon, but its red glowing eyes give itself away. While the statue itself is made of stone, the _%s_, it's wielding, looks real.	Може здатися, що це просто ще одна звичайна статуя, але червоні очі, що виблискують в темряві, не приховують свої злі наміри. Хоча вона і зроблена з каменю, її _%s_ виглядає справжнім.
+succubus	сукуб
+The succubi are demons that look like seductive (in a slightly gothic way) girls. Using its magic, the succubus can charm a hero, who will become unable to attack anything until the charm wears off.	Сукуби - демони, які набувають подоби гарних (зазвичай в готичному стилі) дівчат. Використовуючи магію, сукуби причаровують героя, позбавляючи його здатності атакувати, доки чари не розвіються.
+swarm of flies	рій мух
+The deadly swarm of flies buzzes angrily. Every non-magical attack will split it into two smaller but equally dangerous swarms.	Смертоносний рій злобно дзижчить. Кожна не магічна атака розбиває рій на дві менші частини, кожна з яких не менш небезпечна ніж один цілий.
+Tengu	Тенґу
+Tengu are members of the ancient assassins clan, which is also called Tengu. These assassins are noted for extensive use of shuriken and traps.	Тенґу - члени древнього клану вбивць. Вони відомі своїм уподобанням до пасток та сюрикенів.
+Free at last...	Нарешті, свобода...
+Gotcha, %s!	Попався, %s!
+crazy thief	божевільний злодій
+Deeper levels of the dungeon have always been a hiding place for all kinds of criminals. Not all of them could keep a clear mind during their extended periods so far from daylight. Long ago, these crazy thieves and bandits have forgotten who they are and why they steal.	Глибинні рівні підземелля завжди слугували надійним схроном для будь-якого злочинця. Проте не кожний міг зберегти здоровий глузд надовго покинувши денне світло. Вже досить давно ці безумні бандити позабували хто вони є, і навіщо займаються своїми темними справами.
+%1$s stole %2$s from you!	%1$s вкрав %2$s у тебе!
+\n\n%1$s is carrying a _%2$s_. Stolen obviously.	\n\n%1$s носить _%2$s_. Звичайно ж крадене.
+dwarf warlock	дворф-чорнокнижник
+When dwarves' interests have shifted from engineering to arcane arts, warlocks have come to power in the city. They started with elemental magic, but soon switched to demonology and necromancy.	Коли інтерес дворфів перескочив з технології на магію, чорнокнижника стали новою елітою. Почавши з магії стихій, вони перейшли на некромантію та демонологію.
+%s's shadow bolt killed you...	%s знищує тебе стрілою тіней...
+wraith	фантом
+A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Being an ethereal entity, it is very hard to hit with a regular weapon.	Фантоми - мстивий дух грішника, чию могилу було понівечено. 
+Yog-Dzewa is an Old God, a powerful entity from the realms of chaos. A century ago, the ancient dwarves barely won the war against its army of demons, but were unable to kill the god itself. Instead, they then imprisoned it in the halls below their city, believing it to be too weak to rise ever again.	Йог-Джева - старий бог, могутня сутність зі світу Хаосу. В давні часи древні дворфи ледь подолали його армію демонів, але вбити самого бога їм не вдалося. Вони заточили його глибині свого міста, переконані, що він занадто слабий, аби вирватися на волю.
+...	...
+Hope is an illusion...	Сподіваюсь, мені це привиділось...
+golden bee	бджола
+Despite their small size, golden bees tend to protect their master fiercely. They don't live long though.	Попри свій малий розмір, бджоли мають звичай люто захищати свій вулик. Хоча живуть вони недовго.
+This %s is wandering	%s блукає
+troll blacksmith	Троль-коваль
+This troll blacksmith looks like all trolls look: he is tall and lean, and his skin resembles stone in both color and texture. The troll blacksmith is tinkering with unproportionally small tools.	Цей коваль-троль нічим не відрізняється від інших тролів: високий, сутулий, шкіра наче каміння за кольором і текстурою. Коваль користується не пропорційно маленькими інструментами.
+Hey human! Wanna be useful, eh? Take dis pickaxe and mine me some _dark gold ore_, _15 pieces_ should be enough. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Агов, людинка! Хочеш бути чимось корисним, га?  Візьми цю кірку, та наколупай мені _самородків чорного золота_, _штук 15_ буде досить. Скільки заплачу? Ти гляди який жадібний...\nДобре, добре, немає у мене грошей, але я можу запропонувати тобі свою майстерність. Вважай, що ти щасливчик, знайшов єдиного коваля в цій місцині.
+Hey human! Wanna be useful, eh? Take dis pickaxe and _kill a bat_ wit' it, I need its blood on the head. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Агов, людинка! Хочеш бути чимось корисним, га?  Візьми цю кірку, та зарубай нею _кажана_, аби вістря було у її крові. Скільки заплачу? Ти гляди який жадібний...\nДобре, добре, немає у мене грошей, але я можу запропонувати тобі свою майстерність. Вважай, що ти щасливчик, знайшов єдиного коваля в цій місцині.
+Are you kiddin' me? Where is my pickaxe?!	Ти що, знущаєшся з мене? Де моя кірка?!
+Dark gold ore. 15 pieces. Seriously, is it dat hard?	Чорна золота руда. 15 шматків. Ну серйозно, невже це так важко?
+I said I need bat blood on the pickaxe. Chop chop!	Я сказав, що вістря має бути у крові кажана. Йди, йди!
+Oh, you have returned... Better late dan never.	Ти гляди, повернувся... Краще пізно, ніж ніколи.
+I'm busy. Get lost!	Я зайнятий. Зникни!
+your %s certainly looks better now	твій %s тепер виглядає краще
+Select 2 different items, not the same item twice!	Обери 2 різних предмети, не один і той же двічі!
+Select 2 items of the same type!	Обери 2 предмети однакового типу!
+I need to know what I'm working with, identify them first!	Я тобі що, довідкове бюро? Сам дізнавайся що то за предмети у тебе!
+I don't work with cursed items!	Ти що, я не працюю з проклятими предметами!
+It's a junk, the quality is too poor!	Це мотлох, якість взагалі ніяка!
+I can't reforge these items!	Я не можу перекувати ці предмети!
+sad ghost	Сумний привид
+The ghost is barely visible. It looks like a shapeless spot of faint light with a sorrowful face.	Ти ледь можеш розгледіти привида. Він більше схожий на димку з сумним обличчям.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my _dried rose_... It's very important to me... Some monster stole it from my body...	Привіт, мандрівнику... Колись я був таким же як і ти - сильним та впевненим... Тепер я мертвий... Але не можу покинути це місце... Доки я не знайду свою _посохлу троянду_... Ця річ для мене дуже цінна... Якесь чудовисько потягнуло її з мого бездиханного тіла...
+Please... Help me... _Find the rose_...	Прошу... Допоможи мені... Знайди троянду...
+Yes! Yes!!! This is it! Please give it to me! And you can take one of these items, maybe they will be useful to you in your journey...	Так! Так!!! Те, що треба! Будь ласка, віддай її мені! І можеш узяти одну з цих речей, вони можуть тобі знадобитися...
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my revenge... Slay the _fetid rat_, that has taken my life...	Привіт, мандрівнику... Колись я був таким же як і ти - сильним та впевненим... Тепер я мертвий... Але не можу покинути це місце... Доки я не завершу свою помсту... Вбий за мене _огидного щура_, який позбавила мене життя...
+Please... Help me... _Slay the abomination_...	Прошу... Допоможи мені... Здолай цю тварюку...
+Yes! The ugly creature is slain and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Так! Бридке створення загинуло, і я можу спочити з миром... Будь ласка, візьми будь яку з цих речей, вони можуть тобі знадобитися...
+Imps are lesser demons. They are notable for neither their strength nor their magic talent, but they are quite smart and sociable. Many imps prefer to live among non-demons.	Біси - нижчі демони. Вони не славляться своєю силою чи магічною могутністю, але достатньо розумні та охочі до спілкування. Багато хто бісів надають перевагу жити не з демонами.
+evaded	ухилився
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _golems_ who need to be killed. You see, I'm going to start a little business here, but these stupid golems are bad for business! It's very hard to negotiate with wandering lumps of granite, damn them! So please, kill... let's say _6 of them_ and a reward is yours.	Ти мандрівник? Обожнюю мандрівників! На них завжди можна покластися, якщо треба що-небудь вбити. Чи не так, га? За винагороду, звісно ж ;)\nВ нашому випадку _големи_ дуже потребують свого вбивства. Дивись в чому справа, я хотів розпочати тут одну справу, але ці дурні големи заплутали всі карти! Ходячі шматки граніту не дуже товариські, такі справи! Тому прошу, прибий... скажімо, _6 големів_, і я в боргу не залишуся.
+How is your golem safari going?	Як триває твоє сафарі на големів?
+Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _monks_ who need to be killed. You see, I'm going to start a little business here, but these lunatics don't buy anything themselves and will scare away other customers. So please, kill... let's say _8 of them_ and a reward is yours.	Ти мандрівник? Обожнюю мандрівників! На них завжди можна покластися, якщо треба що-небудь вбити. Чи не так, га? За винагороду, звісно ж ;)\nВ нашому випадку _монахи_ дуже потребують свого вбивства. Дивись в чому справа, я хотів розпочати тут одну справу, але ці фанатики самі нічого не купляють, ще й інших покупців лякають. Тому прошу, прибий... скажімо, _8 монахів_, і я в боргу не залишуся.
+Oh, you are still alive! I knew that your kung-fu is stronger ;) Just don't forget to grab these monks' tokens.	О, ти гляди, не помер! Я знав, що твоє кунг-фу сильніше ;) Тільки не забудь зібрати з цих монахів жетони.
+See you, %s!	Побачимося, %s!
+Psst, %s!	Псст, %s!
+ambitious imp	амбітний біс
+Imps are lesser demons. They are notable for neither their strength nor their magic talent. But they are quite smart and sociable, and many of imps prefer to live and do business among non-demons.	Біси - нижчі демони. Вони не славляться своєю силою чи магічною могутністю, але достатньо розумні та охочі до спілкування. Багато хто бісів надають перевагу жити та вести бізнес не з демонами.
+Hello, friend!	Привіт, друже!
+mirror image	двійник
+This illusion bears a close resemblance to you, but it's paler and twitches a little.	Ця ілюзія дуже схожа на тебе, трохи бліда та поблискує.
+rat king	король щурів
+This rat is a little bigger than a regular marsupial rat and it's wearing a tiny crown on its head.	Цей щур більший за інших та й на голові помітно маленьку корону.
+I'm not sleeping!	Я не сплю!
+What is it? I have no time for this nonsense. My kingdom won't rule itself!	Це ще що таке? Я не маю часу на усілякі дрібниці. Моє королівство само собою не правитиме!
+shopkeeper	торговець
+This stout guy looks more appropriate for a trade district in some large city than for a dungeon. His prices explain why he prefers to do business here.	Цей трохи пухлий індивідуум більше підходить для торгівлі десь в міському кварталі, а ніж в підземеллі. Хоча, судячи по цінах, йому і тут непогано.
+Select an item to sell	Обери предмет для продажу
+old wandmaker	старий майстер
+This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	Цей старий, але міцний на вигляд чолов'яга виглядає трохи стурбованим. Його оточує силовий щит.
+absorbed	поглинув
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	О, який приємний сюрприз, зустріти гідну людину в такій місцині! Я прийшов сюди в пошуках рідкісного інгредієнту, _насіння Гнилівки_. Як людина, яка знається на магії, я непогано даю ради місцевим монстрам, але заблукати для мене - раз плюнути, от сором, чесне слово. Чи не допоможеш старій людині? Я готовий оплатити твій час однією зі своїх чарівних паличок.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Щось вийшло з насінням Гнилівки, %s? Ні? Ну, не переживай, я не поспішаю.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	О, який приємний сюрприз, зустріти гідну людину в такій місцині! Я прийшов сюди в пошуках рідкісного інгредієнту, _трупного пилу_. Її можна зібрати з залишків кісток, яких тут вистачає. Як людина, яка знається на магії, я непогано даю ради місцевим монстрам, але заблукати для мене - раз плюнути, от сором, чесне слово. Чи не допоможеш старій людині? Я готовий оплатити твій час однією зі своїх чарівних паличок.
+Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Як наші пильні справи, %s? Я б в першу чергу оглянув купи кісток.
+A hidden pressure plate clicks!	Клацнула прихована натисна плита!
+Floor	Підлога
+Grass	Трава
+Water	Вода
+Wall	Стіна
+Closed door	Зачинені двері
+Open door	Відкриті двері
+Depth entrance	Глибокий підйом
+Depth exit	Глибокий спуск
+Embers	Жарина
+Locked door	Заблоковані двері
+Pedestal	П'єдестал
+Barricade	Барикада
+High grass	Висока трава
+Locked depth exit	Заблокована драбина вниз
+Unlocked depth exit	Розблокована драбина вниз
+Sign	Знак
+Well	Колодязь
+Empty well	Порожній колодязь
+Statue	Статуя
+Toxic gas trap	Пастка з токсичним газом
+Fire trap	Вогняна пастка
+Paralytic gas trap	Пастка з паралітичним газом
+Poison dart trap	Пастка з отруйними дротиками
+Alarm trap	Сигнальна пастка
+Lightning trap	Електророзрядна пастка
+Gripping trap	Затискальна пастка
+Summoning trap	Заклична пастка
+Triggered trap	Розряджена пастка
+Bookshelf	Книжкова шафа
+Alchemy pot	Алхімічний котел
+\\?\\?\\?	\\?\\?\\?
+You can't see the bottom.	Дна не видно.
+In case of burning step into the water to extinguish the fire.	Якщо загоришся, увійди до води, аби загасити полум'я.
+Stairs lead up to the upper depth.	Ці сходи ведуть догори.
+Stairs lead down to the lower depth.	Ці сходи ведуть вглиб.
+Embers cover the floor.	Підлога покрита вугіллям. 
+Dense vegetation blocks the view.	Густа рослинність перекриває огляд.
+This door is locked, you need a matching key to unlock it.	Ці двері заблоковані, тобі потрібен відповідний ключ, аби відкрити їх.
+Heavy bars block the stairs leading down.	Прохід перекрито тяжкими ґратами.
+The wooden barricade is firmly set but has dried over the years. Might it burn?	Дерев'яна барикада ладно зібрана, але затрухлявіла за роки. Цікаво, загориться?
+You can't read the text from here.	Ти не можеш розгледіти текст звідси.
+Stepping onto a hidden pressure plate will activate the trap.	Ставши на приховану пружинну плиту, ти активуєш пастку.
+The trap has been triggered before and it's not dangerous anymore.	Пастка вже спрацювала, тепер вона безпечна.
+Someone wanted to adorn this place, but failed, obviously.	Хтось хотів прикрасити це місце, але, вочевидь, зазнав невдачі.
+Drop some seeds here to cook a potion.	Закинь сюди насіння, аби зварити зілля.
+The well has run dry.	Колодязь пересох.
+Fluorescent moss	Мох, що світиться
+Fluorescent mushrooms	Люмінесцентні гриби
+Freezing cold water.	Крижана вода.
+The ladder leads up to the upper depth.	Драбина веде догори.
+The ladder leads down to the lower depth.	Драбина веде донизу.
+Huge mushrooms block the view.	Здоровезний гриб перекриває огляд.
+A vein of some ore is visible on the wall. Gold?	На стіні видно відкриту жилу якоїсь руди. Чи то не золото?
+Who would need a bookshelf in a cave?	Кому в підземеллі знадобилася книжкова шафа?
+A ramp leads down to the lower depth.	Рампа, що веде донизу.
+The statue depicts some dwarf standing in a heroic stance.	Статуя показує Дворфа в героїчній позі.
+The rows of books on different disciplines fill the bookshelf.	Полки заповнені різноманітними книгами.
+Books in ancient languages smolder in the bookshelf.	Цю шафу заповнено книгами, написані мертвою мовою.
+Cold lava	Холодна лава
+Embermoss	Вугле-мох
+Emberfungi	Вугле-гриб
+Pillar	Стовп
+It looks like lava, but it's cold and probably safe to touch.	Це дуже схоже на лаву, але вона холодна і на дотик безпечна.
+The pillar is made of real humanoid skulls. Awesome.	Стовп зроблено з черепів гуманоїдів. Щось неймовірне.
+Suspiciously colored water	Вода підозрілого кольору
+High blooming flowers	Високий квітучий кущ
+A ramp leads up to the upper depth.	Рампа, що веде догори.
+A ramp leads down to the Inferno.	Рампа, що веде донизу в пекло.
+Several tiles are missing here.	Тут не вистачає кількох плиток.
+Thick carpet covers the floor.	Підлогу вкрито щільним килимом.
+Dark cold water.	Темна холодна вода.
+There are old blood stains on the floor.	Навколо підлога заляпана старою кров'ю.
+This is probably a vestige of a prison library. Might it burn?	Схоже на залишки тюремної бібліотеки. Цікаво, загориться?
+Murky water	Каламутна вода
+Wet yellowish moss covers the floor.	Вологий жовтуватий мох вкрив підлогу.
+The bookshelf is packed with cheap useless books. Might it burn?	Полиці заповнені дешевими, безкорисними книжками. Цікаво, загориться?
+Select a seed to throw	Обери насіння
+Chasm	Провалля
+Yes, I know what I'm doing	Так, я знаю що роблю.
+No, I changed my mind	Ні, я змінив свою думку
+Do you really want to jump into the chasm? You can probably die.	Ти впевнений що бажаєш стрибнути донизу? Можеш розбитися.
+You fell to death...	Ти розбився...
+What are you doing here?!	Що ти тут робиш?!
+Don't overestimate your strength, use weapons and armor you can handle.	Не будь самовпевненим, використовуй доступні для тебе зброю та обладунки.
+Not all doors in the dungeon are visible at first sight. If you are stuck, search for hidden doors.	Не всі двері в підземеллі помітні з першого разу. Якщо ти не знаєш куди йти, спробуй пошукати приховані двері.
+Remember, that raising your strength is not the only way to access better equipment. You can go the other way, lowering its strength requirement with Scrolls of Upgrade.	Пам'ятай, що підвищення сили - це не єдиний шлях використовувати краще спорядження, ти може піти іншим шляхом, за допомогою сувоїв покращення зменшувати вимоги предметів до сили.
+Beware of Goo!	Стережись Жижі!
+Pixel-Mart. All you need for successful adventure!	Pixel-Mart - все що тобі потрібно для вдалої пригоди!
+Identify your potions and scrolls as soon as possible. Don't put it off to the moment when you actually need them.	Ідентифікуй сувої та зілля якомога раніше. Не відкладай до того моменту, коли вони тобі знадобляться.
+Being hungry doesn't hurt, but starving does hurt.	Голод не наносить шкоди, що не скажеш про виснаження.
+Surprise attack has a better chance to hit. For example, you can ambush your enemy behind a closed door when you know it is approaching.	Несподівана атака має більшу влучність. Наприклад, ти можеш зачекати ворога за зачиненими дверима, маючи впевненість, що він наближається.
+Don't let The Tengu out!	Не випускай Тенґу!
+Pixel-Mart. Spend money. Live longer.	Pixel-Mart. Більше витратиш. Довше проживеш.
+When you're attacked by several monsters at the same time, try to retreat behind a door.	Коли на тебе нападають декілька монстрів, спробуй відступити за двері.
+There is no sense in possessing more than one Ankh at the same time, because you will lose them upon resurrecting.	Немає сенсу тримати при собі більше одного Анкху, вони всі зникнуть при воскресінні.
+DANGER! Heavy machinery can cause injury, loss of limbs or death!	НЕБЕЗПЕКА! Тяжка техніка може бути причиною нанесення травм, втрати кінцівок та смерті!
+Pixel-Mart. A safer life in dungeon.	Pixel-Mart. Зроби безпечніше своє життя в підземеллі.
+When you upgrade an enchanted weapon, there is a chance to destroy that enchantment.	При покращені зачарованої зброї є шанс, що воно лишитися чарів.
+No weapons allowed in the presence of His Majesty!	В присутності Його Величності неприпустимо носіння зброї!
+Pixel-Mart. Special prices for demon hunters!	Pixel-Mart. Спеціальні знижки для мисливців на демонів!
+The trap emits a piercing sound that echoes throughout the dungeon!	Пастка генерує пронизливий звук, який лунає підземеллям!
+lightning trap	електрична пастка
+You were killed by a discharge of a lightning trap...	Тебе прибило розрядом електричної пастки...
+You don't know what is there.	Ти не знаєш, що там.
+Select a cell to examine	Обери комірку для вивчення
+Sacrificial chamber	Жертовна зала
+Killed by an explosion of a bomb on level %d	Загибель від вибуху бомби на %d-му рівні
+Do you want to respec into %s?	Бажаєш змінити спеціалізацію на %s?
+Yes, I want to respec	Так, хочу змінити спеціалізацію
+Maybe later	Можливо, пізніше
+Language	Мова
+dodged	ухилився
+Because of frequent use, your %s has broken.	Через часте використання твій %s зламався.
+Because of frequent use, your %s is going to break soon.	Через часте використання твій %s скоро зламається.
+bomb	бомба
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	Це порівняно невелика бомба, наповнена чорним порохом. На щастя, її ґніт запалюється сам, коли бомбу кидають.
+You killed yourself with a bomb...	Ти підірвав себе бомбою...
+honeypot	горщик меду
+SHATTER	РОЗБИТИ
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	У цьому маленькому горщику небагато меду, зате всередині живе золота бджола, яка не хоче його покидати.
+%s of auto-repair	%s самовідновлення
+enchantment of viscosity	зачарування в'язкості
+The enchantment of viscosity killed you...	Зачарування в'язкості вбило тебе...
+phantom fish	примарна риба
+sheep	вівця
+broken %s	зламаний %s
+Unequip one ring	Зняти одну каблучку
+Scroll of Enchantment	Сувій Зачарування
+Select an enchantable item	Обери предмет для зачарування
+your %s glows in the dark	твій %s сяє в темряві
+Scroll of Wipe Out	Сувій Винищення
+You are now familiar enough with your %s.	Тепер ти вже достатньо добре знаєш свій %s.
+Wand of Reach	Паличка Досяжності
+shocking %s	громовий %s
+tempered %s	загартований %s
+grim %s	похмурий %s
+blazing %s	палаючий %s
+eldritch %s	потойбічний %s
+unstable %s	нестабільний %s
+vampiric %s	вампіричний %s
+lucky %s	щасливий %s
+stunning %s	приголомшливий %s
+venomous %s	отруйний %s
+chilling %s	крижаний %s
+"Your sacrifice is worthy..."	"Твоя жертва гідна..."
+"Your sacrifice is unworthy..."	"Твоя жертва негідна..."
+"Your sacrifice is worthy and so you are!"	"Твоя жертва гідна — як і ти!"
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	Тут палає жертовний вогонь. Кожна істота, якої він торкнеться, стає підношенням духам підземелля.
+Marked for sacrifice	Позначено для жертви
+Immune to gases	Невразливість до газів
+You are hungry.	Ти голодний.
+You are starving!	Ти вмираєш від голоду!
+Blinded with rage	Засліплено люттю
+Zeroed in	На прицілі
+echo of 	відлуння 
+curse personification	втілення прокляття
+DM-350	DM-350
+Goo	Ґу
+spawn of Goo	породження Ґу
+King of Dwarves	Король дворфів
+undead King of Dwarves	мертвий Король дворфів
+undead dwarf	мертвий дворф
+memory of Tengu	спогад про Тенґу
+echo of Yog-Dzewa	відлуння Йоґ-Дзеви
+Yog-Dzewa	Йоґ-Дзева
+rotting fist	гниючий кулак
+burning fist	палаючий кулак
+god's larva	личинка бога
+Yes, I will do it for you	Так, я зроблю це для тебе
+No, I can't help you	Ні, я не можу тобі допомогти
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Є успіхи з _примарною рибою_, %s? Спробуй пошукати її в одній із тутешніх водойм.
+As you try to read the sign it bursts into greenish flames.	Щойно ти намагаєшся прочитати напис, табличка спалахує зеленкуватим полум'ям.
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	Золото можна витрачати в крамницях на глибших рівнях підземелля. Перша з них — на 6-му рівні.
+If you are burning, you can't put out the fire in the water while levitating.	Якщо ти гориш, то не зможеш згасити полум'я у воді, доки левітуєш.
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	Зброя й обладунки зношуються швидше за палички та каблучки, зате полагодити їх можна більшою кількістю способів.
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	Єдиний спосіб отримати Сувій Винищення — заслужити його як дарунок від духів підземелля.
+Choose language	Виберіть мову
+Key bindings	Призначення клавіш
+Switch to fullscreen	Перейти на весь екран
+Switch to windowed	Перейти у віконний режим
+Reset To Defaults	Відновити типові
+<None>	<Немає>
+Press a key for "%s", or press %s to remove the binding.	Натисніть клавішу для «%s» або %s, щоб видалити призначення.
+Hero Info	Відомості про героя
+Wait	Чекати
+Search	Шукати
+Examine cell	Оглянути клітинку
+Resume motion	Продовжити рух
+Backpack	Рюкзак
+Quickslot	Швидкий слот
+Attack	Атакувати
+Visible Enemies	Видимі вороги
+Zoom In	Наблизити
+Zoom Out	Віддалити
+Move North	Рух на північ
+Move South	Рух на південь
+Move West	Рух на захід
+Move East	Рух на схід
+Move NW	Рух на ПнЗ
+Move NE	Рух на ПнС
+Move SW	Рух на ПдЗ
+Move SE	Рух на ПдС
+Current Cell	Поточна клітинка
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Код і графіка: Watabou\nМузика: Cube_Code\n\nЦю гру створено під впливом Brogue Браяна Вокера. Спробуйте її на Windows, Mac OS або Linux — вона чудова! ;)\n\nДокладнішу інформацію шукайте на офіційному сайті:
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	Локалізація: rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+%1$s hit %2$s	%1$s влучає в %2$s
+%1$s defeated %2$s	%1$s перемагає %2$s
+Languages	Мови
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	Цю крихітну напівпрозору рибку ледве видно навіть у повітрі. У воді вона стає практично невидимою.
+You can only wear two rings at a time. Unequip one of your equipped rings.	Одночасно можна носити лише дві каблучки. Зніміть одну з уже споряджених.
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	Цей сувій може накласти випадкові чари на зброю або обладунок, наділивши їх особливою силою.
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	Прочитайте цей сувій, щоб вивільнити лють духів підземелля й знищити все на поточному рівні. Ну, майже все: на деяких могутніх істот він може не подіяти.
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	Цей корисний жезл дає змогу притягувати предмети здалеку й мінятися місцями з ворогами. Хвилі магічної сили впливають на всі клітинки на своєму шляху: активують пастки, витоптують високу рослинність, відчиняють зачинені двері та зачиняють відчинені.
+broken %1$s :%2$d	зламаний %1$s :%2$d
+a broken	зламаний
+%1$s: "%2$s"	%1$s: «%2$s»
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	Ця істота схожа на сумного привида, але довкола неї вирує пітьма. На її обличчі застиг відчай.
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Вітаю, мандрівнику... Колись я був таким, як ти: сильним і впевненим... А тепер я мертвий... Та не можу покинути це місце, бо мене тримає жахливе прокляття... Будь ласка... Допоможи мені... _Знищ прокляття_...
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Дякую, %s! Прокляття зруйновано, і тепер я нарешті можу спочити... Візьми один із цих предметів — можливо, він стане в пригоді у твоїй подорожі...
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	О, яка приємна несподіванка — зустріти порядну людину в такому місці! Я прийшов сюди по рідкісний складник — _примарну рибу_. Її можна зловити голими руками, але у воді майже неможливо помітити. Як маг, я цілком здатен захиститися від місцевих чудовиськ, та постійно гублюся — це дуже ніяково. Можливо, ти мені допоможеш? За послугу я охоче віддам один зі своїх найкращих жезлів.
+1	1

@@ -1,0 +1,105 @@
+LibGDX port: Arcnor / Web port: nojus297	LibGDX移植: Arcnor / Web移植: nojus297
+Telegram port: @barboskich	Telegram移植: @barboskich
+Say thanks	感謝を伝える
+Thank you!	ありがとう！
+This is a voluntary tip for the Telegram port. It never affects gameplay.	Telegram移植版への任意の応援です。ゲーム内容には一切影響しません。
+Support with Telegram Stars	Telegram Starsで応援
+Open @barboskich	@barboskichを開く
+Sacrificial chamber	生贄の間
+Killed by an explosion of a bomb on level %d	%d階で爆弾の爆発に巻き込まれて死亡
+Do you want to respec into %s?	専門を%sに変更しますか？
+Yes, I want to respec	はい、専門を変更する
+Maybe later	また後で
+Language	言語
+Because of frequent use, your %s has broken.	使い込みすぎて、%sは壊れてしまった。
+Because of frequent use, your %s is going to break soon.	使い込みすぎて、%sはもうすぐ壊れそうだ。
+bomb	爆弾
+This is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.	黒色火薬を詰めた、比較的小さな爆弾だ。ありがたいことに、投げると導火線へ自動で火がつく。
+You killed yourself with a bomb...	自分の爆弾で自爆した…
+honeypot	蜂蜜壺
+SHATTER	叩き割る
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	小さな壺に蜂蜜はあまり残っていないが、金色の蜂が一匹、ここを離れまいとしている。
+%s of auto-repair	自己修復の%s
+enchantment of viscosity	粘性の付与魔法
+The enchantment of viscosity killed you...	粘性の付与魔法に殺された…
+phantom fish	幻影魚
+broken %s	壊れた%s
+Unequip one ring	指輪を一つ外す
+Scroll of Enchantment	付与の巻物
+Select an enchantable item	魔法を付与するアイテムを選択
+your %s glows in the dark	%sが闇の中で輝いた
+Scroll of Wipe Out	殲滅の巻物
+You are now familiar enough with your %s.	%sの扱いにはもう十分慣れた。
+Wand of Reach	引き寄せの杖
+shocking %s	電撃の%s
+tempered %s	鍛錬された%s
+"Your sacrifice is worthy..."	「その生贄には価値がある…」
+"Your sacrifice is unworthy..."	「その生贄には価値がない…」
+"Your sacrifice is worthy and so you are!"	「その生贄には価値がある。お前自身にもな！」
+Sacrificial fire burns here. Every creature touched by this fire is marked as an offering for the spirits of the dungeon.	ここには生贄の炎が燃えている。この炎に触れた者は皆、ダンジョンの精霊への供物として印を刻まれる。
+Marked for sacrifice	生贄の印
+Immune to gases	気体への耐性
+Blinded with rage	怒りで我を忘れている
+Zeroed in	照準済み
+echo of 	残響・
+curse personification	呪いの化身
+DM-350	DM-350
+spawn of Goo	グゥの落とし子
+King of Dwarves	ドワーフの王
+undead King of Dwarves	不死のドワーフ王
+memory of Tengu	天狗の記憶
+echo of Yog-Dzewa	ヨグ＝ゼーヴァの残響
+Yes, I will do it for you	ああ、君のためにやろう
+No, I can't help you	いや、力にはなれない
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	_幻影魚_は見つかったか、%s？ この辺りの水溜まりを探してみるといい。
+As you try to read the sign it bursts into greenish flames.	看板を読もうとした瞬間、緑がかった炎に包まれた。
+You can spend your gold in shops on deeper levels of the dungeon. The first one is on the 6th level.	さらに深い階層の店でゴールドを使える。最初の店は6階だ。
+If you are burning, you can't put out the fire in the water while levitating.	空中浮遊中は、燃えていても水で火を消すことはできない。
+Weapons and armors deteriorate faster than wands and rings, but there are more ways to fix them.	武器と鎧は杖や指輪より早く傷むが、修理する手段も多い。
+The only way to obtain a Scroll of Wipe Out is to receive it as a gift from the dungeon spirits.	殲滅の巻物を得る唯一の方法は、ダンジョンの精霊から褒美として授かることだ。
+Choose language	言語を選択
+Key bindings	キー設定
+Switch to fullscreen	フルスクリーンに切り替え
+Switch to windowed	ウィンドウ表示に切り替え
+Reset To Defaults	初期設定に戻す
+<None>	<なし>
+Press a key for "%s", or press %s to remove the binding.	「%s」に割り当てるキーを押してください。%sで割り当てを解除します。
+Hero Info	勇士の情報
+Wait	待機
+Search	探索
+Examine cell	マスを調べる
+Resume motion	移動を再開
+Backpack	バックパック
+Quickslot	クイックスロット
+Attack	攻撃
+Visible Enemies	見えている敵
+Zoom In	拡大
+Zoom Out	縮小
+Move North	北へ移動
+Move South	南へ移動
+Move West	西へ移動
+Move East	東へ移動
+Move NW	北西へ移動
+Move NE	北東へ移動
+Move SW	南西へ移動
+Move SE	南東へ移動
+Current Cell	現在のマス
+Pixel Dungeon	Pixel Dungeon
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	コード・グラフィック：Watabou\n音楽：Cube_Code\n\nこのゲームはBrian WalkerのBrogueに着想を得ています。Windows、Mac OS、Linuxで遊べる素晴らしい作品です！ ;)\n\n詳しくは公式サイトをご覧ください：
+pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
+Languages Create: rodriformiga	ローカライズ：rodriformiga
+rodriformiga@gmail.com	rodriformiga@gmail.com
+Languages	言語
+You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	この小さな半透明の魚は、空中でもかろうじて見える程度だ。水中ではほとんど完全に見えなくなる。
+You can only wear two rings at a time. Unequip one of your equipped rings.	同時に装備できる指輪は二つまでだ。装備中の指輪を一つ外そう。
+This scroll is able to imbue a weapon or an armor with a random enchantment, granting it a special power.	この巻物は武器か防具に無作為な魔法を宿し、特別な力を与えることができる。
+Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	この巻物を読むとダンジョンの精霊たちの怒りが解き放たれ、現在の階にいるすべてを死滅させる。もっとも、ほぼすべてだ。強大な生物の中には効かないものもいる。
+This utility wand can be used to grab objects from a distance and to switch places with enemies. Waves of magic force radiated from it will affect all cells on their way triggering traps, trampling high vegetation, opening closed doors and closing open ones.	この便利な杖は、離れた物を引き寄せたり、敵と位置を入れ替えたりできる。放たれた魔力の波は通り道のすべてのマスに作用し、罠を作動させ、背の高い草を踏み倒し、閉じた扉を開け、開いた扉を閉じる。
+broken %1$s :%2$d	壊れた%1$s：%2$d
+a broken	壊れた
+%1$s: "%2$s"	%1$s：「%2$s」
+This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	この生物は悲しげな幽霊に似ているが、その周囲では闇が渦巻いている。顔には絶望の色が浮かんでいる。
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	こんにちは、冒険者よ… 私もかつては君のように強く、自信に満ちていた… だが今は死んでいる… 恐ろしい呪いに縛られ、この場所を離れられない… 頼む… 助けてくれ… _呪いを解いてくれ_…
+Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	ありがとう、%s！ 呪いは解け、ようやく安らかに眠れる… この品のどちらかを受け取ってくれ。旅の役に立つかもしれない…
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	おお、こんな場所でまともな人に会えるとは嬉しい驚きだ！ 私は珍しい素材、_幻影魚_を探しに来た。素手で捕まえられるが、水中ではほとんど見えない。魔法使いだからこの辺りの怪物から身を守ることはできるのだが、すぐ道に迷ってしまってね。実に恥ずかしい。手を貸してくれないか？ お礼に私の最高の杖を一本差し上げよう。
+1	1

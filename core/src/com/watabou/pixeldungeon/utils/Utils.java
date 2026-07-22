@@ -17,46 +17,82 @@
  */
 package com.watabou.pixeldungeon.utils;
 
+import com.watabou.pixeldungeon.i18n.Localization;
+
 public class Utils {
 
 	public static String capitalize( String str ) {
+		if (str == null || str.length() == 0) {
+			return str;
+		}
 		return Character.toUpperCase( str.charAt( 0 ) ) + str.substring( 1 );
 	}
 	
 	public static String format( String format, Object...args ) {
+		format = Localization.translateFormat( format );
 		StringBuilder builder = new StringBuilder();
-		int arg = 0;
+		int nextArg = 0;
 		for (int i = 0; i < format.length(); i++) {
 			if (format.charAt(i) == '%') {
-				switch (format.charAt(++i)) {
-					case '+':
-						if (format.charAt(++i) != 'd')
-							throw new RuntimeException("Invalid format");
-						if (((Number)args[arg]).doubleValue() >= 0)
-							builder.append('+');
-					case 'd':
-					case 's':
-					case 'f':
-						builder.append(args[arg++]);
-						break;
+				if (++i >= format.length()) {
+					throw new RuntimeException( "Invalid format" );
+				}
+				if (format.charAt( i ) == '%') {
+					builder.append( '%' );
+					continue;
+				}
 
-					case '%':
-						builder.append('%');
-						break;
+				int argument = -1;
+				int digitsStart = i;
+				while (i < format.length() && Character.isDigit( format.charAt( i ) )) {
+					i++;
+				}
+				if (i > digitsStart && i < format.length() && format.charAt( i ) == '$') {
+					argument = Integer.parseInt( format.substring( digitsStart, i ) ) - 1;
+					i++;
+				} else {
+					i = digitsStart;
+				}
 
-					default:
-						throw new RuntimeException("Unknown format");
+				boolean showPlus = i < format.length() && format.charAt( i ) == '+';
+				if (showPlus) {
+					i++;
+				}
+				if (i >= format.length() || "dsf".indexOf( format.charAt( i ) ) < 0) {
+					throw new RuntimeException( "Unknown format" );
+				}
+
+				if (argument < 0) {
+					argument = nextArg++;
+				}
+				if (argument < 0 || argument >= args.length) {
+					throw new RuntimeException( "Missing format argument" );
+				}
+
+				Object value = args[argument];
+				if (showPlus && value instanceof Number && ((Number)value).doubleValue() >= 0) {
+					builder.append( '+' );
+				}
+				if (value instanceof String) {
+					builder.append( Localization.translate( (String)value ) );
+				} else {
+					builder.append( value );
 				}
 			} else {
 				builder.append(format.charAt(i));
 			}
 		}
-		return builder.toString();
+		return Localization.translate( builder.toString() );
 	}
 	
 	public static String VOWELS	= "aoeiu";
 	
 	public static String indefinite( String noun ) {
+		// The English a/an rule cannot be applied safely to translated nouns;
+		// localized item names already carry the grammar their language needs.
+		if (!Localization.ENGLISH.equals( Localization.language() )) {
+			return noun;
+		}
 		if (noun.length() == 0) {
 			return "a";
 		} else {

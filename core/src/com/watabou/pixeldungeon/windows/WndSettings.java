@@ -44,6 +44,7 @@ public class WndSettings extends Window {
 	private static final String TXT_SOUND	= "Sound FX";
 
 	private static final String TXT_BINDINGS	= "Key bindings";
+	private static final String TXT_LANGUAGE	= "Language";
 	
 	private static final String TXT_BRIGHTNESS	= "Brightness";
 	
@@ -64,7 +65,7 @@ public class WndSettings extends Window {
 	
 	public WndSettings( boolean inGame ) {
 		super();
-		
+		float nextY = BTN_HEIGHT + GAP;
 		
 		if (inGame) {
 			int w = BTN_HEIGHT;
@@ -106,6 +107,16 @@ public class WndSettings extends Window {
 			btnScaleUp.setRect( 0, 0, WIDTH, BTN_HEIGHT );
 			btnScaleUp.checked( PixelDungeon.scaleUp() );
 			add( btnScaleUp );
+
+			RedButton btnLanguage = new RedButton( TXT_LANGUAGE ) {
+				@Override
+				protected void onClick() {
+					parent.add( new WndLanguage() );
+				}
+			};
+			btnLanguage.setRect( 0, nextY, WIDTH, BTN_HEIGHT );
+			add( btnLanguage );
+			nextY = btnLanguage.bottom() + GAP;
 			
 		}
 		
@@ -116,7 +127,7 @@ public class WndSettings extends Window {
 				PixelDungeon.music( checked() );
 			}
 		};
-		btnMusic.setRect( 0, BTN_HEIGHT + GAP, WIDTH, BTN_HEIGHT );
+		btnMusic.setRect( 0, nextY, WIDTH, BTN_HEIGHT );
 		btnMusic.checked( PixelDungeon.music() );
 		add( btnMusic );
 		

@@ -70,6 +70,9 @@ public class DesktopInputProcessor extends PDInputProcessor {
 
 	@Override
 	public GameActionWrapper setKeyMapping( GameAction action, boolean defaultKey, int code ) {
+		if (code <= 0) {
+			return removeKeyMapping( action, defaultKey, code );
+		}
 		final GameActionWrapper existingMapping = keyMappings.get(code);
 		keyMappings.put(code, new GameActionWrapper(action, defaultKey));
 		Preferences.INSTANCE.put( getPrefKey( action, defaultKey ), code);

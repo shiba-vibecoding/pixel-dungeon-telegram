@@ -72,6 +72,9 @@ public class HtmlInputProcessor extends PDInputProcessor {
 
 	@Override
 	public GameActionWrapper setKeyMapping( GameAction action, boolean defaultKey, int code ) {
+		if (code <= 0) {
+			return removeKeyMapping( action, defaultKey, code );
+		}
 		final GameActionWrapper existingMapping = keyMappings.get(code);
 		keyMappings.put(code, new GameActionWrapper(action, defaultKey));
 		Preferences.INSTANCE.put( getPrefKey( action, defaultKey ), code);
@@ -121,15 +124,24 @@ public class HtmlInputProcessor extends PDInputProcessor {
 
 	@Override
 	public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-		eventTouch.dispatch(pointers.remove(pointer).up());
-		return true;
+		Touch touch = pointers.remove(pointer);
+		if (touch != null) {
+			touch.update(screenX, screenY);
+			eventTouch.dispatch(touch.up());
+			return true;
+		}
+		return false;
 	}
 
 	@Override
 	public boolean touchDragged(int screenX, int screenY, int pointer) {
-		pointers.get(pointer).update(screenX, screenY);
-		eventTouch.dispatch(null);
-		return true;
+		Touch touch = pointers.get(pointer);
+		if (touch != null) {
+			touch.update(screenX, screenY);
+			eventTouch.dispatch(null);
+			return true;
+		}
+		return false;
 	}
 	
 
