@@ -109,7 +109,6 @@ Huntresses are proficient with missile weapons and get a damage bonus for excess
 Huntresses gain more health from dewdrops.	女獵手透過露水回復的生命值較多。
 Huntresses sense neighboring monsters even if they are hidden behind obstacles.	女獵手可以感知到附近的怪物，即使它們躲在障礙物後面。
 gladiator	鬥士
-A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	當_鬥士_用近戰武器攻擊成功時可以進行連擊，每一次連續擊中的攻擊都會造成更大的傷害。
 berserker	狂戰士
 When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	當_狂戰士_受傷嚴重時會進入狂怒的狀態，大幅提高攻擊輸出。
 warlock	術士
@@ -292,7 +291,6 @@ Switch to portrait	轉換成垂直畫面
 Switch to landscape	轉換成水平畫面
 The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	這座地城就在城鎮正下方，其實頭幾層還構成了城鎮的地下水道系統。名義上這些樓層算是城鎮的一部份，沒那麼危險。雖然稱不上是安全的地方，但至少在這裡你還不需要應付邪惡的魔法。
 Many years ago an underground prison was built here for the most dangerous criminals. At the time it seemed like a very clever idea, because this place indeed was very hard to escape. But soon dark miasma started to permeate from below, driving prisoners and guards insane. In the end the prison was abandoned, though some convicts were left locked up here.	許多年前這裡曾經蓋了一座監獄來囚禁最危險的犯人。當時看來是個非常聰明的主意，因為這地方確實很難逃脫。但不久後黑暗的戾氣就從深處開始瀰漫開來，把犯人和守衛都逼瘋了。最後這個監獄遭到廢棄，雖然有些囚犯仍被關在此處。
-The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	這些從廢棄監獄延伸而下的洞窟人煙罕至。因為位置太深而無法被城鎮利用，貧乏的礦產又不足以引起矮人的興趣。過去這裡曾有個貿易據點位在兩大城邦的往來路線上，但已隨著矮人大都城的沒落而消亡。如今這裡只剩無所不在的豺狼人和地底動物棲息著。
 Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday the mechanized army of dwarves has successfully repelled the invasion of the old god and his demon army. But it is said, that the returning warriors have brought seeds of corruption with them, and that victory was the beginning of the end for the underground kingdom.	矮人大都城曾是最大的矮人城邦。在全盛時期時它曾以機械軍隊成功擊退入侵的上古之神和其惡魔大軍。但人們說腐敗的種子隨著凱旋的戰士們歸來，而這場勝利就此拉開了地下王國滅亡的序幕。
 In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	這幾階樓層本來是大都城的外圍地帶。在那場面對上古之神元氣大傷的勝利後，矮人們已經沒有餘力剷除殘存的惡魔。漸漸的惡魔們掌控了這個地方，現在這裡叫做惡魔大廳。\n\n很少有冒險者能到達這麼深的地方...
 FOR SALE: %1$s - %2$dg	特價：%1$s - %2$dg
@@ -1033,7 +1031,6 @@ Oh, what a pleasant surprise to meet a decent person in such place! I came here 
 Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	有找到_墮落之果的種子_嗎，%s？沒關係，我不急。
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	哦，在這種地方遇上一位體面的人真讓人驚喜！我是來這裡尋找一種稀有材料的──_屍塵_。它可以從骨骸上收集到，而這個地城中有大量這種東西。身為一位魔法師，我可以從怪物手中保護自己，但一下子就迷路了，真丟臉。也許你能幫助我？我很樂意用其中一把最好的法杖來回報你。
 Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	有找到_屍塵_嗎，%s？骨骸堆是最明顯的搜尋處。
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	哦，在這種地方遇上一位體面的人真讓人驚喜！我是來這裡尋找一種稀有材料的──_幻影魚_。它們可以用徒手抓住，但在水中非常不容易注意到它們。身為一位魔法師，我可以從怪物手中保護自己，但一下子就迷路了，真丟臉。也許你能幫助我？我很樂意用其中一把最好的法杖來回報你。
 Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	有找到_幻影魚_嗎，%s？你也許可以在某個水池中找找看。
 A hidden pressure plate clicks!	觸動到一塊隱藏的壓板了！
 Floor	地板
@@ -1186,3 +1183,11 @@ Select a wand to merge	選擇一根要融合的法杖
 +1 str, +5 ht	+1 力量，+5 生命
 +1 str	+1 力量
 Games played: 	遊玩次數：
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	近戰攻擊成功後，_鬥士_會開始連擊；之後每次連續命中都會造成更多傷害。
+The more enemies surround the _Berserker_, the faster he performs his attacks. When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	包圍_狂戰士_的敵人越多，他的攻擊速度就越快。身受重傷時，_狂戰士_會陷入狂怒，大幅提高造成的傷害。
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	廢棄監獄下方的洞窟人煙稀少。這裡埋藏得太深，城鎮無力開發；礦藏又過於貧乏，無法引起矮人的興趣。過去，兩國之間的商路上曾設有一座貿易前哨，但它隨著矮人大都會的衰落一同消亡。如今這裡只剩隨處可見的豺狼人和地底動物。
+15 monsters killed at nighttime	在夜間擊殺15隻怪物
+That food tasted ok.	這食物味道還行。
+Paralysed	麻痺
+Terror	恐懼
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	哦，真沒想到能在這種地方遇見一位正派的人！我是來尋找一種稀有材料——_幻影魚_的。牠可以徒手抓住，但在水中極難發現。身為法師，我對付這裡的怪物不成問題，可我總是很快迷路，實在難為情。你願意幫我嗎？我很樂意拿一根最好的法杖作為報酬。

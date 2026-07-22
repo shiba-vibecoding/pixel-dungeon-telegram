@@ -24,6 +24,7 @@ import com.watabou.pixeldungeon.DungeonTilemap;
 import com.watabou.pixeldungeon.actors.blobs.Blob;
 import com.watabou.pixeldungeon.levels.Level;
 import com.watabou.pixeldungeon.levels.Terrain;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.ui.Window;
 
@@ -61,7 +62,8 @@ public class WndInfoCell extends Window {
 		BitmapTextMultiline info = PixelScene.createMultiline( 6 );
 		add( info );
 		
-		StringBuilder desc = new StringBuilder( Dungeon.level.tileDesc( tile ) );
+		StringBuilder desc = new StringBuilder(
+			Localization.translate( Dungeon.level.tileDesc( tile ) ) );
 		
 		final char newLine = '\n';
 		for (Blob blob:Dungeon.level.blobs.values()) {
@@ -69,7 +71,7 @@ public class WndInfoCell extends Window {
 				if (desc.length() > 0) {
 					desc.append( newLine );
 				}
-				desc.append( blob.tileDesc() );
+				desc.append( Localization.translate( blob.tileDesc() ) );
 			}
 		}
 		

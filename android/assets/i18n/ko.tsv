@@ -103,7 +103,6 @@ Huntresses are proficient with missile weapons and get a damage bonus for excess
 Huntresses gain more health from dewdrops.	사냥꾼은 이슬로부터 더 많은 양의 체력을 회복합니다.
 Huntresses sense neighboring monsters even if they are hidden behind obstacles.	사냥꾼은 근처에 있는 적이 장애물 뒤에 숨어 있어도 인식할 수 있습니다.
 gladiator	검투사
-A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	근접 무기를 이용한 공격에 성공하면 _검투사_는 연타를 시작하고, 다음 공격이 성공할 때마다 추가로 데미지를 입힌다.
 berserker	광전사
 When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	부상이 심하면, _광전사_는 광분 상태가 되며 공격력이 크게 상승한다.
 warlock	흑마법사
@@ -277,7 +276,6 @@ Switch to portrait	세로 모드로 전환
 Switch to landscape	가로 모드로 전환
 The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	던전은 도시 아래 위치하고 있습니다. 실제로 상위 레벨은 도시의 하수 시스템이 구성되어 있습니다. 명목상 도시의 일부이기 때문에 이 수준은 위험하지 않습니다. 아무도 이곳을 안전하게 요청하지 않았기 때문에 당신은 여기에 모든 사악한 마법을 전부 처리 할 필요는 없습니다.
 Many years ago an underground prison was built here for the most dangerous criminals. At the time it seemed like a very clever idea, because this place indeed was very hard to escape. But soon dark miasma started to permeate from below, driving prisoners and guards insane. In the end the prison was abandoned, though some convicts were left locked up here.	몇 년 전 위험한 범죄자들을 가두기 위해 지하감옥이 여기에 세워졌습니다. 이곳은 매우 탈출하기 어려웠기때문에 당시에는 좋은 생각처럼 보였습니다. 그러나 곧 어두운 독기가 간수와 죄수들에게 침투해 그들이 미치기 시작했습니다. 결국 일부 죄수가 남아있었지만 지하감옥은 버려졌습니다.
-The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	그 동굴은, 버려진 지하감옥 밑에 있었습니다. 그들이 이용하기에 너무 깊은 곳에 있었고 미네랄에 관심이 있는 드워프들은 가난했습니다. 과거에 두 도시사이에 무역전초 기지가 있었지만 드워프의 도시가 쇠퇴한뒤에 사라졌습니다. 그곳엔 아직 놀과 지하동물들이 있습니다.
 Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday the mechanized army of dwarves has successfully repelled the invasion of the old god and his demon army. But it is said, that the returning warriors have brought seeds of corruption with them, and that victory was the beginning of the end for the underground kingdom.	드워프 메트로폴리스는 한때 드워프의 도시국가중 제일 거대했다. 전성기에 드워프의 기계화 군대가 고대신과 악마군대의 침공을 성공적으로 물리쳤다. 그러나 돌아온 전사들은 타락했고 그 승리가 지하왕국의 종말의 시작이라고 말하고 있다.
 In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	과거에 이러한 수준은 대도시의 외곽정도였다. 이전에 드워프와 고대신과의 전쟁에서 승리한 후 비용이 너무 많이 드는 나머지, 남은 약화된 악마들을 소탕하지 않았다. 그러자 점차 악마들은 점차 지역을 지배하고 악마들을 소환하기 시작했다. 극소수의 모험가의 후손들에게만 전해져...
 FOR SALE: %1$s - %2$dg	할인 : %1$s - %2$dg
@@ -1186,3 +1184,10 @@ Level %1$d %2$s	레벨 %1$d %2$s
 Sound FX	효과음
 END THE GAME	게임 종료
 Games played: 	플레이 수:
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	근접 무기 공격에 성공하면 _검투사_는 연계를 시작하며, 이후 공격이 연속으로 적중할 때마다 더 큰 피해를 준다.
+The more enemies surround the _Berserker_, the faster he performs his attacks. When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	_광전사_는 주변의 적이 많을수록 더 빠르게 공격한다. 심하게 다치면 _광전사_는 광폭한 분노에 빠져 주는 피해가 크게 증가한다.
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	버려진 감옥 아래로 이어지는 동굴은 인적이 드물다. 도시가 개발하기에는 너무 깊고, 드워프의 관심을 끌기에는 광물이 너무 빈약하다. 과거에는 두 왕국을 연결하는 길목에 교역 전초기지가 있었지만, 드워프 대도시의 쇠퇴와 함께 사라졌다. 이제 이곳에는 어디에나 있는 놀과 지하 동물들만 살아간다.
+15 monsters killed at nighttime	밤에 몬스터 15마리 처치
+That food tasted ok.	먹을 만했다.
+Paralysed	마비
+Terror	공포

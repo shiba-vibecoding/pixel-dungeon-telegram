@@ -37,7 +37,22 @@ RAW_TEXT_CONCAT = re.compile(r'\breturn\s+(TXT_[A-Z0-9_]*)\s*\+')
 RETURN_EXPRESSION = re.compile(
     r'\breturn\s+((?:(?:"(?:\\.|[^"\\])*")|[^;])*);', re.DOTALL)
 NAME_ASSIGNMENT = re.compile(r'\bname\s*=\s*(.*?);', re.DOTALL)
+DISPLAY_ASSIGNMENT = re.compile(
+    r'\b(message|plantName|label|title|wood|rune|txtQuest\d*)\s*=\s*'
+    r'((?:(?:"(?:\\.|[^"\\])*")|[^;])*);', re.DOTALL)
+RAW_DISPLAY_BUILDER = re.compile(
+    r'new\s+StringBuilder\s*\(\s*'
+    r'(?!Utils\.format\s*\(|Localization\.translate\s*\()'
+    r'[A-Za-z0-9_.]+\.(?:description|tileDesc)\s*\(')
+RAW_DISPLAY_APPEND = re.compile(
+    r'\.append\s*\(\s*'
+    r'(?!Utils\.format\s*\(|Localization\.translate\s*\()'
+    r'[A-Za-z0-9_.]+\.(?:description|tileDesc)\s*\(')
 POSITIONAL_ARGUMENT = re.compile(r'%(\d+)\$')
+
+CONTEXT_SEQUENCE_FILES = {
+    'Badges.java', 'HeroSubClass.java', 'WndStory.java'
+}
 
 
 def read(path):
@@ -186,6 +201,12 @@ def main():
             for match in RAW_INFO_BUILDER.finditer(source):
                 dynamic.append((path, line_number(source, match.start()),
                                 'item info', 'description is composed before localization'))
+            for match in RAW_DISPLAY_BUILDER.finditer(source):
+                dynamic.append((path, line_number(source, match.start()),
+                                'display text', 'description is composed before localization'))
+            for match in RAW_DISPLAY_APPEND.finditer(source):
+                dynamic.append((path, line_number(source, match.start()),
+                                'display text', 'description is appended without localization'))
             for match in INFO_APPEND.finditer(source):
                 expression = match.group(1)
                 literal_text = ''.join(
@@ -200,7 +221,7 @@ def main():
                                 match.group(1), 'raw text constant is concatenated before localization'))
             for match in RETURN_EXPRESSION.finditer(source):
                 value = string_expression(match.group(1))
-                if player_facing(value, 'RETURN_TEXT'):
+                if player_facing(value, 'TXT_RETURN'):
                     found.setdefault(value, (path, line_number(source, match.start()), 'returned text'))
                 elif value is None and '+' in match.group(1) and JAVA_STRING.search(match.group(1)):
                     literal_text = ''.join(
@@ -225,6 +246,25 @@ def main():
                         if player_facing(option, 'TXT_NAME'):
                             found.setdefault(option, (
                                 path, line_number(source, match.start()), 'display name option'))
+            for match in DISPLAY_ASSIGNMENT.finditer(source):
+                value = string_expression(match.group(2))
+                if player_facing(value, 'TXT_DISPLAY_FIELD'):
+                    found.setdefault(value, (
+                        path, line_number(source, match.start()),
+                        'display field ' + match.group(1)))
+
+            # These legacy enums/maps store visible prose as constructor or
+            # map arguments instead of named TXT_ fields.  Audit every
+            # sentence-length literal sequence in the small known set so a
+            # typo cannot silently bypass exact-key translation again.
+            if filename in CONTEXT_SEQUENCE_FILES:
+                for match in STRING_SEQUENCE.finditer(source):
+                    value = string_expression(match.group(0))
+                    if (value and len(re.findall(r'[A-Za-z]+', value)) >= 3
+                            and player_facing(value, 'TXT_CONTEXT')):
+                        found.setdefault(value, (
+                            path, line_number(source, match.start()),
+                            'contextual display text'))
 
     missing = []
     for value, location in found.items():

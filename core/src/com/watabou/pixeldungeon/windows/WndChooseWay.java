@@ -18,6 +18,7 @@
 package com.watabou.pixeldungeon.windows;
 
 import com.watabou.pixeldungeon.actors.hero.HeroSubClass;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.items.TomeOfMastery;
 import com.watabou.pixeldungeon.sprites.ItemSprite;
 import com.watabou.pixeldungeon.ui.HighlightedText;
@@ -38,7 +39,8 @@ public class WndChooseWay extends Window {
 		final String TXT_MASTERY	= "Which way will you follow?";
 		final String TXT_CANCEL		= "I'll decide later";
 		
-		float bottom = createCommonStuff( tome, way1.desc() + "\n\n" + way2.desc() + "\n\n" + TXT_MASTERY );
+		float bottom = createCommonStuff( tome, way1.desc() + "\n\n" + way2.desc() +
+			"\n\n" + Localization.translate( TXT_MASTERY ) );
 		
 		RedButton btnWay1 = new RedButton( Utils.capitalize( way1.title() ) ) {
 			@Override

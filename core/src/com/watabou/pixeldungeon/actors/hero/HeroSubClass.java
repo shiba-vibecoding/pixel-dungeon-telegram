@@ -17,6 +17,7 @@
  */
 package com.watabou.pixeldungeon.actors.hero;
 
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.utils.Bundle;
 
 public enum HeroSubClass {
@@ -64,7 +65,10 @@ public enum HeroSubClass {
 	}
 	
 	public String desc() {
-		return desc;
+		// Subclass descriptions are often joined into a larger mastery message.
+		// Translate each paragraph before it is composed, otherwise an exact-key
+		// catalogue lookup can only see the combined (and therefore unknown) text.
+		return Localization.translate( desc );
 	}
 	
 	private static final String SUBCLASS	= "subClass";

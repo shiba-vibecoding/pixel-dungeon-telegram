@@ -100,7 +100,6 @@ Huntresses are proficient with missile weapons and get a damage bonus for excess
 Huntresses gain more health from dewdrops.	ハントレスは雫からより多くの体力を得られる。
 Huntresses sense neighboring monsters even if they are hidden behind obstacles.	ハントレスは、たとえモンスターが障害物の陰に隠れていても、それを感知することができる。
 gladiator	グラディエーター
-A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	近接武器による攻撃に成功すると、「グラディエーター」はコンボを開始することができ、次の攻撃が成功するたびにダメージが増加する。
 berserker	バーサーカー
 When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	重傷を負うと、「バーサーカー」は野生の怒り状態になり、ダメージ量が大幅に増加する。
 warlock	ウォーロック
@@ -274,7 +273,6 @@ Switch to portrait	縦向きへ変更
 Switch to landscape	横向きへ変更
 The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	ダンジョンは都市の真下に位置していて、その上層は都市の下水システムになっている。建前上は都市の一部となっていて、この階層はそこまで危険ではない。誰にとっても安全というわけではないが、少なくともここでは多くの邪悪な魔法に対処する必要はないだろう。
 Many years ago an underground prison was built here for the most dangerous criminals. At the time it seemed like a very clever idea, because this place indeed was very hard to escape. But soon dark miasma started to permeate from below, driving prisoners and guards insane. In the end the prison was abandoned, though some convicts were left locked up here.	何年も前、ここに最も危険な犯罪者のための地下刑務所が作られた。当時はとても賢いアイデアに思えた。なぜなら、この場所は確かに脱獄が非常に困難だったからだ。しかし、やがて地下から暗い瘴気が充満し始め、囚人や看守を狂わせた。結局、何人かの囚人をここに閉じ込めたまま、刑務所は放棄された。
-The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	放棄された監獄の地下に広がる洞窟は、人影もまばらだ。都市開発には深すぎるし、ドワーフが興味を持つには鉱物が乏しすぎる。かつてはこの２つを繋ぐ交易の前哨基地があったが、ドワーフのメトロポリスが衰退したことで消滅してしまった。今は、ノールと地底動物だけが棲息している。
 Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday the mechanized army of dwarves has successfully repelled the invasion of the old god and his demon army. But it is said, that the returning warriors have brought seeds of corruption with them, and that victory was the beginning of the end for the underground kingdom.	ドワーフのメトロポリスは、かつてドワーフ最大の都市国家だった。最盛期には、ドワーフの機械化された軍隊が旧神とその悪魔の軍隊の侵略を見事に撃退した。しかし、帰還した戦士たちは腐敗の種を持ち帰り、その勝利が地下王国の終わりの始まりだったと言われている。
 In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	昔、これらの階層はメトロポリスの郊外だった。旧神との戦いに勝利した後、ドワーフは弱体化し、残った魔物を一掃することができなくなってしまった。結果、徐々に魔物たちの支配力が強まり、今では悪魔の広間と呼ばれている。ここまで降りてきた冒険者はほとんどいない...
 FOR SALE: %1$s - %2$dg	売り物: %1$s - %2$dg
@@ -1186,3 +1184,10 @@ New Game	ニューゲーム
 Happy end	幸せな結末
 Challenge won	チャレンジ達成
 Games played: 	プレイ回数：
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	近接武器で攻撃を命中させると、_グラディエーター_はコンボを開始する。連続して命中するたびに与えるダメージが増加する。
+The more enemies surround the _Berserker_, the faster he performs his attacks. When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	周囲の敵が多いほど、_バーサーカー_の攻撃は速くなる。瀕死になると_バーサーカー_は凶暴な怒りに身を任せ、与えるダメージが大幅に増加する。
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	放棄された監獄の地下へと続く洞窟には、ほとんど人の気配がない。都市が利用するには深すぎ、ドワーフが興味を持つほど鉱物も多くない。かつては二つの国を結ぶ交易路の途中に前哨地があったが、ドワーフの大都市の衰退とともに滅びた。今ここに住むのは、至る所にいるノールと地底の動物だけだ。
+15 monsters killed at nighttime	夜間にモンスターを15体倒した
+That food tasted ok.	味はまあまあだった。
+Paralysed	麻痺
+Terror	恐怖

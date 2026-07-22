@@ -111,3 +111,10 @@ Level %1$d %2$s	레벨 %1$d %2$s
 Sound FX	효과음
 END THE GAME	게임 종료
 Games played: 	플레이 수:
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	근접 무기 공격에 성공하면 _검투사_는 연계를 시작하며, 이후 공격이 연속으로 적중할 때마다 더 큰 피해를 준다.
+The more enemies surround the _Berserker_, the faster he performs his attacks. When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	_광전사_는 주변의 적이 많을수록 더 빠르게 공격한다. 심하게 다치면 _광전사_는 광폭한 분노에 빠져 주는 피해가 크게 증가한다.
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	버려진 감옥 아래로 이어지는 동굴은 인적이 드물다. 도시가 개발하기에는 너무 깊고, 드워프의 관심을 끌기에는 광물이 너무 빈약하다. 과거에는 두 왕국을 연결하는 길목에 교역 전초기지가 있었지만, 드워프 대도시의 쇠퇴와 함께 사라졌다. 이제 이곳에는 어디에나 있는 놀과 지하 동물들만 살아간다.
+15 monsters killed at nighttime	밤에 몬스터 15마리 처치
+That food tasted ok.	먹을 만했다.
+Paralysed	마비
+Terror	공포

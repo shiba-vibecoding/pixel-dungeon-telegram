@@ -20,6 +20,7 @@ package com.watabou.pixeldungeon.windows;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.ui.Component;
 import com.watabou.pixeldungeon.actors.mobs.Mob;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.sprites.CharSprite;
 import com.watabou.pixeldungeon.ui.BuffIndicator;
@@ -36,7 +37,8 @@ public class WndInfoMob extends WndTitledMessage {
 	
 	private static String desc( Mob mob ) {
 		
-		StringBuilder builder = new StringBuilder( mob.description() );
+		StringBuilder builder = new StringBuilder(
+			Localization.translate( mob.description() ) );
 		
 		builder.append( "\n\n" + mob.state.status() + "." );
 		

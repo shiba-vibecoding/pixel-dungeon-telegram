@@ -104,7 +104,6 @@ Huntresses are proficient with missile weapons and get a damage bonus for excess
 Huntresses gain more health from dewdrops.	女猎手能从露珠获得更多生命值。
 Huntresses sense neighboring monsters even if they are hidden behind obstacles.	女猎手可以隔着障碍物感应到附近隐匿的敌人。
 gladiator	角斗士
-A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	一次成功的近战攻击可以让_角斗士_找回节奏，开始连击。接下来每次近战攻击命中都会造成更多伤害。
 berserker	狂战士
 When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	当_狂战士_严重受伤时，会进入狂暴状态。此状态生效时，其伤害将显著提高。
 warlock	术士
@@ -280,7 +279,6 @@ Switch to portrait	转换至竖屏
 Switch to landscape	转换至横屏
 The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	地牢位于城市的正下方，它的上层实际上构成了城市的下水道系统。名义上是城市的一部分，这些地层并没有那么危险。没人会说它是一个安全的地方，但至少你不需要在这里对付太多邪恶的魔法。
 Many years ago an underground prison was built here for the most dangerous criminals. At the time it seemed like a very clever idea, because this place indeed was very hard to escape. But soon dark miasma started to permeate from below, driving prisoners and guards insane. In the end the prison was abandoned, though some convicts were left locked up here.	许多年前，这里为那些最危险的罪犯建造了一座地下监狱。当时，这似乎是一个绝妙的主意，因为这个地方确实很难逃离。但很快，地下更深处的漆黑瘴气开始弥漫上来，让囚犯和守卫心智变得扭曲。最后监狱被遗弃了，尽管还有些犯人被关在这里。
-The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	这些矿洞一直延伸到废弃的监狱下，里面早就没什么人了。它们埋得太深，城市无法开采，而且它们的矿产资源太贫乏，矮人对它们也不感兴趣。过去，矮人国和地面的路线上有一个贸易前哨站，但自从矮人的大都会衰落后，它就消失了。现在只有无所不在的豺狼人和地下生物还居住在这里。
 Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday the mechanized army of dwarves has successfully repelled the invasion of the old god and his demon army. But it is said, that the returning warriors have brought seeds of corruption with them, and that victory was the beginning of the end for the underground kingdom.	矮人都市曾经是最宏伟的矮人城邦。鼎盛时期的矮人们派遣的机械化部队曾成功击退过古神及其恶魔军队的入侵。但是也有传闻说，凯旋的战士同时带来了腐坏的种子，矮人王国的胜利正是其步向毁灭的开端。
 In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	在过去，这些区域是矮人都会的郊区。与古神的战争中取得惨胜之后的矮人无力再掌控清除他们残存的势力。渐渐地，恶魔们对这个地方加强了控制，现在这个地方被称为…地狱。\n\n很少有冒险家能深入到这种地方……
 FOR SALE: %1$s - %2$dg	出售：%1$s— %2$d 枚金币
@@ -1186,3 +1184,10 @@ Disguised as a %s	变装成%s
 You merged two wands into one %s.	你将两根法杖融合成了%s。
 Select a wand to merge	选择一根要融合的法杖
 Games played: 	已玩局数：
+A successful attack with a melee weapon allows the _Gladiator_ to start a combo, in which every next successful hit inflicts more damage.	近战攻击成功后，_角斗士_会开始连击；此后每次连续命中都会造成更多伤害。
+The more enemies surround the _Berserker_, the faster he performs his attacks. When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	包围_狂战士_的敌人越多，他的攻击速度就越快。身受重伤时，_狂战士_会陷入狂怒，大幅提高造成的伤害。
+The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. Only omnipresent gnolls and subterranean animals dwell here now.	废弃监狱下方的洞窟人烟稀少。这里埋藏得太深，城市无力开发；矿藏又过于贫乏，无法引起矮人的兴趣。过去，两国之间的商路上曾设有一座贸易前哨，但它随着矮人大都会的衰落一同消亡。如今这里只剩随处可见的豺狼人和地下动物。
+15 monsters killed at nighttime	在夜间击杀15只怪物
+That food tasted ok.	这食物味道还行。
+Paralysed	麻痹
+Terror	恐惧

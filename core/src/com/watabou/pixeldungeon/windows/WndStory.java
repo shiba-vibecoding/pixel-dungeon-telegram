@@ -23,6 +23,7 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.TouchArea;
 import com.watabou.pixeldungeon.Chrome;
 import com.watabou.pixeldungeon.Dungeon;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.ui.Window;
 import com.watabou.utils.SparseArray;
@@ -57,7 +58,7 @@ public class WndStory extends Window {
 		"were left locked up here." );
 		
 		CHAPTERS.put( ID_CAVES, 
-		"The caves, which stretch down under the abandoned prison, are sparcely populated. They lie too deep to be exploited " +
+		"The caves, which stretch down under the abandoned prison, are sparsely populated. They lie too deep to be exploited " +
 		"by the City and they are too poor in minerals to interest the dwarves. In the past there was a trade outpost " +
 		"somewhere here on the route between these two states, but it has perished since the decline of Dwarven Metropolis. " +
 		"Only omnipresent gnolls and subterranean animals dwell here now." );
@@ -120,7 +121,7 @@ public class WndStory extends Window {
 		
 		String text = CHAPTERS.get( id );
 		if (text != null) {
-			WndStory wnd = new WndStory( text );
+			WndStory wnd = new WndStory( Localization.translate( text ) );
 			if ((wnd.delay = 0.6f) > 0) {
 				wnd.shadow.visible = wnd.chrome.visible = wnd.tf.visible = false;
 			}
