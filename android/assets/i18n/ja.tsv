@@ -1074,11 +1074,9 @@ You don't know what is there.	そこに何があるかわからない。
 Select a cell to examine	調べる場所を選択
 LibGDX port: Arcnor / Web port: nojus297	LibGDX移植: Arcnor / Web移植: nojus297
 Telegram port: @barboskich	Telegram移植: @barboskich
-Say thanks	感謝を伝える
-Thank you!	ありがとう！
-This is a voluntary tip for the Telegram port. It never affects gameplay.	Telegram移植版への任意の応援です。ゲーム内容には一切影響しません。
-Support with Telegram Stars	Telegram Starsで応援
-Open @barboskich	@barboskichを開く
+Select Your Hero	勇者を選択
+Game Over	ゲームオーバー
+Boss slain	ボス撃破
 Sacrificial chamber	生贄の間
 Killed by an explosion of a bomb on level %d	%d階で爆弾の爆発に巻き込まれて死亡
 Do you want to respec into %s?	専門を%sに変更しますか？

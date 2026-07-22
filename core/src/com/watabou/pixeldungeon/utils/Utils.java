@@ -22,6 +22,7 @@ import com.watabou.pixeldungeon.i18n.Localization;
 public class Utils {
 
 	public static String capitalize( String str ) {
+		str = Localization.translate( str );
 		if (str == null || str.length() == 0) {
 			return str;
 		}

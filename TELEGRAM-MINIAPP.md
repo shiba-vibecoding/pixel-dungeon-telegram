@@ -4,7 +4,9 @@ Packages the original **Pixel Dungeon** (Watabou, v1.9.2a) — the libGDX/GWT we
 build from [gnojus/pixel-dungeon-gdx](https://github.com/gnojus/pixel-dungeon-gdx)
 (same one at <https://gnojus.github.io/pixel-dungeon-gdx>) — as a Telegram Mini App.
 
-**Deployable folder: [`dist-telegram-clean/`](dist-telegram-clean) — upload this.**
+The public release is built from source and published automatically by
+[`deploy-pages.yml`](.github/workflows/deploy-pages.yml). For a local build, the
+deployable output is the generated, Git-ignored `dist-telegram/` folder.
 
 ---
 
@@ -34,16 +36,17 @@ by md5). The corrupted `pd-gdx-web/` is kept only for reference — do not ship 
 
 ## 1. What the Telegram layer adds
 
-A small, self-contained overlay in [`telegram/`](telegram/). The game is unchanged.
+A small, self-contained overlay in [`telegram/`](telegram/) around the localized
+game build.
 
 | File | Purpose |
 |------|---------|
-| `telegram/telegram-init.js` | Boots the Telegram WebApp SDK: `ready()`+`expand()`, fullscreen + portrait lock, disable swipe-to-close, closing confirmation, dark theme; keeps libGDX inside Telegram's live content-safe area and opens the fixed 50 Stars invoice. |
-| `telegram/stars-config.js` | Public, token-free Stars endpoint/invoice configuration. Empty values are ignored. |
+| `telegram/telegram-init.js` | Boots the Telegram WebApp SDK: `ready()`+`expand()`, fullscreen + portrait lock, disable swipe-to-close, closing confirmation and dark theme; keeps libGDX below Telegram's floating mobile controls. |
 | `telegram/telegram-storage.js` | Migrates legacy browser saves, namespaces local data by Telegram user ID, restores Telegram CloudStorage before game boot and keeps it synchronized. |
 | `telegram/telegram-bootstrap.js` | Loads the Telegram SDK only for real Mini App launches, waits for cloud restore, then starts GWT; includes a timeout fallback so CDN/API failure cannot brick the game. |
 | `telegram/telegram.css` | Dark background, touch hardening and Telegram/device safe-area bounds so the top HUD never sits under fullscreen controls or a phone cutout. |
-| `telegram/build-telegram.mjs` | Copies the clean web build into `dist-telegram-clean/` and patches `index.html` (SDK + overlay). The SDK `<script>` goes at the end of `<body>`, never in `<head>` (a `<head>` script from telegram.org would block the game wherever telegram.org is slow/blocked). |
+| `telegram/privacy.html` | Public bilingual privacy page suitable for the Mini App's BotFather privacy URL. |
+| `telegram/build-telegram.mjs` | Copies the clean web build into `dist-telegram/`, removes server-only GWT metadata and patches `index.html` (SDK + overlay). The SDK `<script>` goes at the end of `<body>`, never in `<head>` (a `<head>` script from telegram.org would block the game wherever telegram.org is slow/blocked). |
 | `telegram/serve.mjs` | A tiny HTTP/1.1 static server for local testing (see §3). |
 
 ---
@@ -58,7 +61,7 @@ node telegram/build-telegram.mjs
 ```
 
 It auto-picks the source: an explicit arg, else `../pd-gdx-web-clean`, else
-`../pd-gdx-web`, else a from-source `html/build/dist`. Output → `dist-telegram-clean/`
+`../pd-gdx-web`, else a from-source `html/build/dist`. Output → `dist-telegram/`
 (a static folder ready to upload). Re-running is safe.
 
 ---
@@ -69,7 +72,7 @@ It auto-picks the source: an explicit arg, else `../pd-gdx-web-clean`, else
 parallel asset requests it can misbehave. Use the bundled HTTP/1.1 server:
 
 ```bash
-node telegram/serve.mjs dist-telegram-clean 8080
+node telegram/serve.mjs dist-telegram 8080
 # open http://127.0.0.1:8080/
 ```
 
@@ -97,59 +100,25 @@ two devices at once.
 
 ---
 
-## 5. Configure the optional “Say thanks” donation
+## 5. Host it over HTTPS
 
-The dialog lives in **About → Say thanks** and contains one button for a fixed
-**50 Stars** voluntary tip. It grants no items, bonuses, achievements or
-progression. Outside Telegram it explains that Stars checkout must be opened in
-the Mini App.
-
-Telegram Stars payments use currency `XTR` and require a bot. Do **not** put the
-bot token in this repository or in the Mini App bundle. The free Cloudflare
-Worker in [`telegram-worker/`](telegram-worker/) creates the localized 50 Stars
-invoice, answers every `pre_checkout_query`, records successful charge ids in an
-optional `PAYMENTS` KV binding and provides `/terms`, `/support` and
-`/paysupport`.
-
-Deploy that Worker, then add its public origin (without `/invoice`) as the GitHub
-repository variable `STARS_API_URL`. The Pages workflow injects it into the
-static bundle. A previously generated fixed public link can instead be supplied
-as `STARS_INVOICE_50`:
-
-```js
-window.PixelDungeonStars = {
-  apiUrl: 'https://pixel-dungeon-stars.YOUR-SUBDOMAIN.workers.dev',
-  invoices: [{ stars: 50, url: '' }]
-};
-```
-
-Re-run `node telegram/build-telegram.mjs html/build/dist dist-telegram-clean`
-after changing a local configuration. The Mini App opens the link through
-`Telegram.WebApp.openInvoice()` and handles the result without touching game
-saves, achievements or balance.
-
-Official references: [Telegram Stars payments](https://core.telegram.org/bots/payments-stars)
-and [Mini App `openInvoice`](https://core.telegram.org/bots/webapps#initializing-mini-apps).
-
----
-
-## 6. Host it over HTTPS
-
-A Mini App must load from an **HTTPS** URL. The game itself remains static and
-saves go into the WebView's local storage. A separate bot backend is needed only
-if you enable Stars donations. Two hosting routes:
+A Mini App must load from an **HTTPS** URL. The game remains fully static and
+saves go into the WebView's local storage and optional Telegram CloudStorage.
+Two hosting routes:
 
 ### Recommended — free static hosting (no server, no domain to buy)
 
-- **Cloudflare Pages** or **Netlify** — drag-and-drop `dist-telegram-clean/`, get an
+- **GitHub Pages** — use the included workflow; every push to `main` is checked,
+  built and published automatically at a free HTTPS `*.github.io` URL.
+- **Cloudflare Pages** or **Netlify** — drag-and-drop `dist-telegram/`, get an
   HTTPS `*.pages.dev` / `*.netlify.app` URL in a minute. Use that URL directly as the
   Mini App URL.
-- **GitHub Pages** — push the folder to a `gh-pages` branch; HTTPS `*.github.io` URL.
 
 ### VPS route (only if you want your own server)
 
 For static files the **cheapest tier is plenty**: 1 core / 1 GB RAM / 10 GB / 1 TB,
-Ubuntu LTS, automatic backup OFF. (~8 MB per fresh load ⇒ 1 TB ≈ 100k+ loads/mo.)
+Ubuntu LTS, automatic backup OFF. The current uncompressed release is about 26 MB;
+normal HTTP compression reduces transferred JavaScript and text assets.
 You additionally need a **domain** pointed at the VPS, then auto-HTTPS via **Caddy**:
 
 ```
@@ -162,11 +131,11 @@ game.example.com {
 ```
 
 `sudo caddy reload` — Caddy fetches a Let's Encrypt cert automatically. Upload the
-contents of `dist-telegram-clean/` into `/var/www/pixel-dungeon`.
+contents of `dist-telegram/` into `/var/www/pixel-dungeon`.
 
 ---
 
-## 7. Register the Mini App with BotFather
+## 6. Register the Mini App with BotFather
 
 1. Open [@BotFather](https://t.me/BotFather) → `/newbot` (or reuse a bot).
 2. Attach your HTTPS URL, either way:
@@ -180,7 +149,7 @@ same URL.
 
 ---
 
-## 8. Notes & limits
+## 7. Notes & limits
 
 - **Saves** are local-first and isolated per Telegram user; supported clients
   additionally restore/sync them through the bot user's Telegram CloudStorage.
@@ -189,6 +158,6 @@ same URL.
 
 ## Credits & license
 
-Pixel Dungeon — Watabou. libGDX/Web port — gnojus (fork of Arcnor's). Upstream has no
-explicit license file; it derives from Watabou's GPL-3.0 Pixel Dungeon — keep
-attribution and source available when redistributing.
+Pixel Dungeon — Watabou. libGDX/Web port — gnojus (fork of Arcnor's). Telegram
+port — [@barboskich](https://t.me/barboskich). Distributed under
+[GPL-3.0-only](LICENSE); keep attribution and source available when redistributing.

@@ -22,13 +22,10 @@ import com.watabou.input.NoosaInputProcessor;
 import com.watabou.noosa.*;
 import com.watabou.pixeldungeon.PixelDungeon;
 import com.watabou.pixeldungeon.effects.Flare;
-import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.ui.Archs;
 import com.watabou.pixeldungeon.ui.ExitButton;
 import com.watabou.pixeldungeon.ui.Icons;
-import com.watabou.pixeldungeon.ui.RedButton;
 import com.watabou.pixeldungeon.ui.Window;
-import com.watabou.pixeldungeon.windows.WndOptions;
 
 public class AboutScene extends PixelScene {
 
@@ -41,11 +38,6 @@ public class AboutScene extends PixelScene {
 
 	private static final String TXT_PORTS = "LibGDX port: Arcnor / Web port: nojus297";
 	private static final String TXT_TELEGRAM_PORT = "Telegram port: @barboskich";
-	private static final String TXT_THANKS = "Say thanks";
-	private static final String TXT_THANK_YOU = "Thank you!";
-	private static final String TXT_VOLUNTARY =
-		"This is a voluntary tip for the Telegram port. It never affects gameplay.";
-	private static final String TXT_STARS = "Support with Telegram Stars";
 
 	private static final String LNK = "pixeldungeon.watabou.ru";
 	private static final String AUTHOR_LNK = "https://t.me/barboskich";
@@ -78,18 +70,9 @@ public class AboutScene extends PixelScene {
 		link.hardlight( Window.TITLE_COLOR );
 		add( link );
 
-		RedButton thanks = new RedButton( TXT_THANKS ) {
-			@Override
-			protected void onClick() {
-				showThanks();
-			}
-		};
-		thanks.setSize( Math.min( contentWidth, 112 ), 18 );
-		add( thanks );
-
 		Image wata = Icons.WATA.get();
 		float groupHeight = wata.height + 5 + text.height() + ports.height() +
-			author.height() + link.height() + thanks.height() + 12;
+			author.height() + link.height() + 7;
 		float top = Math.max( 4, (Camera.main.height - groupHeight) / 2 );
 
 		wata.x = align( (Camera.main.width - wata.width) / 2 );
@@ -111,9 +94,6 @@ public class AboutScene extends PixelScene {
 
 		link.x = align( (Camera.main.width - link.width()) / 2 );
 		link.y = align( y );
-		y = link.y + link.height() + 5;
-
-		thanks.setPos( align( (Camera.main.width - thanks.width()) / 2 ), align( y ) );
 
 		TouchArea hotArea = new TouchArea( link ) {
 			@Override
@@ -144,17 +124,6 @@ public class AboutScene extends PixelScene {
 		fadeIn();
 	}
 
-	private void showThanks() {
-		add( new WndOptions( TXT_THANK_YOU, TXT_VOLUNTARY, TXT_STARS ) {
-			@Override
-			protected void onSelect( int index ) {
-				if (index == 0) {
-					PixelDungeon.instance.getPlatformSupport().openDonation( Localization.language() );
-				}
-			}
-		} );
-	}
-	
 	@Override
 	protected void onBackPressed() {
 		PixelDungeon.switchNoFade( TitleScene.class );

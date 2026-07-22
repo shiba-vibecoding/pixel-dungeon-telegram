@@ -2,7 +2,7 @@
  * Packages the Pixel Dungeon web build into a Telegram-Mini-App-ready folder.
  *
  *   1. copies the built webapp            ->  dist-telegram/
- *   2. drops in the Telegram UI, persistence and Stars bridge
+ *   2. drops in the Telegram UI and per-user persistence bridge
  *   3. patches index.html so cloud saves restore before the GWT game starts
  *
  * Source of the game files (first match wins, or pass a path as argv[2]):
@@ -42,7 +42,6 @@ const HEAD_INJECT = `
 
 const BODY_INJECT = `
     <!-- ${MARKER} -->
-    <script src="stars-config.js"></script>
     <script src="telegram-storage.js"></script>
     <script src="telegram-bootstrap.js"></script>
 `;
@@ -57,33 +56,19 @@ if (!SRC) {
 fs.rmSync(DEST, { recursive: true, force: true });
 fs.cpSync(SRC, DEST, { recursive: true });
 
+// Gradle's WAR output contains server-only classes and GWT compiler metadata.
+// GitHub Pages is purely static, so publishing WEB-INF only bloats the artifact.
+fs.rmSync(path.join(DEST, 'WEB-INF'), { recursive: true, force: true });
+
 // 2. Telegram overlay assets.
 for (const f of [
   'telegram.css',
-  'stars-config.js',
   'telegram-storage.js',
   'telegram-init.js',
   'telegram-bootstrap.js',
+  'privacy.html',
 ]) {
   fs.copyFileSync(path.join(here, f), path.join(DEST, f));
-}
-
-// Public invoice links can be supplied as GitHub repository variables. Bot
-// tokens never belong in this static bundle.
-const invoiceEnv = [{
-  stars: 50,
-  url: (process.env.STARS_INVOICE_50 || '').trim(),
-}];
-const starsApiUrl = (process.env.STARS_API_URL || '').trim();
-if (invoiceEnv[0].url || starsApiUrl) {
-  const publicConfig = {
-    apiUrl: starsApiUrl,
-    invoices: invoiceEnv,
-  };
-  fs.writeFileSync(
-    path.join(DEST, 'stars-config.js'),
-    'window.PixelDungeonStars = ' + JSON.stringify(publicConfig, null, 2) + ';\n',
-    'utf8');
 }
 
 // 3. Patch index.html.

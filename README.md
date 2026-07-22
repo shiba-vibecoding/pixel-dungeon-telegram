@@ -12,10 +12,13 @@ Telegram / GitHub Pages
 
 This fork includes a production Telegram Mini App wrapper, 15 languages,
 per-Telegram-user local saves, optional Telegram CloudStorage synchronization,
-Telegram Stars support and an automatic GitHub Pages deployment workflow.
+mobile-safe Telegram fullscreen layout and an automatic GitHub Pages deployment workflow.
 
 See [DEPLOY-GITHUB.md](DEPLOY-GITHUB.md) for the complete publishing guide and
 [TELEGRAM-MINIAPP.md](TELEGRAM-MINIAPP.md) for implementation details.
+Privacy details are in [PRIVACY.md](PRIVACY.md) and are also published as
+`privacy.html` with the game. The project is distributed under
+[GPL-3.0-only](LICENSE).
 
 Quickstart
 ----------

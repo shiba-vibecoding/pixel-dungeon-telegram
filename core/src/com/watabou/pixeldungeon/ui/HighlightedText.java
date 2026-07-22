@@ -2,6 +2,7 @@ package com.watabou.pixeldungeon.ui;
 
 import com.watabou.noosa.BitmapTextMultiline;
 import com.watabou.noosa.ui.Component;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.utils.Highlighter;
 
@@ -30,6 +31,9 @@ public class HighlightedText extends Component {
 	}
 	
 	public void text( String value, int maxWidth ) {
+		// Translate before Highlighter removes the _..._ markup.  Looking up the
+		// stripped English sentence cannot match catalogue keys that retain it.
+		value = Localization.translate( value );
 		Highlighter hl = new Highlighter( value );
 		
 		normal.text( hl.text );

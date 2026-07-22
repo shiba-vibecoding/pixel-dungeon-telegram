@@ -1,0 +1,20 @@
+Pixel Dungeon Telegram Port
+SPDX-License-Identifier: GPL-3.0-only
+
+Copyright (C) 2012-2015 Oleg Dolya (Watabou)
+Telegram port and subsequent modifications: their respective contributors.
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+The complete GPL version 3 license text is available at:
+https://www.gnu.org/licenses/gpl-3.0.txt
+
+Source distributions and redistributions of this project must preserve the
+copyright notices, this license notice, attribution, and corresponding source
+code obligations of GPL-3.0-only.

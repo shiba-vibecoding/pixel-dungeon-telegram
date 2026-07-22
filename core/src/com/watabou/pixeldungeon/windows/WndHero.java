@@ -17,8 +17,6 @@
  */
 package com.watabou.pixeldungeon.windows;
 
-import java.util.Locale;
-
 import com.badlogic.gdx.Input;
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.gltextures.TextureCache;
@@ -33,6 +31,7 @@ import com.watabou.pixeldungeon.Statistics;
 import com.watabou.pixeldungeon.actors.buffs.Buff;
 import com.watabou.pixeldungeon.actors.hero.Hero;
 import com.watabou.pixeldungeon.input.GameAction;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.scenes.GameScene;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.ui.BuffIndicator;
@@ -117,7 +116,7 @@ public class WndHero extends WndTabbed {
 			Hero hero = Dungeon.hero; 
 
 			BitmapText title = PixelScene.createText( 
-				Utils.format( TXT_TITLE, hero.lvl, hero.className() ).toUpperCase( Locale.ENGLISH ), 9 );
+				Utils.format( TXT_TITLE, hero.lvl, hero.className() ).toUpperCase( Localization.locale() ), 9 );
 			title.hardlight( TITLE_COLOR );
 			title.measure();
 			add( title );

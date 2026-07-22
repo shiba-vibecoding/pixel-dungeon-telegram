@@ -58,13 +58,13 @@ function assert(condition, message) {
 }
 
 const firstDevice = new MemoryStorage();
-firstDevice.setItem('pd-prefs:languages', 'ru');
+firstDevice.setItem('pd-prefs:language', 'ru');
 firstDevice.setItem('pd-files:game.dat.s', 'saved-run');
 
 let bridge = install(firstDevice);
 let restored = await bridge.restore();
 assert(restored.mode === 'cloud' && restored.restored === false, 'first device should start with empty cloud');
-assert(firstDevice.getItem('pd-prefs-tg-101:languages') === 'ru', 'legacy settings were not migrated');
+assert(firstDevice.getItem('pd-prefs-tg-101:language') === 'ru', 'legacy settings were not migrated');
 assert(firstDevice.getItem('pd-files-tg-101:game.dat.s') === 'saved-run', 'legacy save was not migrated');
 assert(await bridge.syncNow(), 'first cloud upload did not run');
 assert(cloudData.pdgdx_manifest_v1, 'cloud manifest is missing');
@@ -73,7 +73,30 @@ const secondDevice = new MemoryStorage();
 bridge = install(secondDevice);
 restored = await bridge.restore();
 assert(restored.mode === 'cloud' && restored.restored === true, 'second device did not restore cloud data');
-assert(secondDevice.getItem('pd-prefs-tg-101:languages') === 'ru', 'settings did not survive cloud restore');
+assert(secondDevice.getItem('pd-prefs-tg-101:language') === 'ru', 'settings did not survive cloud restore');
 assert(secondDevice.getItem('pd-files-tg-101:game.dat.s') === 'saved-run', 'progress did not survive cloud restore');
+
+secondDevice.setItem('pd-files-tg-101:game.dat.s', 'newer-run');
+assert(await bridge.syncNow(), 'updated progress was not uploaded');
+const thirdDevice = new MemoryStorage();
+bridge = install(thirdDevice);
+restored = await bridge.restore();
+assert(restored.restored === true, 'updated cloud snapshot was not restored');
+assert(thirdDevice.getItem('pd-files-tg-101:game.dat.s') === 'newer-run',
+  'latest progress did not win');
+
+const validManifest = cloudData.pdgdx_manifest_v1;
+cloudData.pdgdx_manifest_v1 = JSON.stringify({
+  version: 1, chunks: 1, length: 10, hash: 'bad-data', updated: 'invalid'
+});
+const localFallback = new MemoryStorage();
+localFallback.setItem('pd-files-tg-101:game.dat.s', 'local-safe-copy');
+bridge = install(localFallback);
+restored = await bridge.restore();
+assert(restored.mode === 'local' && restored.reason === 'cloud-error',
+  'corrupt cloud data must fall back to local storage');
+assert(localFallback.getItem('pd-files-tg-101:game.dat.s') === 'local-safe-copy',
+  'corrupt cloud data erased the local save');
+cloudData.pdgdx_manifest_v1 = validManifest;
 
 console.log('Telegram per-user migration and cloud restore: OK');

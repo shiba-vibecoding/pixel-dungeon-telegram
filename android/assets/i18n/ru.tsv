@@ -42,12 +42,7 @@ You hear the water splashing around you.	Ты слышишь плеск воды
 The smell of vegetation is thick in the air.	В воздухе витает растительный аромат.
 The atmosphere hints that this floor hides many secrets.	Атмосфера таинственности окутывает этот уровень, он полон секретов.
 mob	монстр
-%1$s hit %2$s	%1$s ударило %2$s
-%1$s defeated %2$s	%1$s одолело %2$s
-%1$s %2$s your attack	%1$s %2$s от твоей атаки
-%1$s %2$s %3$s's attack	%1$s %2$s от атаки монстра %3$s
 The pain snapped %s out of paralysis	Боль пробудила %s от паралича
-dodged	уклонилось
 poisoned	отравлен
 amok	буйствует
 slowed	замедлен
@@ -280,14 +275,9 @@ Ghost's armor	Доспехи призрака
 Farewell, adventurer!	Прощай, авантюрист!
 +	+
 -	-
-Default Zoom	Масштаб по условию
-Scale up UI	Маcштабировать ГУИ
 Immersive mode	Режим "погружение"
-Language	язык
 Music	Музыка
-Sound FX	Звуковые эффекты
 Brightness	Яркость
-Second quickslot	Второй квик-слот
 Switch to portrait	Перейти в портретный режим
 Switch to landscape	Перейти в альбомный режим
 The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	Подземелье расположено точно под городом, верхние уровни фактически являются канализацией города. Будучи условно частью города, эти уровни не столь опасны. Конечно безопасными их тоже не назовёшь, но по крайней мере, здесь не приходится волноваться о зловещей магии.
@@ -452,8 +442,6 @@ enchantment of viscosity	зачарование вязкости
 Defered damage (%d)	Отложенный урон  (%d)
 The enchantment of viscosity killed you...	Зачарование вязкости убило тебя
 OPEN	ОТКРЫТЬ
-key ring	Кольцо для ключей
-This is a copper key ring, that lets you keep all your keys separately from the rest of your belongings.	Это кольцо для ключей меди, что позволяет сохранить все ваши ключи отдельно от остальных ваших вещей.
 scroll holder	футляр для свитков
 You can place any number of scrolls into this tubular container. It saves room in your backpack and protects scrolls from fire.	В этот футляр может поместиться любое количество свитков. Он освободит место в твоём рюкзаке и защитит свитки от огня.
 seed pouch	мешочек для семян
@@ -861,7 +849,6 @@ Levitating	Левитирующий
 Illuminated	Светящийся
 Mind vision	Ясновидение
 Caustic ooze	Едкая слизь
-%s killed you...	%s сожрала тебя...
 Paralyzed	Парализован
 Poisoned	Отравлен
 You died from poison...	Ты умер от яда...
@@ -930,7 +917,6 @@ mimic	мимик
 Mimics are magical creatures which can take any shape they wish. In dungeons they almost always choose a shape of a treasure chest, because they know how to beckon an adventurer.	Мимики - магические существа, которые могут принимать любую форму по желанию. В подземельях мимики почти всегда принимают форму сундуков, они ведь знают, как лучше всего привлечь искателя приключений.
 dwarf monk	дворф монах
 These monks are fanatics, who devoted themselves to protecting their city's secrets from all aliens. They don't use any armor or weapons, relying solely on the art of hand-to-hand combat.	Монахи, это фанатики, посветившие себя защите секретов их народа от чужаков. Они не полагаются на броню и оружие, доверившись искусству рукопашного боя.
-parried	отбился
 %1$s has knocked the %2$s from your hands!	%1$s выбил %2$s из твоих рук!
 giant piranha	огромная пиранья
 These carnivorous fish are not natural inhabitants of underground pools. They were bred specifically to protect flooded treasure vaults.	Эти плотоядные рыбы не являются исконными обитателями пещерных водоёмов. Они были выведены специально для защиты затопленных сокровищниц.
@@ -945,7 +931,6 @@ The most intelligent gnolls can master shamanistic magic. Gnoll shamans prefer b
 shielded brute	громила-щитоносец
 skeleton	скелет
 Skeletons are composed of corpses bones from unlucky adventurers and inhabitants of the dungeon, animated by emanations of evil magic from the depths below. After they have been damaged enough, they disintegrate in an explosion of bones.	Скелеты, состоящие из костей павших путешественников, восстали под воздействием отголосков зловещей магии таящейся в глубине подземелья. Будучи достаточно повреждёнными, они разлетаются на костяные осколки.
-blocked	прикрылся
 You were killed by the explosion of bones...	Тебя пробило костяным осколком...
 cave spinner	пещерный паук
 These greenish furry cave spiders try to avoid direct combat, preferring to wait in the distance while their victim, entangled in the spinner's excreted cobweb, slowly dies from their poisonous bite.	Эти пушистые зелёные пауки стараются избегать прямых столкновений, предпочитая выжидать в дали, пока их жертва, запутанная в паутине, медленно гибнет от яда.
@@ -1009,7 +994,6 @@ Thank you, %s! The curse is broken and I can finally rest... Please take one of 
 Yes, I will do it for you	Да, я сделаю это для тебя
 No, I can't help you	Нет, я не могу тебе помочь
 Imps are lesser demons. They are notable for neither their strength nor their magic talent, but they are quite smart and sociable. Many imps prefer to live among non-demons.	Бесы, это низшие демоны. Они не славятся своей силой или магической мощью, но они достаточно умны и общительны. Многие бесы предпочитают жить с теми, кто не является демонами.
-evaded	увернулась
 Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _golems_ who need to be killed. You see, I'm going to start a little business here, but these stupid golems are bad for business! It's very hard to negotiate with wandering lumps of granite, damn them! So please, kill... let's say _6 of them_ and a reward is yours.	Ты путешественник? Я обожаю путешественников! На них всегда можно положится, если требуется чего-нибудь убить. Правда, а? За плату конечно ;)\nВ нашем случае _големы_ нуждаются в убийстве. Видишь ли, я хотел начать здесь дельце, но эти дурацкие големы спутали мне все карты! Ходячие куски гранита не шибко коммуникабельны, однако! Так что, прошу прихлопни... скажем _6 големов_ и я в долгу не останусь.
 How is your golem safari going?	Как там наше големово сафари?
 Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _monks_ who need to be killed. You see, I'm going to start a little business here, but these lunatics don't buy anything themselves and will scare away other customers. So please, kill... let's say _8 of them_ and a reward is yours.	Ты путешественник? Я обожаю путешественников! На них всегда можно положится, если требуется чего-нибудь убить. Правда, а? За плату конечно ;)\nВ нашем случае _монахи_ нуждаются в убийстве. Видишь ли, я хотел начать здесь дельце, но эти шизики сами ничего не купят и остальных покупателей распугают. Так что, прошу прихлопни... скажем _8 монахов_ и я в долгу не останусь.
@@ -1030,7 +1014,6 @@ This stout guy looks more appropriate for a trade district in some large city th
 Select an item to sell	Выбери предмет для продажи
 old wandmaker	Старый мастер
 This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	Этот старый, но крепенький мужчина, выглядит немного озадаченным. Он окружён магическим щитом.
-absorbed	отмахнулся
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	О, какой приятный сюрприз, встретить достойного человека в таком месте! Я пришёл сюда в поисках редкого ингредиента _семян Гниловики_. Как человек осведомлённый в магии, я вполне справляюсь с местными монстрами, но заблудиться для меня, - раз плюнуть, стыдоба, честное слово. Не поможешь старику? Я с радостью оплачу твои старания одной из своих лучших волшебных палочек.
 Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Как поиски _семян Гниловики_, %s? Глухо? Не переживай, я не тороплюсь.
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	О, какой приятный сюрприз, встретить достойного человека в таком месте! Я пришёл сюда в поисках редкого ингредиента - _трупной пыли_. Её можно собрать с костяных останков, которыми изобилует подземелье. Как человек осведомлённый в магии, я вполне справляюсь с местными монстрами, но заблудиться для меня, - раз плюнуть, стыдоба, честное слово. Не поможешь старику? Я с радостью оплачу твои старания одной из своих лучших волшебных палочек.
@@ -1146,20 +1129,35 @@ Pixel-Mart. Special prices for demon hunters!	Pixel магазин. Охотни
 The trap emits a piercing sound that echoes throughout the dungeon!	Ловушка издаёт пронзающий звук, разносящийся по подземелью!
 lightning trap	электрическая ловушка
 You were killed by a discharge of a lightning trap...	Тебя пришибло разрядом электрической ловушки...
-You don't know what is there.	Ты не знаешь что там.
-Select a cell to examine	Выбери ячейку, для изучения
 1	0
 LibGDX port: Arcnor / Web port: nojus297	LibGDX-порт: Arcnor / веб-порт: nojus297
 Telegram port: @barboskich	Telegram-порт: @barboskich
-Say thanks	Сказать спасибо
-Thank you!	Спасибо!
-This is a voluntary tip for the Telegram port. It never affects gameplay.	Это добровольная благодарность за Telegram-порт. Она никак не влияет на игровой процесс.
-Support with Telegram Stars	Поддержать в Telegram Stars
-Open @barboskich	Открыть @barboskich
+Select Your Hero	Выбери героя
+Game Over	Игра окончена
+Boss slain	Босс повержен
+Language	Язык
 Choose language	Выберите язык
+You don't know what is there.	Ты не знаешь, что там.
+Select a cell to examine	Выбери клетку для осмотра
+Second quickslot	Второй быстрый слот
 Key bindings	Настройка клавиш
+Scale up UI	Крупный интерфейс
+Sound FX	Звуки
+Default Zoom	Обычный масштаб
 Switch to fullscreen	На весь экран
 Switch to windowed	В оконный режим
+%1$s hit %2$s	Атака: %1$s -> %2$s
+%1$s defeated %2$s	Победа! %1$s -> %2$s
+%1$s %2$s your attack	Твоя атака не достигла цели: %1$s (%2$s)
+%1$s %2$s %3$s's attack	Атака не достигла цели: %3$s -> %1$s (%2$s)
+%s killed you...	Тебя убивает: %s...
+dodged	уклонение
+evaded	уклонение
+blocked	блок
+parried	парирование
+absorbed	поглощение
+key ring	связка ключей
+This is a copper key ring, that lets you keep all your keys separately from the rest of your belongings.	Это медная связка для ключей. Она позволяет хранить все ключи отдельно от остальных вещей.
 Reset To Defaults	Сбросить настройки
 <None>	<Нет>
 Press a key for "%s", or press %s to remove the binding.	Нажмите клавишу для действия «%s» или нажмите %s, чтобы удалить привязку.

@@ -22,6 +22,9 @@ STRING_ARRAY_DECLARATION = re.compile(
     r'((?:(?:"(?:\\.|[^"\\])*")|[^;])*);', re.DOTALL)
 DIRECT_MESSAGE = re.compile(
     r'\b(?:GLog\.[ipnwh]|yell)\s*\(\s*("(?:\\.|[^"\\])*")')
+DIRECT_UI = re.compile(
+    r'\bnew\s+(?:RedButton|WndMessage|Toast)\s*\(\s*'
+    r'("(?:\\.|[^"\\])*")')
 RETURN_EXPRESSION = re.compile(
     r'\breturn\s+((?:(?:"(?:\\.|[^"\\])*")|[^;])*);', re.DOTALL)
 NAME_ASSIGNMENT = re.compile(r'\bname\s*=\s*(.*?);', re.DOTALL)
@@ -163,6 +166,10 @@ def main():
                 value = unescape_java(match.group(1))
                 if player_facing(value):
                     found.setdefault(value, (path, line_number(source, match.start()), 'direct message'))
+            for match in DIRECT_UI.finditer(source):
+                value = unescape_java(match.group(1))
+                if player_facing(value, 'TXT_UI'):
+                    found.setdefault(value, (path, line_number(source, match.start()), 'direct UI text'))
             for match in RETURN_EXPRESSION.finditer(source):
                 value = string_expression(match.group(1))
                 if player_facing(value, 'RETURN_TEXT'):

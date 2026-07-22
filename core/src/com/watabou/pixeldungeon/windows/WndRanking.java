@@ -17,8 +17,6 @@
  */
 package com.watabou.pixeldungeon.windows;
 
-import java.util.Locale;
-
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
@@ -32,6 +30,7 @@ import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.Statistics;
 import com.watabou.pixeldungeon.actors.hero.Belongings;
 import com.watabou.pixeldungeon.input.GameAction;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.items.Item;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.sprites.HeroSprite;
@@ -169,7 +168,7 @@ public class WndRanking extends WndTabbed {
 			
 			IconTitle title = new IconTitle();
 			title.icon( HeroSprite.avatar( Dungeon.hero.heroClass, Dungeon.hero.tier() ) );
-			title.label( Utils.format( TXT_TITLE, Dungeon.hero.lvl, heroClass ).toUpperCase( Locale.ENGLISH ) );
+			title.label( Utils.format( TXT_TITLE, Dungeon.hero.lvl, heroClass ).toUpperCase( Localization.locale() ) );
 			title.setRect( 0, 0, WIDTH, 0 );
 			add( title );
 			

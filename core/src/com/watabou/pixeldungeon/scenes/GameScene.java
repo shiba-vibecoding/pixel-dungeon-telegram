@@ -47,6 +47,7 @@ import com.watabou.pixeldungeon.effects.Flare;
 import com.watabou.pixeldungeon.effects.FloatingText;
 import com.watabou.pixeldungeon.effects.Ripple;
 import com.watabou.pixeldungeon.effects.SpellSprite;
+import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.items.Heap;
 import com.watabou.pixeldungeon.items.Item;
 import com.watabou.pixeldungeon.items.potions.Potion;
@@ -69,6 +70,7 @@ import com.watabou.pixeldungeon.ui.QuickSlot;
 import com.watabou.pixeldungeon.ui.StatusPane;
 import com.watabou.pixeldungeon.ui.Toast;
 import com.watabou.pixeldungeon.ui.Toolbar;
+import com.watabou.pixeldungeon.ui.TextBanner;
 import com.watabou.pixeldungeon.ui.Window;
 import com.watabou.pixeldungeon.utils.GLog;
 import com.watabou.pixeldungeon.windows.WndBag.Mode;
@@ -88,6 +90,8 @@ public class GameScene extends PixelScene {
 	
 	private static final String TXT_WELCOME			= "Welcome to the level %d of Pixel Dungeon!";
 	private static final String TXT_WELCOME_BACK	= "Welcome back to the level %d of Pixel Dungeon!";
+	private static final String TXT_GAME_OVER		= "Game Over";
+	private static final String TXT_BOSS_SLAIN		= "Boss slain";
 	private static final String TXT_NIGHT_MODE		= "Be cautious, since the dungeon is even more dangerous at night!";
 	
 	private static final String TXT_CHASM	= "Your steps echo across the dungeon.";
@@ -446,11 +450,16 @@ public class GameScene extends PixelScene {
 		}
 	}
 	
-	private void showBanner( Banner banner ) {
+	private void showBanner( Visual banner ) {
 		banner.camera = uiCamera;
-		banner.x = align( uiCamera, (uiCamera.width - banner.width) / 2 );
-		banner.y = align( uiCamera, (uiCamera.height - banner.height) / 3 );
+		banner.x = align( uiCamera, (uiCamera.width - banner.width()) / 2 );
+		banner.y = align( uiCamera, (uiCamera.height - banner.height()) / 3 );
 		add( banner );
+	}
+
+	private static TextBanner textBanner( String text ) {
+		PixelScene.chooseFont( 16 );
+		return new TextBanner( text, PixelScene.font, PixelScene.scale );
 	}
 	
 	// -------------------------------------------------------
@@ -568,18 +577,30 @@ public class GameScene extends PixelScene {
 	}
 	
 	public static void gameOver() {
-		Banner gameOver = new Banner( BannerSprites.get( BannerSprites.Type.GAME_OVER ) );
-		gameOver.show( 0x000000, 1f );
-		scene.showBanner( gameOver );
+		if (Localization.ENGLISH.equals( Localization.language() )) {
+			Banner gameOver = new Banner( BannerSprites.get( BannerSprites.Type.GAME_OVER ) );
+			gameOver.show( 0x000000, 1f );
+			scene.showBanner( gameOver );
+		} else {
+			TextBanner gameOver = textBanner( TXT_GAME_OVER );
+			gameOver.show( 0xFF5555, 1f );
+			scene.showBanner( gameOver );
+		}
 		
 		Sample.INSTANCE.play( Assets.SND_DEATH );
 	}
 	
 	public static void bossSlain() {
 		if (Dungeon.hero.isAlive()) {
-			Banner bossSlain = new Banner( BannerSprites.get( BannerSprites.Type.BOSS_SLAIN ) );
-			bossSlain.show( 0xFFFFFF, 0.3f, 5f );
-			scene.showBanner( bossSlain );
+			if (Localization.ENGLISH.equals( Localization.language() )) {
+				Banner bossSlain = new Banner( BannerSprites.get( BannerSprites.Type.BOSS_SLAIN ) );
+				bossSlain.show( 0xFFFFFF, 0.3f, 5f );
+				scene.showBanner( bossSlain );
+			} else {
+				TextBanner bossSlain = textBanner( TXT_BOSS_SLAIN );
+				bossSlain.show( 0xFFFF44, 0.3f, 5f );
+				scene.showBanner( bossSlain );
+			}
 			
 			Sample.INSTANCE.play( Assets.SND_BOSS );
 		}

@@ -35,14 +35,13 @@ import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.GamesInProgress;
 import com.watabou.pixeldungeon.PixelDungeon;
 import com.watabou.pixeldungeon.actors.hero.HeroClass;
-import com.watabou.pixeldungeon.effects.BannerSprites;
 import com.watabou.pixeldungeon.effects.Speck;
-import com.watabou.pixeldungeon.effects.BannerSprites.Type;
 import com.watabou.pixeldungeon.input.GameAction;
 import com.watabou.pixeldungeon.ui.Archs;
 import com.watabou.pixeldungeon.ui.ExitButton;
 import com.watabou.pixeldungeon.ui.Icons;
 import com.watabou.pixeldungeon.ui.RedButton;
+import com.watabou.pixeldungeon.ui.Window;
 import com.watabou.pixeldungeon.utils.Utils;
 import com.watabou.pixeldungeon.windows.WndChallenges;
 import com.watabou.pixeldungeon.windows.WndClass;
@@ -57,6 +56,7 @@ public class StartScene extends PixelScene {
 	
 	private static final String TXT_LOAD	= "Load Game";
 	private static final String TXT_NEW		= "New Game";
+	private static final String TXT_SELECT_HERO = "Select Your Hero";
 	
 	private static final String TXT_ERASE		= "Erase current game";
 	private static final String TXT_DPTH_LVL	= "Depth: %d, level: %d";
@@ -119,10 +119,16 @@ public class StartScene extends PixelScene {
 		archs.setSize( w, h );
 		add( archs ); 
 		
-		Image title = BannerSprites.get( Type.SELECT_YOUR_HERO );
+		// The original banner has English text baked into the texture.  Render the
+		// heading with the game's bitmap font so every language can translate it.
+		final float titleAreaHeight = 21;
+		BitmapText title = PixelScene.createText( TXT_SELECT_HERO, 12 );
+		title.hardlight( Window.TITLE_COLOR );
+		title.measure();
 		title.x = align( (w - title.width()) / 2 );
-		title.y = align( top );
+		title.y = align( top + (titleAreaHeight - title.height()) / 2 );
 		add( title );
+		float titleBottom = top + titleAreaHeight;
 		
 		buttonX = left;
 		buttonY = bottom - BUTTON_HEIGHT;
@@ -156,7 +162,7 @@ public class StartScene extends PixelScene {
 		};
 		add( btnLoad );	
 		
-		float centralHeight = buttonY - title.y - title.height();
+		float centralHeight = buttonY - titleBottom;
 		
 		HeroClass[] classes = {
 			HeroClass.WARRIOR, HeroClass.MAGE, HeroClass.ROGUE, HeroClass.HUNTRESS	
@@ -169,7 +175,7 @@ public class StartScene extends PixelScene {
 		if (PixelDungeon.landscape()) {
 			float shieldW = width / 4;
 			float shieldH = Math.min( centralHeight, shieldW );
-			top = title.y + title.height + (centralHeight - shieldH) / 2;
+			top = titleBottom + (centralHeight - shieldH) / 2;
 			for (int i=0; i < classes.length; i++) {
 				ClassShield shield = shields.get( classes[i] );
 				shield.setRect( left + i * shieldW, top, shieldW, shieldH );
@@ -184,7 +190,7 @@ public class StartScene extends PixelScene {
 		} else {
 			float shieldW = width / 2;
 			float shieldH = Math.min( centralHeight / 2, shieldW * 1.2f );
-			top = title.y + title.height() + centralHeight / 2 - shieldH;
+			top = titleBottom + centralHeight / 2 - shieldH;
 			for (int i=0; i < classes.length; i++) {
 				ClassShield shield = shields.get( classes[i] );
 				shield.setRect( 
@@ -399,7 +405,7 @@ public class StartScene extends PixelScene {
 				highlighted = BASIC_HIGHLIGHTED;
 			}
 			
-			name.text( cl.name() );
+			name.text( cl.title() );
 			name.measure();
 			name.hardlight( normal );
 			

@@ -122,24 +122,6 @@ public class HtmlLauncher extends GwtApplication {
 			return false;
 		}
 
-		@Override
-		public void openDonation(String language) {
-			if (!openTelegramDonation(language)) {
-				super.openDonation(language);
-			}
-		}
-
-		private static native boolean openTelegramDonation(String language) /*-{
-			try {
-				var bridge = $wnd.PixelDungeonTelegram;
-				if (bridge && typeof bridge.openDonation === 'function') {
-					return bridge.openDonation(language) !== false;
-				}
-			} catch (e) {
-			}
-			return false;
-		}-*/;
-
 		public PDThread newThread(Runnable runnable) {
 			return new HtmlThread(runnable);
 		}

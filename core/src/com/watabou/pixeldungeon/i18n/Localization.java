@@ -97,8 +97,11 @@ public final class Localization {
 		return language;
 	}
 
-	public static boolean isRussian() {
-		return RUSSIAN.equals( language );
+	/** Locale matching the selected game language, not the device language. */
+	public static Locale locale() {
+		int separator = language.indexOf( '_' );
+		return separator < 0 ? new Locale( language ) :
+			new Locale( language.substring( 0, separator ), language.substring( separator + 1 ) );
 	}
 
 	public static boolean isChinese() {
@@ -167,21 +170,6 @@ public final class Localization {
 			}
 		} catch (Throwable error) {
 			Gdx.app.error( "I18N", "Unable to load " + catalogue, error );
-		}
-
-		if (isRussian()) {
-			// 1.9.2a/GDX additions and deliberately polished high-visibility copy.
-			put( "Language", "Язык" );
-			put( "Choose language", "Выберите язык" );
-			put( "You don't know what is there.", "Ты не знаешь, что там." );
-			put( "Select a cell to examine", "Выбери клетку для осмотра" );
-			put( "Second quickslot", "Второй быстрый слот" );
-			put( "Key bindings", "Управление" );
-			put( "Scale up UI", "Крупный интерфейс" );
-			put( "Sound FX", "Звуки" );
-			put( "Default Zoom", "Обычный масштаб" );
-			put( "Switch to fullscreen", "На весь экран" );
-			put( "Switch to windowed", "В оконный режим" );
 		}
 	}
 

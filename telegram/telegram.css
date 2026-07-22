@@ -35,8 +35,9 @@ html, body {
 
 /*
  * Fullscreen Telegram controls are painted over the web view. Keep the GWT
- * host inside Telegram's content-safe rectangle so the hero HUD and menu stay
- * below the Close/status controls and above the phone's home indicator.
+ * host inside Telegram's content-safe rectangle. telegram-init.js also reserves
+ * the fullscreen controls rail because some iOS clients report only the notch
+ * inset and otherwise paint Close/menu buttons over the hero HUD.
  */
 #embed-html {
   position: fixed;

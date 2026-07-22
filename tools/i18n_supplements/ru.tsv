@@ -1,14 +1,31 @@
 LibGDX port: Arcnor / Web port: nojus297	LibGDX-порт: Arcnor / веб-порт: nojus297
 Telegram port: @barboskich	Telegram-порт: @barboskich
-Say thanks	Сказать спасибо
-Thank you!	Спасибо!
-This is a voluntary tip for the Telegram port. It never affects gameplay.	Это добровольная благодарность за Telegram-порт. Она никак не влияет на игровой процесс.
-Support with Telegram Stars	Поддержать в Telegram Stars
-Open @barboskich	Открыть @barboskich
+Select Your Hero	Выбери героя
+Game Over	Игра окончена
+Boss slain	Босс повержен
+Language	Язык
 Choose language	Выберите язык
+You don't know what is there.	Ты не знаешь, что там.
+Select a cell to examine	Выбери клетку для осмотра
+Second quickslot	Второй быстрый слот
 Key bindings	Настройка клавиш
+Scale up UI	Крупный интерфейс
+Sound FX	Звуки
+Default Zoom	Обычный масштаб
 Switch to fullscreen	На весь экран
 Switch to windowed	В оконный режим
+%1$s hit %2$s	Атака: %1$s -> %2$s
+%1$s defeated %2$s	Победа! %1$s -> %2$s
+%1$s %2$s your attack	Твоя атака не достигла цели: %1$s (%2$s)
+%1$s %2$s %3$s's attack	Атака не достигла цели: %3$s -> %1$s (%2$s)
+%s killed you...	Тебя убивает: %s...
+dodged	уклонение
+evaded	уклонение
+blocked	блок
+parried	парирование
+absorbed	поглощение
+key ring	связка ключей
+This is a copper key ring, that lets you keep all your keys separately from the rest of your belongings.	Это медная связка для ключей. Она позволяет хранить все ключи отдельно от остальных вещей.
 Reset To Defaults	Сбросить настройки
 <None>	<Нет>
 Press a key for "%s", or press %s to remove the binding.	Нажмите клавишу для действия «%s» или нажмите %s, чтобы удалить привязку.

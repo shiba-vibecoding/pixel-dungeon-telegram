@@ -42,6 +42,15 @@ def main():
 
         catalogue = entries(catalogue_path)
         reviewed = entries(supplement_path, allow_comments=True)
+        seen_reviewed = set()
+        duplicate_reviewed = []
+        for key, _ in reviewed:
+            if key in seen_reviewed:
+                duplicate_reviewed.append(key)
+            seen_reviewed.add(key)
+        if duplicate_reviewed:
+            raise SystemExit('{}: duplicate supplement keys: {}'.format(
+                filename, ', '.join(sorted(set(duplicate_reviewed)))))
         reviewed_keys = set(key for key, _ in reviewed)
         merged = [(key, value) for key, value in catalogue if key not in reviewed_keys]
         merged.extend(reviewed)

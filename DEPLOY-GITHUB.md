@@ -6,7 +6,7 @@ GitHub автоматически:
 
 1. устанавливает Temurin JDK 8 и Node.js;
 2. собирает GWT-версию игры;
-3. добавляет Telegram-интеграцию, Stars и пользовательские сохранения;
+3. добавляет Telegram-интеграцию и пользовательские сохранения;
 4. проверяет готовый каталог;
 5. публикует его в GitHub Pages.
 
@@ -82,31 +82,15 @@ CloudStorage привязан к паре «бот + пользователь»,
 При открытии прямой GitHub Pages-ссылки вне Telegram доступна только локальная
 копия браузера — у обычной веб-страницы нет подтверждённого Telegram user ID.
 
-## 5. Telegram Stars
-
-Публичные invoice-ссылки можно добавить без изменения исходников через
-**Settings → Secrets and variables → Actions → Variables**:
-
-| Variable | Значение |
-|---|---|
-| `TELEGRAM_AUTHOR_URL` | `https://t.me/barboskich` |
-| `STARS_INVOICE_50` | публичная ссылка счёта на 50 Stars |
-| `STARS_INVOICE_100` | публичная ссылка счёта на 100 Stars |
-| `STARS_INVOICE_250` | публичная ссылка счёта на 250 Stars |
-
-Это именно обычные repository variables, а не токены. Токен бота и обработчик
-`pre_checkout_query` должны оставаться только на сервере бота: всё содержимое
-GitHub Pages публично.
-
-## 6. Локальная production-сборка
+## 5. Локальная production-сборка
 
 Нужны JDK 8 и Node.js:
 
 ```bash
 ./gradlew --no-daemon html:dist
-node telegram/build-telegram.mjs html/build/dist dist-telegram-clean
-node telegram/test-storage.mjs
-node telegram/serve.mjs dist-telegram-clean 8080
+node telegram/build-telegram.mjs html/build/dist dist-telegram
+node --test telegram/test-*.mjs
+node telegram/serve.mjs dist-telegram 8080
 ```
 
 Откройте `http://127.0.0.1:8080/`. Прямая браузерная проверка использует
