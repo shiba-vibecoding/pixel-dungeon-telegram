@@ -7,19 +7,19 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function run(insideTelegram) {
+function run(insideTelegram, graphicsInitiallyReady = true) {
   const styles = new Map();
   const events = Object.create(null);
   const calls = [];
+  const storageCalls = [];
+  const resizeCalls = [];
+  const animationFrames = [];
+  let graphicsReady = graphicsInitiallyReady;
   const root = { style: { setProperty(name, value) { styles.set(name, value); } } };
-  const panel = { style: {} };
-  const canvas = { width: 390, height: 844, style: {} };
   const host = {
-    firstElementChild: panel,
     getBoundingClientRect() {
       return { width: 390, height: insideTelegram ? 714 : 844 };
     },
-    getElementsByTagName(name) { return name === 'canvas' ? [canvas] : []; },
   };
   const document = {
     documentElement: root,
@@ -29,9 +29,20 @@ function run(insideTelegram) {
   const window = {
     innerHeight: 844,
     addEventListener() {},
-    dispatchEvent() {},
     setTimeout(callback) { callback(); return 1; },
     clearTimeout() {},
+    requestAnimationFrame(callback) {
+      animationFrames.push(callback);
+      return animationFrames.length;
+    },
+    TelegramPixelDungeonResize(width, height) {
+      resizeCalls.push([width, height]);
+      return graphicsReady;
+    },
+    PixelDungeonStorage: {
+      pauseAndSync() { storageCalls.push('pauseAndSync'); },
+      resumeGame() { storageCalls.push('resumeGame'); },
+    },
   };
 
   let webApp = null;
@@ -63,30 +74,69 @@ function run(insideTelegram) {
     clearTimeout() {},
   });
   vm.runInContext(source, context, { filename: 'telegram-init.js' });
-  return { styles, events, calls, webApp, panel, canvas };
+  return {
+    styles, events, calls, storageCalls, webApp, resizeCalls,
+    setGraphicsReady(value) { graphicsReady = value; },
+    flushFrame() {
+      const pending = animationFrames.splice(0);
+      for (const callback of pending) callback();
+    },
+  };
 }
 
 const telegram = run(true);
+telegram.flushFrame();
 assert(telegram.styles.get('--pd-safe-top') === '96px',
   'fullscreen controls rail must reserve 96 CSS pixels');
 assert(telegram.styles.get('--pd-safe-bottom') === '34px',
   'bottom safe area was not applied');
-assert(telegram.canvas.width === 390 && telegram.canvas.height === 714,
-  'GWT canvas was not fitted to the Telegram-safe rectangle');
-assert(telegram.panel.style.width === '390px' && telegram.panel.style.height === '714px',
-  'GWT host panel was not fitted to the Telegram-safe rectangle');
+assert(telegram.resizeCalls.length === 1 &&
+  telegram.resizeCalls[0][0] === 390 && telegram.resizeCalls[0][1] === 714,
+  'safe rectangle was not sent through the GWT-owned resize bridge');
 assert(telegram.calls.some(([name]) => name === 'requestFullscreen'),
   'fullscreen was not requested');
-assert(telegram.calls.some(([name, value]) => name === 'lockOrientation' && value === 'portrait'),
-  'portrait orientation was not requested');
+assert(telegram.calls.some((call) => call[0] === 'lockOrientation' && call.length === 1),
+  'current Telegram orientation was not locked with the supported API');
+telegram.events.deactivated();
+telegram.events.activated();
+assert(telegram.storageCalls.join(',') === 'pauseAndSync,resumeGame',
+  'Telegram activation lifecycle was not forwarded to game save/resume');
+
+const preloader = run(true, false);
+preloader.flushFrame();
+assert(preloader.resizeCalls.length === 1,
+  'preloader resize was not attempted');
+preloader.setGraphicsReady(true);
+preloader.events.safeAreaChanged();
+preloader.flushFrame();
+assert(preloader.resizeCalls.length === 2,
+  'failed preloader resize suppressed the retry after graphics became ready');
+
+for (let i = 0; i < 20; i++) {
+  telegram.events.viewportChanged({ isStateStable: false });
+}
+telegram.flushFrame();
+assert(telegram.resizeCalls.length === 1,
+  'unstable viewport events rebuilt the game scene');
+telegram.events.viewportChanged({ isStateStable: true });
+telegram.events.safeAreaChanged();
+telegram.events.contentSafeAreaChanged();
+telegram.flushFrame();
+assert(telegram.resizeCalls.length === 1,
+  'unchanged stable viewport caused redundant game resizes');
 
 telegram.webApp.isFullscreen = false;
 telegram.events.fullscreenChanged();
+telegram.flushFrame();
 assert(telegram.styles.get('--pd-safe-top') === '47px',
   'non-fullscreen layout should use Telegram safe area without the controls rail');
 
 const browser = run(false);
+browser.flushFrame();
 assert(!browser.styles.has('--pd-safe-top'),
   'plain browser fallback must not invent Telegram insets');
+assert(browser.resizeCalls.length === 1 &&
+  browser.resizeCalls[0][0] === 390 && browser.resizeCalls[0][1] === 844,
+  'plain browser did not use the same backend-owned resize path');
 
-console.log('Telegram fullscreen controls safe area: OK');
+console.log('Telegram safe area uses one stable backend-owned resize: OK');

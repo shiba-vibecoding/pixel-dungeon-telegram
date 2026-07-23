@@ -10,9 +10,10 @@ deployable output is the generated, Git-ignored `dist-telegram/` folder.
 
 ---
 
-## ⚠️ 0. The one gotcha that cost hours: git autocrlf
+## 0. Legacy prebuilt fallback and git autocrlf
 
-The prebuilt web files were taken from the project's `gh-pages` branch. On Windows
+Production is built directly from source by Gradle. If an older prebuilt
+`gh-pages` tree is used as an explicit fallback, note that on Windows
 with `git config core.autocrlf=true` (the common default), git **rewrites LF→CRLF
 inside the compiled `html/*.cache.js` game code**. GWT inlines binary resources
 (textures/data) into that JS, so the injected `\r` bytes **corrupt the embedded
@@ -29,8 +30,9 @@ git -C pd-gdx -c core.autocrlf=false -c core.eol=lf archive --worktree-attribute
 for f in pd-gdx-web-clean/html/*.cache.js; do printf '%s CR=%s\n' "$f" "$(tr -cd '\r' < "$f" | wc -c)"; done
 ```
 
-`pd-gdx-web-clean/` is byte-for-byte identical to the live deployed site (verified
-by md5). The corrupted `pd-gdx-web/` is kept only for reference — do not ship it.
+This workaround is not needed for the normal `html/build/dist` production path.
+Never ship a prebuilt tree whose compiled `*.cache.js` files contain carriage
+returns.
 
 ---
 
@@ -41,10 +43,10 @@ game build.
 
 | File | Purpose |
 |------|---------|
-| `telegram/telegram-init.js` | Boots the Telegram WebApp SDK: `ready()`+`expand()`, fullscreen + portrait lock, disable swipe-to-close, closing confirmation and dark theme; keeps libGDX below Telegram's floating mobile controls. |
+| `telegram/telegram-init.js` | Boots the Telegram WebApp SDK: `ready()`+`expand()`, fullscreen + current-orientation lock, disable swipe-to-close, closing confirmation and dark theme; measures Telegram's content-safe rectangle for libGDX. |
 | `telegram/telegram-storage.js` | Migrates legacy browser saves, namespaces local data by Telegram user ID, restores Telegram CloudStorage before game boot and keeps it synchronized. |
 | `telegram/telegram-bootstrap.js` | Loads the Telegram SDK only for real Mini App launches, waits for cloud restore, then starts GWT; includes a timeout fallback so CDN/API failure cannot brick the game. |
-| `telegram/telegram.css` | Dark background, touch hardening and Telegram/device safe-area bounds so the top HUD never sits under fullscreen controls or a phone cutout. |
+| `telegram/telegram.css` | Dark background, touch hardening and Telegram/device safe-area bounds that reserve space for fullscreen controls and phone cutouts. |
 | `telegram/privacy.html` | Public bilingual privacy page suitable for the Mini App's BotFather privacy URL. |
 | `telegram/build-telegram.mjs` | Copies the clean web build into `dist-telegram/`, removes server-only GWT metadata and patches `index.html` (SDK + overlay). The SDK `<script>` goes at the end of `<body>`, never in `<head>` (a `<head>` script from telegram.org would block the game wherever telegram.org is slow/blocked). |
 | `telegram/serve.mjs` | A tiny HTTP/1.1 static server for local testing (see §3). |
@@ -60,9 +62,11 @@ node telegram/build-telegram.mjs
 # or explicitly: node telegram/build-telegram.mjs <src-dir> <out-dir>
 ```
 
-It auto-picks the source: an explicit arg, else `../pd-gdx-web-clean`, else
-`../pd-gdx-web`, else a from-source `html/build/dist`. Output → `dist-telegram/`
-(a static folder ready to upload). Re-running is safe.
+It auto-picks the source: an explicit arg, else the current from-source
+`html/build/dist`, then the optional `../pd-gdx-web-clean` and
+`../pd-gdx-web` fallbacks. Output → `dist-telegram/` (a static folder ready to
+upload). The packager validates required build files and refuses unsafe output
+paths before replacing the destination.
 
 ---
 
@@ -92,11 +96,15 @@ unscoped saves are claimed and migrated once.
 On clients supporting Bot API 6.9+, the wrapper mirrors those stores to the
 current bot user's `Telegram.WebApp.CloudStorage`. Data is serialized into
 3,600-character chunks, integrity-checked, restored before the game starts and
-synced every two seconds. CloudStorage errors fall back to local data without
-clearing it. The direct browser build remains local-only.
+synced 2.5 seconds after a detected save change, with a 30-second fallback
+check. CloudStorage errors fall back to local data without clearing it. The
+direct browser build remains local-only.
 
-Telegram CloudStorage is last-write-wins. Avoid playing the same active run on
-two devices at once.
+The synchronizer stores the hash of the last-common generation. A one-sided
+change can be published or restored automatically. If local and cloud copies
+both diverge, neither is overwritten automatically: a localized Telegram popup
+asks which copy to keep before the game starts. Avoid playing the same active
+run on two devices at once.
 
 ---
 
@@ -160,4 +168,4 @@ same URL.
 
 Pixel Dungeon — Watabou. libGDX/Web port — gnojus (fork of Arcnor's). Telegram
 port — [@barboskich](https://t.me/barboskich). Distributed under
-[GPL-3.0-only](LICENSE); keep attribution and source available when redistributing.
+[GPL-3.0-or-later](LICENSE); keep attribution and source available when redistributing.

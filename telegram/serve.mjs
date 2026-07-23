@@ -7,7 +7,7 @@
  * host (GitHub Pages, nginx, Cloudflare) uses HTTP/1.1+ and works fine; so does
  * this server. Node's http server is HTTP/1.1 with keep-alive by default.
  *
- * Usage:  node telegram/serve.mjs <dir> [port]
+ * Usage:  node telegram/serve.mjs <dir> [port] [host]
  *   e.g.  node telegram/serve.mjs dist-telegram 9200
  */
 import http from 'node:http';
@@ -16,6 +16,7 @@ import path from 'node:path';
 
 const dir = path.resolve(process.argv[2] || '.');
 const port = parseInt(process.argv[3] || '9200', 10);
+const host = process.argv[4] || '127.0.0.1';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -36,8 +37,12 @@ const server = http.createServer((req, res) => {
   try {
     let urlPath = decodeURIComponent(req.url.split('?')[0]);
     if (urlPath.endsWith('/')) urlPath += 'index.html';
-    const filePath = path.join(dir, path.normalize(urlPath));
-    if (!filePath.startsWith(dir)) { res.writeHead(403); return res.end('403'); }
+    const filePath = path.resolve(dir, '.' + path.normalize(urlPath));
+    const relativePath = path.relative(dir, filePath);
+    if (relativePath.startsWith('..' + path.sep) || path.isAbsolute(relativePath)) {
+      res.writeHead(403);
+      return res.end('403');
+    }
     fs.stat(filePath, (err, st) => {
       if (err || !st.isFile()) { res.writeHead(404); return res.end('404'); }
       const type = MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
@@ -72,6 +77,6 @@ const server = http.createServer((req, res) => {
   }
 });
 
-server.listen(port, '127.0.0.1', () => {
-  console.log(`Serving ${dir}\n  http://127.0.0.1:${port}/`);
+server.listen(port, host, () => {
+  console.log(`Serving ${dir}\n  http://${host}:${port}/`);
 });

@@ -85,7 +85,10 @@ public class Gizmo {
 	public void killAndErase() {
 		kill();
 		if (parent != null) {
-			parent.erase( this );
+			Group oldParent = parent;
+			if (oldParent.erase( this ) != null) {
+				destroy();
+			}
 		}
 	}
 	

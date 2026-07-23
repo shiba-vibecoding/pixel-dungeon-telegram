@@ -41,6 +41,7 @@ public class Flare extends Visual {
 	
 	private boolean lightMode = true;
 	
+	private static SmartTexture sharedTexture;
 	private SmartTexture texture;
 	
 	private FloatBuffer vertices;
@@ -55,8 +56,11 @@ public class Flare extends Visual {
 		
 		super( 0, 0, 0, 0 );
 		
-		int gradient[] = {0xFFFFFFFF, 0x00FFFFFF};
-		texture = new Gradient( gradient );
+		if (sharedTexture == null || sharedTexture.bitmap == null) {
+			int gradient[] = {0xFFFFFFFF, 0x00FFFFFF};
+			sharedTexture = new Gradient( gradient );
+		}
+		texture = sharedTexture;
 		
 		this.nRays = nRays;
 		

@@ -244,9 +244,10 @@ public class Ghost extends NPC {
 			if (!spawned && Dungeon.depth > 1 && Random.Int( 5 - Dungeon.depth ) == 0) {
 				
 				Ghost ghost = new Ghost();
-				do {
-					ghost.pos = level.randomRespawnCell();
-				} while (ghost.pos == -1);
+				ghost.pos = level.randomRespawnCell();
+				if (ghost.pos == -1) {
+					return;
+				}
 				level.mobs.add( ghost );
 				Actor.occupyCell( ghost );
 				

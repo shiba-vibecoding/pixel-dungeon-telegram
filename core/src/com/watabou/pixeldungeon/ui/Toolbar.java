@@ -173,6 +173,14 @@ public class Toolbar extends Component {
 			btnInventory.enable( true );
 		}
 	}
+
+	@Override
+	public void destroy() {
+		if (instance == this) {
+			instance = null;
+		}
+		super.destroy();
+	}
 	
 	public void pickup( Item item ) {
 		pickedUp.reset( item, 
@@ -181,10 +189,13 @@ public class Toolbar extends Component {
 	}
 	
 	public static boolean secondQuickslot() {
-		return instance.btnQuick2.visible;
+		return instance != null && instance.btnQuick2.visible;
 	}
 	
 	public static void secondQuickslot( boolean value ) {
+		if (instance == null) {
+			return;
+		}
 		instance.btnQuick2.visible = 
 		instance.btnQuick2.active = 
 			value;

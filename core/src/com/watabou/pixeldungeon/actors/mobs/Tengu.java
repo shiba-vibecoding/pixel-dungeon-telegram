@@ -136,10 +136,10 @@ public class Tengu extends Mob {
 		timeToJump = JUMP_DELAY;
 		
 		for (int i=0; i < 4; i++) {
-			int trapPos;
-			do {
-				trapPos = Random.Int( Level.LENGTH );
-			} while (!Level.fieldOfView[trapPos] || !Level.passable[trapPos]);
+			int trapPos = randomVisiblePassableCell( false );
+			if (trapPos == -1) {
+				break;
+			}
 			
 			if (Dungeon.level.map[trapPos] == Terrain.INACTIVE_TRAP) {
 				Level.set( trapPos, Terrain.POISON_TRAP );
@@ -148,14 +148,13 @@ public class Tengu extends Mob {
 			}
 		}
 		
-		int newPos;
-		do {
-			newPos = Random.Int( Level.LENGTH );
-		} while (
-			!Level.fieldOfView[newPos] || 
-			!Level.passable[newPos] || 
-			(enemy != null && Level.adjacent( newPos, enemy.pos )) ||
-			Actor.findChar( newPos ) != null);
+		int newPos = randomVisiblePassableCell( true );
+		if (newPos == -1) {
+			// A blinded or cornered Tengu can have no legal landing cell.
+			// Cancelling the jump keeps the turn loop responsive.
+			spend( 1 / speed() );
+			return;
+		}
 		
 		sprite.move( pos, newPos );
 		move( newPos );
@@ -166,6 +165,29 @@ public class Tengu extends Mob {
 		}
 		
 		spend( 1 / speed() );
+	}
+
+	private int randomVisiblePassableCell( boolean landingCell ) {
+		int selected = -1;
+		int candidates = 0;
+
+		for (int cell=0; cell < Level.LENGTH; cell++) {
+			if (!Level.fieldOfView[cell] || !Level.passable[cell]) {
+				continue;
+			}
+			if (landingCell && (
+				(enemy != null && Level.adjacent( cell, enemy.pos )) ||
+				Actor.findChar( cell ) != null)) {
+				continue;
+			}
+
+			candidates++;
+			if (Random.Int( candidates ) == 0) {
+				selected = cell;
+			}
+		}
+
+		return selected;
 	}
 	
 	@Override

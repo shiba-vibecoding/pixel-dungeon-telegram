@@ -5,6 +5,8 @@ class MemoryStorage {
   constructor() {
     this.data = new Map();
     this.reads = 0;
+    this.failSetKey = '';
+    this.failSetCount = 0;
   }
   get length() { return this.data.size; }
   key(index) { return Array.from(this.data.keys())[index] ?? null; }
@@ -12,7 +14,14 @@ class MemoryStorage {
     this.reads++;
     return this.data.has(String(key)) ? this.data.get(String(key)) : null;
   }
-  setItem(key, value) { this.data.set(String(key), String(value)); }
+  setItem(key, value) {
+    key = String(key);
+    if (this.failSetCount > 0 && key === this.failSetKey) {
+      this.failSetCount--;
+      throw new Error('simulated localStorage quota failure');
+    }
+    this.data.set(key, String(value));
+  }
   removeItem(key) { this.data.delete(String(key)); }
 }
 
@@ -21,15 +30,23 @@ let cloudWrites = 0;
 let failChunkWriteAt = 0;
 let armedChunkWrites = 0;
 let failRemoveItems = 0;
+let droppedCloudMethod = '';
+let chunkWriteHook = null;
+let dropCommittedManifestCallback = 0;
 const cloud = {
-  getItem(key, callback) { queueMicrotask(() => callback(null, cloudData[key] || '')); },
+  getItem(key, callback) {
+    if (droppedCloudMethod === 'getItem') return;
+    queueMicrotask(() => callback(null, cloudData[key] || ''));
+  },
   getKeys(callback) { queueMicrotask(() => callback(null, Object.keys(cloudData))); },
   getItems(keys, callback) {
+    if (droppedCloudMethod === 'getItems') return;
     const values = {};
     for (const key of keys) values[key] = cloudData[key] || '';
     queueMicrotask(() => callback(null, values));
   },
   setItem(key, value, callback) {
+    if (droppedCloudMethod === 'setItem') return;
     cloudWrites++;
     if (failChunkWriteAt && key.startsWith('pdgdx_data_v2_')) {
       armedChunkWrites++;
@@ -39,9 +56,19 @@ const cloud = {
       }
     }
     cloudData[key] = String(value);
+    if (key === 'pdgdx_manifest_v2' && dropCommittedManifestCallback > 0) {
+      dropCommittedManifestCallback--;
+      return;
+    }
+    if (key.startsWith('pdgdx_data_v2_') && chunkWriteHook) {
+      const hook = chunkWriteHook;
+      chunkWriteHook = null;
+      hook();
+    }
     queueMicrotask(() => callback(null, true));
   },
   removeItems(keys, callback) {
+    if (droppedCloudMethod === 'removeItems') return;
     if (failRemoveItems > 0) {
       failRemoveItems--;
       queueMicrotask(() => callback('simulated cleanup interruption'));
@@ -55,24 +82,42 @@ const cloud = {
 const nativeSetTimeout = globalThis.setTimeout;
 const nativeClearTimeout = globalThis.clearTimeout;
 const source = fs.readFileSync(new URL('./telegram-storage.js', import.meta.url), 'utf8');
+let lastDocumentListeners;
+let lastWindowListeners;
+let lastWindow;
 
-function install(storage) {
-  globalThis.document = { hidden: false, addEventListener() {} };
+function install(storage, options = {}) {
+  lastDocumentListeners = Object.create(null);
+  lastWindowListeners = Object.create(null);
+  globalThis.document = {
+    hidden: false,
+    addEventListener(name, listener) { lastDocumentListeners[name] = listener; },
+  };
   globalThis.window = {
     localStorage: storage,
-    Telegram: {
-      WebApp: {
-        initData: 'signed-init-data',
-        initDataUnsafe: { user: { id: 101 } },
-        isVersionAtLeast() { return true; },
-        CloudStorage: cloud,
-      },
-    },
-    addEventListener() {},
+    addEventListener(name, listener) { lastWindowListeners[name] = listener; },
     setTimeout: nativeSetTimeout,
     clearTimeout: nativeClearTimeout,
     setInterval() { return 1; },
+    __pdCloudCallTimeoutMs: options.cloudTimeoutMs ?? 50,
+    __pdChangeSyncDelayMs: options.changeSyncDelayMs ?? 0,
   };
+  if (!options.noTelegram) {
+    window.Telegram = {
+      WebApp: {
+        initData: 'signed-init-data',
+        initDataUnsafe: { user: { id: options.userId ?? 101 } },
+        isVersionAtLeast() { return true; },
+        CloudStorage: cloud,
+      },
+    };
+  }
+  if (Object.prototype.hasOwnProperty.call(options, 'scope')) {
+    window.__pdStorageScope = options.scope;
+  }
+  if (options.onPause) window.TelegramPixelDungeonPause = options.onPause;
+  if (options.onResume) window.TelegramPixelDungeonResume = options.onResume;
+  lastWindow = window;
   vm.runInThisContext(source, { filename: 'telegram-storage.js' });
   return window.PixelDungeonStorage;
 }
@@ -96,7 +141,61 @@ function resetCloud() {
   failChunkWriteAt = 0;
   armedChunkWrites = 0;
   failRemoveItems = 0;
+  droppedCloudMethod = '';
+  chunkWriteHook = null;
+  dropCommittedManifestCallback = 0;
 }
+
+async function flush(count = 8) {
+  for (let i = 0; i < count; i++) await Promise.resolve();
+}
+
+function snapshotFor(entries) {
+  const ordered = {};
+  for (const key of Object.keys(entries).sort()) ordered[key] = entries[key];
+  return JSON.stringify({ version: 1, entries: ordered });
+}
+
+function installCloudSnapshot(entries, generation) {
+  const value = snapshotFor(entries);
+  cloudData[`pdgdx_data_v2_${generation}_0000`] = value;
+  cloudData.pdgdx_manifest_v2 = JSON.stringify({
+    version: 2,
+    generation,
+    chunks: 1,
+    length: value.length,
+    hash: checksum(value),
+    updated: 'test',
+  });
+  return value;
+}
+
+// Production loads storage before bootstrap. The bridge must wait until
+// bootstrap installs its launch-derived immutable fallback scope.
+const preBootstrapBridge = install(new MemoryStorage(), { noTelegram: true });
+Object.defineProperty(lastWindow, '__pdStorageScope', {
+  value: 'tg-202',
+  writable: false,
+  configurable: false,
+});
+assert(preBootstrapBridge.scope() === 'tg-202',
+  'storage froze an empty scope before bootstrap supplied the launch user');
+
+const unsignedLaunchDevice = new MemoryStorage();
+unsignedLaunchDevice.setItem('pd-files:game.dat.s', 'legacy-must-not-be-claimed');
+unsignedLaunchDevice.setItem('pd-files-tg-101:game.dat.s', 'verified-profile');
+const unsignedBridge = install(unsignedLaunchDevice, {
+  noTelegram: true,
+  scope: 'tg-unverified-101',
+});
+const unsignedRestore = await unsignedBridge.restore();
+assert(unsignedRestore.mode === 'local' &&
+  unsignedBridge.scope() === 'tg-unverified-101',
+  'unsigned launch scope was not kept in its isolated local namespace');
+assert(unsignedLaunchDevice.getItem('pd-files-tg-unverified-101:game.dat.s') === null,
+  'unsigned launch claimed the legacy save namespace');
+assert(unsignedLaunchDevice.getItem('pd-files-tg-101:game.dat.s') === 'verified-profile',
+  'unsigned launch accessed or changed a verified Telegram profile');
 
 resetCloud();
 const firstDevice = new MemoryStorage();
@@ -104,6 +203,10 @@ firstDevice.setItem('pd-prefs:language', 'ru');
 firstDevice.setItem('pd-files:game.dat.s', 'saved-run');
 
 let bridge = install(firstDevice);
+assert(bridge.scope() === 'tg-101', 'storage did not freeze the Telegram user scope');
+const scopeDescriptor = Object.getOwnPropertyDescriptor(lastWindow, '__pdStorageScope');
+assert(scopeDescriptor && scopeDescriptor.writable === false && scopeDescriptor.configurable === false,
+  'storage scope is not immutable when bootstrap is absent');
 let restored = await bridge.restore();
 assert(restored.mode === 'cloud' && restored.restored === false, 'first device should start with empty cloud');
 assert(firstDevice.getItem('pd-prefs-tg-101:language') === 'ru', 'legacy settings were not migrated');
@@ -139,6 +242,7 @@ assert(Object.keys(cloudData).some((key) =>
 const thirdDevice = new MemoryStorage();
 bridge = install(thirdDevice);
 restored = await bridge.restore();
+await flush();
 assert(restored.restored === true, 'updated cloud snapshot was not restored');
 assert(thirdDevice.getItem('pd-files-tg-101:game.dat.s') === 'newer-run',
   'latest progress did not win');
@@ -230,4 +334,211 @@ assert(restored.mode === 'cloud' && restored.restored === true,
 assert(v2RoundTripDevice.getItem('pd-files-tg-101:game.dat.s') === 'migrated-v2-run',
   'successful v2 round-trip restored the wrong progress');
 
-console.log('Telegram transactional cloud storage, v1 compatibility, and v2 round-trip: OK');
+// A device that changed while the known cloud generation stayed at the base
+// must retain its local progress and publish it instead of restoring old cloud.
+const locallyNewerDevice = new MemoryStorage();
+bridge = install(locallyNewerDevice);
+restored = await bridge.restore();
+assert(restored.restored === true, 'local-newer setup did not restore its base snapshot');
+locallyNewerDevice.setItem('pd-files-tg-101:game.dat.s', 'local-only-change');
+bridge = install(locallyNewerDevice);
+restored = await bridge.restore();
+assert(restored.localPreserved === true,
+  'locally changed progress was overwritten while cloud still matched the base');
+assert(locallyNewerDevice.getItem('pd-files-tg-101:game.dat.s') === 'local-only-change',
+  'local-newer restore changed the game file');
+assert(await bridge.syncNow(), 'local-newer progress was not published');
+
+// The older round-trip device now has a local change and a remote change from
+// the device above. Neither side may be selected automatically.
+v2RoundTripDevice.setItem('pd-files-tg-101:game.dat.s', 'other-local-change');
+const conflictCloudManifest = cloudData.pdgdx_manifest_v2;
+bridge = install(v2RoundTripDevice);
+restored = await bridge.restore();
+assert(restored.conflict === true && bridge.mode() === 'conflict',
+  'two-sided restore divergence was not reported as a conflict');
+assert(v2RoundTripDevice.getItem('pd-files-tg-101:game.dat.s') === 'other-local-change',
+  'conflict restore overwrote local progress');
+assert(cloudData.pdgdx_manifest_v2 === conflictCloudManifest,
+  'conflict restore modified the remote generation');
+assert(await bridge.syncNow() === false, 'conflicted progress was uploaded without a decision');
+assert(await bridge.resolveConflict('cloud') === true,
+  'cloud conflict choice was not accepted');
+assert(bridge.mode() === 'cloud' &&
+  v2RoundTripDevice.getItem('pd-files-tg-101:game.dat.s') === 'local-only-change',
+  'cloud conflict choice did not restore the remote save');
+
+// A later two-sided divergence can also be resolved explicitly in favour of
+// this device; the selected local copy must become the new cloud generation.
+v2RoundTripDevice.setItem('pd-files-tg-101:game.dat.s', 'chosen-local-copy');
+installCloudSnapshot({
+  'pd-files-tg-101:game.dat.s': 'chosen-remote-copy',
+  'pd-prefs-tg-101:language': 'de',
+}, 'choice_remote');
+bridge = install(v2RoundTripDevice);
+restored = await bridge.restore();
+assert(restored.conflict === true, 'local-choice setup did not create a conflict');
+assert(await bridge.resolveConflict('local') === true && bridge.mode() === 'cloud',
+  'local conflict choice did not resume cloud synchronization');
+const chosenManifest = JSON.parse(cloudData.pdgdx_manifest_v2);
+const chosenSnapshot = cloudData[
+  `pdgdx_data_v2_${chosenManifest.generation}_0000`
+];
+assert(JSON.parse(chosenSnapshot).entries['pd-files-tg-101:game.dat.s'] ===
+  'chosen-local-copy',
+  'local conflict choice was not published as the new cloud save');
+
+// Detect a second device switching the manifest while detached chunks upload.
+const uploadRaceDevice = new MemoryStorage();
+bridge = install(uploadRaceDevice);
+restored = await bridge.restore();
+assert(restored.restored === true, 'upload-race setup did not restore cloud');
+uploadRaceDevice.setItem('pd-files-tg-101:game.dat.s', 'race-local');
+let concurrentManifest = '';
+chunkWriteHook = () => {
+  installCloudSnapshot({
+    'pd-files-tg-101:game.dat.s': 'race-remote',
+    'pd-prefs-tg-101:language': 'de',
+  }, 'other_device');
+  concurrentManifest = cloudData.pdgdx_manifest_v2;
+};
+assert(await bridge.syncNow() === false, 'upload race should stop before switching the manifest');
+assert(bridge.mode() === 'conflict', 'upload race did not enter conflict mode');
+assert(cloudData.pdgdx_manifest_v2 === concurrentManifest,
+  'upload race overwrote the concurrent device manifest');
+assert(uploadRaceDevice.getItem('pd-files-tg-101:game.dat.s') === 'race-local',
+  'upload race changed local progress');
+
+// Applying a valid cloud snapshot is transactional: a quota error after some
+// writes must restore every original key and remove newly introduced keys.
+resetCloud();
+const rollbackDevice = new MemoryStorage();
+const rollbackEntries = {
+  'pd-files-tg-101:game.dat.s': 'local-before-quota',
+  'pd-prefs-tg-101:language': 'ru',
+};
+for (const [key, value] of Object.entries(rollbackEntries)) rollbackDevice.setItem(key, value);
+const rollbackBase = snapshotFor(rollbackEntries);
+rollbackDevice.setItem('pdgdx_sync_state_v3_tg-101', JSON.stringify({
+  version: 1,
+  baseHash: checksum(rollbackBase),
+}));
+installCloudSnapshot({
+  'pd-files-tg-101:game.dat.s': 'cloud-after-quota',
+  'pd-files-tg-101:level.dat.s': 'new-cloud-level',
+  'pd-prefs-tg-101:language': 'fr',
+}, 'quota_test');
+rollbackDevice.failSetKey = 'pd-prefs-tg-101:language';
+rollbackDevice.failSetCount = 1;
+bridge = install(rollbackDevice);
+restored = await bridge.restore();
+assert(restored.mode === 'local' && restored.reason === 'cloud-error',
+  'localStorage quota failure did not abort cloud restore');
+assert(rollbackDevice.getItem('pd-files-tg-101:game.dat.s') === 'local-before-quota' &&
+  rollbackDevice.getItem('pd-prefs-tg-101:language') === 'ru',
+  'transaction rollback did not restore original keys');
+assert(rollbackDevice.getItem('pd-files-tg-101:level.dat.s') === null,
+  'transaction rollback left a partially restored cloud key');
+
+// A correctly checksummed snapshot with an out-of-scope key is still invalid.
+resetCloud();
+installCloudSnapshot({ 'pd-files-tg-999:game.dat.s': 'wrong-user' }, 'invalid_scope');
+const validationDevice = new MemoryStorage();
+validationDevice.setItem('pd-files-tg-101:game.dat.s', 'validation-local');
+bridge = install(validationDevice);
+restored = await bridge.restore();
+assert(restored.mode === 'local' && restored.reason === 'cloud-error',
+  'out-of-scope cloud key passed snapshot validation');
+assert(validationDevice.getItem('pd-files-tg-101:game.dat.s') === 'validation-local',
+  'invalid snapshot changed valid local progress');
+
+// If Telegram commits the manifest but loses its callback, timeout handling
+// must not delete the generation now referenced by that manifest.
+resetCloud();
+const ambiguousCommitDevice = new MemoryStorage();
+ambiguousCommitDevice.setItem('pd-files-tg-101:game.dat.s', 'callback-lost-after-commit');
+bridge = install(ambiguousCommitDevice, { cloudTimeoutMs: 10 });
+restored = await bridge.restore();
+assert(restored.mode === 'cloud', 'ambiguous-commit setup did not enable cloud');
+dropCommittedManifestCallback = 1;
+assert(await bridge.syncNow() === false, 'lost manifest callback should report an unconfirmed sync');
+const ambiguouslyCommittedManifest = JSON.parse(cloudData.pdgdx_manifest_v2);
+assert(cloudData[
+  `pdgdx_data_v2_${ambiguouslyCommittedManifest.generation}_0000`
+], 'lost manifest callback cleanup deleted the possibly active generation');
+
+// A native Telegram method that never invokes its callback must settle.
+resetCloud();
+droppedCloudMethod = 'getItem';
+const timeoutStarted = Date.now();
+bridge = install(new MemoryStorage(), { cloudTimeoutMs: 10 });
+restored = await bridge.restore();
+assert(restored.mode === 'local' && restored.reason === 'cloud-error',
+  'hung CloudStorage callback did not fall back to local mode');
+assert(Date.now() - timeoutStarted < 500,
+  'CloudStorage callback timeout was not bounded');
+
+// Lifecycle sync is deferred until later listeners have synchronously saved
+// the game, and markLocalChange provides a debounced explicit write hook.
+resetCloud();
+const lifecycleDevice = new MemoryStorage();
+lifecycleDevice.setItem('pd-files-tg-101:game.dat.s', 'before-pause');
+const lifecycleCalls = [];
+bridge = install(lifecycleDevice, {
+  onPause() {
+    lifecycleCalls.push('pause');
+    lifecycleDevice.setItem(
+      'pd-files-tg-101:game.dat.s', 'saved-by-gwt-pause-bridge');
+    return true;
+  },
+  onResume() {
+    lifecycleCalls.push('resume');
+    return true;
+  },
+});
+restored = await bridge.restore();
+assert(restored.mode === 'cloud', 'lifecycle setup did not enable cloud sync');
+document.hidden = true;
+lastDocumentListeners.visibilitychange();
+await new Promise((resolve) => nativeSetTimeout(resolve, 100));
+let lifecycleManifest = JSON.parse(cloudData.pdgdx_manifest_v2);
+let lifecycleSnapshot = cloudData[
+  `pdgdx_data_v2_${lifecycleManifest.generation}_0000`
+];
+assert(JSON.parse(lifecycleSnapshot).entries['pd-files-tg-101:game.dat.s'] ===
+  'saved-by-gwt-pause-bridge',
+  'visibility sync ran before the GWT pause bridge saved');
+assert(lifecycleCalls[0] === 'pause',
+  'visibility lifecycle did not pause the game before cloud sync');
+document.hidden = false;
+lastDocumentListeners.visibilitychange();
+assert(lifecycleCalls[1] === 'resume',
+  'visible lifecycle did not resume the paused game');
+
+lifecycleDevice.setItem('pd-files-tg-101:game.dat.s', 'marked-local-change');
+bridge.markLocalChange();
+assert(bridge.state().dirty === true, 'markLocalChange did not mark sync state dirty');
+await new Promise((resolve) => nativeSetTimeout(resolve, 100));
+lifecycleManifest = JSON.parse(cloudData.pdgdx_manifest_v2);
+lifecycleSnapshot = cloudData[
+  `pdgdx_data_v2_${lifecycleManifest.generation}_0000`
+];
+assert(JSON.parse(lifecycleSnapshot).entries['pd-files-tg-101:game.dat.s'] ===
+  'marked-local-change',
+  'markLocalChange did not schedule the updated snapshot');
+assert(bridge.state().dirty === false && bridge.state().baseHash === lifecycleManifest.hash,
+  'successful upload did not persist the common base hash');
+
+// The captured scope remains immutable, and a mismatching live SDK identity
+// disables cloud access instead of switching stores in the running session.
+const manifestBeforeIdentityMismatch = cloudData.pdgdx_manifest_v2;
+lastWindow.Telegram.WebApp.initDataUnsafe.user.id = 999;
+lifecycleDevice.setItem('pd-files-tg-101:game.dat.s', 'must-stay-local');
+assert(bridge.scope() === 'tg-101', 'live SDK identity changed the frozen scope');
+assert(await bridge.syncNow() === false, 'mismatched SDK identity still accessed cloud');
+assert(cloudData.pdgdx_manifest_v2 === manifestBeforeIdentityMismatch,
+  'mismatched SDK identity changed the cloud manifest');
+
+console.log(
+  'Telegram transactional storage, v1/v2 compatibility, conflict guards, rollback, timeout, and lifecycle sync: OK'
+);

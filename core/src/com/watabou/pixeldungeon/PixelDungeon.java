@@ -27,6 +27,7 @@ import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.input.GameAction;
 import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.scenes.GameScene;
+import com.watabou.pixeldungeon.scenes.InterlevelScene;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.scenes.TitleScene;
 import com.watabou.utils.PDPlatformSupport;
@@ -129,8 +130,13 @@ public class PixelDungeon extends Game<GameAction> {
 	
 	@Override
 	public void create() {
-		Localization.setup( language() );
 		super.create();
+
+		// Preferences resolves its platform-specific namespace through
+		// Game.instance.  A genuinely fresh web session has no cached
+		// Preferences object, so reading the language before Game.create()
+		// initialized that singleton crashed the first launch.
+		Localization.setup( language() );
 		
 		boolean landscape = Gdx.graphics.getWidth() > Gdx.graphics.getHeight();
 
@@ -195,7 +201,20 @@ public class PixelDungeon extends Game<GameAction> {
 
 	@Override
 	public void resize(int width, int height) {
-		super.resize(width, height);
+		if (requestedReset || scene() instanceof InterlevelScene) {
+			/*
+			 * Never let a viewport event replace an already queued scene
+			 * transition. Recreating InterlevelScene would also start another
+			 * asynchronous descend/load operation and could mutate Dungeon
+			 * twice. The queued/destination scene will be created with these
+			 * latest dimensions on the next frame.
+			 */
+			Gdx.gl.glViewport( 0, 0, width, height );
+			Game.width = width;
+			Game.height = height;
+		} else {
+			super.resize(width, height);
+		}
 
 		Graphics.DisplayMode mode = Gdx.graphics.getDisplayMode();
 		boolean maximized = width >= mode.width || height >= mode.height;

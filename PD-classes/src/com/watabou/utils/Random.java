@@ -52,20 +52,37 @@ public class Random {
 	
 	public static int chances( float[] chances ) {
 		
+		if (chances == null || chances.length == 0) {
+			return -1;
+		}
+
 		int length = chances.length;
 		
-		float sum = chances[0];
-		for (int i=1; i < length; i++) {
-			sum += chances[i];
-		}
-		
-		float value = Float( sum );
-		sum = chances[0];
+		float sum = 0;
 		for (int i=0; i < length; i++) {
-			if (value < sum) {
+			if (chances[i] > 0) {
+				sum += chances[i];
+			}
+		}
+
+		if (!(sum > 0)) {
+			return 0;
+		}
+
+		float value = Float( sum );
+		for (int i=0; i < length - 1; i++) {
+			if (chances[i] > 0) {
+				if (value < chances[i]) {
+					return i;
+				}
+				value -= chances[i];
+			}
+		}
+
+		for (int i=length - 1; i >= 0; i--) {
+			if (chances[i] > 0) {
 				return i;
 			}
-			sum += chances[i + 1];
 		}
 		
 		return 0;
@@ -74,27 +91,45 @@ public class Random {
 	@SuppressWarnings("unchecked")
 	public static <K> K chances( HashMap<K,Float> chances ) {
 		
+		if (chances == null || chances.isEmpty()) {
+			return null;
+		}
+
 		int size = chances.size();
 
 		Object[] values = chances.keySet().toArray();
 		float[] probs = new float[size];
 		float sum = 0;
 		for (int i=0; i < size; i++) {
-			probs[i] = chances.get( values[i] );
-			sum += probs[i];
+			Float probability = chances.get( values[i] );
+			probs[i] = probability == null ? 0 : probability;
+			if (probs[i] > 0) {
+				sum += probs[i];
+			}
 		}
-		
+
+		if (!(sum > 0)) {
+			return (K)values[0];
+		}
+
 		float value = Float( sum );
-		
-		sum = probs[0];
-		for (int i=0; i < size; i++) {
-			if (value < sum) {
+
+		for (int i=0; i < size - 1; i++) {
+			if (probs[i] > 0) {
+				if (value < probs[i]) {
+					return (K)values[i];
+				}
+				value -= probs[i];
+			}
+		}
+
+		for (int i=size - 1; i >= 0; i--) {
+			if (probs[i] > 0) {
 				return (K)values[i];
 			}
-			sum += probs[i + 1];
 		}
-		
-		return null;
+
+		return (K)values[0];
 	}
 	
 	public static int index( Collection<?> collection ) {

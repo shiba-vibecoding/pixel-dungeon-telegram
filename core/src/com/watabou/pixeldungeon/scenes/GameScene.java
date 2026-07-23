@@ -287,6 +287,14 @@ public class GameScene extends PixelScene {
 		if (dropped != null) {
 			for (Item item : dropped) {
 				int pos = Dungeon.level.randomRespawnCell();
+				if (pos == -1) {
+					pos = Dungeon.level.randomDestination();
+				}
+				if (pos == -1) {
+					// A valid level always has a passable destination. Keep a
+					// corrupted edge case playable instead of indexing at -1.
+					pos = Dungeon.hero.pos;
+				}
 				if (item instanceof Potion) {
 					((Potion)item).shatter( pos );
 				} else if (item instanceof Plant.Seed) {

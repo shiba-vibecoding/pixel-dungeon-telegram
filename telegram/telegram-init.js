@@ -21,32 +21,49 @@
 
   /*
    * libGDX's GWT backend measures window.innerWidth/innerHeight, while a
-   * fullscreen Mini App has a smaller content-safe rectangle. Resize the GWT
-   * panel and canvas to that rectangle; changing the canvas backing size is
-   * detected by libGDX on its next frame and causes a normal game resize.
+   * fullscreen Mini App has a smaller content-safe rectangle. The Java/GWT
+   * backend owns the WebGL drawing buffer; this wrapper only measures the host
+   * and asks that backend to resize it. Writing canvas.width here would reset
+   * WebGL state behind libGDX and can freeze rendering or input in a WebView.
    */
+  var fitScheduled = false;
+  var fittedWidth = 0;
+  var fittedHeight = 0;
+
   function fitGameToSafeArea() {
     var host = document.getElementById('embed-html');
     if (!host) return;
     var rect = host.getBoundingClientRect();
-    var width = Math.max(1, Math.round(rect.width));
-    var height = Math.max(1, Math.round(rect.height));
-    var panel = host.firstElementChild;
-    if (panel) {
-      panel.style.width = width + 'px';
-      panel.style.height = height + 'px';
-    }
-    var canvas = host.getElementsByTagName('canvas')[0];
-    if (!canvas) return;
-    if (canvas.width !== width) canvas.width = width;
-    if (canvas.height !== height) canvas.height = height;
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
+    var width = Math.round(rect.width);
+    var height = Math.round(rect.height);
+
+    // Telegram can report a transient zero-sized viewport while animating its
+    // native chrome. Never rebuild a complete game scene at 1x1 pixels.
+    if (width < 64 || height < 96) return;
+
+    var resize = window.TelegramPixelDungeonResize;
+    if (typeof resize !== 'function') return;
+    if (width === fittedWidth && height === fittedHeight) return;
+    // The bridge is installed before libGDX creates its graphics object.
+    // Remember the dimensions only after Java confirms that the drawing
+    // buffer exists; the later canvas MutationObserver can then retry.
+    if (resize(width, height) === false) return;
+    fittedWidth = width;
+    fittedHeight = height;
   }
 
   function scheduleSafeAreaFit() {
-    window.setTimeout(fitGameToSafeArea, 0);
-    window.setTimeout(fitGameToSafeArea, 80);
+    if (fitScheduled) return;
+    fitScheduled = true;
+    var run = function () {
+      fitScheduled = false;
+      fitGameToSafeArea();
+    };
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(run);
+    } else {
+      window.setTimeout(run, 0);
+    }
   }
 
   // --- Fallback viewport height (used before/without Telegram) ---------------
@@ -58,20 +75,9 @@
   applyWindowHeight();
   window.addEventListener('resize', applyWindowHeight);
 
-  // libGDX's GWT backend fits its canvas to the window on the 'resize' event.
-  // Fire a few delayed resizes so the canvas re-measures after the browser and
-  // Telegram finish their own layout/animation passes.
-  function pokeResize() {
-    try {
-      window.dispatchEvent(new Event('resize'));
-    } catch (e) {
-      var evt = document.createEvent('Event');
-      evt.initEvent('resize', true, true);
-      window.dispatchEvent(evt);
-    }
-    scheduleSafeAreaFit();
-  }
-  [50, 200, 500, 1000, 2000].forEach(function (t) { setTimeout(pokeResize, t); });
+  // One delayed safety measurement covers a slow preloader. Telegram viewport
+  // events and the canvas MutationObserver handle all normal later changes.
+  window.setTimeout(scheduleSafeAreaFit, 500);
 
   if (!isTelegramContext(tg)) {
     // Not inside Telegram: keep the plain-browser fallback and stop here.
@@ -99,9 +105,10 @@
   // 3. Confirm before closing so a stray gesture never drops an active run.
   call('enableClosingConfirmation');
 
-  // 4. Go fullscreen and lock to portrait where supported (Bot API 8.0+).
+  // 4. Go fullscreen and lock the current (normally portrait) orientation
+  // where supported (Bot API 8.0+). Telegram's lockOrientation takes no args.
   var fullscreenRequested = call('requestFullscreen');
-  call('lockOrientation', 'portrait');
+  call('lockOrientation');
 
   // 5. Match the Telegram chrome to the game's dark theme.
   call('setHeaderColor', '#1f1d1d');
@@ -135,18 +142,44 @@
     setVar('--pd-safe-bottom', bottom + 'px');
     setVar('--pd-safe-left', left + 'px');
     setVar('--pd-safe-right', right + 'px');
-    scheduleSafeAreaFit();
   }
 
   updateViewport();
   updateInsets();
+  scheduleSafeAreaFit();
 
   ['viewportChanged', 'safeAreaChanged', 'contentSafeAreaChanged', 'fullscreenChanged']
     .forEach(function (name) {
       try {
-        tg.onEvent(name, function () { updateViewport(); updateInsets(); pokeResize(); });
+        tg.onEvent(name, function (event) {
+          updateViewport();
+          updateInsets();
+          // During Telegram's drag/expand animation the viewport may change
+          // every frame. Wait for its stable notification and rebuild once.
+          if (name !== 'viewportChanged' || !event || event.isStateStable !== false) {
+            scheduleSafeAreaFit();
+          }
+        });
       } catch (e) {}
     });
+
+  // Telegram may keep document.visibilityState unchanged while it temporarily
+  // deactivates a Mini App. Save the current turn before cloud mirroring and
+  // resume audio only after the app becomes active again.
+  try {
+    tg.onEvent('deactivated', function () {
+      var storage = window.PixelDungeonStorage;
+      if (storage && typeof storage.pauseAndSync === 'function') {
+        storage.pauseAndSync();
+      }
+    });
+    tg.onEvent('activated', function () {
+      var storage = window.PixelDungeonStorage;
+      if (storage && typeof storage.resumeGame === 'function') {
+        storage.resumeGame();
+      }
+    });
+  } catch (e) {}
 
   // The GWT canvas is inserted only after its assets finish preloading.
   if (typeof MutationObserver !== 'undefined') {

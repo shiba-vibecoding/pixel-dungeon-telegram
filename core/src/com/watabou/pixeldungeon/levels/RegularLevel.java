@@ -58,14 +58,23 @@ public abstract class RegularLevel extends Level {
 		int distance;
 		int retry = 0;
 		int minDistance = (int)Math.sqrt( rooms.size() );
+		ArrayList<Room> endpointRooms = new ArrayList<Room>();
+		for (Room room : rooms) {
+			if (room.width() >= 4 && room.height() >= 4) {
+				endpointRooms.add( room );
+			}
+		}
+		if (endpointRooms.size() < 2) {
+			return false;
+		}
 		do {
-			do {
-				roomEntrance = Random.element( rooms );
-			} while (roomEntrance.width() < 4 || roomEntrance.height() < 4);
-			
-			do {
-				roomExit = Random.element( rooms );
-			} while (roomExit == roomEntrance || roomExit.width() < 4 || roomExit.height() < 4);
+			int entranceIndex = Random.Int( endpointRooms.size() );
+			int exitIndex = Random.Int( endpointRooms.size() - 1 );
+			if (exitIndex >= entranceIndex) {
+				exitIndex++;
+			}
+			roomEntrance = endpointRooms.get( entranceIndex );
+			roomExit = endpointRooms.get( exitIndex );
 	
 			Graph.buildDistanceMap( rooms, roomExit );
 			distance = roomEntrance.distance();
@@ -105,13 +114,17 @@ public abstract class RegularLevel extends Level {
 		}
 		
 		int nConnected = (int)(rooms.size() * Random.Float( 0.5f, 0.7f ));
-		while (connected.size() < nConnected) {
+		int connectionAttempts = Math.max( 16, rooms.size() * rooms.size() * 4 );
+		while (connected.size() < nConnected && connectionAttempts-- > 0) {
 			Room cr = Random.element( connected );
 			Room or = Random.element( cr.neigbours );
-			if (!connected.contains( or )) {
+			if (or != null && !connected.contains( or )) {
 				cr.connect( or );
 				connected.add( or );
 			}
+		}
+		if (connected.size() < nConnected) {
+			return false;
 		}
 		
 		if (Dungeon.shopOnLevel()) {
@@ -240,12 +253,16 @@ public abstract class RegularLevel extends Level {
 			}
 		}
 		
-		while (count < 4) {
-			Room r = randomRoom( Type.TUNNEL, 1 );
-			if (r != null) {
-				r.type = Type.STANDARD;
-				count++;
+		ArrayList<Room> tunnels = new ArrayList<Room>();
+		for (Room room : rooms) {
+			if (room.type == Type.TUNNEL) {
+				tunnels.add( room );
 			}
+		}
+		while (count < 4 && !tunnels.isEmpty()) {
+			Room room = tunnels.remove( Random.Int( tunnels.size() ) );
+			room.type = Type.STANDARD;
+			count++;
 		}
 	}
 	
@@ -527,9 +544,15 @@ public abstract class RegularLevel extends Level {
 		int nMobs = nMobs();
 		for (int i=0; i < nMobs; i++) {
 			Mob mob = Bestiary.mob( Dungeon.depth );
-			do {
-				mob.pos = randomRespawnCell();
-			} while (mob.pos == -1);
+			if (mob == null) {
+				continue;
+			}
+			mob.pos = randomRespawnCell();
+			if (mob.pos == -1) {
+				// A malformed or unusually crowded generated floor must not
+				// trap the asynchronous level builder in an endless retry.
+				break;
+			}
 			mobs.add( mob );
 			Actor.occupyCell( mob );
 		}
@@ -543,7 +566,7 @@ public abstract class RegularLevel extends Level {
 		while (true) {
 			
 			if (++count > 10) {
-				return -1;
+				return super.randomRespawnCell();
 			}
 			
 			Room room = randomRoom( Room.Type.STANDARD, 10 );
@@ -552,7 +575,10 @@ public abstract class RegularLevel extends Level {
 			}
 			
 			cell = room.random();
-			if (!Dungeon.visible[cell] && Actor.findChar( cell ) == null && Level.passable[cell]) {
+			boolean visible = Dungeon.visible != null &&
+				cell >= 0 && cell < Dungeon.visible.length && Dungeon.visible[cell];
+			if (cell >= 0 && cell < LENGTH && !visible &&
+					Actor.findChar( cell ) == null && Level.passable[cell]) {
 				return cell;
 			}
 			
@@ -561,22 +587,23 @@ public abstract class RegularLevel extends Level {
 	
 	@Override
 	public int randomDestination() {
-		
-		int cell = -1;
-		
-		while (true) {
-			
+
+		// Prefer room cells to preserve the original wandering behaviour, but
+		// keep the selection bounded so a damaged room list cannot freeze a
+		// gameplay turn forever.
+		for (int attempt=0; attempt < 100; attempt++) {
 			Room room = Random.element( rooms );
 			if (room == null) {
-				continue;
+				break;
 			}
-			
-			cell = room.random();
-			if (Level.passable[cell]) {
+
+			int cell = room.random();
+			if (cell >= 0 && cell < LENGTH && Level.passable[cell]) {
 				return cell;
 			}
-			
 		}
+
+		return super.randomDestination();
 	}
 	
 	@Override
@@ -627,7 +654,7 @@ public abstract class RegularLevel extends Level {
 	protected Room randomRoom( Room.Type type, int tries ) {
 		for (int i=0; i < tries; i++) {
 			Room room = Random.element( rooms );
-			if (room.type == type) {
+			if (room != null && room.type == type) {
 				return room;
 			}
 		}
@@ -645,15 +672,18 @@ public abstract class RegularLevel extends Level {
 	}
 	
 	protected int randomDropCell() {
-		while (true) {
+		for (int attempt=0; attempt < 200; attempt++) {
 			Room room = randomRoom( Room.Type.STANDARD, 1 );
 			if (room != null) {
 				int pos = room.random();
-				if (passable[pos]) {
+				if (pos >= 0 && pos < LENGTH && passable[pos]) {
 					return pos;
 				}
 			}
 		}
+
+		int fallback = super.randomDestination();
+		return fallback != -1 ? fallback : entrance;
 	}
 	
 	@Override

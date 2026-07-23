@@ -1,7 +1,6 @@
 buildscript {
     repositories {
         mavenCentral()
-        mavenLocal()
         google()
         gradlePluginPortal()
         maven { url 'https://github.com/steffenschaefer/gwt-gradle-plugin/raw/maven-repo/' }
@@ -37,7 +36,6 @@ allprojects {
     }
 
     repositories {
-        mavenLocal()
         mavenCentral()
         google()
         gradlePluginPortal()

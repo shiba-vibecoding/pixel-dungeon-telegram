@@ -76,7 +76,7 @@ public class StartScene extends PixelScene {
 	private static final float WIDTH_L	= 224;
 	private static final float HEIGHT_L	= 124;
 	
-	private static HashMap<HeroClass, ClassShield> shields = new HashMap<HeroClass, ClassShield>();
+	private final HashMap<HeroClass, ClassShield> shields = new HashMap<HeroClass, ClassShield>();
 	
 	private float buttonX;
 	private float buttonY;
@@ -161,7 +161,12 @@ public class StartScene extends PixelScene {
 		};
 		add( btnLoad );	
 		
-		float centralHeight = buttonY - titleBottom;
+		// Portrait mode may need two full-width button rows for translated
+		// load/new-game labels. Reserve that space up front so the hero shields
+		// never overlap the adaptive button stack.
+		float buttonsTop = PixelDungeon.landscape() ?
+			buttonY : buttonY - BUTTON_HEIGHT - GAP;
+		float centralHeight = buttonsTop - titleBottom;
 		
 		HeroClass[] classes = {
 			HeroClass.WARRIOR, HeroClass.MAGE, HeroClass.ROGUE, HeroClass.HUNTRESS	
@@ -279,12 +284,21 @@ public class StartScene extends PixelScene {
 				btnNewGame.visible = true;
 				btnNewGame.secondary( TXT_ERASE, false );
 				
-				float w = (Camera.main.width - GAP) / 2 - buttonX;
-				
-				btnLoad.setRect(
-					buttonX, buttonY, w, BUTTON_HEIGHT );
-				btnNewGame.setRect(
-					btnLoad.right() + GAP, buttonY, w, BUTTON_HEIGHT );
+				if (PixelDungeon.landscape()) {
+					float w = (Camera.main.width - GAP) / 2 - buttonX;
+
+					btnLoad.setRect(
+						buttonX, buttonY, w, BUTTON_HEIGHT );
+					btnNewGame.setRect(
+						btnLoad.right() + GAP, buttonY, w, BUTTON_HEIGHT );
+				} else {
+					float w = Camera.main.width - buttonX * 2;
+
+					btnLoad.setRect(
+						buttonX, buttonY - BUTTON_HEIGHT - GAP, w, BUTTON_HEIGHT );
+					btnNewGame.setRect(
+						buttonX, buttonY, w, BUTTON_HEIGHT );
+				}
 				
 			} else {
 				btnLoad.visible = false;

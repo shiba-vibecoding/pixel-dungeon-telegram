@@ -17,14 +17,14 @@
  */
 package com.watabou.pixeldungeon.windows;
 
-import com.watabou.input.NoosaInputProcessor;
 import com.watabou.noosa.BitmapTextMultiline;
 import com.watabou.noosa.Game;
-import com.watabou.noosa.TouchArea;
+import com.watabou.noosa.ui.Component;
 import com.watabou.pixeldungeon.Chrome;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.scenes.PixelScene;
+import com.watabou.pixeldungeon.ui.ScrollPane;
 import com.watabou.pixeldungeon.ui.Window;
 import com.watabou.utils.SparseArray;
 
@@ -76,6 +76,7 @@ public class WndStory extends Window {
 	};
 	
 	private BitmapTextMultiline tf;
+	private ScrollPane pane;
 	
 	private float delay;
 	
@@ -92,16 +93,28 @@ public class WndStory extends Window {
 		tf.gm = -bgG;
 		tf.bm = -bgB;
 		tf.x = MARGIN;
-		add( tf );
-		
-		add( new TouchArea( chrome ) {
+		final Component content = new Component();
+		content.add( tf );
+
+		int windowWidth = (int)(tf.width() + MARGIN * 2);
+		content.setSize( windowWidth, tf.height() );
+
+		int maxHeight = Math.max( 1,
+			(int)(PixelScene.uiCamera.height - chrome.marginVer() - 4) );
+		int viewportHeight = Math.min( (int)tf.height(), maxHeight );
+
+		pane = new ScrollPane( content ) {
 			@Override
-			protected void onClick( NoosaInputProcessor.Touch touch ) {
+			public void onClick( float x, float y ) {
 				hide();
 			}
-		} );
-		
-		resize( (int)(tf.width() + MARGIN * 2), (int)Math.min( tf.height(), 180 ) );
+		};
+
+		// ScrollPane derives its clipping camera from the window camera during
+		// layout, so size and attach the window before assigning its rectangle.
+		resize( windowWidth, viewportHeight );
+		add( pane );
+		pane.setRect( 0, 0, windowWidth, viewportHeight );
 	}
 	
 	@Override
@@ -109,7 +122,7 @@ public class WndStory extends Window {
 		super.update();
 		
 		if (delay > 0 && (delay -= Game.elapsed) <= 0) {
-			shadow.visible = chrome.visible = tf.visible = true;
+			shadow.visible = chrome.visible = pane.visible = true;
 		}
 	}
 	
@@ -123,7 +136,7 @@ public class WndStory extends Window {
 		if (text != null) {
 			WndStory wnd = new WndStory( Localization.translate( text ) );
 			if ((wnd.delay = 0.6f) > 0) {
-				wnd.shadow.visible = wnd.chrome.visible = wnd.tf.visible = false;
+				wnd.shadow.visible = wnd.chrome.visible = wnd.pane.visible = false;
 			}
 			
 			Game.scene().add( wnd );

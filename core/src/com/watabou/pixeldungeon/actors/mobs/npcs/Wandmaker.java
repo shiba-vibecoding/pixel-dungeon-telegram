@@ -288,6 +288,16 @@ public class Wandmaker extends NPC {
 		
 		abstract protected Item checkItem();
 		abstract protected void placeItem();
+
+		protected int itemCell() {
+			int pos = Dungeon.level.randomRespawnCellWithoutHeap();
+			if (pos == -1 && Dungeon.level.entrance >= 0 &&
+					Dungeon.level.entrance < Level.LENGTH &&
+					Dungeon.level.heaps.get( Dungeon.level.entrance ) == null) {
+				pos = Dungeon.level.entrance;
+			}
+			return pos;
+		}
 	}
 	
 	private static final QuestHandler berryQuest = new QuestHandler() {
@@ -308,11 +318,10 @@ public class Wandmaker extends NPC {
 
 		@Override
 		protected void placeItem() {
-			int shrubPos = Dungeon.level.randomRespawnCell();
-			while (Dungeon.level.heaps.get( shrubPos ) != null) {
-				shrubPos = Dungeon.level.randomRespawnCell();
+			int shrubPos = itemCell();
+			if (shrubPos != -1) {
+				Dungeon.level.plant( new Rotberry.Seed(), shrubPos );
 			}
-			Dungeon.level.plant( new Rotberry.Seed(), shrubPos );
 		}
 	};
 	
@@ -344,9 +353,9 @@ public class Wandmaker extends NPC {
 			if (candidates.size() > 0) {
 				Random.element( candidates ).drop( new CorpseDust() );
 			} else {
-				int pos = Dungeon.level.randomRespawnCell();
-				while (Dungeon.level.heaps.get( pos ) != null) {
-					pos = Dungeon.level.randomRespawnCell();
+				int pos = itemCell();
+				if (pos == -1) {
+					return;
 				}
 				
 				Heap heap = Dungeon.level.drop( new CorpseDust(), pos );
@@ -385,9 +394,9 @@ public class Wandmaker extends NPC {
 				}
 			}
 			if (heap == null) {
-				int pos = Dungeon.level.randomRespawnCell();
-				while (Dungeon.level.heaps.get( pos ) != null) {
-					pos = Dungeon.level.randomRespawnCell();
+				int pos = itemCell();
+				if (pos == -1) {
+					return;
 				}
 				
 				Dungeon.level.drop( new PhantomFish(), pos );

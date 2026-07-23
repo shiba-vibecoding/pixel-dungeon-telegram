@@ -77,20 +77,36 @@ public class Bones {
 			
 			try {
 				Bundle bundle = Bundle.read( Game.instance.readFile( BONES_FILE ) );
+				if (bundle == null || !bundle.contains( LEVEL ) || !bundle.contains( ITEM )) {
+					throw new IOException( "Bones file is missing required data" );
+				}
 				
 				depth = bundle.getInt( LEVEL );
-				item = (Item)bundle.get( ITEM );
+				if (depth <= 0) {
+					throw new IOException( "Bones file contains an invalid depth" );
+				}
+
+				Object storedItem = bundle.get( ITEM );
+				if (!(storedItem instanceof Item)) {
+					throw new IOException( "Bones file does not contain a valid item" );
+				}
+				item = (Item)storedItem;
 				
 				return get();
 				
-			} catch (IOException e) {
+			} catch (Exception e) {
+				discard();
 				return null;
 			}
 			
 		} else {
 			if (depth == Dungeon.depth) {
-				Game.instance.deleteFile( BONES_FILE );
+				deleteFile();
 				depth = 0;
+				if (item == null) {
+					discard();
+					return null;
+				}
 				
 				if (!item.stackable) {
 					item.cursed = true;
@@ -112,6 +128,20 @@ public class Bones {
 			} else {
 				return null;
 			}
+		}
+	}
+
+	private static void discard() {
+		depth = 0;
+		item = null;
+		deleteFile();
+	}
+
+	private static void deleteFile() {
+		try {
+			Game.instance.deleteFile( BONES_FILE );
+		} catch (RuntimeException ignored) {
+			// Bones are optional; a storage failure must not block level creation.
 		}
 	}
 }

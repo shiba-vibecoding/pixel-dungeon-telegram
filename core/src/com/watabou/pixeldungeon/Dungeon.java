@@ -260,7 +260,7 @@ public class Dungeon {
 		
 		Actor respawner = level.respawner();
 		if (respawner != null) {
-			Actor.add( level.respawner() );
+			Actor.add( respawner );
 		}
 		
 		hero.pos = pos != -1 ? pos : level.exit;
@@ -408,20 +408,39 @@ public class Dungeon {
 			Bundle badges = new Bundle();
 			Badges.saveLocal( badges );
 			bundle.put( BADGES, badges );
+
+			// Bundle's legacy writer treats a failed Bundlable serialization as
+			// an omitted key. Never replace a valid save with such a partial
+			// payload.
+			if (!bundle.contains( HERO ) || !bundle.contains( DEPTH )) {
+				throw new IOException( "Required game state could not be serialized" );
+			}
 			
 			Game.instance.writeFile( fileName, Bundle.write(bundle) );
 			
 		} catch (Exception e) {
 
-			GamesInProgress.setUnknown( hero.heroClass );
+			if (hero != null) {
+				GamesInProgress.setUnknown( hero.heroClass );
+			}
+			throw new IOException( "Unable to save game data to " + fileName, e );
 		}
 	}
 	
 	public static void saveLevel() throws IOException {
-		Bundle bundle = new Bundle();
-		bundle.put( LEVEL, level );
-		
-		Game.instance.writeFile( Utils.format( depthFile( hero.heroClass ), depth ), Bundle.write(bundle) );
+		try {
+			Bundle bundle = new Bundle();
+			bundle.put( LEVEL, level );
+			if (!bundle.contains( LEVEL )) {
+				throw new IOException( "Level state could not be serialized" );
+			}
+
+			Game.instance.writeFile(
+				Utils.format( depthFile( hero.heroClass ), depth ),
+				Bundle.write(bundle) );
+		} catch (Exception e) {
+			throw new IOException( "Unable to save level " + depth, e );
+		}
 	}
 	
 	public static void saveAll() throws IOException {
@@ -509,8 +528,14 @@ public class Dungeon {
 		@SuppressWarnings("unused")
 		String version = bundle.getString( VERSION );
 		
-		hero = null;
-		hero = (Hero)bundle.get( HERO );
+		// Hero/item deserialization consults the restored quick-slot mapping.
+		// Keep this after QuickSlot.restore or concrete item slots are cleared
+		// on every load.
+		Bundlable storedHero = bundle.get( HERO );
+		if (!(storedHero instanceof Hero)) {
+			throw new IOException( "Save file " + fileName + " does not contain a valid hero" );
+		}
+		hero = (Hero)storedHero;
 		
 		QuickSlot.compress();
 		
@@ -534,13 +559,20 @@ public class Dungeon {
 	
 	public static Level loadLevel( HeroClass cl ) throws IOException {
 		
-		Dungeon.level = null;
-		Actor.clear();
-		
 		byte[] input = Game.instance.readFile( Utils.format( depthFile( cl ), depth ) ) ;
 		Bundle bundle = Bundle.read( input );
+		if (bundle == null || !bundle.contains( LEVEL )) {
+			throw new IOException( "Level save for depth " + depth + " is missing or corrupt" );
+		}
+		Bundlable storedLevel = bundle.get( LEVEL );
+		if (!(storedLevel instanceof Level)) {
+			throw new IOException( "Level save for depth " + depth + " does not contain a valid level" );
+		}
 		
-		return (Level)bundle.get( "level" );
+		Dungeon.level = null;
+		Actor.clear();
+
+		return (Level)storedLevel;
 	}
 	
 	public static void deleteGame( HeroClass cl, boolean deleteLevels ) {
@@ -560,6 +592,9 @@ public class Dungeon {
 	public static Bundle gameBundle( String fileName ) throws IOException {
 		
 		Bundle bundle = Bundle.read( Game.instance.readFile( fileName ) );
+		if (bundle == null || !bundle.contains( HERO ) || !bundle.contains( DEPTH )) {
+			throw new IOException( "Save file " + fileName + " is missing or corrupt" );
+		}
 		
 		return bundle;
 	}

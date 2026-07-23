@@ -192,13 +192,18 @@ public abstract class Level implements Bundlable {
 		
 		boolean pitNeeded = Dungeon.depth > 1 && weakFloorCreated;
 		
-		do {
+		boolean built = false;
+		for (int attempt=0; attempt < 128 && !built; attempt++) {
 			Arrays.fill( map, feeling == Feeling.CHASM ? Terrain.CHASM : Terrain.WALL );
 			
 			pitRoomNeeded = pitNeeded;
 			weakFloorCreated = false;
 			
-		} while (!build());
+			built = build();
+		}
+		if (!built) {
+			throw new IllegalStateException( "Unable to generate a valid level after 128 attempts" );
+		}
 		decorate();
 		
 		buildFlagMaps();
@@ -368,9 +373,10 @@ public abstract class Level implements Bundlable {
 				if (mobs.size() < nMobs()) {
 
 					Mob mob = Bestiary.mutable( Dungeon.depth );
-					mob.state = mob.WANDERING;
-					mob.pos = randomRespawnCell();
-					if (Dungeon.hero.isAlive() && mob.pos != -1) {
+					int respawnCell = randomRespawnCell();
+					if (mob != null && respawnCell != -1 && Dungeon.hero != null && Dungeon.hero.isAlive()) {
+						mob.state = mob.WANDERING;
+						mob.pos = respawnCell;
 						GameScene.add( mob );
 						if (Statistics.amuletObtained) {
 							mob.beckon( Dungeon.hero.pos );
@@ -384,19 +390,55 @@ public abstract class Level implements Bundlable {
 	}
 	
 	public int randomRespawnCell() {
-		int cell;
-		do {
-			cell = Random.Int( LENGTH );
-		} while (!passable[cell] || Dungeon.visible[cell] || Actor.findChar( cell ) != null);
-		return cell;
+		int result = -1;
+		int candidates = 0;
+		for (int cell=0; cell < LENGTH; cell++) {
+			boolean visible = Dungeon.visible != null &&
+				cell < Dungeon.visible.length && Dungeon.visible[cell];
+			if (passable[cell] && !visible && Actor.findChar( cell ) == null) {
+				candidates++;
+				if (Random.Int( candidates ) == 0) {
+					result = cell;
+				}
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Returns a hidden, unoccupied passable cell without an item heap.
+	 * Quest placement used to retry randomRespawnCell forever when every
+	 * sampled cell contained an item; scanning once keeps generation bounded.
+	 */
+	public int randomRespawnCellWithoutHeap() {
+		int result = -1;
+		int candidates = 0;
+		for (int cell=0; cell < LENGTH; cell++) {
+			boolean visible = Dungeon.visible != null &&
+				cell < Dungeon.visible.length && Dungeon.visible[cell];
+			if (passable[cell] && !visible && Actor.findChar( cell ) == null &&
+					heaps.get( cell ) == null) {
+				candidates++;
+				if (Random.Int( candidates ) == 0) {
+					result = cell;
+				}
+			}
+		}
+		return result;
 	}
 	
 	public int randomDestination() {
-		int cell;
-		do {
-			cell = Random.Int( LENGTH );
-		} while (!passable[cell]);
-		return cell;
+		int result = -1;
+		int candidates = 0;
+		for (int cell=0; cell < LENGTH; cell++) {
+			if (passable[cell]) {
+				candidates++;
+				if (Random.Int( candidates ) == 0) {
+					result = cell;
+				}
+			}
+		}
+		return result;
 	}
 	
 	public void addItemToSpawn( Item item ) {

@@ -16,7 +16,7 @@
 
 <p align="center">
   <a href="https://github.com/shiba-vibecoding/pixel-dungeon-telegram/actions/workflows/deploy-pages.yml"><img alt="Build and deploy" src="https://github.com/shiba-vibecoding/pixel-dungeon-telegram/actions/workflows/deploy-pages.yml/badge.svg"></a>
-  <a href="LICENSE"><img alt="GPL-3.0-only" src="https://img.shields.io/badge/license-GPL--3.0--only-blue.svg"></a>
+  <a href="LICENSE"><img alt="GPL-3.0-or-later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg"></a>
   <img alt="15 languages" src="https://img.shields.io/badge/languages-15-8a9a5b.svg">
   <img alt="Pixel Dungeon 1.9.2a" src="https://img.shields.io/badge/Pixel_Dungeon-1.9.2a-8b0000.svg">
 </p>
@@ -101,9 +101,11 @@ The game writes a local save after gameplay changes. Inside Telegram, local data
 is namespaced by the current Telegram user. On supported clients it is also
 mirrored to Telegram CloudStorage and can be restored on another device.
 
-Avoid continuing the same run on two devices at once: the last successfully
-synchronized generation wins. A regular browser opened outside Telegram has
-access only to its own local copy because it has no verified Telegram user ID.
+Avoid continuing the same run on two devices at once. The synchronizer keeps a
+last-common snapshot: a change from one device can advance it, while a
+two-device divergence preserves both copies, keeps the local run playable and
+pauses cloud writes instead of silently overwriting progress. A regular browser
+opened outside a Telegram launch context has access only to its own local copy.
 
 The project has no custom analytics, advertising, payments or server-side user
 database. Read the complete policy in [PRIVACY.md](PRIVACY.md).
@@ -117,9 +119,11 @@ place of `./gradlew`.
 # Run the desktop version
 ./gradlew desktop:run
 
-# Validate localization, cloud storage and the Telegram bot worker
+# Validate localization and Telegram persistence
 python tools/validate_localization.py
 node --test telegram/test-*.mjs
+
+# Optional, dormant bot-worker reference tests (the worker is not deployed)
 node --test telegram-worker/test/*.mjs
 
 # Build and package the production Mini App
@@ -137,7 +141,7 @@ Mini App launched through the bot.
 
 The [GitHub Pages workflow](.github/workflows/deploy-pages.yml) validates all
 translations and Telegram integration tests, builds the GWT client, packages the
-Mini App and deploys it after every push to `main` or `master`.
+Mini App and deploys it after every push to `main`.
 
 The repository must use **Settings → Pages → Source → GitHub Actions**.
 
@@ -145,7 +149,7 @@ Detailed guides:
 
 - [GitHub Pages deployment](DEPLOY-GITHUB.md)
 - [Telegram Mini App integration](TELEGRAM-MINIAPP.md)
-- [Telegram bot auto-reply worker](telegram-worker/README.md)
+- [Dormant bot-worker reference](telegram-worker/README.md) (not deployed)
 - [Localization system](LOCALIZATION.md)
 
 ## Project layout
@@ -157,7 +161,7 @@ Detailed guides:
 | `android/assets/` | Art, audio, fonts and localization catalogues |
 | `html/` | GWT/libGDX web backend |
 | `telegram/` | Mini Apps integration, saves and production packaging |
-| `telegram-worker/` | Secure webhook auto-reply bot with a game launch button |
+| `telegram-worker/` | Dormant webhook reference implementation; not deployed |
 | `tools/` | Localization and font generation/auditing |
 | `.github/workflows/` | Automated validation, build and deployment |
 
@@ -169,6 +173,6 @@ Detailed guides:
 - **Telegram port:** [@barboskich](https://t.me/barboskich)
 
 The project is distributed under the
-[GNU General Public License v3.0 only](LICENSE). Please preserve the original
+[GNU General Public License v3.0 or later](LICENSE). Please preserve the original
 authors' attribution and keep the corresponding source code available when
 redistributing modified builds.
