@@ -8,8 +8,8 @@ import java.util.Date;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
-import com.badlogic.gdx.backends.gwt.GwtApplication;
 import com.badlogic.gdx.backends.gwt.GwtApplicationConfiguration;
+import com.badlogic.gdx.backends.gwt.ResilientGwtApplication;
 import com.badlogic.gdx.backends.gwt.preloader.Preloader.PreloaderCallback;
 import com.badlogic.gdx.utils.compression.lzma.Base;
 import com.watabou.noosa.audio.Music;
@@ -20,7 +20,7 @@ import com.watabou.input.NoosaInputProcessor;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Window;
 
-public class HtmlLauncher extends GwtApplication {
+public class HtmlLauncher extends ResilientGwtApplication {
 
 	@Override
 	public GwtApplicationConfiguration getConfig() {
@@ -37,6 +37,23 @@ public class HtmlLauncher extends GwtApplication {
 		String version = "1.9.2a-gdx1.1";
 		return new PixelDungeon(new HtmlPlatformSupport(version, null, new HtmlInputProcessor()));
 	}
+
+	@Override
+	protected void onFrameError(Throwable error, int consecutiveErrors) {
+		recordFrameError(error == null ? "Unknown frame error" : error.toString(), consecutiveErrors);
+	}
+
+	private static native void recordFrameError(String message, int consecutiveErrors) /*-{
+		try {
+			var value = JSON.stringify({
+				time: new Date().toISOString(),
+				message: String(message || "Unknown frame error").substring(0, 1000),
+				consecutive: consecutiveErrors
+			});
+			$wnd.localStorage.setItem("pdgdx-last-frame-error", value);
+		} catch (ignored) {
+		}
+	}-*/;
 
 	static class HtmlPlatformSupport<GameActionType> extends PDPlatformSupport {
 		boolean isFullscreen = true;

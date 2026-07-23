@@ -20,6 +20,7 @@ public class HtmlInputProcessor extends PDInputProcessor {
 	@Override
 	public void init() {
 		super.init();
+		installTouchRecovery();
 
 		// Load the default mappings...
 		// ...ONLY IF IT'S THE FIRST RUN!
@@ -116,6 +117,13 @@ public class HtmlInputProcessor extends PDInputProcessor {
 	// TODO: handle mobile/desktop differently in touch events?
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+		// A WebView may reuse a pointer after swallowing its touchend. Release
+		// the old logical touch first so TouchArea never keeps a ghost finger.
+		Touch previous = pointers.remove(pointer);
+		if (previous != null) {
+			eventTouch.dispatch(previous.up());
+		}
+
 		Touch touch = new Touch(screenX, screenY);
 		pointers.put(pointer, touch);
 		eventTouch.dispatch(touch);
@@ -142,6 +150,73 @@ public class HtmlInputProcessor extends PDInputProcessor {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Telegram's iOS/Android WebViews can consume a touchend when their own
+	 * fullscreen controls or system gestures take over. libGDX then keeps the
+	 * pointer forever and the next tap is interpreted as the second finger of a
+	 * pinch gesture. Reconcile libGDX's pointers with the browser's authoritative
+	 * event.touches collection before starts and after ends.
+	 */
+	private native void installTouchRecovery() /*-{
+		if ($wnd.__pdTouchRecoveryInstalled) return;
+		$wnd.__pdTouchRecoveryInstalled = true;
+
+		var self = this;
+		var activeTouches = function (event) {
+			return event && event.touches ? event.touches.length : 0;
+		};
+
+		// Capture runs before libGDX's target listener. At this point the new
+		// browser touch is counted, but libGDX has not inserted it yet.
+		$doc.addEventListener('touchstart', function (event) {
+			self.@com.watabou.pixeldungeon.client.HtmlInputProcessor::beforeBrowserTouchStart(I)(
+				activeTouches(event));
+		}, true);
+
+		// Bubble runs after libGDX's target listener, so all normally completed
+		// pointers have already been removed.
+		var afterTouchEnd = function (event) {
+			self.@com.watabou.pixeldungeon.client.HtmlInputProcessor::afterBrowserTouchEnd(I)(
+				activeTouches(event));
+		};
+		$doc.addEventListener('touchend', afterTouchEnd, false);
+		$doc.addEventListener('touchcancel', afterTouchEnd, false);
+
+		var releaseAll = function () {
+			self.@com.watabou.pixeldungeon.client.HtmlInputProcessor::releaseAllTouches()();
+		};
+		$wnd.addEventListener('blur', releaseAll, false);
+		$wnd.addEventListener('pagehide', releaseAll, false);
+		$doc.addEventListener('visibilitychange', function () {
+			if ($doc.hidden) releaseAll();
+		}, false);
+	}-*/;
+
+	private void beforeBrowserTouchStart(int browserTouches) {
+		// browserTouches already includes the finger that caused touchstart,
+		// while pointers does not. Equality therefore proves at least one old
+		// Java pointer is stale. A real second finger produces 1 < 2.
+		if (pointers.size >= browserTouches && pointers.size > 0) {
+			releaseAllTouches();
+		}
+	}
+
+	private void afterBrowserTouchEnd(int browserTouches) {
+		if (pointers.size > browserTouches) {
+			releaseAllTouches();
+		}
+	}
+
+	private void releaseAllTouches() {
+		for (IntMap.Entry<Touch> entry : pointers.entries()) {
+			Touch touch = entry.value;
+			if (touch != null && touch.down) {
+				eventTouch.dispatch(touch.up());
+			}
+		}
+		pointers.clear();
 	}
 	
 

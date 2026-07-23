@@ -13,7 +13,11 @@
   var CHUNK_PREFIX = 'pdgdx_data_v1_';
   var CHUNK_SIZE = 3600;
   var MAX_CHUNKS = 1000;
-  var SYNC_INTERVAL = 2000;
+  // Starting a multi-chunk native CloudStorage upload two seconds after boot
+  // can starve rendering in Telegram WebViews. Local progress is synchronous
+  // and safe; cloud mirroring can happen less aggressively and cooperatively.
+  var SYNC_INTERVAL = 30000;
+  var CHUNK_YIELD = 25;
   var RESTORE_TIMEOUT = 4000;
 
   var cloudEnabled = false;
@@ -254,7 +258,11 @@
     var chain = Promise.resolve();
     chunks.forEach(function (chunk, index) {
       chain = chain.then(function () {
-        return cloudCall('setItem', [chunkKey(index), chunk]);
+        return new Promise(function (resolve) {
+          window.setTimeout(resolve, CHUNK_YIELD);
+        }).then(function () {
+          return cloudCall('setItem', [chunkKey(index), chunk]);
+        });
       });
     });
     return chain;
@@ -270,12 +278,12 @@
 
   function syncNow() {
     if (!cloudEnabled) return Promise.resolve(false);
-    var current = snapshot();
-    if (current == null || current === uploadedSnapshot) return Promise.resolve(false);
     if (uploadActive) {
       uploadPending = true;
       return Promise.resolve(false);
     }
+    var current = snapshot();
+    if (current == null || current === uploadedSnapshot) return Promise.resolve(false);
 
     var chunks = [];
     for (var i = 0; i < current.length; i += CHUNK_SIZE) chunks.push(current.substring(i, i + CHUNK_SIZE));

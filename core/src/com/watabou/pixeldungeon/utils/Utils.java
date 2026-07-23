@@ -30,7 +30,25 @@ public class Utils {
 	}
 	
 	public static String format( String format, Object...args ) {
-		format = Localization.translateFormat( format );
+		String translated = Localization.translateFormat( format );
+		try {
+			return formatStrict( translated, args );
+		} catch (RuntimeException translatedError) {
+			// A typo in player-facing text must never terminate the GWT render
+			// loop. Prefer the validated English source if a translated format
+			// is malformed; as a final fallback show the untranslated template.
+			if (!translated.equals( format )) {
+				try {
+					return formatStrict( format, args );
+				} catch (RuntimeException sourceError) {
+					// Fall through to a readable, non-fatal template.
+				}
+			}
+			return translated;
+		}
+	}
+
+	private static String formatStrict( String format, Object...args ) {
 		StringBuilder builder = new StringBuilder();
 		int nextArg = 0;
 		for (int i = 0; i < format.length(); i++) {
