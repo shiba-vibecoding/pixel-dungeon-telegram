@@ -35,6 +35,7 @@ public class BitmaskEmitter extends Emitter {
 	private Pixmap pixmap;
 	private int mapW;
 	private int mapH;
+	private boolean disposePixmap;
 
 	public BitmaskEmitter( Image target ) {
 		super();
@@ -42,14 +43,34 @@ public class BitmaskEmitter extends Emitter {
 		this.target = target;
 
 		map = target.texture;
-		mapW = map.bitmap.getWidth();
-		mapH = map.bitmap.getHeight();
+		mapW = map == null ? (int)target.width : map.width;
+		mapH = map == null ? (int)target.height : map.height;
 
-		TextureData td = map.bitmap.getTextureData();
-		if (!td.isPrepared()) {
-			td.prepare();
+		try {
+			if (map == null || map.bitmap == null) {
+				return;
+			}
+
+			mapW = map.bitmap.getWidth();
+			mapH = map.bitmap.getHeight();
+
+			TextureData td = map.bitmap.getTextureData();
+			if (td == null) {
+				return;
+			}
+			if (!td.isPrepared()) {
+				td.prepare();
+			}
+			pixmap = td.consumePixmap();
+			disposePixmap = pixmap != null && td.disposePixmap();
+		} catch (Throwable ignored) {
+			// Pixel-perfect placement is decorative. Some mobile WebViews can
+			// temporarily fail to decode a texture again after a resize or a
+			// WebGL context change; fall back to the target rectangle instead
+			// of aborting creation of the whole scene.
+			pixmap = null;
+			disposePixmap = false;
 		}
-		pixmap = td.consumePixmap();
 	}
 
 	@Override
@@ -59,14 +80,45 @@ public class BitmaskEmitter extends Emitter {
 		float ofsX = frame.left * mapW;
 		float ofsY = frame.top * mapH;
 
-		float x, y;
-		do {
+		float x = 0;
+		float y = 0;
+		for (int attempt = 0; attempt < 64; attempt++) {
 			x = Random.Float( frame.width() ) * mapW;
 			y = Random.Float( frame.height() ) * mapH;
-		} while ((pixmap.getPixel( (int)(x + ofsX), (int)(y + ofsY) ) & 0x000000FF) == 0);
+			if (pixmap == null) {
+				break;
+			}
+			try {
+				if ((pixmap.getPixel( (int)(x + ofsX), (int)(y + ofsY) ) & 0x000000FF) != 0) {
+					break;
+				}
+			} catch (Throwable ignored) {
+				// A lost WebGL context can invalidate the CPU-side image. The
+				// particle can still be emitted safely inside the target bounds.
+				releasePixmap();
+				break;
+			}
+		}
 
 		factory.emit( this, index,
 			target.x + x * target.scale.x,
 			target.y + y * target.scale.y );
+	}
+
+	@Override
+	public void destroy() {
+		super.destroy();
+		releasePixmap();
+	}
+
+	private void releasePixmap() {
+		if (pixmap != null && disposePixmap) {
+			try {
+				pixmap.dispose();
+			} catch (Throwable ignored) {
+			}
+		}
+		pixmap = null;
+		disposePixmap = false;
 	}
 }

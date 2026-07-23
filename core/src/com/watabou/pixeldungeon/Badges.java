@@ -219,11 +219,21 @@ public class Badges {
 		if (global == null) {
 			try {
 				Bundle bundle = Bundle.read( Game.instance.readFile( BADGES_FILE ) );
-				
+
+				if (bundle == null || bundle.isNull()) {
+					throw new IllegalStateException();
+				}
 				global = restore( bundle );
-				
+
 			} catch (IOException e) {
 				global = new HashSet<Badge>();
+			} catch (RuntimeException e) {
+				// A truncated or otherwise malformed badges file must never leave
+				// the hero-selection scene half-created.  Start from a clean badge
+				// set and replace the broken data on the next normal scene save.
+				global = new HashSet<Badge>();
+				saveNeeded = true;
+				PixelDungeon.reportException( e );
 			}
 		}
 	}
@@ -874,7 +884,8 @@ public class Badges {
 	}
 	
 	public static boolean isUnlocked( Badge badge ) {
-		return global.contains( badge );
+		loadGlobal();
+		return badge != null && global.contains( badge );
 	}
 	
 	public static void disown( Badge badge ) {

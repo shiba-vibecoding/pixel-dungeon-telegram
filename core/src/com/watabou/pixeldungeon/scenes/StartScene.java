@@ -26,7 +26,6 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Sample;
-import com.watabou.noosa.particles.BitmaskEmitter;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.noosa.ui.Button;
 import com.watabou.pixeldungeon.Assets;
@@ -424,7 +423,12 @@ public class StartScene extends PixelScene {
 			name = PixelScene.createText( 9 );
 			add( name );
 			
-			emitter = new BitmaskEmitter( avatar );
+			// Hero selection only needs a small sparkle burst. A regular target
+			// emitter avoids decoding avatars.png four extra times whenever a
+			// mobile WebView recreates this scene after a resize/orientation
+			// change, while keeping the same visual feedback.
+			emitter = new Emitter();
+			emitter.pos( avatar );
 			add( emitter );
 		}
 		
