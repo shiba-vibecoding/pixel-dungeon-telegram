@@ -1,5 +1,5 @@
 /*
- * Telegram Mini App integration for the Pixel Dungeon (libGDX/GWT) web build.
+ * Telegram Mini App integration for the Telegram Pixel Dungeon (libGDX/GWT) web build.
  *
  * Loaded AFTER telegram-web-app.js and the game's GWT bootstrap. It is a safe
  * no-op when the page is opened outside Telegram (plain browser testing), so the

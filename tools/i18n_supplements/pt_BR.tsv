@@ -1,5 +1,13 @@
 LibGDX port: Arcnor / Web port: nojus297	Port para LibGDX: Arcnor / port para web: nojus297
 Telegram port: @barboskich	Port para Telegram: @barboskich
+Eating the seed triggers its effect immediately.	Comer a semente ativa imediatamente o efeito da planta.
+Tip: Long-press the wait button to rest until something interrupts you.	Dica: Mantenha pressionado o botão de esperar para descansar até que algo interrompa você.
+Tip: Long-press the backpack to open the item catalog.	Dica: Mantenha a mochila pressionada para abrir o catálogo de itens.
+Tip: Doors and tall grass can break an enemy's line of sight.	Dica: Portas e grama alta podem bloquear a linha de visão de um inimigo.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Dica: Arremesse sementes em espaços vazios para cultivar plantas úteis.
+Tip: Search suspicious walls to discover hidden doors and traps.	Dica: Examine paredes suspeitas para descobrir portas ocultas e armadilhas.
+Tip: Examining an enemy reveals useful combat information.	Dica: Examinar um inimigo revela informações úteis de combate.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	PV: %d/%d\nPrecisão: %d  Esquiva: %d\nProteção: 0-%d
 Select Your Hero	Escolha seu herói
 Game Over	Fim de jogo
 Boss slain	Chefe derrotado
@@ -9,7 +17,7 @@ Switch to fullscreen	Mudar para tela cheia
 Switch to windowed	Mudar para modo janela
 Reset To Defaults	Restaurar padrões
 <None>	<Nenhuma>
-Press a key for "%s", or press %s to remove the binding.	Pressione uma tecla para “%s” ou pressione %s para remover o atalho.
+Press a key for "%s", or press %s to remove the binding.	Pressione uma tecla para "%s" ou pressione %s para remover o atalho.
 Hero Info	Informações do herói
 Wait	Esperar
 Search	Procurar
@@ -53,4 +61,17 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	A comida até que estava boa.
 Paralysed	Paralisado
 Terror	Aterrorizado
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Ah, que surpresa agradável encontrar uma pessoa decente num lugar destes! Vim buscar um ingrediente raro: um _peixe-fantasma_. Você pode pegá-lo com as próprias mãos, mas é muito difícil enxergá-lo na água. Como mago, sei me defender dos monstros daqui, mas me perco num instante — é bastante constrangedor. Poderia me ajudar? Terei prazer em recompensá-lo com uma das minhas melhores varinhas.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Ah, que surpresa agradável encontrar uma pessoa decente num lugar destes! Vim buscar um ingrediente raro: um _peixe-fantasma_. Você pode pegá-lo com as próprias mãos, mas é muito difícil enxergá-lo na água. Como mago, sei me defender dos monstros daqui, mas me perco num instante, o que é bastante constrangedor. Poderia me ajudar? Terei prazer em recompensá-lo com uma das minhas melhores varinhas.
+berserker	berserker
+When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	Quando gravemente ferido, o _Berserker_ entra em um estado de fúria selvagem, aumentando significativamente o dano que causa.
+A ramp leads down to the Inferno.	Uma rampa desce até o Inferno.
+mind	mente
+vision	visão
+Second quickslot	Segundo atalho rápido
+Select an item for the quickslot	Selecione um item para o atalho rápido
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Ah, que surpresa agradável encontrar uma pessoa decente em um lugar como este! Vim em busca de um ingrediente raro: uma _semente de frutapodre_. Como usuário de magia, consigo me defender dos monstros daqui, mas me perco num instante, o que é bastante constrangedor. Você poderia me ajudar? Ficarei feliz em recompensar você com uma de minhas melhores varinhas.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Alguma sorte com a _semente de frutapodre_, %s? Não? Não se preocupe, não estou com pressa.
+Welcome to the level %d of Telegram Pixel Dungeon!	Bem-vindo ao nível %d de Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Bem-vindo de volta ao nível %d de Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	Não se sai de Telegram Pixel Dungeon tão facilmente.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nEste sinalizador foi definido em algum lugar do nível %d de Telegram Pixel Dungeon.

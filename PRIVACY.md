@@ -1,6 +1,6 @@
 # Privacy
 
-Pixel Dungeon does not include analytics, advertising, payments or a custom
+Telegram Pixel Dungeon does not include analytics, advertising, payments or a custom
 tracking backend.
 
 Game progress and settings are saved locally in the browser. When the game is

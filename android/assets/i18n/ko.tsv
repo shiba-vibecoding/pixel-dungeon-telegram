@@ -28,8 +28,6 @@ Many heroes of all kinds ventured into the Dungeon before you. Some of them have
 Let's call it a day	여기서 끝내기로 하지
 I'm not done yet	아직 끝내긴 일러
 You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	당신은 마침내 옌더의 아뮬렛을 거머쥐었습니다. 이 힘을 이용해서 당신은 세상을 손에 넣거나 아니면 평화와 번영을 가져다 주는 등 여러 가지 일을 할 수 있습니다. 어쨌든, 당신의 인생은 완전히 바뀔 것이고, 게임은 여기서 끝날 겁니다. 아니면, 아주 잠시 필멸자로 남을 수도 있고요.
-Welcome to the level %d of Pixel Dungeon!	리믹스드 던전 %d층에 오신 걸 환영합니다!
-Welcome back to the level %d of Pixel Dungeon!	리믹스드 던전 %d층에 돌아오신 걸 환영합니다!
 Be cautious, since the dungeon is even more dangerous at night!	조심하세요, 던전은 밤 중에 보다 더 위험하답니다.
 Your steps echo across the dungeon.	당신의 발자국 소리가 던전에 울려 퍼집니다.
 You hear the water splashing around you.	물 소리가 당신 주위에서 들려옵니다.
@@ -55,7 +53,6 @@ bleeding	출혈
 dizzy	현기증
 invisible	투명화
 you	당신
-One does not simply leave Pixel Dungeon.	누구도 쉽사리 리믹스드 던전을 빠져나가지 못한다.
 level up!	레벨 업!
 Welcome to level %d! Now you are healthier and more focused. It's easier for you to hit enemies and dodge their attacks.	레벨 %d이 된걸 축하합니다! 이제 당신은 보다 더 건강해지고 집중력이 높아졌습니다. 적을 맞추거나 공격을 회피하기 쉬워졌습니다.
 You now have %s	%s을/를 얻었다.
@@ -149,8 +146,6 @@ Death from fire, poison, toxic gas & hunger	불, 중독, 독가스, 굶주림으
 2nd boss slain	텐구가 살해되었다
 3rd boss slain	DM-300이 살해되었다
 4th boss slain	왕이 살해되었다
-1st boss slain by Warrior, Mage, Rogue & Huntress	Goo has been slain by all classes
-3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	Boss dikalahkan
 Ring of Haggler obtained	흥정꾼의 반지 획득
 Ring of Thorns obtained	가시의 반지 획득
 13 points of Strength attained	힘 수치 13 달성
@@ -203,7 +198,6 @@ Ambitious imp	야심만만한 임프
 Killed by %1$s on level %2$d	%2$d층에서 %1$s에게 죽었습니다.
 Killed by your own %1$s on level %2$d	%2$d 층에서 당신의 %1$s에 의해서 사망
 Killed by the %1$s on level %2$d	%2$d층에서 %1$s에게 죽었습니다.
-Killed by discharge of %1$s on level %2$d	진행 깊이: %1$s \n층 수: %2$d
 Burned to death on level %d	%d 층에서 불에 타죽었습니다.
 Starved to death on level %d	%d 층에서 굶어 죽었습니다.
 Died from poison on level %d	%d 층에서 독에 의해 죽었습니다.
@@ -225,7 +219,6 @@ Settings	설정
 Rankings	랭킹
 Start New Game	새 게임 시작
 Main Menu	메인 메뉴
-Exit Game	리믹스드 던전 종료
 Return to Game	게임으로 돌아가기
 Buffs	버프
 Experience	경험치
@@ -327,9 +320,7 @@ Lloyd's beacon is an intricate magic device, that allows you to return to a plac
 Strong magic aura of this place prevents you from using the lloyd's beacon!	이곳의 강력한 마력이 로이드의 신호기를 사용하지 못하게 막고 있습니다!
 Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	주변 생물의 영향력 때문에 로이드의 신호기를 사용할 수 없습니다.
 The lloyd's beacon is successfully set at your current location, now you can return here anytime.	로이드의 신호기가 귀환 위치를 설정하는데 성공했습니다. 이제 언제든지 당신은 여기로 귀환할 수 있습니다.
-\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\n이 신호기는 리믹스드 던전 %d층 어딘가에 귀환 위치를 설정하였습니다.
 Tome of Mastery	전직의 서
-Tome of Remastery	전직의 서
 This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	두껍지 않지만 가죽으로 마감된 이 책은 읽는데 시간이 좀 걸리겠지만 당신에게 많은 영감을 줄 수 있다는 걸 명심하세요.
 You can't read while blinded	눈이 먼 상태에서는 읽을 수 없습니다.
 You have chosen the way of the %s!	%s의 길을 선택했습니다.
@@ -777,8 +768,6 @@ Shafts of light pierce the gloom of the underground garden.	빛의 기둥이 지
 A cloud of paralytic gas is swirling here.	마비가스의 구름이 소용돌이 칩니다.
 A greenish cloud of toxic gas is swirling here.	녹색 독성 가스구름이 소용돌이 치고 있습니다.
 You died from a toxic gas..	당신은 유독가스 흡입으로 사망하였습니다...
-As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	지식의 힘이 우물에서 흘러나옵니다. 한모금 마시면 당신이 장착한 아이템의 모든 정보를 알게 됩니다.
-Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	한모금 마시자, 머리속이 맑아지며 지식이 쏟아져 들어옵니다. 이제 장착아이템에 대한 모든정보를 알게됩니다. 또 현재 층에 있는 모든 아이템과 비밀을 알수있게 되었습니다.
 Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	좋은 물에서 힘의 원천이 나옵니다. 상처를 치유하고 굶주림을 채우기 위해 거기서 한모금 가져가세요.
 As you take a sip, you feel your wounds heal completely.	한 모금 마시자, 당신의 모든 상처가 완전히 회복되는 것을 느낍니다.
 Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	변화의 힘이 우물에서 흘러나옵니다. 뭔가를 그 안으로 던져넣어 보세요.
@@ -806,7 +795,6 @@ Invisible	투명
 Levitating	공중부양
 Illuminated	섬광
 Mind vision	심안
-Caustic ooze	Kaustik Rüzgar
 %s killed you...	%s 이/가 당신을 죽였습니다...
 Paralyzed	마비됨
 Poisoned	중독
@@ -1073,6 +1061,14 @@ You don't know what is there.	그곳에 무엇이 있는지 알 수 없습니다
 Select a cell to examine	검사할 타일을 선택하세요.
 LibGDX port: Arcnor / Web port: nojus297	LibGDX 포팅: Arcnor / 웹 포팅: nojus297
 Telegram port: @barboskich	Telegram 포팅: @barboskich
+Eating the seed triggers its effect immediately.	씨앗을 먹으면 식물의 효과가 즉시 발동합니다.
+Tip: Long-press the wait button to rest until something interrupts you.	도움말: 무언가가 방해할 때까지 쉬려면 대기 버튼을 길게 누르세요.
+Tip: Long-press the backpack to open the item catalog.	도움말: 배낭을 길게 누르면 아이템 도감을 열 수 있습니다.
+Tip: Doors and tall grass can break an enemy's line of sight.	도움말: 문과 키 큰 풀은 적의 시야를 차단할 수 있습니다.
+Tip: Throw seeds onto empty tiles to grow useful plants.	도움말: 빈 칸에 씨앗을 던져 유용한 식물을 키우세요.
+Tip: Search suspicious walls to discover hidden doors and traps.	도움말: 수상한 벽을 수색하면 숨겨진 문과 함정을 찾을 수 있습니다.
+Tip: Examining an enemy reveals useful combat information.	도움말: 적을 조사하면 전투에 유용한 정보를 확인할 수 있습니다.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	체력: %d/%d\n명중: %d  회피: %d\n방어: 0-%d
 Select Your Hero	영웅 선택
 Game Over	게임 오버
 Boss slain	보스 처치
@@ -1191,3 +1187,19 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	먹을 만했다.
 Paralysed	마비
 Terror	공포
+Welcome to the level %d of Pixel Dungeon!	Pixel Dungeon %d층에 오신 것을 환영합니다!
+Welcome back to the level %d of Pixel Dungeon!	Pixel Dungeon %d층에 돌아오신 것을 환영합니다!
+One does not simply leave Pixel Dungeon.	누구도 Pixel Dungeon을 쉽게 빠져나갈 수 없다.
+Exit Game	게임 종료
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\n이 신호기는 Pixel Dungeon %d층 어딘가에 설치되었습니다.
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	한 모금 마시자 지식이 머리로 쏟아져 들어옵니다. 이제 장착한 아이템의 모든 정보를 알게 되었고, 현재 층의 모든 아이템과 비밀도 느낄 수 있습니다.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	지식의 힘이 우물에서 흘러나옵니다. 한 모금 마시면 장착한 아이템의 모든 비밀을 알게 됩니다.
+1st boss slain by Warrior, Mage, Rogue & Huntress	전사, 마법사, 도적, 사냥꾼으로 첫 번째 보스 처치
+3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	검투사, 광전사, 흑마법사, 전투 마법사, 프리러너, 암살자, 저격수, 숲지기로 세 번째 보스 처치
+Killed by discharge of %1$s on level %2$d	%2$d층에서 %1$s의 방전으로 사망
+Caustic ooze	부식성 점액
+Tome of Remastery	재전직의 서
+Welcome to the level %d of Telegram Pixel Dungeon!	Telegram Pixel Dungeon %d층에 오신 것을 환영합니다!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Telegram Pixel Dungeon %d층에 돌아오신 것을 환영합니다!
+One does not simply leave Telegram Pixel Dungeon.	누구도 Telegram Pixel Dungeon을 쉽게 빠져나갈 수 없다.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\n이 신호기는 Telegram Pixel Dungeon %d층 어딘가에 설치되었습니다.

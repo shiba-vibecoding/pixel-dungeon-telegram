@@ -35,7 +35,6 @@ Let's call it a day	Powiedzmy, że zostanę tu jeszcze dzień...
 I'm not done yet	Jeszcze nie skończyłem
 You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	W końcu trzymasz go w swych dłoniach. Amulet Yendora należy do ciebie! Używając jego mocy możesz objąć panowanie nad światem, przynieść pokój i dobrobyt mieszkańcom Powierzchni lub cokolwiek innego. W każdym razie, twoje życie odmieniło się na zawsze i ta gra kończy się tutaj. Albo możesz zostać tutaj jako śmiertelnik nieco dłużej.
 Welcome to the level %d of Pixel Dungeon!	Witaj na poziomie %d gry Pixel Dungeon!
-Welcome back to the level %d of Pixel Dungeon!	Witaj z powrotem na poziomie %d of Pixel Dungeon!
 Be cautious, since the dungeon is even more dangerous at night!	Zachowaj ostrożność! Loch jest jeszcze bardziej niebezpieczny w nocy!
 Your steps echo across the dungeon.	Dźwięk twych kroków roznosi się echem po lochu.
 You hear the water splashing around you.	Słyszysz plusk wody wokół ciebie.
@@ -334,7 +333,6 @@ Your dew vial is empty!	Twój flakonik jest pusty!
 This is a mimic!	To mimik!
 honeypot	garnek miodu
 SHATTER	ROZTRZASKAĆ
-There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	Nie ma zbyt wiele miodu w tym małym honeypot, ale jest złote pszczoły tam i nie chce go opuścić.
 gold	złoto
 Collect gold coins to spend them later in a shop.	Zbieraj złoto by potem móc wydać je w sklepie.
 A pile of %d gold coins.	Stos %d złotych monet
@@ -349,7 +347,6 @@ Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beaco
 The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Rdzeń Lloyda został pomyślnie ustawiony na twojej obecnej pozycji. Teraz możesz powrócić w to miejsce kiedy chcesz.
 \n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nRdzeń został ustawiony na %d poziomie Pixel Dungeon.
 Tome of Mastery	Książka Mistrzostwa
-Tome of Remastery	Książka Mistrzostwa(2)
 This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	Ta używana, skórzana książka nie jest aż tak gruba, ale czujesz jednak, że mógłbyś się z niej wiele nauczyć. Pamiętaj, że czytanie jej zajmie trochę czasu.
 You can't read while blinded	Nie możesz czytać gdy jesteś oślepiony
 You have chosen the way of the %s!	wybrałeś ścieżkę %s!
@@ -823,8 +820,6 @@ Sacrificial fire burns here. Every creature touched by this fire is marked as an
 Marked for sacrifice	Zaznaczono ofiary
 A greenish cloud of toxic gas is swirling here.	Chmura gazu toksycznego się tutaj unosi.
 You died from a toxic gas..	Zabił cię trujący gaz...
-As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Potęga wiedzy emanuje z wody tej studni. Weź z niej łyk by poznać sekrety założonych przedmiotów.
-Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Gdy tylko wziąłeś łyk wody z tej studni, czujesz jak wiedza wypełnia twój umysł. Teraz wiesz wszystko o używanych przez ciebie przedmiotach. Możesz też wyczuć inne przedmioty na tym poziomie, oraz znasz wszystkie jego sekrety.
 Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	Potęga życia emanuje z wody tej studni. Weź z niej łyk by uleczyć swe rany i nasyć głód.
 As you take a sip, you feel your wounds heal completely.	Gdy tylko bierzesz łyk z tej studni, czujesz jak twoje rany goją się całkowicie.
 Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	Potęga zmiany emanuje z wody tej studni. Wrzuć przedmiot do studni by zmienić go w coś innego.
@@ -896,7 +891,6 @@ fire elemental	Żywiołak ognia
 Wandering fire elementals are a byproduct of summoning greater entities. They are too chaotic in their nature to be controlled by even the most powerful demonologist.	Podróżujące tam i z powrotem żywiołaki ognia są skutkiem ubocznym przyzywania większych istnień. Są zbyt chaotyczne z natury by być kontrolowanymi nawet przez najpotężniejszego demonologa.
 evil eye	Złe oko
 One of this demon's other names is "orb of hatred", because when it sees an enemy, it uses its deathgaze recklessly, often ignoring its allies and wounding them.	Jedno z imion tego demona brzmi "kula nienawiści", ponieważ gdy widzi wroga używa bezmyślnie swego Wzroku Śmierci, często ignorując swoich sojuszników i raniąc ich dotkliwie.
-%s's deathgaze killed you...	%s's Wzrok Śmierci zabił ciebie...
 fetid rat	cuchnący ściekoszczur
 This marsupial rat is much larger, than a regular one. It is surrounded by a foul cloud.	Ten ściekoszczur jest znacznie większy od zwykłego szczura. Jest otoczony chmurą paraliżującego smrodu...
 gnoll scout	Zwiadowca Gnolli
@@ -933,7 +927,6 @@ These huge arachnid-like demonic creatures avoid close combat by all means, firi
 senior monk	Starszy akolita
 gnoll shaman	szaman gnolli
 The most intelligent gnolls can master shamanistic magic. Gnoll shamans prefer battle spells to compensate for lack of might, not hesitating to use them on those who question their status in a tribe.	Najbardziej inteligentne z Gnolli mogą opanować magię Szamanów. Szamani Gnolli preferują bojowe zaklęcia w ramach rekompensaty za ich brak siły. Nie wahają się używać ich przeciwko tym, którzy kwestionują ich status w klanie.
-%s's lightning bolt killed you...	%s's piorun zabił ciebie...
 shielded brute	tarczownik gnolli 
 skeleton	szkielet
 Skeletons are composed of corpses bones from unlucky adventurers and inhabitants of the dungeon, animated by emanations of evil magic from the depths below. After they have been damaged enough, they disintegrate in an explosion of bones.	Szkielety to odpowiednio spreparowane kości podróżników i mieszkańców Lochu, którzy zostali ożywieni przez emanację mrocznej magii z głębszych poziomów. Kiedy giną, są tak samo niebezpieczne jak za "Życia", ponieważ gdy giną rozpadają się w eksplozji kości raniąc swego zabójcę. 
@@ -958,7 +951,6 @@ Deeper levels of the dungeon have always been a hiding place for all kinds of cr
 \n\n%1$s is carrying a _%2$s_. Stolen obviously.	\n\n%1$s nosi ze sobą  _%2$s_. Oczywiście ukradzione.
 dwarf warlock	Krasnoludzki Czarnoksiężnik
 When dwarves' interests have shifted from engineering to arcane arts, warlocks have come to power in the city. They started with elemental magic, but soon switched to demonology and necromancy.	Kiedy krasnoludy zaczęły się interesować sztuką magii bardziej niż inżynierią, czarnoksiężnicy doszli do władzy w mieście. Początkowo posługiwali się magią żywiołów, ale przestawili się na demonologię i nekromancję.
-%s's shadow bolt killed you...	%s's wystrzelił ostatni w Twym życiu Pocisk Cienia...
 wraith	widmo
 A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Being an ethereal entity, it is very hard to hit with a regular weapon.	Widma to żądne zemsty duchy nieboszczyka, którego grób lub grobowiec został splądrowany. Są one bytami eterycznymi i ciężko je zranić standardową bronią.
 Yog-Dzewa	Yog-Dzewa
@@ -1035,8 +1027,6 @@ Water	Woda
 Wall	Ściana
 Closed door	Zamknięte drzwi
 Open door	Otwarte drzwi
-Depth entrance	Przejście w dół
-Depth exit	Wyjście na górę
 Embers	Rozżarzone węgielki
 Locked door	Zablokowane drzwi
 Pedestal	Piedestał
@@ -1142,6 +1132,14 @@ Select a cell to examine	Wybierz miejsce by je zbadać
 1	0
 LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port webowy: nojus297
 Telegram port: @barboskich	Port na Telegram: @barboskich
+Eating the seed triggers its effect immediately.	Zjedzenie nasiona natychmiast wywołuje efekt rośliny.
+Tip: Long-press the wait button to rest until something interrupts you.	Wskazówka: Przytrzymaj przycisk czekania, aby odpoczywać, aż coś ci przeszkodzi.
+Tip: Long-press the backpack to open the item catalog.	Wskazówka: Przytrzymaj plecak, aby otworzyć katalog przedmiotów.
+Tip: Doors and tall grass can break an enemy's line of sight.	Wskazówka: Drzwi i wysoka trawa mogą przerwać linię wzroku wroga.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Wskazówka: Rzucaj nasiona na puste pola, aby wyhodować przydatne rośliny.
+Tip: Search suspicious walls to discover hidden doors and traps.	Wskazówka: Przeszukuj podejrzane ściany, aby odkryć ukryte drzwi i pułapki.
+Tip: Examining an enemy reveals useful combat information.	Wskazówka: Zbadanie wroga ujawnia przydatne informacje bojowe.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	PŻ: %d/%d\nCelność: %d  Unik: %d\nOchrona: 0-%d
 Select Your Hero	Wybierz bohatera
 Game Over	Koniec gry
 Boss slain	Boss pokonany
@@ -1151,7 +1149,7 @@ Switch to fullscreen	Przełącz na pełny ekran
 Switch to windowed	Przełącz do okna
 Reset To Defaults	Przywróć domyślne
 <None>	<Brak>
-Press a key for "%s", or press %s to remove the binding.	Naciśnij klawisz dla „%s” albo %s, aby usunąć przypisanie.
+Press a key for "%s", or press %s to remove the binding.	Naciśnij klawisz dla "%s" albo %s, aby usunąć przypisanie.
 Hero Info	Informacje o bohaterze
 Wait	Czekaj
 Search	Szukaj
@@ -1190,4 +1188,18 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Jedzenie było całkiem niezłe.
 Paralysed	Sparaliżowany
 Terror	Przerażenie
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Och, co za miła niespodzianka spotkać porządną osobę w takim miejscu! Przybyłem tu po rzadki składnik — _widmową rybę_. Można ją złapać gołymi rękami, lecz bardzo trudno dostrzec ją w wodzie. Jako mag potrafię obronić się przed tutejszymi potworami, ale błyskawicznie się gubię — to dość krępujące. Czy zechcesz mi pomóc? Chętnie wynagrodzę cię jedną z moich najlepszych różdżek.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Och, co za miła niespodzianka spotkać porządną osobę w takim miejscu! Przybyłem tu po rzadki składnik: _widmową rybę_. Można ją złapać gołymi rękami, lecz bardzo trudno dostrzec ją w wodzie. Jako mag potrafię obronić się przed tutejszymi potworami, ale błyskawicznie się gubię, co jest dość krępujące. Czy zechcesz mi pomóc? Chętnie wynagrodzę cię jedną z moich najlepszych różdżek.
+Welcome back to the level %d of Pixel Dungeon!	Witaj z powrotem na poziomie %d gry Pixel Dungeon!
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Gdy bierzesz łyk, czujesz, jak wiedza wypełnia twój umysł. Teraz wiesz wszystko o używanych przedmiotach. Wyczuwasz też wszystkie przedmioty na tym poziomie i znasz wszystkie jego sekrety.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Potęga wiedzy emanuje z wody tej studni. Weź łyk, aby poznać wszystkie sekrety używanych przedmiotów.
+Tome of Remastery	Księga Ponownego Mistrzostwa
+Depth entrance	Przejście w górę
+Depth exit	Przejście w dół
+%s's deathgaze killed you...	Śmiercionośne spojrzenie %s zabiło cię...
+%s's lightning bolt killed you...	Piorun %s zabił cię...
+%s's shadow bolt killed you...	Pocisk cienia %s zabił cię...
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	W tym małym garnku nie ma zbyt wiele miodu, ale w środku znajduje się złota pszczoła, która nie chce go opuścić.
+Welcome to the level %d of Telegram Pixel Dungeon!	Witaj na poziomie %d gry Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Witaj z powrotem na poziomie %d gry Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	Telegram Pixel Dungeon nie opuszcza się tak po prostu.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nSygnał ustawiono gdzieś na poziomie %d gry Telegram Pixel Dungeon.

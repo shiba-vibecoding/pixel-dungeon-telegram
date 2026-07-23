@@ -1,5 +1,18 @@
 LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port web: nojus297
 Telegram port: @barboskich	Port Telegram: @barboskich
+Welcome to the level %d of Pixel Dungeon!	Benvenuto al livello %d di Pixel Dungeon!
+Welcome back to the level %d of Pixel Dungeon!	Bentornato al livello %d di Pixel Dungeon!
+One does not simply leave Pixel Dungeon.	Non si esce semplicemente da Pixel Dungeon.
+Exit Game	Esci dal gioco
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nQuesto faro è stato posizionato da qualche parte nel livello %d di Pixel Dungeon.
+Eating the seed triggers its effect immediately.	Mangiare il seme attiva immediatamente l'effetto della pianta.
+Tip: Long-press the wait button to rest until something interrupts you.	Suggerimento: Tieni premuto il pulsante di attesa per riposare finché qualcosa non ti interrompe.
+Tip: Long-press the backpack to open the item catalog.	Suggerimento: Tieni premuto lo zaino per aprire il catalogo degli oggetti.
+Tip: Doors and tall grass can break an enemy's line of sight.	Suggerimento: Le porte e l'erba alta possono interrompere la linea di vista di un nemico.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Suggerimento: Lancia i semi sulle caselle vuote per far crescere piante utili.
+Tip: Search suspicious walls to discover hidden doors and traps.	Suggerimento: Esamina le pareti sospette per scoprire porte nascoste e trappole.
+Tip: Examining an enemy reveals useful combat information.	Suggerimento: Esaminare un nemico rivela informazioni utili per il combattimento.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	PV: %d/%d\nPrecisione: %d  Schivata: %d\nProtezione: 0-%d
 Select Your Hero	Scegli il tuo eroe
 Game Over	Partita finita
 Boss slain	Boss sconfitto
@@ -61,7 +74,7 @@ Switch to fullscreen	Passa a schermo intero
 Switch to windowed	Passa alla modalità finestra
 Reset To Defaults	Ripristina predefiniti
 <None>	<Nessuno>
-Press a key for "%s", or press %s to remove the binding.	Premi un tasto per «%s», oppure %s per rimuovere l'assegnazione.
+Press a key for "%s", or press %s to remove the binding.	Premi un tasto per "%s", oppure %s per rimuovere l'assegnazione.
 Hero Info	Informazioni eroe
 Wait	Attendi
 Search	Cerca
@@ -128,3 +141,22 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Quel cibo non era male.
 Paralysed	Paralizzato
 Terror	Terrore
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Appena ne bevi un sorso, senti la conoscenza riversarsi nella tua mente. Ora sai tutto sugli oggetti che hai equipaggiato. Inoltre, percepisci tutti gli oggetti del livello e ne conosci ogni segreto.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Il potere della conoscenza si irradia dall'acqua di questo pozzo. Bevila per svelare tutti i segreti degli oggetti equipaggiati.
+Tome of Remastery	Tomo della Rimaestria
+Stairs lead up to the upper depth.	Le scale che salgono conducono al piano superiore.
+Stairs lead down to the lower depth.	Le scale che scendono conducono al piano inferiore.
+You are crippled!	Sei rallentato!
+Rooted	Radicato
+\n\n%1$s is carrying a _%2$s_. Stolen obviously.	\n\n%1$s porta con sé un _%2$s_. Chiaramente rubato.
+Hey human! Wanna be useful, eh? Take dis pickaxe and mine me some _dark gold ore_, _15 pieces_ should be enough. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Ehi, umano! Vuoi renderti utile, eh? Prendi questo piccone e scavami un po' di _minerale d'oro scuro_: _15 pezzi_ dovrebbero bastare. Come dici, come ti pagherò? Avido...\nVa bene, va bene, non ho denaro, ma posso forgiare qualcosa per te. Ritieniti fortunato: sono l'unico fabbro nei dintorni.
+%s's deathgaze killed you...	Lo sguardo mortale di %s ti ha ucciso...
+%s's lightning bolt killed you...	Il fulmine di %s ti ha ucciso...
+%s's shadow bolt killed you...	Il dardo d'ombra di %s ti ha ucciso...
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, che piacevole sorpresa incontrare una persona perbene in un posto simile! Sono venuto qui per un ingrediente raro: un _seme di Baccamarcia_. So difendermi dai mostri locali con la magia, ma mi perdo in continuazione: che imbarazzo. Potresti aiutarmi? Sarei lieto di ricompensarti con una delle mie bacchette migliori.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Hai avuto fortuna con un _seme di Baccamarcia_, %s? No? Non preoccuparti, non ho fretta.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, che piacevole sorpresa incontrare una persona perbene in un posto simile! Sono venuto qui per un ingrediente raro: la _polvere di cadavere_. Si può raccogliere dai resti scheletrici, e nel dungeon ce n'è in abbondanza. So difendermi dai mostri locali con la magia, ma mi perdo in continuazione: che imbarazzo. Potresti aiutarmi? Sarei lieto di ricompensarti con una delle mie bacchette migliori.
+Welcome to the level %d of Telegram Pixel Dungeon!	Benvenuto al livello %d di Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Bentornato al livello %d di Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	Non si esce semplicemente da Telegram Pixel Dungeon.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nQuesto faro è stato posizionato da qualche parte nel livello %d di Telegram Pixel Dungeon.

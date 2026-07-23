@@ -96,8 +96,10 @@ public class Plant implements Bundlable {
 	public static class Seed extends Item {
 		
 		public static final String AC_PLANT	= "PLANT";
+		public static final String AC_EAT	= "EAT";
 		
 		private static final String TXT_INFO = "Throw this seed to the place where you want to grow %s.\n\n%s";
+		private static final String TXT_EAT_INFO = "Eating the seed triggers its effect immediately.";
 		
 		private static final float TIME_TO_PLANT = 1f;
 		
@@ -125,7 +127,20 @@ public class Plant implements Bundlable {
 		public ArrayList<String> actions( Hero hero ) {
 			ArrayList<String> actions = super.actions( hero );
 			actions.add( AC_PLANT );
+			if (canEat()) {
+				actions.add( AC_EAT );
+			}
 			return actions;
+		}
+
+		/**
+		 * A compact emergency option inspired by later community forks: the
+		 * seed may be consumed to trigger its normal plant effect on the hero.
+		 * No new effect or hidden modifier is introduced, so the decision keeps
+		 * the original risk/reward language of each plant.
+		 */
+		protected boolean canEat() {
+			return true;
 		}
 		
 		@Override
@@ -146,6 +161,20 @@ public class Plant implements Bundlable {
 				((Seed)detach( hero.belongings.backpack )).onThrow( hero.pos );
 				
 				hero.sprite.operate( hero.pos );
+
+			} else if (action.equals( AC_EAT ) && canEat()) {
+
+				Seed seed = (Seed)detach( hero.belongings.backpack );
+				if (seed != null) {
+					hero.spend( TIME_TO_PLANT );
+					hero.busy();
+					hero.sprite.operate( hero.pos );
+
+					Plant plant = Dungeon.level.plant( seed, hero.pos );
+					if (plant != null) {
+						plant.activate( hero );
+					}
+				}
 				
 			} else {
 				
@@ -184,7 +213,8 @@ public class Plant implements Bundlable {
 		
 		@Override
 		public String info() { 
-			return Utils.format( TXT_INFO, Utils.indefinite( plantName ), desc() );
+			String info = Utils.format( TXT_INFO, Utils.indefinite( plantName ), desc() );
+			return canEat() ? info + "\n\n" + Utils.format( TXT_EAT_INFO ) : info;
 		}
 	}
 }

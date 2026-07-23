@@ -110,17 +110,10 @@ Huntresses sense neighboring monsters even if they are hidden behind obstacles.	
 gladiator	gladiador
 berserker	furioso
 When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	Cuando está muy dañado, el _Furioso_ entra en un estado de furia salvaje, incrementando significantemente su daño.
-warlock	bruto
-After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	Después de matar un enemigo el _Bruto_ consume su alma. Ésta cura sus heridas y satisface su hambre.
-battlemage	bimago
-When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	Cuando se lucha con una varita en las manos, el _BiMago_ inflinge daño adicional dependiendo del número actual de cargas. Cada ataque exitoso añade una carga a su varita.
 assassin	asesino
 When performing a surprise attack, the _Assassin_ inflicts additional damage to his target.	Cuando inflinge una ataque sorpresa, el _Asesino_ añade daño adicional al enemigo.
 freerunner	corredor
 The _Freerunner_ can move almost twice faster, than most of the monsters. When he is running, the Freerunner is much harder to hit. For that he must be unencumbered and not starving.	El _Corredor_ se mueve casi el doble de rápidoque muchos de los monstruos. Cuando está corriendo es mucho más difícil de acertar. Para ello no debe tener un enemigo al lado ni tener mucha hambre.
-_Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	Los _Snipers_ pueden detectar puntos débiles en la armadura de un enemigo, ignorándola al usar un proyectil.
-warden	guardian
-Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	Teniendo una conexión con las fuerzas de la naturaleza, el _Guardian_ posee la habilidad de coger gotas de rocío y semillas de las plantas. También pisar la hierba le da un bufo de armadura.
 Badge endorsed: %s	Insignia conseguida: %s
 New super badge: %s	Nueva súper insignia: %s
 New badge: %s	Nueva insignia: %s
@@ -154,7 +147,6 @@ Death from fire, poison, toxic gas & hunger	Muerte por Fuego, Veneno, Gas Tóxic
 3rd boss slain	Tercer jefe derrotado
 4th boss slain	Cuarto jefe derrotado
 1st boss slain by Warrior, Mage, Rogue & Huntress	Primer jefe derrotado por el Guerrero, Mago, Bellaco & Cazadora
-3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	Tercer jefe derrotado por el Gladiador, Furioso, Bruto, BiMago, Corredor, Asesino, Sniper & Guardian
 Ring of Haggler obtained	Anillo de Negociación obtenido
 Ring of Thorns obtained	Anillo de Espinas obtenido
 13 points of Strength attained	13 puntos de Fuerza adquiridos
@@ -283,7 +275,6 @@ Language	Idioma
 Music	Música
 Sound FX	Sonidos
 Brightness	Modo Brillo
-Second quickslot	Segundo QuickSlot
 Switch to portrait	Sin inclinación
 Switch to landscape	Modo tumbado
 The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	La mazmorra se encuentra justo debajo de la ciudad, sus niveles superiores constituyen el alcantarillado de la ciudad. Al ser parte de ella, éstos niveles no son peligrosos. Nadie los llamaría un lugar seguro, pero al menos no tienes que luchar contra magia malvada.
@@ -292,7 +283,6 @@ Dwarven Metropolis was once the greatest of dwarven city-states. In its heyday t
 In the past these levels were the outskirts of Metropolis. After the costly victory in the war with the old god dwarves were too weakened to clear them of remaining demons. Gradually demons have tightened their grip on this place and now it's called Demon Halls.\n\nVery few adventurers have ever descended this far...	En el pasado, estos niveles eran las afueras de Metrópolis. Después de la costosa victoria en la guerra contra los viejos enanos Dios eran demasiado debilitado para borrarlos del resto de los demonios. Poco a poco, los demonios han endurecido su control sobre este lugar y ahora se llama Demon Halls.\n\nMuy pocos aventureros nunca han descendido hasta aquí...
 FOR SALE: %1$s - %2$dg	EN VENTA: %1$s - %2$dg
 Buy for %dg	Comprar para %dg
-Sell for %dg	Vender para 10 %dg
 Sell 1 for %dg	Vender 1 para %dg
 Sell all for %dg	Vender todo para %dg
 You've sold your %1$s for %2$dg	Has vendido tu %1$s para %2$dg
@@ -301,7 +291,6 @@ Oh, I see you have succeeded! I do hope it hasn't troubled you too much. As I pr
 Battle wand	Batalla varita
 Non-battle wand	Varita no batalla
 Good luck in your quest, %s!	Buena suerte en su búsqueda, %s!
-Select an item for the quickslot	Seleccione un elemento para la Quickslot
 DROP	DEJAR
 THROW	TIRAR
 Your pack is too full for the %s	Su paquete es demasiado lleno para el %s
@@ -369,16 +358,9 @@ Never mind	No importa
 PLANT	PLANTA
 Throw this seed to the place where you want to grow %1$s.\n\n%2$s	Tire a esta semilla en el lugar donde desea crecer %1$s.\n\n%2$s
 seed of %s	semilla de %s
-Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Al tocar un Dreamweed segrega una nube brillante de gas confuso.
-When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Cuando una criatura toca un Earthroot, sus raíces crean una especie de armadura natural a su alrededor.
 Herbal armor	Armadura herbal
-Touching a Fadeleaf will teleport any creature to a random place on the current level.	Tocar una Fadeleaf se teletransportarse a cualquier criatura a un lugar al azar en el nivel actual.
-When something touches a Firebloom, it bursts into flames.	Cuando algo toca una Firebloom, estalla en llamas.
-Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Al tocar un Icecap excreta un polen, que congela todo en su vecindad.
 Berries of this shrub taste like sweet, sweet death.	Las bayas de este arbusto saben a dulce, dulce muerte.
 The seed emits a roar that echoes throughout the dungeon!	La semilla emite un rugido que hace eco a lo largo de la mazmorra!
-A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Un Sorrowmoss es una flor (no un musgo) con pétalos afilados, recubiertas de una de veneno mortal.
-Sungrass is renowned for its sap's healing properties.	Sungrass es famoso por las propiedades curativas de su savia.
 Herbal healing	Curación herbaria
 your %s constricts around you painfully	tu %s constriñe a tu alrededor dolorosamente
 Interaction of different types of magic has erased the glyph on this armor!	Interacción de los diferentes tipos de magia ha borrado el glifo en esta armadura!
@@ -1009,8 +991,6 @@ Select an item to sell	Seleccione un ítem para vender
 old wandmaker	viejo fabricante de varitas
 This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	Este viejo pero sano caballero lleva una expresión un poco confundido. Él está protegido por un escudo mágico.
 absorbed	absorbido
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	¡Oh, qué agradable sorpresa conocer a una persona decente en tal lugar! Vine aquí para un ingrediente raro - una _semilla Rotberry_. Ser un usuario de magia, soy muy capaz de defenderme contra monstruos locales, pero me estoy perdido en muy poco tiempo, es muy embarazoso. Probablemente usted me podría ayudar? Yo estaría encantado de pagar por su servicio con una de mis mejores varitas.
-Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Ha habido suerte con una _semilla Rotberry_, %s? ¿No? No te preocupes, yo no tengo prisa.
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	¡Oh, qué agradable sorpresa conocer a una persona decente en tal lugar! Vine aquí para un ingrediente raro - _polvo de cadáver_. Puede ser obtenida de los restos óseos y hay un amplio número de ellos en el calabozo. Ser un usuario de magia, soy muy capaz de defenderme contra monstruos locales, pero me estoy perdido en muy poco tiempo, es muy embarazoso. Probablemente usted me podría ayudar? Yo estaría encantado de pagar por su servicio con una de mis mejores varitas.
 Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Ha habido suerte con _polvo de cadáver_, %s? Montones de hueso son los lugares más obvios para buscar.
 Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Ha habido suerte con el _pez fantasma_, %s? Usted puede intentar buscarlo en una de las piscinas locales.
@@ -1053,7 +1033,6 @@ Stairs lead down to the lower depth.	Las escaleras le llevará a una mayor profu
 Embers cover the floor.	Ascuas cubren el suelo.
 Dense vegetation blocks the view.	Bloques de vegetación densa por delante.
 This door is locked, you need a matching key to unlock it.	Esta puerta está cerrada, se necesita una clave coincidente para desbloquearlo.
-Heavy bars block the stairs leading down.	Bares pesados bloquean las escaleras que conducen.
 The wooden barricade is firmly set but has dried over the years. Might it burn?	La barricada de madera se establece con firmeza pero se ha secado en los últimos años. Podría quemar?
 You can't read the text from here.	No se puede leer el texto de aquí.
 Stepping onto a hidden pressure plate will activate the trap.	Caminando sobre una placa de presión oculto activará la trampa.
@@ -1074,15 +1053,12 @@ The statue depicts some dwarf standing in a heroic stance.	La estatua representa
 The rows of books on different disciplines fill the bookshelf.	Las filas de libros sobre diferentes disciplinas llenar la estantería.
 Books in ancient languages smolder in the bookshelf.	Libros en idiomas antiguos arden en la estantería.
 Cold lava	Lava fría
-Embermoss	Musgo em brasas
-Emberfungi	Fungo em brasas
 Pillar	Pilar
 It looks like lava, but it's cold and probably safe to touch.	Parece que la lava, pero hace frío y probablemente puede tocar.
 The pillar is made of real humanoid skulls. Awesome.	El pilar está hecho de cráneos humanoides reales. Impresionante.
 Suspiciously colored water	Agua de color sospechosamente
 High blooming flowers	Flores de alta flor
 A ramp leads up to the upper depth.	La rampa le llevará a la planta superior.
-A ramp leads down to the Inferno.	La rampa le llevará a una mayor profundidad.
 Several tiles are missing here.	Varios azulejos faltan aquí.
 Thick carpet covers the floor.	Gruesa alfombra cubre el suelo.
 Dark cold water.	Agua fría oscura.
@@ -1128,6 +1104,14 @@ Select a cell to examine	Seleccione una celda para examinar
 1	0
 LibGDX port: Arcnor / Web port: nojus297	Port para LibGDX: Arcnor / port web: nojus297
 Telegram port: @barboskich	Port para Telegram: @barboskich
+Eating the seed triggers its effect immediately.	Comer la semilla activa de inmediato el efecto de la planta.
+Tip: Long-press the wait button to rest until something interrupts you.	Consejo: Mantén pulsado el botón de esperar para descansar hasta que algo te interrumpa.
+Tip: Long-press the backpack to open the item catalog.	Consejo: Mantén pulsada la mochila para abrir el catálogo de objetos.
+Tip: Doors and tall grass can break an enemy's line of sight.	Consejo: Las puertas y la hierba alta pueden bloquear la línea de visión de un enemigo.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Consejo: Lanza semillas sobre casillas vacías para cultivar plantas útiles.
+Tip: Search suspicious walls to discover hidden doors and traps.	Consejo: Examina muros sospechosos para descubrir puertas ocultas y trampas.
+Tip: Examining an enemy reveals useful combat information.	Consejo: Examinar a un enemigo revela información útil para el combate.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	PV: %d/%d\nPrecisión: %d  Evasión: %d\nProtección: 0-%d
 Select Your Hero	Elige a tu héroe
 Game Over	Fin de la partida
 Boss slain	Jefe derrotado
@@ -1137,7 +1121,7 @@ Switch to fullscreen	Cambiar a pantalla completa
 Switch to windowed	Cambiar a modo ventana
 Reset To Defaults	Restablecer valores
 <None>	<Ninguna>
-Press a key for "%s", or press %s to remove the binding.	Pulsa una tecla para «%s» o pulsa %s para eliminar la asignación.
+Press a key for "%s", or press %s to remove the binding.	Pulsa una tecla para "%s" o pulsa %s para eliminar la asignación.
 Hero Info	Información del héroe
 Wait	Esperar
 Search	Buscar
@@ -1164,7 +1148,7 @@ Disguised as a %s	Disfrazado de %s
 You merged two wands into one %s.	Has fusionado dos varitas para crear %s.
 Select a wand to merge	Elige una varita para fusionar
 mob	monstruo
-sniper	tirador
+sniper	francotiradora
 7-hit combo	combo de 7 golpes
 smth	algo
 Dreamweed	hierbasueño
@@ -1191,3 +1175,31 @@ That food tasted ok.	La comida no estaba mal.
 Paralysed	Paralizado
 Terror	Aterrorizado
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	¡Qué agradable sorpresa encontrar a alguien decente en un lugar como este! Vine en busca de un ingrediente raro: un _pez fantasma_. Puedes atraparlo con las manos desnudas, pero es muy difícil verlo en el agua. Como mago puedo defenderme de los monstruos de la zona, pero me pierdo enseguida; es bastante vergonzoso. ¿Podrías ayudarme? Con gusto te recompensaré con una de mis mejores varitas.
+warlock	brujo
+After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	Tras matar a un enemigo, el _Brujo_ consume su alma. Esto sana sus heridas y sacia su hambre.
+Sell for %dg	Vender por %dg
+Embermoss	Musgo de brasas
+Emberfungi	Hongos de brasas
+A ramp leads down to the Inferno.	Una rampa desciende hasta el Infierno.
+battlemage	mago de batalla
+When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	Mientras lucha con una varita en la mano, el _Mago de batalla_ inflige daño adicional según el número de cargas que le queden. Cada golpe acertado restaura 1 carga de esa varita.
+_Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	Las _Francotiradoras_ detectan puntos débiles en la armadura enemiga, por lo que prácticamente la ignoran cuando usan armas a distancia.
+warden	guardiana
+Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	Su fuerte vínculo con las fuerzas de la naturaleza permite a las _Guardianas_ recoger gotas de rocío y semillas de las plantas. Además, al pisar hierba alta obtienen temporalmente una mejora de armadura.
+3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	Tercer jefe derrotado por Gladiador, Berserker, Brujo, Mago de batalla, Corredor, Asesino, Francotiradora y Guardiana
+Second quickslot	Segundo acceso rápido
+Select an item for the quickslot	Selecciona un objeto para el acceso rápido
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Al tocar la hierbasueño, esta libera una nube brillante de gas desorientador.
+When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Cuando una criatura toca una raíz terrestre, sus raíces forman a su alrededor una especie de armadura natural.
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	Tocar una hoja evanescente teletransporta a cualquier criatura a un lugar aleatorio del nivel actual.
+When something touches a Firebloom, it bursts into flames.	Cuando algo toca una flor de fuego, estalla en llamas.
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Al tocar un sombrerillo de hielo, este libera un polen que congela todo a su alrededor.
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	El musgo triste es una flor (no un musgo) de pétalos afilados como cuchillas, cubiertos de un veneno mortal.
+Sungrass is renowned for its sap's healing properties.	La hierba solar es famosa por las propiedades curativas de su savia.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	¡Qué agradable sorpresa encontrar a alguien decente en un lugar como este! He venido a buscar un ingrediente raro: una _semilla de bayapodrida_. Como usuario de la magia, puedo defenderme de los monstruos de la zona, pero me pierdo enseguida, lo cual es bastante vergonzoso. ¿Podrías ayudarme? Estaría encantado de recompensarte con una de mis mejores varitas.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	¿Has tenido suerte con la _semilla de bayapodrida_, %s? ¿No? No te preocupes, no tengo prisa.
+Heavy bars block the stairs leading down.	Unos barrotes pesados bloquean las escaleras que descienden.
+Welcome to the level %d of Telegram Pixel Dungeon!	¡Bienvenido al nivel %d de Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	¡Bienvenido de nuevo al nivel %d de Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	No se sale de Telegram Pixel Dungeon tan fácilmente.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nEsta baliza se instaló en algún lugar del nivel %d de Telegram Pixel Dungeon.

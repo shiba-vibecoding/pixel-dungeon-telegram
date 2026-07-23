@@ -78,5 +78,13 @@ public class Rotberry extends Plant {
 		public String desc() {
 			return TXT_DESC;
 		}
+
+		// Rotberry plants return their quest seed when triggered. Allowing the
+		// generic consume action would therefore duplicate an irreplaceable
+		// quest item instead of consuming it.
+		@Override
+		protected boolean canEat() {
+			return false;
+		}
 	}
 }

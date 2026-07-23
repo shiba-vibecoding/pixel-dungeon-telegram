@@ -9,10 +9,14 @@
 (function () {
   'use strict';
 
-  var MANIFEST_KEY = 'pdgdx_manifest_v1';
-  var CHUNK_PREFIX = 'pdgdx_data_v1_';
+  var LEGACY_MANIFEST_KEY = 'pdgdx_manifest_v1';
+  var LEGACY_CHUNK_PREFIX = 'pdgdx_data_v1_';
+  var MANIFEST_KEY = 'pdgdx_manifest_v2';
+  var CHUNK_PREFIX = 'pdgdx_data_v2_';
   var CHUNK_SIZE = 3600;
-  var MAX_CHUNKS = 1000;
+  // Telegram allows 1024 keys per bot/user. Two generations must fit at once
+  // so the active save remains readable until the new manifest is committed.
+  var MAX_CHUNKS = 480;
   // Starting a multi-chunk native CloudStorage upload two seconds after boot
   // can starve rendering in Telegram WebViews. Local progress is synchronous
   // and safe; cloud mirroring can happen less aggressively and cooperatively.
@@ -25,7 +29,7 @@
   var uploadPending = false;
   var syncTimer = null;
   var uploadedSnapshot = null;
-  var knownCloudChunks = 0;
+  var knownCloudManifest = null;
 
   function telegram() {
     return window.Telegram && window.Telegram.WebApp;
@@ -152,16 +156,60 @@
     });
   }
 
-  function chunkKey(index) {
-    return CHUNK_PREFIX + ('0000' + index).slice(-4);
+  function legacyChunkKey(index) {
+    return LEGACY_CHUNK_PREFIX + ('0000' + index).slice(-4);
   }
 
-  function readChunks(count) {
+  function validGeneration(value) {
+    return typeof value === 'string' && /^[a-zA-Z0-9_-]{1,48}$/.test(value);
+  }
+
+  function generationChunkKey(generation, index) {
+    return CHUNK_PREFIX + generation + '_' + ('0000' + index).slice(-4);
+  }
+
+  function chunkKey(manifest, index) {
+    return manifest.version === 2
+      ? generationChunkKey(manifest.generation, index)
+      : legacyChunkKey(index);
+  }
+
+  function parseManifest(rawManifest, version) {
+    var manifest = JSON.parse(rawManifest);
+    var count = Number(manifest.chunks);
+    if (Number(manifest.version) !== version) throw new Error('Unsupported cloud manifest');
+    if (!(count >= 0 && count <= MAX_CHUNKS && Math.floor(count) === count)) {
+      throw new Error('Invalid cloud manifest');
+    }
+    if (version === 2 && !validGeneration(manifest.generation)) {
+      throw new Error('Invalid cloud generation');
+    }
+    return {
+      version: version,
+      generation: version === 2 ? manifest.generation : null,
+      chunks: count,
+      length: Number(manifest.length),
+      hash: manifest.hash
+    };
+  }
+
+  function readManifest() {
+    return cloudCall('getItem', [MANIFEST_KEY]).then(function (rawManifest) {
+      if (rawManifest) return parseManifest(rawManifest, 2);
+      return cloudCall('getItem', [LEGACY_MANIFEST_KEY]).then(function (legacyManifest) {
+        return legacyManifest ? parseManifest(legacyManifest, 1) : null;
+      });
+    });
+  }
+
+  function readChunks(manifest) {
     var result = {};
     var batches = [];
-    for (var start = 0; start < count; start += 50) {
+    for (var start = 0; start < manifest.chunks; start += 50) {
       var keys = [];
-      for (var i = start; i < Math.min(start + 50, count); i++) keys.push(chunkKey(i));
+      for (var i = start; i < Math.min(start + 50, manifest.chunks); i++) {
+        keys.push(chunkKey(manifest, i));
+      }
       batches.push(keys);
     }
 
@@ -218,62 +266,118 @@
         resolve(result);
       }
 
-      cloudCall('getItem', [MANIFEST_KEY]).then(function (rawManifest) {
+      readManifest().then(function (manifest) {
         if (finished) return;
-        if (!rawManifest) {
-          cloudEnabled = true;
-          uploadedSnapshot = null;
-          startAutoSync();
-          done({ mode: 'cloud', restored: false });
-          return;
+        if (!manifest) {
+          return cleanupOrphanedGenerations(null).catch(function (error) {
+            try { console.warn('Telegram Pixel Dungeon orphan cloud cleanup failed:', error); } catch (ignored) {}
+          }).then(function () {
+            if (finished) return;
+            cloudEnabled = true;
+            uploadedSnapshot = null;
+            knownCloudManifest = null;
+            startAutoSync();
+            done({ mode: 'cloud', restored: false });
+          });
         }
 
-        var manifest = JSON.parse(rawManifest);
-        var count = Number(manifest.chunks);
-        if (!(count >= 0 && count <= MAX_CHUNKS)) throw new Error('Invalid cloud manifest');
-        knownCloudChunks = count;
-        return readChunks(count).then(function (values) {
+        return readChunks(manifest).then(function (values) {
           if (finished) return;
           var combined = '';
-          for (var i = 0; i < count; i++) combined += values[chunkKey(i)] || '';
+          for (var i = 0; i < manifest.chunks; i++) {
+            combined += values[chunkKey(manifest, i)] || '';
+          }
           if (combined.length !== Number(manifest.length) || checksum(combined) !== manifest.hash) {
             throw new Error('Incomplete cloud save');
           }
           applySnapshot(combined);
           uploadedSnapshot = snapshot();
-          cloudEnabled = true;
-          startAutoSync();
-          done({ mode: 'cloud', restored: true });
+          knownCloudManifest = manifest;
+          return cleanupOrphanedGenerations(manifest).catch(function (error) {
+            try { console.warn('Telegram Pixel Dungeon orphan cloud cleanup failed:', error); } catch (ignored) {}
+          }).then(function () {
+            if (finished) return;
+            cloudEnabled = true;
+            startAutoSync();
+            done({ mode: 'cloud', restored: true });
+          });
         });
       }).catch(function (error) {
         if (finished) return;
         cloudEnabled = false;
-        try { console.warn('Pixel Dungeon cloud restore failed:', error); } catch (ignored) {}
+        try { console.warn('Telegram Pixel Dungeon cloud restore failed:', error); } catch (ignored) {}
         done({ mode: 'local', reason: 'cloud-error' });
       });
     });
   }
 
-  function writeChunks(chunks) {
+  function newGeneration() {
+    return Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function writeChunks(chunks, generation) {
     var chain = Promise.resolve();
     chunks.forEach(function (chunk, index) {
       chain = chain.then(function () {
         return new Promise(function (resolve) {
           window.setTimeout(resolve, CHUNK_YIELD);
         }).then(function () {
-          return cloudCall('setItem', [chunkKey(index), chunk]);
+          return cloudCall('setItem', [generationChunkKey(generation, index), chunk]);
         });
       });
     });
     return chain;
   }
 
-  function removeOldChunks(from, to) {
-    if (to <= from) return Promise.resolve();
+  function removeKeysBatched(keys) {
+    if (!keys || !keys.length) return Promise.resolve();
+    var chain = Promise.resolve();
+    for (var start = 0; start < keys.length; start += 50) {
+      (function (batch) {
+        chain = chain.then(function () { return cloudCall('removeItems', [batch]); });
+      })(keys.slice(start, start + 50));
+    }
+    return chain;
+  }
+
+  function removeManifestChunks(manifest) {
+    if (!manifest || !manifest.chunks) return Promise.resolve();
     var keys = [];
-    for (var i = from; i < to; i++) keys.push(chunkKey(i));
-    if (!keys.length) return Promise.resolve();
-    return cloudCall('removeItems', [keys]);
+    for (var i = 0; i < manifest.chunks; i++) keys.push(chunkKey(manifest, i));
+    return removeKeysBatched(keys);
+  }
+
+  function cleanupOrphanedGenerations(activeManifest) {
+    return cloudCall('getKeys', []).then(function (keys) {
+      var stale = [];
+      var activeV2Prefix = activeManifest && activeManifest.version === 2
+        ? CHUNK_PREFIX + activeManifest.generation + '_'
+        : null;
+
+      (keys || []).forEach(function (key) {
+        if (key.indexOf(CHUNK_PREFIX) === 0) {
+          if (!activeV2Prefix || key.indexOf(activeV2Prefix) !== 0) stale.push(key);
+        } else if (activeManifest && activeManifest.version === 2 &&
+            (key === LEGACY_MANIFEST_KEY || key.indexOf(LEGACY_CHUNK_PREFIX) === 0)) {
+          stale.push(key);
+        } else if (!activeManifest && key.indexOf(LEGACY_CHUNK_PREFIX) === 0) {
+          stale.push(key);
+        }
+      });
+      return removeKeysBatched(stale);
+    });
+  }
+
+  function removePreviousGeneration(manifest, currentGeneration) {
+    if (!manifest) return Promise.resolve();
+    if (manifest.version === 2 && manifest.generation === currentGeneration) {
+      return Promise.resolve();
+    }
+    return removeManifestChunks(manifest).then(function () {
+      if (manifest.version === 1) {
+        return cloudCall('removeItems', [[LEGACY_MANIFEST_KEY]]);
+      }
+    });
   }
 
   function syncNow() {
@@ -288,30 +392,52 @@
     var chunks = [];
     for (var i = 0; i < current.length; i += CHUNK_SIZE) chunks.push(current.substring(i, i + CHUNK_SIZE));
     if (chunks.length > MAX_CHUNKS) {
-      try { console.warn('Pixel Dungeon save is too large for Telegram CloudStorage'); } catch (ignored) {}
+      try { console.warn('Telegram Pixel Dungeon save is too large for Telegram CloudStorage'); } catch (ignored) {}
       return Promise.resolve(false);
     }
 
     uploadActive = true;
-    var previousCount = knownCloudChunks;
-    return writeChunks(chunks).then(function () {
+    var previousManifest = knownCloudManifest;
+    var generation = newGeneration();
+    var nextManifest = {
+      version: 2,
+      generation: generation,
+      chunks: chunks.length,
+      length: current.length,
+      hash: checksum(current),
+      updated: new Date().toISOString()
+    };
+    var manifestSwitched = false;
+    return cleanupOrphanedGenerations(previousManifest).then(function () {
+      return writeChunks(chunks, generation);
+    }).then(function () {
       var manifest = JSON.stringify({
-        version: 1,
-        chunks: chunks.length,
-        length: current.length,
-        hash: checksum(current),
-        updated: new Date().toISOString()
+        version: nextManifest.version,
+        generation: nextManifest.generation,
+        chunks: nextManifest.chunks,
+        length: nextManifest.length,
+        hash: nextManifest.hash,
+        updated: nextManifest.updated
       });
       return cloudCall('setItem', [MANIFEST_KEY, manifest]);
     }).then(function () {
+      manifestSwitched = true;
       uploadedSnapshot = current;
-      knownCloudChunks = chunks.length;
-      return removeOldChunks(chunks.length, previousCount);
+      knownCloudManifest = nextManifest;
+      return removePreviousGeneration(previousManifest, generation).catch(function (error) {
+        try { console.warn('Telegram Pixel Dungeon old cloud generation cleanup failed:', error); } catch (ignored) {}
+      });
     }).then(function () {
       return true;
     }).catch(function (error) {
-      try { console.warn('Pixel Dungeon cloud sync failed:', error); } catch (ignored) {}
-      return false;
+      var cleanup = manifestSwitched ? Promise.resolve() :
+        removeManifestChunks(nextManifest).catch(function (cleanupError) {
+          try { console.warn('Telegram Pixel Dungeon failed cloud generation cleanup failed:', cleanupError); } catch (ignored) {}
+        });
+      return cleanup.then(function () {
+        try { console.warn('Telegram Pixel Dungeon cloud sync failed:', error); } catch (ignored) {}
+        return false;
+      });
     }).then(function (result) {
       uploadActive = false;
       if (uploadPending) {

@@ -66,3 +66,12 @@ build/
 
 ## RoboVM
 ios/robovm.properties
+
+## Telegram bot / Cloudflare Worker secrets
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+!.env.example
+telegram-worker/.wrangler/
+telegram-worker/node_modules/

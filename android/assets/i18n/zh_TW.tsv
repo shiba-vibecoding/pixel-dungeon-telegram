@@ -1146,6 +1146,14 @@ Select a cell to examine	選擇一個區域來查看。
 1	1
 LibGDX port: Arcnor / Web port: nojus297	LibGDX 移植：Arcnor / 網頁移植：nojus297
 Telegram port: @barboskich	Telegram 移植：@barboskich
+Eating the seed triggers its effect immediately.	吃下種子會立即觸發對應植物的效果。
+Tip: Long-press the wait button to rest until something interrupts you.	提示：長按等待鍵可以休息，\n直到有事情打擾你。
+Tip: Long-press the backpack to open the item catalog.	提示：長按背包可開啟物品目錄。
+Tip: Doors and tall grass can break an enemy's line of sight.	提示：門和高草可以遮擋敵人的視線。
+Tip: Throw seeds onto empty tiles to grow useful plants.	提示：將種子丟到空地格上，\n可以長出有用的植物。
+Tip: Search suspicious walls to discover hidden doors and traps.	提示：搜尋可疑的牆壁，\n可能發現隱藏門和陷阱。
+Tip: Examining an enemy reveals useful combat information.	提示：查看敵人，\n可瞭解有用的戰鬥資訊。
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	生命: %d/%d\n命中: %d  閃避: %d\n防護: 0-%d
 Select Your Hero	選擇英雄
 Game Over	遊戲結束
 Boss slain	首領已擊敗
@@ -1191,3 +1199,7 @@ That food tasted ok.	這食物味道還行。
 Paralysed	麻痺
 Terror	恐懼
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	哦，真沒想到能在這種地方遇見一位正派的人！我是來尋找一種稀有材料——_幻影魚_的。牠可以徒手抓住，但在水中極難發現。身為法師，我對付這裡的怪物不成問題，可我總是很快迷路，實在難為情。你願意幫我嗎？我很樂意拿一根最好的法杖作為報酬。
+Welcome to the level %d of Telegram Pixel Dungeon!	歡迎來到 Telegram Pixel Dungeon 第 %d 層！
+Welcome back to the level %d of Telegram Pixel Dungeon!	歡迎回到 Telegram Pixel Dungeon 第 %d 層！
+One does not simply leave Telegram Pixel Dungeon.	沒有人能輕易離開 Telegram Pixel Dungeon。
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\n此信標已設置在 Telegram Pixel Dungeon 第 %d 層的某處。

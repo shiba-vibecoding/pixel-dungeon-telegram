@@ -19,6 +19,7 @@ package com.watabou.pixeldungeon.windows;
 
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.ui.Component;
+import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.actors.mobs.Mob;
 import com.watabou.pixeldungeon.i18n.Localization;
 import com.watabou.pixeldungeon.scenes.PixelScene;
@@ -28,6 +29,9 @@ import com.watabou.pixeldungeon.ui.HealthBar;
 import com.watabou.pixeldungeon.utils.Utils;
 
 public class WndInfoMob extends WndTitledMessage {
+
+	private static final String TXT_STATS =
+		"HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d";
 
 	public WndInfoMob( Mob mob ) {
 		
@@ -39,8 +43,21 @@ public class WndInfoMob extends WndTitledMessage {
 		
 		StringBuilder builder = new StringBuilder(
 			Localization.translate( mob.description() ) );
-		
-		builder.append( "\n\n" + mob.state.status() + "." );
+
+		if (mob.hostile) {
+			builder.append( "\n\n" );
+			builder.append( Utils.format(
+				TXT_STATS,
+				mob.HP,
+				mob.HT,
+				mob.attackSkill( Dungeon.hero ),
+				mob.defenseSkill( Dungeon.hero ),
+				mob.dr() ) );
+		}
+
+		builder.append( "\n\n" )
+			.append( Localization.translate( mob.state.status() ) )
+			.append( "." );
 		
 		return builder.toString();
 	}

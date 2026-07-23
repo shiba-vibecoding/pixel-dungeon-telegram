@@ -1,5 +1,18 @@
 LibGDX port: Arcnor / Web port: nojus297	LibGDX-порт: Arcnor / вебпорт: nojus297
 Telegram port: @barboskich	Telegram-порт: @barboskich
+Welcome to the level %d of Pixel Dungeon!	Ласкаво просимо на %d-й рівень Pixel Dungeon!
+Welcome back to the level %d of Pixel Dungeon!	З поверненням на %d-й рівень Pixel Dungeon!
+One does not simply leave Pixel Dungeon.	Pixel Dungeon не так просто залишити.
+Exit Game	Вийти з гри
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nЦей маяк встановлено десь на %d-му рівні Pixel Dungeon.
+Eating the seed triggers its effect immediately.	Якщо з'їсти насінину, ефект рослини спрацює негайно.
+Tip: Long-press the wait button to rest until something interrupts you.	Порада: Утримуй кнопку очікування, щоб відпочивати, доки щось тебе не перерве.
+Tip: Long-press the backpack to open the item catalog.	Порада: Утримуй рюкзак, щоб відкрити каталог предметів.
+Tip: Doors and tall grass can break an enemy's line of sight.	Порада: Двері й висока трава можуть перекрити ворогові лінію зору.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Порада: Кидай насіння на порожні клітинки, щоб вирощувати корисні рослини.
+Tip: Search suspicious walls to discover hidden doors and traps.	Порада: Обшукуй підозрілі стіни, щоб знаходити приховані двері й пастки.
+Tip: Examining an enemy reveals useful combat information.	Порада: Огляд ворога показує корисні відомості для бою.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	Здоров'я: %d/%d\nТочність: %d  Ухилення: %d\nЗахист: 0-%d
 Select Your Hero	Обери героя
 Game Over	Гру завершено
 Boss slain	Боса переможено
@@ -134,3 +147,11 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Їжа виявилася цілком пристойною.
 Paralysed	Параліч
 Terror	Жах
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Зробивши ковток, ти відчуваєш, як знання наповнюють твій розум. Тепер ти знаєш усе про споряджені предмети, а також відчуваєш усі предмети на рівні й знаєш всі його секрети.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Вода цієї криниці випромінює силу знань. Зроби ковток, щоб розкрити всі секрети свого спорядження.
+Tome of Remastery	Том перенавчання
+RETURN	ПОВЕРНУТИСЯ
+Welcome to the level %d of Telegram Pixel Dungeon!	Ласкаво просимо на %d-й рівень Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	З поверненням на %d-й рівень Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	Telegram Pixel Dungeon не так просто залишити.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nЦей маяк встановлено десь на %d-му рівні Telegram Pixel Dungeon.

@@ -1,5 +1,13 @@
 LibGDX port: Arcnor / Web port: nojus297	LibGDX 移植：Arcnor / 网页移植：nojus297
 Telegram port: @barboskich	Telegram 移植：@barboskich
+Eating the seed triggers its effect immediately.	吃下种子会立即触发对应植物的效果。
+Tip: Long-press the wait button to rest until something interrupts you.	提示：长按等待键可以休息，\n直到有事情将你打断。
+Tip: Long-press the backpack to open the item catalog.	提示：长按背包可打开物品图鉴。
+Tip: Doors and tall grass can break an enemy's line of sight.	提示：门和高草可以遮挡敌人的视线。
+Tip: Throw seeds onto empty tiles to grow useful plants.	提示：将种子投到空地格上，\n可以长出有用的植物。
+Tip: Search suspicious walls to discover hidden doors and traps.	提示：搜索可疑的墙壁，\n可能发现隐藏门和陷阱。
+Tip: Examining an enemy reveals useful combat information.	提示：查看敌人，\n可了解有用的战斗信息。
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	生命: %d/%d\n命中: %d  闪避: %d\n防护: 0-%d
 Select Your Hero	选择英雄
 Game Over	游戏结束
 Boss slain	首领已击败
@@ -114,3 +122,16 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	这食物味道还行。
 Paralysed	麻痹
 Terror	恐惧
+Welcome to the level %d of Pixel Dungeon!	欢迎来到 Pixel Dungeon 第 %d 层！
+Welcome back to the level %d of Pixel Dungeon!	欢迎回到 Pixel Dungeon 第 %d 层！
+One does not simply leave Pixel Dungeon.	没有人能轻易离开 Pixel Dungeon。
+Exit Game	退出游戏
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\n这个信标被设置在 Pixel Dungeon 第 %d 层的某处。
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	喝下一口，你感觉知识涌入脑海。现在你对装备的物品了如指掌，也能感知这一层的所有物品和秘密。
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	这口井的水散发着知识的力量。喝一口便能揭示所有装备物品的秘密。
+Tome of Remastery	重修之书
+Scale up UI	放大界面
+Welcome to the level %d of Telegram Pixel Dungeon!	欢迎来到 Telegram Pixel Dungeon 第 %d 层！
+Welcome back to the level %d of Telegram Pixel Dungeon!	欢迎回到 Telegram Pixel Dungeon 第 %d 层！
+One does not simply leave Telegram Pixel Dungeon.	没有人能轻易离开 Telegram Pixel Dungeon。
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\n这个信标被设置在 Telegram Pixel Dungeon 第 %d 层的某处。

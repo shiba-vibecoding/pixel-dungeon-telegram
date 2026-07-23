@@ -29,8 +29,6 @@ Many heroes of all kinds ventured into the Dungeon before you. Some of them have
 Let's call it a day	Selesai sudah
 I'm not done yet	Saya belum selesai
 You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	Anda akhirnya mendapatkannya di tangan Anda, Jimat Yendor. Menggunakan kekuatannya Anda dapat mengambil alih dunia atau membawa damai dan kemakmuran ke orang-orang atau apapun juga. Lagipula, hidup Anda akan berubah selamanya dan permainan ini berakhir di sini. Atau Anda dapat tinggal di sini lebih lama sedikit.
-Welcome to the level %d of Pixel Dungeon!	Selamat datang ditingkat %d dari Remixed Dungeon!
-Welcome back to the level %d of Pixel Dungeon!	Selamat datang kembali ditingkat %ddari Remixed Dungeon!
 Be cautious, since the dungeon is even more dangerous at night!	Hati-hati, karena Dungeon akan lebih berbahaya di malam hari!
 Your steps echo across the dungeon.	Langkah Anda bergema melintasi di Dungeon.
 You hear the water splashing around you.	Anda mendengar air bercipratan di sekitar Anda.
@@ -56,7 +54,6 @@ bleeding	berdarah
 dizzy	pusing
 invisible	tidak terlihat
 you	Anda
-One does not simply leave Pixel Dungeon.	Seseorang tidak begitu saja meninggalkan Remixed Dungeon.
 level up!	naik level!
 Welcome to level %d! Now you are healthier and more focused. It's easier for you to hit enemies and dodge their attacks.	Selamat datang di level %d! Sekarang anda lebih segar dan fokus. Lebih mudah untuk anda mengenai musuh dan menghindari serangan mereka.
 You now have %s	Sekarang Anda punya %s
@@ -225,9 +222,7 @@ Settings	Pengaturan
 Rankings	Papan Peringkat
 Start New Game	Mulai Permainan Baru
 Main Menu	Menu Utama
-Exit Game	Keluar Remixed Dungeon
 Return to Game	Kembali ke Permainan
-Buffs	Buffer
 Experience	Pengalaman
 Catalogus	Katalog
 Oh yes! You are my hero!\nRegarding your reward, I don't have cash with me right now, but I have something better for you. This is my family heirloom ring: my granddad took it off a dead paladin's finger.	Oh ya! Kau pahlawanku!\nMengenai hadiahmu, saya tidak punya uang sekarang, tapi saya akan memberikanmu sesuatu yang lebih baik. Ini adalah cincin milik keluargaku: kakekku mengambilnya dari jari ksatria yang telah mati.
@@ -325,12 +320,7 @@ you wince as your grip involuntarily tightens around your %s	Anda meringis sebag
 SET	SIAPKAN
 RETURN	KEMBALI
 Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	Suar Lloyd adalah perangkat ajaib yang rumit, yang memungkinkan Anda kembali ke tempat yang pernah Anda kunjungi.
-Strong magic aura of this place prevents you from using the lloyd's beacon!	Suatu aura sihir yang kuat yang ada di sini mencegah Anda menggunakan lloyd's beacon!
-Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Aura psikis dari makhluk disekitar tidak memungkinkan Anda untuk menggunakan lloyd beacon pada saat ini.
-The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Lloyd beacon berhasil ditetapkan di lokasi Anda saat ini, sekarang Anda dapat kembali ke sini kapan saja.
-\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	Suar ini dipasang di suatu tempat pada level %d dari Remixed Dungeon.
 Tome of Mastery	Buku tentang Penguasaan
-Tome of Remastery	Buku tentang Penguasaan
 This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	Buku kulit usang ini tidak terlalu tebal, tetapi entah bagaimana Anda merasa, bahwa Anda dapat mengumpulkan banyak hal darinya. Ingatlah bahwa membaca kali ini mungkin memerlukan waktu.
 You can't read while blinded	Kamu tidak bisa membaca saat buta
 You have chosen the way of the %s!	Kamu telah memilih jalan menjadi %s !
@@ -350,18 +340,12 @@ Never mind	Lupakan
 PLANT	TANAM
 Throw this seed to the place where you want to grow %1$s.\n\n%2$s	Lempar biji ini ke tempat dimana Anda ingin menanamnya %1$s.\n\n%2$s
 seed of %s	biji dari %s
-Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Saat menyentuh Dreamweed akan muncul awan gas membingungkan yang berkilau.
 Earthroot	akar tanah
 When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Saat sebuah makhluk menyentuh akar tanah, akarnya akan membentuk semacam zirah alami di sekitarnya.
 Herbal armor	Zirah alami
-Touching a Fadeleaf will teleport any creature to a random place on the current level.	Menyentuh tanaman Fadeleaf akan menteleportasikan makhluk apapun ke tempat acak di level itu.
-When something touches a Firebloom, it bursts into flames.	Saat sesuatu menyentuh Firebloom, tanaman ini akan berubah menjadi api.
-Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Saat menyentuh setangkai Icecap akan keluar serbuk sari, yang akan membekukan semuanya yang ada dekatnya.
 Rotberry	Murbei
 Berries of this shrub taste like sweet, sweet death.	Buah beri dari semak ini rasanya seperti kematian yang manis dan manis.
 The seed emits a roar that echoes throughout the dungeon!	Benih itu mengeluarkan raungan yang bergema di seluruh ruang bawah tanah!
-A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Sorrowmoss adalah sebuah bunga (bukan lumut) dengan daun bunga tajam sekali, yang ditutupi dengan racun mematikan.
-Sungrass is renowned for its sap's healing properties.	Sungrass dikenal karena getahnya dapat menyembuhkan.
 Herbal healing	Penyembuhan alami
 your %s constricts around you painfully	 %s anda mengencangkan dirinya di sekeliling anda dengan menyakitkan
 Interaction of different types of magic has erased the glyph on this armor!	Interaksi dari berbagai tipe sihir telah menghapuskan sihir di zirah ini!
@@ -641,7 +625,6 @@ The purple light from this wand will make the target run amok attacking random c
 Wand of Avalanche	Tongkat Longsor
 When a discharge of this wand hits a wall (or any other solid obstacle) it causes an avalanche of stones, damaging and stunning all creatures in the affected area.	Ketika pelepasan tongkat ini mengenai dinding (atau rintangan padat lainnya) itu menyebabkan longsoran batu, merusak dan membuat semua makhluk di area yang terkena dampak stun.
 You killed yourself with your own Wand of Avalanche...	Kamu menghancurkan dirimu sendiri dengan tongkat Longsor milikmu sendiri
-Wand of Blink	tongkat teleportasi
 This wand will allow you to teleport in the chosen direction. Creatures and inanimate obstructions will block the teleportation.	Tongkat ini akan memungkinkan Anda untuk berteleportasi ke arah yang dipilih makhluk dan benda mati yang terhalang akan memblokir teleportasi.
 Wand of Disintegration	Tongkat Kehacuran
 This wand emits a beam of destructive energy, which pierces all creatures in its way. The more targets it hits, the more damage it inflicts to each of them.	Tongkat ini memancarkan sinar energi penghancur, yang menembus semua makhluk di jalannya. Semakin banyak target yang terkena, semakin banyak kerusakan yang ditimbulkannya pada masing-masing dari mereka.
@@ -759,8 +742,6 @@ Shafts of light pierce the gloom of the underground garden.	Poros cahaya menembu
 A cloud of paralytic gas is swirling here.	Awan gas lumpuh berputar-putar di sini.
 A greenish cloud of toxic gas is swirling here.	Awan beracun kehijauan berputar-putar di sini.
 You died from a toxic gas..	Kamu mati karena menghirup gas beracun...
-As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	 The power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of your equipped items.
-Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Saat Anda menyesapnya, Anda merasakan pengetahuan mengalir ke dalam pikiran Anda. Anda sekarang tahu segalanya tentang item yang dilengkapi. Juga, Anda merasakan semua item pada level dan mengetahui semua rahasianya.
 Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	Kekuatan kesehatan terpancar dari air sumur ini. Minumlah sedikit untuk menyembuhkan luka Anda dan memuaskan rasa lapar.
 As you take a sip, you feel your wounds heal completely.	Saat Anda menyesapnya, Anda merasakan luka Anda sembuh total.
 Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	Kekuatan perubahan terpancar dari air sumur ini. Lempar item ke dalam sumur untuk mengubahnya menjadi sesuatu yang lain.
@@ -904,7 +885,6 @@ Dark gold ore. 15 pieces. Seriously, is it dat hard?	Biji emas hitam. 15 buah. S
 I said I need bat blood on the pickaxe. Chop chop!	Aku bilang aku butuh darah kalelawar di kapakku. Chop chop!
 Oh, you have returned... Better late dan never.	Oh, Anda telah kembali... Lebih baik terlambat daripada tidak sama sekali.
 I'm busy. Get lost!	Saya sedang sibuk. Pergilah!
-your %s certainly looks better now	Anda 1%s lebih terlihat membaik sekarang
 Select 2 different items, not the same item twice!	Pilih 2 item yang berbeda, tidak item yang sama dua kali!
 Select 2 items of the same type!	Pilih 2 item yang sama tipenya!
 I need to know what I'm working with, identify them first!	Aku harus tahu aku akan mengerjakan apa, identifikasi itu dulu.
@@ -942,8 +922,6 @@ Select an item to sell	Pilih barang untuk dijual
 old wandmaker	pembuat tongkat tua
 This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	Pria tua tapi sehat ini memasang ekspresi sedikit bingung. Dia dilindungi oleh perisai ajaib.
 absorbed	terserap
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, kejutan yang menyenangkan bertemu orang yang baik di tempat seperti itu! Saya datang ke sini untuk bahan langka - _Benih Rotberry_. Menjadi pengguna sihir, aku cukup bisa membela diri melawan monster lokal, tapi aku tersesat dalam waktu singkat, itu sangat memalukan. Mungkin Anda bisa membantu saya? Saya akan dengan senang hati membayar layanan Anda dengan salah satu tongkat terbaik saya.
-Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Adakah keberuntungan dengan benih Rotberry, %s? Tidak? Jangan khawatir, saya tidak terburu-buru.
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, kejutan yang menyenangkan bertemu orang yang baik di tempat seperti itu! Saya datang ke sini untuk bahan langka - _debu mayat_. Itu dapat dikumpulkan dari sisa-sisa kerangka dan ada banyak dari mereka di ruang bawah tanah. Menjadi pengguna sihir, aku cukup bisa membela diri melawan monster lokal, tapi aku tersesat dalam waktu singkat, itu sangat memalukan. Mungkin Anda bisa membantu saya? Saya akan dengan senang hati membayar layanan Anda dengan salah satu tongkat terbaik saya.
 Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Apakah Anda beruntung dengan debu mayat, %s ? Tumpukan tulang adalah tempat yang paling jelas untuk dilihat.
 A hidden pressure plate clicks!	Tombol tak terlihat terpencet!
@@ -1053,6 +1031,19 @@ You don't know what is there.	Anda tidak tahu ada apa disana
 Select a cell to examine	Pilih sel yang diperiksa
 LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port web: nojus297
 Telegram port: @barboskich	Port Telegram: @barboskich
+Welcome to the level %d of Pixel Dungeon!	Selamat datang di lantai %d Pixel Dungeon!
+Welcome back to the level %d of Pixel Dungeon!	Selamat datang kembali di lantai %d Pixel Dungeon!
+One does not simply leave Pixel Dungeon.	Tidak semudah itu meninggalkan Pixel Dungeon.
+Exit Game	Keluar dari Game
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nSuar ini dipasang di suatu tempat pada lantai %d Pixel Dungeon.
+Eating the seed triggers its effect immediately.	Memakan benih langsung memicu efek tanamannya.
+Tip: Long-press the wait button to rest until something interrupts you.	Tips: Tekan lama tombol tunggu untuk beristirahat hingga sesuatu mengganggumu.
+Tip: Long-press the backpack to open the item catalog.	Tips: Tekan lama ransel untuk membuka katalog item.
+Tip: Doors and tall grass can break an enemy's line of sight.	Tips: Pintu dan rumput tinggi dapat memutus pandangan musuh.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Tips: Lempar benih ke petak kosong untuk menumbuhkan tanaman yang berguna.
+Tip: Search suspicious walls to discover hidden doors and traps.	Tips: Periksa dinding mencurigakan untuk menemukan pintu tersembunyi dan jebakan.
+Tip: Examining an enemy reveals useful combat information.	Tips: Memeriksa musuh menampilkan informasi tempur yang berguna.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	HP: %d/%d\nAkurasi: %d  Penghindaran: %d\nPerlindungan: 0-%d
 Select Your Hero	Pilih Pahlawanmu
 Game Over	Permainan berakhir
 Boss slain	Bos dikalahkan
@@ -1114,7 +1105,7 @@ Switch to fullscreen	Beralih ke layar penuh
 Switch to windowed	Beralih ke mode jendela
 Reset To Defaults	Kembalikan bawaan
 <None>	<Tidak ada>
-Press a key for "%s", or press %s to remove the binding.	Tekan tombol untuk “%s”, atau tekan %s untuk menghapus pemetaan.
+Press a key for "%s", or press %s to remove the binding.	Tekan tombol untuk "%s", atau tekan %s untuk menghapus pemetaan.
 Hero Info	Info pahlawan
 Wait	Tunggu
 Search	Cari
@@ -1136,7 +1127,7 @@ Move SW	Bergerak ke barat daya
 Move SE	Bergerak ke tenggara
 Current Cell	Petak saat ini
 Pixel Dungeon	Pixel Dungeon
-Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Kode & grafis: Watabou\nMusik: Cube_Code\n\nGame ini terinspirasi oleh Brogue karya Brian Walker. Cobalah di Windows, Mac OS, atau Linux — game itu luar biasa! ;)\n\nKunjungi situs resmi untuk informasi lebih lanjut:
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Kode & grafis: Watabou\nMusik: Cube_Code\n\nGame ini terinspirasi oleh Brogue karya Brian Walker. Cobalah di Windows, Mac OS, atau Linux - game itu luar biasa! ;)\n\nKunjungi situs resmi untuk informasi lebih lanjut:
 pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
 Languages Create: rodriformiga	Lokalisasi: rodriformiga
 rodriformiga@gmail.com	rodriformiga@gmail.com
@@ -1150,9 +1141,9 @@ broken %1$s :%2$d	%1$s rusak :%2$d
 a broken	yang rusak
 %1$s: "%2$s"	%1$s: "%2$s"
 This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	Makhluk ini menyerupai hantu sedih, tetapi berpusar dalam kegelapan. Wajahnya menampakkan keputusasaan.
-Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Halo, petualang... Dahulu aku sepertimu — kuat dan penuh keyakinan... Kini aku mati... Namun aku tak bisa meninggalkan tempat ini karena terikat kutukan mengerikan... Kumohon... Tolong aku... _Hancurkan kutukannya_...
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Halo, petualang... Dahulu aku sepertimu, kuat dan penuh keyakinan... Kini aku mati... Namun aku tak bisa meninggalkan tempat ini karena terikat kutukan mengerikan... Kumohon... Tolong aku... _Hancurkan kutukannya_...
 Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Terima kasih, %s! Kutukannya telah hancur dan akhirnya aku bisa beristirahat... Ambillah salah satu benda ini, mungkin akan berguna dalam perjalananmu...
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, sungguh menyenangkan bertemu orang baik di tempat seperti ini! Aku datang mencari bahan langka — seekor _ikan hantu_. Ikan itu bisa ditangkap dengan tangan kosong, tetapi sangat sulit terlihat di dalam air. Sebagai pengguna sihir aku mampu melindungi diri dari monster di sini, tetapi sebentar saja sudah tersesat—sungguh memalukan. Maukah kamu membantuku? Aku akan senang membayar jasamu dengan salah satu tongkat terbaikku.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, sungguh menyenangkan bertemu orang baik di tempat seperti ini! Aku datang mencari bahan langka: seekor _ikan hantu_. Ikan itu bisa ditangkap dengan tangan kosong, tetapi sangat sulit terlihat di dalam air. Sebagai pengguna sihir aku mampu melindungi diri dari monster di sini, tetapi sebentar saja sudah tersesat - sungguh memalukan. Maukah kamu membantuku? Aku akan senang membayar jasamu dengan salah satu tongkat terbaikku.
 1	1
 As you take a sip, you feel something changing inside you.	Saat meneguknya, Anda merasakan sesuatu berubah di dalam diri Anda.
 Disguised as a %s	Menyamar sebagai %s
@@ -1191,3 +1182,24 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Rasanya lumayan.
 Paralysed	Lumpuh
 Terror	Ketakutan
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Saat meneguk airnya, kamu merasakan pengetahuan mengalir ke dalam pikiranmu. Kini kamu mengetahui segala hal tentang perlengkapanmu. Kamu juga dapat merasakan semua benda di lantai ini dan mengetahui seluruh rahasianya.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Kekuatan pengetahuan memancar dari air sumur ini. Minumlah seteguk untuk mengungkap semua rahasia perlengkapanmu.
+Tome of Remastery	Buku Penguasaan Ulang
+Wand of Blink	Tongkat Kedip
+your %s certainly looks better now	%s milikmu jelas terlihat lebih baik sekarang
+Buffs	Efek
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Saat disentuh, rumput mimpi mengeluarkan awan berkilau berisi gas yang membingungkan.
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	Menyentuh daun pudar akan memindahkan makhluk mana pun ke tempat acak di lantai saat ini.
+When something touches a Firebloom, it bursts into flames.	Saat sesuatu menyentuh bunga api, bunga itu akan berkobar.
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Saat disentuh, tudung es mengeluarkan serbuk sari yang membekukan segala sesuatu di sekitarnya.
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Lumut duka adalah bunga (bukan lumut) dengan kelopak setajam pisau yang dilapisi racun mematikan.
+Sungrass is renowned for its sap's healing properties.	Rumput surya terkenal karena getahnya yang berkhasiat menyembuhkan.
+Strong magic aura of this place prevents you from using the lloyd's beacon!	Aura sihir kuat di tempat ini mencegahmu menggunakan suar Lloyd!
+Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Aura psikis makhluk di sekitar membuatmu tidak dapat menggunakan suar Lloyd saat ini.
+The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Suar Lloyd berhasil dipasang di lokasimu saat ini; sekarang kamu dapat kembali ke sini kapan saja.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, sungguh menyenangkan bertemu orang baik di tempat seperti ini! Aku datang mencari bahan langka: _benih murbei_. Sebagai pengguna sihir, aku cukup mampu melindungi diri dari monster setempat, tetapi aku selalu cepat tersesat - sungguh memalukan. Maukah kamu membantuku? Aku akan dengan senang hati membayar jasamu dengan salah satu tongkat terbaikku.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Bagaimana hasil pencarian _benih murbei_, %s? Belum? Jangan khawatir, aku tidak terburu-buru.
+Welcome to the level %d of Telegram Pixel Dungeon!	Selamat datang di lantai %d Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Selamat datang kembali di lantai %d Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	Tidak semudah itu meninggalkan Telegram Pixel Dungeon.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nSuar ini dipasang di suatu tempat pada lantai %d Telegram Pixel Dungeon.

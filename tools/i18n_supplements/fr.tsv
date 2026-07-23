@@ -1,5 +1,13 @@
 LibGDX port: Arcnor / Web port: nojus297	Portage LibGDX : Arcnor / portage Web : nojus297
 Telegram port: @barboskich	Portage Telegram : @barboskich
+Eating the seed triggers its effect immediately.	Manger la graine déclenche immédiatement l'effet de la plante.
+Tip: Long-press the wait button to rest until something interrupts you.	Astuce : Maintenez le bouton d'attente pour vous reposer jusqu'à ce que quelque chose vous interrompe.
+Tip: Long-press the backpack to open the item catalog.	Astuce : Faites un appui long sur le sac à dos pour ouvrir le catalogue des objets.
+Tip: Doors and tall grass can break an enemy's line of sight.	Astuce : Les portes et les hautes herbes peuvent couper la ligne de vue d'un ennemi.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Astuce : Lancez des graines sur des cases vides pour faire pousser des plantes utiles.
+Tip: Search suspicious walls to discover hidden doors and traps.	Astuce : Inspectez les murs suspects pour découvrir des portes cachées et des pièges.
+Tip: Examining an enemy reveals useful combat information.	Astuce : Examiner un ennemi révèle des informations utiles au combat.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	PV : %d/%d\nPrécision : %d  Esquive : %d\nProtection : 0-%d
 Select Your Hero	Choisissez votre héros
 Game Over	Fin de partie
 Boss slain	Boss vaincu
@@ -9,7 +17,7 @@ Switch to fullscreen	Passer en plein écran
 Switch to windowed	Passer en mode fenêtré
 Reset To Defaults	Rétablir les réglages
 <None>	<Aucune>
-Press a key for "%s", or press %s to remove the binding.	Appuyez sur une touche pour « %s », ou sur %s pour retirer le raccourci.
+Press a key for "%s", or press %s to remove the binding.	Appuyez sur une touche pour "%s", ou sur %s pour retirer le raccourci.
 Hero Info	Infos du héros
 Wait	Attendre
 Search	Fouiller
@@ -47,4 +55,12 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Ce repas n'était pas mauvais.
 Paralysed	Paralysé
 Terror	Terrifié
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, quelle agréable surprise de rencontrer quelqu'un de convenable dans un endroit pareil ! Je suis venu chercher un ingrédient rare : un _poisson fantôme_. Tu peux l'attraper à mains nues, mais il est très difficile à repérer dans l'eau. En tant que mage, je peux me défendre contre les monstres du coin, mais je me perds très vite — c'est assez embarrassant. Pourrais-tu m'aider ? Je te récompenserai volontiers avec l'une de mes meilleures baguettes.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, quelle agréable surprise de rencontrer quelqu'un de convenable dans un endroit pareil ! Je suis venu chercher un ingrédient rare : un _poisson fantôme_. Tu peux l'attraper à mains nues, mais il est très difficile à repérer dans l'eau. En tant que mage, je peux me défendre contre les monstres du coin, mais je me perds très vite, ce qui est assez embarrassant. Pourrais-tu m'aider ? Je te récompenserai volontiers avec l'une de mes meilleures baguettes.
+mind	esprit
+vision	vue
+A ramp leads down to the Inferno.	Une rampe descend vers l'Enfer.
+Scale up UI	Agrandir l'interface
+Welcome to the level %d of Telegram Pixel Dungeon!	Bienvenue au niveau %d de Telegram Pixel Dungeon !
+Welcome back to the level %d of Telegram Pixel Dungeon!	Bienvenue de nouveau au niveau %d de Telegram Pixel Dungeon !
+One does not simply leave Telegram Pixel Dungeon.	On ne quitte pas Telegram Pixel Dungeon si facilement.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nCette balise a été installée quelque part au niveau %d de Telegram Pixel Dungeon.

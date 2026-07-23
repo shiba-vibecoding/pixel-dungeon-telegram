@@ -1,5 +1,13 @@
 LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port webowy: nojus297
 Telegram port: @barboskich	Port na Telegram: @barboskich
+Eating the seed triggers its effect immediately.	Zjedzenie nasiona natychmiast wywołuje efekt rośliny.
+Tip: Long-press the wait button to rest until something interrupts you.	Wskazówka: Przytrzymaj przycisk czekania, aby odpoczywać, aż coś ci przeszkodzi.
+Tip: Long-press the backpack to open the item catalog.	Wskazówka: Przytrzymaj plecak, aby otworzyć katalog przedmiotów.
+Tip: Doors and tall grass can break an enemy's line of sight.	Wskazówka: Drzwi i wysoka trawa mogą przerwać linię wzroku wroga.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Wskazówka: Rzucaj nasiona na puste pola, aby wyhodować przydatne rośliny.
+Tip: Search suspicious walls to discover hidden doors and traps.	Wskazówka: Przeszukuj podejrzane ściany, aby odkryć ukryte drzwi i pułapki.
+Tip: Examining an enemy reveals useful combat information.	Wskazówka: Zbadanie wroga ujawnia przydatne informacje bojowe.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	PŻ: %d/%d\nCelność: %d  Unik: %d\nOchrona: 0-%d
 Select Your Hero	Wybierz bohatera
 Game Over	Koniec gry
 Boss slain	Boss pokonany
@@ -9,7 +17,7 @@ Switch to fullscreen	Przełącz na pełny ekran
 Switch to windowed	Przełącz do okna
 Reset To Defaults	Przywróć domyślne
 <None>	<Brak>
-Press a key for "%s", or press %s to remove the binding.	Naciśnij klawisz dla „%s” albo %s, aby usunąć przypisanie.
+Press a key for "%s", or press %s to remove the binding.	Naciśnij klawisz dla "%s" albo %s, aby usunąć przypisanie.
 Hero Info	Informacje o bohaterze
 Wait	Czekaj
 Search	Szukaj
@@ -48,4 +56,18 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Jedzenie było całkiem niezłe.
 Paralysed	Sparaliżowany
 Terror	Przerażenie
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Och, co za miła niespodzianka spotkać porządną osobę w takim miejscu! Przybyłem tu po rzadki składnik — _widmową rybę_. Można ją złapać gołymi rękami, lecz bardzo trudno dostrzec ją w wodzie. Jako mag potrafię obronić się przed tutejszymi potworami, ale błyskawicznie się gubię — to dość krępujące. Czy zechcesz mi pomóc? Chętnie wynagrodzę cię jedną z moich najlepszych różdżek.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Och, co za miła niespodzianka spotkać porządną osobę w takim miejscu! Przybyłem tu po rzadki składnik: _widmową rybę_. Można ją złapać gołymi rękami, lecz bardzo trudno dostrzec ją w wodzie. Jako mag potrafię obronić się przed tutejszymi potworami, ale błyskawicznie się gubię, co jest dość krępujące. Czy zechcesz mi pomóc? Chętnie wynagrodzę cię jedną z moich najlepszych różdżek.
+Welcome back to the level %d of Pixel Dungeon!	Witaj z powrotem na poziomie %d gry Pixel Dungeon!
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Gdy bierzesz łyk, czujesz, jak wiedza wypełnia twój umysł. Teraz wiesz wszystko o używanych przedmiotach. Wyczuwasz też wszystkie przedmioty na tym poziomie i znasz wszystkie jego sekrety.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Potęga wiedzy emanuje z wody tej studni. Weź łyk, aby poznać wszystkie sekrety używanych przedmiotów.
+Tome of Remastery	Księga Ponownego Mistrzostwa
+Depth entrance	Przejście w górę
+Depth exit	Przejście w dół
+%s's deathgaze killed you...	Śmiercionośne spojrzenie %s zabiło cię...
+%s's lightning bolt killed you...	Piorun %s zabił cię...
+%s's shadow bolt killed you...	Pocisk cienia %s zabił cię...
+There is not much honey in this small honeypot, but there is a golden bee there and it doesn't want to leave it.	W tym małym garnku nie ma zbyt wiele miodu, ale w środku znajduje się złota pszczoła, która nie chce go opuścić.
+Welcome to the level %d of Telegram Pixel Dungeon!	Witaj na poziomie %d gry Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Witaj z powrotem na poziomie %d gry Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	Telegram Pixel Dungeon nie opuszcza się tak po prostu.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nSygnał ustawiono gdzieś na poziomie %d gry Telegram Pixel Dungeon.

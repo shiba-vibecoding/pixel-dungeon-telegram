@@ -50,8 +50,6 @@ dodged	evitou
 poisoned	envenenado
 amok	fúria
 slowed	lento
-mind	visão
-vision	mental
 paralyzed	paralisado
 frightened	assustado
 rooted	enraizado
@@ -108,8 +106,6 @@ Huntresses are proficient with missile weapons and get a damage bonus for excess
 Huntresses gain more health from dewdrops.	Caçadoras ganham mais vida a partir de gotas de orvalho.
 Huntresses sense neighboring monsters even if they are hidden behind obstacles.	Caçadoras podem sentir monstros por perto, mesmo que eles estejam escondidos atrás de obstáculos.
 gladiator	gladiador
-berserker	fúria
-When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	Quando gravemente ferido, o _Fúria_ entra em um estado de fúria selvagem aumentando significativamente seu potencial de dano.
 warlock	bruxo
 After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	Depois de matar um inimigo o _Bruxo_ consome a sua alma. Ele cura as feridas e preenche sua fome.
 battlemage	mago lutador
@@ -280,7 +276,6 @@ Language	Idioma
 Music	Música
 Sound FX	Efeitos Sonoros
 Brightness	Brilho
-Second quickslot	Segundo QuickSlot
 Switch to portrait	Mudar para Retrato
 Switch to landscape	Mudar para Paisagem
 The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	O Calabouço situa-se abaixo da cidade e seus níveis superiores constituem, na verdade, o sistema de esgoto da cidade. Sendo teoricamente uma parte da cidade, estes níveis não são perigosos. Ninguém vai chamá-lo de um lugar seguro, mas pelo menos você não vai precisar lidar com magia negra aqui.
@@ -298,7 +293,6 @@ Oh, I see you have succeeded! I do hope it hasn't troubled you too much. As I pr
 Battle wand	Varinha de Batalha
 Non-battle wand	Varinha não de Batalha
 Good luck in your quest, %s!	Boa sorte em sua busca, %s!
-Select an item for the quickslot	Selecione um item para o QuickSlot
 DROP	LARGAR
 THROW	JOGAR
 Your pack is too full for the %s	Sua mochila está muito cheia para %s
@@ -1018,8 +1012,6 @@ Select an item to sell	Selecione um item para vender
 old wandmaker	velho fabricante de varinhas
 This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	Este antigo, mas forte cavalheiro usa uma expressão um pouco confusa. Ele é protegido por um escudo mágico.
 absorbed	absorveu
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, que surpresa agradável encontrar uma pessoa decente em tal lugar! Eu vim aqui para um ingrediente raro - uma _semente rotberry_. Sendo um usuário de magia, eu sou bem capaz de me defender contra os monstros locais, mas eu estou ficando perdido e tenho pouco tempo, é muito constrangedor. Provavelmente, você poderia me ajudar? Eu ficaria feliz em pagar por seu serviço com uma das minhas melhores varinhas.
-Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Alguma sorte com a _semente Rotberry_, %s? Não? Não se preocupe, eu não estou com pressa.
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, que surpresa agradável encontrar uma pessoa decente em tal lugar! Eu vim aqui para um ingrediente raro - _Pó de Cadáver_. Ela pode ser obtida de restos de esqueletos e há um amplo número deles no calabouço. Sendo um usuário de magia, eu sou bem capaz de me defender contra os monstros locais, mas eu estou ficando perdido e tenho pouco tempo, é muito constrangedor. Provavelmente, você poderia me ajudar? Eu ficaria feliz em pagar por seu serviço com uma das minhas melhores varinhas.
 Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Alguma sorte com o _Pó de Cadáver_, %s? Pilhas de Ossos são os lugares mais óbvios para procurar.
 Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Alguma sorte com um _peixe fantasma_, %s? Você pode tentar procurá-lo em uma das piscinas locais.
@@ -1091,7 +1083,6 @@ The pillar is made of real humanoid skulls. Awesome.	O pilar é feito de crânio
 Suspiciously colored water	A cor da água é suspeita
 High blooming flowers	Altas flores desabrochando
 A ramp leads up to the upper depth.	A rampa te levará ao piso superior.
-A ramp leads down to the Inferno.	A rampa te levará a uma profundidade maior.
 Several tiles are missing here.	Vários azulejos estão faltando aqui.
 Thick carpet covers the floor.	O tapete grosso cobre o chão.
 Dark cold water.	Água fria e escura.
@@ -1137,6 +1128,14 @@ Select a cell to examine	Selecione uma célula para examinar
 1	0
 LibGDX port: Arcnor / Web port: nojus297	Port para LibGDX: Arcnor / port para web: nojus297
 Telegram port: @barboskich	Port para Telegram: @barboskich
+Eating the seed triggers its effect immediately.	Comer a semente ativa imediatamente o efeito da planta.
+Tip: Long-press the wait button to rest until something interrupts you.	Dica: Mantenha pressionado o botão de esperar para descansar até que algo interrompa você.
+Tip: Long-press the backpack to open the item catalog.	Dica: Mantenha a mochila pressionada para abrir o catálogo de itens.
+Tip: Doors and tall grass can break an enemy's line of sight.	Dica: Portas e grama alta podem bloquear a linha de visão de um inimigo.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Dica: Arremesse sementes em espaços vazios para cultivar plantas úteis.
+Tip: Search suspicious walls to discover hidden doors and traps.	Dica: Examine paredes suspeitas para descobrir portas ocultas e armadilhas.
+Tip: Examining an enemy reveals useful combat information.	Dica: Examinar um inimigo revela informações úteis de combate.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	PV: %d/%d\nPrecisão: %d  Esquiva: %d\nProteção: 0-%d
 Select Your Hero	Escolha seu herói
 Game Over	Fim de jogo
 Boss slain	Chefe derrotado
@@ -1146,7 +1145,7 @@ Switch to fullscreen	Mudar para tela cheia
 Switch to windowed	Mudar para modo janela
 Reset To Defaults	Restaurar padrões
 <None>	<Nenhuma>
-Press a key for "%s", or press %s to remove the binding.	Pressione uma tecla para “%s” ou pressione %s para remover o atalho.
+Press a key for "%s", or press %s to remove the binding.	Pressione uma tecla para "%s" ou pressione %s para remover o atalho.
 Hero Info	Informações do herói
 Wait	Esperar
 Search	Procurar
@@ -1190,4 +1189,17 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	A comida até que estava boa.
 Paralysed	Paralisado
 Terror	Aterrorizado
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Ah, que surpresa agradável encontrar uma pessoa decente num lugar destes! Vim buscar um ingrediente raro: um _peixe-fantasma_. Você pode pegá-lo com as próprias mãos, mas é muito difícil enxergá-lo na água. Como mago, sei me defender dos monstros daqui, mas me perco num instante — é bastante constrangedor. Poderia me ajudar? Terei prazer em recompensá-lo com uma das minhas melhores varinhas.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Ah, que surpresa agradável encontrar uma pessoa decente num lugar destes! Vim buscar um ingrediente raro: um _peixe-fantasma_. Você pode pegá-lo com as próprias mãos, mas é muito difícil enxergá-lo na água. Como mago, sei me defender dos monstros daqui, mas me perco num instante, o que é bastante constrangedor. Poderia me ajudar? Terei prazer em recompensá-lo com uma das minhas melhores varinhas.
+berserker	berserker
+When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	Quando gravemente ferido, o _Berserker_ entra em um estado de fúria selvagem, aumentando significativamente o dano que causa.
+A ramp leads down to the Inferno.	Uma rampa desce até o Inferno.
+mind	mente
+vision	visão
+Second quickslot	Segundo atalho rápido
+Select an item for the quickslot	Selecione um item para o atalho rápido
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Ah, que surpresa agradável encontrar uma pessoa decente em um lugar como este! Vim em busca de um ingrediente raro: uma _semente de frutapodre_. Como usuário de magia, consigo me defender dos monstros daqui, mas me perco num instante, o que é bastante constrangedor. Você poderia me ajudar? Ficarei feliz em recompensar você com uma de minhas melhores varinhas.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Alguma sorte com a _semente de frutapodre_, %s? Não? Não se preocupe, não estou com pressa.
+Welcome to the level %d of Telegram Pixel Dungeon!	Bem-vindo ao nível %d de Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Bem-vindo de volta ao nível %d de Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	Não se sai de Telegram Pixel Dungeon tão facilmente.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nEste sinalizador foi definido em algum lugar do nível %d de Telegram Pixel Dungeon.

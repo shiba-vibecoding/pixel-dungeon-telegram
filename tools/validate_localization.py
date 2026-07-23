@@ -19,6 +19,23 @@ LEGACY_FONT_LAYOUTS = {
     "font3x-layout.txt": (210, 2048, 128),
 }
 
+# These locales intentionally keep the original heavy pixel font. Its packed
+# atlas has a fixed character set, so catalogue punctuation must be checked
+# separately from the larger international atlas.
+LEGACY_FONT_CATALOGUES = {
+    "de.tsv", "es.tsv", "fr.tsv", "id.tsv",
+    "it.tsv", "pl.tsv", "pt_BR.tsv", "ru.tsv",
+}
+LEGACY_FONT_CHARS = set(
+    " !¡\"#$%&'()*+,-./0123456789:;<=>?¿@ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u007f"
+    "àáâäãąèéêëęìíîïòóôöõùúûüñńçćłśźż"
+    "ÀÁÂÄÃĄÈÉÊËĘÌÍÎÏÒÓÔÖÕÙÚÛÜÑŃÇĆŁŚŹŻºß"
+    "БГДЖЗИЙЛПУФЦЧШЩЪЫЬЭЮЯ"
+    "бвгджзийлмнптуфцчшщъыьэюя"
+    "АаВЕеЁёКкМНОоРрСсТХх"
+)
+
 # Some names, runes, sound effects and universal symbols are intentionally the
 # same in multiple languages.  Every other source-equals-translation entry is
 # treated as an untranslated regression, including single-word menu labels.
@@ -103,6 +120,14 @@ def main():
             if "@string/" in translated or "@array/" in translated:
                 print("{}:{}: unresolved Android resource".format(filename, line_number))
                 failed = True
+            if filename in LEGACY_FONT_CATALOGUES:
+                unsupported = sorted(set(
+                    char for char in translated
+                    if ord(char) >= 32 and char not in LEGACY_FONT_CHARS))
+                if unsupported:
+                    print("{}:{}: legacy font is missing glyphs {}: {}".format(
+                        filename, line_number, "".join(unsupported), english))
+                    failed = True
         catalogue_keys[filename] = set(entries)
         print("{}: {} entries".format(filename, len(entries)))
 

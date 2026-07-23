@@ -17,10 +17,6 @@
  */
 package com.watabou.pixeldungeon.scenes;
 
-import com.badlogic.gdx.Gdx;
-
-import com.badlogic.gdx.graphics.GL20;
-
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
@@ -64,7 +60,7 @@ public class TitleScene extends PixelScene {
 		Image title = BannerSprites.get( BannerSprites.Type.PIXEL_DUNGEON );
 		add( title );
 		
-		float height = title.height + 
+		float height = title.height +
 			(PixelDungeon.landscape() ? DashboardItem.SIZE : DashboardItem.SIZE * 2);
 		
 		title.x = (w - title.width()) / 2;
@@ -72,24 +68,6 @@ public class TitleScene extends PixelScene {
 		
 		placeTorch( title.x + 18, title.y + 20 );
 		placeTorch( title.x + title.width - 18, title.y + 20 );
-		
-		Image signs = new Image( BannerSprites.get( BannerSprites.Type.PIXEL_DUNGEON_SIGNS ) ) {
-			private float time = 0;
-			@Override
-			public void update() {
-				super.update();
-				am = (float)Math.sin( -(time += Game.elapsed) );
-			}
-			@Override
-			public void draw() {
-				Gdx.gl.glBlendFunc( GL20.GL_SRC_ALPHA, GL20.GL_ONE );
-				super.draw();
-				Gdx.gl.glBlendFunc( GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA );
-			}
-		};
-		signs.x = title.x;
-		signs.y = title.y;
-		add( signs );
 		
 		DashboardItem btnBadges = new DashboardItem( TXT_BADGES, 3 ) {
 			@Override

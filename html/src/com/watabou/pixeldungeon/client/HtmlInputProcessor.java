@@ -3,7 +3,6 @@ package com.watabou.pixeldungeon.client;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.utils.IntMap;
 import com.watabou.noosa.audio.Music;
-import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Preferences;
 import com.watabou.pixeldungeon.input.GameAction;
 import com.watabou.pixeldungeon.input.PDInputProcessor;
@@ -117,6 +116,11 @@ public class HtmlInputProcessor extends PDInputProcessor {
 	// TODO: handle mobile/desktop differently in touch events?
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+		// Mobile browsers may reject the title music before the first user
+		// gesture. Retrying inside the tap unlocks audio without changing the
+		// player's saved Music setting.
+		Music.INSTANCE.resume();
+
 		// A WebView may reuse a pointer after swallowing its touchend. Release
 		// the old logical touch first so TouchArea never keeps a ghost finger.
 		Touch previous = pointers.remove(pointer);

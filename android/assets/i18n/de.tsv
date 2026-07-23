@@ -54,7 +54,6 @@ mind	geist
 paralyzed	paralysiert
 frightened	erschrocken
 rooted	verwurzelt
-crippled	gelähmt
 bleeding	blutend
 dizzy	schwindlig
 invisible	unsichtbar
@@ -78,7 +77,6 @@ You are blinded!	Du bist geblendet!
 You become furious!	Du wirst wütend!
 furious	wütend
 You are charmed!	Du bist verzaubert!
-You are crippled!	Du bist gelähmt!
 You are bleeding!	Du blutest!
 Everything is spinning around you!	Alles dreht sich um dich!
 warrior	Krieger
@@ -95,8 +93,6 @@ Mages recharge their wands faster.	Magier laden ihre Zauberstäbe schneller auf.
 When eaten, any piece of food restores 1 charge for all wands in the inventory.	Jedes Nahrungsmittel stellt beim Essen 1 Ladung bei allen Zauberstäben im Rucksack wieder her.
 Mages can use wands as a melee weapon.	Magiere können ihre Zauberstäbe als Nahkampfwaffe nutzen.
 Scrolls of Identify are identified from the beginning.	Identifizierungsrollen sind bereits zu Beginn bekannt.
-Rogues identify a type of a ring on equipping it.	Rogues identify the type of a ring on equipping it.
-Rogues are proficient with light armor, dodging better while wearing one.	Rogues are proficient with light armor, dodging better while wearing it.
 Huntresses start with 15 points of Health.	Jägerinnen beginnen mit 15 Lebenspunkten.
 Huntresses start with a unique upgradeable boomerang.	Jägerinnen beginnen mit einem einzigartigen aufwertbaren Bummerang.
 Huntresses are proficient with missile weapons and get a damage bonus for excessive strength when using them.	Jägerinnen sind effektiv im Umgang mit Fernkampfwaffen und erhalten einen Schadensbonus beim Benutzen, wenn ihre Stärke die erforderliche Stärke für die Waffe übersteigt.
@@ -214,9 +210,6 @@ Bled to death on level %d	Ist auf Ebene %d verblutet.
 Killed by a caustic ooze on level %d	Ist auf Ebene %d durch Säure gestorben
 Fell to death on level %d	Ist auf Ebene %d in den Tod gestürzt
 Obtained the Amulet of Yendor	Hat das Amulett von Yendor erlangt
-OK, a deal is a deal, dat's what I can do for you: I can reforge 2 items and turn them into one of a better quality.	OK, ist ein Angebot, ein Geschäft, das ist, was ich für Sie tun kann: Ich kann 2 Artikel reforge und machen sie zu einem der besseren Qualität.
-Select an item to reforge	Wählen Sie ein Gegenstand, um zu schmieden
-Reforge them	Reforge ihnen
 Potions	Tränke
 Scrolls	Schriftrollen
 Which way will you follow?	Welchem Weg wirst du folgen?
@@ -277,7 +270,6 @@ Language	Sprache
 Music	Musik
 Sound FX	Toneffekte
 Brightness	Helligkeit
-Second quickslot	Zweite Quickslot
 Switch to portrait	Zum Portrait wechseln
 Switch to landscape	Zur Landschaft wechseln
 The Dungeon lies right beneath the City, its upper levels actually constitute the City's sewer system. Being nominally a part of the City, these levels are not that dangerous. No one will call it a safe place, but at least you won't need to deal with evil magic here.	Der Dungeon befindet sich direkt unterhalb der Stadt, seiner oberen Ebenen tatsächlich bilden die Stadt die Kanalisation. Nominell ein Teil der Stadt, sind diese Ebenen nicht gefährlich. Niemand wird es als ein sicherer Ort, aber zumindest werden Sie nicht brauchen, um mit bösen Zauber hier umzugehen.
@@ -295,7 +287,6 @@ Oh, I see you have succeeded! I do hope it hasn't troubled you too much. As I pr
 Battle wand	Kampf-Zauberstab
 Non-battle wand	Nicht-Kampf Zauberstab
 Good luck in your quest, %s!	Viel Glück bei Ihrer Suche, %s!
-Select an item for the quickslot	Wählen Sie ein Gegenstand für die Quickslot
 smth	etw.
 DROP	FALLEN LASSEN
 THROW	WERFEN
@@ -335,13 +326,7 @@ Collect gold coins to spend them later in a shop.	Sammle Goldmünzen um sie spä
 A pile of %d gold coins.	Ein Stapel mit %d Goldmünzen.
 One gold coin.	Eine Goldmünze.
 you wince as your grip involuntarily tightens around your %s	Sie zusammenzucken, wie Sie Ihren Griff Unwillkürlich zieht um Ihr %s
-SET	SATZ
 RETURN	ZURÜCKKEHREN
-Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	Lloyd's beacon ist ein kompliziertes magische Gerät, das Sie an einen Ort, den Sie bereits haben, zurückkehren können.
-Strong magic aura of this place prevents you from using the lloyd's beacon!	Starke magische Aura dieses Ortes verhindert, dass Sie mit der lloyd's beacon!
-Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Psychic Aura der Nachbar Kreaturen erlaubt es Ihnen nicht um die lloyd's beacon in diesem Moment benutzen.
-The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Der lloyd's beacon erfolgreich an Ihrem aktuellen Standort festgelegt, jetzt können Sie jederzeit hier wieder zurück.
-\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nDieser Leuchtturm war irgendwo auf der Ebene %d der Pixel Dungeon gesetzt.
 Tome of Mastery	Handbuch Spezialisierung
 Tome of Remastery	Handbuch Respezialisierung
 This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	Diese getragen Leder Buch ist nicht so stark, aber Sie fühlen sich irgendwie, dass man eine Menge daraus zu sammeln. Denken Sie jedoch daran, dass das Lesen dieses Schmöker kann einige Zeit benötigen.
@@ -351,7 +336,6 @@ torch	Fackel
 LIGHT	ENTZÜNDEN
 It's an indispensable item in The Demon Halls, which are notorious for their poor ambient lighting.	Es ist ein unverzichtbares Gegenstand in der Dämon-Hallen, die berüchtigt für ihre schlechten Umgebungslicht gibt.
 weightstone	gewichtsstein
-APPLY	BEWERBEN
 Using a weightstone, you can balance your melee weapon to increase its speed or accuracy.	Mit Hilfe eines Gewichtsstein, können Sie Ihre Nahkampfwaffe auszugleichen, um die Geschwindigkeit und die Genauigkeit zu erhöhen.
 Select a weapon to balance	Wählen Sie eine Waffe, um auszugleichen
 you balanced your %s to make it faster	Sie ausgewogen dein %s, um es schneller zu machen
@@ -363,18 +347,11 @@ Never mind	Vergiss es
 PLANT	PFLANZEN
 Throw this seed to the place where you want to grow %1$s.\n\n%2$s	Werfen Sie diesen Samen zu der Stelle, an der Sie %1$s wachsen wollen.\n\n%2$s
 seed of %s	samen der %s
-Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Beim Berühren eines Dreamweed es sondert eine glitzernde Wolke aus Gas verwirrend.
-When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Wenn eine Kreatur berührt eine Earthroot, seine Wurzeln schaffen eine Art natürliche Rüstung um ihn herum.
 Herbal armor	pflanzliche Rüstung
-Touching a Fadeleaf will teleport any creature to a random place on the current level.	Berühren einer Fadeleaf wird jede Kreatur in eine zufällige Platz auf dem derzeitigen Niveau zu teleportieren.
-When something touches a Firebloom, it bursts into flames.	Wenn etwas berührt einen Firebloom, platzt sie in Flammen.
-Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Beim Berühren einer Icecap scheidet eine Pollen, die alles, was in seiner Umgebung friert.
 Rotberry	Rottbeere
 Berries of this shrub taste like sweet, sweet death.	Beeren dieses Strauches schmecken süß, süßer Tod.
 The seed emits a roar that echoes throughout the dungeon!	Der Samen emittiert ein Brüllen, das in der gesamten Dungeon hallt!
-A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Ein Sorrowmoss ist eine Blume (kein Moos) mit gestochen scharfen Blütenblätter, mit einem tödlichen Gift überzogen.
 Sungrass	Sonnengras
-Sungrass is renowned for its sap's healing properties.	Sungrass ist bekannt für heilenden Eigenschaften seines SAP.
 Herbal healing	pflanzliche Heilung
 your %s constricts around you painfully	Deine %s schnürt dich schmerzhaft ein.
 Interaction of different types of magic has erased the glyph on this armor!	Eine Überlagerung verschiedener Magiearten hat die Glyphe von dieser Rüstung entfernt.
@@ -530,7 +507,6 @@ dried rose	Getrocknete Rose
 The rose has dried long ago, but it has kept all its petals somehow.	Die Rose ist längst getrocknet, aber es hat alle seine Blütenblätter gehalten irgendwie.
 dwarf token	Zwerg-Token
 Many dwarves and some of their larger creations carry these small pieces of metal of unknown purpose. Maybe they are jewelry or maybe some kind of ID. Dwarves are strange folk.	Viele Zwerge und einige ihrer größeren Kreationen tragen diese kleine Metallstücke von unbekannten Zweck. Vielleicht sind sie Schmuck oder vielleicht eine Art von ID. Zwerge sind seltsame Leute.
-phantom fish	geisterfische
 EAT	ESSEN
 You can barely see this tiny translucent fish in the air. In the water it becomes effectively invisible.	Sie können kaum sehen, diese kleine durchscheinende Fisch in der Luft. Im Wasser wird es praktisch unsichtbar.
 You see your hands turn invisible!	Du siehst, wie deine Hände unsichtbar werden!
@@ -562,14 +538,11 @@ Your %s tightens around your finger painfully	Deine %s schnürt dich schmerzhaft
 %1$s\n\nThe %2$s is on your finger %3$s.	%1$s\n\nDer %2$s ist auf dem Finger %3$s.
 , and because it is cursed, you are powerless to remove it	, und da sie verflucht ist, kannst du sie nicht entfernen.
 %1$s\n\nYou can feel a malevolent magic lurking within the %2$s.	%1$s\n\nDu spürst, dass eine bösartige Magie in dieser %2$s lauert.
-This is a %s	Dies ist 1 %s
 Ring of Accuracy	Ring des Genauigkeit
 This ring increases your chance to hit the enemy.	Dieser Ring erhöht deine Chance den Feind zu treffen.
 Ring of Detection	Ring des Erkennung
-Wearing this ring will allow the wearer to notice hidden secrets - traps and secret doors - without taking time to search. Degraded rings of detection will dull your senses, making it harder to notice secrets even when actively searching for them.	Das Tragen dieser Ring ermöglicht es dem Träger, verborgenen Geheimnisse bemerken - Fallen und Geheimtüren - ohne Zeit zu suchen. Degraded Ringe Nachweis wird dumpfen Sinnen, so dass es schwieriger, um Geheimnisse einmal bemerken, wenn aktiv nach ihnen.
 Ring of Elements	Ring von Elementen
 This ring provides resistance to different elements, such as fire, electricity, gases etc. Also it decreases duration of negative effects.	Dieser Ring bietet Beständigkeit gegen verschiedene Elemente wie Feuer, Strom, Gase etc. Auch es verringert Dauer der negativen Auswirkungen.
-Ring of Evasion	Ring der Steuerhinterziehung
 This ring increases your chance to dodge enemy attack.	Dieser Ring erhöht deine Chance feindlichen Attacken auszuweichen.
 Ring of Haggler	Ring des Schacherers
 In fact this ring doesn't provide any magic effect, but it demonstrates to shopkeepers and vendors, that the owner of the ring is a member of The Thieves' Guild. Usually they are glad to give a discount in exchange for temporary immunity guarantee. Upgrading this ring won't give any additional bonuses.	In der Tat ist dieser Ring bietet keine magische Wirkung, aber es zeigt den Ladenbesitzer und Lieferanten, dass der Eigentümer des Rings ist ein Mitglied der Diebesgilde. Normalerweise sind sie froh, einen Rabatt im Austausch für vorübergehende Immunität Garantie zu geben. Aktualisieren Sie diesen Ring nicht geben, zusätzliche Boni.
@@ -578,11 +551,8 @@ This ring accelerates the wearer's flow of time, allowing one to perform all act
 Ring of Herbalism	Ring der Kräuterkunde
 This ring increases your chance to gather dew and seeds from trampled grass.	Dieser Ring erhöht deine Chance Tautropfen und Samen in zertrampeltem Gras zu finden.
 Ring of Mending	Ring des Ausbesserung
-This ring increases the body's regenerative properties, allowing one to recover lost health at an accelerated rate. Degraded rings will decrease or even halt one's natural regeneration.	Dieser Ring erhöht die körpereigene regenerative Eigenschaften, so dass man verlorene Gesundheit mit einer beschleunigten Rate zu erholen. Degraded Ringe abnehmen oder sogar stoppen den natürlichen Regeneration.
 Ring of Power	Ring der Macht
-Your wands will become more powerful in the energy field that radiates from this ring. Degraded rings of power will instead weaken your wands.	Ihre Zauberstäbe werden immer leistungsfähiger werden im Bereich der Energie, die von dieser Ring strahlt. Degraded Ringe der Macht wird stattdessen zu schwächen eure Zauberstäbe.
 Ring of Satiety	Ring der Sattheit
-Wearing this ring you can go without food longer. Degraded rings of satiety will cause the opposite effect.	Das Tragen dieser Ring können Sie ohne Nahrung mehr zu gehen. Degraded Ringe der Sattheit führt dazu, den gegenteiligen Effekt.
 Ring of Shadows	Ring der Schatten
 Enemies will be less likely to notice you if you wear this ring. Degraded rings of shadows will alert enemies who might otherwise not have noticed your presence.	Wenn Sie diesen Ring tragen, ist es weniger wahrscheinlich, dass Feinde sie bemerken. Verschlechterte Ringe der Schatten werden Feinde, die Ihre Anwesenheit sonst nicht bemerkt hätten, vielleicht alarmieren.
 Ring of Thorns	Ring Dornen
@@ -653,7 +623,6 @@ READ	LESEN
 Read this scroll to unleash the wrath of the dungeon spirits, killing everything on the current level. Well, almost everything. Some of the more powerful creatures may be not affected.	Lesen Sie diese Schriftrolle, um den Zorn der Geister Dungeon zu entfesseln, alles zu töten auf dem derzeitigen Niveau. Na ja, fast alles. Einige der mächtigen Kreaturen sind möglicherweise nicht betroffen.
 You can't read a scroll while blinded	Du kannst keine Schriftrolle lesen, solange du erblindet bist
 %s wand	%s Zauberstab
-ZAP	ZACK
 This thin %s wand is warm to the touch. Who knows what it will do when used?	Diese dünne %s Zauberstab ist warm anfühlen. Wer weiß, was sie tun werden, wenn verwendet?
 When this wand is used as a melee weapon, its average damage is %d points per hit.	Wenn dieser Zauberstab als Nahkampfwaffe eingesetzt wird, ist seine Durchschnittsschaden %d Punkte pro Treffer.
 You can use this wand as a melee weapon.	Sie können diesen Zauberstab als Nahkampfwaffe benutzen.
@@ -768,7 +737,6 @@ quarterstaff	Kampfstab
 A staff of hardwood, its ends are shod with iron.	Ein Stab aus Hartholz, werden ihre Enden mit Eisen beschlagen.
 short sword	Kurzschwert
 It is indeed quite short, just a few inches longer, than a dagger.	Es ist zwar recht kurz, nur ein paar Zoll länger, als ein Dolch.
-REFORGE	SCHMIEDE
 Select a weapon to upgrade	Wählen Sie eine Waffe zu aktualisieren
 you reforged the short sword to upgrade your %s	Du hast dein Kurzschwert neu geschmiedet um dein %s zu verbessern
 you can't upgrade a boomerang this way	Du kannst einen Boomerang nicht auf diese Art verbessern
@@ -824,7 +792,6 @@ Burning	Brennende
 %s burns up!	%s verbrennt!
 You burned to death...	Sie verbrannt zu Tode...
 Charmed	Fasziniert
-Crippled	Gelähmt
 Frozen	Eingefroren
 Fury	Furie
 Immune to gases	Immun gegen Gase
@@ -939,7 +906,6 @@ crazy thief	Verrückter Dieb
 %1$s stole %2$s from you!	%1$s hat %2$s von dir gestohlen!
 \n\n%1$s is carrying a _%2$s_. Stolen obviously.	\n\n%1$s trägt ein _%2$s_. Offensichtlich gestohlen.
 dwarf warlock	Zwergenhexenmeister
-%s's shadow bolt killed you...	%s's Schattenblitz hat dich getötet...
 wraith	Geist
 Yog-Dzewa	Yog-Dzewa
 Yog-Dzewa is an Old God, a powerful entity from the realms of chaos. A century ago, the ancient dwarves barely won the war against its army of demons, but were unable to kill the god itself. Instead, they then imprisoned it in the halls below their city, believing it to be too weak to rise ever again.	Yog-Dzewa ist eine alte Gott, ein leistungsfähiges Unternehmen aus dem Reich des Chaos. Vor einem Jahrhundert, die alten Zwerge kaum gewonnen, den Krieg gegen die Armee von Dämonen, konnten aber den Gott selbst zu töten. Stattdessen werden sie dann in den Hallen unter ihrer Stadt eingesperrt, zu glauben, es zu schwach, um jemals wieder steigen werden.
@@ -965,7 +931,6 @@ Select 2 items of the same type!	Wähle 2 Gegenstände des selben Art aus!
 I need to know what I'm working with, identify them first!	Ich muss wissen, womit ich arbeite. Identifiziere sie erst!
 I don't work with cursed items!	Ich arbeite nicht mit verfluchten Gegenständen!
 It's a junk, the quality is too poor!	Das ist ein Scherz, die Qualität ist zu schlecht!
-I can't reforge these items!	Ich kann diese Gegenstände nicht wiederverwerten!
 sad ghost	trauriger Geist
 The ghost is barely visible. It looks like a shapeless spot of faint light with a sorrowful face.	Der Geist ist kaum sichtbar. Er sieht wie ein formloses schwaches Licht mit einem traurigen Gesicht aus.
 Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place... Not until I have my _dried rose_... It's very important to me... Some monster stole it from my body...	Hallo Abenteurer... Einst war ich wie du - stark und selbstbewusst... Und nun bin ich tot... Aber ich kann diesen Platz nicht verlassen... nicht bevor ich meine _getrocknete Rose_ wieder habe... Es ist sehr wichtig für mich... Einige Monster haben sie von meinem Körper gestohlen...
@@ -1003,8 +968,6 @@ This old but hale gentleman wears a slightly confused expression. He is protecte
 absorbed	absorbiert
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, was für eine angenehme Überraschung einen anständigen Menschen in einem solchen Ort zu treffen! Ich kam hierher für eine seltene Zutat - ein _Samen der Rottbeere_. Als Magier bin ich durchaus in der Lage mich gegen Monster in der Nähe zu verteidigen, aber ich würde mich in kürzester Zeit verlaufen. Das ist sehr peinlich. Vielleicht können Sie mir helfen? Ich würde mich freuen Ihnen dafür einen meiner besten Zauberstäbe zu geben.
 Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Schon Glück gehabt mit den _Samen der Rottbeere_, %s? Nein? Mach dir keine Sorgen, ich bin nicht in Eile.
-Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Schon Glück mit _corpse dust_ gehabt, %s? Knochenhaufen sind die besten Orte um danach zu suchen.
-Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Schon Glück mit einem _phantom fish_ gehabt, %s? Du kannst dich auf die Suche machen in einem der Pools in der Nähe.
 A hidden pressure plate clicks!	Eine verborgene Druckplatte knackt.
 Floor	Boden
 Grass	Gras
@@ -1039,7 +1002,6 @@ Alchemy pot	Alchemiekessel
 \\?\\?\\?	\\?\\?\\?
 You can't see the bottom.	Du kannst den Boden nicht erkennen.
 In case of burning step into the water to extinguish the fire.	Wenn du Feuer gefangen hast, stelle dich in Wasser um das Feuer zu löschen.
-Stairs lead up to the upper depth.	Treffen führen nach oben in eine höhere Ebene.
 Stairs lead down to the lower depth.	Treppen führen nach unten in eine tiefere Ebene.
 Embers cover the floor.	Glühende Kohlen bedecken den Boden.
 Dense vegetation blocks the view.	Dichter Pflanzenbewuchs versperrt die Sicht.
@@ -1073,7 +1035,6 @@ The pillar is made of real humanoid skulls. Awesome.	Dieses Kissen ist aus echte
 Suspiciously colored water	Merkwürdig gefärbtes Wasser
 High blooming flowers	Große blühende Blumen
 A ramp leads up to the upper depth.	Eine Rampe führt in eine höhere Ebene.
-A ramp leads down to the Inferno.	Eine Rampe führt in eine tiefere Ebene.
 Several tiles are missing here.	Mehrere Bodenplatten fehlen hier.
 Thick carpet covers the floor.	Ein dicker Teppich bedeckt den Bode.
 Dark cold water.	Dunkles kaltes Wasser.
@@ -1119,6 +1080,14 @@ Select a cell to examine	Wählen Sie eine Zelle zu prüfen.
 1	0
 LibGDX port: Arcnor / Web port: nojus297	LibGDX-Port: Arcnor / Web-Port: nojus297
 Telegram port: @barboskich	Telegram-Port: @barboskich
+Eating the seed triggers its effect immediately.	Wenn du den Samen isst, wird die Wirkung der Pflanze sofort ausgelöst.
+Tip: Long-press the wait button to rest until something interrupts you.	Tipp: Halte die Schaltfläche Warten gedrückt, um dich auszuruhen, bis dich etwas unterbricht.
+Tip: Long-press the backpack to open the item catalog.	Tipp: Halte den Rucksack gedrückt, um den Gegenstandskatalog zu öffnen.
+Tip: Doors and tall grass can break an enemy's line of sight.	Tipp: Türen und hohes Gras können die Sichtlinie eines Gegners unterbrechen.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Tipp: Wirf Samen auf freie Felder, um nützliche Pflanzen wachsen zu lassen.
+Tip: Search suspicious walls to discover hidden doors and traps.	Tipp: Durchsuche verdächtige Wände, um verborgene Türen und Fallen zu entdecken.
+Tip: Examining an enemy reveals useful combat information.	Tipp: Das Untersuchen eines Gegners zeigt nützliche Kampfinformationen.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	LP: %d/%d\nGenauigkeit: %d  Ausweichen: %d\nSchutz: 0-%d
 Select Your Hero	Wähle deinen Helden
 Game Over	Spiel vorbei
 Boss slain	Boss besiegt
@@ -1130,7 +1099,7 @@ Switch to fullscreen	Zum Vollbild wechseln
 Switch to windowed	Zum Fenstermodus wechseln
 Reset To Defaults	Standardeinstellungen
 <None>	<Keine>
-Press a key for "%s", or press %s to remove the binding.	Drücke eine Taste für „%s“ oder %s, um die Belegung zu entfernen.
+Press a key for "%s", or press %s to remove the binding.	Drücke eine Taste für "%s" oder %s, um die Belegung zu entfernen.
 Hero Info	Heldeninfo
 Wait	Warten
 Search	Suchen
@@ -1155,8 +1124,8 @@ Deeper levels of the dungeon have always been a hiding place for all kinds of cr
 When dwarves' interests have shifted from engineering to arcane arts, warlocks have come to power in the city. They started with elemental magic, but soon switched to demonology and necromancy.	Als sich das Interesse der Zwerge von der Technik zu den arkanen Künsten verlagerte, gelangten Hexenmeister in der Stadt an die Macht. Sie begannen mit Elementarmagie, wandten sich aber bald der Dämonologie und Nekromantie zu.
 A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Being an ethereal entity, it is very hard to hit with a regular weapon.	Ein Geist ist der rachsüchtige Schatten eines Sünders, dessen Grab gestört wurde. Als körperloses Wesen ist er mit einer gewöhnlichen Waffe nur sehr schwer zu treffen.
 Despite their small size, golden bees tend to protect their master fiercely. They don't live long though.	Trotz ihrer geringen Größe verteidigen goldene Bienen ihren Meister erbittert. Allerdings leben sie nicht lange.
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, was für eine angenehme Überraschung, an einem solchen Ort einen anständigen Menschen zu treffen! Ich bin wegen einer seltenen Zutat hier: _Leichenstaub_. Man kann ihn aus Skelettresten gewinnen, und davon gibt es im Dungeon reichlich. Als Magier kann ich mich zwar gegen die hiesigen Monster verteidigen, aber ich verlaufe mich ständig – höchst peinlich. Könntest du mir vielleicht helfen? Für deine Dienste würde ich dich gern mit einem meiner besten Zauberstäbe bezahlen.
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, was für eine angenehme Überraschung, an einem solchen Ort einen anständigen Menschen zu treffen! Ich bin wegen einer seltenen Zutat hier: eines _Phantomfisches_. Man kann ihn mit bloßen Händen fangen, doch im Wasser ist er kaum zu erkennen. Als Magier kann ich mich zwar gegen die hiesigen Monster verteidigen, aber ich verlaufe mich ständig – höchst peinlich. Könntest du mir vielleicht helfen? Für deine Dienste würde ich dich gern mit einem meiner besten Zauberstäbe bezahlen.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, was für eine angenehme Überraschung, an einem solchen Ort einen anständigen Menschen zu treffen! Ich bin wegen einer seltenen Zutat hier: _Leichenstaub_. Man kann ihn aus Skelettresten gewinnen, und davon gibt es im Dungeon reichlich. Als Magier kann ich mich zwar gegen die hiesigen Monster verteidigen, aber ich verlaufe mich ständig - höchst peinlich. Könntest du mir vielleicht helfen? Für deine Dienste würde ich dich gern mit einem meiner besten Zauberstäbe bezahlen.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, was für eine angenehme Überraschung, an einem solchen Ort einen anständigen Menschen zu treffen! Ich bin wegen einer seltenen Zutat hier: eines _Phantomfisches_. Man kann ihn mit bloßen Händen fangen, doch im Wasser ist er kaum zu erkennen. Als Magier kann ich mich zwar gegen die hiesigen Monster verteidigen, aber ich verlaufe mich ständig - höchst peinlich. Könntest du mir vielleicht helfen? Für deine Dienste würde ich dich gern mit einem meiner besten Zauberstäbe bezahlen.
 As you take a sip, you feel something changing inside you.	Als du einen Schluck nimmst, spürst du, wie sich etwas in dir verändert.
 Disguised as a %s	Verkleidet als %s
 You merged two wands into one %s.	Aus zwei Zauberstäben hast du %s erschaffen.
@@ -1191,3 +1160,46 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Das Essen schmeckte ganz in Ordnung.
 Paralysed	Gelähmt
 Terror	Panik
+Rogues identify a type of a ring on equipping it.	Schurken identifizieren die Art eines Rings, sobald sie ihn anlegen.
+Rogues are proficient with light armor, dodging better while wearing one.	Schurken sind im Umgang mit leichter Rüstung geübt und weichen besser aus, wenn sie eine tragen.
+SET	SETZEN
+APPLY	ANWENDEN
+ZAP	FEUERN
+Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	Lloyds Leuchtfeuer ist ein komplexes magisches Gerät, mit dem du an einen Ort zurückkehren kannst, den du bereits besucht hast.
+Strong magic aura of this place prevents you from using the lloyd's beacon!	Die starke magische Aura dieses Ortes hindert dich daran, Lloyds Leuchtfeuer zu benutzen!
+Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Die psychische Aura benachbarter Kreaturen hindert dich gerade daran, Lloyds Leuchtfeuer zu benutzen.
+The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Lloyds Leuchtfeuer wurde an deinem aktuellen Standort gesetzt. Du kannst nun jederzeit hierher zurückkehren.
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nDieses Leuchtfeuer wurde irgendwo auf Ebene %d von Pixel Dungeon gesetzt.
+This is a %s	Dies ist ein %s
+Ring of Evasion	Ring des Ausweichens
+Wearing this ring will allow the wearer to notice hidden secrets - traps and secret doors - without taking time to search. Degraded rings of detection will dull your senses, making it harder to notice secrets even when actively searching for them.	Wer diesen Ring trägt, entdeckt verborgene Geheimnisse wie Fallen und Geheimtüren, ohne Zeit mit einer Suche zu verbringen. Verschlechterte Ringe der Erkennung trüben dagegen die Sinne und erschweren es, Geheimnisse selbst bei gezielter Suche zu finden.
+This ring increases the body's regenerative properties, allowing one to recover lost health at an accelerated rate. Degraded rings will decrease or even halt one's natural regeneration.	Dieser Ring verstärkt die Regeneration des Körpers und lässt verlorene Gesundheit schneller zurückkehren. Verschlechterte Ringe verlangsamen oder stoppen dagegen die natürliche Regeneration.
+Your wands will become more powerful in the energy field that radiates from this ring. Degraded rings of power will instead weaken your wands.	Das Energiefeld dieses Rings verstärkt deine Zauberstäbe. Verschlechterte Ringe der Macht schwächen deine Zauberstäbe stattdessen.
+Wearing this ring you can go without food longer. Degraded rings of satiety will cause the opposite effect.	Mit diesem Ring kommst du länger ohne Nahrung aus. Verschlechterte Ringe der Sättigung bewirken das Gegenteil.
+Stairs lead up to the upper depth.	Die Treppe führt hinauf in die obere Ebene.
+crippled	verkrüppelt
+Crippled	Verkrüppelt
+You are crippled!	Du bist verkrüppelt!
+A ramp leads down to the Inferno.	Eine Rampe führt hinab ins Inferno.
+%s's shadow bolt killed you...	Der Schattenblitz von %s hat dich getötet...
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Beim Berühren setzt Traumkraut eine glitzernde Wolke aus verwirrendem Gas frei.
+When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Wenn eine Kreatur eine Erdwurzel berührt, bilden deren Wurzeln eine natürliche Rüstung um sie.
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	Das Berühren eines Schwundblatts teleportiert jede Kreatur an einen zufälligen Ort auf der aktuellen Ebene.
+When something touches a Firebloom, it bursts into flames.	Wenn etwas eine Feuerblüte berührt, geht es in Flammen auf.
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Beim Berühren setzt eine Eiskappe Blütenstaub frei, der alles in ihrer Nähe einfriert.
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Trauermoos ist eine Blume (kein Moos) mit rasiermesserscharfen Blütenblättern, die mit einem tödlichen Gift überzogen sind.
+Sungrass is renowned for its sap's healing properties.	Sonnengras ist für die heilende Wirkung seines Safts bekannt.
+Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Hattest du schon Glück mit dem _Leichenstaub_, %s? Knochenhaufen sind die naheliegendsten Orte, um danach zu suchen.
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Hattest du schon Glück mit einem _Phantomfisch_, %s? Suche am besten in einem der Wasserbecken hier.
+phantom fish	Phantomfisch
+Second quickslot	Zweiter Schnellzugriff
+Select an item for the quickslot	Wähle einen Gegenstand für den Schnellzugriff
+OK, a deal is a deal, dat's what I can do for you: I can reforge 2 items and turn them into one of a better quality.	Na gut, abgemacht ist abgemacht. Folgendes kann ich für dich tun: Ich kann zwei Gegenstände neu schmieden und zu einem höherwertigen vereinen.
+Select an item to reforge	Wähle einen Gegenstand zum Neuschmieden
+Reforge them	Neu schmieden
+REFORGE	NEU SCHMIEDEN
+I can't reforge these items!	Diese Gegenstände kann ich nicht neu schmieden!
+Welcome to the level %d of Telegram Pixel Dungeon!	Willkommen auf Ebene %d von Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Willkommen zurück auf Ebene %d von Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	Telegram Pixel Dungeon verlässt man nicht einfach so.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nDieses Leuchtfeuer wurde irgendwo auf Ebene %d von Telegram Pixel Dungeon gesetzt.

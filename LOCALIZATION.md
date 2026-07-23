@@ -9,7 +9,7 @@ Supported locales: English, Russian, Spanish, French, German, Brazilian
 Portuguese, Polish, Italian, Turkish, Ukrainian, Indonesian, Japanese, Korean,
 Simplified Chinese and Traditional Chinese.
 
-Every translated catalogue contains the same 1,193 source phrases.  The
+Every translated catalogue contains the same 1,205 source phrases.  The
 validator rejects missing/extra phrases, broken format placeholders, unresolved
 Android resource references, duplicate keys and glyphs absent from the shipped
 font atlas. The runtime audit also checks player-facing literals, legacy text

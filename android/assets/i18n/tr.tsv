@@ -29,8 +29,6 @@ Many heroes of all kinds ventured into the Dungeon before you. Some of them have
 Let's call it a day	Bugünlük bu kadar yeter
 I'm not done yet	Daha işim bitmedi
 You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	Sonunda ellerinde tutuyorsun, Yendor'un Tılsımı. Bu tılsımın gücüyle dünyayı ele geçirebilir veya insanlara falan barış ve refah getirebilirsin. Her neyse, hayatın sonsuza kadar değişecek ve oyun burada bitecek. Veya önemsiz bir ölümlü olarak biraz daha buralarda kalabilirsin.
-Welcome to the level %d of Pixel Dungeon!	Remixed Dungeon'ın %d numaralı seviyesine hoşgeldiniz!
-Welcome back to the level %d of Pixel Dungeon!	Remixed Dungeon'ın %d numaralı seviyesine tekrar hoşgeldiniz!
 Be cautious, since the dungeon is even more dangerous at night!	Zindan geceleri daha da tehlikeli olduğu için dikkatli olun!
 Your steps echo across the dungeon.	Adımların zindanda yankılanıyor.
 You hear the water splashing around you.	Etrafındaki su şarıltılarını duyuyorsun.
@@ -56,7 +54,6 @@ bleeding	kanama
 dizzy	sersem
 invisible	görünmez
 you	sen
-One does not simply leave Pixel Dungeon.	Hiç kimse Remixed Dungeon'dan basitçe ayrılamadı.
 level up!	seviye atladın!
 Welcome to level %d! Now you are healthier and more focused. It's easier for you to hit enemies and dodge their attacks.	%d. Seviyeye hoş geldiniz! Artık daha sağlıklı ve daha odaklanmışsın. Düşmanlara vurmak ve saldırılarından kaçmak senin için daha kolay.
 You now have %s	Artık %s var.
@@ -106,7 +103,6 @@ Huntresses sense neighboring monsters even if they are hidden behind obstacles.	
 gladiator	gladyatör
 berserker	Vahşi Savaşçı
 When severely wounded, the _Berserker_ enters a state of wild fury significantly increasing his damage output.	Ciddi şekilde yaralandığında, _Vahşi Savaşçı_ vahşi bir öfke durumuna girerek verdiği hasarı önemli ölçüde artırır.
-warlock	büyücü
 After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	Bir düşmanı öldürdükten sonra _Büyücü_ onun ruhunu tüketir. Bu onun yaralarını iyileştirir ve açlığını giderir.
 battlemage	savaş büyücüsü
 When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	_Savaş büyücüsü_ elinde bir asayla savaşırken, mevcut şarj sayısına bağlı olarak ek hasar verir. Her başarılı vuruş, bu asaya 1 şarj geri yükler.
@@ -226,7 +222,6 @@ Settings	Ayarlar
 Rankings	Sıralama
 Start New Game	Yeni Oyun
 Main Menu	Ana Menü
-Exit Game	Remixed Dungeon'dan Çık
 Return to Game	Oyuna Geri Dön
 Buffs	Takviyeler
 Experience	Deneyim
@@ -330,9 +325,7 @@ Lloyd's beacon is an intricate magic device, that allows you to return to a plac
 Strong magic aura of this place prevents you from using the lloyd's beacon!	Bir çeşit güçlü ve sihirli aura Llody'un Fenerini kullanmanı engelliyor!
 Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Etraftaki yaratıkların psişik auorası Lloyd'un fenerini kullanmanı engelliyor
 The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Lloyd'un feneri başarıyla şu anki konuma ayarlandı.İstediğinde buraya geri dönebilirsin.
-\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nBu pastırma Zindanın %dkatında bir yerlerde duruyordu.
 Tome of Mastery	Ustalık Kitabı
-Tome of Remastery	Ustalık Kitabı
 This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	Bu yıpranmış deri kitap o kadar kalın değil, ama bir şekilde ondan çok şey toplayabileceğinizi hissediyorsunuz. Yine de bu kitabı okumanın biraz zaman gerektirebileceğini unutmayın.
 You can't read while blinded	Körken okuyamazsın
 You have chosen the way of the %s!	%s yolunu seçtin!
@@ -498,7 +491,6 @@ Drinking this curious liquid will cause you to hover in the air, able to drift e
 You float into the air!	Havada süzülüyorsun!
 Potion of Liquid Flame	Sıvı Alev İksiri
 This flask contains an unstable compound which will burst violently into flame upon exposure to open air.	Bu şişe, açık havaya maruz kaldığında şiddetli bir şekilde alev alacak kararsız bir bileşik içermektedir.
-Potion of Might	Güç İksiri
 This powerful liquid will course through your muscles, permanently increasing your strength by one point and health by five points.	Bu güçlü sıvı kaslarınızdan geçerek gücünüzü kalıcı olarak bir puan ve sağlığınızı beş puan artıracaktır.
 +1 str, +5 ht	+1 güç, +5 can
 Potion of Mind Vision	Zihin Görme İksiri
@@ -659,7 +651,6 @@ The purple light from this wand will make the target run amok attacking random c
 Wand of Avalanche	Çığ Asası
 When a discharge of this wand hits a wall (or any other solid obstacle) it causes an avalanche of stones, damaging and stunning all creatures in the affected area.	Bu asanın bir deşarjı bir duvara (veya başka bir katı engele) çarptığında, etkilenen alandaki tüm yaratıklara zarar veren ve sersemleten bir taş çığına neden olur.
 You killed yourself with your own Wand of Avalanche...	Çığ asası ile kendi kendini öldürdün...
-Wand of Blink	Işınlanma Asası
 This wand will allow you to teleport in the chosen direction. Creatures and inanimate obstructions will block the teleportation.	Bu asa seçilen yöne ışınlanmanızı sağlayacaktır. Yaratıklar ve cansız engeller ışınlanmayı engelleyecektir.
 Wand of Disintegration	Parçalama Asası
 This wand emits a beam of destructive energy, which pierces all creatures in its way. The more targets it hits, the more damage it inflicts to each of them.	Bu asa yokedici bir enerji ışını yayar. Bu enerji yolu üzerindeki tüm yaratıklara işler, ne kadar çok yaratık varsa verdiği hasar da o kadar artar.
@@ -779,8 +770,6 @@ Shafts of light pierce the gloom of the underground garden.	Işık huzmeleri yer
 A cloud of paralytic gas is swirling here.	Burada felç edici bir gaz bulutu dönüyor.
 A greenish cloud of toxic gas is swirling here.	Burada yeşilimsi bir zehirli gaz bulutu dönüyor.
 You died from a toxic gas..	Zehirli gazı soluyarak öldün.
-As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Bilginin gücü bu kuyunun suyundan yayılıyor. Donatılmış eşyalarınızın tüm sırlarını açığa çıkarmak için ondan bir yudum alın.
-Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Bir yudum aldığınızda, bilginin zihninize aktığını hissediyorsunuz. Artık kuşandığınız eşyalar hakkında her şeyi biliyorsunuz. Ayrıca, seviyedeki tüm eşyaları hissediyor ve tüm sırlarını biliyorsunuz.
 Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	Kuyudan sağlık verici ışıltılar yayılıyor , bir yudum aldığında yaraların ve tüm açlığın yok oluyor.
 As you take a sip, you feel your wounds heal completely.	bir yudum aldığın gibi tüm yaraların iyileşti.
 Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	Kuyudan Sanş ışıltıları yayılıyor , Kuyuya bir nesne at ve başka bir şeye dönüşsün.
@@ -940,7 +929,6 @@ Hello adventurer... Once I was like you - strong and confident... And now I'm de
 Please... Help me... _Slay the abomination_...	Lütfen... Yardım et... Nefret ettiğim sıçanı öldür...
 Yes! The ugly creature is slain and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Evet ! O çirkin yaratık öldü artık dinlenebilirim... Maceranda yardımcı olacak bu nesnelerden birini seçebilirsin...
 Imps are lesser demons. They are notable for neither their strength nor their magic talent, but they are quite smart and sociable. Many imps prefer to live among non-demons.	Güç ve sihirli yetenekleri ile değil , akıllı ve sosyal olmaları ile tanınırlar.Birçokları şeytanlar ile yaşamayı tercih etmez
-evaded	savuşturdu
 Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _golems_ who need to be killed. You see, I'm going to start a little business here, but these stupid golems are bad for business! It's very hard to negotiate with wandering lumps of granite, damn them! So please, kill... let's say _6 of them_ and a reward is yours.	Sen bir maceracı mısın ? Maceracıları severim ! Eğer birşeyler öldürülmesi gerekiyorsa onlara güvenebilirsin. Haksız mıyım? Bir ödül karşılığında ;)\n Benim durumumda bu öldürülecek olanlar Golemler. Gördün mü , ufak bir iş başlatıyorum burada , ama bu aptal golemler iş için çok kötüler! Bu granit topağı göçebelerle anlaşmak imkansız, lanet olsun onlara ! Lütfen öldür onları... şöyle diyelim 6 tanesini öldür.
 How is your golem safari going?	Golem safarin ne alemde?
 Are you an adventurer? I love adventurers! You can always rely on them if something needs to be killed. Am I right? For a bounty, of course ;)\nIn my case this is _monks_ who need to be killed. You see, I'm going to start a little business here, but these lunatics don't buy anything themselves and will scare away other customers. So please, kill... let's say _8 of them_ and a reward is yours.	Sen bir maceracı mısın ? Maceracıları severim ! Eğer birşeyler öldürülmesi gerekiyorsa onlara güvenebilirsin. Haksız mıyım? Bir ödül karşılığında ;)\n Benim durumumda bu öldürülecek olanlar keşişler. Gördün mü , ufak bir iş başlatıyorum burada , ama bu deliler kendilerine bir şey almadıkları gibi müşterileri de korkutuyorlar. lanet olsun onlara ! Lütfen öldür onları... şöyle diyelim 8 tanesini öldür.
@@ -1000,7 +988,6 @@ Alchemy pot	Simya kabı
 \\?\\?\\?	\\?\\?\\?
 You can't see the bottom.	Aşağıyı göremezsin.
 In case of burning step into the water to extinguish the fire.	Yanma durumunda, ateşi söndürmek için suya girin.
-Stairs lead up to the upper depth.	Merdivenler bir üst derinliğe inmenizi sağlar.
 Stairs lead down to the lower depth.	Merdivenler bir alt derinliğe geçmenizi sağlar.
 Embers cover the floor.	Közler zemini kaplamış.
 Dense vegetation blocks the view.	Yoğun bitkiler görüşü engelliyor.
@@ -1016,7 +1003,6 @@ The well has run dry.	Bu kuyu kurumaya yüz tutmuş.
 Fluorescent moss	Florasan yosun
 Fluorescent mushrooms	Florasan mantar
 Freezing cold water.	Dondurucu soğuk su.
-The ladder leads up to the upper depth.	Merdiven, bir üst derinliğe inmenizi sağlar.
 The ladder leads down to the lower depth.	Aşağı seviyelere inen bir merdiven.
 Huge mushrooms block the view.	Büyük mantarlar, görüntüyü engeller.
 A vein of some ore is visible on the wall. Gold?	Duvarda bir maden damarı gözüküyor, Altın olmasın?
@@ -1074,6 +1060,19 @@ You don't know what is there.	Burada ne var bilmiyorsun.
 Select a cell to examine	Kontrol edilecek bir hücre seç
 LibGDX port: Arcnor / Web port: nojus297	LibGDX portu: Arcnor / web portu: nojus297
 Telegram port: @barboskich	Telegram portu: @barboskich
+Welcome to the level %d of Pixel Dungeon!	Pixel Dungeon'ın %d. katına hoş geldin!
+Welcome back to the level %d of Pixel Dungeon!	Pixel Dungeon'ın %d. katına tekrar hoş geldin!
+One does not simply leave Pixel Dungeon.	Pixel Dungeon'dan öylece çıkıp gidemezsin.
+Exit Game	Oyundan Çık
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nBu işaret Pixel Dungeon'ın %d. katında bir yere yerleştirildi.
+Eating the seed triggers its effect immediately.	Tohumu yemek, bitkinin etkisini hemen tetikler.
+Tip: Long-press the wait button to rest until something interrupts you.	İpucu: Bir şey seni kesintiye uğratana kadar dinlenmek için bekleme düğmesine basılı tut.
+Tip: Long-press the backpack to open the item catalog.	İpucu: Eşya kataloğunu açmak için sırt çantasına basılı tut.
+Tip: Doors and tall grass can break an enemy's line of sight.	İpucu: Kapılar ve uzun otlar bir düşmanın görüş hattını kesebilir.
+Tip: Throw seeds onto empty tiles to grow useful plants.	İpucu: Yararlı bitkiler yetiştirmek için tohumları boş karelere at.
+Tip: Search suspicious walls to discover hidden doors and traps.	İpucu: Gizli kapıları ve tuzakları bulmak için şüpheli duvarları ara.
+Tip: Examining an enemy reveals useful combat information.	İpucu: Bir düşmanı incelemek, savaşta yararlı bilgiler sağlar.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	Can: %d/%d\nİsabet: %d  Kaçınma: %d\nKoruma: 0-%d
 Select Your Hero	Kahramanını seç
 Game Over	Oyun bitti
 Boss slain	Boss yenildi
@@ -1191,3 +1190,16 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Yemeğin tadı fena değildi.
 Paralysed	Felç
 Terror	Dehşet
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Bir yudum aldığında bilginin zihnine aktığını hissediyorsun. Artık kuşandığın eşyalar hakkında her şeyi biliyor, bu kattaki tüm eşyaları ve sırları hissedebiliyorsun.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Bilginin gücü bu kuyunun suyundan yayılıyor. Kuşandığın eşyaların tüm sırlarını açığa çıkarmak için bir yudum al.
+Tome of Remastery	Yeniden Ustalık Kitabı
+Wand of Blink	Sıçrama Asası
+Potion of Might	Kudret İksiri
+warlock	büyücü savaşçı
+evaded	sıyrıldı
+Stairs lead up to the upper depth.	Merdivenler bir üst kata çıkmanızı sağlar.
+The ladder leads up to the upper depth.	Merdiven bir üst kata çıkmanızı sağlar.
+Welcome to the level %d of Telegram Pixel Dungeon!	Telegram Pixel Dungeon'ın %d. katına hoş geldin!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Telegram Pixel Dungeon'ın %d. katına tekrar hoş geldin!
+One does not simply leave Telegram Pixel Dungeon.	Telegram Pixel Dungeon'dan öylece çıkıp gidemezsin.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nBu işaret Telegram Pixel Dungeon'ın %d. katında bir yere yerleştirildi.

@@ -1,4 +1,4 @@
-name: Build and deploy Telegram Mini App
+name: Build and deploy Telegram Pixel Dungeon
 
 on:
   push:
@@ -46,6 +46,7 @@ jobs:
             python tools/audit_runtime_localization.py core/src "$catalogue" --fail-on-missing
           done
           node --test telegram/test-*.mjs
+          node --test telegram-worker/test/*.mjs
 
       - name: Build GWT game
         run: |
@@ -67,9 +68,12 @@ jobs:
           done
           test ! -d site/WEB-INF
           test ! -f site/stars-config.js
+          grep -q '<title>Telegram Pixel Dungeon</title>' site/index.html
+          grep -q 'name="application-name" content="Telegram Pixel Dungeon"' site/index.html
           grep -Eq 'telegram\.css\?v=[0-9a-f]{12}' site/index.html
           grep -Eq 'telegram-bootstrap\.js\?v=[0-9a-f]{12}' site/index.html
           ! grep -R -q -E "openDonation|Telegram Stars|Support with Telegram Stars" site
+          ! grep -R -q -E "Pixel Dungeon // Game|Telegram Edition|Play Pixel Dungeon" site
           ! grep -q "SuperDev Refresh" site/index.html
 
       - name: Configure GitHub Pages

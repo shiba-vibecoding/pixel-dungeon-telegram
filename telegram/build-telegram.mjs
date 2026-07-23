@@ -1,5 +1,5 @@
 /*
- * Packages the Pixel Dungeon web build into a Telegram-Mini-App-ready folder.
+ * Packages the Telegram Pixel Dungeon web build into a Telegram-Mini-App-ready folder.
  *
  *   1. copies the built webapp            ->  dist-telegram/
  *   2. drops in the Telegram UI and per-user persistence bridge
@@ -31,6 +31,7 @@ const candidates = [
 const SRC = candidates.find((p) => fs.existsSync(path.join(p, 'index.html')));
 const DEST = process.argv[3] ? path.resolve(process.argv[3]) : path.join(repoRoot, 'dist-telegram');
 const MARKER = 'telegram-mini-app-overlay';
+const BRAND_NAME = 'Telegram Pixel Dungeon';
 
 if (!SRC) {
   console.error('ERROR: no web build found. Looked in:\n  ' + candidates.join('\n  '));
@@ -94,6 +95,13 @@ for (const f of [
 // 3. Patch index.html.
 const indexPath = path.join(DEST, 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');
+
+// Keep the public browser/PWA identity canonical even when an older compatible
+// web build is supplied explicitly to the packager.
+html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${BRAND_NAME}</title>`);
+if (!/<meta\s+name=["']application-name["']/i.test(html)) {
+  html = html.replace('</head>', `    <meta name="application-name" content="${BRAND_NAME}">\n    <meta name="apple-mobile-web-app-title" content="${BRAND_NAME}">\n</head>`);
+}
 
 if (!html.includes(MARKER)) {
   // Bootstrap is reinserted after Telegram CloudStorage has restored the

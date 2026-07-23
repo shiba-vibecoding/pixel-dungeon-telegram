@@ -1,5 +1,18 @@
 LibGDX port: Arcnor / Web port: nojus297	LibGDX移植: Arcnor / Web移植: nojus297
 Telegram port: @barboskich	Telegram移植: @barboskich
+Welcome to the level %d of Pixel Dungeon!	Pixel Dungeonの%d階層へようこそ！
+Welcome back to the level %d of Pixel Dungeon!	Pixel Dungeonの%d階層へおかえりなさい！
+One does not simply leave Pixel Dungeon.	Pixel Dungeonから簡単に出ることはできない。
+Exit Game	ゲームを終了する
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nこのビーコンはPixel Dungeonの%d階層のどこかに設置されている。
+Eating the seed triggers its effect immediately.	種を食べると、植物の効果が\nすぐに発動します。
+Tip: Long-press the wait button to rest until something interrupts you.	ヒント：何かに中断されるまで\n休むには、待機ボタンを長押しします。
+Tip: Long-press the backpack to open the item catalog.	ヒント：バックパックを長押しすると、\nアイテム一覧を開けます。
+Tip: Doors and tall grass can break an enemy's line of sight.	ヒント：扉や背の高い草は、\n敵の視線を遮ることがあります。
+Tip: Throw seeds onto empty tiles to grow useful plants.	ヒント：空いているマスに種を投げると、\n役立つ植物が育ちます。
+Tip: Search suspicious walls to discover hidden doors and traps.	ヒント：怪しい壁を調べると、\n隠し扉や罠が見つかります。
+Tip: Examining an enemy reveals useful combat information.	ヒント：敵を調べると、\n戦闘に役立つ情報が分かります。
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	HP: %d/%d\n命中: %d  回避: %d\n防御: 0-%d
 Select Your Hero	勇者を選択
 Game Over	ゲームオーバー
 Boss slain	ボス撃破
@@ -119,3 +132,11 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	味はまあまあだった。
 Paralysed	麻痺
 Terror	恐怖
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	一口飲むと、知識が頭の中に流れ込んでくるのを感じる。あなたは今、装備しているアイテムのすべてを知っている。また、この階層にあるすべてのアイテムを感知し、その秘密のすべてを知っている。
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	この井戸の水からは知識の力が放たれている。一口飲めば、装備したアイテムの秘密がすべて明らかになるだろう。
+Tome of Remastery	再習熟の学術本
+Remember, that raising your strength is not the only way to access better equipment. You can go the other way, lowering its strength requirement with Scrolls of Upgrade.	力を上げることだけが、より良い装備を使う方法ではない。強化の巻物で装備の必要筋力を下げる方法もある。
+Welcome to the level %d of Telegram Pixel Dungeon!	Telegram Pixel Dungeonの%d階層へようこそ！
+Welcome back to the level %d of Telegram Pixel Dungeon!	Telegram Pixel Dungeonの%d階層へおかえりなさい！
+One does not simply leave Telegram Pixel Dungeon.	Telegram Pixel Dungeonから簡単に出ることはできない。
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nこのビーコンはTelegram Pixel Dungeonの%d階層のどこかに設置されている。

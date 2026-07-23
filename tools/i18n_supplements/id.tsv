@@ -1,5 +1,18 @@
 LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port web: nojus297
 Telegram port: @barboskich	Port Telegram: @barboskich
+Welcome to the level %d of Pixel Dungeon!	Selamat datang di lantai %d Pixel Dungeon!
+Welcome back to the level %d of Pixel Dungeon!	Selamat datang kembali di lantai %d Pixel Dungeon!
+One does not simply leave Pixel Dungeon.	Tidak semudah itu meninggalkan Pixel Dungeon.
+Exit Game	Keluar dari Game
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nSuar ini dipasang di suatu tempat pada lantai %d Pixel Dungeon.
+Eating the seed triggers its effect immediately.	Memakan benih langsung memicu efek tanamannya.
+Tip: Long-press the wait button to rest until something interrupts you.	Tips: Tekan lama tombol tunggu untuk beristirahat hingga sesuatu mengganggumu.
+Tip: Long-press the backpack to open the item catalog.	Tips: Tekan lama ransel untuk membuka katalog item.
+Tip: Doors and tall grass can break an enemy's line of sight.	Tips: Pintu dan rumput tinggi dapat memutus pandangan musuh.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Tips: Lempar benih ke petak kosong untuk menumbuhkan tanaman yang berguna.
+Tip: Search suspicious walls to discover hidden doors and traps.	Tips: Periksa dinding mencurigakan untuk menemukan pintu tersembunyi dan jebakan.
+Tip: Examining an enemy reveals useful combat information.	Tips: Memeriksa musuh menampilkan informasi tempur yang berguna.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	HP: %d/%d\nAkurasi: %d  Penghindaran: %d\nPerlindungan: 0-%d
 Select Your Hero	Pilih Pahlawanmu
 Game Over	Permainan berakhir
 Boss slain	Bos dikalahkan
@@ -61,7 +74,7 @@ Switch to fullscreen	Beralih ke layar penuh
 Switch to windowed	Beralih ke mode jendela
 Reset To Defaults	Kembalikan bawaan
 <None>	<Tidak ada>
-Press a key for "%s", or press %s to remove the binding.	Tekan tombol untuk “%s”, atau tekan %s untuk menghapus pemetaan.
+Press a key for "%s", or press %s to remove the binding.	Tekan tombol untuk "%s", atau tekan %s untuk menghapus pemetaan.
 Hero Info	Info pahlawan
 Wait	Tunggu
 Search	Cari
@@ -83,7 +96,7 @@ Move SW	Bergerak ke barat daya
 Move SE	Bergerak ke tenggara
 Current Cell	Petak saat ini
 Pixel Dungeon	Pixel Dungeon
-Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Kode & grafis: Watabou\nMusik: Cube_Code\n\nGame ini terinspirasi oleh Brogue karya Brian Walker. Cobalah di Windows, Mac OS, atau Linux — game itu luar biasa! ;)\n\nKunjungi situs resmi untuk informasi lebih lanjut:
+Code & graphics: Watabou\nMusic: Cube_Code\n\nThis game is inspired by Brian Walker's Brogue. Try it on Windows, Mac OS or Linux - it's awesome! ;)\n\nPlease visit official website for additional info:	Kode & grafis: Watabou\nMusik: Cube_Code\n\nGame ini terinspirasi oleh Brogue karya Brian Walker. Cobalah di Windows, Mac OS, atau Linux - game itu luar biasa! ;)\n\nKunjungi situs resmi untuk informasi lebih lanjut:
 pixeldungeon.watabou.ru	pixeldungeon.watabou.ru
 Languages Create: rodriformiga	Lokalisasi: rodriformiga
 rodriformiga@gmail.com	rodriformiga@gmail.com
@@ -97,9 +110,9 @@ broken %1$s :%2$d	%1$s rusak :%2$d
 a broken	yang rusak
 %1$s: "%2$s"	%1$s: "%2$s"
 This creature resembles the sad ghost, but it swirls with darkness. Its face bears an expression of despair.	Makhluk ini menyerupai hantu sedih, tetapi berpusar dalam kegelapan. Wajahnya menampakkan keputusasaan.
-Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Halo, petualang... Dahulu aku sepertimu — kuat dan penuh keyakinan... Kini aku mati... Namun aku tak bisa meninggalkan tempat ini karena terikat kutukan mengerikan... Kumohon... Tolong aku... _Hancurkan kutukannya_...
+Hello adventurer... Once I was like you - strong and confident... And now I'm dead... But I can't leave this place, as I am bound by a horrid curse... Please... Help me... _Destroy the curse_...	Halo, petualang... Dahulu aku sepertimu, kuat dan penuh keyakinan... Kini aku mati... Namun aku tak bisa meninggalkan tempat ini karena terikat kutukan mengerikan... Kumohon... Tolong aku... _Hancurkan kutukannya_...
 Thank you, %s! The curse is broken and I can finally rest... Please take one of these items, maybe they will be useful to you in your journey...	Terima kasih, %s! Kutukannya telah hancur dan akhirnya aku bisa beristirahat... Ambillah salah satu benda ini, mungkin akan berguna dalam perjalananmu...
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, sungguh menyenangkan bertemu orang baik di tempat seperti ini! Aku datang mencari bahan langka — seekor _ikan hantu_. Ikan itu bisa ditangkap dengan tangan kosong, tetapi sangat sulit terlihat di dalam air. Sebagai pengguna sihir aku mampu melindungi diri dari monster di sini, tetapi sebentar saja sudah tersesat—sungguh memalukan. Maukah kamu membantuku? Aku akan senang membayar jasamu dengan salah satu tongkat terbaikku.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, sungguh menyenangkan bertemu orang baik di tempat seperti ini! Aku datang mencari bahan langka: seekor _ikan hantu_. Ikan itu bisa ditangkap dengan tangan kosong, tetapi sangat sulit terlihat di dalam air. Sebagai pengguna sihir aku mampu melindungi diri dari monster di sini, tetapi sebentar saja sudah tersesat - sungguh memalukan. Maukah kamu membantuku? Aku akan senang membayar jasamu dengan salah satu tongkat terbaikku.
 1	1
 As you take a sip, you feel something changing inside you.	Saat meneguknya, Anda merasakan sesuatu berubah di dalam diri Anda.
 Disguised as a %s	Menyamar sebagai %s
@@ -138,3 +151,24 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Rasanya lumayan.
 Paralysed	Lumpuh
 Terror	Ketakutan
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Saat meneguk airnya, kamu merasakan pengetahuan mengalir ke dalam pikiranmu. Kini kamu mengetahui segala hal tentang perlengkapanmu. Kamu juga dapat merasakan semua benda di lantai ini dan mengetahui seluruh rahasianya.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Kekuatan pengetahuan memancar dari air sumur ini. Minumlah seteguk untuk mengungkap semua rahasia perlengkapanmu.
+Tome of Remastery	Buku Penguasaan Ulang
+Wand of Blink	Tongkat Kedip
+your %s certainly looks better now	%s milikmu jelas terlihat lebih baik sekarang
+Buffs	Efek
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Saat disentuh, rumput mimpi mengeluarkan awan berkilau berisi gas yang membingungkan.
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	Menyentuh daun pudar akan memindahkan makhluk mana pun ke tempat acak di lantai saat ini.
+When something touches a Firebloom, it bursts into flames.	Saat sesuatu menyentuh bunga api, bunga itu akan berkobar.
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Saat disentuh, tudung es mengeluarkan serbuk sari yang membekukan segala sesuatu di sekitarnya.
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Lumut duka adalah bunga (bukan lumut) dengan kelopak setajam pisau yang dilapisi racun mematikan.
+Sungrass is renowned for its sap's healing properties.	Rumput surya terkenal karena getahnya yang berkhasiat menyembuhkan.
+Strong magic aura of this place prevents you from using the lloyd's beacon!	Aura sihir kuat di tempat ini mencegahmu menggunakan suar Lloyd!
+Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Aura psikis makhluk di sekitar membuatmu tidak dapat menggunakan suar Lloyd saat ini.
+The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Suar Lloyd berhasil dipasang di lokasimu saat ini; sekarang kamu dapat kembali ke sini kapan saja.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, sungguh menyenangkan bertemu orang baik di tempat seperti ini! Aku datang mencari bahan langka: _benih murbei_. Sebagai pengguna sihir, aku cukup mampu melindungi diri dari monster setempat, tetapi aku selalu cepat tersesat - sungguh memalukan. Maukah kamu membantuku? Aku akan dengan senang hati membayar jasamu dengan salah satu tongkat terbaikku.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Bagaimana hasil pencarian _benih murbei_, %s? Belum? Jangan khawatir, aku tidak terburu-buru.
+Welcome to the level %d of Telegram Pixel Dungeon!	Selamat datang di lantai %d Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Selamat datang kembali di lantai %d Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	Tidak semudah itu meninggalkan Telegram Pixel Dungeon.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nSuar ini dipasang di suatu tempat pada lantai %d Telegram Pixel Dungeon.

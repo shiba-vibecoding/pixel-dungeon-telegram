@@ -40,7 +40,7 @@ public class DesktopLauncher {
 		config.addIcon( "ic_launcher_16.png", Files.FileType.Internal );
 
 		// TODO: It have to be pulled from build.gradle, but I don't know how it can be done
-		config.title = "Pixel Dungeon";
+		config.title = "Telegram Pixel Dungeon";
 
 		new LwjglApplication(new PixelDungeon(
 				new DesktopSupport(version, config.preferencesDirectory, new DesktopInputProcessor())

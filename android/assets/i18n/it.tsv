@@ -29,8 +29,6 @@ Many heroes of all kinds ventured into the Dungeon before you. Some of them have
 Let's call it a day	E' abbastanza per oggi
 I'm not done yet	Non ho ancora finito
 You finally hold it in your hands, the Amulet of Yendor. Using its power you can take over the world or bring peace and prosperity to people or whatever. Anyway, your life will change forever and this game will end here. Or you can stay a mere mortal a little longer.	Finalmente lo brandisci, l'Amuleto di Yendor. Con il suo potere puoi dominare il mondo e portare pace e prosperità ai popoli e roba del genere. In ogni caso, la tua vita cambierà per sempre e questo gioco finirà qui. Oppure puoi rimanere un mero mortale per poco più.
-Welcome to the level %d of Pixel Dungeon!	Benvenuto al livello %d di Remixed Dungeon!
-Welcome back to the level %d of Pixel Dungeon!	Bentornato al livello %d di Remixed Dungeon!
 Be cautious, since the dungeon is even more dangerous at night!	Fai attenzione, il Dungeon è ancora più pericoloso di notte!
 Your steps echo across the dungeon.	I tuoi passi riecheggiano nel dungeon.
 You hear the water splashing around you.	Puoi udire l'acqua intorno a te.
@@ -55,7 +53,6 @@ bleeding	sanguinante
 dizzy	allucinato
 invisible	invisibile
 you	tu
-One does not simply leave Pixel Dungeon.	Non si esce semplicemente da Remixed Dungeon.
 level up!	salito di livello!
 Welcome to level %d! Now you are healthier and more focused. It's easier for you to hit enemies and dodge their attacks.	Benvenuti al livello %d! Ora sei più sano e più concentrato. Adesso è più facile per te colpire i nemici e schivare i loro attacchi.
 You now have %s	Tu ora hai %s
@@ -74,7 +71,6 @@ You are blinded!	Sei accecato!
 You become furious!	Diventi furioso!
 furious	furioso
 You are charmed!	Sei affascinato!
-You are crippled!	Sei paralizzato!
 You are bleeding!	Stai sanguinando!
 Everything is spinning around you!	Tutto gira intorno a te!
 warrior	guerriero
@@ -221,7 +217,6 @@ Settings	Impostazioni
 Rankings	Classifiche
 Start New Game	Inizia nuova partita
 Main Menu	Menu principale 
-Exit Game	Esci da Remixed Dungeon
 Return to Game	Ritorna nel gioco
 Experience	Esperienza
 Catalogus	Cataloghi
@@ -323,9 +318,7 @@ Lloyd's beacon is an intricate magic device, that allows you to return to a plac
 Strong magic aura of this place prevents you from using the lloyd's beacon!	Qualche tipo di potente aura magica presente qui ti impedisce di usare il faro di lloyd!
 Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	L'aura psichica delle creature vicine non ti permette di usare il faro di lloyd in questo momento
 The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Il faro di lloyd è stato impostato con successo nella tua posizione attuale, ora puoi tornare qui in qualunque momento.
-\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nQuesto faro è stato posizionato da qualche parte nel livello %ddi Remixed Dungeon.
 Tome of Mastery	Tomo della Maestria
-Tome of Remastery	Tomo della Maestria
 This worn leather book is not that thick, but you feel somehow, that you can gather a lot from it. Remember though that reading this tome may require some time.	Questo logoro libro di pelle non è tanto spesso, ma hai la sensazione di poter ottenere tantissimo da lui. Ricorda però che la lettura di questo tomo potrebbe richiedere diverso tempo
 You can't read while blinded	Non puoi leggere, sei stato accecato
 You have chosen the way of the %s!	Hai scelto il sentiero del %s!
@@ -768,8 +761,6 @@ Shafts of light pierce the gloom of the underground garden.	Spiragli di luce per
 A cloud of paralytic gas is swirling here.	Una nube di gas paralizzante sta vorticando qua.
 A greenish cloud of toxic gas is swirling here.	Una nube verdastra di gas tossico sta vorticando qua.
 You died from a toxic gas..	Sei morto a causa delle esalazioni di gas tossico... 
-As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	La forza della conoscenza si irradia dall'acqua di questo pozzo. Prendine un sorso per rilevare tutti i segreti degli oggetti equipaggiati. 
-Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Appena ne bevi un sorso, senti la conoscenza riversarsi nella tua mente. Ora sai tutto sui tuoi oggetti equipaggiati. Inoltre, percepisci tutti gli oggetti di questo livello e ne sai tutti i segreti.
 Power of health radiates from the water of this well. Take a sip from it to heal your wounds and satisfy hunger.	Il potere della salute viene irradiato dall'acqua di questo pozzo. Prendine un sorso per curare le tue ferite e saziare la tua fame.
 As you take a sip, you feel your wounds heal completely.	Appena ne prendi un sorso, senti che le tue ferite guariscono completamente. 
 Power of change radiates from the water of this well. Throw an item into the well to turn it into something else.	Il potere del mutamento viene irradiato dall'acqua di questo pozzo. Getta un oggetto nel pozzo per trasformarlo in qualcos'altro.
@@ -802,7 +793,6 @@ Caustic ooze	Melma Caustica
 Paralyzed	Paralizzato
 Poisoned	Avvelenato
 You died from poison...	Sei morto avvelenato...
-Rooted	Bloccato
 Shadowmelded	Fuso con l'ombra
 Slowed	Rallentato
 Vertigo	Vertigini
@@ -834,7 +824,6 @@ fire elemental	elementale del fuoco
 Wandering fire elementals are a byproduct of summoning greater entities. They are too chaotic in their nature to be controlled by even the most powerful demonologist.	Gli elementali del fuoco erranti sono un sottoprodotto dell'evocazione di più grandi entità. Sono troppo caotici nella loro forma per essere controllati anche dal più potente demonologo.
 evil eye	malocchio 
 One of this demon's other names is "orb of hatred", because when it sees an enemy, it uses its deathgaze recklessly, often ignoring its allies and wounding them.	Uno degli altri nomi di questo demone è "sfera d'odio" perché quando vede un nemico, usa il suo raggio mortale sconsideratamente, spesso ignorando i suoi alleati e ferendoli.
-%s's deathgaze killed you...	%s's raggio mortale ti ha ucciso...
 fetid rat	ratto puzzolente
 This marsupial rat is much larger, than a regular one. It is surrounded by a foul cloud.	Questo topo marsupiale è molto più grande rispetto ad uno normale. Ed è circondato da una nuvola di gas puzzolente.
 gnoll scout	gnoll esploratore
@@ -868,7 +857,6 @@ These huge arachnid-like demonic creatures avoid close combat by all means, firi
 senior monk	Monaco anziano
 gnoll shaman	gnoll sciamano
 The most intelligent gnolls can master shamanistic magic. Gnoll shamans prefer battle spells to compensate for lack of might, not hesitating to use them on those who question their status in a tribe.	Gli gnoll più intelligenti posso imparare la magia sciamanica. Gli gnoll sciamani preferiscono magie d'attacco per compensare la loro mancanza di forza, non esitando ad usarle su coloro che mettono in dubbio il loro prestigio nella tribù.
-%s's lightning bolt killed you...	%s's fulmine ti ha ucciso....
 shielded brute	Bruto schermato
 skeleton	Scheletro
 Skeletons are composed of corpses bones from unlucky adventurers and inhabitants of the dungeon, animated by emanations of evil magic from the depths below. After they have been damaged enough, they disintegrate in an explosion of bones.	Gli scheletri sono composti dalle ossa di avventurieri sfortunati e degli abitanti del dungeon, animati dalle emanazioni di magia maligna provenienti dai pieni inferiori. Dopo essere stati danneggiati abbastanza, si disintegrano in un esplosioni di ossa.
@@ -888,10 +876,8 @@ Free at last...	Finalmente libero...
 crazy thief	Ladro pazzo
 Deeper levels of the dungeon have always been a hiding place for all kinds of criminals. Not all of them could keep a clear mind during their extended periods so far from daylight. Long ago, these crazy thieves and bandits have forgotten who they are and why they steal.	I livelli più profondi del dungeon sono sempre stati un nascondiglio per tutti i tipi di criminali. Non tutti potevano mantenere una mente lucida durante i loro lunghi periodi così lontano dalla luce del giorno. Molto tempo fa, questi banditi e ladri folli hanno dimenticato chi sono e perché rubano. Questo bandito sembra aver rivestito il pugnale con qualcosa!
 %1$s stole %2$s from you!	%1$s ha rubato %2$s da te!
-\n\n%1$s is carrying a _%2$s_. Stolen obviously.	\n\n%1$s sta portando un _%2$s_. rubalo ovviamente.
 dwarf warlock	Stregone Nano
 When dwarves' interests have shifted from engineering to arcane arts, warlocks have come to power in the city. They started with elemental magic, but soon switched to demonology and necromancy.	Quando gli interessi dei nani deviarono dall'ingegneria alle arti arcane, gli sciamani andarono al potere nella città. Iniziarono con la magia elementale, ma presto verterono in demonologia e necromanzia. 
-%s's shadow bolt killed you...	%s's raggio oscuro ti ha ucciso...
 wraith	Spettro
 A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Being an ethereal entity, it is very hard to hit with a regular weapon.	Un wraith è lo spirito vendicativo di un peccatore a cui fu  disturbata la lapide o la tomba. Essendo una creatura eterea, è veramente difficile da colpire con un'arma normale. 
 Yog-Dzewa	Yog-Dzewa
@@ -906,7 +892,6 @@ Despite their small size, golden bees tend to protect their master fiercely. The
 This %s is wandering	Questo %s sta girovagando.
 troll blacksmith	fabbro troll
 This troll blacksmith looks like all trolls look: he is tall and lean, and his skin resembles stone in both color and texture. The troll blacksmith is tinkering with unproportionally small tools.	Questo fabbro troll si presenta come tutti i troll guardandolo : è alto e magro, la sua pelle assomiglia alla pietra sia a colori e alla consistenza. Il fabbro troll sa armeggiare con piccoli attrezzi in modo non proporzionale 
-Hey human! Wanna be useful, eh? Take dis pickaxe and mine me some _dark gold ore_, _15 pieces_ should be enough. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Hey umano!  Vuoi essere utile, eh? Prendi il piccone e mina del _dark gold ore_, _15 pieces_ dovrebbe essere sufficiente. Cosa vuol dire come ho intenzione di pagare? Sei avido...\nOk, ok, non ho soldi da darti, ma in cambio ti posso offrire i miei servigi per un po. Considerati fortunato, io sono l'unico fabbro qui attorno.
 Hey human! Wanna be useful, eh? Take dis pickaxe and _kill a bat_ wit' it, I need its blood on the head. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Hey umano!  Vuoi essere utile, eh? Prendi il piccone e _uccidi il pipistrello_',ho bisogno del suo sangue sulla testa. dovrebbe essere sufficiente. Cosa vuol dire, come sto andando pagare? Sei avido...\nOk, ok, non ho soldi per pagare, ma posso fare un po il fabbro 'per voi. Considerati fortunato, io sono l'unico fabbro attorno.
 Are you kiddin' me? Where is my pickaxe?!	Mi stai prendendo in giro?! Dov'è il mio piccone!?
 Dark gold ore. 15 pieces. Seriously, is it dat hard?	minerale di oro scuro. 15 pezzi. Scherzi a parte, è difficile?
@@ -951,9 +936,6 @@ Select an item to sell	Seleziona un item da vendere
 old wandmaker	vecchio creatore di bacchette
 This old but hale gentleman wears a slightly confused expression. He is protected by a magic shield.	Questo vecchio ma sano gentiluomo indossa un'espressione un po 'confusa. Egli è protetto da uno scudo magico.
 absorbed	assorbito
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, che bella sorpresa incontrare una persona decente in tale luogo! Sono venuto qui per un raro ingrediente - un _Rotberry seed_. Essendo un utente di magia, sono perfettamente in grado di difendermi contro i mostri locali, ma mi sto perso in poco tempo, è molto imbarazzante. Probabilmente potrebbe aiutarmi? Sarei felice di pagare per il vostro servizio con una delle mie migliori bacchette.
-Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Hai avuto fortuna con un seme Rotberry, %s? No? Non ti preoccupare, io non ho fretta.
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, che bella sorpresa incontrare una persona decente in tale luogo! Sono venuto qui per un ingrediente raro - _corpse dust_. Può essere raccolto da resti scheletrici e vi è un ampio numero di loro in prigione. Essendo un utente di magia, sono perfettamente in grado di difendermi contro i mostri locali, ma mi sto perso in poco tempo, è molto imbarazzante. Probabilmente potrebbe aiutarmi? Sarei felice di pagare per il vostro servizio con una delle mie migliori bacchette.
 Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Hai avuto fortuna con la polvere di cadavere, %s? i mucchi di ossa sono luoghi più evidenti da controllare
 A hidden pressure plate clicks!	Una lastra a pressione nascosta!
 Floor	Pavimento
@@ -989,8 +971,6 @@ Alchemy pot	Pentola alchemica
 \\?\\?\\?	\\?\\?\\?
 You can't see the bottom.	Non riesci a vederne il fondo.
 In case of burning step into the water to extinguish the fire.	Nel caso tu fossi in fiamme cammina nell'acqua per spegnere il fuoco.
-Stairs lead up to the upper depth.	Le scale che portano su conducono in una profondità maggiore
-Stairs lead down to the lower depth.	Le scale che portano giù conducono in una profondità minore
 Embers cover the floor.	le ceneri coprono il pavimento
 Dense vegetation blocks the view.	Una densa vegetazione blocca la visuale.
 This door is locked, you need a matching key to unlock it.	La porta è chiusa, hai bisogno di una chiave adatta per aprirla.
@@ -1063,6 +1043,19 @@ You don't know what is there.	Non sai cosa ci sia.
 Select a cell to examine	Scegli una casella da esaminare
 LibGDX port: Arcnor / Web port: nojus297	Port LibGDX: Arcnor / port web: nojus297
 Telegram port: @barboskich	Port Telegram: @barboskich
+Welcome to the level %d of Pixel Dungeon!	Benvenuto al livello %d di Pixel Dungeon!
+Welcome back to the level %d of Pixel Dungeon!	Bentornato al livello %d di Pixel Dungeon!
+One does not simply leave Pixel Dungeon.	Non si esce semplicemente da Pixel Dungeon.
+Exit Game	Esci dal gioco
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nQuesto faro è stato posizionato da qualche parte nel livello %d di Pixel Dungeon.
+Eating the seed triggers its effect immediately.	Mangiare il seme attiva immediatamente l'effetto della pianta.
+Tip: Long-press the wait button to rest until something interrupts you.	Suggerimento: Tieni premuto il pulsante di attesa per riposare finché qualcosa non ti interrompe.
+Tip: Long-press the backpack to open the item catalog.	Suggerimento: Tieni premuto lo zaino per aprire il catalogo degli oggetti.
+Tip: Doors and tall grass can break an enemy's line of sight.	Suggerimento: Le porte e l'erba alta possono interrompere la linea di vista di un nemico.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Suggerimento: Lancia i semi sulle caselle vuote per far crescere piante utili.
+Tip: Search suspicious walls to discover hidden doors and traps.	Suggerimento: Esamina le pareti sospette per scoprire porte nascoste e trappole.
+Tip: Examining an enemy reveals useful combat information.	Suggerimento: Esaminare un nemico rivela informazioni utili per il combattimento.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	PV: %d/%d\nPrecisione: %d  Schivata: %d\nProtezione: 0-%d
 Select Your Hero	Scegli il tuo eroe
 Game Over	Partita finita
 Boss slain	Boss sconfitto
@@ -1124,7 +1117,7 @@ Switch to fullscreen	Passa a schermo intero
 Switch to windowed	Passa alla modalità finestra
 Reset To Defaults	Ripristina predefiniti
 <None>	<Nessuno>
-Press a key for "%s", or press %s to remove the binding.	Premi un tasto per «%s», oppure %s per rimuovere l'assegnazione.
+Press a key for "%s", or press %s to remove the binding.	Premi un tasto per "%s", oppure %s per rimuovere l'assegnazione.
 Hero Info	Informazioni eroe
 Wait	Attendi
 Search	Cerca
@@ -1191,3 +1184,22 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Quel cibo non era male.
 Paralysed	Paralizzato
 Terror	Terrore
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Appena ne bevi un sorso, senti la conoscenza riversarsi nella tua mente. Ora sai tutto sugli oggetti che hai equipaggiato. Inoltre, percepisci tutti gli oggetti del livello e ne conosci ogni segreto.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Il potere della conoscenza si irradia dall'acqua di questo pozzo. Bevila per svelare tutti i segreti degli oggetti equipaggiati.
+Tome of Remastery	Tomo della Rimaestria
+Stairs lead up to the upper depth.	Le scale che salgono conducono al piano superiore.
+Stairs lead down to the lower depth.	Le scale che scendono conducono al piano inferiore.
+You are crippled!	Sei rallentato!
+Rooted	Radicato
+\n\n%1$s is carrying a _%2$s_. Stolen obviously.	\n\n%1$s porta con sé un _%2$s_. Chiaramente rubato.
+Hey human! Wanna be useful, eh? Take dis pickaxe and mine me some _dark gold ore_, _15 pieces_ should be enough. What do you mean, how am I gonna pay? You greedy...\nOk, ok, I don't have money to pay, but I can do some smithin' for you. Consider yourself lucky, I'm the only blacksmith around.	Ehi, umano! Vuoi renderti utile, eh? Prendi questo piccone e scavami un po' di _minerale d'oro scuro_: _15 pezzi_ dovrebbero bastare. Come dici, come ti pagherò? Avido...\nVa bene, va bene, non ho denaro, ma posso forgiare qualcosa per te. Ritieniti fortunato: sono l'unico fabbro nei dintorni.
+%s's deathgaze killed you...	Lo sguardo mortale di %s ti ha ucciso...
+%s's lightning bolt killed you...	Il fulmine di %s ti ha ucciso...
+%s's shadow bolt killed you...	Il dardo d'ombra di %s ti ha ucciso...
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, che piacevole sorpresa incontrare una persona perbene in un posto simile! Sono venuto qui per un ingrediente raro: un _seme di Baccamarcia_. So difendermi dai mostri locali con la magia, ma mi perdo in continuazione: che imbarazzo. Potresti aiutarmi? Sarei lieto di ricompensarti con una delle mie bacchette migliori.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	Hai avuto fortuna con un _seme di Baccamarcia_, %s? No? Non preoccuparti, non ho fretta.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, che piacevole sorpresa incontrare una persona perbene in un posto simile! Sono venuto qui per un ingrediente raro: la _polvere di cadavere_. Si può raccogliere dai resti scheletrici, e nel dungeon ce n'è in abbondanza. So difendermi dai mostri locali con la magia, ma mi perdo in continuazione: che imbarazzo. Potresti aiutarmi? Sarei lieto di ricompensarti con una delle mie bacchette migliori.
+Welcome to the level %d of Telegram Pixel Dungeon!	Benvenuto al livello %d di Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Bentornato al livello %d di Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	Non si esce semplicemente da Telegram Pixel Dungeon.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nQuesto faro è stato posizionato da qualche parte nel livello %d di Telegram Pixel Dungeon.

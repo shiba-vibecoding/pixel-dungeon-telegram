@@ -1,5 +1,18 @@
 LibGDX port: Arcnor / Web port: nojus297	LibGDX portu: Arcnor / web portu: nojus297
 Telegram port: @barboskich	Telegram portu: @barboskich
+Welcome to the level %d of Pixel Dungeon!	Pixel Dungeon'ın %d. katına hoş geldin!
+Welcome back to the level %d of Pixel Dungeon!	Pixel Dungeon'ın %d. katına tekrar hoş geldin!
+One does not simply leave Pixel Dungeon.	Pixel Dungeon'dan öylece çıkıp gidemezsin.
+Exit Game	Oyundan Çık
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nBu işaret Pixel Dungeon'ın %d. katında bir yere yerleştirildi.
+Eating the seed triggers its effect immediately.	Tohumu yemek, bitkinin etkisini hemen tetikler.
+Tip: Long-press the wait button to rest until something interrupts you.	İpucu: Bir şey seni kesintiye uğratana kadar dinlenmek için bekleme düğmesine basılı tut.
+Tip: Long-press the backpack to open the item catalog.	İpucu: Eşya kataloğunu açmak için sırt çantasına basılı tut.
+Tip: Doors and tall grass can break an enemy's line of sight.	İpucu: Kapılar ve uzun otlar bir düşmanın görüş hattını kesebilir.
+Tip: Throw seeds onto empty tiles to grow useful plants.	İpucu: Yararlı bitkiler yetiştirmek için tohumları boş karelere at.
+Tip: Search suspicious walls to discover hidden doors and traps.	İpucu: Gizli kapıları ve tuzakları bulmak için şüpheli duvarları ara.
+Tip: Examining an enemy reveals useful combat information.	İpucu: Bir düşmanı incelemek, savaşta yararlı bilgiler sağlar.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	Can: %d/%d\nİsabet: %d  Kaçınma: %d\nKoruma: 0-%d
 Select Your Hero	Kahramanını seç
 Game Over	Oyun bitti
 Boss slain	Boss yenildi
@@ -117,3 +130,16 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Yemeğin tadı fena değildi.
 Paralysed	Felç
 Terror	Dehşet
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	Bir yudum aldığında bilginin zihnine aktığını hissediyorsun. Artık kuşandığın eşyalar hakkında her şeyi biliyor, bu kattaki tüm eşyaları ve sırları hissedebiliyorsun.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	Bilginin gücü bu kuyunun suyundan yayılıyor. Kuşandığın eşyaların tüm sırlarını açığa çıkarmak için bir yudum al.
+Tome of Remastery	Yeniden Ustalık Kitabı
+Wand of Blink	Sıçrama Asası
+Potion of Might	Kudret İksiri
+warlock	büyücü savaşçı
+evaded	sıyrıldı
+Stairs lead up to the upper depth.	Merdivenler bir üst kata çıkmanızı sağlar.
+The ladder leads up to the upper depth.	Merdiven bir üst kata çıkmanızı sağlar.
+Welcome to the level %d of Telegram Pixel Dungeon!	Telegram Pixel Dungeon'ın %d. katına hoş geldin!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Telegram Pixel Dungeon'ın %d. katına tekrar hoş geldin!
+One does not simply leave Telegram Pixel Dungeon.	Telegram Pixel Dungeon'dan öylece çıkıp gidemezsin.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nBu işaret Telegram Pixel Dungeon'ın %d. katında bir yere yerleştirildi.

@@ -1,5 +1,13 @@
 LibGDX port: Arcnor / Web port: nojus297	Port para LibGDX: Arcnor / port web: nojus297
 Telegram port: @barboskich	Port para Telegram: @barboskich
+Eating the seed triggers its effect immediately.	Comer la semilla activa de inmediato el efecto de la planta.
+Tip: Long-press the wait button to rest until something interrupts you.	Consejo: Mantén pulsado el botón de esperar para descansar hasta que algo te interrumpa.
+Tip: Long-press the backpack to open the item catalog.	Consejo: Mantén pulsada la mochila para abrir el catálogo de objetos.
+Tip: Doors and tall grass can break an enemy's line of sight.	Consejo: Las puertas y la hierba alta pueden bloquear la línea de visión de un enemigo.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Consejo: Lanza semillas sobre casillas vacías para cultivar plantas útiles.
+Tip: Search suspicious walls to discover hidden doors and traps.	Consejo: Examina muros sospechosos para descubrir puertas ocultas y trampas.
+Tip: Examining an enemy reveals useful combat information.	Consejo: Examinar a un enemigo revela información útil para el combate.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	PV: %d/%d\nPrecisión: %d  Evasión: %d\nProtección: 0-%d
 Select Your Hero	Elige a tu héroe
 Game Over	Fin de la partida
 Boss slain	Jefe derrotado
@@ -9,7 +17,7 @@ Switch to fullscreen	Cambiar a pantalla completa
 Switch to windowed	Cambiar a modo ventana
 Reset To Defaults	Restablecer valores
 <None>	<Ninguna>
-Press a key for "%s", or press %s to remove the binding.	Pulsa una tecla para «%s» o pulsa %s para eliminar la asignación.
+Press a key for "%s", or press %s to remove the binding.	Pulsa una tecla para "%s" o pulsa %s para eliminar la asignación.
 Hero Info	Información del héroe
 Wait	Esperar
 Search	Buscar
@@ -36,7 +44,7 @@ Disguised as a %s	Disfrazado de %s
 You merged two wands into one %s.	Has fusionado dos varitas para crear %s.
 Select a wand to merge	Elige una varita para fusionar
 mob	monstruo
-sniper	tirador
+sniper	francotiradora
 7-hit combo	combo de 7 golpes
 smth	algo
 Dreamweed	hierbasueño
@@ -63,3 +71,31 @@ That food tasted ok.	La comida no estaba mal.
 Paralysed	Paralizado
 Terror	Aterrorizado
 Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	¡Qué agradable sorpresa encontrar a alguien decente en un lugar como este! Vine en busca de un ingrediente raro: un _pez fantasma_. Puedes atraparlo con las manos desnudas, pero es muy difícil verlo en el agua. Como mago puedo defenderme de los monstruos de la zona, pero me pierdo enseguida; es bastante vergonzoso. ¿Podrías ayudarme? Con gusto te recompensaré con una de mis mejores varitas.
+warlock	brujo
+After killing an enemy the _Warlock_ consumes its soul. It heals his wounds and satisfies his hunger.	Tras matar a un enemigo, el _Brujo_ consume su alma. Esto sana sus heridas y sacia su hambre.
+Sell for %dg	Vender por %dg
+Embermoss	Musgo de brasas
+Emberfungi	Hongos de brasas
+A ramp leads down to the Inferno.	Una rampa desciende hasta el Infierno.
+battlemage	mago de batalla
+When fighting with a wand in his hands, the _Battlemage_ inflicts additional damage depending on the current number of charges. Every successful hit restores 1 charge to this wand.	Mientras lucha con una varita en la mano, el _Mago de batalla_ inflige daño adicional según el número de cargas que le queden. Cada golpe acertado restaura 1 carga de esa varita.
+_Snipers_ are able to detect weak points in an enemy's armor, effectively ignoring it when using a missile weapon.	Las _Francotiradoras_ detectan puntos débiles en la armadura enemiga, por lo que prácticamente la ignoran cuando usan armas a distancia.
+warden	guardiana
+Having a strong connection with forces of nature gives _Wardens_ an ability to gather dewdrops and seeds from plants. Also trampling a high grass grants them a temporary armor buff.	Su fuerte vínculo con las fuerzas de la naturaleza permite a las _Guardianas_ recoger gotas de rocío y semillas de las plantas. Además, al pisar hierba alta obtienen temporalmente una mejora de armadura.
+3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	Tercer jefe derrotado por Gladiador, Berserker, Brujo, Mago de batalla, Corredor, Asesino, Francotiradora y Guardiana
+Second quickslot	Segundo acceso rápido
+Select an item for the quickslot	Selecciona un objeto para el acceso rápido
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Al tocar la hierbasueño, esta libera una nube brillante de gas desorientador.
+When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Cuando una criatura toca una raíz terrestre, sus raíces forman a su alrededor una especie de armadura natural.
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	Tocar una hoja evanescente teletransporta a cualquier criatura a un lugar aleatorio del nivel actual.
+When something touches a Firebloom, it bursts into flames.	Cuando algo toca una flor de fuego, estalla en llamas.
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Al tocar un sombrerillo de hielo, este libera un polen que congela todo a su alrededor.
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	El musgo triste es una flor (no un musgo) de pétalos afilados como cuchillas, cubiertos de un veneno mortal.
+Sungrass is renowned for its sap's healing properties.	La hierba solar es famosa por las propiedades curativas de su savia.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _Rotberry seed_. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	¡Qué agradable sorpresa encontrar a alguien decente en un lugar como este! He venido a buscar un ingrediente raro: una _semilla de bayapodrida_. Como usuario de la magia, puedo defenderme de los monstruos de la zona, pero me pierdo enseguida, lo cual es bastante vergonzoso. ¿Podrías ayudarme? Estaría encantado de recompensarte con una de mis mejores varitas.
+Any luck with a _Rotberry seed_, %s? No? Don't worry, I'm not in a hurry.	¿Has tenido suerte con la _semilla de bayapodrida_, %s? ¿No? No te preocupes, no tengo prisa.
+Heavy bars block the stairs leading down.	Unos barrotes pesados bloquean las escaleras que descienden.
+Welcome to the level %d of Telegram Pixel Dungeon!	¡Bienvenido al nivel %d de Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	¡Bienvenido de nuevo al nivel %d de Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	No se sale de Telegram Pixel Dungeon tan fácilmente.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nEsta baliza se instaló en algún lugar del nivel %d de Telegram Pixel Dungeon.

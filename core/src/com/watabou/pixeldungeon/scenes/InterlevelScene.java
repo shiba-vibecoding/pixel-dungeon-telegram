@@ -20,6 +20,7 @@ package com.watabou.pixeldungeon.scenes;
 import java.io.FileNotFoundException;
 
 import com.watabou.noosa.BitmapText;
+import com.watabou.noosa.BitmapTextMultiline;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Music;
@@ -45,6 +46,21 @@ public class InterlevelScene extends PixelScene {
 	private static final String TXT_RESURRECTING= "Resurrecting...";
 	private static final String TXT_RETURNING	= "Returning...";
 	private static final String TXT_FALLING		= "Falling...";
+
+	/*
+	 * Short, mechanics-only hints make the otherwise empty transition useful
+	 * without changing balance or spoiling dungeon discoveries. The selected
+	 * hint is derived from run state instead of the gameplay RNG, so showing it
+	 * can never alter level generation.
+	 */
+	private static final String[] TIPS = {
+		"Tip: Long-press the wait button to rest until something interrupts you.",
+		"Tip: Long-press the backpack to open the item catalog.",
+		"Tip: Doors and tall grass can break an enemy's line of sight.",
+		"Tip: Throw seeds onto empty tiles to grow useful plants.",
+		"Tip: Search suspicious walls to discover hidden doors and traps.",
+		"Tip: Examining an enemy reveals useful combat information."
+	};
 	
 	private static final String ERR_FILE_NOT_FOUND	= "File not found. For some reason...";
 	private static final String ERR_GENERIC			= "Something went wrong..."	;	
@@ -68,6 +84,7 @@ public class InterlevelScene extends PixelScene {
 	private float timeLeft;
 	
 	private BitmapText message;
+	private BitmapTextMultiline tip;
 	
 	private PDPlatformSupport.PDThread thread;
 	private String error = null;
@@ -104,6 +121,15 @@ public class InterlevelScene extends PixelScene {
 		message.x = (Camera.main.width - message.width()) / 2; 
 		message.y = (Camera.main.height - message.height()) / 2;
 		add( message );
+
+		int tipIndex = Math.abs( Dungeon.depth + Statistics.deepestFloor + mode.ordinal() ) % TIPS.length;
+		tip = PixelScene.createMultiline( TIPS[tipIndex], 6 );
+		tip.maxWidth = Math.max( 80, Camera.main.width - 20 );
+		tip.measure();
+		tip.x = (Camera.main.width - tip.width()) / 2;
+		tip.y = message.y + message.height() + 12;
+		tip.hardlight( 0xAAA79A );
+		add( tip );
 		
 		phase = Phase.FADE_IN;
 		timeLeft = TIME_TO_FADE;
@@ -171,6 +197,7 @@ public class InterlevelScene extends PixelScene {
 		
 		case FADE_IN:
 			message.alpha( 1 - p );
+			tip.alpha( 1 - p );
 			if ((timeLeft -= Game.elapsed) <= 0) {
 				if (!thread.isAlive() && error == null) {
 					phase = Phase.FADE_OUT;
@@ -183,6 +210,7 @@ public class InterlevelScene extends PixelScene {
 			
 		case FADE_OUT:
 			message.alpha( p );
+			tip.alpha( p );
 			if (mode == Mode.CONTINUE || (mode == Mode.DESCEND && Dungeon.depth == 1)) {
 				Music.INSTANCE.volume( p );
 			}

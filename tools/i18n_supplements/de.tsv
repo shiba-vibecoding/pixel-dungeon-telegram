@@ -1,5 +1,13 @@
 LibGDX port: Arcnor / Web port: nojus297	LibGDX-Port: Arcnor / Web-Port: nojus297
 Telegram port: @barboskich	Telegram-Port: @barboskich
+Eating the seed triggers its effect immediately.	Wenn du den Samen isst, wird die Wirkung der Pflanze sofort ausgelöst.
+Tip: Long-press the wait button to rest until something interrupts you.	Tipp: Halte die Schaltfläche Warten gedrückt, um dich auszuruhen, bis dich etwas unterbricht.
+Tip: Long-press the backpack to open the item catalog.	Tipp: Halte den Rucksack gedrückt, um den Gegenstandskatalog zu öffnen.
+Tip: Doors and tall grass can break an enemy's line of sight.	Tipp: Türen und hohes Gras können die Sichtlinie eines Gegners unterbrechen.
+Tip: Throw seeds onto empty tiles to grow useful plants.	Tipp: Wirf Samen auf freie Felder, um nützliche Pflanzen wachsen zu lassen.
+Tip: Search suspicious walls to discover hidden doors and traps.	Tipp: Durchsuche verdächtige Wände, um verborgene Türen und Fallen zu entdecken.
+Tip: Examining an enemy reveals useful combat information.	Tipp: Das Untersuchen eines Gegners zeigt nützliche Kampfinformationen.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	LP: %d/%d\nGenauigkeit: %d  Ausweichen: %d\nSchutz: 0-%d
 Select Your Hero	Wähle deinen Helden
 Game Over	Spiel vorbei
 Boss slain	Boss besiegt
@@ -11,7 +19,7 @@ Switch to fullscreen	Zum Vollbild wechseln
 Switch to windowed	Zum Fenstermodus wechseln
 Reset To Defaults	Standardeinstellungen
 <None>	<Keine>
-Press a key for "%s", or press %s to remove the binding.	Drücke eine Taste für „%s“ oder %s, um die Belegung zu entfernen.
+Press a key for "%s", or press %s to remove the binding.	Drücke eine Taste für "%s" oder %s, um die Belegung zu entfernen.
 Hero Info	Heldeninfo
 Wait	Warten
 Search	Suchen
@@ -36,8 +44,8 @@ Deeper levels of the dungeon have always been a hiding place for all kinds of cr
 When dwarves' interests have shifted from engineering to arcane arts, warlocks have come to power in the city. They started with elemental magic, but soon switched to demonology and necromancy.	Als sich das Interesse der Zwerge von der Technik zu den arkanen Künsten verlagerte, gelangten Hexenmeister in der Stadt an die Macht. Sie begannen mit Elementarmagie, wandten sich aber bald der Dämonologie und Nekromantie zu.
 A wraith is a vengeful spirit of a sinner, whose grave or tomb was disturbed. Being an ethereal entity, it is very hard to hit with a regular weapon.	Ein Geist ist der rachsüchtige Schatten eines Sünders, dessen Grab gestört wurde. Als körperloses Wesen ist er mit einer gewöhnlichen Waffe nur sehr schwer zu treffen.
 Despite their small size, golden bees tend to protect their master fiercely. They don't live long though.	Trotz ihrer geringen Größe verteidigen goldene Bienen ihren Meister erbittert. Allerdings leben sie nicht lange.
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, was für eine angenehme Überraschung, an einem solchen Ort einen anständigen Menschen zu treffen! Ich bin wegen einer seltenen Zutat hier: _Leichenstaub_. Man kann ihn aus Skelettresten gewinnen, und davon gibt es im Dungeon reichlich. Als Magier kann ich mich zwar gegen die hiesigen Monster verteidigen, aber ich verlaufe mich ständig – höchst peinlich. Könntest du mir vielleicht helfen? Für deine Dienste würde ich dich gern mit einem meiner besten Zauberstäbe bezahlen.
-Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, was für eine angenehme Überraschung, an einem solchen Ort einen anständigen Menschen zu treffen! Ich bin wegen einer seltenen Zutat hier: eines _Phantomfisches_. Man kann ihn mit bloßen Händen fangen, doch im Wasser ist er kaum zu erkennen. Als Magier kann ich mich zwar gegen die hiesigen Monster verteidigen, aber ich verlaufe mich ständig – höchst peinlich. Könntest du mir vielleicht helfen? Für deine Dienste würde ich dich gern mit einem meiner besten Zauberstäbe bezahlen.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - _corpse dust_. It can be gathered from skeletal remains and there is an ample number of them in the dungeon. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, was für eine angenehme Überraschung, an einem solchen Ort einen anständigen Menschen zu treffen! Ich bin wegen einer seltenen Zutat hier: _Leichenstaub_. Man kann ihn aus Skelettresten gewinnen, und davon gibt es im Dungeon reichlich. Als Magier kann ich mich zwar gegen die hiesigen Monster verteidigen, aber ich verlaufe mich ständig - höchst peinlich. Könntest du mir vielleicht helfen? Für deine Dienste würde ich dich gern mit einem meiner besten Zauberstäbe bezahlen.
+Oh, what a pleasant surprise to meet a decent person in such place! I came here for a rare ingredient - a _phantom fish_. You can catch it with your bare hands, but it's very hard to notice in the water. Being a magic user, I'm quite able to defend myself against local monsters, but I'm getting lost in no time, it's very embarrassing. Probably you could help me? I would be happy to pay for your service with one of my best wands.	Oh, was für eine angenehme Überraschung, an einem solchen Ort einen anständigen Menschen zu treffen! Ich bin wegen einer seltenen Zutat hier: eines _Phantomfisches_. Man kann ihn mit bloßen Händen fangen, doch im Wasser ist er kaum zu erkennen. Als Magier kann ich mich zwar gegen die hiesigen Monster verteidigen, aber ich verlaufe mich ständig - höchst peinlich. Könntest du mir vielleicht helfen? Für deine Dienste würde ich dich gern mit einem meiner besten Zauberstäbe bezahlen.
 As you take a sip, you feel something changing inside you.	Als du einen Schluck nimmst, spürst du, wie sich etwas in dir verändert.
 Disguised as a %s	Verkleidet als %s
 You merged two wands into one %s.	Aus zwei Zauberstäben hast du %s erschaffen.
@@ -72,3 +80,46 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	Das Essen schmeckte ganz in Ordnung.
 Paralysed	Gelähmt
 Terror	Panik
+Rogues identify a type of a ring on equipping it.	Schurken identifizieren die Art eines Rings, sobald sie ihn anlegen.
+Rogues are proficient with light armor, dodging better while wearing one.	Schurken sind im Umgang mit leichter Rüstung geübt und weichen besser aus, wenn sie eine tragen.
+SET	SETZEN
+APPLY	ANWENDEN
+ZAP	FEUERN
+Lloyd's beacon is an intricate magic device, that allows you to return to a place you have already been.	Lloyds Leuchtfeuer ist ein komplexes magisches Gerät, mit dem du an einen Ort zurückkehren kannst, den du bereits besucht hast.
+Strong magic aura of this place prevents you from using the lloyd's beacon!	Die starke magische Aura dieses Ortes hindert dich daran, Lloyds Leuchtfeuer zu benutzen!
+Psychic aura of neighboring creatures doesn't allow you to use the lloyd's beacon at this moment.	Die psychische Aura benachbarter Kreaturen hindert dich gerade daran, Lloyds Leuchtfeuer zu benutzen.
+The lloyd's beacon is successfully set at your current location, now you can return here anytime.	Lloyds Leuchtfeuer wurde an deinem aktuellen Standort gesetzt. Du kannst nun jederzeit hierher zurückkehren.
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\nDieses Leuchtfeuer wurde irgendwo auf Ebene %d von Pixel Dungeon gesetzt.
+This is a %s	Dies ist ein %s
+Ring of Evasion	Ring des Ausweichens
+Wearing this ring will allow the wearer to notice hidden secrets - traps and secret doors - without taking time to search. Degraded rings of detection will dull your senses, making it harder to notice secrets even when actively searching for them.	Wer diesen Ring trägt, entdeckt verborgene Geheimnisse wie Fallen und Geheimtüren, ohne Zeit mit einer Suche zu verbringen. Verschlechterte Ringe der Erkennung trüben dagegen die Sinne und erschweren es, Geheimnisse selbst bei gezielter Suche zu finden.
+This ring increases the body's regenerative properties, allowing one to recover lost health at an accelerated rate. Degraded rings will decrease or even halt one's natural regeneration.	Dieser Ring verstärkt die Regeneration des Körpers und lässt verlorene Gesundheit schneller zurückkehren. Verschlechterte Ringe verlangsamen oder stoppen dagegen die natürliche Regeneration.
+Your wands will become more powerful in the energy field that radiates from this ring. Degraded rings of power will instead weaken your wands.	Das Energiefeld dieses Rings verstärkt deine Zauberstäbe. Verschlechterte Ringe der Macht schwächen deine Zauberstäbe stattdessen.
+Wearing this ring you can go without food longer. Degraded rings of satiety will cause the opposite effect.	Mit diesem Ring kommst du länger ohne Nahrung aus. Verschlechterte Ringe der Sättigung bewirken das Gegenteil.
+Stairs lead up to the upper depth.	Die Treppe führt hinauf in die obere Ebene.
+crippled	verkrüppelt
+Crippled	Verkrüppelt
+You are crippled!	Du bist verkrüppelt!
+A ramp leads down to the Inferno.	Eine Rampe führt hinab ins Inferno.
+%s's shadow bolt killed you...	Der Schattenblitz von %s hat dich getötet...
+Upon touching a Dreamweed it secretes a glittering cloud of confusing gas.	Beim Berühren setzt Traumkraut eine glitzernde Wolke aus verwirrendem Gas frei.
+When a creature touches an Earthroot, its roots create a kind of natural armor around it.	Wenn eine Kreatur eine Erdwurzel berührt, bilden deren Wurzeln eine natürliche Rüstung um sie.
+Touching a Fadeleaf will teleport any creature to a random place on the current level.	Das Berühren eines Schwundblatts teleportiert jede Kreatur an einen zufälligen Ort auf der aktuellen Ebene.
+When something touches a Firebloom, it bursts into flames.	Wenn etwas eine Feuerblüte berührt, geht es in Flammen auf.
+Upon touching an Icecap excretes a pollen, which freezes everything in its vicinity.	Beim Berühren setzt eine Eiskappe Blütenstaub frei, der alles in ihrer Nähe einfriert.
+A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.	Trauermoos ist eine Blume (kein Moos) mit rasiermesserscharfen Blütenblättern, die mit einem tödlichen Gift überzogen sind.
+Sungrass is renowned for its sap's healing properties.	Sonnengras ist für die heilende Wirkung seines Safts bekannt.
+Any luck with _corpse dust_, %s? Bone piles are the most obvious places to look.	Hattest du schon Glück mit dem _Leichenstaub_, %s? Knochenhaufen sind die naheliegendsten Orte, um danach zu suchen.
+Any luck with a _phantom fish_, %s? You may want to try searching for it in one of the local pools.	Hattest du schon Glück mit einem _Phantomfisch_, %s? Suche am besten in einem der Wasserbecken hier.
+phantom fish	Phantomfisch
+Second quickslot	Zweiter Schnellzugriff
+Select an item for the quickslot	Wähle einen Gegenstand für den Schnellzugriff
+OK, a deal is a deal, dat's what I can do for you: I can reforge 2 items and turn them into one of a better quality.	Na gut, abgemacht ist abgemacht. Folgendes kann ich für dich tun: Ich kann zwei Gegenstände neu schmieden und zu einem höherwertigen vereinen.
+Select an item to reforge	Wähle einen Gegenstand zum Neuschmieden
+Reforge them	Neu schmieden
+REFORGE	NEU SCHMIEDEN
+I can't reforge these items!	Diese Gegenstände kann ich nicht neu schmieden!
+Welcome to the level %d of Telegram Pixel Dungeon!	Willkommen auf Ebene %d von Telegram Pixel Dungeon!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Willkommen zurück auf Ebene %d von Telegram Pixel Dungeon!
+One does not simply leave Telegram Pixel Dungeon.	Telegram Pixel Dungeon verlässt man nicht einfach so.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\nDieses Leuchtfeuer wurde irgendwo auf Ebene %d von Telegram Pixel Dungeon gesetzt.

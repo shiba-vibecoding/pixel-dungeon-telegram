@@ -136,7 +136,7 @@ public class HtmlLauncher extends ResilientGwtApplication {
 
 		@Override
 		public boolean musicDefault() {
-			return false;
+			return true;
 		}
 
 		public PDThread newThread(Runnable runnable) {

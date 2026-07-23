@@ -1,4 +1,4 @@
-# Публикация Pixel Dungeon как Telegram Mini App через GitHub Pages
+# Публикация Telegram Pixel Dungeon через GitHub Pages
 
 Проект уже содержит production-сборку и workflow
 `.github/workflows/deploy-pages.yml`. После каждого push в `master` или `main`
@@ -21,7 +21,7 @@ GitHub автоматически:
 git remote rename origin upstream
 git remote add origin https://github.com/ВАШ_ЛОГИН/pixel-dungeon-telegram.git
 git add .
-git commit -m "Prepare Pixel Dungeon Telegram Mini App"
+git commit -m "Prepare Telegram Pixel Dungeon Mini App"
 git push -u origin master
 ```
 
@@ -39,7 +39,7 @@ git push -u origin main
 
 Откройте **Settings → Pages → Build and deployment** и выберите
 **Source: GitHub Actions**. Затем откройте вкладку **Actions** и дождитесь
-успешного workflow `Build and deploy Telegram Mini App`.
+успешного workflow `Build and deploy Telegram Pixel Dungeon`.
 
 Адрес игры будет выглядеть так:
 

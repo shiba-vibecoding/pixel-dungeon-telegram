@@ -1,5 +1,13 @@
 LibGDX port: Arcnor / Web port: nojus297	LibGDX 포팅: Arcnor / 웹 포팅: nojus297
 Telegram port: @barboskich	Telegram 포팅: @barboskich
+Eating the seed triggers its effect immediately.	씨앗을 먹으면 식물의 효과가 즉시 발동합니다.
+Tip: Long-press the wait button to rest until something interrupts you.	도움말: 무언가가 방해할 때까지 쉬려면 대기 버튼을 길게 누르세요.
+Tip: Long-press the backpack to open the item catalog.	도움말: 배낭을 길게 누르면 아이템 도감을 열 수 있습니다.
+Tip: Doors and tall grass can break an enemy's line of sight.	도움말: 문과 키 큰 풀은 적의 시야를 차단할 수 있습니다.
+Tip: Throw seeds onto empty tiles to grow useful plants.	도움말: 빈 칸에 씨앗을 던져 유용한 식물을 키우세요.
+Tip: Search suspicious walls to discover hidden doors and traps.	도움말: 수상한 벽을 수색하면 숨겨진 문과 함정을 찾을 수 있습니다.
+Tip: Examining an enemy reveals useful combat information.	도움말: 적을 조사하면 전투에 유용한 정보를 확인할 수 있습니다.
+HP: %d/%d\nAccuracy: %d  Evasion: %d\nProtection: 0-%d	체력: %d/%d\n명중: %d  회피: %d\n방어: 0-%d
 Select Your Hero	영웅 선택
 Game Over	게임 오버
 Boss slain	보스 처치
@@ -118,3 +126,19 @@ The caves, which stretch down under the abandoned prison, are sparsely populated
 That food tasted ok.	먹을 만했다.
 Paralysed	마비
 Terror	공포
+Welcome to the level %d of Pixel Dungeon!	Pixel Dungeon %d층에 오신 것을 환영합니다!
+Welcome back to the level %d of Pixel Dungeon!	Pixel Dungeon %d층에 돌아오신 것을 환영합니다!
+One does not simply leave Pixel Dungeon.	누구도 Pixel Dungeon을 쉽게 빠져나갈 수 없다.
+Exit Game	게임 종료
+\n\nThis beacon was set somewhere on the level %d of Pixel Dungeon.	\n\n이 신호기는 Pixel Dungeon %d층 어딘가에 설치되었습니다.
+As you take a sip, you feel the knowledge pours into your mind. Now you know everything about your equipped items. Also you sense all items on the level and know all its secrets.	한 모금 마시자 지식이 머리로 쏟아져 들어옵니다. 이제 장착한 아이템의 모든 정보를 알게 되었고, 현재 층의 모든 아이템과 비밀도 느낄 수 있습니다.
+Power of knowledge radiates from the water of this well. Take a sip from it to reveal all secrets of equipped items.	지식의 힘이 우물에서 흘러나옵니다. 한 모금 마시면 장착한 아이템의 모든 비밀을 알게 됩니다.
+1st boss slain by Warrior, Mage, Rogue & Huntress	전사, 마법사, 도적, 사냥꾼으로 첫 번째 보스 처치
+3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden	검투사, 광전사, 흑마법사, 전투 마법사, 프리러너, 암살자, 저격수, 숲지기로 세 번째 보스 처치
+Killed by discharge of %1$s on level %2$d	%2$d층에서 %1$s의 방전으로 사망
+Caustic ooze	부식성 점액
+Tome of Remastery	재전직의 서
+Welcome to the level %d of Telegram Pixel Dungeon!	Telegram Pixel Dungeon %d층에 오신 것을 환영합니다!
+Welcome back to the level %d of Telegram Pixel Dungeon!	Telegram Pixel Dungeon %d층에 돌아오신 것을 환영합니다!
+One does not simply leave Telegram Pixel Dungeon.	누구도 Telegram Pixel Dungeon을 쉽게 빠져나갈 수 없다.
+\n\nThis beacon was set somewhere on the level %d of Telegram Pixel Dungeon.	\n\n이 신호기는 Telegram Pixel Dungeon %d층 어딘가에 설치되었습니다.

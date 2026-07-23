@@ -1,4 +1,4 @@
-# Pixel Dungeon → Telegram Mini App
+# Telegram Pixel Dungeon — Mini App
 
 Packages the original **Pixel Dungeon** (Watabou, v1.9.2a) — the libGDX/GWT web
 build from [gnojus/pixel-dungeon-gdx](https://github.com/gnojus/pixel-dungeon-gdx)
