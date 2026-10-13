@@ -65,6 +65,12 @@ export interface Level {
   region?: number;
   /** The arena of waves: its dais, gates and pens (level/arena.ts). */
   ring?: ArenaRing;
+  /**
+   * Tall grass the huntress has passed through (Terrain.FURROWED_GRASS): it still stands, but sheds
+   * nothing more. A seam for the levels stream, which brings Shattered's terrains: until then such
+   * cells stay HIGH_GRASS and are listed here.
+   */
+  furrowed?: number[];
 }
 
 /** How each depth is laid out (Dungeon.newLevel): each region's levels and its boss's, the last shop, the Amulet's hall. */
@@ -117,7 +123,6 @@ export function generateLevel(run: RunState, depth: number, span = SOLO_SPAN, im
   }
 
   const rng = Rng.seeded(deriveSeed(run.seed, Stream.LAYOUT, depth));
-  const DEW_VIAL_STREAM = 7;
   const feeling = rollFeeling(rng, depth);
   const pitNeeded = depth > 1 && run.weakFloorCreated;
   const boss = isBossDepth(depth);
@@ -145,11 +150,7 @@ export function generateLevel(run: RunState, depth: number, span = SOLO_SPAN, im
     }
     run.weakFloorCreated = level.weakFloorCreated;
     if (level.blacksmithPlaced) run.blacksmithSpawned = true;
-    // SewerLevel.createItems: the dew vial turns up somewhere in the first three depths.
-    if (depth <= 3 && !run.dewVialSpawned && Rng.seeded(deriveSeed(run.seed, Stream.LAYOUT, depth, DEW_VIAL_STREAM)).int(4 - depth) === 0) {
-      level.toSpawn.push({ roll: 'kind', kind: 'vial' });
-      run.dewVialSpawned = true;
-    }
+    // Pixel Dungeon's dew vial no longer turns up in the sewers: every hero sets out with a waterskin (HeroClass.initHero).
 
     return {
       depth,

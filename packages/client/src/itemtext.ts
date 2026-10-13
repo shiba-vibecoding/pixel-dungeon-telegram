@@ -1,7 +1,7 @@
 import {
   armorStats, chargesKnown, durabilityOf, isBroken, kindKnown, levelKnown, maxDurability, CLASS_ARMOR, CLASS_ARMOR_OF, type Hero, type HeroClass,
   type Item, itemDef, type ItemKind, itemSprite, magicMissileDamage, missileStats, SCROLL_RUNES, visiblyCursed, wandMaxCharges, weaponStats,
-  type World,
+  WATERSKIN_VOLUME, type World,
 } from '@pd/core';
 import { t } from './i18n';
 
@@ -19,7 +19,7 @@ export const isKnown = (world: World, item: Item): boolean => kindKnown(world, i
 export function itemName(world: World, item: Item): string {
   const category = itemDef(item.kind).category;
   if (category === 'gold') return `${item.qty} ${t.goldShort}`;
-  if (category === 'vial') return `${t.items[item.kind]} (${item.volume ?? 0}/10)`;
+  if (category === 'vial') return `${t.items[item.kind]} (${item.volume ?? 0}/${WATERSKIN_VOLUME})`;
   if (!isKnown(world, item)) {
     const label = world.run.labels[item.kind] ?? 0;
     // Wand.name and Ring.name go by the wood or the gem; Item.toString adds a known level all the same.

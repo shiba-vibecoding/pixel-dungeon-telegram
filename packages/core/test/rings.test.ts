@@ -63,7 +63,7 @@ describe('rings', () => {
     hero.items = [createItem('ring.accuracy', 1, 2), createItem('ring.haste', 1, 1), createItem('ring.mending', 1, 1)];
     const before = heroAttackSkill(hero);
     act(world, 'p', { type: 'equip', item: 0 });
-    expect(heroAttackSkill(hero)).toBe(Math.trunc(before * Math.fround(1.4 ** 2)));
+    expect(heroAttackSkill(hero)).toBe(Math.round(Math.fround(before * Math.fround(1.4 ** 2))));
     act(world, 'p', { type: 'equip', item: 0 });
     act(world, 'p', { type: 'equip', item: 0 });
     expect(hero.rings.map((r) => r.kind)).toEqual(['ring.haste', 'ring.mending']);
@@ -73,23 +73,27 @@ describe('rings', () => {
     expect(hero.items).toHaveLength(2);
   });
 
-  it('a ring worn long enough tells what it is', () => {
+  it('a ring worn tells what it is with experience, not with time (Ring.onHeroGainExp; see ident.test.ts)', () => {
     const world = solo();
     const hero = heroById(world, 'p')!;
     hero.items = [createItem('ring.satiety', 1, 1)];
     act(world, 'p', { type: 'equip', item: 0 });
     expect(world.known).not.toContain('ring.satiety');
     for (let i = 0; i < 210; i++) act(world, 'p', { type: 'wait' });
-    expect(world.known).toContain('ring.satiety');
+    expect(world.known).not.toContain('ring.satiety');
   });
 
   it('haste makes everything quicker', () => {
     const world = solo();
     const hero = heroById(world, 'p')!;
     hero.rings = [createItem('ring.haste', 1, 3)];
-    const before = hero.time;
+    let before = hero.time;
+    act(world, 'p', { type: 'search' });
+    expect(hero.time - before).toBeCloseTo(2 * 1.1 ** -3);
+    // Resting is a turn whatever (Hero.rest: spendConstant).
+    before = hero.time;
     act(world, 'p', { type: 'wait' });
-    expect(hero.time - before).toBeCloseTo(1.1 ** -3);
+    expect(hero.time - before).toBe(1);
   });
 
   it('thorns turn some of a blow back on the attacker', () => {
