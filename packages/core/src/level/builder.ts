@@ -46,7 +46,11 @@ export type ItemSpec =
   /** One of the Rat King's chests: mostly a few coins, now and then worn gear. */
   | { roll: 'kingsPrize' }
   /** One particular item, such as the wares of a shop. */
-  | { roll: 'kind'; kind: ItemKind; qty?: number };
+  | { roll: 'kind'; kind: ItemKind; qty?: number }
+  /** An artifact the run has not dealt yet (or a ring, if it has none left). */
+  | { roll: 'artifact' }
+  /** ShopRoom's rare ware: now and then a wand, a ring or an artifact. */
+  | { roll: 'rare' };
 
 export type WellWater = 'health' | 'awareness' | 'transmutation';
 

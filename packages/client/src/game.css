@@ -235,3 +235,7 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* A choice an item asks for (alchemyui.ts showChoice): the option's picture before its words, long words wrapping. */
 .pd-button.pd-choice { display: flex; align-items: center; justify-content: center; gap: 6px; white-space: normal; text-align: left; }
 .pd-button.pd-choice .pd-sitem { --u: 2px; }
+
+/* The artifacts' buff icons tinted as Shattered tints them: the cloak's stealth dimmed (cloakStealth.tintIcon), the time freeze orange (timeFreeze.tintIcon). */
+.pd-buff i[data-buff="stealth"] { filter: brightness(0.6); }
+.pd-buff i[data-buff="timeFreeze"] { filter: sepia(1) saturate(4) hue-rotate(-15deg); }

@@ -1,8 +1,9 @@
 import {
   adjacent, cellX, cellY, type Effect, F, terrainFlags, type Enchantment, heroById, isAlive, itemDef, type ItemKind, itemSprite, LENGTH, type MobKind,
   visibleCells, WIDTH, type World,
-  type Look,
+  type Look, isInvisible, frozenBy,
 } from '@pd/core';
+import { artText, capital } from './artifacttext';
 import { audio, type Sound } from './audio';
 import { between, hitSound, openSound, readSounds, TRAP_SOUNDS, weaponHit, woundSound } from './sfx';
 import { capitalize, fill, t } from './i18n';
@@ -38,6 +39,8 @@ const BOLT_COLORS: Record<string, string> = {
   rainbow: '255, 120, 220', foliage: '68, 170, 68', death: '120, 0, 160', light: '255, 255, 210', blood: '204, 0, 0',
   // Alchemy's spells: wild energy's chaotic bolt, a telekinetic grab.
   wild: '210, 130, 255', grab: '240, 240, 255',
+  // LloydsBeacon's zap (MagicMissile.BEACON).
+  beacon: '255, 255, 255',
 };
 
 /** The bolts of Shattered's wands (and its wards): their zappers move, and they fly as MagicMissile does (wandfx.ts). */
@@ -316,6 +319,10 @@ export class View {
     /** A wand's bolt (MagicMissile): its particles' kind (wandfx.ts), and whether it is one of a cone's (a wider emitter). */
     trail?: string; wide?: boolean;
   }> = [];
+  /** Shattered's Chains effects: the ethereal chains thrown out from a cell to a cell (effects/Chains.java). */
+  chains: Array<{ from: number; to: number; start: number; duration: number }> = [];
+  /** TimekeepersHourglass.timeFreeze.fx: while my hero freezes time, everything else is drawn still and grey. */
+  timeFrozen = false;
 
   constructor(private readonly assets: Assets) {}
 
@@ -329,6 +336,7 @@ export class View {
     this.bossIntro = null;
     this.levelCard = null;
     this.projectiles = [];
+    this.chains = [];
   }
 
   /** Coming into a region (or setting out): its card, over the band in the middle. */
@@ -379,6 +387,9 @@ export class View {
    */
   sync(world: World, now: number, myId = ''): void {
     const seen = new Set<string>();
+    // TimekeepersHourglass.timeFreeze.fx: everything else stands still while my hero freezes time.
+    const me = myId ? heroById(world, myId) : undefined;
+    this.timeFrozen = !!me && frozenBy(me) !== undefined;
     const place = (
       id: string, kind: string, sprite: CharSprite, isHero: boolean, pos: number, hp: number, ht: number, sleeping: boolean,
       pumped = false,
@@ -453,7 +464,7 @@ export class View {
       if (hero.depth === this.depth) {
         place(
           hero.id, hero.heroClass, this.assets.heroes[hero.heroClass], true, hero.pos, hero.hp, hero.ht, false, false,
-          hero.invisible > 0,
+          isInvisible(hero),
         );
         const puppet = this.puppets.get(hero.id)!;
         // Pixel-Mart: the hero's look, once its sheet has loaded.
@@ -1555,7 +1566,78 @@ export class View {
           if (effect.hero === myId && gas) this.say(fill(t.alch.spew, gas), COLORS.warning, now);
           break;
         }
+        case 'artifact': {
+          // GLog's lines of the artifacts' rules, by Shattered's message keys; %s names the item, if there is one.
+          if (effect.hero !== myId) break;
+          const args = effect.item ? [itemName(world, effect.item), ...(effect.args ?? [])] : effect.args;
+          const text = artText(effect.msg, args);
+          const tone = { p: COLORS.positive, w: COLORS.warning, n: COLORS.negative, i: COLORS.default }[effect.tone];
+          if (text) this.say(capital(text), tone, now);
+          if (effect.msg.endsWith('levelup') || effect.msg.endsWith('level_up') || effect.msg.endsWith('maxlevel')) audio.play('levelup', 1.3, 0.5);
+          if (effect.msg === 'chaliceofblood.onprick') audio.play('cursed');
+          if (effect.msg.startsWith('timekeepershourglass$sandbag') || effect.msg.startsWith('driedrose$petal')) audio.play('dewdrop');
+          if (effect.msg === 'hornofplenty.eat') audio.play('eat');
+          break;
+        }
+        case 'stealth':
+          // CloakOfShadows: Sounds.MELD as the cloak wraps the hero; the sprite fades (State.INVISIBLE, see sync).
+          if (effect.on) audio.play('meld', 1, 1, this.placeOf(effect.hero, now));
+          this.busy(effect.hero, now);
+          break;
+        case 'stasis':
+        case 'timeFreeze':
+          // TimekeepersHourglass: GameScene.flash(0x80FFFFFF) and Sounds.TELEPORT as it starts.
+          if (effect.on) audio.play('teleport');
+          break;
+        case 'scried':
+          // TalismanOfForesight.scry: Sounds.SCAN, and SECRET if something hidden was found; checkedCell on every cell swept.
+          if (effect.depth !== this.depth) break;
+          audio.play('scan');
+          if (effect.noticed) audio.play('secret');
+          for (const cell of effect.cells) this.flashes.push({ cell, start: now, color: '170, 120, 255', duration: 700 });
+          this.busy(effect.hero, now);
+          break;
+        case 'chained':
+          // EtherealChains: Sounds.CHAINS, and the ethereal chain thrown out (Chains: 200 ms, and 50 a cell).
+          if (effect.depth !== this.depth) break;
+          audio.play('chains', 1, 1, cellMiddle(effect.from));
+          this.chains.push({
+            from: effect.from, to: effect.to, start: now,
+            duration: 200 + (Math.hypot(cellX(effect.to) - cellX(effect.from), cellY(effect.to) - cellY(effect.from)) * TILE * 1000) / 320,
+          });
+          break;
+        case 'ghostSummoned':
+          // DriedRose: the ghost appears in a shaft of light (ShaftParticle, Speck.LIGHT) with Sounds.GHOST.
+          if (effect.depth !== this.depth) break;
+          audio.play('ghost');
+          this.flashes.push({ cell: effect.pos, start: now, color: '255, 255, 220', duration: 900 });
+          break;
+        case 'ghostSays': {
+          // GhostHero.yell: the ghost's line, under its name.
+          if (effect.depth !== this.depth) break;
+          const line = artText(`driedrose$ghosthero.${effect.line}`, effect.args);
+          if (line) this.say(`${capital(t.mobs.ghostHero)}: «${line}»`, COLORS.highlight, now);
+          if (effect.line.startsWith('defeated') || effect.line.startsWith('player_killed') || effect.line === 'introduce') audio.play('ghost');
+          break;
+        }
+        case 'spellbookRead':
+          // The unstable spellbook reads a scroll for the hero: Scroll.readAnimation.
+          if (effect.hero === myId) this.say(capital(t.items[effect.kind] ?? ''), COLORS.highlight, now);
+          break;
+        case 'surprised':
+          // Surprise.hit: the armband's theft caught the monster unawares.
+          if (effect.depth === this.depth) {
+            this.float(effect.mob, '!', COLORS.highlight, now);
+            audio.play('hit_strong');
+          }
+          break;
         case 'interrupted': {
+          // The artifacts' refusals are Shattered's lines (art: keys); 'art:cannot' says nothing.
+          if (effect.reason.startsWith('art:') && effect.hero === myId) {
+            const line = artText(effect.reason.slice(4));
+            if (line) this.say(capital(line), COLORS.warning, now);
+            break;
+          }
           // Only the reasons worth telling: a refused move into a wall says nothing.
           const why = t.reasons[effect.reason];
           if (effect.hero === myId && why) this.say(why, COLORS.warning, now);

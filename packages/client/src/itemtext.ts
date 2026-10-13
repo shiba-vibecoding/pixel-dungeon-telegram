@@ -1,12 +1,13 @@
 import {
   armorStats, buffedLevel, chargeLimit, chargesKnown, chargesPerCast, durabilityOf, isBroken, isIdentified, kindKnown, levelKnown, maxCharges,
   maxDurability, CLASS_ARMOR, CLASS_ARMOR_OF, type Hero, type HeroClass, type Item, itemDef, type ItemKind, itemSprite, missileStats, SCROLL_RUNES,
-  visiblyCursed, wandDamage, weaponStats, sealShield, WATERSKIN_VOLUME, type World,
+  visiblyCursed, visiblyUpgraded, wandDamage, weaponStats, sealShield, WATERSKIN_VOLUME, type World,
   isExotic, labelOf, TRINKETS, RAT_SKULL, PARCHMENT_SCRAP, PETRIFIED_SEED, EXOTIC_CRYSTALS,
   MOSSY_CLUMP, SUNDIAL, CLOVER, TRAP_MECHANISM, MIMIC_TOOTH, WONDROUS_RESIN, EYE_OF_NEWT, SALT_CUBE, VIAL_OF_BLOOD, CHAOTIC_CENSER,
   FERRET_TUFT, SPYGLASS,
 } from '@pd/core';
 import { fill, t } from './i18n';
+import { artifactInfo, artifactName } from './artifacttext';
 
 /*
  * How items are called and described, given what the party knows: the kinds
@@ -23,6 +24,11 @@ export function itemName(world: World, item: Item): string {
   const category = itemDef(item.kind).category;
   if (category === 'gold') return `${item.qty} ${t.goldShort}`;
   if (category === 'vial') return `${t.items[item.kind]} (${item.volume ?? 0}/${WATERSKIN_VOLUME})`;
+  // Artifact: its own name (the sandals' grows), and the level shown +0 to +10 (visiblyUpgraded).
+  if (category === 'artifact') {
+    const level = visiblyUpgraded(item);
+    return level === 0 ? artifactName(item) : `${artifactName(item)} +${level}`;
+  }
   if (!isKnown(world, item)) {
     const label = labelOf(item.kind, world.run.labels);
     // Ring.name goes by the gem; Item.toString adds a known level all the same.
@@ -253,7 +259,10 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
   if ((category === 'potion' || category === 'scroll') && isExotic(item.kind) && !isKnown(world, item)) {
     return [category === 'potion' ? t.alch.exoticPotionUnknown : t.alch.exoticScrollUnknown];
   }
-  if (category === 'beacon') return [t.itemInfo[item.kind] ?? '', ...(item.returnTo ? [t.beaconSetAt(item.returnTo.depth)] : [])];
+  // Artifact.desc and info, Shattered's texts (artifacttext.ts).
+  if (category === 'artifact') {
+    return [...artifactInfo(world, hero, item, (kind) => t.items[kind as ItemKind] ?? kind), ...(visiblyCursed(item) ? [t.cursedInfo] : [])];
+  }
   return [isKnown(world, item) ? (t.itemInfo[item.kind] ?? '') : t.unknownInfo];
 }
 

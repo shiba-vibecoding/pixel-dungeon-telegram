@@ -32,7 +32,10 @@ export function botAction(world: World, id: string, deepest = 4): Action {
   if (!hero.weapon && weapon >= 0) return { type: 'equip', item: weapon };
   const food = hero.items.findIndex((item) => item.kind.startsWith('food.'));
   if (hero.hunger >= HUNGRY && food >= 0) return { type: 'use', item: food };
-  if (floor.heaps.some((heap) => heap.pos === hero.pos && heap.kind !== 'forSale') && hero.items.length < 20) {
+  // (A locked chest only with its golden key: the trinket catalyst and the artifacts lie in some.)
+  const golden = hero.items.some((item) => item.kind === 'key.golden' && item.depth === hero.depth);
+  const takeable = (kind: string): boolean => kind !== 'forSale' && (golden || (kind !== 'lockedChest' && kind !== 'crystalChest'));
+  if (floor.heaps.some((heap) => heap.pos === hero.pos && takeable(heap.kind)) && hero.items.length < 20) {
     return { type: 'pickup' };
   }
   if (hero.pos === level.exit && hero.depth < deepest) return { type: 'descend' };

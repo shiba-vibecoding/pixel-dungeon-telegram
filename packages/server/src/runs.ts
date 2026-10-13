@@ -1,6 +1,6 @@
 import {
   act, type Action, addHero, applyBoon, type BadgeId, type BadgeProgress, type Bones, checkBadges, countGame, createWorld, dailyRules, dailySeed, deriveSeed,
-  emptyBadgeProgress, fingerprint, giveBones, type HeroClass, heroById, leaveBones, Rng, type RunOutcome, runOutcome, type World,
+  BONES_ROLLS, emptyBadgeProgress, fingerprint, giveBones, type HeroClass, heroById, leaveBones, Rng, type RunOutcome, runOutcome, type World,
 } from '@pd/core';
 
 /*
@@ -274,7 +274,7 @@ export class PlayerLogic {
     if (run.slot === 'dungeon' && !outcome.won) {
       // Bones.leave, with its dice from the run's own seed.
       const rng = Rng.seeded(deriveSeed(run.seed, 0xb0e5));
-      p.bones = leaveBones(me, rng.int(4), rng.float());
+      p.bones = leaveBones(me, rng.int(BONES_ROLLS), rng.float());
     }
     p.history = [summary, ...p.history].slice(0, HISTORY);
     run.record = record;

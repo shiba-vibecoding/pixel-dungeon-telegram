@@ -2,16 +2,20 @@ import {
   type Action, adjacent, blockers, liveBlockers, distance, type Mob, trapAt, buyPrice, cellX, cellY, createHero, createWorld, type Effect, exploredCells, F, findPath, hasFlag,
   HEAP_SPRITES,
   type Hero, type Item, type Level,
-  type Bones, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
+  BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
   visibleCells, chargesKnown, staffReach, WIDTH,
-  type World, charAt, swapsWithHero, visibleEnemies, NEIGHBOURS8, atPot,
+  type World, charAt, swapsWithHero, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
 import './game.css';
 import { mobDescription, mobName, plantText, tileText, wellText } from './examine';
-import { chooseQuickslot, isPlaceholder, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT } from './quickslot';
+import {
+  chooseQuickslot, isPlaceholder, quickArtifact, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
+} from './quickslot';
+import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookChoice } from './artifactui';
+import { artText, chargeOf } from './artifacttext';
 import { fx } from './fx';
 import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
 
@@ -741,7 +745,30 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
   (world.floors[depth]?.heaps ?? []).some((heap) => heap.pos === pos && heap.kind !== 'hidden');
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
-let aim: { index: number; kind: 'throw' | 'zap' | 'special' | 'cast' } | null = null;
+let aim: { index: number; kind: 'throw' | 'zap' | 'special' | 'cast' } | { index: -1; kind: 'artifact'; action: ArtifactAction } | null = null;
+
+/** What artifacts ask of the game outside the backpack (a quick slot's default action, the spellbook's window). */
+function artifactHost(world: World, me: Hero): ArtifactHost {
+  const back = (): void => hideOverlay();
+  return {
+    world,
+    hero: me,
+    act: (action) => {
+      hideOverlay();
+      send(action, performance.now());
+    },
+    stay: (action) => send(action, performance.now()),
+    aim: (action) => {
+      hideOverlay();
+      aim = { index: -1, kind: 'artifact', action };
+    },
+    pick: (title, targets, onPick, onCancel) => showBackpack({
+      world, hero: me, onAction: (action) => send(action, performance.now()), onAim: () => undefined, onClose: hideOverlay,
+      pick: { title, targets, onPick, onCancel: onCancel ?? back },
+    }),
+    back,
+  };
+}
 
 /** QuickSlotButton.onClick: use what the slot holds; an empty slot, or one whose item ran out, asks what to put in it. */
 function quickTap(slot: number): void {
@@ -759,6 +786,14 @@ function toggleQuickslot(slot = 0): void {
     aim = null;
     return;
   }
+  // An artifact, worn or carried: its default action (Artifact.defaultAction).
+  const artifact = quickArtifact(me, slot);
+  if (artifact) {
+    walk.reset();
+    const run = defaultArtifactAction(artifactHost(world, me), artifact.item, artifact.ref);
+    if (run) run();
+    return;
+  }
   const index = quickIndex(me, slot);
   const item = quickItem(me, slot);
   if (!item) return;
@@ -773,7 +808,7 @@ function toggleQuickslot(slot = 0): void {
   if (use === 'use') send({ type: 'use', item: index }, performance.now());
   // Shattered's potions, scrolls, stones, spells...: whatever the item's first action is (it may want a target or a choice).
   else if (use === 'item') quickAction(backpackOptions(world!, me), index);
-  else if (use) aim = { index, kind: use };
+  else if (use && use !== 'artifact') aim = { index, kind: use };
 }
 
 /** Awake monsters the party could see last frame (a walk goes no further while there are any). */
@@ -1047,12 +1082,22 @@ function takeHere(world: World, me: Hero, now: number): void {
   else send({ type: 'pickup' }, now);
 }
 
+/** The master thieves' armband's offer for a ware (WndTradeItem's steal button), if it is worn and charged. */
+function stealOffer(world: World, me: Hero, item: Item): { label: string; sure: boolean; onSteal(): void } | undefined {
+  const offer = shopliftOffer(world, me, item);
+  const armband = thievery(me);
+  const ref = armband && (me.artifact === armband ? 'artifact' : 'misc');
+  if (!offer || !ref) return undefined;
+  return { ...offer, onSteal: () => send({ type: 'artifact', item: ref, use: 'shoplift' }, performance.now()) };
+}
+
 function openTrade(world: World, me: Hero, item: Item): void {
   walk.reset();
   showTrade({
     world, hero: me, item,
-    price: buyPrice(item, me.depth, world.known.includes(item.kind), me.rings.some((ring) => ring.kind === 'ring.haggler')),
+    price: buyPrice(item, me.depth, world.known.includes(item.kind), haggles(me)),
     onBuy: () => send({ type: 'buy' }, performance.now()),
+    steal: stealOffer(world, me, item),
     onClose: hideOverlay,
   });
 }
@@ -1162,6 +1207,16 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
     if (effect.type === 'imp' && effect.hero === myId) talkWithImp(effect.line);
     if (effect.type === 'smith' && effect.hero === myId) talkWithSmith(effect.line);
     if (effect.type === 'shop' && effect.hero === myId) openShop();
+    // The unstable spellbook's scroll to settle: its window (and again, if some other action was refused meanwhile).
+    const pendingWorld = session?.world;
+    const pendingHero = pendingWorld && heroById(pendingWorld, myId);
+    if (pendingWorld && pendingHero?.pendingScroll && ((effect.type === 'spellbook' && effect.hero === myId) ||
+      (effect.type === 'interrupted' && effect.hero === myId && effect.reason === 'art:unstablespellbook.prompt'))) {
+      walk.reset();
+      showSpellbookChoice(artifactHost(pendingWorld, pendingHero), pendingHero.pendingScroll.kind, pendingHero.pendingScroll.exotic, hideOverlay);
+    }
+    // AlchemistsToolkit.AC_BREW: the alchemy window, wherever the hero is (alchemyui.ts).
+    if (effect.type === 'alchemy' && effect.hero === myId) openAlchemy();
     // Ward.interact: dismiss the ward?
     if (effect.type === 'ward' && effect.hero === myId) {
       walk.reset();
@@ -1340,7 +1395,8 @@ function tapCell(cell: number, quiet = false): void {
   if (aim) {
     const shot = aim;
     aim = null;
-    if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
+    if (shot.kind === 'artifact') send({ ...shot.action, cell }, performance.now());
+    else if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
     // A spell cast, dragon's breath breathed, a siren's song sung at the cell.
     else if (shot.kind === 'cast') {
       if (cell !== me.pos && me.items[shot.index]) send({ type: 'use', item: shot.index, cell }, performance.now());
@@ -1456,7 +1512,12 @@ function showBuff(name: BuffName, turns?: number): void {
     ? shield.shield > 0 ? t.hero.shieldActive(shield.shield, shield.cooldown) : t.hero.shieldCooldown(shield.cooldown)
     : name === 'lockedFloor' ? t.hero.lockedFloorDesc
       : name === 'hunger' ? t.hero.hungryIntro + t.hero.hungerDesc
-        : name === 'starvation' ? t.hero.starvingIntro + t.hero.hungerDesc : null;
+        : name === 'starvation' ? t.hero.starvingIntro + t.hero.hungerDesc
+          // The artifacts' buffs: Shattered's own descriptions.
+          : name === 'stealth' ? artText('cloakofshadows$cloakstealth.desc', [turns ?? 0])
+          : name === 'timeFreeze' ? artText('timekeepershourglass$timefreeze.desc', [turns ?? 0])
+          : name === 'thorns' ? artText('capeofthorns$thorns.desc', [turns ?? 0])
+          : name === 'foresight' ? artText('talismanofforesight$foresight.desc') || null : null;
   if (long) {
     walk.reset();
     showInfo(t.buffs[name], long.split('\n\n'), hideOverlay);
@@ -1519,6 +1580,9 @@ function openBackpack(): void {
     onAction: (action) => send(action, performance.now()),
     onAim: (index, kind) => {
       aim = { index, kind };
+    },
+    onAimArtifact: (action) => {
+      aim = { index: -1, kind: 'artifact', action };
     },
     onClose: hideOverlay,
   });
@@ -2637,15 +2701,16 @@ function tick(now: number): void {
   const quickState = (slot: number): QuickState | null => {
     const kind = quickKind(slot);
     if (!kind) return null;
-    // (The mage's staff is zapped from the hand: quickItem.)
-    const item = quickItem(me, slot);
+    // An artifact may be worn: Shattered's quick slots hold it all the same; the mage's staff is zapped from the hand (quickItem).
+    const item = quickArtifact(me, slot)?.item ?? quickItem(me, slot);
     if (!item || isPlaceholder(me, slot)) {
       return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };
     }
     return {
       sprite: itemSprite(item, world.run.labels),
       label: chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
-      aiming: aim !== null && aim.index === quickIndex(me, slot),
+      aiming: aim !== null && (aim.kind === 'artifact' ? itemAt(me, aim.action.item) === item : aim.index === quickIndex(me, slot)),
+      charge: itemDef(item.kind).category === 'artifact' ? chargeOf(world, me, item) : null,
       wear: wearOf(world, item),
     };
   };
@@ -2655,7 +2720,8 @@ function tick(now: number): void {
     examining = false;
   };
   // One state at a time, the most pressing: the connection, death, a target to choose, examining, companions.
-  const aimed = aim && aim.index >= 0 ? me.items[aim.index] : aim?.index === WEAPON_SLOT ? me.weapon ?? undefined : undefined;
+  const aimed = aim && aim.kind === 'artifact' ? itemAt(me, aim.action.item)
+    : aim && aim.index >= 0 ? me.items[aim.index] : aim?.index === WEAPON_SLOT ? me.weapon ?? undefined : undefined;
   const status: HudStatus | null =
     session.status ? { kind: session.status === t.reconnecting ? 'reconnecting' : 'connecting', text: session.status }
     : !isAlive(me) && !world.over ? { kind: 'dead', text: `${t.youDied}. ${world.arena ? t.arena.fallenCoop : t.youDiedCoop}` }
@@ -2717,7 +2783,7 @@ function tick(now: number): void {
     const solo = session.mode === 'solo';
     const victory = world.victory;
     // Bones.leave: a hero fallen alone in an ordinary run leaves something for the next.
-    if (!victory && solo && !dailyRun && !session.checked) store(BONES_KEY, JSON.stringify(leaveBones(me, Math.floor(Math.random() * 4), Math.random())));
+    if (!victory && solo && !dailyRun && !session.checked) store(BONES_KEY, JSON.stringify(leaveBones(me, Math.floor(Math.random() * BONES_ROLLS), Math.random())));
     if (victory) {
       audio.play('levelup');
       haptic('success');

@@ -128,9 +128,12 @@ describe('statue, pool and vault rooms', () => {
   it('a vault holds a wand or a ring; its chests open only with the golden key', () => {
     const kinds = new Set<string>();
     for (const wanted of ['lockedChest', 'crystalChest']) {
-      const { world, depth } = withRoom(RoomType.VAULT, (w, d) => floorAt(w, d).heaps.some((heap) => heap.kind === wanted));
+      // (The vault's chest, not one with the trinket catalyst or an artifact in it.)
+      const vaultChest = (heap: { kind: string; items: Array<{ kind: string }> }): boolean =>
+        heap.kind === wanted && heap.items.every((item) => item.kind.startsWith('wand.') || item.kind.startsWith('ring.'));
+      const { world, depth } = withRoom(RoomType.VAULT, (w, d) => floorAt(w, d).heaps.some(vaultChest));
       const floor = floorAt(world, depth);
-      const locked = floor.heaps.find((heap) => heap.kind === wanted)!;
+      const locked = floor.heaps.find(vaultChest)!;
       kinds.add(locked.kind);
       for (const item of locked.items) expect(item.kind.startsWith('wand.') || item.kind.startsWith('ring.')).toBe(true);
       heroAt(world, depth, locked.pos);

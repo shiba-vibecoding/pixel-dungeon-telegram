@@ -286,8 +286,11 @@ function transmuteHeld(ctx: Ctx, hero: Hero, item: Item): void {
   if (!result) return;
   if (hero.weapon === item) {
     hero.weapon = result;
-  } else if (hero.rings.includes(item)) {
-    hero.rings[hero.rings.indexOf(item)] = result;
+  } else if (hero.ring === item || hero.misc === item || hero.artifact === item) {
+    // A worn ring (or artifact) changes in its slot.
+    if (hero.ring === item) hero.ring = result;
+    else if (hero.misc === item) hero.misc = result;
+    else hero.artifact = result;
   } else {
     const index = hero.items.indexOf(item);
     if (index < 0) return;

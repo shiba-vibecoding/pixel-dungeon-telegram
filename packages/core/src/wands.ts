@@ -1,5 +1,5 @@
 import { effectiveLevel, wear } from './wear';
-import { type Hero, isAlive, maxExp, type Mob, mobStats, ringBonus } from './actors';
+import { type Hero, isAlive, maxExp, type Mob, mobStats } from './actors';
 import {
   type Ballistica, ballistica, cone, type Cone, IGNORE_SOFT_SOLID, insideMap, MAGIC_BOLT, PROJECTILE, STOP_SOLID, STOP_TARGET, subPath,
   WONT_STOP,
@@ -23,6 +23,8 @@ import { allyWandHeal, corruptionHeal, findGuardian, guardianInfo, placeGuardian
 import { cursedZap } from './cursed';
 import { regrowCone } from './regrowth';
 import { trample } from './world';
+import { wandChargeMultiplier } from './rings';
+import { dispelInvisibility } from './artifacts';
 import type { ItemRef } from './scrolls';
 
 /*
@@ -43,6 +45,8 @@ const f32 = Math.fround;
 export type Bolt =
   | 'magic' | 'lightning' | 'fire' | 'frost' | 'corrosion' | 'force' | 'earth' | 'ward' | 'corruption' | 'rainbow' | 'foliage'
   | 'death' | 'light' | 'blood' | 'beam' | 'poison' | 'shadow'
+  /** LloydsBeacon's zap (MagicMissile.BEACON). */
+  | 'beacon'
   // Alchemy's spells: wild energy's chaotic zap, a telekinetic grab.
   | 'wild' | 'grab';
 
@@ -76,11 +80,11 @@ export function wandAt(hero: Hero, ref: ItemRef): { wand: Item; staff: Item | nu
 const baseLevel = (wand: Item, staff: Item | null): number => (staff ? effectiveLevel(staff) : effectiveLevel(wand));
 
 /**
- * Wand.buffedLvl: the wand's level, a ring of power's on top (Pixel Dungeon's ring, which still makes
- * every wand stronger), and no less than a magic missile's charge while it lasts.
+ * Wand.buffedLvl: the wand's level (Shattered has no ring of power)
+ * and no less than a magic missile's charge while it lasts.
  */
 export function buffedLevel(hero: Hero, wand: Item, staff: Item | null = null): number {
-  const level = Math.max(0, baseLevel(wand, staff) + ringBonus(hero, 'ring.power'));
+  const level = Math.max(0, baseLevel(wand, staff));
   const charge = hero.magicCharge;
   return charge && charge.level > level ? charge.level : level;
 }
@@ -262,11 +266,12 @@ function wandUsed(z: Zap, charges: number): void {
   wand.charges = (wand.charges ?? 0) - (z.cursed ? 1 : charges);
   const charge = hero.magicCharge;
   if (charge) {
-    const own = Math.max(0, baseLevel(wand, staff) + ringBonus(hero, 'ring.power'));
+    const own = Math.max(0, baseLevel(wand, staff));
     if (!charge.fresh && charge.level === z.level && z.level > own) delete hero.magicCharge;
     else delete charge.fresh;
   }
-  hero.invisible = 0;
+  // Invisibility.dispel: the cloak's stealth and the hourglass's frozen time end too.
+  dispelInvisibility(ctx, hero);
   wear(ctx, hero, staff ?? wand);
 }
 
@@ -1121,9 +1126,9 @@ const CHARGE_BUFF_BONUS = 0.25;
 /**
  * Wand.Charger.act, `ticks` times: a wand short of charges gathers a share of one every turn, the
  * bigger the more it lacks (ten turns plus forty times 0.875 to the power of what it lacks), a
- * quarter of one more under Recharging; full, it gathers nothing. Seam for the other streams: the
- * ring of energy would speed it up (RingOfEnergy.wandChargeMultiplier), and a locked boss floor
- * stop it (Regeneration.regenOn).
+ * quarter of one more under Recharging; full, it gathers nothing; rings of energy speed it up
+ * (RingOfEnergy.wandChargeMultiplier). Seam for the other streams: a locked boss floor would stop it
+ * (Regeneration.regenOn).
  */
 export function chargeWands(hero: Hero, ticks: number, inHolster: (item: Item) => boolean): void {
   for (let t = 0; t < ticks; t++) {
@@ -1133,7 +1138,7 @@ export function chargeWands(hero: Hero, ticks: number, inHolster: (item: Item) =
       if (charges < max) {
         const scale = staff ? STAFF_SCALE_FACTOR : inHolster(wand) ? HOLSTER_SCALE_FACTOR : NORMAL_SCALE_FACTOR;
         const turns = f32(BASE_CHARGE_DELAY + SCALING_CHARGE_ADDITION * powi(scale, max - charges));
-        wand.partial = f32((wand.partial ?? 0) + f32(1 / turns));
+        wand.partial = f32((wand.partial ?? 0) + f32(f32(1 / turns) * wandChargeMultiplier(hero)));
         if ((hero.recharging ?? 0) > 0) wand.partial = f32(wand.partial + CHARGE_BUFF_BONUS * Math.min(1, hero.recharging!));
       }
       while ((wand.partial ?? 0) >= 1 && (wand.charges ?? 0) < max) {

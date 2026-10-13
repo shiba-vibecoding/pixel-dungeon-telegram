@@ -1,3 +1,4 @@
+import { heroEquipped } from './actors';
 import { heldWands, gainCharge } from './wands';
 import { createMob, type Hero } from './actors';
 import { randomDestinationFor } from './ai';
@@ -50,7 +51,7 @@ export function spellProblem(world: World, hero: Hero, kind: ItemKind, use: Spel
       const choice = ALCHEMIZE_CHOICES[use.choice ?? -1];
       if (!choice) return 'choose what to do';
       const known = knownIn(world.known, use.on.kind);
-      if (choice.startsWith('sell')) return itemPrice(use.on, known) > 0 && use.on !== hero.weapon && use.on !== hero.armor && !hero.rings.includes(use.on) ? null : 'nobody would buy that';
+      if (choice.startsWith('sell')) return itemPrice(use.on, known) > 0 && !heroEquipped(hero).includes(use.on) ? null : 'nobody would buy that';
       return null;
     }
     case 'spell.beacon':

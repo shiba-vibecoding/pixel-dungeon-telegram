@@ -1,3 +1,4 @@
+import { chargeArtifacts } from './artifacts';
 import { baseKind, type Hero, isAlive, type Mob, MOBS } from './actors';
 import { hurt } from './combat';
 import { type Char, charAt, type Ctx, exploredCells, heroView, isHero, isWater } from './floor';
@@ -445,6 +446,8 @@ function heroTurn(ctx: Ctx, hero: Hero, b: Buffs): void {
     if (b.wellFed < 0) delete b.wellFed;
     else if (b.wellFed % 18 === 0 && hero.hp < hero.ht) hero.hp++;
   }
+  // ArtifactRecharge.act: every worn artifact charges as if a turn of its own had passed, again (uncursed ones).
+  if (has(b.artifactRecharge)) chargeArtifacts(ctx, hero, Math.min(1, b.artifactRecharge!));
   // Foresight: every turn a search reaching far around, that finds whatever is hidden there (Hero.search).
   if (has(b.foresight)) foresee(ctx, hero);
   // Drowsy, then MagicalSleep: asleep until fully healed (a point a turn) or struck.

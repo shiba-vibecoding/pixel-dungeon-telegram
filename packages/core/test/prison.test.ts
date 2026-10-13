@@ -234,7 +234,8 @@ describe('the shop on depth 6', () => {
       const world = createWorld(seed);
       for (let d = 1; d <= 6; d++) levelAt(world, d);
       const wares = floorAt(world, 6).heaps.filter((h) => h.kind === 'forSale');
-      expect(wares.length, `seed ${seed}`).toBe(15);
+      // ShopRoom's rare ware comes in one shop in ten of three (a wand, a ring or an artifact).
+      expect(wares.length === 15 || wares.length === 16, `seed ${seed}: ${wares.length}`).toBe(true);
       expect(wares.some((h) => h.items[0]!.kind === 'bag.seeds'), `seed ${seed}`).toBe(true);
       expect(wares.some((h) => h.items[0]!.kind === 'stone.augmentation'), `seed ${seed}`).toBe(true);
       expect(wares.some((h) => h.items[0]!.kind === 'ankh'), `seed ${seed}`).toBe(true);

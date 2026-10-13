@@ -1,4 +1,4 @@
-import { type Deck, type DeckCategory, type Labels, rollLabels } from './items';
+import { type Deck, type DeckCategory, type ItemKind, type Labels, rollLabels } from './items';
 import { RoomType, SPECIALS } from './level/room';
 import { deriveSeed, Rng, Stream } from './rng';
 
@@ -20,6 +20,8 @@ export interface RunState {
   decks?: Partial<Record<DeckCategory, Deck>>;
   /** Dungeon.LimitedDrops: the stone of intuition, the trinket catalyst and the stone of enchantment have been laid out. */
   drops?: { intStone?: boolean; catalyst?: boolean; enchStone?: boolean; cookingHp?: number };
+  /** Generator's artifact deck: the kinds not dealt yet (absent until the first is; see artifacts/artifact.ts). */
+  artifactsLeft?: ItemKind[];
   /** Generator.Category.WAND's deck: how many of each wand kind (in WAND_KINDS order) are left, and how many were dealt. */
   wandDeck?: number[];
   wandsDealt?: number;

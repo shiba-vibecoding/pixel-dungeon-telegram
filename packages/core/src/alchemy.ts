@@ -1,3 +1,4 @@
+import { availableEnergy as kitEnergy, consumeEnergy, readyToolkit, toolkitForbidsAlchemy } from './artifacts/toolkit';
 import { type Hero, statsOf } from './actors';
 import { hasRoom } from './bags';
 import type { Ctx } from './floor';
@@ -147,13 +148,19 @@ export function atPot(world: World, hero: Hero): boolean {
 }
 
 /**
- * The artifacts stream's alchemist's toolkit: energy it can lend a recipe, and whether it lets the hero brew away
- * from a pot (AlchemistsToolkit.kitEnergy). None until that stream fills these in.
+ * The alchemist's toolkit worn (artifacts/toolkit.ts): the energy it holds goes into a recipe first
+ * (AlchemistsToolkit.availableEnergy and consumeEnergy), and with it the hero brews anywhere (its BREW).
  */
 export const toolkit = {
-  energy: (_hero: Hero): number => 0,
-  consume: (_hero: Hero, cost: number): number => cost,
-  anywhere: (_hero: Hero): boolean => false,
+  energy: (hero: Hero): number => {
+    const kit = readyToolkit(hero);
+    return kit ? kitEnergy(kit) : 0;
+  },
+  consume: (ctx: Ctx, hero: Hero, cost: number): number => {
+    const kit = readyToolkit(hero);
+    return kit ? consumeEnergy(ctx, hero, kit, cost) : cost;
+  },
+  anywhere: (hero: Hero): boolean => readyToolkit(hero) !== undefined,
 };
 
 /** Gathers the ingredients a client named: pack slots, one item each (a whole stack of what goes in whole). */
@@ -351,6 +358,8 @@ export const availableEnergy = (world: World, hero: Hero): number => (world.ener
 
 /** Why the hero cannot brew this. */
 export function brewProblem(world: World, hero: Hero, inputs: readonly number[], recipe = 0): string | null {
+  // AlchemistsToolkit: a cursed one worn forbids alchemy, even at a pot.
+  if (toolkitForbidsAlchemy(hero)) return 'your cursed toolkit will not let you brew';
   if (!atPot(world, hero) && !toolkit.anywhere(hero)) return 'you need an alchemy pot';
   const ings = gather(hero, inputs);
   if (typeof ings === 'string') return ings;
@@ -372,7 +381,7 @@ export function brew(ctx: Ctx, hero: Hero, inputs: readonly number[], recipeInde
   const ings = gather(hero, inputs) as Ingredient[];
   const recipe = findRecipes(world, ings)[recipeIndex]!;
   let cost = recipe.cost(world, ings);
-  cost = toolkit.consume(hero, cost);
+  cost = toolkit.consume(ctx, hero, cost);
   world.energy = (world.energy ?? 0) - cost;
   const result = make(ctx, hero, recipe, ings);
   // The ingredients leave the pack (the slots shift as they go: highest first).

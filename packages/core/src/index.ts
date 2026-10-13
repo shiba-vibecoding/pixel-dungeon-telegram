@@ -24,7 +24,7 @@ export { charAt, type Effect, type Floor, heroesOn, heroSight, isWater, swapsWit
 
 export { ORE_WANTED, type SmithLine, type SmithQuest } from './smith';
 export {
-  canTarget, isEnchantable, isItemRef, isUnidentified, isUpgradable, itemAt, type ItemRef, scrollTargets, type TargetedScroll,
+  canTarget, isEnchantable, isItemRef, isTargetedScroll, isUnidentified, isUpgradable, itemAt, type ItemRef, scrollTargets, type TargetedScroll,
 } from './scrolls';
 export { type ImpQuest, TOKENS_WANTED } from './imp';
 export { CLASS_ARMOR, CLASS_ARMOR_OF } from './classArmor';
@@ -64,8 +64,12 @@ export { ALCHEMIZE_CHOICES, spellProblem, TARGETED_SPELLS } from './spells';
 export { FUSE_TURNS, isBomb } from './bombs';
 export * from './trinkets';
 export { type GasKind, GAS_KINDS, gasAt, smokeCells } from './gas';
-export { TARGETED, TARGET_PROBLEMS, defaultTarget, isTargetedScroll, uncursable } from './scrolls';
+export { TARGETED, TARGET_PROBLEMS, defaultTarget, uncursable } from './scrolls';
 export { circleCells } from './fov';
+export * from './artifacts';
+export { BONES_ROLLS } from './bones';
+export { miscChoices, haggles } from './inventory';
+export * from './rings';
 export {
   type Bolt, buffedLevel, chargesPerCast, heldWands, maxCharges, staffReach, wandAt, wandDamage, type WandNote, zapProblem,
 } from './wands';

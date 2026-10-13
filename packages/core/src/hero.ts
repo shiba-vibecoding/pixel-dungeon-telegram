@@ -1,4 +1,5 @@
-import { type Hero, isAlive, type Mob, type MobKind, ringBonus } from './actors';
+import { type Hero, heroRings, isAlive, type Mob, type MobKind } from './actors';
+import { mightHTMultiplier } from './rings';
 import { hungerPaused, mightOnLevelUp } from './buffs';
 import { SALT_CUBE, trinketLevel } from './trinkets';
 import { hurt } from './combat';
@@ -10,6 +11,7 @@ import { cellX, cellY, HEIGHT, WIDTH } from './level/geometry';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { sealShieldTick } from './seal';
 import type { World } from './world';
+import { artifactsAct, artifactsGainExp, chaliceRegenDelay, talismanBlinds, talismanFound } from './artifacts';
 
 /*
  * The hero's own rules as Shattered Pixel Dungeon has them (Hero, Hunger,
@@ -35,8 +37,21 @@ export const heroHT = (hero: Hero): number => 20 + 5 * (hero.lvl - 1) + (hero.ht
  * set to otherwise: the tests' sturdy heroes.)
  */
 export function growHT(hero: Hero, amount: number, boostHP: boolean): void {
+  // With rings of might worn, Hero.updateHT itself: the base health times their multiplier.
+  if (heroRings(hero).some((ring) => ring.kind === 'ring.might')) {
+    refreshMightHT(hero, boostHP);
+    return;
+  }
   hero.ht += amount;
   if (boostHP) hero.hp += Math.max(amount, 0);
+  hero.hp = Math.min(hero.hp, hero.ht);
+}
+
+/** Hero.updateHT with rings of might: twenty, five a level and the boosts, times RingOfMight.HTMultiplier. */
+export function refreshMightHT(hero: Hero, boostHP: boolean): void {
+  const before = hero.ht;
+  hero.ht = Math.round(mightHTMultiplier(hero) * heroHT(hero));
+  if (boostHP) hero.hp += Math.max(hero.ht - before, 0);
   hero.hp = Math.min(hero.hp, hero.ht);
 }
 
@@ -54,6 +69,8 @@ export function earnExp(ctx: Ctx, hero: Hero, exp: number, source?: 'potion'): v
   hero.exp += exp;
   const percent = Math.fround(exp / maxExpFor(hero.lvl));
   ctx.effects.push({ type: 'exp', hero: hero.id, amount: exp });
+  // Hero.earnExp: the artifacts that charge with experience get their share of a level (a potion's too).
+  artifactsGainExp(ctx, hero, percent);
   // Hero.earnExp: a potion of experience teaches the items nothing.
   if (source !== 'potion') {
     heroGainsExp(ctx, hero, percent);
@@ -111,7 +128,7 @@ function hungerTurn(ctx: Ctx, hero: Hero): void {
     return;
   }
   // SaltCube.hungerGainMultiplier: a salt cube makes hunger grow slower.
-  const level = hero.hunger + SALT_CUBE.hungerGainMultiplier(trinketLevel(hero, 'trinket.saltCube')) - ringBonus(hero, 'ring.satiety') / 10;
+  const level = hero.hunger + SALT_CUBE.hungerGainMultiplier(trinketLevel(hero, 'trinket.saltCube'));
   if (level >= STARVING) {
     // Hunger.act: the moment starving begins hurts.
     hero.hunger = STARVING;
@@ -165,8 +182,8 @@ export const REGENERATION_DELAY = 10;
  */
 function regenerationTurn(ctx: Ctx, hero: Hero): void {
   if (!regenOn(ctx.world, hero) || hero.hp >= hero.ht || isStarving(hero)) return;
-  // SaltCube.healthRegenMultiplier: and wounds close slower.
-  const delay = REGENERATION_DELAY / 1.2 ** ringBonus(hero, 'ring.mending') / SALT_CUBE.healthRegenMultiplier(trinketLevel(hero, 'trinket.saltCube'));
+  // The chalice of blood worn quickens it (cursed, slows it); a salt cube slows it (SaltCube.healthRegenMultiplier).
+  const delay = chaliceRegenDelay(hero, REGENERATION_DELAY) / SALT_CUBE.healthRegenMultiplier(trinketLevel(hero, 'trinket.saltCube'));
   hero.regen = Math.fround(hero.regen + Math.fround(1 / delay));
   if (hero.regen >= 1) {
     const heal = Math.trunc(hero.regen);
@@ -228,14 +245,23 @@ export function bossHurt(ctx: Ctx, boss: Mob, damage: number): void {
  * every whole turn the hero's time crossed. Shattered's buffs keep the game's own clock; the hero here
  * spends time in uneven steps, so each turn boundary passed counts once.
  */
-export function heroTurns(ctx: Ctx, hero: Hero, from: number, to: number): void {
+export function heroTurns(ctx: Ctx, hero: Hero, from: number, to: number): number {
+  let lost = 0;
   for (let turns = Math.floor(to) - Math.floor(from); turns > 0 && isAlive(hero); turns--) {
     // Regeneration acts right after the hero (HERO_PRIO - 1), before the rest.
     regenerationTurn(ctx, hero);
     lockedFloorTurn(ctx, hero);
     hungerTurn(ctx, hero);
     sealShieldTick(ctx, hero);
+    // The artifacts' buffs (Artifact.ArtifactBuff), on the hero's own depth; the time a cursed hourglass steals.
+    if (hero.depth === ctx.depth) lost += artifactsAct(ctx, hero);
+    // timeStasis.detach: back in time.
+    if ((hero.stasis ?? 0) > 0 && --hero.stasis! <= 0) {
+      delete hero.stasis;
+      ctx.effects.push({ type: 'stasis', hero: hero.id, on: false });
+    }
   }
+  return lost;
 }
 
 /* Searching (Hero.search) */
@@ -253,7 +279,7 @@ const HUNGER_FOR_SEARCH = 6;
 export function search(ctx: Ctx, hero: Hero, intentional: boolean): boolean {
   if (!isAlive(hero)) return false;
   // Pixel Dungeon's ring of detection, while it is still found, widens it.
-  const distance = Math.max(0, (hero.heroClass === 'rogue' ? 2 : 1) + ringBonus(hero, 'ring.detection'));
+  const distance = hero.heroClass === 'rogue' ? 2 : 1;
   const fov = heroView(ctx.world, hero);
   const cx = cellX(hero.pos);
   const cy = cellY(hero.pos);
@@ -263,8 +289,11 @@ export function search(ctx: Ctx, hero: Hero, intentional: boolean): boolean {
       const p = x + y * WIDTH;
       if (!fov[p] || p === hero.pos) continue;
       if (hasFlag(ctx.level.map[p]!, F.SECRET)) {
-        const chance = intentional ? 1 : ctx.level.map[p] === T.SECRET_DOOR ? 0.2 - hero.depth / 100 : 0.4 - hero.depth / 250;
+        // A cursed talisman worn lets nothing be noticed in passing.
+        const chance = intentional ? 1 : talismanBlinds(hero) ? 0 : ctx.level.map[p] === T.SECRET_DOOR ? 0.2 - hero.depth / 100 : 0.4 - hero.depth / 250;
         if (ctx.rng.float() < chance) {
+          // Foresight.charge: a find charges the talisman, a door more than a trap.
+          talismanFound(hero, ctx.level.map[p] === T.SECRET_DOOR);
           ctx.level.map[p] = discover(ctx.level.map[p]!);
           exploredCells(ctx.world, hero.depth)[p] = true;
           ctx.effects.push({ type: 'discovered', depth: hero.depth, cell: p });
