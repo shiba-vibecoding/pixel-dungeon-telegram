@@ -9,6 +9,8 @@ import {
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
+import { loop } from './lifecycle';
+import { reloadForUpdate } from './update';
 import './game.css';
 import { mobDescription, mobName, plantText, tileText, wellText } from './examine';
 import {
@@ -481,7 +483,7 @@ async function startRun(key: string, mode: 'dungeon' | 'arena', fresh: boolean, 
       ? { run: carried.run, world: carried.world }
       : await api.start(slot, heroClass, chosen);
     if (answer === 'rules') {
-      location.reload();
+      reloadForUpdate();
       return;
     }
     if (typeof answer === 'string') {
@@ -847,6 +849,7 @@ function nextDanger(): void {
   pan.y = (cellY(mob.pos) - cellY(me.pos)) * TILE;
   pan.home = false;
   feedback.aim(mob.pos, true, fx.now, mob.id);
+  feedback.danger(mob.id, mob.pos, fx.now);
 }
 
 /**
@@ -2318,8 +2321,25 @@ function noteFrame(now: number): void {
   }
 }
 
-function frame(now: number): void {
-  requestAnimationFrame(frame);
+/**
+ * The game came back from being out of sight (a hidden tab, Telegram Desktop's minimised window): clocks measured
+ * between frames start over (the long gap must not look like a struggling phone or a jump in the visual clock),
+ * the canvas is sized afresh (a WebView may have dropped its pixels) and the map is baked and drawn anew.
+ */
+function restoreAfterPause(): void {
+  lastFrame = 0;
+  lastVisual = 0;
+  lastUnderWindow = 0;
+  frames.prev = 0;
+  frames.since = 0;
+  bakedKey = '';
+  bakedFor = '';
+  vignetteState = '';
+  resize();
+}
+
+function frame(now: number, resumed = false): void {
+  if (resumed) restoreAfterPause();
   noteFrame(now);
   if (session && windowOverMap()) {
     if (now - lastUnderWindow < UNDER_WINDOW_MS) return;
@@ -2477,6 +2497,7 @@ function tick(now: number): void {
     if (dangerTarget && !enemiesInSight.includes(dangerTarget)) {
       dangerTarget = null;
       dangerIndex = -1;
+      feedback.clearDanger();
     }
   }
 
@@ -2727,7 +2748,7 @@ function tick(now: number): void {
       wear: wearOf(world, item),
     };
   };
-  const quick = Array.from({ length: visibleQuickslots(hud.wide, innerWidth) }, (_, slot) => quickState(slot));
+  const quick = Array.from({ length: visibleQuickslots(hud.wide) }, (_, slot) => quickState(slot));
   const cancelChoice = (): void => {
     aim = null;
     examining = false;
@@ -3035,7 +3056,7 @@ function shareChoices(card: () => Promise<ShareCard>, text: string, start: 'dail
   return choices;
 }
 
-requestAnimationFrame(frame);
+loop(frame);
 
 addEventListener('pd-run-restored', () => toast(t.ranked.restored));
 

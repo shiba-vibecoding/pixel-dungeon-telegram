@@ -1,4 +1,5 @@
 import { defaultQuantity, durabilityLeft, durabilityPerUse, MAX_DURABILITY } from './missiles';
+import { dpow } from './fmath';
 import { availableEnergy as kitEnergy, consumeEnergy, readyToolkit, toolkitForbidsAlchemy } from './artifacts/toolkit';
 import { type Hero, statsOf } from './actors';
 import { hasRoom } from './bags';
@@ -215,7 +216,7 @@ const resinQuantity = (wand: Item): number => 2 * (wand.level - (wand.resin ?? 0
 function metalQuantity(missile: Item): number {
   const tier = itemDef(missile.kind).tier ?? 1;
   let perWeapon = defaultQuantity(missile.kind) !== 3 ? Math.fround(3 / defaultQuantity(missile.kind)) : 5 * (tier + 1);
-  perWeapon = Math.fround(perWeapon * Math.fround(1.35 ** Math.min(5, missile.level)));
+  perWeapon = Math.fround(perWeapon * Math.fround(dpow(1.35, Math.min(5, missile.level))));
   const quantity = Math.fround(missile.qty - 1 + Math.fround(0.25 + Math.fround(0.0075 * durabilityLeft(missile))));
   return Math.round(quantity * perWeapon);
 }
@@ -542,7 +543,7 @@ function setDurability(missile: Item, left: number): void {
 /** What liquid metal would do: repair so much durability, or add a whole weapon to a set short of one; and the metal it takes. */
 function metalPlan(missile: Item, metal: Item): { use: number; repair?: number; refill?: number } | null {
   const tier = itemDef(missile.kind).tier ?? 1;
-  const maxToUse = Math.fround(5 * (tier + 1) * Math.fround(1.35 ** missile.level));
+  const maxToUse = Math.fround(5 * (tier + 1) * Math.fround(dpow(1.35, missile.level)));
   const perMetal = Math.fround(100 / maxToUse);
   // (A tiny amount less, for rounding errors.)
   const lost = Math.fround(0.999 - Math.fround(durabilityLeft(missile) / 100));

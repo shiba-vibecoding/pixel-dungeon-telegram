@@ -1,4 +1,5 @@
 import { effectiveLevel } from './wear';
+import { dpow } from './fmath';
 import { createItem, type Item, itemDef, type ItemKind } from './items';
 import { armorDrMax, armorDrMin, armorEvasionBonus, armorStr } from './armor';
 import {
@@ -335,7 +336,7 @@ function accuracyFactor(hero: Hero, weapon: Item, targetPos?: number): number {
   let acc = category === 'weapon' ? weaponAcc(weapon.kind) : 1;
   if ((hero.wayward ?? 0) > 0 && weapon.enchant === 'wayward') acc = f32(acc / 5);
   const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
-  let factor = encumbrance > 0 ? f32(acc / 1.5 ** encumbrance) : acc;
+  let factor = encumbrance > 0 ? f32(acc / dpow(1.5, encumbrance)) : acc;
   if ((category === 'missile' || category === 'bow') && targetPos !== undefined) {
     // Seam: the point blank talent (talents stream) adds a quarter a point.
     factor = f32(factor * (adjacent(hero.pos, targetPos) ? 0.5 : 1.5));
@@ -363,7 +364,7 @@ export function heroDefenseSkill(hero: Hero): number {
   if (hero.paralysed > 0) evasion = f32(evasion / 2);
   if (hero.armor.glyph === 'stone') return 0;
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
-  if (encumbrance > 0) evasion = f32(evasion / 1.5 ** encumbrance);
+  if (encumbrance > 0) evasion = f32(evasion / dpow(1.5, encumbrance));
   // Seam (talents stream): Momentum's evasion. Here the 1.9 freerunner still doubles it, unburdened and fed.
   if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) evasion = f32(evasion * 2);
   // FerretTuft.evasionMultiplier.
@@ -453,7 +454,7 @@ export function heroAttackDelay(hero: Hero, weapon: Strike = hero.weapon): numbe
   const category = itemDef(weapon.kind).category;
   let delay = augmentDelay(weapon, category === 'weapon' ? weaponDly(weapon.kind) : 1);
   const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
-  if (encumbrance > 0) delay = f32(delay * 1.2 ** encumbrance);
+  if (encumbrance > 0) delay = f32(delay * dpow(1.2, encumbrance));
   // Seam: the scimitar's sword dance (classes) would speed it up.
   return f32(delay / attackSpeedMultiplier(hero));
 }
@@ -484,7 +485,7 @@ export function heroSpeed(hero: Hero, footing?: Footing): number {
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
   let speed = hero.crippled > 0 ? 0.5 : 1;
   if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) speed *= 1.6;
-  if (encumbrance > 0) speed = f32(speed / 1.2 ** encumbrance);
+  if (encumbrance > 0) speed = f32(speed / dpow(1.2, encumbrance));
   const glyph = hero.armor.glyph;
   const level = gearLevel(hero.armor);
   if (footing && glyph === 'swiftness' && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));

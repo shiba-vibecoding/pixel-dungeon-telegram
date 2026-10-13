@@ -1,12 +1,13 @@
 import { HEIGHT, type Level, LENGTH, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
-import { FALL_MS, type Puppet, TILE, type View } from './view';
+import { CHAIN_MS, FALL_MS, type Puppet, TILE, type View } from './view';
 import { bossCard, depthCard, floatNumber, levelCard, nameplate, slainCard, waveCard } from './cards';
 
 import { fx } from './fx';
 import { CHEST_ANIMS, type HeapLook } from './motion';
 import { drawFrame, frameAt as sheetFrame, lookIndex, regionIndex, sheet, tintedImage } from './worldsheets';
 import { quality } from './quality';
+import { BOLT_FRAME_MS, HEART_MS, loaded, PRISM_PHASE_MS, shImage, WAND_BOLT_ROW, WAND_BOLT_TRAIL } from './shfx';
 import { tintSprite, wandFx } from './wandfx';
 import { t } from './i18n';
 import { flightAngle, glowStrength } from './gearfx';
@@ -175,12 +176,34 @@ function puffImage(color: string): HTMLCanvasElement {
   return image;
 }
 
+/** The rose's ghost carries a blue light 1.6 cells wide that flickers by 0.06 (design v19: rgba(150, 210, 255, 0.22)). */
+function drawGhostLight(ctx: CanvasRenderingContext2D, x: number, y: number, now: number): void {
+  const cx = x + TILE / 2;
+  const cy = y + TILE / 2 + Math.round(Math.sin(now / 500) * 2);
+  const r = TILE * 1.6;
+  const a = 0.22 + 0.06 * Math.sin(now / 300);
+  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  glow.addColorStop(0, `rgba(150, 210, 255, ${a})`);
+  glow.addColorStop(0.5, `rgba(150, 210, 255, ${a * 0.45})`);
+  glow.addColorStop(1, 'rgba(150, 210, 255, 0)');
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.fillStyle = glow;
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  ctx.restore();
+}
+
 function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y: number, now: number, frozen = false): void {
   const { sheet, anims } = puppet.sprite;
   const anim = puppet.anim === 'idle' && puppet.pumped ? 'pump' : puppet.anim;
   const frame = frameAt(anims[anim], frozen && !puppet.isHero ? 0 : now - puppet.animStart);
-  const sx = (frame % sheet.cols) * sheet.w;
-  const sy = (Math.floor(frame / sheet.cols) + puppet.row) * sheet.h;
+  // A prismatic image has a sheet of its own (prismatic.png, design v19): the hero's frames, one row to each of four colour phases.
+  const glass = puppet.prismatic === true && loaded(shImage('prismatic'));
+  const image = glass ? shImage('prismatic') : sheet.image;
+  const sx = glass ? frame * sheet.w : (frame % sheet.cols) * sheet.w;
+  const sy = glass ? (Math.floor(now / PRISM_PHASE_MS) % 4) * sheet.h : (Math.floor(frame / sheet.cols) + puppet.row) * sheet.h;
+  // The rose's ghost sways by two pixels (design v19: ShMapFx).
+  const sway = puppet.kind === 'ghostHero' ? Math.round(Math.sin(now / 500) * 2) : 0;
   // A melee lunge: forward and back again in a blink.
   const lunge = puppet.lungeStart !== undefined && now - puppet.lungeStart < LUNGE_MS ? Math.sin((Math.PI * (now - puppet.lungeStart)) / LUNGE_MS) : 0;
   const knock = knockback(puppet, now);
@@ -189,7 +212,7 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   const hover = (puppet.levitating && puppet.alive ? 4 + Math.round(Math.sin(now / 320)) : 0)
     // WardSprite.update: a sentry rises and sinks a pixel, slowly (sin of the time in seconds).
     + (puppet.bob && puppet.alive ? Math.round(Math.sin(now / 1000)) : 0);
-  const dy = snap(y + TILE - sheet.h + lunge * (puppet.lungeY ?? 0)) + knock * (puppet.knockY ?? 0) - hover;
+  const dy = snap(y + TILE - sheet.h + lunge * (puppet.lungeY ?? 0)) + knock * (puppet.knockY ?? 0) - hover + sway;
   if (hover) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
     ctx.fillRect(snap(x + 4), snap(y + TILE - 2), 8, 2);
@@ -198,8 +221,8 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
 
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
-  // GhostSprite.draw: the rose's ghost glows (Blending.setLightMode).
-  if (puppet.kind === 'ghostHero') ctx.globalCompositeOperation = 'lighter';
+  // The rose's ghost is seen through (design v19: 0.82), with its blue light under it (drawGhostLight).
+  if (puppet.kind === 'ghostHero' && !puppet.invisible) ctx.globalAlpha = 0.82;
   // timeFreeze.fx: while the hero freezes time, everything else stands still and grey (State.PARALYSED).
   if (frozen && !puppet.isHero) ctx.filter = 'grayscale(1) brightness(0.8)';
   if (puppet.fallStart !== undefined) {
@@ -228,12 +251,12 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   } else {
     ctx.translate(dx, dy);
   }
-  ctx.drawImage(sheet.image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+  ctx.drawImage(image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
   if (puppet.alive) {
     // IceBlock: tinted (0.83, 1.17, 1.33) at 0.6. DarkBlock: brightness 0.4. WardSprite.resetColor: a ward dims as it shoots.
-    if (puppet.frozen) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, 'rgb(212, 255, 255)', 0.6);
-    else if (puppet.darkened) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#000000', 0.6);
-    else if (puppet.dim !== undefined && puppet.dim < 1) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#000000', 1 - puppet.dim);
+    if (puppet.frozen) tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, 'rgb(212, 255, 255)', 0.6);
+    else if (puppet.darkened) tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, '#000000', 0.6);
+    else if (puppet.dim !== undefined && puppet.dim < 1) tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, '#000000', 1 - puppet.dim);
     if (puppet.shielded) {
       // ShieldHalo: a soft glow of 0xBBAACC about the sprite, as wide as its diagonal.
       const r = Math.hypot(sheet.w / 2, sheet.h / 2);
@@ -249,13 +272,13 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   if (now < puppet.flashUntil) {
     // Hit flash: adding the sprite onto itself brightens only its own pixels.
     ctx.globalCompositeOperation = 'lighter';
-    ctx.drawImage(sheet.image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
-    ctx.drawImage(sheet.image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+    ctx.drawImage(image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+    ctx.drawImage(image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
   } else if (puppet.pumped && puppet.alive) {
     // A pumped-up Goo throbs.
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = 0.35 + 0.35 * Math.sin(now / 60);
-    ctx.drawImage(sheet.image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+    ctx.drawImage(image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
   }
   ctx.restore();
 }
@@ -524,7 +547,10 @@ export function render(
       return { puppet, x: Math.round(at.x * camera.zoom) / camera.zoom, y: Math.round(at.y * camera.zoom) / camera.zoom };
     })
     .sort((a, b) => Number(a.puppet.alive) - Number(b.puppet.alive) || a.y - b.y);
-  for (const { puppet, x, y } of shown) drawPuppet(ctx, puppet, x, y, now, view.timeFrozen);
+  for (const { puppet, x, y } of shown) {
+    if (puppet.kind === 'ghostHero' && puppet.alive) drawGhostLight(ctx, x, y, now);
+    drawPuppet(ctx, puppet, x, y, now, view.timeFrozen);
+  }
 
   for (const { puppet, x, y } of shown) {
     if (!puppet.alive) continue;
@@ -535,6 +561,12 @@ export function render(
       drawIcon(ctx, assets, ICONS.alert, x + TILE / 2, top - 2);
     }
     if (puppet.hp < puppet.ht && !(puppet.isHero && puppet.id === myId)) drawHealth(ctx, puppet, x, y);
+    // An ally wears a heart over its head (design v19: ally-heart.png, two frames of 7×7 every 400 ms, the second a pixel lower).
+    if (puppet.ally && loaded(shImage('ally-heart'))) {
+      const beat = Math.floor(now / HEART_MS) % 2;
+      const sway = puppet.kind === 'ghostHero' ? Math.round(Math.sin(now / 500) * 2) : 0;
+      ctx.drawImage(shImage('ally-heart'), beat * 7, 0, 7, 7, snap(x + (TILE - 7) / 2), top - 7 + beat + sway, 7, 7);
+    }
   }
 
   // Thrown weapons and magic bolts in flight.
@@ -542,7 +574,22 @@ export function render(
     const k = Math.min(1, (now - p.start) / p.duration);
     const x = ((p.from % WIDTH) + ((p.to % WIDTH) - (p.from % WIDTH)) * k) * TILE + TILE / 2;
     const y = (Math.trunc(p.from / WIDTH) + (Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)) * k) * TILE + TILE / 2;
-    if (p.sprite === null && p.trail) {
+    const boltRow = p.sprite === null && p.trail ? WAND_BOLT_ROW[p.trail] : undefined;
+    if (boltRow !== undefined && loaded(shImage('wand-bolts'))) {
+      // A wand's bolt (design v19, wand-bolts.png): two frames of 8×8 at 90 ms, four squares of the wand's colour behind it.
+      const dx = ((p.to % WIDTH) - (p.from % WIDTH)) * TILE;
+      const dy = (Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)) * TILE;
+      const length = Math.hypot(dx, dy) || 1;
+      if (!quality.light) {
+        ctx.fillStyle = WAND_BOLT_TRAIL[boltRow]!;
+        for (let j = 1; j < 5; j++) {
+          ctx.globalAlpha = 0.5 - j * 0.1;
+          ctx.fillRect(Math.round(x - (dx / length) * j * 2.5) - 1, Math.round(y - (dy / length) * j * 2.5) - 1, 2, 2);
+        }
+        ctx.globalAlpha = 1;
+      }
+      ctx.drawImage(shImage('wand-bolts'), (Math.floor(now / BOLT_FRAME_MS) % 2) * 8, boltRow * 8, 8, 8, Math.round(x) - 4, Math.round(y) - 4, 8, 8);
+    } else if (p.sprite === null && p.trail) {
       // MagicMissile: no body of its own, only the particles it pours (wandfx.ts) about a bright point.
       ctx.fillStyle = `rgba(${p.color ?? '255, 255, 255'}, 0.6)`;
       ctx.fillRect(Math.round(x) - 2, Math.round(y) - 2, 4, 4);
@@ -579,24 +626,51 @@ export function render(
     }
   }
 
-  // Chains.update: the ethereal chain's links spread out from the hero to where it was thrown, then vanish.
+  // The ethereal chain (design v19: chain-link.png, a link every 5 px along the line, turned its way, the two frames
+  // taking turns; chain-hook.png at the tip with a blue flash): it flies out from the hero to where it was thrown, then
+  // pulls (the target moves with the action) and is gone.
   view.chains = view.chains.filter((c) => now - c.start < c.duration);
+  const link = shImage('chain-link');
+  const hook = shImage('chain-hook');
   for (const c of view.chains) {
-    const k = Math.min(1, (now - c.start) / c.duration);
+    const elapsed = now - c.start;
+    const k = elapsed < CHAIN_MS ? elapsed / CHAIN_MS : 1 - (elapsed - CHAIN_MS) / (c.duration - CHAIN_MS);
     const fx0 = (c.from % WIDTH) * TILE + TILE / 2;
     const fy0 = Math.trunc(c.from / WIDTH) * TILE + TILE / 2;
     const dx = ((c.to % WIDTH) * TILE + TILE / 2) - fx0;
     const dy = (Math.trunc(c.to / WIDTH) * TILE + TILE / 2) - fy0;
-    const links = Math.round(Math.hypot(dx, dy) / 6) + 1;
-    const angle = Math.atan2(dy, dx) + Math.PI / 2;
-    for (let i = 0; i < links; i++) {
-      ctx.save();
-      ctx.translate(snap(fx0 + dx * (i / links) * k), snap(fy0 + dy * (i / links) * k));
-      ctx.rotate(angle);
-      // Effects.Type.ETHEREAL_CHAIN: (11, 16) to (16, 22) in effects.png.
-      ctx.drawImage(assets.effects, 11, 16, 5, 6, -2.5, -3, 5, 6);
-      ctx.restore();
+    const length = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx);
+    const fade = 1;
+    const reach = length * k;
+    ctx.save();
+    ctx.globalAlpha = fade;
+    const links = Math.floor(reach / 5);
+    if (loaded(link)) {
+      for (let i = 0; i < links; i++) {
+        ctx.save();
+        ctx.translate(snap(fx0 + Math.cos(angle) * i * 5), snap(fy0 + Math.sin(angle) * i * 5));
+        ctx.rotate(angle);
+        ctx.drawImage(link, (i % 2) * 6, 0, 6, 4, -3, -2, 6, 4);
+        ctx.restore();
+      }
     }
+    const tipX = fx0 + Math.cos(angle) * reach;
+    const tipY = fy0 + Math.sin(angle) * reach;
+    ctx.globalCompositeOperation = 'lighter';
+    const glow = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, 9);
+    glow.addColorStop(0, 'rgba(120, 216, 255, 0.35)');
+    glow.addColorStop(0.5, 'rgba(120, 216, 255, 0.16)');
+    glow.addColorStop(1, 'rgba(120, 216, 255, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(tipX - 9, tipY - 9, 18, 18);
+    ctx.globalCompositeOperation = 'source-over';
+    if (loaded(hook)) {
+      ctx.translate(snap(tipX), snap(tipY));
+      ctx.rotate(angle + Math.PI / 2);
+      ctx.drawImage(hook, -3.5, -3.5, 7, 7);
+    }
+    ctx.restore();
   }
 
   fx.draw(ctx, now, seen);

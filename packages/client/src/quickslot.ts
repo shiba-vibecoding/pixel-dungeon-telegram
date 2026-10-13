@@ -2,8 +2,8 @@ import { type Hero, type Item, type ItemKind, type ItemRef, itemDef, startingKit
 
 /*
  * The quick slots as Shattered Pixel Dungeon has them (QuickSlot, Toolbar):
- * six of them, as many shown as the screen has room for (four at least on a
- * phone, all six on a wide screen, keys 1 to 6). Each holds a kind of item
+ * six of them, as many shown as the player chose (2, 4 or 6 on a phone, all six
+ * on a wide screen, keys 1 to 6). Each holds a kind of item
  * from the pack; once the last of it is used up the slot keeps it as a
  * placeholder, greyed, and the next one picked up fills it again
  * (QuickSlot.replacePlaceholder). A new run starts with its class's slots
@@ -113,14 +113,39 @@ export function quickArtifact(hero: Hero, slot: number): { item: Item; ref: Item
 export const isPlaceholder = (hero: Hero, slot: number): boolean =>
   state.slots[slot] != null && quickIndex(hero, slot) === -1 && quickArtifact(hero, slot) === null;
 
+/** How many quick slots the toolbar shows on a phone: 2, 4 or 6 (design v19: ShQuickslots), the player's choice in the settings. */
+export type QuickCount = 2 | 4 | 6;
+
+const COUNT_KEY = 'pd-quick-count';
+
+/** The chosen count, kept on this device; 4 until the player says otherwise. */
+export function quickCount(): QuickCount {
+  try {
+    const value = Number(localStorage.getItem(COUNT_KEY));
+    if (value === 2 || value === 4 || value === 6) return value;
+  } catch {
+    // The default.
+  }
+  return 4;
+}
+
+export function setQuickCount(count: QuickCount): void {
+  try {
+    localStorage.setItem(COUNT_KEY, String(count));
+  } catch {
+    // For this session only.
+  }
+  chosenCount = count;
+}
+
+let chosenCount: QuickCount = quickCount();
+
 /**
- * Toolbar.layout: how many slots the screen shows — four on a narrow phone, five from a wider one,
- * six on a wide screen (QuickSlotButton.lastVisible).
+ * Toolbar.layout: how many slots the screen shows — the player's 2, 4 or 6 on a phone (4 in one row with the other
+ * buttons, 6 in a row of their own above them, ShQuickslots), all six on a wide screen (QuickSlotButton.lastVisible).
  */
-export function visibleQuickslots(wide: boolean, width: number): number {
-  if (wide) return QUICKSLOTS;
-  // Toolbar: 4, one more above 152 points of width, another above 170 (a point is about 2.5 px here).
-  return 4 + (width > 380 ? 1 : 0) + (width > 425 ? 1 : 0);
+export function visibleQuickslots(wide: boolean): number {
+  return wide ? QUICKSLOTS : chosenCount;
 }
 
 /** The item a quick slot shows, if any: in the pack, or the staff in hand. */

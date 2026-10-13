@@ -84,5 +84,5 @@ export {
 } from './wands';
 export { chargeLimit } from './regrowth';
 export type { CursedEffect } from './cursed';
-export { friendly } from './allies';
+export { friendly, prismaticMaxHp } from './allies';
 export { type Property, propertiesOf } from './props';

@@ -1,4 +1,5 @@
 import { COMMON_ENCHANTMENTS, COMMON_GLYPHS, isCurseEnchant, isCurseGlyph, RARE_ENCHANTMENTS, RARE_GLYPHS, UNCOMMON_ENCHANTMENTS, UNCOMMON_GLYPHS } from './items';
+import { dpow } from './fmath';
 import { isEnchantable } from './scrolls';
 import { isDart } from './missiles';
 import { heldWands } from './wands';
@@ -219,7 +220,7 @@ export function readScroll(ctx: Ctx, hero: Hero, kind: ItemKind, target: Item | 
         strike(ctx, mob, Math.round(mob.ht / 2 + mob.hp / 2), hero);
         if (isAlive(mob)) mob.blind = Math.max(mob.blind ?? 0, BLINDNESS_TURNS);
       }
-      const own = Math.max(0, Math.round(hero.ht * 0.5 * 0.9 ** targets.length));
+      const own = Math.max(0, Math.round(hero.ht * 0.5 * dpow(0.9, targets.length)));
       if (own > 0) {
         ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: hero.id, damage: own });
         hurt(ctx, hero, own, 'psionic');
