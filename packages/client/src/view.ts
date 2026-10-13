@@ -1,11 +1,12 @@
 import {
   adjacent, cellX, cellY, type Effect, F, terrainFlags, type Enchantment, heroById, isAlive, isTippedDart, itemDef, type ItemKind, itemSprite, LENGTH, type MobKind,
   visibleCells, WIDTH, type World,
-  type Look,
+  type Look, S,
 } from '@pd/core';
 import { audio } from './audio';
 import { capitalize, t } from './i18n';
 import { itemName, magicColor, plainName } from './itemtext';
+import { type Flight, flightOf, hitSound } from './gearfx';
 import { type AnimName, type Assets, type CharSprite, duration, heroSprite } from './sprites';
 import { haptic } from './telegram';
 import { DEPTH_CARD_MS } from './cards';
@@ -253,7 +254,8 @@ export class View {
   /** The arena's wave banner: its words, its kind, and when it shows (after a sinking card, if one is up). */
   waveCard: { title: string; sub: string; kind: '' | 'champions' | 'boss'; start: number } | null = null;
   /** Thrown items and magic bolts in flight; `sprite` null for a bolt. */
-  projectiles: Array<{ from: number; to: number; start: number; duration: number; sprite: number | null; color?: string }> = [];
+  /** Thrown things and bolts in flight; a thrown weapon flies as MissileSprite has it (gearfx.ts: `flight`). */
+  projectiles: Array<{ from: number; to: number; start: number; duration: number; sprite: number | null; color?: string; flight?: Flight }> = [];
 
   constructor(private readonly assets: Assets) {}
 
@@ -442,9 +444,10 @@ export class View {
     this.projectiles = this.projectiles.filter((p) => now - p.start < p.duration);
   }
 
-  private shoot(from: number, to: number, sprite: number | null, now: number, color?: string): void {
+  private shoot(from: number, to: number, sprite: number | null, now: number, color?: string, crossbow = false): void {
     const cells = Math.max(Math.abs(cellX(to) - cellX(from)), Math.abs(cellY(to) - cellY(from)));
-    this.projectiles.push({ from, to, start: now, duration: Math.max(90, cells * 45), sprite, color });
+    const flight = sprite === null ? undefined : flightOf(sprite, crossbow);
+    this.projectiles.push({ from, to, start: now, duration: Math.max(90, (cells * 45) / (flight?.speed ?? 1)), sprite, color, ...(flight ? { flight } : {}) });
   }
 
   /** How long my hero's step has still to go (ms; 0 or less when standing): the walk sends the next step as it ends. */
@@ -539,7 +542,9 @@ export class View {
             if (target) target.flashUntil = now + 160;
             const toHero = !effect.target.startsWith('#');
             this.float(effect.target, String(effect.damage), toHero ? COLORS.negative : COLORS.warning, now);
-            audio.play('hit', 0.8 + Math.random() * 0.45, 1, this.placeOf(effect.target, now));
+            // KindOfWeapon.hitSound: each weapon its own (Char.hitSound for the rest).
+            const [sound, pitch] = hitSound(effect.weapon);
+            audio.play(sound, pitch * (0.87 + Math.random() * 0.28), 1, this.placeOf(effect.target, now));
             if (effect.target === myId) haptic('hurt');
             else if (effect.attacker === myId) haptic('hit');
           } else {
@@ -836,7 +841,11 @@ export class View {
           break;
         case 'thrown':
           if (effect.depth === this.depth) {
-            this.shoot(effect.from, effect.to, itemSprite({ kind: effect.item, qty: 1, level: 0 }, world.run.labels), now);
+            // Item.throwSound (a crossbow's shot for a dart, with a crossbow in hand).
+            const thrower = world.heroes.find((h) => h.depth === effect.depth && h.pos === effect.from);
+            const crossbow = thrower?.weapon?.kind === 'weapon.crossbow' && (effect.item === 'missile.dart' || effect.item.endsWith('Dart'));
+            this.shoot(effect.from, effect.to, itemSprite({ kind: effect.item, qty: 1, level: 0 }, world.run.labels), now, undefined, crossbow);
+            audio.play(crossbow ? 'atk_crossbow' : 'miss', crossbow ? 1 : 1.5, 0.6, cellMiddle(effect.from));
           }
           break;
         case 'zapped':
@@ -897,7 +906,9 @@ export class View {
           break;
         case 'missile':
           if (effect.depth === this.depth) this.shoot(effect.from, effect.to, effect.sprite, now);
-          audio.play('miss', 1.4, 0.6);
+          // SpiritArrow.throwSound: the spirit bow's own.
+          if (effect.sprite === S.SPIRIT_ARROW) audio.play('atk_spiritbow', 0.87 + Math.random() * 0.28);
+          else audio.play('miss', 1.4, 0.6);
           break;
         case 'jumped':
           // Gone in a puff of smoke, and there at once in the new place.

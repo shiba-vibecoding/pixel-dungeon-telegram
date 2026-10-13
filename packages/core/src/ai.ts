@@ -80,6 +80,12 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     beeAct(ctx, mob);
     return;
   }
+  // Corrupted, it fights for the heroes (Corruption: Char.Alignment.ALLY), as it wastes away.
+  if (mob.corrupted) {
+    if (mobConditions(ctx, mob)) spend(mob, TICK);
+    else if (isAlive(mob)) allyAct(ctx, mob);
+    return;
+  }
   // A magic sheep just stands there, until it fades away.
   if (mob.kind === 'sheep') {
     mob.lifespan = (mob.lifespan ?? 0) - TICK;
@@ -125,11 +131,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     spend(mob, TICK);
     return;
   }
-  // Corrupted, it fights for the heroes (Corruption: Char.Alignment.ALLY).
-  if (mob.corrupted) {
-    allyAct(ctx, mob);
-    return;
-  }
+
   // Dizzy, it staggers about instead of doing anything useful.
   if ((mob.dizzy ?? 0) > 0) {
     mob.dizzy!--;

@@ -81,7 +81,8 @@ export const isWater = (terrain: number): boolean => terrain >= T.WATER_TILES &&
 
 /** What players should see happen; returned by every accepted action. */
 export type Effect =
-  | { type: 'attack'; depth: number; attacker: string; target: string; hit: boolean; damage: number }
+  /** A blow or shot; `weapon`: what a hero struck with (the weapon in hand, a thrown one, the spirit bow), for its sound. */
+  | { type: 'attack'; depth: number; attacker: string; target: string; hit: boolean; damage: number; weapon?: ItemKind }
   /** Someone died; for a monster, what it was and which hero (if any) slew it. */
   | { type: 'died'; depth: number; who: string; pos: number; kind?: MobKind; by?: string }
   | { type: 'noticed'; depth: number; mob: string }

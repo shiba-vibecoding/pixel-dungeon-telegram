@@ -88,6 +88,7 @@ const GRIM_RESISTANT: ReadonlySet<string> = new Set(['goo', 'tengu', 'dm300', 'k
 export function attack(ctx: Ctx, attacker: Char, defender: Char, override: AttackOverride = {}): boolean {
   const strike = isHero(attacker) ? (override.weapon ?? attacker.weapon) : null;
   const thrown = isHero(attacker) && override.weapon !== undefined;
+  const struck = strike ? { weapon: strike.kind } : {};
   const surprised = isHero(attacker) && !isHero(defender) && surprises(attacker, defender, strike);
   // Char.hit: an invisible hero who can surprise never misses.
   const sure = isHero(attacker) && attacker.invisible > 0 && (isHero(defender) || surprised);
@@ -96,7 +97,7 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   const skill = override.attack ?? attackSkill(attacker, defender, strike);
   const hit = sure || ctx.rng.floatMax(skill) >= ctx.rng.floatMax(defenseSkill(defender));
   if (!hit) {
-    ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0 });
+    ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0, ...struck });
     return false;
   }
   // A sniper's thrown weapons find the weak points in any armour, from afar.
@@ -207,12 +208,12 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   if (blow.vorpal !== undefined && !isHero(defender) && damage <= defender.hp) {
     const bleed = Math.round(blow.vorpal * (2 + damage / 2));
     defender.bleeding = Math.max(defender.bleeding ?? 0, bleed);
-    ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0 });
+    ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0, ...struck });
     ctx.effects.push({ type: 'enchanted', depth: ctx.depth, pos: defender.pos, enchant: 'vorpal' });
     return true;
   }
   const before = defender.hp;
-  ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage });
+  ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage, ...struck });
   hurt(ctx, defender, damage, attacker);
   if (isHero(attacker) && !isHero(defender)) afterBlow(ctx, attacker, defender, damage, before, blow);
   // Pickaxe.proc: a vampire bat slain with the pickaxe leaves its blood on it, as the blacksmith wants.

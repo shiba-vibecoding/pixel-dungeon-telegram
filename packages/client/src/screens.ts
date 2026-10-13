@@ -1774,6 +1774,8 @@ function showTip(options: ItemOptions, index: number, act: (action: Action) => v
         ? [button(fmt(t.gear.tipAll, maxToTip, Math.trunc((maxToTip + 1) / 2)), () => act({ type: 'tip', item: index, seed: seedIndex, all: true }), 'small')]
         : []),
     ];
+    // Shattered's labels are long: they wrap rather than run out of the button.
+    for (const choice of choices) Object.assign(choice.style, { whiteSpace: 'normal', height: 'auto', minHeight: '36px', lineHeight: '20px' });
     return el(
       'div',
       { className: 'pd-choice' },
@@ -1783,7 +1785,12 @@ function showTip(options: ItemOptions, index: number, act: (action: Action) => v
     );
   });
   show(
-    windowOf({ title: t.gear.tipTitle, icon: slot(world, darts, { hero }), onClose: back }, info(t.gear.tipDesc), el('div', { className: 'pd-choices' }, ...rows)),
+    windowOf(
+      { title: t.gear.tipTitle, icon: slot(world, darts, { hero }), onClose: back },
+      // Dart.tip_desc without its last sentence, which names the seed's dart (each choice below does).
+      info(t.gear.tipDesc.replace(/[^.!?\n]*%s[^.!?]*[.!?]?/, '').trim()),
+      el('div', { className: 'pd-choices' }, ...rows),
+    ),
     back,
   );
 }

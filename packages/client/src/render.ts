@@ -8,6 +8,25 @@ import { CHEST_ANIMS, type HeapLook } from './motion';
 import { drawFrame, frameAt as sheetFrame, lookIndex, regionIndex, sheet, tintedImage } from './worldsheets';
 import { quality } from './quality';
 import { t } from './i18n';
+import { flightAngle, glowStrength } from './gearfx';
+
+/** An item's sprite in one colour, kept once made (for ItemSprite.Glowing). */
+const tintedItems = new Map<string, HTMLCanvasElement>();
+function tintedItem(items: CanvasImageSource, sprite: number, color: string): HTMLCanvasElement {
+  const key = `${sprite}|${color}`;
+  let canvas = tintedItems.get(key);
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 16;
+    const c = canvas.getContext('2d')!;
+    c.drawImage(items, (sprite % 16) * 16, Math.floor(sprite / 16) * 16, 16, 16, 0, 0, 16, 16);
+    c.globalCompositeOperation = 'source-atop';
+    c.fillStyle = color;
+    c.fillRect(0, 0, 16, 16);
+    tintedItems.set(key, canvas);
+  }
+  return canvas;
+}
 
 /* Canvas renderer for the world, using the original 16px tiles and sprites. */
 
@@ -253,7 +272,7 @@ export interface Scene {
   visible: readonly boolean[];
   explored: readonly boolean[];
   /** Items lying around, with their sprite index in items.png, and the colour of their glow, if magic. */
-  heaps: ReadonlyArray<{ pos: number; sprite: number; aura?: string }>;
+  heaps: ReadonlyArray<{ pos: number; sprite: number; aura?: string; glow?: { color: string; period: number } }>;
   /** Plants growing here, with their index in plants.png. */
   plants?: ReadonlyArray<{ pos: number; index: number }>;
   /** Clouds of gas: how much is in each cell, and its colour. */
@@ -353,6 +372,12 @@ export function render(
     const first = closed ? chests?.anims[closed]?.[0] : undefined;
     if (chests && first) ctx.drawImage(chests.image, first.x, first.y, 16, 16, -8, -16, 16, 16);
     else ctx.drawImage(assets.items, (heap.sprite % 16) * 16, Math.floor(heap.sprite / 16) * 16, 16, 16, -8, -16, 16, 16);
+    // ItemSprite.Glowing: the sprite swells towards its glow's colour and back.
+    if (heap.glow && visible[heap.pos]) {
+      ctx.globalAlpha = quality.reducedMotion ? 0.3 : glowStrength(now, heap.glow.period);
+      ctx.drawImage(tintedItem(assets.items, heap.sprite, heap.glow.color), -8, -16);
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
   }
   scene.over?.(ctx);
@@ -499,16 +524,26 @@ export function render(
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
     } else {
-      // A thrown thing flies in an arc, higher the farther it goes, its shadow running along the floor.
+      // A thrown thing flies in an arc, higher the farther it goes, its shadow running along the floor; a thrown weapon
+      // straight, spinning or pointing along its way (MissileSprite).
       const cells = Math.max(Math.abs((p.to % WIDTH) - (p.from % WIDTH)), Math.abs(Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)));
-      const height = Math.sin(k * Math.PI) * Math.min(14, 2 + cells * 2.5);
+      const height = p.flight?.straight ? 0 : Math.sin(k * Math.PI) * Math.min(14, 2 + cells * 2.5);
       ctx.fillStyle = `rgba(0, 0, 0, ${0.28 - height * 0.01})`;
       ctx.beginPath();
       ctx.ellipse(x, y + 6, 4 - height * 0.12, 1.3, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.save();
       ctx.translate(snap(x), snap(y - height));
-      ctx.rotate(k * Math.PI * 4);
+      if (p.flight) {
+        const dx = (p.to % WIDTH) - (p.from % WIDTH);
+        const dy = Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH);
+        const { angle, flip } = flightAngle(dx, dy);
+        const spun = quality.reducedMotion ? 0 : (p.flight.spin * (flip ? -1 : 1) * (now - p.start)) / 1000;
+        ctx.rotate(angle + (spun * Math.PI) / 180);
+        if (flip) ctx.scale(-1, 1);
+      } else {
+        ctx.rotate(k * Math.PI * 4);
+      }
       ctx.drawImage(assets.items, (p.sprite % 16) * 16, Math.floor(p.sprite / 16) * 16, 16, 16, -8, -8, 16, 16);
       ctx.restore();
     }

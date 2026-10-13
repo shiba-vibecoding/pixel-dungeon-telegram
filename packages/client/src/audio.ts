@@ -34,7 +34,17 @@ export type Synth =
   | 'creak' | 'thud' | 'rustle' | 'coin' | 'pop' | 'whoosh' | 'tick' | 'sizzle' | 'clank' | 'drip' | 'pebble' | 'sparkle'
   | 'stepWood' | 'stepGrass' | 'knock' | 'crowd';
 
-export type Sound = Sample | Synth;
+/**
+ * Shattered's sounds the gear plays (hits by weapon, the bows' shots, the enchantments' own), until their files come
+ * (the audio stream's): each played as the nearest sound there is. A name that gets a file of its own moves to Sample.
+ */
+const STAND_INS = {
+  hit_slash: 'hit', hit_stab: 'hit', hit_crush: 'hit', hit_strong: 'hit', hit_arrow: 'hit', hit_magic: 'zap', hit_parry: 'miss',
+  atk_spiritbow: 'miss', atk_crossbow: 'miss', meld: 'puff', gas: 'puff', mimic: 'cursed', charms: 'evoke', health_warn: 'degrade',
+} as const satisfies Record<string, Sample>;
+export type StandIn = keyof typeof STAND_INS;
+
+export type Sound = Sample | Synth | StandIn;
 
 /** The music: the original's tunes from files, or one played here. */
 export type Track = 'theme' | 'game' | SongName;
@@ -485,7 +495,8 @@ class Audio {
    * Plays a sound: `rate` (pitch), `volume`, and where in the world it comes from, if anywhere.
    * Its pitch wanders a little unless `rate` is given exactly... it wanders around `rate`.
    */
-  play(name: Sound, rate = 1, volume = 1, at?: Place, pan?: number): void {
+  play(sound: Sound, rate = 1, volume = 1, at?: Place, pan?: number): void {
+    const name: Sample | Synth = sound in STAND_INS ? STAND_INS[sound as StandIn] : (sound as Sample | Synth);
     const ctx = this.context;
     if (!this.enabled || !ctx || !this.sfx || document.hidden || ctx.state !== 'running') return;
     const buffer = this.buffers.get(name);

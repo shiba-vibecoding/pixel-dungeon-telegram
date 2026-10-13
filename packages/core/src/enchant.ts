@@ -571,7 +571,8 @@ export function armorProc(ctx: Ctx, attacker: Mob, hero: Hero, damage: number, b
         const char = charAt(world, depth, hero.pos + n);
         if (char && !immuneTo(char, 'frost')) char.paralysed = Math.max(char.paralysed ?? 0, FROST_TURNS);
       }
-      burst(ctx, hero.pos, 'frost', 0, true);
+      // Freezing.affect on every cell around (not the wearer's own): only the frost's show here.
+      ctx.effects.push({ type: 'burst', depth, pos: hero.pos, kind: 'frost', radius: 1, silent: true });
       if (!isWater(ctx.level.map[hero.pos]!) && hero.armor.glyph !== 'brimstone') hero.burning = Math.max(hero.burning, 4);
       shown();
       return damage;

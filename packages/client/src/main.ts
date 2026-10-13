@@ -12,6 +12,7 @@ import './ui.css';
 import './game.css';
 import { mobDescription, plantText, tileText, wellText } from './examine';
 import { quickIndex, quickUse } from './quickslot';
+import { glowOf } from './gearfx';
 import { fx } from './fx';
 import { ambientFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
 /** The visual clock's last reading, for frame-to-frame particle steps. */
@@ -2332,6 +2333,8 @@ function tick(now: number): void {
     // Rings and wands lying about glow, gold and blue.
     ...(heap.kind === 'heap' && heap.items[0]!.kind.startsWith('ring.') ? { aura: '#ffd27a' }
       : heap.kind === 'heap' && heap.items[0]!.kind.startsWith('wand.') ? { aura: '#8fc4ff' } : {}),
+    // ItemSprite.Glowing: an enchanted weapon or inscribed armour lying about glows in its magic's colour.
+    ...((heap.kind === 'heap' || heap.kind === 'forSale') && glowOf(heap.items[0]!) ? { glow: glowOf(heap.items[0]!)! } : {}),
   }));
   motion.update(level, heaps, visible, view, session.myId, `${session.generation}:${me.depth}`, vnow);
   for (const launch of motion.takeLaunches()) if (!launch.gold) launches.push(launch);
