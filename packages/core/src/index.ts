@@ -85,4 +85,10 @@ export {
 export { chargeLimit } from './regrowth';
 export type { CursedEffect } from './cursed';
 export { friendly } from './allies';
-export { type Property, propertiesOf } from './props';
+export { mobRotation, RARE_ALTS, rollMob } from './spawner';
+export { CHAMPION_AURA, CHAMPIONS } from './champions';
+export { isEnemy as isHostileMob, isOpenSpace, spawningWeight } from './mobs';
+export { type MobBolt } from './mobskills';
+export { type MobLine } from './floor';
+export { hasProp, type Property, propertiesOf } from './props';
+export { CHAMPION_ENEMIES } from './challenges';

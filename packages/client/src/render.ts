@@ -1,3 +1,4 @@
+import { drawAura, drawBeams } from './mobfx';
 import { HEIGHT, type Level, LENGTH, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
 import { FALL_MS, type Puppet, TILE, type View } from './view';
@@ -196,8 +197,10 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.fillRect(snap(x + 5), snap(y + TILE - 3), 6, 1);
   }
 
+  drawAura(ctx, puppet, x, y, now);
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
+  if (puppet.alpha !== undefined) ctx.globalAlpha = puppet.alpha;
   // GhostSprite.draw: the rose's ghost glows (Blending.setLightMode).
   if (puppet.kind === 'ghostHero') ctx.globalCompositeOperation = 'lighter';
   // timeFreeze.fx: while the hero freezes time, everything else stands still and grey (State.PARALYSED).
@@ -229,6 +232,13 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.translate(dx, dy);
   }
   ctx.drawImage(sheet.image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+  if (puppet.sprite.brightness !== undefined) {
+    // CharSprite.brightness: darker, its own pixels only.
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = `rgba(0, 0, 0, ${1 - puppet.sprite.brightness})`;
+    ctx.fillRect(0, 0, sheet.w, sheet.h);
+    ctx.globalCompositeOperation = 'source-over';
+  }
   if (puppet.alive) {
     // IceBlock: tinted (0.83, 1.17, 1.33) at 0.6. DarkBlock: brightness 0.4. WardSprite.resetColor: a ward dims as it shoots.
     if (puppet.frozen) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, 'rgb(212, 255, 255)', 0.6);
@@ -579,6 +589,7 @@ export function render(
     }
   }
 
+  drawBeams(ctx, view, now);
   // Chains.update: the ethereal chain's links spread out from the hero to where it was thrown, then vanish.
   view.chains = view.chains.filter((c) => now - c.start < c.duration);
   for (const c of view.chains) {

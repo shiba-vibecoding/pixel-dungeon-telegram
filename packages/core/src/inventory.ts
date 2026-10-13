@@ -3,7 +3,7 @@ import { mend, wear } from './wear';
 import { chargesKnown, identify, isIdentified, learn } from './ident';
 import {
   BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, heroEquipped, heroRings, isAlive, maxExp, MISC_SLOTS,
-  type MiscSlot, type Mob, mobStats, type SubClass, SUBCLASSES,
+  type MiscSlot, type Mob, type MobKind, mobStats, type SubClass, SUBCLASSES,
 } from './actors';
 import { affectHunger, growHT, STARVING } from './hero';
 import { affixProblem, affixSeal, detachProblem, detachSeal, type SealSource } from './seal';
@@ -20,7 +20,7 @@ import {
   canEnter, charAt, type Ctx, dropItem, enterCell, exploredCells, heroView, isHero, isPassable, isWater, landItem, leaveCell,
 } from './floor';
 import {
-  type Augment, buyPrice, createItem, type Heap, isCurseEnchant, isCurseGlyph, isStackable, type Item, itemDef, ItemGenerator, type ItemKind,
+  type Augment, buyPrice, createItem, type Heap, type HeapKind, isCurseEnchant, isCurseGlyph, isStackable, type Item, itemDef, ItemGenerator, type ItemKind,
   itemPrice, knownIn, stacksWith, wandMaxCharges,
 } from './items';
 import { isTippedDart, mergeMissiles, TIPPED_DARTS } from './missiles';
@@ -41,6 +41,8 @@ import { wipeOut } from './altar';
 import { applyArmorKit, CLASS_ARMOR, CLASS_ARMOR_OF, classSpecial, specialProblem, TIME_TO_APPLY_KIT } from './classArmor';
 import type { World } from './world';
 import { scaleMob } from './party';
+import { ambush, cleanseSpirit, potDropped, potPickedUp, spawnBee, spawnWraith as spawnShatteredWraith } from './mobskills';
+import { mimicPrize } from './mobs';
 import { underChallenges } from './challenges';
 import {
   canTarget, defaultTarget, enchantItem, isEnchantable, isItemRef, isTargetedScroll, itemAt, type ItemRef, TARGET_PROBLEMS, type TargetedScroll,
@@ -412,12 +414,15 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
         drinkFromWaterskin(ctx, hero, hero.items[action.item]!);
         return TIME_TO_DRINK;
       }
-      if (itemDef(hero.items[action.item]!.kind).category === 'honeypot') {
-        // Honeypot.execute: shattered right where the hero stands; the shattered pot is left in hand.
+      if (hero.items[action.item]!.kind === 'honeypot') {
+        // Honeypot.execute: shattered right where the hero stands, its pieces kept (the bee is after whoever holds them).
         const pot = hero.items[action.item]!;
         if (--pot.qty <= 0) hero.items.splice(action.item, 1);
-        shatterHoneypot(ctx, hero.pos);
-        if (!collect(hero, createItem('honeypot.shattered'))) landItem(ctx, hero.pos, createItem('honeypot.shattered'));
+        if (shatterHoneypot(ctx, hero.pos, hero.id)) {
+          if (!collect(hero, createItem('honeypot.shattered'))) dropItem(ctx.floor, hero.pos, createItem('honeypot.shattered'));
+        } else {
+          landItem(ctx, hero.pos, createItem('honeypot'));
+        }
         return TIME_TO_THROW;
       }
       if (itemDef(hero.items[action.item]!.kind).category === 'kit') {
@@ -509,6 +514,8 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       // Floating over a chasm, it falls through.
       landItem(ctx, hero.pos, item);
       ctx.effects.push({ type: 'dropped', hero: hero.id, item });
+      // ShatteredPot.doDrop: its bee guards it where it lies.
+      if (item.kind === 'honeypot.shattered') potDropped(ctx, hero.id, hero.pos);
       return TIME_TO_DROP;
     }
     case 'throw':
@@ -685,17 +692,13 @@ function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
     throwStone(ctx, hero, index, target);
     return;
   }
-  if (itemDef(item.kind).category === 'honeypot') {
-    // Honeypot.onThrow: it breaks where it lands, unless it falls down a chasm.
+  if (item.kind === 'honeypot') {
+    // Honeypot.onThrow: it breaks where it lands (its pieces lie there, guarded), unless it falls down a chasm.
     if (--item.qty <= 0) hero.items.splice(index, 1);
     const end = ballistica(ctx, hero.pos, target).at(-1)!;
     ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: 'honeypot' });
     if (hasFlag(ctx.level.map[end]!, F.PIT)) landItem(ctx, end, createItem('honeypot'));
-    else {
-      shatterHoneypot(ctx, end);
-      // Honeypot.shatter: what is left of the pot lies there (ShatteredPot).
-      landItem(ctx, end, createItem('honeypot.shattered'));
-    }
+    else landItem(ctx, end, createItem(shatterHoneypot(ctx, end, null) ? 'honeypot.shattered' : 'honeypot'));
     return;
   }
   if (itemDef(item.kind).category === 'seed') {
@@ -727,6 +730,8 @@ function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
     const end = ballistica(ctx, hero.pos, target).at(-1)!;
     ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: item.kind });
     landItem(ctx, end, flying);
+    // ShatteredPot.onThrow: its bee goes where it lands.
+    if (flying.kind === 'honeypot.shattered') potDropped(ctx, hero.id, end);
     return;
   }
 }
@@ -860,7 +865,7 @@ export function collect(hero: Hero, item: Item): boolean {
 /** Opens a chest or remains if need be, and takes everything there is room for. */
 /** Heap.open: a chest unlocked (with the golden key, if it wants one), a tomb or remains disturbed; false if a mimic sprang instead. */
 function openHeap(ctx: Ctx, hero: Hero, heap: Heap): boolean {
-  if (heap.kind === 'mimic' && springMimic(ctx, hero, heap)) return false;
+  if (MIMIC_OF[heap.kind] && springMimic(ctx, hero, heap)) return false;
   // A locked or crystal chest: the golden key turns in its lock and stays there.
   if (heap.kind === 'lockedChest' || heap.kind === 'crystalChest') hero.items.splice(goldenKeyFor(hero), 1);
   if (heap.kind !== 'heap') {
@@ -904,6 +909,8 @@ function pickUp(ctx: Ctx, hero: Hero): void {
       else left.push(item);
     } else if (collect(hero, item)) {
       ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
+      // ShatteredPot.doPickUp: its bee is after whoever holds it now.
+      if (item.kind === 'honeypot.shattered') potPickedUp(ctx, hero.id, heap.pos);
       if (item.kind === 'seed.rotberry') rotberryRoar(ctx, hero);
       if (item.kind === 'quest.amulet') {
         // Amulet.doPickUp: the journey's goal. Its bearer may end the run here («Let's call it a day»)
@@ -930,7 +937,7 @@ function disturb(ctx: Ctx, hero: Hero, heap: Heap): void {
     const risen = NEIGHBOURS4.filter((n) => spawnWraith(ctx, hero.pos + n)).length;
     if (risen > 0) ctx.effects.push({ type: 'wraiths', depth: ctx.depth, pos: heap.pos });
   }
-  if (heap.kind === 'skeleton' && heap.items.some((item) => item.cursed) && !spawnWraith(ctx, heap.pos)) {
+  if (heap.kind === 'skeleton' && heap.items.some((item) => item.cursed) && !spawnWraith(ctx, heap.pos, true)) {
     const damage = Math.trunc(hero.hp / 2);
     ctx.effects.push({ type: 'wraiths', depth: ctx.depth, pos: heap.pos });
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: hero.id, damage });
@@ -938,36 +945,20 @@ function disturb(ctx: Ctx, hero: Hero, heap: Heap): void {
   }
 }
 
-/** Wraith.spawnAt: a wraith rises on a free open cell, already after the hero, and acts a little later. */
-export function spawnWraith(ctx: Ctx, pos: number): boolean {
-  if (!isPassable(ctx.level, pos) || charAt(ctx.world, ctx.depth, pos)) return false;
-  const wraith = createMob(`#${++ctx.world.nextId}`, 'wraith', pos, 'hunting', ctx.floor.now + WRAITH_SPAWN_DELAY);
-  wraith.level = ctx.depth;
-  wraith.enemySeen = true;
-  ctx.floor.mobs.push(wraith);
-  enterCell(ctx.level, pos);
-  return true;
+/**
+ * Wraith.spawnAt: a wraith rises on a free cell (one in a hundred a tormented spirit), already after the hero, and
+ * acts a little later; a tomb's rise only where they are let out (Wraith.spawnAround), a skeleton's beside it too.
+ */
+export function spawnWraith(ctx: Ctx, pos: number, allowAdjacent = false): boolean {
+  return spawnShatteredWraith(ctx, pos, undefined, undefined, allowAdjacent) !== null;
 }
 
 /**
- * Honeypot.shatter: out flies a golden bee, where the pot broke or, if
- * someone stands there, on a free cell beside.
+ * Honeypot.shatter: out flies a golden bee, where the pot broke or, if someone stands there, on a free cell beside;
+ * it guards the pot's pieces (or goes after whoever holds them). False if there was no room for it.
  */
-function shatterHoneypot(ctx: Ctx, pos: number): void {
-  const { world, depth, level, rng, floor } = ctx;
-  let at = pos;
-  if (charAt(world, depth, pos)) {
-    at = rng.element(NEIGHBOURS4.map((n) => pos + n).filter((c) => isPassable(level, c) && !charAt(world, depth, c))) ?? -1;
-  }
-  if (at === -1) return;
-  const bee = createMob(`#${++world.nextId}`, 'bee', at, 'passive', floor.now + 1);
-  bee.level = depth;
-  bee.ht = bee.hp = mobStats(bee).ht;
-  // Alert from the start: no monster catches it off guard.
-  bee.enemySeen = true;
-  floor.mobs.push(bee);
-  enterCell(level, at);
-  ctx.effects.push({ type: 'bee', depth, pos: at, from: pos });
+function shatterHoneypot(ctx: Ctx, pos: number, holder: string | null): boolean {
+  return spawnBee(ctx, pos, holder) !== null;
 }
 
 /** Wraith.SPAWN_DELAY. */
@@ -1021,14 +1012,18 @@ const MEAT_BURNING_TURNS = 8;
 const ROOTED_TURNS = 10;
 const SLOWED_TURNS = 10;
 
+/** The mimic a heap is, if it is one (Mimic, GoldenMimic, CrystalMimic). */
+export const MIMIC_OF: Partial<Record<HeapKind, MobKind>> = { mimic: 'mimic', goldenMimic: 'goldenMimic', crystalMimic: 'crystalMimic' };
+
 /**
- * Mimic.spawnAt: the "chest" was a mimic. The hero is pushed aside and the
- * mimic, holding the treasure, attacks. False if there is no room to move.
+ * Mimic.interact: the "chest" was a mimic. The hero is pushed aside (if they stood on it) and the mimic, holding
+ * the treasure and a prize of its own (Mimic.generatePrize), springs at them with its ambush. False if there is
+ * no room to move.
  */
 function springMimic(ctx: Ctx, hero: Hero, heap: Heap): boolean {
   const { world, depth, level, rng, floor } = ctx;
   const cells = NEIGHBOURS8.map((n) => hero.pos + n).filter((c) => canEnter(level, c) && !charAt(world, depth, c));
-  if (cells.length === 0) {
+  if (cells.length === 0 && hero.pos === heap.pos) {
     heap.kind = 'chest';
     return false;
   }
@@ -1041,13 +1036,15 @@ function springMimic(ctx: Ctx, hero: Hero, heap: Heap): boolean {
     enterCell(level, to);
   }
   floor.heaps.splice(floor.heaps.indexOf(heap), 1);
-  const mimic = scaleMob(world, createMob(`#${++world.nextId}`, 'mimic', pos, 'hunting', floor.now + 1));
+  const kind = MIMIC_OF[heap.kind] ?? 'mimic';
+  const mimic = scaleMob(world, createMob(`#${++world.nextId}`, kind, pos, 'hunting', floor.now + 1));
   mimic.level = depth;
   mimic.ht = mimic.hp = mobStats(mimic).ht;
-  Object.assign(mimic, { enemy: hero.id, target: hero.pos, enemySeen: true, loot: heap.items });
+  mimic.loot = mimicPrize(rng, depth, kind, heap.items);
   floor.mobs.push(mimic);
   enterCell(level, pos);
   ctx.effects.push({ type: 'mimic', depth, mob: mimic.id, hero: hero.id });
+  ambush(ctx, mimic, hero);
   return true;
 }
 

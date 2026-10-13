@@ -217,6 +217,9 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* The journal's notes (the hero stream): a landmark journal.png has no icon for takes an item's picture; a floor's feeling, none. */
 .pd-jicon.item { background: none; display: grid; place-items: center; }
 .pd-jicon.blank { background: none; }
+/* The bestiary (mobs stream): a monster not seen yet is its dark shape. */
+.pd-portrait.silhouette canvas { filter: brightness(0) opacity(0.45); }
+.pd-catalog .pd-portrait canvas { max-width: 32px; max-height: 32px; image-rendering: pixelated; }
 /* The alchemy pot (alchemyui.ts): AlchemyScene's emitters over the window, a puff of smoke and bubbles over the
    result (Speck.WOOL, Speck.BUBBLE), the catalyst's glow, sparks over the energy counter (SparkParticle). */
 .pd-alch-fx { position: absolute; inset: 0; pointer-events: none; z-index: 1000; }
