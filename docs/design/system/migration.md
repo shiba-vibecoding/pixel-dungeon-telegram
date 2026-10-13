@@ -1450,3 +1450,122 @@ export function trophyClass(board: string, place: number): string {
 | `.pd-art-level`, `.pd-steps`, `.pd-art-charge`, `.pd-charge-bar(.seg/.full)`, `.pd-art-state(.on)`, `.pd-charge(.full)` | артефакт |
 | `.pd-mark.ench/.glyph(.new)`, `.pd-ench-line(.curse)` | зачарования и глифы |
 | `.pd-classes.six`, `.pd-class.new` | 6 классов |
+
+## Привал
+
+Привал заменяет `showTitle`: форма с классами уходит, класс выбирают на сцене. Ассеты — группа `Camp` (в `packages/client/public/assets/camp/`), значки краёв встроены в `bundle.css` как `--spr-quests`, `--spr-mail`, `--spr-mart`.
+
+### Разметка
+
+```html
+<main class="pd-camp" id="camp">            <!-- canvas и слой героя ставит PD.camp / ваш рантайм -->
+  <div class="pd-camp-ui">
+    <div class="pd-camp-top">
+      <button class="pd-profile framed" aria-label="Рейтинг">
+        <span class="pd-profile-face frame-gold"><i style="--av:0"></i></span>
+        <span class="pd-profile-text">
+          <span class="pd-profile-name">QA</span>
+          <span class="pd-profile-streak"><i class="pd-tro x1 flame"></i>12 дней подряд</span>
+          <span class="pd-profile-facts">Рекорд <b>4 320</b> · Забегов <b>37</b></span>
+        </span>
+        <span class="pd-profile-side"><span class="pd-counter frost"><i class="pd-tro frost"></i>1</span><span class="pd-counter trophies"><i class="pd-tro gold"></i>3</span></span>
+      </button>
+    </div>
+    <div class="pd-camp-edges">
+      <nav class="pd-camp-edge left">
+        <button class="pd-camp-icon quests" aria-label="Задания, есть новые" title="Задания"><i></i><span class="pd-count dot"></span></button>
+        <button class="pd-camp-icon mail" aria-label="Почта, 3" title="Почта"><i></i><span class="pd-count">3</span></button>
+      </nav>
+      <nav class="pd-camp-edge right">
+        <button class="pd-camp-icon ranks" aria-label="Рейтинг" title="Рейтинг"><i></i></button>
+        <button class="pd-camp-icon mart" aria-label="Пиксель-Март" title="Пиксель-Март"><i></i></button>
+        <button class="pd-camp-icon prefs" aria-label="Настройки" title="Настройки"><i></i></button>
+      </nav>
+    </div>
+    <div class="pd-camp-sheet">
+      <div class="pd-daily compact">
+        <div class="pd-daily-title"><h3>Подземелье дня</h3></div>
+        <div class="pd-daily-rules" aria-label="Сегодня: Во тьму, Припасы — 2 зелья лечения и паёк">
+          <span class="bad"><i class="pd-ch-mini" style="--c:5"></i>Во тьму</span>
+          <span class="boon" title="2 зелья лечения и паёк"><i class="pd-item" data-i="56"></i>Припасы</span>
+          <span class="pd-chip">1 попытка</span>
+        </div>
+        <button class="pd-button">Спуститься</button>
+      </div>
+      <div class="pd-actions">
+        <button class="pd-button primary big stacked">Продолжить<span class="pd-btn-sub">Воин, уровень 7 · глубина 9</span></button>
+        <div class="pd-row"><button class="pd-button">Новая игра</button><button class="pd-button pd-ch-btn"><i class="pd-icon" style="width:24px;height:24px;background-image:var(--spr-challenge-off)"></i>Испытания</button></div>
+      </div>
+    </div>
+  </div>
+</main>
+```
+
+- `--c` у `.pd-ch-mini` — номер испытания дня в `challenges.png` (как в `challengeList`), дар — значок предмета дара. Сыграно — `.pd-daily.done` с местом, как на старом титуле.
+- `.pd-count.dot` — точка без числа; почта показывает число незабранных писем, 0 — без значка.
+- Рамка портрета — `frame-bronze | frame-gold | frame-shadow | frame-patron` из `worn.frame`; без рамки — без класса.
+
+### Сцена
+
+```ts
+// main.ts — вместо showTitle
+const camp = PD.camp(root, { scene: worn.camp ?? 'outdoor', season: seasonOf(new Date()), hero: CLASS_INDEX[selected],
+  skin: worn.skins[selected] ?? null, effect: worn.effect ?? null, lang });
+// свайп и стрелки меняют класс: слушайте смену и сохраняйте 'pd-class'
+```
+
+- Холст 94×203, `image-rendering: pixelated`, CSS 376×812, по центру; слой `.pd-camp-layer` того же размера поверх — кнопка-герой `.pd-camp-hero`, облачко `.pd-camp-bubble`, имя `.pd-camp-name` со стрелками `.pd-camp-arrow.prev/.next`.
+- Порядок слоёв за кадр: фон → звёзды → факелы (`torch.png`, 130 мс) → костёр (`fire.png`, 100 мс) → тень и герой → свет (`globalCompositeOperation = 'lighter'`) → частицы.
+- Герой смотрит на костёр (отражён по горизонтали), обиженный — от костра.
+- Сезон входа: декабрь–февраль — зима, сентябрь–ноябрь — осень, остальное — лето (как сезон снега в Пиксель-Марте).
+- Платные привалы — новые товары Пиксель-Марта `kind: 'camp'`: `camp.cave`, `camp.prison`, `camp.hall`; превью товара — тот же `PD.camp` с `crop`.
+- Сдвиг на низком экране: `top = min(0, sheetTop − 16 − 129 × 4)` для холста и слоя.
+- Фразы касания и обиды — `CAMPT` в `bundle.js` (по три на класс, RU и EN, у Охотницы и Дуэлянтки женский род).
+
+### Обучение по шагу
+
+```html
+<div class="pd-coach" role="dialog" aria-label="Враг">
+  <div class="pd-coach-ring" style="left:72px;top:380px;width:40px;height:46px"></div>   <!-- клетка цели ± 4 px -->
+  <div class="pd-coach-bubble above" style="bottom:450px;--tail:80px">
+    <div class="pd-coach-head"><b>Враг</b><span class="pd-coach-step">Шаг 1 из 4</span></div>
+    <p class="pd-coach-text">Это <em>крыса</em>. Коснитесь её, чтобы ударить…</p>
+    <div class="pd-coach-actions"><button class="pd-button quiet">Пропустить обучение</button><button class="pd-button">Дальше</button></div>
+    <div class="pd-coach-dots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
+  </div>
+</div>
+```
+
+- Рамку ставьте по клетке карты (`cellRect(x, y)` из рендера) или по кнопке (`getBoundingClientRect`) и обновляйте при сдвиге камеры.
+- `.below` — облачко под местом (место в верхней половине), `.above` — над ним. `--tail` — x хвостика от левого края облачка.
+- Последний шаг: кнопка `.primary` «Понятно». «Пропустить обучение» сохраняет `pd-coach-done`, как и прохождение.
+
+### Почта
+
+```html
+<section class="pd-window pd-mail-window" role="dialog" aria-label="Почта">
+  <header class="pd-window-head"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-mail)"></i><div class="pd-titles"><h2 class="pd-heading">Почта</h2></div><button class="pd-close"></button></header>
+  <div class="pd-scroll"><div class="pd-mail">
+    <article class="pd-letter unread">
+      <span class="pd-letter-ico"><i class="pd-tro big gold"></i></span>
+      <header class="pd-letter-head"><b>Кубок дня</b><time>сегодня</time></header>
+      <p class="pd-letter-text">Подземелье дня 13.10: <em>1 место из 214</em>.</p>
+      <div class="pd-letter-act"><span class="pd-letter-gifts"><span class="pd-gift"><i class="pd-tro x1 gold"></i>Золотой кубок</span></span><button class="pd-button primary">Забрать</button></div>
+    </article>
+    <article class="pd-letter claimed">…<div class="pd-letter-act">…<span class="pd-letter-done">Получено</span></div></article>
+  </div></div>
+  <div class="pd-mail-foot"><span>Письма хранятся 30 дней</span><button class="pd-button quiet">Забрать всё</button></div>
+</section>
+```
+
+- Значок письма: кубок дня `gold | silver | bronze`, итоги недели `week`, сезон — `--spr-season`. Награда звёздами — `<i class="pd-icon" style="background-image:var(--spr-stars)"></i><span class="price">+25</span>`, рамка — 16 px рамки из Пиксель-Марта.
+- Пустая почта: `<p class="pd-mail-empty">` вместо списка и без подвала.
+
+| Класс | Что это |
+| --- | --- |
+| `.pd-camp`, `.pd-camp-canvas`, `.pd-camp-layer`, `.pd-camp-hero`, `.pd-camp-name`, `.pd-camp-arrow(.prev/.next)`, `.pd-camp-bubble` | сцена и герой |
+| `.pd-camp-ui`, `.pd-camp-top`, `.pd-profile.framed`, `.pd-profile-face(.frame-*)`, `.pd-profile-name` | карточка игрока |
+| `.pd-camp-edges`, `.pd-camp-edge(.left/.right)`, `.pd-camp-icon(.quests/.mail/.ranks/.mart/.prefs)`, `.pd-count(.dot)` | значки по краям |
+| `.pd-camp-sheet`, `.pd-daily.compact`, `.pd-daily-title`, `.pd-daily-rules span(.bad/.boon)` | нижняя панель |
+| `.pd-coach`, `.pd-coach-ring`, `.pd-coach-bubble(.above/.below)`, `.pd-coach-head`, `.pd-coach-step`, `.pd-coach-text`, `.pd-coach-actions`, `.pd-coach-dots` | обучение по шагу |
+| `.pd-mail-window`, `.pd-mail`, `.pd-letter(.unread/.claimed)`, `.pd-letter-ico`, `.pd-letter-head`, `.pd-letter-text`, `.pd-letter-act`, `.pd-letter-gifts`, `.pd-gift`, `.pd-letter-done`, `.pd-mail-empty`, `.pd-mail-foot` | почта |
