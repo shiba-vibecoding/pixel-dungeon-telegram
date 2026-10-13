@@ -536,6 +536,8 @@ describe('the warlock (SoulMark)', () => {
     hero.subclass = 'warlock';
     const golem = addMob(world, 'golem', hero.pos + 3);
     golem.hp = golem.ht = 100000;
+    // Shattered's golem pulls its enemy to it and pounds hard: held still, it is only a target here.
+    golem.paralysed = 100000;
     let marked = false;
     for (let i = 0; i < 40 && !marked; i++) {
       wand!.charges = 2;

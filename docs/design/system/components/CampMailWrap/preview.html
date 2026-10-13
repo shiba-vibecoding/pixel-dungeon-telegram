@@ -1,0 +1,23 @@
+<!-- @dsCard group="Привал" height=640 width=798 page subtitle="Почта на узком экране: награда и «Забрать» в одну строку, если влезают; не влезают — кнопка сама уходит на следующую строку вправо; очень длинная награда переносится внутри плашки. Без &lt;br&gt; и обрезки" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Почта: перенос</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 8px; flex: none; }
+  .cap { margin: 0; height: 20px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .cap b { color: var(--gold); font-weight: 400; }
+  .phone { position: relative; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get('lang') || 'ru', en = L === 'en';
+  function phone(w, h, cap) { var c = document.createElement('div'); c.className = 'col'; c.innerHTML = '<p class="cap">' + (cap || '') + '</p>'; var p = document.createElement('div'); p.className = 'phone pd-phone'; p.style.width = w + 'px'; p.style.height = h + 'px'; c.appendChild(p); document.getElementById('row').appendChild(c); return p; }
+  function game(p) { var g = document.createElement('div'); g.style.cssText = 'position:absolute;inset:0'; p.appendChild(g); PD.demo.game(g); return g; }
+  [[360, '360 px'], [375, '375 px']].forEach(function (w) { var p = phone(w[0], 600, '<b>' + w[1] + '</b>'); game(p); PD.demo.overlay(p, PD.demo.win.mailNarrow(L)).classList.add('open'); });
+  PD.sprite(document.body);
+</script>
+</body>
+</html>

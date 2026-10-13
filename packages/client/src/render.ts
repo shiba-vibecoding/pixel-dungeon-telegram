@@ -1,3 +1,4 @@
+import { drawAura, drawBeams } from './mobfx';
 import { HEIGHT, type Level, LENGTH, S, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
 import { CHAIN_MS, FALL_MS, type Puppet, TILE, type View } from './view';
@@ -219,10 +220,12 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.fillRect(snap(x + 5), snap(y + TILE - 3), 6, 1);
   }
 
+  drawAura(ctx, puppet, x, y, now);
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
+  if (puppet.alpha !== undefined) ctx.globalAlpha = puppet.alpha;
   // The rose's ghost is seen through (design v19: 0.82), with its blue light under it (drawGhostLight).
-  if (puppet.kind === 'ghostHero' && !puppet.invisible) ctx.globalAlpha = 0.82;
+  if (puppet.kind === 'ghostHero' && !puppet.invisible && puppet.alpha === undefined) ctx.globalAlpha = 0.82;
   // timeFreeze.fx: while the hero freezes time, everything else stands still and grey (State.PARALYSED).
   if (frozen && !puppet.isHero) ctx.filter = 'grayscale(1) brightness(0.8)';
   if (puppet.fallStart !== undefined) {
@@ -252,6 +255,13 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.translate(dx, dy);
   }
   ctx.drawImage(image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+  if (puppet.sprite.brightness !== undefined) {
+    // CharSprite.brightness: darker, its own pixels only.
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = `rgba(0, 0, 0, ${1 - puppet.sprite.brightness})`;
+    ctx.fillRect(0, 0, sheet.w, sheet.h);
+    ctx.globalCompositeOperation = 'source-over';
+  }
   if (puppet.alive) {
     // IceBlock: tinted (0.83, 1.17, 1.33) at 0.6. DarkBlock: brightness 0.4. WardSprite.resetColor: a ward dims as it shoots.
     if (puppet.frozen) tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, 'rgb(212, 255, 255)', 0.6);
@@ -628,6 +638,7 @@ export function render(
     }
   }
 
+  drawBeams(ctx, view, now);
   // The ethereal chain (design v19: chain-link.png, a link every 5 px along the line, turned its way, the two frames
   // taking turns; chain-hook.png at the tip with a blue flash): it flies out from the hero to where it was thrown, then
   // pulls (the target moves with the action) and is gone.

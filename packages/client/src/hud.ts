@@ -37,6 +37,8 @@ export const BUFF_ICONS = {
   prismaticGuard: 1020, challengeArena: 1054,
   // The artifacts': the cloak's stealth (INVISIBLE, dimmed), the hourglass's time freeze and stasis (TIME), the cape's THORNS, the talisman's FORESIGHT.
   stealth: 1012, timeFreeze: 1007, thorns: 1031,
+  // The monsters' curses (mobs stream): BuffIndicator.VULNERABLE, HEX, DEGRADE.
+  degrade: 1048,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 
@@ -102,6 +104,7 @@ export function heroBuffs(me: Hero): BuffEntry[] {
     ...((me.blessed ?? 0) > 0 ? [{ name: 'bless' as const, turns: Math.ceil(me.blessed!) }] : []),
     ...alchemyBuffs(me),
     ...artifactBuffs(me),
+    ...((me.degraded ?? 0) > 0 ? [{ name: 'degrade' as const, turns: turns(me.degraded!) }] : []),
   ];
   return list.map(tinted);
 }

@@ -315,7 +315,8 @@ describe('the cape of thorns', () => {
     Object.assign(rat, { enemy: 'p', target: hero.pos, enemySeen: true, ht: 5000, hp: 5000 });
     floorAt(world, 1).mobs.push(rat);
     let radiated = false;
-    for (let i = 0; i < 200 && !radiated; i++) {
+    // Half of every blow's harm (rounded down) charges it: a rat's bites take a few hundred turns to fill it.
+    for (let i = 0; i < 600 && !radiated; i++) {
       hero.hunger = 0;
       act(world, 'p', { type: 'wait' });
       radiated = (hero.artifact.cooldown ?? 0) > 0;

@@ -132,6 +132,12 @@ export class Rng {
     return min + Math.trunc(((a + b) * (max - min + 1)) / 2);
   }
 
+  /** Java: Random.NormalFloat(min, max) — the mean of two Float(max - min), past min. */
+  normalFloat(min: number, max: number): number {
+    const span = f32(max - min);
+    return f32(min + f32(f32(this.floatMax(span) + this.floatMax(span)) / 2));
+  }
+
   /** Java: Random.chances(float[]) — weights are floats, summed in float. */
   chances(chances: readonly number[]): number {
     const length = chances.length;

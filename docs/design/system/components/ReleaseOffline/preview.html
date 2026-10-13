@@ -1,0 +1,23 @@
+<!-- @dsCard group="Релиз" height=812 width=1173 page subtitle="Нет связи с сервером: игра идёт дальше без рейтинга и почты, забег засчитается, когда связь вернётся; «Повторить» и «Играть без связи». В игре — плашка «Нет связи · забег засчитается позже». Тост «Вышла новая версия — обновляем» с вращающимся значком" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Нет связи и обновление</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .phone { position: relative; width: 375px; height: 812px; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+  .tag { position: absolute; left: 8px; top: 150px; z-index: 40; padding: 2px 8px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--gold); background: rgba(11,11,9,.8); clip-path: var(--notch); }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get('lang') || 'ru', en = L === 'en';
+  function phone() { var p = document.createElement('div'); p.className = 'phone pd-phone'; document.getElementById('row').appendChild(p); return p; }
+  function tag(p, t) { var s = document.createElement('span'); s.className = 'tag'; s.textContent = t; p.appendChild(s); return s; }
+  var a = phone(); PD.demo.campScreen(a, { lang: L, hero: 0, frame: 'gold' }); PD.demo.overlay(a, PD.demo.win.offline(L));
+  var b = phone(); PD.demo.game(b, { mates: false, names: false }); b.insertAdjacentHTML('beforeend', '<span class="pd-net-badge" role="status">' + PD.demo.v20[L].offBadge + '</span>');
+  var c = phone(); PD.demo.campScreen(c, { lang: L, hero: 0, frame: 'gold' }); c.insertAdjacentHTML('beforeend', '<div class="pd-toast update" role="status" style="top:110px;z-index:50">' + PD.demo.v20[L].upd + '</div>');
+  PD.sprite(document.body);
+</script>
+</body>
+</html>
