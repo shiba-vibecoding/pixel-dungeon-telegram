@@ -75,11 +75,13 @@ export const isQuickslotted = (kind: ItemKind): boolean => state.slots.includes(
 /** The kind a slot holds, if any. */
 export const quickKind = (slot: number): ItemKind | null => state.slots[slot] ?? null;
 
-/** What a quickslot tap does with an item: aim a throw or a zap, use it at once, or an artifact's default action. */
-export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'use' | 'artifact' | null {
+/** What a quickslot tap does with an item: aim a throw, a zap or a shot, use it at once, or an artifact's default action. */
+export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'shoot' | 'use' | 'artifact' | null {
   const category = itemDef(kind).category;
   if (category === 'artifact') return 'artifact';
   if (category === 'wand' || kind === 'weapon.magesStaff') return 'zap';
+  // SpiritBow.defaultAction: AC_SHOOT.
+  if (category === 'bow') return 'shoot';
   if (category === 'missile' || category === 'bomb' || category === 'honeypot' || category === 'seed') return 'throw';
   if (['potion', 'scroll', 'food', 'torch', 'vial', 'wipeout'].includes(category) || kind === 'quest.fish') return 'use';
   return null;

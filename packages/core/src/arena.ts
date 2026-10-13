@@ -1,7 +1,10 @@
 import { createMob, type Hero, heroBelongings, isAlive, isHungry, type Mob, type MobKind, rollMob } from './actors';
 import { canEnter, charAt, type Ctx, dropItem, enterCell, type Floor, freeCellNear, leaveCell, observe } from './floor';
 import { collect } from './inventory';
-import { createItem, type Item, itemDef, type ItemKind, ITEMS, missileStats, rollFood } from './items';
+import { createItem, type Item, itemDef, type ItemKind, ITEMS, rollFood } from './items';
+import { missileStr } from './missiles';
+import { meleeStr } from './weapons';
+import { armorStr } from './armor';
 import { ARENA_CENTRE, ARENA_DEPTHS, ARENA_RADIUS, ARENA_STANDS, buildArenaLevel, insideArena, ringDistance } from './level/arena';
 import { identify } from './ident';
 import { isInvisible } from './artifacts';
@@ -499,8 +502,8 @@ const SURVIVE: Pool = [
 
 /** Thrown weapons by the wave (kind, from wave, fewest, most): darts first, javelins and tomahawks later. */
 const MISSILES: ReadonlyArray<readonly [ItemKind, number, number, number]> = [
-  ['missile.dart', 0, 10, 16], ['missile.curare', 3, 3, 6], ['missile.incendiary', 3, 3, 6], ['missile.shuriken', 6, 6, 10],
-  ['missile.javelin', 8, 4, 8], ['missile.tomahawk', 12, 4, 7],
+  ['missile.dart', 0, 10, 16], ['missile.paralyticDart', 3, 3, 6], ['missile.incendiaryDart', 3, 3, 6], ['missile.shuriken', 6, 3, 3],
+  ['missile.javelin', 8, 3, 3], ['missile.tomahawk', 12, 3, 3],
 ];
 
 /** For the next wave's crowd: blasts, clouds, fear and sleep, and something to throw. */
@@ -517,7 +520,7 @@ const CROWD: Pool = [
   [4, (rng, wave, hero) => {
     const [kind, , fewest, most] = rng.oneOf(MISSILES.filter(([, from]) => wave >= from));
     // Heavy ones only for an arm strong enough to throw them well.
-    if (missileStats(createItem(kind)).str > hero.str + 2) return createItem('missile.dart', rng.intRange(10, 16));
+    if (missileStr(createItem(kind)) > hero.str + 2) return createItem('missile.dart', rng.intRange(10, 16));
     return createItem(kind, rng.intRange(fewest, most));
   }],
 ];
@@ -546,9 +549,11 @@ function betterGear(rng: Rng, wave: number, hero: Hero, slot: 'weapon' | 'armor'
     return def.category === slot && def.tier === tier && kind !== 'weapon.pickaxe';
   });
   const kind = rng.oneOf(kinds);
-  const def = itemDef(kind);
-  const needs = slot === 'weapon' ? (def.str ?? 8 + tier * 2) : 7 + tier * 2;
-  let level = Math.max(Math.min(3, rng.int(2) + Math.trunc(wave / 7)), needs - hero.str);
+  // Upgrades lower the strength wanted at +1, +3, +6...: as many as it takes to fit the hero's.
+  const needs = (lvl: number): number => (slot === 'weapon' ? meleeStr(createItem(kind), lvl) : armorStr(createItem(kind), lvl));
+  let fits = 0;
+  while (needs(fits) > hero.str && fits < 30) fits++;
+  let level = Math.max(Math.min(3, rng.int(2) + Math.trunc(wave / 7)), fits);
   // Of the same kind, it must still be the better of the two.
   if (worn && kind === worn.kind) level = Math.max(level, worn.level + 1);
   return createItem(kind, 1, Math.max(0, level));
@@ -571,7 +576,7 @@ const GROW: Pool = [
   [2, (_rng, _wave, hero) => (wands(hero) > 0 ? createItem('scroll.recharging') : null)],
   [2, kindOf('potion.experience')],
   [1, (_rng, wave) => (wave >= 8 ? createItem('potion.might') : null)],
-  [1, (_rng, _wave, hero) => (has(hero, 'missile.boomerang') ? null : createItem('missile.boomerang', 1, 1))],
+  [1, (_rng, _wave, hero) => (has(hero, 'missile.heavyBoomerang') ? null : createItem('missile.heavyBoomerang', 3))],
 ];
 
 /** One thing from a pool, not of a kind already on offer. */

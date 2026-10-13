@@ -4,6 +4,7 @@ import { type Puppet, STEP_MS, TILE, type View } from './view';
 import { audio } from './audio';
 import { wandFx } from './wandfx';
 import { duration, levelRegion } from './sprites';
+import { magicColor } from './itemtext';
 
 /*
  * What the dungeon's events look like beyond the sprites: blood and sparks on
@@ -464,8 +465,104 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
     case 'enchanted': {
       if (!here(effect.depth)) return;
       const at = cellCentre(effect.pos);
-      fx.burst(at.x, at.y, now, { count: 12, colors: effect.enchant === 'fire' ? FIRE : effect.enchant === 'shock' ? BOLT_GLOW.lightning! : SPARK, glow: true, speed: [20, 60], life: [250, 550], size: [1, 1] });
-      if (effect.enchant === 'death') fx.flash('40, 0, 40', 0.4, 300, now);
+      // Each enchantment's own: Blazing's flames, Chilling's splash, Shocking's sparks, Venomous's poison, Grim's shadow...
+      const colors = effect.enchant === 'blazing' ? FIRE : effect.enchant === 'shocking' ? BOLT_GLOW.lightning! : effect.enchant === 'chilling' ? FROST
+        : effect.enchant === 'grim' ? VOID : effect.enchant === 'eldritch' ? ['#ff0000', '#ff6060'] : effect.enchant === 'venomous' ? ['#8a50e0', '#4400aa']
+        : effect.enchant === 'vorpal' || effect.enchant === 'vampiric' ? BLOOD : [magicColor(effect.enchant), '#ffffff'];
+      fx.burst(at.x, at.y, now, { count: 12, colors, glow: true, speed: [20, 60], life: [250, 550], size: [1, 1] });
+      if (effect.enchant === 'grim') fx.flash('40, 0, 40', 0.4, 300, now);
+      return;
+    }
+    case 'glyph': {
+      // Each glyph's own (Affection's hearts, Entanglement's earth and a shake, Potential's energy, the curses' shadows).
+      const at = centreOf(view, effect.hero, now);
+      const look: Partial<Record<string, readonly string[]>> = {
+        affection: ['#ff6fa8', '#ffb0d0'], entanglement: DUST, potential: ['#ffffff', '#c8f0ff'], viscosity: ['#a77ae0', '#d0b0ff'],
+        thorns: BLOOD, repulsion: ['#ffffff', '#e8e2c8'], antiEntropy: FIRE, corrosion: ['#303030', '#101010'], metabolism: HEAL,
+        stench: ICHOR, overgrowth: ['#4cc24c', '#2f8f1f'], multiplicity: VOID, displacement: ECTO,
+      };
+      burst(at, now, { count: 12, colors: look[effect.glyph] ?? [magicColor(effect.glyph), '#ffffff'], glow: true, speed: [15, 50], life: [300, 700], rise: 8 });
+      if (effect.glyph === 'entanglement') fx.shake(1, 400, now);
+      if (effect.glyph === 'antiEntropy' && at) burst(at, now, { count: 24, colors: FROST, speed: [30, 80], life: [300, 600], spread: 10 });
+      return;
+    }
+    case 'geyser': {
+      // GeyserTrap.activate: a splash of water upwards, and the gas's hiss.
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      fx.burst(at.x, at.y, now, { count: 40, colors: ['#5bc1e3', '#9fe0f5', '#ffffff'], speed: [40, 110], life: [300, 700], gravity: 260, angle: -Math.PI / 2, cone: Math.PI / 2 });
+      audio.play('gas', 0.75);
+      return;
+    }
+    case 'bloomed':
+      // Blooming.plantGrass: leaves burst from every tuft that springs up.
+      if (!here(effect.depth)) return;
+      for (const cell of effect.cells) {
+        const at = cellCentre(cell);
+        fx.burst(at.x, at.y, now, { count: 4, colors: ['#4cc24c', '#2f8f1f', '#a6e86a'], speed: [10, 40], life: [400, 800], gravity: 60 });
+      }
+      return;
+    case 'dazzled':
+      // Dazzling.proc: a white flash (GameScene.flash) and a blast.
+      if (!here(effect.depth)) return;
+      fx.flash('255, 255, 255', 0.5, 300, now);
+      audio.play('blast');
+      return;
+    case 'wondrous': {
+      // Wondrous.proc: a rainbow burst (RainbowParticle.BURST).
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      fx.burst(at.x, at.y, now, { count: 25, colors: ['#ff4040', '#ffb040', '#ffff40', '#40ff40', '#40c0ff', '#a040ff'], glow: true, speed: [20, 70], life: [400, 900] });
+      return;
+    }
+    case 'corrupted': {
+      // Corruption: it rises again darkened.
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      // (Its sound comes with the 'ally' effect beside this one.)
+      fx.burst(at.x, at.y, now, { count: 20, colors: ['#440066', '#b878e8', '#200030'], glow: true, speed: [10, 40], life: [500, 1000], rise: 14 });
+      return;
+    }
+    case 'lucky': {
+      // RingOfWealth.showFlareForBonusDrop: a green flare where the prize falls.
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      fx.burst(at.x, at.y, now, { count: 18, colors: ['#66ff66', '#ffffff', '#c8ffc8'], glow: true, speed: [20, 60], life: [400, 800], rise: 10 });
+      audio.play('gold', 1.2, 0.7);
+      return;
+    }
+    case 'shielded': {
+      // Blocking.proc: light specks on the wielder.
+      burst(centreOf(view, effect.hero, now), now, { count: 5, colors: ['#ffffff', '#c8d8ff'], glow: true, speed: [10, 30], life: [300, 600] });
+      return;
+    }
+    case 'blinked': {
+      // ScrollOfTeleportation.appear: light where it was, light where it is.
+      if (!here(effect.depth)) return;
+      for (const cell of [effect.from, effect.to]) {
+        const at = cellCentre(cell);
+        fx.burst(at.x, at.y, now, { count: 10, colors: ECTO, glow: true, speed: [10, 40], life: [300, 600], rise: 10 });
+      }
+      return;
+    }
+    case 'explosive': {
+      // Explosive.proc: smoke when it warms, sparks when it is hot.
+      const at = centreOf(view, effect.hero, now);
+      burst(at, now, effect.state === 'warm'
+        ? { count: 4, colors: SMOKE, speed: [5, 20], life: [500, 900], rise: 12 }
+        : { count: 5, colors: FIRE, glow: true, speed: [20, 50], life: [200, 400] });
+      return;
+    }
+    case 'annoying': {
+      // Annoying.proc: it screams (Speck.SCREAM).
+      burst(centreOf(view, effect.hero, now), now, { count: 6, colors: ['#ffffff', '#ffe0e0'], speed: [30, 60], life: [400, 700], rise: 20 });
+      return;
+    }
+    case 'pushed': {
+      // WandOfBlastWave.throwChar: dust where it is flung from.
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.from);
+      fx.burst(at.x, at.y + 5, now, { count: 8, colors: DUST, speed: [10, 40], life: [250, 500], gravity: 120 });
       return;
     }
     case 'enraged':

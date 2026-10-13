@@ -2,6 +2,7 @@ import { type Hero, MISC_SLOTS, type MiscSlot } from './actors';
 import { CLASS_ARMOR } from './classArmor';
 import type { Ctx } from './floor';
 import { type Item, itemDef, type ItemKind, randomEnchantment, randomGlyph, wandMaxCharges } from './items';
+import { gearUpgradable, upgradeGear } from './gear';
 import { isBroken, mend } from './wear';
 import { isIdentified } from './ident';
 import type { World } from './world';
@@ -44,22 +45,20 @@ export function heldRefs(hero: Hero): ItemRef[] {
 }
 
 /**
- * Item.isUpgradable: melee weapons, armour, wands, rings and the boomerang —
- * but not other thrown weapons (MissileWeapon), the blacksmith's pickaxe,
- * class armour, or the rings of haggler and thorns.
+ * Item.isUpgradable: melee weapons, armour, thrown weapons (MissileWeapon: not darts), wands and rings — but not the
+ * blacksmith's pickaxe, class armour, the spirit bow, or the rings of haggler and thorns.
  */
 export function isUpgradable(item: Item): boolean {
   switch (itemDef(item.kind).category) {
     case 'weapon':
-      return item.kind !== 'weapon.pickaxe';
+    case 'missile':
+      return gearUpgradable(item);
     case 'armor':
       return !CLASS_ARMOR.includes(item.kind);
     case 'wand':
       return true;
     case 'ring':
       return true;
-    case 'missile':
-      return item.kind === 'missile.boomerang';
     // BrokenSeal.isUpgradable: a scroll of upgrade can be read on the seal itself, once.
     case 'seal':
       return item.level === 0;
@@ -68,10 +67,13 @@ export function isUpgradable(item: Item): boolean {
   }
 }
 
-/** WndBag.Mode.ENCHANTABLE: a melee weapon, the boomerang or any armour (class armour too). */
+/**
+ * ScrollOfEnchantment.enchantable (and what a stone of augmentation takes): a weapon or armour that can be upgraded,
+ * or the spirit bow; class armour too.
+ */
 export function isEnchantable(item: Item): boolean {
   const category = itemDef(item.kind).category;
-  return (category === 'weapon' && item.kind !== 'weapon.pickaxe') || category === 'armor' || item.kind === 'missile.boomerang';
+  return category === 'bow' || category === 'armor' || ((category === 'weapon' || category === 'missile') && gearUpgradable(item));
 }
 
 /**
@@ -148,15 +150,15 @@ export function upgradeItem(ctx: Ctx, hero: Hero, item: Item): void {
     ctx.effects.push({ type: 'mended', hero: hero.id, item });
     return;
   }
-  // Weapon.upgrade(false) / Armor.upgrade(false): Random.Int(level()) > 0 drives the magic out.
-  if ((item.enchant || item.glyph) && item.level > 0 && ctx.rng.int(item.level) > 0) {
-    delete item.enchant;
-    delete item.glyph;
-    ctx.effects.push({ type: 'disenchanted', hero: hero.id, item });
+  const category = itemDef(item.kind).category;
+  if (category === 'weapon' || category === 'armor' || category === 'missile') {
+    // Weapon.upgrade(false), Armor.upgrade(false), MissileWeapon.upgrade (gear.ts): the magic may be lost from +4 on.
+    if (upgradeGear(ctx, hero, item) === 'enchant') ctx.effects.push({ type: 'disenchanted', hero: hero.id, item });
+  } else {
+    item.level++;
   }
   // Armor.upgrade: the seal on the armour takes the upgrade with it, once.
   if (item.seal && item.seal.level === 0) item.seal.level = 1;
-  item.level++;
   // Item.upgrade: no curse, and that is known (cursedKnown), though the level stays as known as it was.
   delete item.curseUnknown;
   mend(item);
@@ -167,14 +169,17 @@ export function upgradeItem(ctx: Ctx, hero: Hero, item: Item): void {
 }
 
 /**
- * ScrollOfEnchantment.onItemSelected: the curse is lifted, a weapon (or the
- * boomerang) gets a new enchantment and armour a new glyph, never the one it
- * had (Weapon.enchant, Armor.inscribe), and the item comes out mended.
+ * The scroll of enchantment (as StoneOfEnchantment.onItemSelected does it): the curse is lifted, a weapon (or the
+ * spirit bow) gets a new enchantment and armour a new glyph, never the one it had (Weapon.enchant(),
+ * Armor.inscribe()); a curse enchantment or glyph is replaced with them. Seam: the exotic scroll of enchantment's
+ * choice of three is the alchemy stream's.
  */
 export function enchantItem(ctx: Ctx, hero: Hero, item: Item): void {
   uncurse(item);
   if (itemDef(item.kind).category === 'armor') item.glyph = randomGlyph(ctx.rng, item.glyph);
   else item.enchant = randomEnchantment(ctx.rng, item.enchant);
+  delete item.infused;
+  delete item.explosive;
   mend(item);
   ctx.effects.push({ type: 'imbued', hero: hero.id, item });
 }

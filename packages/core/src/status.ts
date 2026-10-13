@@ -98,7 +98,10 @@ export const flies = (char: Char): boolean => (isHero(char) ? (char.levitating ?
 export function damageTaken(ctx: Ctx, victim: Char, damage: number, by: Char | null): number {
   if ((victim.invulnerable ?? 0) > 0) return 0;
   if ((victim.frozen ?? 0) > 0) thaw(ctx, victim);
-  if (!isHero(victim) && (victim.charmed ?? 0) > 0 && !(victim.charmFirm && by && !isHero(by) && by.ally)) {
+  if (!isHero(victim) && victim.charmIgnoreNext) {
+    // Charm.recover: ignoreNextHit.
+    delete victim.charmIgnoreNext;
+  } else if (!isHero(victim) && (victim.charmed ?? 0) > 0 && !(victim.charmFirm && by && !isHero(by) && by.ally)) {
     victim.charmed = Math.max(0, victim.charmed! - 5);
     if (victim.charmed <= 0) delete victim.charmedBy;
   }

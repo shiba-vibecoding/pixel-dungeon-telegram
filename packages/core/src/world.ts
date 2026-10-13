@@ -2,9 +2,12 @@ import { wear } from './wear';
 import { identifyBelongings, observeBelongings } from './ident';
 import { mobAct, populate, randomRespawnCell, reinforce, respawn, TIME_TO_RESPAWN } from './ai';
 import {
-  createHero, createMob, type Hero, heroAttackDelay, heroBelongings, heroRings, heroSpeed, isAlive, isShopkeeper, type Mob, type PlayerInfo,
+  createHero, createMob, type Footing, type Hero, heroAttackDelay, heroBelongings, heroReach, heroRings, heroSpeed, isAlive, isShopkeeper,
+  type Mob, type PlayerInfo,
   ringBonus,
 } from './actors';
+import { camouflage, isEnemy } from './enchant';
+import { canReach, gearTick } from './throwing';
 import { heroTurns, search, TIME_TO_SEARCH } from './hero';
 import { startingKit } from './heroclass';
 import { type Note, noteLandmarks } from './journal';
@@ -423,9 +426,11 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       if (!mob) return 'no such enemy';
       // Charmed, the hero cannot bring themselves to strike the charmer.
       if (hero.charmed > 0 && hero.charmedBy === mob.id) return 'you are charmed';
+      // Hero.canAttack: next to it, or within the weapon's reach (KindOfWeapon.canReach; MagesStaff.reachFactor: a
+      // battlemage's staff of disintegration reaches over a cell); a word, or an ally, only face to face.
       if (adjacent(hero.pos, mob.pos)) return null;
-      // MagesStaff.reachFactor: a battlemage's staff of disintegration reaches over a cell (Hero.canAttack).
-      return staffReach(hero) > 1 && !mob.ally && reaches(level, hero.pos, mob.pos, staffReach(hero)) ? null : 'too far away';
+      const reach = Math.max(heroReach(hero), staffReach(hero));
+      return mob.state !== 'passive' && !mob.ally && canReach(world, level, hero, mob.pos, reach) ? null : 'too far away';
     }
     case 'dismiss':
       return dismissProblem(world, hero, action.target);
@@ -913,6 +918,8 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   // The hero's buffs, the artifacts' among them, once a turn; a cursed hourglass may steal a turn.
   const lost = heroTurns(ctx, hero, from, hero.time);
   for (const ring of heroRings(hero)) wear(ctx, hero, ring, time);
+  // The hero's gear as time passes: shields fade, boomerangs come back, crystal mends (throwing.ts).
+  if (hero.depth === ctx.depth) gearTick(ctx, hero, time);
 
   // Caustic ooze burns every turn until washed off in water.
   if (hero.ooze >= 0) {
@@ -957,14 +964,12 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
       hurt(ctx, hero, damage, 'poison');
     }
   }
-  // Armour of viscosity: blows held back are taken now, a point a turn (DeferedDamage).
-  if ((hero.deferred ?? 0) > 0) {
-    const damage = ticks(hero.deferred!);
-    hero.deferred = Math.max(0, hero.deferred! - time);
-    if (damage > 0 && isAlive(hero)) {
-      ctx.effects.push({ type: 'hurt', depth: hero.depth, who: hero.id, damage });
-      hurt(ctx, hero, damage, 'deferred');
-    }
+  // Armour of viscosity: blows held back are taken now, a tenth (a point at least) every turn (Viscosity.DeferedDamage).
+  for (let i = Math.floor(hero.time) - Math.floor(hero.time - time); i > 0 && (hero.deferred ?? 0) > 0 && isAlive(hero); i--) {
+    const damage = Math.min(hero.deferred!, Math.max(1, Math.trunc(hero.deferred! * 0.1)));
+    hero.deferred! -= damage;
+    ctx.effects.push({ type: 'hurt', depth: hero.depth, who: hero.id, damage });
+    hurt(ctx, hero, damage, 'deferred');
   }
   if (hero.blind) hero.blind = Math.max(0, hero.blind - time);
   // Bleeding: every turn it hurts, and eases, until it stops (Bleeding.act).
@@ -977,7 +982,8 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   if (hero.levitating) hero.levitating = Math.max(0, hero.levitating - time);
   if (hero.gasImmune) hero.gasImmune = Math.max(0, hero.gasImmune - time);
   if (hero.burning > 0) {
-    if (isWater(ctx.level.map[hero.pos]!)) {
+    // Armour of brimstone: fire does not take (Char.isImmune: Burning).
+    if (isWater(ctx.level.map[hero.pos]!) || hero.armor.glyph === 'brimstone') {
       hero.burning = 0;
     } else {
       for (let i = ticks(hero.burning); i > 0 && isAlive(hero); i--) {
@@ -1052,7 +1058,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
         wanderer.pos = from;
         enterCell(level, from);
       }
-      spend(ctx, hero, 1 / heroSpeed(hero));
+      spend(ctx, hero, 1 / heroSpeed(hero, footing(ctx, hero)));
       if (hero.pos === from) break;
       // The step is done, then the trap goes off; floating, the hero touches nothing (Char.move). While the
       // hourglass freezes time, traps and plants wait for it to start again (heroPress).
@@ -1106,7 +1112,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
           hero.pos = mob.pos;
           mob.pos = from;
           enterCell(level, hero.pos);
-          spend(ctx, hero, 1 / heroSpeed(hero));
+          spend(ctx, hero, 1 / heroSpeed(hero, footing(ctx, hero)));
         }
         else talkToGhost(ctx, hero);
         break;
@@ -1194,6 +1200,34 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
     observe(world, hero);
     noteLandmarks(world, hero);
   }
+}
+
+/**
+ * What a hero's speed depends on besides the hero (Swiftness: an enemy within three steps of open ground, Flow:
+ * water underfoot, Bulk: a doorway).
+ */
+function footing(ctx: Ctx, hero: Hero): Footing {
+  const { level } = ctx;
+  let enemyNear = false;
+  if (hero.armor.glyph === 'swiftness') {
+    const reach = new Map<number, number>([[hero.pos, 0]]);
+    const queue = [hero.pos];
+    for (let head = 0; head < queue.length && !enemyNear; head++) {
+      const cell = queue[head]!;
+      const d = reach.get(cell)!;
+      const there = charAt(ctx.world, ctx.depth, cell);
+      if (there && isEnemy(there)) enemyNear = true;
+      if (d >= 3) continue;
+      for (const n of NEIGHBOURS8) {
+        const next = cell + n;
+        if (next >= 0 && next < LENGTH && !reach.has(next) && adjacent(cell, next) && isPassable(level, next)) {
+          reach.set(next, d + 1);
+          queue.push(next);
+        }
+      }
+    }
+  }
+  return { terrain: level.map[hero.pos]!, enemyNear };
 }
 
 /** Whether a hero carries the Amulet of Yendor. */
@@ -1373,6 +1407,8 @@ function awakenYog(ctx: Ctx, hero: Hero): void {
 export function trample(ctx: Ctx, pos: number, hero?: Hero): void {
   const level = ctx.level;
   const furrowed = isFurrowed(level, pos);
+  // Armour of camouflage: trampling tall grass (or furrowing it), its wearer melts into it.
+  if (hero) camouflage(hero);
   if (hero?.heroClass === 'huntress') {
     if (furrowed) return;
     furrow(level, pos);

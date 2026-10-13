@@ -1,6 +1,6 @@
 import type { Hero } from './actors';
 import type { Ctx } from './floor';
-import { createItem, type Item, itemDef, wandMaxCharges } from './items';
+import { createItem, isCurseEnchant, type Item, itemDef, randomWeaponCurse, wandMaxCharges } from './items';
 import type { ItemRef } from './scrolls';
 
 /*
@@ -66,7 +66,8 @@ export function imbue(ctx: Ctx, hero: Hero, staffRef: ItemRef, wandIndex: number
   updateWand(staff, false);
   wand.charges = Math.min(wandMaxCharges(wand, true), (wand.charges ?? 0) + oldCharges);
   if (wand.cursed) {
-    // Seam for the gear stream: a cursed staff also takes a random curse enchantment (Weapon.Enchantment.randomCurse).
+    // MagesStaff.imbueWand: a cursed wand curses the staff, with a curse enchantment unless it has one already.
+    if (!staff.cursed || !isCurseEnchant(staff.enchant)) staff.enchant = randomWeaponCurse(ctx.rng);
     staff.cursed = true;
     delete staff.curseUnknown;
     if (hero.weapon === staff) ctx.effects.push({ type: 'cursedEquip', hero: hero.id, item: staff });

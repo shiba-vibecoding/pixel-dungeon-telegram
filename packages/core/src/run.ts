@@ -16,6 +16,12 @@ export interface RunState {
   labels: Labels;
   /** The troll blacksmith has set up his forge in the caves (absent in older runs). */
   blacksmithSpawned?: boolean;
+  /**
+   * Generator's decks for weapons and thrown weapons by tier (Generator.Category.probs, as gear.ts deals them),
+   * and how many each has dealt (Category.dropped); absent until the first is dealt.
+   */
+  decks?: Record<string, number[]>;
+  deckDrops?: Record<string, number>;
   /** Generator's artifact deck: the kinds not dealt yet (absent until the first is; see artifacts/artifact.ts). */
   artifactsLeft?: ItemKind[];
   /** Generator.Category.WAND's deck: how many of each wand kind (in WAND_KINDS order) are left, and how many were dealt. */

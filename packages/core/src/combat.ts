@@ -1,22 +1,24 @@
-import { wear } from './wear';
 import { familiarise, identifyBelongings } from './ident';
 import { bossHurt, earnExp } from './hero';
 import { shieldDamage } from './seal';
 import {
-  baseKind, BRUTE_ENRAGED_DAMAGE, isShopkeeper, statsOf, createMob, type Hero, heroArmor, heroAttackSkill, heroDamageRoll, heroDefenseSkill, isAlive,
-  heroRings, type Mob, MOBS, mobStats, ringBonus,
+  baseKind, BRUTE_ENRAGED_DAMAGE, isShopkeeper, statsOf, createMob, type Hero, heroArmor, heroAttackSkill, heroDamageRoll, heroDefenseSkill,
+  heroDrRoll, heroRings, heroStr, isAlive, type Mob, MOBS, mobStats, ringBonus, strikeStr,
 } from './actors';
 import {
   charAt, type Char, type Ctx, dropItem, enterCell, freeCellNear, heroesOn, isHero, isPassable, isWater, landItem, leaveCell,
   observe,
 } from './floor';
-import { createItem, type Item, itemDef, ItemGenerator, randomRing, rollGold } from './items';
+import { createItem, type Item, itemDef, ItemGenerator, randomRing, rollGold, wandMaxCharges } from './items';
 import { damageTaken, rollFactor } from './status';
 import { rockArmorAbsorbs, staffBlow } from './wands';
 import { guardianArmor, wardArmor } from './allies';
 import { isChallenged, NO_ARMOR } from './challenges';
-import { NEIGHBOURS4, NEIGHBOURS8 } from './level/geometry';
-import { armorProc, TERROR_TURNS, weaponProc } from './enchant';
+import { adjacent, NEIGHBOURS4, NEIGHBOURS8 } from './level/geometry';
+import {
+  armorProc, type Blow, corruptSlain, deferDamage, gearSoaks, luckyDrop, procMultiplier, TERROR_TURNS, weaponProc,
+} from './enchant';
+import { missileProc } from './throwing';
 import { earthrootAbsorbs } from './plants';
 import { impQuestKill } from './imp';
 import { curseBroken, questKill } from './quest';
@@ -35,8 +37,8 @@ import { bossSlainBeacon, capeTakes, dispelInvisibility, ghostDied, ghostSeesHer
  * then damage minus a roll of the defender's armour.
  */
 
-function attackSkill(char: Char): number {
-  return isHero(char) ? heroAttackSkill(char) : mobStats(char).attack;
+function attackSkill(char: Char, target: Char, weapon?: Item | null): number {
+  return isHero(char) ? heroAttackSkill(char, target.pos, weapon === undefined ? char.weapon : weapon) : mobStats(char).attack;
 }
 
 /** Char.defenseSkill, as a monster's ranged attack (or anyone's) is weighed against it. */
@@ -54,17 +56,19 @@ export function charArmor(char: Char): number {
   return isHero(char) ? heroArmor(char) : mobStats(char).dr;
 }
 
-/** Char.drRoll: how much of a blow armour takes (the earth guardian's and a sentry's their own way). */
-export function armorRoll(ctx: Ctx, char: Char): number {
+/**
+ * Char.drRoll: how much of a blow armour takes — a hero's armour (Hero.drRoll), a monster's 0 to its armour, the earth
+ * guardian's and a sentry's their own way.
+ */
+export function drRoll(ctx: Ctx, char: Char): number {
   if (!isHero(char) && char.kind === 'guardian') return guardianArmor(ctx, char, isChallenged(ctx.world, NO_ARMOR));
   if (!isHero(char) && char.kind === 'ward') return wardArmor(ctx, char);
-  return ctx.rng.intRange(0, charArmor(char));
+  return isHero(char) ? heroDrRoll(char, ctx.rng) : ctx.rng.intRange(0, mobStats(char).dr);
 }
 
 function damageRoll(ctx: Ctx, char: Char, range?: readonly [number, number]): number {
   if (range) return ctx.rng.normalIntRange(range[0], range[1]);
-  if (isHero(char)) return heroDamageRoll(char, ctx.rng);
-  const [min, max] = baseKind(char.kind) === 'brute' && char.enraged ? BRUTE_ENRAGED_DAMAGE : mobStats(char).damage;
+  const [min, max] = !isHero(char) && baseKind(char.kind) === 'brute' && char.enraged ? BRUTE_ENRAGED_DAMAGE : mobStats(char as Mob).damage;
   return ctx.rng.normalIntRange(min, max);
 }
 
@@ -72,36 +76,74 @@ function damageRoll(ctx: Ctx, char: Char, range?: readonly [number, number]): nu
 export interface AttackOverride {
   attack?: number;
   damage?: readonly [number, number];
-  /** A hero's thrown weapon, whose enchantment the shot carries (Hero.attackProc: rangedWeapon). */
+  /**
+   * What a hero strikes with instead of the weapon in hand (Belongings.thrownWeapon): a thrown weapon, or the spirit
+   * bow for its arrow. Its numbers, its enchantment and its own effect make the shot.
+   */
   weapon?: Item;
 }
 
-/** One blow or shot; returns whether it hit. */
+/**
+ * Hero.canSurpriseAttack: not with a weapon too heavy for them, nor with a flail. A surprised monster (Mob.surprisedBy:
+ * the hero unseen by it, or invisible) cannot dodge, and some weapons hit it harder.
+ */
+function surprises(hero: Hero, mob: Mob, weapon: Item | null): boolean {
+  if (weapon && (weapon.kind === 'weapon.flail' || heroStr(hero) < strikeStr(hero, weapon))) return false;
+  return hero.invisible > 0 || !mob.enemySeen;
+}
+
+/** Bosses resist a grim blow (Char.Property.BOSS resistances). */
+const GRIM_RESISTANT: ReadonlySet<string> = new Set(['goo', 'tengu', 'dm300', 'king']);
+
+/**
+ * One blow or shot; returns whether it hit (Char.attack): accuracy against evasion; then the defender's armour is
+ * rolled, the damage rolled; the defender's armour glyph acts on it (defenseProc), the armour soaks its roll, the
+ * attacker's weapon acts on what is left (attackProc), and that is dealt (Char.damage, where a vorpal, grim, kinetic
+ * or corrupting blow does what it does).
+ */
 export function attack(ctx: Ctx, attacker: Char, defender: Char, override: AttackOverride = {}): boolean {
-  // Striking gives an invisible hero away (Invisibility.dispel: the cloak's stealth and a time freeze too).
+  const strike = isHero(attacker) ? (override.weapon ?? attacker.weapon) : null;
+  const thrown = isHero(attacker) && override.weapon !== undefined;
+  const surprised = isHero(attacker) && !isHero(defender) && surprises(attacker, defender, strike);
+  const struck = { ...(strike ? { weapon: strike.kind } : {}), ...(surprised ? { surprise: true } : {}) };
+  // Char.hit: an invisible hero who can surprise never misses.
+  const sure = isHero(attacker) && attacker.invisible > 0 && (isHero(defender) || surprised);
+  // Striking gives an invisible hero away (Invisibility.dispel: the cloak's stealth and a time freeze too), but not
+  // before it has its surprise.
   if (isHero(attacker)) dispelInvisibility(ctx, attacker);
-  const skill = override.attack ?? attackSkill(attacker);
+  const skill = override.attack ?? attackSkill(attacker, defender, strike);
   // Char.hit: a hex makes the roll a fifth worse, a blessing a quarter better.
-  const hit = ctx.rng.floatMax(skill) * rollFactor(attacker) >= ctx.rng.floatMax(defenseSkill(defender)) * rollFactor(defender);
+  const hit = sure || ctx.rng.floatMax(skill) * rollFactor(attacker) >= ctx.rng.floatMax(defenseSkill(defender)) * rollFactor(defender);
   if (!hit) {
-    ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0 });
+    ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0, ...struck });
     return false;
   }
-  // A sniper's thrown weapons find the weak points in any armour.
-  const thrown = override.damage !== undefined;
-  const sniping = isHero(attacker) && attacker.subclass === 'sniper' && thrown;
-  const reduction = sniping ? 0 : armorRoll(ctx, defender);
-  let raw = damageRoll(ctx, attacker, override.damage);
+  // A sniper's thrown weapons find the weak points in any armour, from afar.
+  const sniping = isHero(attacker) && attacker.subclass === 'sniper' && thrown && !adjacent(attacker.pos, defender.pos);
+  const reduction = sniping ? 0 : drRoll(ctx, defender);
+  let damage = isHero(attacker) && override.damage === undefined
+    ? heroDamageRoll(attacker, ctx.rng, surprised, strike)
+    : damageRoll(ctx, attacker, override.damage);
   // Weakness (the wand of corruption's): a weakened monster strikes two thirds as hard.
-  if (!isHero(attacker) && (attacker.weakened ?? 0) > 0) raw = Math.round(raw * 0.67);
+  if (!isHero(attacker) && (attacker.weakened ?? 0) > 0) damage = Math.round(damage * 0.67);
   // Hero.defenseProc: earthen armour takes half the blow, before the armour worn.
-  if (isHero(defender)) raw = rockArmorAbsorbs(defender, raw);
+  if (isHero(defender)) damage = rockArmorAbsorbs(defender, damage);
   // Mob.defenseProc: a soul-marked monster struck by a hero gives some of it back as health.
-  if (isHero(attacker) && !isHero(defender) && (defender.soulMarked ?? 0) > 0) soulSiphon(ctx, attacker, defender, raw);
-  let damage = Math.max(raw - reduction, 0);
+  if (isHero(attacker) && !isHero(defender) && (defender.soulMarked ?? 0) > 0) soulSiphon(ctx, attacker, defender, damage);
+  if (isHero(attacker) && !isHero(defender)) damage = masteredBlow(ctx, attacker, defender, damage, thrown);
+  const blow: Blow = {};
+  // Hero.defenseProc: an inscribed armour's answer, before the armour soaks the blow.
+  if (isHero(defender) && !isHero(attacker)) {
+    const mark = ctx.effects.length;
+    damage = armorProc(ctx, attacker, defender, damage, blow);
+    // The glyph's backlash may have felled its wearer, or an ankh raised them anew: the blow is spent.
+    if (!isAlive(defender) || ctx.effects.slice(mark).some((e) => e.type === 'resurrected')) return true;
+  }
+  damage = Math.max(damage - reduction, 0);
   // Vulnerable: a third more, after the armour.
   if ((defender.vulnerable ?? 0) > 0) damage = Math.round(damage * 1.33);
-  if (isHero(attacker) && !isHero(defender)) damage = masteredBlow(ctx, attacker, defender, damage, thrown);
+  // Viscosity: some of what gets past the armour is put off.
+  if (isHero(defender) && blow.viscosity !== undefined) damage = deferDamage(ctx, defender, damage, blow.viscosity);
   // Goo's touch may leave caustic ooze that burns until washed off in water.
   if (!isHero(attacker) && attacker.kind === 'goo' && ctx.rng.int(3) === 0 && isHero(defender)) {
     if (defender.ooze < 0) ctx.effects.push({ type: 'oozed', hero: defender.id });
@@ -127,7 +169,7 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
       // Albino.attackProc: half its bites leave the hero bleeding.
       if (attacker.kind === 'albino' && ctx.rng.int(2) === 0 && damage > 0) defender.bleeding = Math.max(defender.bleeding ?? 0, damage);
       // Monk.attackProc: one blow in six knocks the weapon out of the hero's hands (knuckledusters stay on).
-      if (baseKind(attacker.kind) === 'monk' && ctx.rng.int(6) === 0 && defender.weapon && defender.weapon.kind !== 'weapon.knuckles' && !defender.weapon.cursed) {
+      if (baseKind(attacker.kind) === 'monk' && ctx.rng.int(6) === 0 && defender.weapon && defender.weapon.kind !== 'weapon.gloves' && !defender.weapon.cursed) {
         const weapon = defender.weapon;
         defender.weapon = null;
         landItem(ctx, defender.pos, weapon);
@@ -164,28 +206,20 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
       attacker.target = defender.pos;
     }
   }
-  // Hero.attackProc and defenseProc: an enchanted weapon's blow, an inscribed armour's answer.
-  let afterBlow: (() => void) | undefined;
+  // Hero.attackProc: a thrown weapon's own effect, then the weapon's enchantment (Weapon.proc).
+  let staffAfter: (() => void) | undefined;
   if (isHero(attacker) && !isHero(defender)) {
-    // MagesStaff.proc: a battlemage's staff does what its wand does on a hit.
-    if (!thrown && attacker.weapon?.kind === 'weapon.magesStaff') afterBlow = staffBlow(ctx, attacker, attacker.weapon, defender, damage);
-    weaponProc(ctx, attacker, defender, damage, thrown ? override.weapon ?? null : attacker.weapon);
-    // Weapon.proc: every blow that lands makes the weapon better known, and wears it a little (a thrown boomerang wears as it comes back).
-    if (!thrown && attacker.weapon) {
-      familiarise(ctx, attacker, attacker.weapon);
-      wear(ctx, attacker, attacker.weapon);
-    }
+    // MagesStaff.proc: a battlemage's staff does what its wand does on a hit, before its enchantment.
+    if (!thrown && attacker.weapon?.kind === 'weapon.magesStaff') staffAfter = staffBlow(ctx, attacker, attacker.weapon, defender, damage);
+    if (thrown) damage = missileProc(ctx, attacker, defender, damage, override.weapon!);
+    if (damage >= 0 && isAlive(defender)) damage = weaponProc(ctx, attacker, defender, damage, strike, blow);
+    // Weapon.proc: every blow that lands makes the weapon in hand better known (a thrown one, see throwing.ts).
+    if (!thrown && attacker.weapon) familiarise(ctx, attacker, attacker.weapon);
+    damage = Math.max(0, damage);
+    if (!isAlive(defender)) return true;
   }
-
-  if (isHero(defender) && !isHero(attacker)) {
-    const mark = ctx.effects.length;
-    damage = armorProc(ctx, attacker, defender, damage);
-    // Armor.proc: and every blow taken makes the armour better known, and wears it.
-    familiarise(ctx, defender, defender.armor);
-    wear(ctx, defender, defender.armor);
-    // The glyph's backlash may have felled its wearer, or an ankh raised them anew: the blow is spent.
-    if (!isAlive(defender) || ctx.effects.slice(mark).some((e) => e.type === 'resurrected')) return true;
-  }
+  // Armor.proc: and every blow taken makes the armour better known.
+  if (isHero(defender) && !isHero(attacker)) familiarise(ctx, defender, defender.armor);
   if (!isHero(defender) && defender.kind === 'swarm') split(ctx, defender, damage);
   // FetidRat.defenseProc: struck, it lets out a puff of paralytic gas.
   if (!isHero(defender) && defender.kind === 'fetidRat') seedGas(ctx, defender.pos, 'paralytic', 20);
@@ -204,14 +238,46 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   }
   // Yog.defenseProc: struck, Yog-Dzewa spawns a larva next to it.
   if (!isHero(defender) && defender.kind === 'yog') spawnLarva(ctx, defender);
-  ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage });
+  // Char.damage, as a vorpal blow has it: unless it kills, it is dealt as bleeding instead.
+  if (blow.vorpal !== undefined && !isHero(defender) && damage <= defender.hp) {
+    const bleed = Math.round(blow.vorpal * (2 + damage / 2));
+    defender.bleeding = Math.max(defender.bleeding ?? 0, bleed);
+    ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0, ...struck });
+    ctx.effects.push({ type: 'enchanted', depth: ctx.depth, pos: defender.pos, enchant: 'vorpal' });
+    return true;
+  }
+  const before = defender.hp;
+  ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage, ...struck });
   hurt(ctx, defender, damage, attacker);
-  afterBlow?.();
+  staffAfter?.();
+  if (isHero(attacker) && !isHero(defender)) afterBlow(ctx, attacker, defender, damage, before, blow);
   // Pickaxe.proc: a vampire bat slain with the pickaxe leaves its blood on it, as the blacksmith wants.
   if (isHero(attacker) && attacker.weapon?.kind === 'weapon.pickaxe' && !thrown && !isHero(defender) && defender.kind === 'bat' && !isAlive(defender)) {
     attacker.weapon.bloody = true;
   }
   return true;
+}
+
+/**
+ * Char.damage's trackers: a grim blow may finish off what it left alive, the lower its health the likelier; a
+ * kinetic one keeps what it overkilled for the next; a corrupting one raises what it slew on the hero's side.
+ */
+function afterBlow(ctx: Ctx, hero: Hero, mob: Mob, damage: number, before: number, blow: Blow): void {
+  if (blow.grim !== undefined && isAlive(mob)) {
+    const finalChance = blow.grim * ((mob.ht - mob.hp) / mob.ht) ** 2;
+    if (ctx.rng.float() < finalChance) {
+      const extra = Math.round(mob.hp * (GRIM_RESISTANT.has(mob.kind) ? 0.5 : 1));
+      ctx.effects.push({ type: 'enchanted', depth: ctx.depth, pos: mob.pos, enchant: 'grim' });
+      ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage: extra });
+      hurt(ctx, mob, extra, hero);
+    }
+  }
+  if (blow.kinetic !== undefined) {
+    const add = damage > before && !mob.corrupted ? Math.round((damage - before - blow.kinetic) * procMultiplier(hero)) : 0;
+    if (add > 0) hero.kinetic = add;
+    else delete hero.kinetic;
+  }
+  if (blow.corrupting !== undefined && !isAlive(mob)) corruptSlain(ctx, mob, blow.corrupting);
 }
 
 /** What a ring of elements can shield a hero from (RingOfElements.Resistance.FULL). */
@@ -328,7 +394,7 @@ function split(ctx: Ctx, swarm: Mob, damage: number): void {
 /** What hurts without being a character. */
 export type Hazard =
   | 'poison' | 'burning' | 'ooze' | 'lightning' | 'gripping' | 'hunger' | 'bones' | 'gas' | 'fall' | 'deferred' | 'bleeding' | 'dry'
-  | 'multiplicity' | 'bomb' | 'chalice' | 'noRose'
+  | 'multiplicity' | 'bomb' | 'chill' | 'magic' | 'holy' | 'chalice' | 'noRose'
   /** Shattered's wands: a wand's own harm to the hero, corrosion, corruption wasting an ally away, a knock against a wall. */
   | 'wand' | 'corrosion' | 'corruption' | 'knockback';
 
@@ -337,7 +403,7 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   // Hero.damage: in the hourglass's stasis nothing can touch the hero.
   if (isHero(victim) && (victim.stasis ?? 0) > 0) return;
   // The sad ghost cannot be harmed; the shopkeeper will not stay to be.
-  if (!isHero(victim) && victim.state === 'passive' && victim.kind !== 'bee') {
+  if (!isHero(victim) && victim.state === 'passive' && victim.kind !== 'bee' && !victim.corrupted) {
     if (isShopkeeper(victim)) shopkeeperFlees(ctx, victim);
     return;
   }
@@ -357,14 +423,15 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
     const what = typeof source === 'string' ? source : isHero(source) ? '' : source.kind;
     if (ELEMENTAL.has(what)) damage = Math.round(damage * elementsResist(victim));
   }
-  // Char.damage: invulnerability, frost, charm, doom and shields (status.ts).
-  damage = damageTaken(ctx, victim, damage, by);
-  // Earthroot's bark takes the blows first.
+  // Earthroot's bark takes the blows first; then armour of anti-magic soaks magic, and a blocking weapon's shield.
   if (isHero(victim)) damage = earthrootAbsorbs(victim, damage);
+  if (isHero(victim)) damage = gearSoaks(ctx, victim, damage, source);
   // Hero.damage: the cape of thorns takes its share of whatever hurts the hero; rings of tenacity ease the rest,
   // the more the hero is hurt (RingOfTenacity.damageMultiplier, rounded up).
   if (isHero(victim) && damage > 0) damage = capeTakes(ctx, victim, damage, typeof source === 'string' ? null : source);
   if (isHero(victim) && damage > 0) damage = Math.ceil(damage * tenacityMultiplier(victim));
+  // Char.damage: invulnerability, frost, charm, doom and shields (status.ts).
+  damage = damageTaken(ctx, victim, damage, by);
   // Char.damage: the warrior's seal may raise its shield, and shields take what they can (not hunger's).
   if (isHero(victim)) damage = shieldDamage(ctx, victim, damage, source === 'hunger');
   if (!isHero(victim) && victim.kind === 'yog') {
@@ -437,7 +504,14 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   questKill(ctx, mob);
   impQuestKill(ctx, mob);
 
+  // Mob.rollToDropLoot (not for an ally): a thief's goods, the fetid rat's skull, a mimic's treasure, the loot;
+  // then a lucky blow's prize (Lucky.LuckProc); then the thrown weapons stuck in it fall (PinCushion).
   if (!mob.ally) dropRemains(ctx, mob);
+  if (mob.luck !== undefined) {
+    landItem(ctx, mob.pos, luckyDrop(ctx, mob.luck));
+    ctx.effects.push({ type: 'lucky', depth: ctx.depth, pos: mob.pos });
+  }
+  for (const item of mob.pinned ?? []) landItem(ctx, mob.pos, item);
 
   if (mob.kind === 'skeleton') explode(ctx, mob);
 

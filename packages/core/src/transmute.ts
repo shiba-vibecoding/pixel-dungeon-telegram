@@ -1,4 +1,6 @@
-import { createItem, type Item, itemDef, ItemGenerator, type ItemKind, randomEnchantment, wandMaxCharges } from './items';
+import { createItem, type Item, itemDef, ItemGenerator, type ItemKind, wandMaxCharges } from './items';
+import { randomOfTier } from './gear';
+import { isDart } from './missiles';
 import type { Rng } from './rng';
 
 /*
@@ -11,13 +13,6 @@ import type { Rng } from './rng';
  * them; an enchantment comes out as a new one.
  */
 
-const WEAPON_TWINS: Partial<Record<ItemKind, ItemKind>> = {
-  'weapon.knuckles': 'weapon.dagger', 'weapon.dagger': 'weapon.knuckles',
-  'weapon.spear': 'weapon.quarterstaff', 'weapon.quarterstaff': 'weapon.spear',
-  'weapon.sword': 'weapon.mace', 'weapon.mace': 'weapon.sword',
-  'weapon.longsword': 'weapon.battleAxe', 'weapon.battleAxe': 'weapon.longsword',
-  'weapon.glaive': 'weapon.warHammer', 'weapon.warHammer': 'weapon.glaive',
-};
 
 const SWAPS: Partial<Record<ItemKind, ItemKind>> = {
   'scroll.upgrade': 'scroll.enchantment', 'scroll.enchantment': 'scroll.upgrade',
@@ -45,11 +40,19 @@ export function transmute(item: Item, rng: Rng, depth: number): Item | null {
     return changed;
   };
   switch (category) {
-    case 'weapon': {
-      const twin = WEAPON_TWINS[item.kind];
-      if (!twin) return null;
-      const changed = keep(twin);
-      if (item.enchant) changed.enchant = randomEnchantment(rng);
+    case 'weapon':
+    case 'missile': {
+      // ScrollOfTransmutation.changeWeapon: another of the same tier, keeping its level, magic, augment and set's wear.
+      // (The mage's staff changes its wand instead, ScrollOfTransmutation.changeStaff: a seam for the wands stream.)
+      if (item.kind === 'weapon.pickaxe' || item.kind === 'weapon.magesStaff' || isDart(item.kind)) return null;
+      const tier = itemDef(item.kind).tier!;
+      const kind = other(() => randomOfTier(rng, tier, category === 'missile'));
+      if (kind === item.kind) return null;
+      const changed = keep(kind);
+      for (const key of ['enchant', 'infused', 'mastery', 'augment', 'hardened', 'durability'] as const) {
+        if (item[key] !== undefined) (changed as unknown as Record<string, unknown>)[key] = item[key];
+      }
+      if (category === 'missile') changed.set = 1 + rng.int(0x3fffffff);
       return changed;
     }
     case 'ring':
