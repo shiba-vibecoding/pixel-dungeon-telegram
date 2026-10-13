@@ -1,5 +1,6 @@
 import { challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, journalNotes, kindKnown, type Landmark, S, type World } from '@pd/core';
 import { audio } from './audio';
+import { sliderSound } from './sfx';
 import { fx } from './fx';
 import { capitalize, lang, locale, t } from './i18n';
 import { itemInfo, itemName } from './itemtext';
@@ -160,7 +161,7 @@ export function showSettings(options: SettingsOptions): void {
   const sound = group(
     t.meta.sound,
     stepsRow(t.musicVolume, () => level(audio.musicVolume), louder((v) => audio.setMusicVolume(v)), () => undefined),
-    stepsRow(t.soundVolume, () => level(audio.soundVolume), louder((v) => audio.setSoundVolume(v)), () => audio.play('coin', 1, 0.6)),
+    stepsRow(t.soundVolume, () => level(audio.soundVolume), louder((v) => audio.setSoundVolume(v)), () => audio.play(sliderSound())),
     switchRow(t.meta.vibration, t.meta.vibrationNote, haptics.on, (on) => haptics.set(on)),
   );
   const modes: ReadonlyArray<readonly [FxMode, string]> = (['auto', 'full', 'light'] as const).map((m) => [m, t.meta.fxModes[m]] as const);
@@ -270,6 +271,35 @@ function confirmReset(onCancel: () => void, onDone: () => void): void {
 
 /* About */
 
+/** AboutScene: the freesound.org samples in Shattered's sounds, and their authors, by licence. */
+const FREESOUND_BY: ReadonlyArray<readonly [string, string]> = [
+  ['SFX ATTACK SWORD 001.wav', 'JoelAudio'],
+  ['Pack: Slingshots and Longbows', 'saturdaysoundguy'],
+  ['Cracking/Crunching, A.wav', 'InspectorJ'],
+  ['Extracting a sword.mp3', 'Taira Komori'],
+  ['Pack: Uni Sound Library', 'timmy h123'],
+];
+const FREESOUND_ZERO: ReadonlyArray<readonly [string, string]> = [
+  ['Pack: Movie Foley: Swords', 'Black Snow'],
+  ['machine gun shot 2.flac', 'qubodup'],
+  ['m240h machine gun burst 4.flac', 'qubodup'],
+  ['Pack: Onomatopoeia', 'Adam N'],
+  ['Pack: Watermelon', 'lolamadeus'],
+  ['metal chain', 'Mediapaja2009'],
+  ['Pack: Sword Clashes Pack', 'JohnBuhr'],
+  ['Pack: Metal Clangs and Pings', 'wilhellboy'],
+  ['Pack: Stabbing Stomachs & Crushing Skulls', 'TheFilmLook'],
+  ['Sheep bleating', 'zachrau'],
+  ['Lemon,Juicy,Squeeze,Fruit.wav', 'Filipe Chagas'],
+  ['Lemon,Squeeze,Squishy,Fruit.wav', 'Filipe Chagas'],
+];
+
+function freesoundCredits(): HTMLElement {
+  const list = (title: string, samples: ReadonlyArray<readonly [string, string]>): HTMLElement =>
+    el('p', { className: 'pd-legal' }, title, ...samples.flatMap(([work, author]) => [el('br'), `${work} — ${author}`]));
+  return el('div', {}, el('p', { className: 'pd-legal', textContent: t.meta.freesound }), list(t.meta.ccBy, FREESOUND_BY), list(t.meta.ccZero, FREESOUND_ZERO));
+}
+
 export function showAbout(onClose: () => void): void {
   const credits = el('dl', { className: 'pd-credits' });
   for (const [what, who, more] of t.meta.credits) {
@@ -292,6 +322,7 @@ export function showAbout(onClose: () => void): void {
           el('span', { className: 'pd-build', textContent: t.meta.build(BUILD.commit, BUILD.date) }),
         ),
         credits,
+        freesoundCredits(),
         el(
           'div',
           {},

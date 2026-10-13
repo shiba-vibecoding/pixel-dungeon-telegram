@@ -4,6 +4,7 @@ import {
   type Look,
 } from '@pd/core';
 import { audio, type Sound } from './audio';
+import { between, hitSound, openSound, readSounds, TRAP_SOUNDS, weaponHit, woundSound } from './sfx';
 import { capitalize, t } from './i18n';
 import { itemName, plainName } from './itemtext';
 import { type AnimName, type Assets, type CharSprite, duration, heroSprite } from './sprites';
@@ -598,6 +599,23 @@ export class View {
     // What the party sees on the depth shown, worked out only if something needs it.
     let sight: boolean[] | undefined;
     const seen = (cell: number): boolean => (sight ??= visibleCells(world, this.depth))[cell] === true;
+    // A thrown weapon or a bolt that the next blow of this batch is struck with (KindOfWeapon.hitSound).
+    let thrownKind: string | null = null;
+    let bolt: string | null = null;
+    // Hero.damage: my hero's health before each blow of the batch, for the warnings it rings.
+    const me = heroById(world, myId);
+    let woundsLeft = 0;
+    for (const effect of effects) {
+      if (effect.type === 'attack' && effect.hit && effect.target === myId) woundsLeft += effect.damage;
+      if (effect.type === 'hurt' && effect.who === myId) woundsLeft += effect.damage;
+    }
+    const wounded = (damage: number): void => {
+      if (!me || damage <= 0) return;
+      const after = me.hp + woundsLeft - damage;
+      const sound = isAlive(me) ? woundSound(after + damage, after, me.ht) : null;
+      woundsLeft -= damage;
+      if (sound) audio.play(sound.sound, 1, sound.volume);
+    };
     for (const effect of effects) {
       switch (effect.type) {
         case 'attack': {
@@ -609,16 +627,37 @@ export class View {
             attacker.animStart = now;
             if (target && cellX(target.to) !== cellX(attacker.to)) attacker.flip = cellX(target.to) < cellX(attacker.to);
           }
+          const place = this.placeOf(effect.target, now);
+          // Char.attack: the attacker's weapon sounds the blow (a thrown one's, a bolt's own), a shield parries
+          // what does no harm; a surprise blow strikes hard (Mob.damage: HIT_STRONG); a miss whooshes.
+          const striker = heroById(world, effect.attacker);
+          const weapon = striker ? (thrownKind ?? striker.weapon?.kind ?? null) : null;
           if (effect.hit) {
             if (target) target.flashUntil = now + 160;
             const toHero = !effect.target.startsWith('#');
             this.float(effect.target, String(effect.damage), toHero ? COLORS.negative : COLORS.warning, now);
-            audio.play('hit', 0.8 + Math.random() * 0.45, 1, this.placeOf(effect.target, now));
-            if (effect.target === myId) haptic('hurt');
-            else if (effect.attacker === myId) haptic('hit');
+            if (striker && bolt) {
+              // The bolt's impact sounds as it lands (the 'zapped' effect, HIT_SOUNDS: HIT_MAGIC for the magic missile,
+              // frost, living earth and corruption, Wand.onZap); a beam, lightning and fire sound as they are cast.
+            } else {
+              const blow = hitSound(weapon, !!striker, effect.damage, heroById(world, effect.target)?.weapon?.kind);
+              audio.play(blow.sound, blow.rate, 1, place);
+            }
+            // Seam for the gear stream: a surprise attack's blow (Mob.damage), late for an arrow or a dart.
+            if (striker && (effect as { surprise?: boolean }).surprise) {
+              audio.later(weaponHit(weapon)[0] === 'hit_arrow' ? 125 : 0, 'hit_strong', 1, 1, place);
+            }
+            if (effect.target === myId) {
+              haptic('hurt');
+              wounded(effect.damage);
+            } else if (effect.attacker === myId) haptic('hit');
           } else {
             this.float(effect.target, t.miss, COLORS.neutral, now);
-            audio.play('miss', 1, 1, this.placeOf(effect.target, now));
+            audio.play('miss', 1, 1, place);
+          }
+          if (striker) {
+            thrownKind = null;
+            bolt = null;
           }
           break;
         }
@@ -694,14 +733,15 @@ export class View {
           this.say(t.revived(this.name(world, effect.hero)), COLORS.positive, now);
           break;
         case 'resurrected':
-          // Up again at the stairs: no sliding across the map.
+          // Up again at the stairs: no sliding across the map (GameScene, RESURRECT: TELEPORT).
           this.puppets.delete(effect.hero);
-          audio.play('levelup');
+          audio.play('teleport');
           this.say(effect.hero === myId ? t.resurrected : t.resurrectedCompanion(this.name(world, effect.hero)), COLORS.highlight, now);
           if (effect.hero === myId) haptic('success');
           break;
         case 'hurt':
           if (effect.depth === this.depth) this.float(effect.who, String(effect.damage), COLORS.negative, now);
+          if (effect.who === myId) wounded(effect.damage);
           break;
         case 'oozed':
           if (effect.hero === myId) this.say(t.oozed, COLORS.negative, now);
@@ -733,7 +773,8 @@ export class View {
           haptic('success');
           break;
         case 'opened':
-          audio.play('item', 0.8);
+          // Hero.actOpenChest: a tomb's sound, remains', a chest's lock.
+          if (effect.depth === this.depth) audio.play(openSound(effect.heap), 1, 1, cellMiddle(effect.pos));
           break;
         case 'pickedUp': {
           // Whoever takes something stoops for it.
@@ -746,8 +787,8 @@ export class View {
           if (effect.hero !== myId) break;
           if (effect.item.kind === 'gold') {
             this.say(t.youFoundGold(effect.item.qty), COLORS.highlight, now);
-            audio.play('gold', 1, 0.8);
-            audio.coins(effect.item.qty);
+            // Gold.doPickUp.
+            audio.play('gold');
           } else {
             this.say(t.youPicked(itemName(world, effect.item)), COLORS.default, now);
             audio.play('item');
@@ -758,14 +799,15 @@ export class View {
           if (effect.hero === myId) this.say(t.packFull, COLORS.warning, now);
           break;
         case 'dropped':
-          if (effect.hero === myId) audio.play('item', 0.7);
+          // What it lands on sounds as it lands (motion.ts: ItemSprite.drop).
           break;
         case 'equipped':
           if (effect.hero === myId) this.say(t.equippedItem(itemName(world, effect.item)), COLORS.default, now);
           break;
         case 'used': {
+          // Potion.drink: DRINK; a scroll read: READ, or its own (sfx.ts readSounds).
           const potion = effect.kind.startsWith('potion.');
-          audio.play(potion ? 'drink' : 'read', 1, 1, this.placeOf(effect.hero, now));
+          for (const sound of potion ? (['drink'] as const) : readSounds(effect.kind)) audio.play(sound, 1, 1, this.placeOf(effect.hero, now));
           this.busy(effect.hero, now);
           if (effect.identified) this.say(t.itWas(t.items[effect.kind]), COLORS.highlight, now);
           if (effect.hero === myId && effect.kind === 'potion.levitation') this.say(t.floating, COLORS.default, now);
@@ -825,7 +867,11 @@ export class View {
           if (effect.hero === myId) this.say(t.teleported, COLORS.default, now);
           break;
         case 'mapped':
-          if (effect.hero === myId) this.say(t.mapped, COLORS.highlight, now);
+          // ScrollOfMagicMapping: SECRET, as the map comes.
+          if (effect.hero === myId) {
+            this.say(t.mapped, COLORS.highlight, now);
+            audio.play('secret');
+          }
           break;
         case 'scroll':
           if (effect.kind === 'removeCurse') {
@@ -837,7 +883,6 @@ export class View {
             if (at) wandFx.burst('energy', at.x, at.y, now, 15);
             if (effect.hero === myId) this.say(effect.count > 0 ? t.recharged : t.nothingToRecharge, COLORS.default, now);
           } else if (effect.kind === 'psionic') {
-            audio.play('blast');
             if (effect.hero === myId) this.say(t.psionic, COLORS.warning, now);
           } else {
             this.say(effect.kind === 'challenge' ? t.challenge : effect.kind === 'terror' ? t.terror : t.lullaby, COLORS.warning, now);
@@ -855,8 +900,8 @@ export class View {
         case 'pushed':
           break;
         case 'imbued':
+          // ScrollOfEnchantment: what reading it sounds (READ) is all.
           if (effect.hero === myId) this.say(t.imbued(itemName(world, effect.item)), COLORS.highlight, now);
-          audio.play('evoke');
           break;
         case 'disenchanted':
           if (effect.hero === myId) this.say(t.disenchanted(itemName(world, effect.item)), COLORS.warning, now);
@@ -897,7 +942,9 @@ export class View {
               }
             }
           }
-          if (effect.kind === 'fire') audio.play('burning');
+          // The gas potions' GAS, liquid flame's BURNING (a trap's gas and flames are its own).
+          if (!trapped && (effect.kind === 'toxic' || effect.kind === 'paralytic')) audio.play('gas', 1, 1, cellMiddle(effect.pos));
+          if (!trapped && effect.kind === 'fire') audio.play('burning', 1, 1, cellMiddle(effect.pos));
           if (!trapped && !effect.silent) this.say(t.bursts[effect.kind], COLORS.warning, now);
           break;
         case 'unlocked':
@@ -915,35 +962,40 @@ export class View {
           }
           break;
         case 'thrown':
+          thrownKind = effect.item;
+          // Item.throwSound.
+          if (effect.depth === this.depth) audio.play('miss', 1.5, 0.6, cellMiddle(effect.from));
           if (effect.depth === this.depth) {
             this.shoot(effect.from, effect.to, itemSprite({ kind: effect.item, qty: 1, level: 0 }, world.run.labels), now);
           }
           break;
         case 'zapped': {
-          const bolt = effect.bolt ?? 'magic';
+          const kind = effect.bolt ?? 'magic';
+          // (The blow it strikes next is the bolt's: its impact sounds as it lands, below.)
+          bolt = kind;
           const here = effect.depth === this.depth;
           const from = cellMiddle(effect.from);
           const to = cellMiddle(effect.to);
-          if (here && WAND_BOLTS.has(bolt)) this.zapper(effect.from, effect.to, now);
-          if (here && wandFx.isBeam(bolt)) {
+          if (here && WAND_BOLTS.has(kind)) this.zapper(effect.from, effect.to, now);
+          if (here && wandFx.isBeam(kind)) {
             // Beam.DeathRay, LightRay, HealthRay: at once from end to end, fading.
-            wandFx.beam(from.x, from.y, to.x, to.y, bolt, now);
-          } else if (here && bolt === 'lightning') {
+            wandFx.beam(from.x, from.y, to.x, to.y, kind, now);
+          } else if (here && kind === 'lightning') {
             // Lightning: an arc, and sparks off what it strikes.
             if (effect.from === effect.to) wandFx.arc(from.x, from.y - 8, to.x, to.y + 4, now);
             else wandFx.arc(from.x, from.y, to.x, to.y, now);
             wandFx.burst('spark', to.x, to.y, now, 3);
             this.flashes.push({ cell: effect.to, start: now, color: '255, 255, 220', duration: 200 });
           } else if (here) {
-            this.shoot(effect.from, effect.to, null, now, BOLT_COLORS[bolt], WAND_BOLTS.has(bolt) ? bolt : undefined);
+            this.shoot(effect.from, effect.to, null, now, BOLT_COLORS[kind], WAND_BOLTS.has(kind) ? kind : undefined);
           }
           const at = here ? from : undefined;
           // Shattered's sounds: a ray for the beams, lightning's own, the zap for every missile.
-          audio.play(wandFx.isBeam(bolt) ? 'ray' : bolt === 'lightning' ? 'lightning' : 'zap', 1, 1, at);
+          audio.play(wandFx.isBeam(kind) ? 'ray' : kind === 'lightning' ? 'lightning' : 'zap', 1, 1, at);
           // On striking: magic hits (DamageWand's missiles, frost, living earth, corruption), corrosive gas let out.
-          const arrive = here && !wandFx.isBeam(bolt) && bolt !== 'lightning' ? Math.min(600, Math.hypot(cellX(effect.to) - cellX(effect.from), cellY(effect.to) - cellY(effect.from)) * BOLT_MS_PER_CELL) : 0;
-          const impact = HIT_SOUNDS[bolt];
-          if (impact) audio.later(arrive, impact, 0.87 + Math.random() * 0.28, 1, here ? to : undefined);
+          const arrive = here && !wandFx.isBeam(kind) && kind !== 'lightning' ? Math.min(600, Math.hypot(cellX(effect.to) - cellX(effect.from), cellY(effect.to) - cellY(effect.from)) * BOLT_MS_PER_CELL) : 0;
+          const impact = HIT_SOUNDS[kind];
+          if (impact) audio.later(arrive, impact, between(0.87, 1.15), 1, here ? to : undefined);
           break;
         }
         case 'avalanche':
@@ -973,22 +1025,24 @@ export class View {
           if (effect.hero === myId) this.say(t.specialUsed[effect.ability]!, COLORS.highlight, now);
           break;
         case 'mined':
+          // Hero.actMine: a vein of gold struck out (EVOKE).
           if (effect.depth !== this.depth) break;
           this.flashes.push({ cell: effect.pos, start: now, color: '255, 210, 90', duration: 500 });
-          audio.play('rocks', 1.3, 0.5, cellMiddle(effect.pos));
+          audio.play('evoke', 1, 1, cellMiddle(effect.pos));
           break;
         case 'smith':
           break;
         case 'mirrored':
           if (effect.depth !== this.depth) break;
           for (const cell of effect.cells) this.flashes.push({ cell, start: now, color: '200, 220, 255', duration: 500 });
-          audio.play('teleport', 1.2, 0.6);
           if (effect.hero === myId) this.say(t.mirrored(effect.cells.length), COLORS.default, now);
           break;
         case 'flock':
           if (effect.depth !== this.depth) break;
           for (const cell of effect.cells) this.flashes.push({ cell, start: now, color: '255, 255, 255', duration: 500 });
+          // StoneOfFlock, FlockTrap: PUFF and SHEEP.
           audio.play('puff');
+          audio.play('sheep', between(0.91, 1.1));
           break;
         case 'faded':
           if (effect.depth !== this.depth) break;
@@ -996,11 +1050,15 @@ export class View {
           this.flashes.push({ cell: effect.pos, start: now, color: '255, 255, 255', duration: 500 });
           break;
         case 'baa':
-          if (effect.depth === this.depth) this.float(effect.mob, t.baa[Math.floor(Math.random() * t.baa.length)]!, COLORS.default, now);
+          if (effect.depth === this.depth) {
+            this.float(effect.mob, t.baa[Math.floor(Math.random() * t.baa.length)]!, COLORS.default, now);
+            // Sheep.interact.
+            audio.play('sheep', between(0.91, 1.1));
+          }
           break;
         case 'missile':
           if (effect.depth === this.depth) this.shoot(effect.from, effect.to, effect.sprite, now);
-          audio.play('miss', 1.4, 0.6);
+          audio.play('miss', 1.5, 0.6);
           break;
         case 'jumped':
           // Gone in a puff of smoke, and there at once in the new place.
@@ -1149,14 +1207,17 @@ export class View {
         case 'ward':
           break;
         case 'planted':
+          // Plant.couch: PLANT, where it is seen.
+          if (effect.depth === this.depth && seen(effect.pos)) audio.play('plant', 1, 1, cellMiddle(effect.pos));
           break;
         case 'combo':
           if (effect.hero === myId) this.float(effect.hero, t.combo(effect.count), COLORS.highlight, now);
           break;
         case 'mastered':
+          // TengusMask: MASTERY.
           if (effect.hero === myId) {
             this.say(t.mastered(t.subclasses[effect.subclass]), COLORS.highlight, now);
-            audio.play('levelup');
+            audio.play('mastery');
           }
           break;
         case 'brewed':
@@ -1168,11 +1229,13 @@ export class View {
         case 'mimic':
           if (effect.depth !== this.depth) break;
           this.say(t.isMimic, COLORS.negative, now);
-          audio.play('alert');
+          audio.play('mimic');
           if (effect.hero === myId) haptic('hurt');
           break;
         case 'charmed':
+          // Succubus.attackProc: CHARMS.
           if (effect.hero === myId) this.say(t.charmed, COLORS.negative, now);
+          audio.play('charms', 1, 1, this.placeOf(effect.hero, now));
           break;
         case 'crippled':
           if (effect.hero === myId) this.say(t.crippled, COLORS.negative, now);
@@ -1197,18 +1260,19 @@ export class View {
               break;
             }
             this.flashes.push({ cell: effect.pos, start: now });
-            const at = { x: cellX(effect.pos) * TILE + TILE / 2, y: cellY(effect.pos) * TILE + TILE / 2 };
-            audio.play(effect.kind === 'lightning' ? 'lightning' : effect.kind === 'fire' ? 'burning' : 'trap', 1, 1, at);
+            // Trap.trigger: TRAP where it is seen, then the trap's own.
+            const at = cellMiddle(effect.pos);
+            audio.play('trap', 1, 1, at);
+            const own = TRAP_SOUNDS[effect.kind];
+            if (own) audio.play(own, 1, 1, at);
             const kind = this.puppets.get(effect.mob)?.kind as MobKind | undefined;
             if (kind) this.say(t.mobTrap(t.mobs[kind]), COLORS.warning, now);
-            if (effect.kind === 'alarm') {
-              audio.play('alert');
-              this.say(t.traps.alarm, COLORS.warning, now);
-            }
+            if (effect.kind === 'alarm') this.say(t.traps.alarm, COLORS.warning, now);
             break;
           }
           if (effect.depth === this.depth) this.flashes.push({ cell: effect.pos, start: now });
-          audio.play(effect.kind === 'lightning' ? 'lightning' : effect.kind === 'fire' ? 'burning' : 'trap');
+          audio.play('trap');
+          if (TRAP_SOUNDS[effect.kind]) audio.play(TRAP_SOUNDS[effect.kind]!);
           if (effect.hero === myId) {
             this.say(t.plateClicks, COLORS.warning, now);
             this.say(t.traps[effect.kind], COLORS.negative, now);
@@ -1261,7 +1325,11 @@ export class View {
           if (effect.hero === myId) this.say(t.hero.dewFull, COLORS.default, now);
           break;
         case 'levelCap':
-          if (effect.hero === myId) this.say(t.hero.levelCap, COLORS.positive, now);
+          // Hero.earnExp at the cap: LEVELUP.
+          if (effect.hero === myId) {
+            this.say(t.hero.levelCap, COLORS.positive, now);
+            audio.play('levelup');
+          }
           break;
         // Hero.noticed_smth is said once for what was found ('discovered', above).
         case 'shielded':
@@ -1317,11 +1385,13 @@ export class View {
           if (effect.depth === this.depth) this.say(t.cursed, COLORS.negative, now);
           break;
         case 'beacon':
+          // LloydsBeacon: BEACON as it is set; the return is a teleport.
           audio.play(effect.mode === 'set' ? 'beacon' : 'teleport');
           if (effect.hero === myId && effect.mode === 'set') this.say(t.beaconDone, COLORS.default, now);
           break;
         case 'balanced':
-          audio.play('miss');
+          // A stone used on an item (InventoryStone): READ.
+          audio.play('read');
           if (effect.hero === myId && effect.item.imbue) this.say(t.balanced[effect.item.imbue], COLORS.positive, now);
           break;
         case 'interrupted': {
@@ -1331,14 +1401,17 @@ export class View {
           break;
         }
         case 'cursedEquip':
-          if (effect.hero === myId) this.say(t.cursedEquip(itemName(world, effect.item)), COLORS.negative, now);
+          // EquipableItem.equipCursed: CURSED.
+          if (effect.hero === myId) {
+            this.say(t.cursedEquip(itemName(world, effect.item)), COLORS.negative, now);
+            audio.play('cursed');
+          }
           break;
         case 'victory':
           break;
       }
     }
     if (searchedByMe && !discovered) this.say(t.nothingFound, COLORS.neutral, now);
-    const me = heroById(world, myId);
     if (me && !isAlive(me) && effects.some((e) => e.type === 'died' && e.who === myId)) haptic('error');
   }
 }
