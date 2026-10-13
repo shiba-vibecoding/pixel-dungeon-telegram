@@ -1,36 +1,11 @@
-import { cursedKnown, type Enchantment, type Glyph, isCurseEnchant, isCurseGlyph, type Item, type ItemKind, S } from '@pd/core';
-import type { Sound } from './audio';
+import { cursedKnown, type Enchantment, type Glyph, isCurseEnchant, isCurseGlyph, type Item, S } from '@pd/core';
 
 /*
- * How Shattered's weapons, armour and thrown weapons look and sound: each
- * weapon's hit sound (KindOfWeapon.hitSound and hitSoundPitch), how a thrown
- * one flies (MissileSprite: spinning, or pointing along its way), and the glow
- * of an enchanted item (ItemSprite.Glowing).
+ * How Shattered's weapons, armour and thrown weapons look: how a thrown one
+ * flies (MissileSprite: spinning, or pointing along its way), and the glow of
+ * an enchanted item (ItemSprite.Glowing). Their hit sounds are sfx.ts's
+ * (KindOfWeapon.hitSound, by the audio stream).
  */
-
-/** KindOfWeapon.hitSound and hitSoundPitch of each weapon (HIT at 1 unless said otherwise). */
-const HIT_SOUNDS: Partial<Record<ItemKind, readonly [Sound, number]>> = {
-  'weapon.wornShortsword': ['hit_slash', 1.1], 'weapon.gloves': ['hit', 1.3], 'weapon.dagger': ['hit_stab', 1.1], 'weapon.rapier': ['hit_slash', 1.3],
-  'weapon.cudgel': ['hit_crush', 1.2], 'weapon.shortsword': ['hit_slash', 1.1], 'weapon.handAxe': ['hit_slash', 1], 'weapon.spear': ['hit_stab', 0.9],
-  'weapon.quarterstaff': ['hit_crush', 1], 'weapon.dirk': ['hit_stab', 1], 'weapon.sickle': ['hit_slash', 1], 'weapon.sword': ['hit_slash', 1],
-  'weapon.mace': ['hit_crush', 1], 'weapon.scimitar': ['hit_slash', 1.2], 'weapon.roundShield': ['hit', 1], 'weapon.sai': ['hit_stab', 1.3],
-  'weapon.whip': ['hit', 1.1], 'weapon.longsword': ['hit_slash', 1], 'weapon.battleAxe': ['hit_slash', 0.9], 'weapon.flail': ['hit_crush', 0.8],
-  'weapon.runicBlade': ['hit_slash', 1], 'weapon.assassinsBlade': ['hit_stab', 0.9], 'weapon.crossbow': ['hit', 1], 'weapon.katana': ['hit_slash', 1.1],
-  'weapon.greatsword': ['hit_slash', 1], 'weapon.warHammer': ['hit_crush', 1], 'weapon.glaive': ['hit_slash', 0.8], 'weapon.greataxe': ['hit_slash', 1],
-  'weapon.gauntlet': ['hit_crush', 1.2], 'weapon.warScythe': ['hit_slash', 0.9],
-  'missile.throwingStone': ['hit', 1.1], 'missile.throwingKnife': ['hit_slash', 1.2], 'missile.throwingSpike': ['hit_stab', 1.2],
-  'missile.fishingSpear': ['hit_stab', 1.1], 'missile.throwingClub': ['hit_crush', 1.1], 'missile.shuriken': ['hit_stab', 1.2],
-  'missile.throwingSpear': ['hit_stab', 1], 'missile.kunai': ['hit_stab', 1.1], 'missile.bolas': ['hit', 1], 'missile.javelin': ['hit_stab', 1],
-  'missile.tomahawk': ['hit_slash', 0.9], 'missile.heavyBoomerang': ['hit_crush', 1], 'missile.trident': ['hit_slash', 0.9],
-  'missile.throwingHammer': ['hit_crush', 0.8], spiritBow: ['hit_arrow', 1],
-};
-
-/** The sound a blow with a weapon makes (darts: HIT_ARROW at 1.3), and its pitch. */
-export function hitSound(kind: ItemKind | undefined): readonly [Sound, number] {
-  if (!kind) return ['hit', 1];
-  if (kind.endsWith('Dart') || kind === 'missile.dart') return ['hit_arrow', 1.3];
-  return HIT_SOUNDS[kind] ?? ['hit', 1];
-}
 
 /** How a thing in flight turns (MissileSprite.ANGULAR_SPEEDS): degrees a second, or 0 to point along its way. */
 export interface Flight {

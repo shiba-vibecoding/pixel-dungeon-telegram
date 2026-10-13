@@ -6,7 +6,8 @@ import { type Item, itemDef, type ItemKind } from './items';
  * delay (DLY) and reach (RCH) and its own damage formula; the strength they
  * want falls as they are upgraded; augmented for speed or for damage by a
  * stone of augmentation. The Duelist's weapon abilities are the classes
- * stream's (see weaponAbility). The mage's staff is the wands stream's.
+ * stream's (see weaponAbility). The mage's staff strikes as a weapon here;
+ * the wand inside it is the wands stream's (staff.ts).
  */
 
 const f32 = Math.fround;
@@ -41,6 +42,8 @@ export const MELEE: Readonly<Partial<Record<ItemKind, MeleeDef>>> = {
   'weapon.dagger': { max: four, surprise: 0.75 },
   'weapon.rapier': { max: four, defense: () => 1 },
   'weapon.cudgel': { acc: 1.4, max: four },
+  // MagesStaff: 1-6, two more a level (the wand in it is the wands stream's: staff.ts).
+  'weapon.magesStaff': { max: (t, l) => jround(3 * (t + 1)) + l * (t + 1) },
   // Tier 2
   'weapon.shortsword': {},
   'weapon.handAxe': { acc: 1.32, max: four },

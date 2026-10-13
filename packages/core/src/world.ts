@@ -18,7 +18,12 @@ import {
 } from './floor';
 import { inventoryProblem, isInventoryAction, type InventoryAction, performInventory } from './inventory';
 import { type Bones, layBones } from './bones';
-import { createItem, createItems, ItemGenerator, type ItemKind, shareOfDepth, WAND_RECHARGE, wandMaxCharges } from './items';
+import { createItem, createItems, ItemGenerator, type ItemKind, shareOfDepth } from './items';
+import { inBag } from './bags';
+import { chargeWands, staffReach } from './wands';
+import { heroStatusTime, timeScale } from './status';
+import { cursedTurn } from './cursed';
+import { allySwaps, dismiss, dismissProblem } from './allies';
 import { staggerTarget, stepOnPlant, sungrassHeals } from './plants';
 import { discoverable } from './level/flags';
 import { faceCurse, faceCurseProblem, type GhostQuest, rewardFromGhost, rewardProblem, spawnGhost, talkToGhost } from './quest';
@@ -73,6 +78,8 @@ export type Action =
   | { type: 'wandReward'; choice: 'battle' | 'utility' }
   /** Agree to free the sad ghost of its curse, and face it. */
   | { type: 'faceCurse' }
+  /** Ward.interact's «dismiss»: the ward beside the hero is gone. */
+  | { type: 'dismiss'; target: string }
   /** The Amulet of Yendor's «Let's call it a day»: the party wins here. */
   | { type: 'endGame' }
   /** Live turns: what the hero is to do from now on, a turn at a time (an empty plan stops them). */
@@ -338,7 +345,7 @@ const THREAT_REACH = 2;
 export function isSafe(world: World, hero: Hero): boolean {
   const fov = heroView(world, hero);
   return !floorAt(world, hero.depth).mobs.some((mob) =>
-    mob.state === 'hunting' && fov[mob.pos] && (mob.enemy === hero.id || distance(mob.pos, hero.pos) <= THREAT_REACH));
+    !mob.ally && mob.state === 'hunting' && fov[mob.pos] && (mob.enemy === hero.id || distance(mob.pos, hero.pos) <= THREAT_REACH));
 }
 
 /** Why an action is impossible right now, or null if it is fine. */
@@ -374,10 +381,14 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       if (!mob) return 'no such enemy';
       // Charmed, the hero cannot bring themselves to strike the charmer.
       if (hero.charmed > 0 && hero.charmedBy === mob.id) return 'you are charmed';
-      // Hero.canAttack: next to it, or within the weapon's reach (KindOfWeapon.canReach); a word only face to face.
+      // Hero.canAttack: next to it, or within the weapon's reach (KindOfWeapon.canReach; MagesStaff.reachFactor: a
+      // battlemage's staff of disintegration reaches over a cell); a word, or an ally, only face to face.
       if (adjacent(hero.pos, mob.pos)) return null;
-      return mob.state !== 'passive' && canReach(world, level, hero, mob.pos, heroReach(hero)) ? null : 'too far away';
+      const reach = Math.max(heroReach(hero), staffReach(hero));
+      return mob.state !== 'passive' && !mob.ally && canReach(world, level, hero, mob.pos, reach) ? null : 'too far away';
     }
+    case 'dismiss':
+      return dismissProblem(world, hero, action.target);
     case 'reward':
       return rewardProblem(world, hero, action.choice);
     case 'wandReward':
@@ -413,6 +424,31 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       return 'unknown action';
   }
 }
+
+/** Hero.canAttack with reach: a way within so many steps over open ground (or what is to be avoided), whoever stands there. */
+function reaches(level: Level, from: number, to: number, reach: number): boolean {
+  if (distance(from, to) > reach) return false;
+  let frontier = [to];
+  const seen = new Set(frontier);
+  for (let step = 0; step < reach; step++) {
+    const next: number[] = [];
+    for (const cell of frontier) {
+      for (const n of NEIGHBOURS8) {
+        const c = cell + n;
+        if (!adjacent(cell, c) || seen.has(c)) continue;
+        if (c === from) return true;
+        if (!hasFlag(level.map[c]!, F.PASSABLE) && !hasFlag(level.map[c]!, F.AVOID)) continue;
+        seen.add(c);
+        next.push(c);
+      }
+    }
+    frontier = next;
+  }
+  return false;
+}
+
+/** Whether a hero can do nothing this turn: paralysed, frozen solid, or out of time (TimeStasis). */
+const held = (hero: Hero): boolean => hero.paralysed > 0 || (hero.frozen ?? 0) > 0 || (hero.stasis ?? 0) > 0;
 
 /** Queues a player's action and lets the world run until someone must decide. */
 export function act(world: World, heroId: string, action: Action): ActionResult {
@@ -506,7 +542,7 @@ export function liveWaiting(world: World, depth: number): string[] {
   if (world.over || !inFight(world, depth)) return [];
   const until = beatEnd(floorAt(world, depth));
   return heroesOn(world, depth)
-    .filter((hero) => isAlive(hero) && hero.time < until && hero.paralysed <= 0 && !hasOrders(hero) && heldToTurns(world, hero))
+    .filter((hero) => isAlive(hero) && hero.time < until && !held(hero) && !hasOrders(hero) && heldToTurns(world, hero))
     .map((hero) => hero.id);
 }
 
@@ -575,7 +611,7 @@ function advanceLive(world: World, depth: number, effects: Effect[], until: numb
     }
     const hero = turn.hero;
     floor.now = Math.max(floor.now, hero.time);
-    if (hero.paralysed > 0) {
+    if (held(hero)) {
       spend(ctx, hero, TIME_TO_REST);
       overChasm(ctx, hero);
       continue;
@@ -761,8 +797,8 @@ function advance(world: World, depth: number, effects: Effect[]): void {
 
     const hero = turn.hero;
     floor.now = Math.max(floor.now, hero.time);
-    if (hero.paralysed > 0) {
-      // Paralysed: the turn passes; whatever the player chose waits.
+    if (held(hero)) {
+      // Paralysed (or frozen, or out of time): the turn passes; whatever the player chose waits.
       spend(ctx, hero, TIME_TO_REST);
       overChasm(ctx, hero);
       continue;
@@ -813,13 +849,14 @@ function playTurn(ctx: Ctx, turn: Exclude<Turn, { kind: 'hero' }>): void {
 }
 
 /**
- * Char.spend: time passes for the hero, slowed twice as long and quicker with a ring of haste
- * (Pixel Dungeon's); `constant`, as Hero.spendConstant (resting), it is neither. The hero's buffs act
+ * Char.spend: time passes for the hero, slowed twice as long, chilled a little longer (status.ts
+ * timeScale) and quicker with a ring of haste (Pixel Dungeon's); `constant`, as Hero.spendConstant
+ * (resting), it is none of these. The hero's buffs act
  * for every turn passed (hero.ts heroTurns: hunger, regeneration, the sealed floor, the seal's shield).
  */
 function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   if (!constant) {
-    if (hero.slowed > 0) time *= 2;
+    time /= timeScale(hero);
     const haste = ringBonus(hero, 'ring.haste');
     if (haste !== 0) time *= 1.1 ** -haste;
   }
@@ -856,16 +893,12 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   sungrassHeals(hero, time);
   if (hero.charmed <= 0) hero.charmedBy = null;
 
-  // Wands recharge with time.
-  for (const item of hero.items) {
-    if (item.charges === undefined) continue;
-    const max = wandMaxCharges(item);
-    item.recharge = item.charges >= max ? 0 : (item.recharge ?? 0) + time;
-    while (item.recharge >= WAND_RECHARGE && item.charges < max) {
-      item.recharge -= WAND_RECHARGE;
-      item.charges++;
-    }
-  }
+  // Wand.Charger: the wands gather charges, a turn at a time; the wands' conditions wear off (status.ts),
+  // and a cursed wand's lingering effects go on (cursed.ts).
+  const turns = Math.floor(hero.time) - Math.floor(hero.time - time);
+  chargeWands(hero, turns, (item) => inBag(hero, item));
+  heroStatusTime(ctx, hero, time, turns);
+  if (hero.depth === ctx.depth) for (let i = 0; i < turns && isAlive(hero); i++) cursedTurn(ctx, hero);
 
   // Poison and fire hurt once for every whole turn that passes.
   const ticks = (left: number): number => Math.floor(left) - Math.floor(Math.max(0, left - time));
@@ -989,6 +1022,19 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
 
     case 'attack': {
       const mob = mobById(world, hero.depth, action.target)!;
+      if (mob.ally) {
+        // Mob.interact for an ally: the hero and the ally swap places; a ward asks to be dismissed.
+        if (mob.kind === 'ward') {
+          ctx.effects.push({ type: 'ward', hero: hero.id, mob: mob.id });
+        } else if (allySwaps(mob) && adjacent(hero.pos, mob.pos)) {
+          const from = hero.pos;
+          hero.pos = mob.pos;
+          mob.pos = from;
+          enterCell(level, hero.pos);
+          spend(ctx, hero, 1 / heroSpeed(hero));
+        }
+        break;
+      }
       if (mob.state === 'passive') {
         // Not a fight: a word with the sad ghost, or business with the
         // shopkeeper; it takes no time.
@@ -1002,7 +1048,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
           ctx.effects.push({ type: 'ratKing', hero: hero.id, line: mob.awake ? 'busy' : 'notSleeping' });
           mob.awake = true;
         }
-        else if (mob.kind === 'mirror' || mob.kind === 'bee' || mob.corrupted) {
+        else if (mob.kind === 'mirror' || mob.kind === 'bee') {
           // MirrorImage.interact and Bee.interact: the hero and the ally swap places.
           const from = hero.pos;
           hero.pos = mob.pos;
@@ -1047,6 +1093,10 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
 
     case 'faceCurse':
       faceCurse(ctx, hero);
+      break;
+
+    case 'dismiss':
+      dismiss(ctx, mobById(world, hero.depth, action.target)!);
       break;
 
     case 'reforge':
@@ -1303,9 +1353,9 @@ function awakenYog(ctx: Ctx, hero: Hero): void {
 /**
  * HighGrass.trample: walked through, tall grass is flattened and sometimes sheds a seed or a dewdrop.
  * The huntress travels through it without trampling it: it only furrows (FURROWED_GRASS, which still
- * stands and hides, but sheds nothing more and is flattened by anyone else).
+ * stands and hides, but sheds nothing more and is flattened by anyone else). Also a hard press on it (wands.ts pressCell: one thrown by a blast wave landing).
  */
-function trample(ctx: Ctx, pos: number, hero?: Hero): void {
+export function trample(ctx: Ctx, pos: number, hero?: Hero): void {
   const level = ctx.level;
   const furrowed = isFurrowed(level, pos);
   // Armour of camouflage: trampling tall grass (or furrowing it), its wearer melts into it.
@@ -1441,6 +1491,29 @@ function fall(ctx: Ctx, hero: Hero, into: number): void {
   if (!isAlive(hero)) return;
   observe(world, hero);
   reviveFallen(world, depth, effects);
+}
+
+/** Chasm.heroFall where the hero stands (the ground gave way under them: a cursed wand's sinkhole). */
+export function heroFall(ctx: Ctx, hero: Hero): void {
+  if (isBossDepth(hero.depth + 1) || hero.depth + 1 >= DEEPEST_AVAILABLE) return;
+  fall(ctx, hero, hero.pos);
+}
+
+/**
+ * InterlevelScene.Mode.RETURN to another depth, somewhere on it (a cursed wand's teleport across
+ * floors): at a random spot, as RegularLevel.randomRespawnCell picks.
+ */
+export function sendHeroTo(ctx: Ctx, hero: Hero, depth: number): void {
+  const { world } = ctx;
+  const from = levelAt(world, hero.depth);
+  leaveCell(world, from, hero.depth, hero.pos);
+  hero.depth = depth;
+  const there = floorAt(world, depth);
+  hero.pos = landingCell(world, depth, new Rng(there.rng), false);
+  hero.time = there.now;
+  enterCell(levelAt(world, depth), hero.pos);
+  observe(world, hero);
+  ctx.effects.push({ type: 'teleported', hero: hero.id });
 }
 
 /** Level.press on a chasm: a hero no longer floating (or blinked onto it) falls through. */

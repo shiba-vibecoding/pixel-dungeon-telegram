@@ -1,4 +1,4 @@
-import { type Hero, type ItemKind, itemDef, startingKit, type World } from '@pd/core';
+import { type Hero, type Item, type ItemKind, itemDef, startingKit, type World } from '@pd/core';
 
 /*
  * The quick slots as Shattered Pixel Dungeon has them (QuickSlot, Toolbar):
@@ -9,8 +9,12 @@ import { type Hero, type ItemKind, itemDef, startingKit, type World } from '@pd/
  * (QuickSlot.replacePlaceholder). A new run starts with its class's slots
  * (HeroClass.init…: the warrior's stones, the mage's staff, the rogue's cloak
  * and knives, the huntress's bow). The slots are kept on this device, with the
- * run they belong to.
+ * run they belong to. The mage's staff in hand counts as the pack's
+ * (WEAPON_SLOT): Shattered puts it in the first slot from the start.
  */
+
+/** The «slot» of the weapon in hand, where the mage's staff is zapped from. */
+export const WEAPON_SLOT = -2;
 
 /** QuickSlot.SIZE. */
 export const QUICKSLOTS = 6;
@@ -74,7 +78,7 @@ export const quickKind = (slot: number): ItemKind | null => state.slots[slot] ??
 /** What a quickslot tap does with an item: aim a throw or a zap, or use it at once. */
 export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'shoot' | 'use' | null {
   const category = itemDef(kind).category;
-  if (category === 'wand') return 'zap';
+  if (category === 'wand' || kind === 'weapon.magesStaff') return 'zap';
   // SpiritBow.defaultAction: AC_SHOOT.
   if (category === 'bow') return 'shoot';
   if (category === 'missile' || category === 'bomb' || category === 'honeypot' || category === 'seed') return 'throw';
@@ -82,14 +86,15 @@ export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'shoot' | 'use' | nu
   return null;
 }
 
-/** The backpack slot of the item a quick slot shows, or -1 (empty, or a placeholder: none left). */
+/** The backpack slot of the item a quick slot shows, WEAPON_SLOT for the staff in hand, or -1 (empty, or a placeholder: none left). */
 export function quickIndex(hero: Hero, slot = 0): number {
   const kind = state.slots[slot];
+  if (kind === 'weapon.magesStaff' && hero.weapon?.kind === kind && hero.weapon.wand !== undefined) return WEAPON_SLOT;
   return kind ? hero.items.findIndex((item) => item.kind === kind) : -1;
 }
 
-/** QuickSlot.isPlaceholder: the slot keeps a kind none of which is left in the pack. */
-export const isPlaceholder = (hero: Hero, slot: number): boolean => state.slots[slot] != null && quickIndex(hero, slot) < 0;
+/** QuickSlot.isPlaceholder: the slot keeps a kind none of which is left in the pack (or in hand, for the staff). */
+export const isPlaceholder = (hero: Hero, slot: number): boolean => state.slots[slot] != null && quickIndex(hero, slot) === -1;
 
 /**
  * Toolbar.layout: how many slots the screen shows — four on a narrow phone, five from a wider one,
@@ -99,4 +104,10 @@ export function visibleQuickslots(wide: boolean, width: number): number {
   if (wide) return QUICKSLOTS;
   // Toolbar: 4, one more above 152 points of width, another above 170 (a point is about 2.5 px here).
   return 4 + (width > 380 ? 1 : 0) + (width > 425 ? 1 : 0);
+}
+
+/** The item a quick slot shows, if any: in the pack, or the staff in hand. */
+export function quickItem(hero: Hero, slot = 0): Item | undefined {
+  const index = quickIndex(hero, slot);
+  return index === WEAPON_SLOT ? hero.weapon ?? undefined : hero.items[index];
 }

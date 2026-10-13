@@ -60,3 +60,10 @@ export {
 export { gearUpgradable, MISSILE_TIERS, WEAPON_TIERS } from './gear';
 export { canReach } from './throwing';
 export { isAlly } from './enchant';
+export {
+  type Bolt, buffedLevel, chargesPerCast, heldWands, maxCharges, staffReach, wandAt, wandDamage, type WandNote, zapProblem,
+} from './wands';
+export { chargeLimit } from './regrowth';
+export type { CursedEffect } from './cursed';
+export { friendly } from './allies';
+export { type Property, propertiesOf } from './props';

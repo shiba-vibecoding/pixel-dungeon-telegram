@@ -114,6 +114,37 @@ export interface Hero {
   levitating?: number;
   /** Turns left of breathing no gas (a potion of purity). */
   gasImmune?: number;
+  /* Shattered's wands (wands.ts, status.ts). */
+  /** Barrier (ShieldBuff): shielding that takes blows before health, and fades a little every turn. */
+  shield?: number;
+  shieldDecay?: number;
+  /** WandOfLivingEarth.RockArmor: earthen armour gathered from zaps, which takes half of every blow, and the wand level it is of. */
+  rockArmor?: { armor: number; level: number };
+  /** WandOfMagicMissile.MagicCharge: turns left in which the other wands zap as strong as the magic missile that charged them. */
+  magicCharge?: { level: number; turns: number; fresh?: boolean };
+  /** WandOfLightning.LightningCharge: turns left of arcs reaching a cell further (a battlemage's staff of lightning). */
+  lightningCharge?: number;
+  /** Recharging (ScrollOfRecharging): turns left of every wand charging faster. */
+  recharging?: number;
+  /** Chill: turns left of moving slower, the more the colder; Frost: turns left frozen solid (a cursed wand's doing). */
+  chill?: number;
+  frozen?: number;
+  /** Corrosion: turns left, and how hard it eats away now (it grows every turn). */
+  corrosion?: { left: number; damage: number };
+  /** Hex (missing and being hit more), Vulnerable (taking a third more), Invulnerability: turns left (Bless: below). */
+  hexed?: number;
+  vulnerable?: number;
+  invulnerable?: number;
+  /** HeroDisguise: turns left of looking like a hero of another class. */
+  disguise?: { heroClass: HeroClass; turns: number };
+  /** TimeStasis: turns left of being frozen in time, untouchable and still. */
+  stasis?: number;
+  /** CursedWand's lingering effects: a supernova building up, gravity gone wild, the ground about to give way. */
+  supernova?: { pos: number; turns: number; harmsAllies: boolean };
+  gravity?: { turns: number; positiveOnly: boolean; next?: number };
+  sinkhole?: { cells: number[]; turns: number; depth: number };
+  /** Sungrass.Health (a battlemage's staff of regrowth): health still to come back while standing there, and what has gathered. */
+  herbal?: { level: number; pos: number; partial: number };
   /** Hunger.level: 0 when fed, hungry from HUNGRY, starving at STARVING (it grows a point a turn). */
   hunger: number;
   /** Unused since Shattered's hunger (kept for the shape of older saves). */
@@ -423,7 +454,9 @@ export type MobKind =
   | 'succubus' | 'eye' | 'scorpio' | 'yog' | 'rottingFist' | 'burningFist' | 'larva' | 'mimic'
   | 'statue' | 'piranha' | 'imp' | 'sheep' | 'blacksmith' | 'mirror'
   | 'albino' | 'bandit' | 'shielded' | 'senior' | 'acidic'
-  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper';
+  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper'
+  /** WandOfWarding.Ward, WandOfLivingEarth.EarthGuardian, WandOfRegrowth.Lotus. */
+  | 'ward' | 'guardian' | 'lotus';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
 export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
 
@@ -508,6 +541,12 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   /** Asleep (or so he says) in his hidden treasury beside Goo's lair. */
   ratKing: { name: 'rat king', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 2 },
   piranha: { name: 'giant piranha', ht: 15, attack: 22, defense: 12, damage: [1, 6], dr: 1, exp: 0, maxLvl: 30, speed: 2 },
+  /** A ward of the wand of warding (NPC: one hit point, until it grows into a sentry); it never misses. */
+  ward: { name: 'ward', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** The wand of living earth's guardian, as strong as the wand and the hero (see mobStats). */
+  guardian: { name: 'earthen guardian', ht: 1, attack: 0, defense: 0, damage: [2, 4], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** The wand of regrowth's lotus, which withers a little every turn. */
+  lotus: { name: 'golden lotus', ht: 25, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
 };
 
 /** A monster's numbers: the table's, but a mimic is as strong as the depth it lurks on (Mimic.adjustStats). */
@@ -526,6 +565,13 @@ export function mobStats(mob: Mob): MobStats {
     return { ...MOBS.bee, ht, attack: 9 + depth, defense: 9 + depth, damage: [Math.trunc(ht / 10), Math.trunc(ht / 4)] };
   }
   if (mob.kind === 'wraith') return { ...MOBS.wraith, attack: 10 + depth, defense: (10 + depth) * 5, damage: [1, 3 + depth] };
+  if (mob.kind === 'guardian') {
+    // EarthGuardian: half the hero's evasion, and as accurate as the hero; damageRoll grows with the depth.
+    const defense = mob.guardian?.defense ?? 0;
+    return { ...MOBS.guardian, ht: mob.ht, attack: 2 * defense + 5, defense, damage: [2, 4 + Math.trunc(depth / 2)] };
+  }
+  // Ward.defenseSkill: a sentry dodges as well as the depth allows.
+  if (mob.kind === 'ward') return { ...MOBS.ward, ht: mob.ht, defense: (mob.ward?.tier ?? 1) > 3 ? 4 + depth : 0 };
   if (mob.kind === 'curse') return { ...MOBS.curse, ht: 10 + depth * 3, attack: 10 + depth, defense: 10 + depth };
   if (mob.kind === 'piranha') {
     return { ...MOBS.piranha, ht: 10 + depth * 5, attack: 20 + depth * 2, defense: 10 + depth * 2, damage: [depth, 4 + depth * 2], dr: depth };
@@ -616,19 +662,52 @@ export interface Mob {
   image?: { owner: string; attack: number; damage: number };
   /** Thrown weapons stuck in it, dropped where it dies (PinCushion). */
   pinned?: Item[];
-  /** Turns left of being chilled (Chill): the more it has left, the slower it acts. */
-  chilled?: number;
-  /** Corrupted by a weapon (Corruption): it fights for the heroes now, and wastes away a hundredth a turn. */
-  corrupted?: boolean;
-  corruptDamage?: number;
   /** Turns left of acting twice as fast (Adrenaline). */
   adrenaline?: number;
   /** A lucky blow landed (Lucky.LuckProc): should it die before it acts again, it drops something (at this ring level). */
   luck?: number;
-  /** Turns left of acidic ooze from armour of corrosion (Ooze). */
+
+  /* Shattered's wands (wands.ts, allies.ts, status.ts). */
+  /** Char.Alignment.ALLY: it fights for the heroes (a ward, the earth guardian, a corrupted monster). */
+  ally?: boolean;
+  /** Corruption: an ally now, wasting away a hundredth of its health a turn (and the share of a point gathered so far). */
+  corrupted?: boolean;
+  corruptDecay?: number;
+  /** An ally it is fighting (Mob.enemy, when that is not a hero). */
+  foe?: string;
+  /** Chill, Frost, Ooze, Weakness, Vulnerable, Hex, SoulMark, Bless, Invulnerability: turns left. */
+  chill?: number;
+  frozen?: number;
   ooze?: number;
-  /** Turns left of being blessed (Bless, from a holy dart). */
+  weakened?: number;
+  vulnerable?: number;
+  hexed?: number;
+  soulMarked?: number;
   blessed?: number;
+  invulnerable?: number;
+  /** Corrosion: turns left, and how hard it eats away now. */
+  corrosion?: { left: number; damage: number };
+  /** Doom: it takes two thirds more harm, for good. */
+  doomed?: boolean;
+  /** Barrier: shielding that takes blows before health, fading a little every turn. */
+  shield?: number;
+  shieldDecay?: number;
+  /** Charm.ignoreHeroAllies: blows from the heroes' allies do not shake off the charm (a wand of transfusion's). */
+  charmFirm?: boolean;
+  /** Charm.ignoreNextHit: the blow that charmed it (a friendly weapon's) does not shake the charm off. */
+  charmIgnoreNext?: boolean;
+  /** WandOfBlastWave.BWaveOnHitTracker: turns left before a battlemage's blast can strike it again. */
+  blasted?: number;
+  /** Levitation (a cursed wand's): turns left of floating over chasms and traps. */
+  levitating?: number;
+  /** A ward: its tier (2 and 3 sturdier wards, from 4 on a sentry), the wand level it shoots with, and its shots so far. */
+  ward?: { tier: number; level: number; zaps: number };
+  /** The earth guardian: the wand level it is of, and its evasion (half the hero's). */
+  guardian?: { level: number; defense: number };
+  /** The lotus: the level of the wand that grew it. */
+  lotus?: { level: number };
+  /** When its conditions last wore on (status.ts mobStatusTurn), so that they do so once a turn. */
+  statusAt?: number;
 }
 
 /** Mob.beckon: called towards a spot. Statue.beckon: an animated statue does not stir for it. */

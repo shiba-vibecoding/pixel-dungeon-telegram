@@ -150,24 +150,6 @@ describe('monsters and chasms (Chasm.mobFall)', () => {
   });
 });
 
-describe('monsters set down by magic (WandOfFlock)', () => {
-  it('a magic sheep that appears over a chasm falls, and one on a trap sets it off', () => {
-    const world = openGround();
-    const hero = heroById(world, 'p')!;
-    hero.items = [createItem('wand.flock', 1)];
-    const level = levelAt(world, 1);
-    const spot = CENTRE + 3;
-    level.map[spot] = T.CHASM;
-    for (const n of [-1, 1, -WIDTH, WIDTH, -WIDTH - 1, -WIDTH + 1, WIDTH - 1, WIDTH + 1]) level.map[spot + n] = T.ALARM_TRAP;
-    const result = act(world, 'p', { type: 'zap', item: 0, target: spot });
-    const effects = result.ok ? result.effects : [];
-    expect(effects).toContainEqual(expect.objectContaining({ type: 'mobFell', pos: spot, kind: 'sheep' }));
-    const trap = effects.find((e) => e.type === 'trap');
-    expect(trap).toMatchObject({ type: 'trap', kind: 'alarm', hero: '' });
-    expect(floorAt(world, 1).mobs.some((mob) => mob.kind === 'sheep' && trap?.type === 'trap' && mob.id === trap.mob)).toBe(true);
-  });
-});
-
 describe('spinner webs (Web)', () => {
   it('a fleeing spinner leaves webs behind it that hold a hero fast, until they wear away', () => {
     const world = openGround();

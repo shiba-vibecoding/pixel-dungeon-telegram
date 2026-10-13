@@ -1,5 +1,5 @@
 import { F, hasFlag, type Mob, type MobKind, type PlantKind, T, trapAt } from '@pd/core';
-import { lang } from './i18n';
+import { lang, t } from './i18n';
 
 /*
  * What the examine tool tells about a cell (Toolbar's info button, Mob.description,
@@ -96,8 +96,28 @@ const SAME_AS: Partial<Record<MobKind, MobKind>> = {
 };
 
 export function mobDescription(mob: Mob): string {
+  // Shattered's wands' creatures: what they can do, as strong as the wand that made them.
+  if (mob.kind === 'ward') {
+    const { tier, level } = mob.ward ?? { tier: 1, level: 0 };
+    return t.wardInfo(tier, 2 + level, 8 + 4 * level, tier);
+  }
+  if (mob.kind === 'guardian') {
+    const level = Math.max(0, mob.guardian?.level ?? 0);
+    return t.guardianInfo(level, 3 + 3 * level);
+  }
+  if (mob.kind === 'lotus') {
+    const level = mob.lotus?.level ?? 0;
+    return t.lotusInfo(level, Math.round(Math.min(1, 0.4 + 0.04 * level) * 100));
+  }
   const table = lang === 'ru' ? RU_MOBS : EN_MOBS;
-  return table[mob.kind] ?? table[SAME_AS[mob.kind] ?? mob.kind] ?? '';
+  const own = table[mob.kind] ?? table[SAME_AS[mob.kind] ?? mob.kind] ?? '';
+  return mob.corrupted ? `${own}\n\n${t.corruptedInfo}` : own;
+}
+
+/** A creature's name, a ward's by its tier (Ward.name). */
+export function mobName(mob: Mob): string {
+  if (mob.kind === 'ward') return t.wardNames[(mob.ward?.tier ?? 1) - 1] ?? t.mobs.ward;
+  return t.mobs[mob.kind];
 }
 
 const EN_PLANTS: Record<PlantKind, readonly [string, string]> = {
@@ -109,6 +129,8 @@ const EN_PLANTS: Record<PlantKind, readonly [string, string]> = {
   earthroot: ['Earthroot', 'When a creature touches an Earthroot, its roots make a kind of natural armour around it.'],
   fadeleaf: ['Fadeleaf', 'Touching a Fadeleaf will teleport any creature to a random place on the level.'],
   rotberry: ['Rotberry', 'The berries of this shrub taste like sweet, sweet death.'],
+  dewcatcher: ['Dewcatcher', 'Dewcatchers are wondrous plants that fill themselves with magical dew. They attempt to camouflage as grass to avoid attention, but their bulges of collected dew give them away.'],
+  seedpod: ['Seed Pod', 'Seed Pods are magical plants that produce seeds from other plant types, rather than any seeds of their own. They somehow manage to spread despite having no seed of their own.'],
 };
 
 const RU_PLANTS: Record<PlantKind, readonly [string, string]> = {
@@ -120,6 +142,8 @@ const RU_PLANTS: Record<PlantKind, readonly [string, string]> = {
   earthroot: ['Земляной корень', 'Когда существо касается земляного корня, корни образуют вокруг него что-то вроде природной брони.'],
   fadeleaf: ['Блеклист', 'Прикосновение к блеклисту переносит любое существо в случайное место на уровне.'],
   rotberry: ['Гнилоягодник', 'Ягоды этого кустарника на вкус как сладкая, сладкая смерть.'],
+  dewcatcher: ['Росянка', 'Росянки - удивительные растения, наполняющиеся волшебной росой. Чтобы не привлекать внимание, они маскируются под траву, но их выдают наполненные росой выпуклости.'],
+  seedpod: ['Семяловка', 'Семяловки - это волшебные растения, которые производят семена других видов растений, вместо своих собственных. Каким-то образом им удается распространяться, несмотря на отсутствие собственных семян.'],
 };
 
 /** WellWater.tileDesc: what power the well's water holds. */

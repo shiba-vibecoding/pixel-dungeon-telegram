@@ -12,6 +12,8 @@ import {
   durabilityLeft, durabilityPerUse, isDart, isSticky, isTippedDart, MAX_DURABILITY,
 } from './missiles';
 import { burst, immuneTo } from './traps';
+import { CHILL_TURNS, ignite, timeScale } from './status';
+import { isImmune } from './props';
 import { collect, pressUnderItem } from './inventory';
 import { S } from './spd-sprites';
 import type { World } from './world';
@@ -32,7 +34,6 @@ const SHURIKEN_TURNS = 20;
 const CIRCLE_TURNS = 5;
 /** Cripple.DURATION, Blindness.DURATION, Chill.DURATION, Bless.DURATION, Paralysis (a paralytic dart). */
 const BLIND_TURNS = 10;
-const CHILL_TURNS = 10;
 const BLESS_TURNS = 30;
 const PARALYSIS_TURNS = 5;
 
@@ -271,10 +272,14 @@ export function missileProc(ctx: Ctx, hero: Hero, mob: Mob, damage: number, thro
       mob.blind = Math.max(mob.blind ?? 0, BLIND_TURNS);
       return damage;
     case 'missile.chillingDart':
-      mob.chilled = Math.max(mob.chilled ?? 0, isWater(ctx.level.map[mob.pos]!) ? CHILL_TURNS : 6);
+      // Buff.prolong(Chill): at least this long (nothing on the frozen or the icy).
+      if (!isImmune(mob, 'chill') && !((mob.frozen ?? 0) > 0)) {
+        mob.chill = Math.max(mob.chill ?? 0, isWater(ctx.level.map[mob.pos]!) ? CHILL_TURNS : 6);
+        mob.burning = 0;
+      }
       return damage;
     case 'missile.incendiaryDart':
-      if (!isWater(ctx.level.map[mob.pos]!) && !immuneTo(mob, 'burning') && mob.kind !== 'elemental') mob.burning = Math.max(mob.burning ?? 0, 8);
+      if (!isWater(ctx.level.map[mob.pos]!) && !immuneTo(mob, 'burning')) ignite(mob);
       return damage;
     case 'missile.rotDart':
       // RotDart: corrosion, weaker on bosses. Here, as poison of the same strength.
@@ -304,12 +309,12 @@ export function missileProc(ctx: Ctx, hero: Hero, mob: Mob, damage: number, thro
       // HealingDart: heals 30 and half the health of whoever it hits (here at once), and cures them.
       const heal = Math.min(mob.ht - mob.hp, Math.trunc(0.5 * mob.ht + 30));
       if (heal > 0) mob.hp += heal;
-      Object.assign(mob, { poison: 0, bleeding: 0, crippled: 0, blind: 0, ooze: 0, chilled: 0 });
+      Object.assign(mob, { poison: 0, bleeding: 0, crippled: 0, blind: 0, ooze: 0, chill: 0 });
       return ally ? 0 : damage;
     }
     case 'missile.cleansingDart':
       if (ally) {
-        Object.assign(mob, { poison: 0, bleeding: 0, crippled: 0, blind: 0, ooze: 0, chilled: 0, paralysed: 0, burning: 0 });
+        Object.assign(mob, { poison: 0, bleeding: 0, crippled: 0, blind: 0, ooze: 0, chill: 0, paralysed: 0, burning: 0 });
         return 0;
       }
       // CleansingDart: a foe loses what helps it, and forgets whom it was after.
@@ -470,50 +475,16 @@ function circledBack(ctx: Ctx, hero: Hero, flight: CircleBack): void {
 }
 
 /**
- * What a monster's gear-made conditions do on its turn (Chill, Ooze, Corruption, Adrenaline, Bless, the lucky blow's
- * tracker); true if it died of them.
+ * What a monster's gear-made conditions do on its turn (Adrenaline, the lucky blow's tracker; the wands' conditions —
+ * chill, ooze, corruption, bless — wear off in status.ts); true if it died of them.
  */
-export function mobGearTick(ctx: Ctx, mob: Mob): boolean {
+export function mobGearTick(_ctx: Ctx, mob: Mob): boolean {
   delete mob.luck;
-  if (mob.chilled) mob.chilled = Math.max(0, mob.chilled - 1);
   if (mob.adrenaline) mob.adrenaline = Math.max(0, mob.adrenaline - 1);
-  if (mob.blessed) mob.blessed = Math.max(0, mob.blessed - 1);
-  if (mob.ooze) {
-    // Ooze.act: deeper, a point a chapter a turn; above, a point every other turn; water washes it off.
-    if (isWater(ctx.level.map[mob.pos]!)) {
-      mob.ooze = 0;
-    } else {
-      const damage = ctx.depth > 4 ? Math.trunc(ctx.depth / 5) : ctx.rng.int(2) === 0 ? 1 : 0;
-      mob.ooze--;
-      if (damage > 0) {
-        ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage });
-        hurt(ctx, mob, damage, 'ooze');
-        if (!isAlive(mob)) return true;
-      }
-    }
-  }
-  if (mob.corrupted) {
-    // Corruption.act: a hundredth of its health a turn.
-    mob.corruptDamage = (mob.corruptDamage ?? 0) + mob.ht / 100;
-    const damage = Math.trunc(mob.corruptDamage);
-    mob.corruptDamage -= damage;
-    if (damage > 0) {
-      ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage });
-      mob.hp -= damage;
-      if (mob.hp <= 0) {
-        mob.hp = 1;
-        hurt(ctx, mob, 1, 'corruption');
-        return true;
-      }
-    }
-  }
   return false;
 }
 
-/** Char.spend for a monster: chilled, slower by a tenth a turn left (half speed at most); adrenaline, twice as fast. */
+/** Char.spend for a monster: slowed or chilled as status.ts has it; with adrenaline, twice as fast. */
 export function mobTimeScale(mob: Mob): number {
-  let scale = 1;
-  if ((mob.chilled ?? 0) > 0) scale *= Math.max(0.5, 1 - mob.chilled! * 0.1);
-  if ((mob.adrenaline ?? 0) > 0) scale *= 2;
-  return scale;
+  return (mob.adrenaline ?? 0) > 0 ? timeScale(mob) * 2 : timeScale(mob);
 }

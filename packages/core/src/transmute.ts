@@ -43,7 +43,8 @@ export function transmute(item: Item, rng: Rng, depth: number): Item | null {
     case 'weapon':
     case 'missile': {
       // ScrollOfTransmutation.changeWeapon: another of the same tier, keeping its level, magic, augment and set's wear.
-      if (item.kind === 'weapon.pickaxe' || isDart(item.kind)) return null;
+      // (The mage's staff changes its wand instead, ScrollOfTransmutation.changeStaff: a seam for the wands stream.)
+      if (item.kind === 'weapon.pickaxe' || item.kind === 'weapon.magesStaff' || isDart(item.kind)) return null;
       const tier = itemDef(item.kind).tier!;
       const kind = other(() => randomOfTier(rng, tier, category === 'missile'));
       if (kind === item.kind) return null;

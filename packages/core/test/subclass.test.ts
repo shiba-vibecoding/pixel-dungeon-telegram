@@ -50,7 +50,7 @@ describe('the Tome of Mastery', () => {
     expect(combos[0]).toBe(3);
   });
 
-  it('the freerunner runs; the warlock feeds on souls; the warden draws bark from grass', () => {
+  it('the freerunner runs; the warlock feeds on marked souls; the warden draws bark from grass', () => {
     let world = solo('rogue');
     let hero = heroById(world, 'p')!;
     const walking = heroSpeed(hero);
@@ -62,6 +62,8 @@ describe('the Tome of Mastery', () => {
     act(world, 'p', { type: 'master', item: 0, subclass: 'warlock' });
     Object.assign(hero, { attackSkill: 1000, hp: 5 });
     const rat = ratBeside(world, 1);
+    // SoulMark (a warlock's zaps leave it): blows on the marked monster heal the hero.
+    floorAt(world, 1).mobs.find((m) => m.id === rat)!.soulMarked = 10;
     act(world, 'p', { type: 'attack', target: rat });
     expect(hero.hp).toBeGreaterThan(5);
 

@@ -61,8 +61,8 @@ describe('enchantments (Weapon.Enchantment)', () => {
     heroById(world, 'p')!.weapon = enchanted('weapon.sword', 'chilling', 10);
     mob = beside(world);
     strike(world, mob, 10);
-    expect(mob.chilled).toBeGreaterThan(0);
-    expect(mob.chilled).toBeLessThanOrEqual(6 * 1);
+    expect(mob.chill).toBeGreaterThan(0);
+    expect(mob.chill).toBeLessThanOrEqual(6 * 1);
   });
 
   it('kinetic keeps what a blow overkilled, for the next one', () => {
@@ -128,7 +128,7 @@ describe('enchantments (Weapon.Enchantment)', () => {
       ally = floorAt(world, 1).mobs.find((m) => m.corrupted);
     }
     expect(ally).toBeDefined();
-    expect(ally).toMatchObject({ kind: 'gnoll', state: 'passive' });
+    expect(ally).toMatchObject({ kind: 'gnoll', ally: true, corrupted: true });
     // Corruption.act: a hundredth of its health a turn.
     const hp = ally!.hp;
     floorAt(world, 1).mobs = floorAt(world, 1).mobs.filter((m) => m === ally);
@@ -315,7 +315,7 @@ describe('glyphs (Armor.Glyph)', () => {
     const hero = heroById(world, 'p')!;
     Object.assign(hero, { defenseSkill: 0 });
     hero.armor = inscribed('entanglement');
-    hero.items = [{ ...createItem('wand.firebolt'), charges: 0 }];
+    hero.items = [{ ...createItem('wand.fireblast'), charges: 0 }];
     beside(world, 1e9, 'gnoll');
     for (let i = 0; i < 80 && !hero.earthroot; i++) {
       hero.hp = hero.ht;

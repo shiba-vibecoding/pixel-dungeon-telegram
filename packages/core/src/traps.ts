@@ -8,6 +8,7 @@ import { clearGas, seedGas } from './gas';
 import { burnHeaps, chillPack, freezeHeaps } from './cooking';
 import { scaleMob } from './party';
 import { stepOnPlant } from './plants';
+import { flies, mobStatusTurn } from './status';
 
 /*
  * Traps (levels/traps): set off by stepping on them, visible or hidden; then
@@ -152,21 +153,26 @@ export function triggerTrap(ctx: Ctx, victim: Char | null, pos: number): void {
       hurt(ctx, victim, damage, 'gripping');
       break;
     }
-    case 'summoning': {
-      let count = 1;
-      if (rng.int(2) === 0) {
-        count++;
-        if (rng.int(2) === 0) count++;
-      }
-      const cells = NEIGHBOURS8.map((n) => pos + n).filter((c) => isPassable(level, c) && !charAt(ctx.world, depth, c));
-      for (let i = 0; i < count && cells.length > 0; i++) {
-        const cell = cells.splice(rng.index(cells.length), 1)[0]!;
-        const summoned: Mob = scaleMob(ctx.world, createMob(`#${++ctx.world.nextId}`, rollMob(rng, depth, false), cell, 'wandering', ctx.floor.now + 1));
-        summoned.target = pos;
-        ctx.floor.mobs.push(summoned);
-      }
+    case 'summoning':
+      summonAround(ctx, pos);
       break;
-    }
+  }
+}
+
+/** SummoningTrap.activate: one to three monsters of the depth on free cells around, on their way to it. */
+export function summonAround(ctx: Ctx, pos: number): void {
+  const { level, rng, depth } = ctx;
+  let count = 1;
+  if (rng.int(2) === 0) {
+    count++;
+    if (rng.int(2) === 0) count++;
+  }
+  const cells = NEIGHBOURS8.map((n) => pos + n).filter((c) => isPassable(level, c) && !charAt(ctx.world, depth, c));
+  for (let i = 0; i < count && cells.length > 0; i++) {
+    const cell = cells.splice(rng.index(cells.length), 1)[0]!;
+    const summoned: Mob = scaleMob(ctx.world, createMob(`#${++ctx.world.nextId}`, rollMob(rng, depth, false), cell, 'wandering', ctx.floor.now + 1));
+    summoned.target = pos;
+    ctx.floor.mobs.push(summoned);
   }
 }
 
@@ -182,7 +188,7 @@ const POISON_RESISTANT: ReadonlySet<MobKind> = new Set<MobKind>(['spinner', 'sco
 export function mobPress(ctx: Ctx, mob: Mob): void {
   const cell = mob.pos;
   const terrain = ctx.level.map[cell]!;
-  if (hasFlag(terrain, F.PIT) && !MOBS[mob.kind].flying) {
+  if (hasFlag(terrain, F.PIT) && !flies(mob)) {
     mobFall(ctx, mob);
     return;
   }
@@ -210,8 +216,10 @@ export function mobFall(ctx: Ctx, mob: Mob): void {
 
 /** Hurt a monster's turn by the conditions traps leave behind; true if it loses the turn. */
 export function mobConditions(ctx: Ctx, mob: Mob): boolean {
-  // What gear left on it: chill, ooze, corruption's wasting (throwing.ts).
+  // What gear left on it: adrenaline, a lucky blow's tracker (throwing.ts).
   if (mobGearTick(ctx, mob)) return true;
+  // Shattered's conditions: corrosion, ooze, corruption, frost and the rest (status.ts).
+  if (mobStatusTurn(ctx, mob)) return true;
   // IMMUNITIES: the fetid rat breathes its own paralytic cloud unharmed, and nothing holds the curse.
   if (mob.kind === 'fetidRat' || mob.kind === 'curse') mob.paralysed = 0;
   if (mob.kind === 'curse') mob.rooted = 0;

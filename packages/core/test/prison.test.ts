@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, type Action, addHero, adjacent, canEnter, charAt, createItem, createMob, createWorld, type Effect, findPath,
+  act, isIdentified, type Action, addHero, adjacent, canEnter, charAt, createItem, createMob, createWorld, type Effect, findPath,
   floorAt, heroById, isAlive, itemDef, levelAt, type Mob, type MobKind, NEIGHBOURS8, RoomType, T, WIDTH, type World,
 } from '../src/index';
 import { botAction, checkInvariants, pacify, skeletonKey } from './helpers';
@@ -209,7 +209,8 @@ describe('the old wandmaker', () => {
       expect(wand.ok && wand.effects.at(-1)).toEqual({ type: 'wandmaker', hero: 'p', line: 'farewell' });
       expect(hero.items.some((i) => i.kind === quest.battle.kind)).toBe(true);
       expect(hero.items.some((i) => i.kind === 'quest.dust')).toBe(false);
-      expect(world.known).toContain(quest.battle.kind);
+      // WndWandmaker: the wand given is known through and through.
+      expect(isIdentified(world, hero.items.find((i) => i.kind === quest.battle.kind)!)).toBe(true);
       expect(floor.mobs.some((m) => m.kind === 'wandmaker')).toBe(false);
     }
     expect(met).toBeGreaterThan(15);

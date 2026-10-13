@@ -16,6 +16,8 @@ import { gearLevel } from './weapons';
 import { cellX, cellY, distance, LENGTH, NEIGHBOURS8, NEIGHBOURS9 } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import { burst, immuneTo } from './traps';
+import { chill } from './status';
+import { freezing } from './cursed';
 import { explodeBomb } from './inventory';
 
 /*
@@ -65,8 +67,8 @@ export const bleedImmune = (mob: Mob): boolean => INORGANIC.has(mob.kind);
 /** AllyBuff among the immunities: bosses and minibosses are never corrupted. */
 const corruptImmune = (mob: Mob): boolean => BOSSES.has(mob.kind) || MINIBOSSES.has(mob.kind) || mob.kind === 'mimic' || mob.kind === 'statue';
 
-/** Who fights alongside the heroes (Char.Alignment.ALLY): mirror images, golden bees, the corrupted. */
-export const isAlly = (char: Char): boolean => isHero(char) || char.corrupted === true || char.kind === 'mirror' || char.kind === 'bee';
+/** Who fights alongside the heroes (Char.Alignment.ALLY): mirror images, golden bees, wards, the guardian, the corrupted. */
+export const isAlly = (char: Char): boolean => isHero(char) || char.ally === true || char.kind === 'mirror' || char.kind === 'bee';
 /** Who fights the heroes (Char.Alignment.ENEMY): any monster not passive, and not an ally. */
 export const isEnemy = (char: Char): boolean => !isHero(char) && enemyMob(char);
 
@@ -170,15 +172,17 @@ function explosiveCurse(ctx: Ctx, hero: Hero, mob: Char, weapon: Item): void {
 export function corruptSlain(ctx: Ctx, slain: Mob, power: number): void {
   const { world, depth, level, floor } = ctx;
   if (charAt(world, depth, slain.pos) || !isPassable(level, slain.pos)) return;
-  const ally = createMob(`#${++world.nextId}`, slain.kind, slain.pos, 'passive', floor.now + 1);
+  // Multiplicity.duplicate, then Buff.affect(Corruption): an ally of the heroes (allies.ts, ai.ts allyAct) as the wand's are.
+  const ally = createMob(`#${++world.nextId}`, slain.kind, slain.pos, 'wandering', floor.now + 1);
   if (slain.level !== undefined) ally.level = slain.level;
   ally.ht = ally.hp = slain.ht;
+  ally.ally = true;
   ally.corrupted = true;
-  ally.enemySeen = true;
   if (power > 1.1) ally.adrenaline = Math.round(5 * (power - 1));
   floor.mobs.push(ally);
   enterCell(level, ally.pos);
   ctx.effects.push({ type: 'corrupted', depth, mob: ally.id, pos: ally.pos });
+  ctx.effects.push({ type: 'ally', depth, mob: ally.id, event: 'corrupted' });
 }
 
 /**
@@ -232,8 +236,8 @@ function enchantProc(ctx: Ctx, hero: Hero, mob: Mob, damage: number, weapon: Ite
       const { hit, power } = chance((level + 1) / (level + 4));
       if (!hit) return damage;
       let add = 3 * power;
-      if ((mob.chilled ?? 0) > 0) add = Math.min(add, 6 * power - mob.chilled!);
-      if (add > 0) mob.chilled = (mob.chilled ?? 0) + add;
+      if ((mob.chill ?? 0) > 0) add = Math.min(add, 6 * power - mob.chill!);
+      if (add > 0) chill(mob, add);
       shown(ctx, mob.pos, enchant);
       return damage;
     }
@@ -424,6 +428,7 @@ function enchantProc(ctx: Ctx, hero: Hero, mob: Mob, damage: number, weapon: Ite
         hero.charmedBy = mob.id;
         mob.charmed = Math.max(mob.charmed ?? 0, CHARM_TURNS / 2);
         mob.charmedBy = hero.id;
+        mob.charmIgnoreNext = true;
         ctx.effects.push({ type: 'charmed', hero: hero.id });
       }
       return damage;
@@ -566,13 +571,11 @@ export function armorProc(ctx: Ctx, attacker: Mob, hero: Hero, damage: number, b
 
     // The curses
     case 'antiEntropy': {
-      // Anti-entropy: one blow in eight freezes everything around, and sets the wearer alight.
+      // Anti-entropy: one blow in eight freezes everything around (Freezing.affect: chill, frost at its full), and sets
+      // the wearer alight.
       if (!chance(1 / 8).hit) return damage;
-      for (const n of NEIGHBOURS8) {
-        const char = charAt(world, depth, hero.pos + n);
-        if (char && !immuneTo(char, 'frost')) char.paralysed = Math.max(char.paralysed ?? 0, FROST_TURNS);
-      }
-      // Freezing.affect on every cell around (not the wearer's own): only the frost's show here.
+      for (const n of NEIGHBOURS8) freezing(ctx, hero.pos + n);
+      // The frost's show around the wearer (not on its own cell).
       ctx.effects.push({ type: 'burst', depth, pos: hero.pos, kind: 'frost', radius: 1, silent: true });
       if (!isWater(ctx.level.map[hero.pos]!) && hero.armor.glyph !== 'brimstone') hero.burning = Math.max(hero.burning, 4);
       shown();
@@ -698,7 +701,7 @@ export function camouflage(hero: Hero): void {
 }
 
 /** Sources of harm armour of anti-magic softens (AntiMagic.RESISTS): magic, and the evil eye's gaze. */
-const MAGIC_SOURCES: ReadonlySet<string> = new Set(['magic', 'eye']);
+const MAGIC_SOURCES: ReadonlySet<string> = new Set(['magic', 'wand', 'eye']);
 
 /**
  * What a hero's gear soaks of any harm (Char.damage): armour of brimstone keeps fire off altogether; armour of

@@ -526,9 +526,10 @@ const CROWD: Pool = [
 
 /** Battle wands worth carrying into a wave, and rings worth wearing in one. */
 const BATTLE_WANDS: readonly ItemKind[] = [
-  'wand.magicMissile', 'wand.firebolt', 'wand.lightning', 'wand.poison', 'wand.slowness', 'wand.amok', 'wand.flock', 'wand.teleportation',
+  'wand.magicMissile', 'wand.fireblast', 'wand.lightning', 'wand.frost', 'wand.corrosion', 'wand.blastWave', 'wand.corruption',
+  'wand.transfusion',
 ];
-const LATE_WANDS: readonly ItemKind[] = ['wand.avalanche', 'wand.disintegration'];
+const LATE_WANDS: readonly ItemKind[] = ['wand.disintegration', 'wand.livingEarth', 'wand.prismaticLight', 'wand.warding'];
 const FIGHTING_RINGS: readonly ItemKind[] = [
   'ring.haste', 'ring.evasion', 'ring.accuracy', 'ring.mending', 'ring.elements', 'ring.thorns', 'ring.satiety',
 ];

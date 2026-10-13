@@ -87,7 +87,7 @@ describe('thrown weapons (MissileWeapon)', () => {
       ['missile.bolas', (rat) => (rat.crippled ?? 0) > 0],
       ['missile.paralyticDart', (rat) => (rat.paralysed ?? 0) > 0],
       ['missile.tomahawk', (rat) => (rat.bleeding ?? 0) > 0],
-      ['missile.chillingDart', (rat) => (rat.chilled ?? 0) > 0],
+      ['missile.chillingDart', (rat) => (rat.chill ?? 0) > 0],
       ['missile.incendiaryDart', (rat) => (rat.burning ?? 0) > 0],
     ];
     for (const [kind, check] of checks) {

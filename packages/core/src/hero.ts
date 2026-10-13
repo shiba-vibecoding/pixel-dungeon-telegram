@@ -2,6 +2,7 @@ import { type Hero, isAlive, type Mob, type MobKind, ringBonus } from './actors'
 import { hurt } from './combat';
 import { type Ctx, exploredCells, heroView } from './floor';
 import { heroGainsExp } from './ident';
+import { wandsGainExp } from './wands';
 import { isBossDepth } from './level/builder';
 import { cellX, cellY, HEIGHT, WIDTH } from './level/geometry';
 import { discover, F, hasFlag, T } from './level/terrain';
@@ -47,20 +48,16 @@ export const maxExpFor = (lvl: number): number => 5 + lvl * 5;
  * the cap, experience only makes room for more.
  */
 export function earnExp(ctx: Ctx, hero: Hero, exp: number, source?: 'potion'): void {
-  // A warlock feeds on the souls of the slain: some health, and a little less hunger (Pixel Dungeon's subclass, until talents).
-  if (hero.subclass === 'warlock' && isAlive(hero) && source !== 'potion') {
-    const value = Math.min(hero.ht - hero.hp, 1 + Math.trunc((ctx.depth - 1) / 5));
-    if (value > 0) {
-      hero.hp += value;
-      ctx.effects.push({ type: 'healed', hero: hero.id, amount: value });
-    }
-    hero.hunger = Math.max(0, hero.hunger - 10);
-  }
+  // (Pixel Dungeon's warlock fed on the slain here; Shattered's marks souls with the staff instead: wands.ts wandProc.)
   hero.exp += exp;
   const percent = Math.fround(exp / maxExpFor(hero.lvl));
   ctx.effects.push({ type: 'exp', hero: hero.id, amount: exp });
   // Hero.earnExp: a potion of experience teaches the items nothing.
-  if (source !== 'potion') heroGainsExp(ctx, hero, percent);
+  if (source !== 'potion') {
+    heroGainsExp(ctx, hero, percent);
+    // Wand.onHeroGainExp: the wands not yet known may count more zaps towards knowing them.
+    wandsGainExp(hero, percent);
+  }
   let levelUp = false;
   while (hero.exp >= maxExpFor(hero.lvl)) {
     hero.exp -= maxExpFor(hero.lvl);
@@ -295,7 +292,7 @@ export function visibleEnemies(world: World, hero: Hero): Mob[] {
 }
 
 /**
- * Mob.alignment == ENEMY: not passive (the ghost, keepers, quest givers, the bee and the images), not charmed into an
- * ally, and not corrupted (Corruption: an ally from then on).
+ * Mob.alignment == ENEMY: not passive (the ghost, keepers, quest givers, the bee and the images) and not charmed into an ally,
+ * nor one of the hero's allies (a ward, the earthen guardian, the lotus, a corrupted monster: Char.Alignment.ALLY).
  */
-export const isEnemy = (mob: Mob): boolean => mob.state !== 'passive' && mob.kind !== 'mirror' && !mob.corrupted;
+export const isEnemy = (mob: Mob): boolean => mob.state !== 'passive' && mob.kind !== 'mirror' && !mob.ally;
