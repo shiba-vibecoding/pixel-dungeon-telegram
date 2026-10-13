@@ -36,10 +36,12 @@ export interface Assets {
   mobs: Record<MobKind, CharSprite>;
   icons: HTMLImageElement;
   items: HTMLImageElement;
-  /** 16x16 plants, in the order of PLANT_KINDS. */
+  /** 16x16 plants, in the order of PLANT_KINDS (the wand of regrowth's two after Pixel Dungeon's eight). */
   plants: HTMLImageElement;
   /** Shattered's monster sheets, by file (an armoured statue's tier is cut from the statue's when drawn). */
   spd: Record<SpdSheet, HTMLImageElement>;
+  /** Shattered's effects.png (Effects.get): the chains among them. */
+  effects: HTMLImageElement;
 }
 
 const anim = (fps: number, frames: number[], loop = false): Animation => ({ fps, frames, loop });
@@ -87,6 +89,12 @@ const IMP_SPRITE = {
 
 /** Pixel Dungeon's sheets, for those Shattered's (MOB_SHEETS) do not cover yet. */
 const MOB_SPRITES: Partial<Record<MobKind, { w: number; h: number; anims: Record<AnimName, Animation> }>> = {
+  // GhostSprite, Shattered's sheet (spd/ghost.png): it strikes and fades away as the sad ghost does not.
+  ghostHero: {
+    w: 14,
+    h: 15,
+    anims: basic(anim(5, [0, 1], true), anim(10, [0, 1], true), anim(10, [0, 2, 3]), anim(8, [0, 4, 5, 6, 7])),
+  },
   ghost: {
     w: 14,
     h: 15,
@@ -161,6 +169,8 @@ const MOB_SPRITES: Partial<Record<MobKind, { w: number; h: number; anims: Record
     anims: basic(anim(2, [0, 0, 0, 1], true), anim(10, [2, 3, 4, 5, 6], true), anim(15, [0]), anim(10, [0])),
   },
   mirror: { w: 12, h: 15, anims: HERO_ANIMS },
+  // A prismatic image (PrismaticImage) is drawn with its hero's sheet too, until it has a sprite of its own.
+  prismatic: { w: 12, h: 15, anims: HERO_ANIMS },
   blacksmith: {
     w: 13,
     h: 16,
@@ -171,6 +181,14 @@ const MOB_SPRITES: Partial<Record<MobKind, { w: number; h: number; anims: Record
     h: 15,
     anims: basic(anim(8, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0], true), anim(8, [0], true), anim(8, [0]), anim(20, [4])),
   },
+  // Shattered's (assets/spd): WardSprite, one tier a row (see View.sync), EarthGuardianSprite and LotusSprite.
+  ward: { w: 16, h: 16, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(1, [0])) },
+  guardian: {
+    w: 12,
+    h: 15,
+    anims: basic(anim(2, [0, 0, 0, 0, 0, 1, 1], true), anim(15, [2, 3, 4, 5, 6, 7], true), anim(12, [8, 9, 10]), anim(5, [11, 12, 13, 14, 15, 15])),
+  },
+  lotus: { w: 19, h: 16, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(1, [0])) },
   tengu: {
     w: 14,
     h: 16,
@@ -254,8 +272,8 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     'tiles0', 'water0', 'tiles1', 'water1', 'tiles2', 'water2', 'dm300', 'tiles3', 'water3',
     'king', 'undead', 'tiles4', 'water4',
     'yog', 'rottingFist', 'burningFist', 'larva', 'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'warrior', 'mage', 'rogue', 'ranger', 'goo', 'ghost',
-    'tengu', 'shopkeeper', 'wandmaker',
-    'icons', 'items', 'plants',
+    'tengu', 'shopkeeper', 'wandmaker', 'spd/ghost', 'spd/effects',
+    'icons', 'items', 'plants', 'spd/wards', 'spd/guardian', 'spd/lotus',
   ] as const;
   let loaded = 0;
   const total = names.length + SPD_SHEETS.length;
@@ -285,7 +303,9 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     if (shattered) return spdSprite(spd[shattered.sheet], shattered);
     const spec = MOB_SPRITES[kind] ?? MOB_SPRITES.ghost!;
     // A mirror image is drawn with its hero's own sheet (see View.sync); the warrior's stands in here.
-    const image = kind === 'mirror' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp' : baseKind(kind);
+    const image = kind === 'mirror' || kind === 'prismatic' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp'
+      : kind === 'ward' ? 'spd/wards' : kind === 'guardian' ? 'spd/guardian' : kind === 'lotus' ? 'spd/lotus' : kind === 'ghostHero' ? 'spd/ghost'
+      : baseKind(kind);
     return { sheet: sheet(images[image as (typeof names)[number]] ?? images.ghost, spec.w, spec.h), anims: spec.anims };
   };
   const kinds = new Set<MobKind>([...(Object.keys(MOB_SPRITES) as MobKind[]), ...(Object.keys(MOB_SHEETS) as MobKind[])]);
@@ -303,6 +323,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     icons: images.icons,
     items: images.items,
     plants: images.plants,
+    effects: images['spd/effects'],
   };
 }
 

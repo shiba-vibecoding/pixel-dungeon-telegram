@@ -34,3 +34,14 @@ Everything lands on the branch `shattered` and ships as one update.
 - Client screens for new things work with the design system's existing markup; what a designer should draw
   goes into the stream's report.
 - The browser pane is shared: if you check the client, run Vite on a port of your own and use your own tab.
+
+## Release checklist (from the Tonmons community review)
+- Announce the reset of unfinished runs at least a week ahead, in RU and EN, in the channel and in the game. Records, badges and trophies stay. Everyone who played before the update gets a commemorative «Первопроходец» trophy.
+- A «Что нового» window on the first launch after the update: 5–8 lines in the micro-update template.
+- A «Сообщить о проблеме» button in settings and on error screens, sending the version, run id and last actions to the admin chat through the bot. A «Охотник за багами» badge for confirmed reports.
+- The board rules window must show what scores, what each place wins, when the board closes, and the tie-break (who finished first).
+- Replace float math in core rules (`Math.hypot` ×4, `Math.cos` in fov.ts) with integer maths, so iOS and the server cannot round differently.
+- Measure the first-screen weight after the update (target ≤ 3 MB; audio stays lazy).
+- Pause and restore rendering on `visibilitychange` (Telegram Desktop for Windows runs the app in Edge WebView).
+- Server outages must neither break a streak nor spend a freeze.
+- Make a weekly backup of boards and profiles, and test a restore once.

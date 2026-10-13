@@ -1,6 +1,10 @@
 import { baseKind, type Hero, isMimic, type Mob, type MobKind, mobStats } from './actors';
 import { type Ctx, type Floor, heroesOn, isPassable, landItem } from './floor';
-import { createItem, type Item, itemDef, ItemGenerator, type ItemKind, ITEMS, rollGold } from './items';
+import { createItem, EXOTIC_OF, isCurseEnchant, isCurseGlyph, type Item, itemDef, ItemGenerator, type ItemKind, ITEMS, rollGold } from './items';
+import { randomArmor as gearArmor, randomizeArmor, randomMissile, randomOfTier, randomWeapon as gearWeapon } from './gear';
+import { isIdentified } from './ident';
+import { wealthDropMultiplier } from './rings';
+import { EXOTIC_CRYSTALS, SHARD_OF_OBLIVION, trinketLevel } from './trinkets';
 import { hasProp } from './props';
 import { NEIGHBOURS8, NEIGHBOURS9, LENGTH, WIDTH } from './level/geometry';
 import { F, hasFlag } from './level/terrain';
@@ -49,6 +53,8 @@ export const fits = (level: Level, mob: Mob, cell: number): boolean => !hasProp(
 /** The folk, the harmless and the heroes' own: not Char.Alignment.ENEMY. */
 const NOT_ENEMIES: ReadonlySet<MobKind> = new Set<MobKind>([
   'ghost', 'shopkeeper', 'impShopkeeper', 'wandmaker', 'imp', 'blacksmith', 'ratKing', 'sheep', 'mirror',
+  // The heroes' own: alchemy's prismatic image, the wands' ward, guardian and lotus, the rose's ghost.
+  'prismatic', 'ward', 'guardian', 'lotus', 'ghostHero',
 ]);
 
 /** Char.Alignment.ENEMY: a monster against the heroes (not the folk, not their allies). */
@@ -90,16 +96,15 @@ function countDrop(world: World, drop: LimitedDrop): void {
 }
 
 /**
- * Mob.lootChance's multiplier from the hero: RingOfWealth.dropChanceMultiplier, ShardOfOblivion's.
- * SEAM(artifacts): Shattered's ring of wealth; SEAM(alchemy): the shard of oblivion (a trinket). None until then.
+ * Mob.lootChance's multiplier from the hero: RingOfWealth.dropChanceMultiplier, and ShardOfOblivion's share added to
+ * it (a fifth more for each unknown thing worn, up to its level and one).
  */
-export const dropBonus = (_hero: Hero | undefined): number => 1;
-
-/**
- * Generator.random(Class) for a potion or scroll that may come out exotic (Mob.createLoot with
- * ExoticCrystals.consumableExoticChance). SEAM(alchemy): exotic potions and scrolls; never until then.
- */
-export const consumableExoticChance = (): number => 0;
+export function lootChanceMultiplier(world: World, hero: Hero | undefined): number {
+  if (!hero) return 1;
+  const unknownWorn = [hero.weapon, hero.armor, hero.artifact, hero.misc, hero.ring]
+    .filter((item): item is Item => item != null && !isIdentified(world, item)).length;
+  return wealthDropMultiplier(hero) + SHARD_OF_OBLIVION.lootChanceMultiplier(trinketLevel(hero, 'trinket.shardOfOblivion'), unknownWorn) - 1;
+}
 
 /** An item of a kind Shattered has and the port may not yet: `kind` once another stream adds it, else `fallback` (or nothing). */
 export function itemOr(kind: string, fallback: ItemKind | null): Item | null {
@@ -107,25 +112,34 @@ export function itemOr(kind: string, fallback: ItemKind | null): Item | null {
   return fallback ? createItem(fallback) : null;
 }
 
-/** A level's item generator for loot (Generator.randomUsingDefaults). */
+/** A level's item generator for loot (Generator.randomUsingDefaults: the default odds, not the run's decks). */
 const generator = (ctx: Ctx): ItemGenerator => new ItemGenerator(ctx.rng, ctx.depth);
 
 /**
- * Generator.randomWeapon / randomArmor (with a floor set: DM-200s and golems use the city's and the halls'
- * odds) and a tier's weapon at +0 (a slime's). SEAM(gear): Shattered's decks and Weapon.random; Pixel
- * Dungeon's generator until then.
+ * Mob.createLoot of a potion or scroll it names: now and then its exotic counterpart instead, with exotic crystals
+ * (ExoticCrystals.consumableExoticChance).
  */
-function randomWeapon(ctx: Ctx, _floorSet?: number): Item {
-  let item = generator(ctx).of('weapon');
-  while (itemDef(item.kind).category !== 'weapon') item = generator(ctx).of('weapon');
-  return item;
+function consumable(ctx: Ctx, kind: ItemKind): Item {
+  const exotic = EXOTIC_OF[kind];
+  const chance = EXOTIC_CRYSTALS.consumableExoticChance(trinketLevel(heroesOn(ctx.world, ctx.depth)[0], 'trinket.exoticCrystals'));
+  if (exotic && chance > 0 && ctx.rng.float() < chance) return createItem(exotic);
+  return createItem(kind);
 }
-function randomArmor(ctx: Ctx, _floorSet?: number): Item {
-  return generator(ctx).of('armor');
+
+/**
+ * Generator.randomWeapon / randomArmor (gear.ts, by the default odds), with a floor set of their own where a monster
+ * names one (DM-200s and golems use the city's and the halls' odds: floor sets 4 and 5), and a tier's weapon at +0
+ * (a slime's: Generator.Category.WEP_T2).
+ */
+const floorSetDepth = (ctx: Ctx, floorSet?: number): number => (floorSet === undefined ? ctx.depth : floorSet * 5);
+function randomWeapon(ctx: Ctx, floorSet?: number): Item {
+  return gearWeapon(ctx.rng, floorSetDepth(ctx, floorSet));
+}
+function randomArmor(ctx: Ctx, floorSet?: number): Item {
+  return gearArmor(ctx.rng, floorSetDepth(ctx, floorSet));
 }
 function tierWeapon(ctx: Ctx, tier: number): Item {
-  const kinds = (Object.keys(ITEMS) as ItemKind[]).filter((k) => itemDef(k).category === 'weapon' && itemDef(k).tier === tier && k !== 'weapon.pickaxe');
-  return createItem(ctx.rng.oneOf(kinds.length > 0 ? kinds : ['weapon.quarterstaff' as ItemKind]));
+  return createItem(randomOfTier(ctx.rng, tier, false));
 }
 
 /** Mob.lootChance (and its own override): the chance it leaves something, before the hero's bonuses. */
@@ -171,13 +185,13 @@ export function createLoot(ctx: Ctx, mob: Mob): Item | null {
   switch (mob.kind) {
     case 'gnoll': case 'brute': case 'ghoul': return rollGold(rng, ctx.depth);
     case 'albino': case 'crab': case 'hermitCrab': case 'spinner': case 'piranha': return createItem('food.meat');
-    // SEAM(alchemy): PhantomMeat; a mystery meat stands in.
+    // SEAM(alchemy): PhantomMeat; a mystery meat stands in until it is among the foods.
     case 'phantomPiranha': return itemOr('food.phantomMeat', 'food.meat');
     case 'greatCrab': return createItem('food.meat', 2);
     case 'snake': return generator(ctx).of('seed');
     case 'swarm':
       countDrop(world, 'swarmHp');
-      return createItem('potion.healing');
+      return consumable(ctx, 'potion.healing');
     case 'slime': case 'causticSlime':
       countDrop(world, 'slimeWep');
       return tierWeapon(ctx, 2);
@@ -185,22 +199,22 @@ export function createLoot(ctx: Ctx, mob: Mob): Item | null {
       countDrop(world, 'skeleWep');
       return randomWeapon(ctx);
     case 'thief': case 'bandit':
-      // Thief.loot: a ring or an artifact. SEAM(artifacts): a ring for an artifact until artifacts are among the finds.
+      // Thief.loot: a ring or an artifact (Generator.random(ARTIFACT): from the run's artifacts, a ring when none is left).
       countDrop(world, 'theifMisc');
-      return rng.int(2) === 0 ? generator(ctx).of('ring') : itemOr('artifact.random', null) ?? generator(ctx).of('ring');
+      return rng.int(2) === 0 ? generator(ctx).of('ring') : new ItemGenerator(rng, ctx.depth, { run: world.run }).of('artifact');
     case 'dm100': return generator(ctx).of('scroll');
     case 'guard':
       countDrop(world, 'guardArm');
       return randomArmor(ctx);
     case 'necromancer': case 'spectralNecromancer':
       countDrop(world, 'necroHp');
-      return createItem('potion.healing');
+      return consumable(ctx, 'potion.healing');
     case 'bat':
       countDrop(world, 'batHp');
-      return createItem('potion.healing');
+      return consumable(ctx, 'potion.healing');
     case 'shielded':
-      // ArmoredBrute.createLoot: plate one time in four, scale otherwise (Armor.random: SEAM(gear)).
-      return createItem(rng.int(4) === 0 ? 'armor.plate' : 'armor.scale');
+      // ArmoredBrute.createLoot: plate one time in four, scale otherwise (Armor.random).
+      return randomizeArmor(createItem(rng.int(4) === 0 ? 'armor.plate' : 'armor.scale'), rng);
     case 'shaman': case 'blueShaman': case 'purpleShaman':
       countDrop(world, 'shamanWand');
       return generator(ctx).of('wand');
@@ -211,18 +225,17 @@ export function createLoot(ctx: Ctx, mob: Mob): Item | null {
     case 'golem':
       countDrop(world, 'golemEquip');
       return rng.int(2) === 0 ? randomWeapon(ctx, 5) : randomArmor(ctx, 5);
-    case 'elemental': return createItem('potion.liquidFlame');
-    case 'frostElemental': return createItem('potion.frost');
-    case 'shockElemental': return createItem('scroll.recharging');
-    // SEAM(alchemy): ScrollOfTransmutation; a scroll of upgrade is not that, so a random scroll stands in.
-    case 'chaosElemental': return itemOr('scroll.transmutation', null) ?? generator(ctx).of('scroll');
+    case 'elemental': return consumable(ctx, 'potion.liquidFlame');
+    case 'frostElemental': return consumable(ctx, 'potion.frost');
+    case 'shockElemental': return consumable(ctx, 'scroll.recharging');
+    case 'chaosElemental': return consumable(ctx, 'scroll.transmutation');
     case 'monk': return createItem('food.ration');
     case 'senior': return createItem('food.pasty');
     case 'warlock': {
       // Warlock.createLoot: one time in three a potion of healing, ever rarer over eight; else any other potion.
       if (rng.int(3) === 0 && rng.int(8) > dropsOf(world, 'warlockHp')) {
         countDrop(world, 'warlockHp');
-        return createItem('potion.healing');
+        return consumable(ctx, 'potion.healing');
       }
       let potion: Item;
       do potion = generator(ctx).of('potion');
@@ -244,23 +257,22 @@ export function createLoot(ctx: Ctx, mob: Mob): Item | null {
       while (potion.kind === 'potion.healing' || potion.kind === 'potion.strength');
       return potion;
     }
-    case 'acidic': return createItem('potion.experience');
-    case 'spawner': return createItem('potion.healing');
+    case 'acidic': return consumable(ctx, 'potion.experience');
+    case 'spawner': return consumable(ctx, 'potion.healing');
     case 'gnollTrickster': {
-      // GnollTrickster.createLoot: a thrown weapon at +0, uncursed, half the set. SEAM(gear): Shattered's thrown weapons.
-      let missile = generator(ctx).of('weapon');
-      while (itemDef(missile.kind).category !== 'missile') missile = generator(ctx).of('weapon');
+      // GnollTrickster.createLoot: a thrown weapon (Generator.randomMissile), half the set, rounded up.
+      const missile = randomMissile(rng, ctx.depth);
       return { ...missile, qty: Math.trunc((missile.qty + 1) / 2) };
     }
     default: return null;
   }
 }
 
-/** Eye.createLoot: half the time a dewdrop (and another beside it), else a seed or a runestone (SEAM(alchemy): a seed). */
+/** Eye.createLoot: half the time a dewdrop (and another beside it), else a seed or a runestone. */
 function eyeLoot(ctx: Ctx, mob: Mob): Item {
   switch (ctx.rng.int(4)) {
     case 2: return generator(ctx).of('seed');
-    case 3: return itemOr('stone.random', null) ?? generator(ctx).of('seed');
+    case 3: return generator(ctx).of('stone');
     default: {
       dropBeside(ctx, mob.pos, createItem('dew'), NEIGHBOURS8);
       return createItem('dew');
@@ -277,19 +289,13 @@ function dropBeside(ctx: Ctx, pos: number, item: Item, around: readonly number[]
 }
 
 /**
- * Mob.rollToDropLoot: unless the party has outgrown it (every hero more than two levels above its maxLvl),
- * the chance of its loot (times the heroes' bonus), and what each kind leaves besides: a gnoll exile's
- * pack, a hermit crab's armour, a caustic slime's goo, a spectral necromancer's scroll of remove curse, a
- * DM-201's metal shard. A thief's stolen goods and a mimic's treasure come out first (combat.ts).
+ * Mob.rollToDropLoot, what each kind leaves besides its loot (combat.ts dropRemains rolls that), unless the party has
+ * outgrown it (every hero more than two levels above its maxLvl): a gnoll exile's pack, a hermit crab's armour, a
+ * caustic slime's goo, a spectral necromancer's scroll of remove curse, a DM-201's metal shard.
  */
-export function rollToDropLoot(ctx: Ctx, mob: Mob): void {
+export function dropExtras(ctx: Ctx, mob: Mob): void {
   const stats = mobStats(mob);
-  const heroes = heroesOn(ctx.world, ctx.depth);
-  if (!heroes.some((hero) => hero.lvl <= stats.maxLvl + 2)) return;
-  if (ctx.rng.float() < baseLootChance(ctx, mob) * dropBonus(heroes[0])) {
-    const loot = createLoot(ctx, mob);
-    if (loot) landItem(ctx, mob.pos, loot);
-  }
+  if (!heroesOn(ctx.world, ctx.depth).some((hero) => hero.lvl <= stats.maxLvl + 2)) return;
   switch (mob.kind) {
     case 'gnollExile': {
       // GnollExile.rollToDropLoot: two or three random finds, scattered about it.
@@ -301,30 +307,27 @@ export function rollToDropLoot(ctx: Ctx, mob: Mob): void {
     case 'hermitCrab':
       landItem(ctx, mob.pos, randomArmor(ctx));
       break;
-    case 'causticSlime': {
-      // SEAM(alchemy): GooBlob, an alchemy ingredient; nothing until it is in.
-      const blob = itemOr('goo.blob', null);
-      if (blob) dropBeside(ctx, mob.pos, blob);
+    case 'causticSlime':
+      // CausticSlime.rollToDropLoot: a GooBlob, an alchemy ingredient.
+      dropBeside(ctx, mob.pos, createItem('quest.gooBlob'));
       break;
-    }
     case 'spectralNecromancer':
       dropBeside(ctx, mob.pos, createItem('scroll.removeCurse'));
       break;
-    case 'dm201': {
-      // SEAM(alchemy): MetalShard, an alchemy ingredient; nothing until it is in.
-      const shard = itemOr('metal.shard', null);
-      if (shard) dropBeside(ctx, mob.pos, shard);
+    case 'dm201':
+      // DM201.rollToDropLoot: a MetalShard, an alchemy ingredient.
+      dropBeside(ctx, mob.pos, createItem('quest.metalShard'));
       break;
-    }
   }
 }
 
 /* A mimic's prize */
 
 /**
- * Mimic.generatePrize: one find more, of gold, a thrown weapon, armour, a weapon or a ring; a golden mimic's
- * finds are uncursed and half the time a level better, an ebony mimic's always and it has one more. A crystal
- * mimic's treasure is its prize already, only uncursed. SEAM(gear): Shattered's decks.
+ * Mimic.generatePrize: one find more, of gold, a thrown weapon, armour, a weapon or a ring (by the default odds); a
+ * golden mimic's gear and wands are uncursed (a curse enchantment or glyph gone) and half the time a level better
+ * if +0, an ebony mimic's always so, and it has one more find. A crystal mimic's treasure is its prize already, only
+ * uncursed.
  */
 export function mimicPrize(rng: Rng, depth: number, kind: MobKind, items: Item[]): Item[] {
   const gen = new ItemGenerator(rng, depth);
@@ -332,19 +335,9 @@ export function mimicPrize(rng: Rng, depth: number, kind: MobKind, items: Item[]
   if (kind !== 'crystalMimic') {
     switch (rng.int(5)) {
       case 0: prize.push(rollGold(rng, depth)); break;
-      case 1: {
-        let missile = gen.of('weapon');
-        while (itemDef(missile.kind).category !== 'missile') missile = gen.of('weapon');
-        prize.push(missile);
-        break;
-      }
+      case 1: prize.push(gen.of('missile')); break;
       case 2: prize.push(gen.of('armor')); break;
-      case 3: {
-        let weapon = gen.of('weapon');
-        while (itemDef(weapon.kind).category !== 'weapon') weapon = gen.of('weapon');
-        prize.push(weapon);
-        break;
-      }
+      case 3: prize.push(gen.of('weapon')); break;
       default: prize.push(gen.of('ring'));
     }
     if (kind === 'ebonyMimic') prize.push(gen.random());
@@ -352,11 +345,14 @@ export function mimicPrize(rng: Rng, depth: number, kind: MobKind, items: Item[]
   if (kind === 'goldenMimic' || kind === 'ebonyMimic' || kind === 'crystalMimic') {
     for (const item of prize) {
       const category = itemDef(item.kind).category;
-      if (!['weapon', 'armor', 'ring', 'wand', 'missile'].includes(category) && kind !== 'crystalMimic') continue;
-      // SEAM(gear): a curse enchantment or glyph comes off too.
+      if (!['weapon', 'armor', 'ring', 'wand', 'missile', 'artifact'].includes(category)) continue;
       item.cursed = false;
-      if (item.level < 0) item.level = 0;
-      if (kind !== 'crystalMimic' && item.level === 0 && (kind === 'ebonyMimic' || rng.int(2) === 0)) item.level = 1;
+      delete item.curseUnknown;
+      if (isCurseEnchant(item.enchant)) delete item.enchant;
+      if (isCurseGlyph(item.glyph)) delete item.glyph;
+      if (kind !== 'crystalMimic' && category !== 'missile' && category !== 'artifact' && item.level === 0 && (kind === 'ebonyMimic' || rng.int(2) === 0)) {
+        item.level = 1;
+      }
     }
   }
   return prize;

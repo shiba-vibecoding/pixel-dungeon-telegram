@@ -171,7 +171,7 @@ export function mobEffect(view: View, effect: Effect, world: World, myId: string
       }
       break;
     }
-    case 'debuffed':
+    case 'afflicted':
       if (effect.hero !== myId) break;
       view.say(t.mobLines.debuffs[effect.by], COLORS.negative, now);
       audio.play(effect.by === 'degrade' ? 'degrade' : 'debuff');

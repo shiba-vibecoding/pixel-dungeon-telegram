@@ -1,7 +1,7 @@
-import type { Hero } from './actors';
+import { type Hero, heroBelongings } from './actors';
 import { wavesCleared } from './arena';
 import type { Effect } from './floor';
-import { ITEMS, type Item, itemDef, type ItemKind } from './items';
+import { isExotic, ITEMS, type Item, itemDef, type ItemKind } from './items';
 import { levelKnown } from './ident';
 import type { World } from './world';
 
@@ -49,7 +49,7 @@ const DEATHS: Readonly<Record<string, BadgeId>> = {
 const LABELLED = new Map<string, ItemKind[]>();
 const labelled = (category: string): ItemKind[] => {
   if (!LABELLED.has(category)) {
-    LABELLED.set(category, (Object.keys(ITEMS) as ItemKind[]).filter((kind) => itemDef(kind).category === category && itemDef(kind).sprite === undefined));
+    LABELLED.set(category, (Object.keys(ITEMS) as ItemKind[]).filter((kind) => itemDef(kind).category === category && itemDef(kind).sprite === undefined && !isExotic(kind)));
   }
   return LABELLED.get(category)!;
 };
@@ -105,12 +105,13 @@ export function checkBadges(progress: BadgeProgress, world: World, me: Hero, eff
   // The arena of waves: so many waves held.
   if (world.arena) tiers(['arena5', 'arena10', 'arena20'], wavesCleared(world.arena), [5, 10, 20]);
 
-  const belongings: Item[] = [...me.items, ...me.rings, me.armor, ...(me.weapon ? [me.weapon] : [])];
+  const belongings: Item[] = heroBelongings(me);
   // Badges.validateItemLevelAquired: only a level that is known counts.
   const best = Math.max(0, ...belongings.filter(levelKnown).map((item) => item.level));
   tiers(['item1', 'item2', 'item3', 'item4'], best, [3, 6, 9, 12]);
-  earn('haggler', belongings.some((item) => item.kind === 'ring.haggler'));
-  earn('thorns', belongings.some((item) => item.kind === 'ring.thorns'));
+  // Pixel Dungeon's rare rings are Shattered's master thieves' armband and cape of thorns.
+  earn('haggler', belongings.some((item) => item.kind === 'artifact.armband'));
+  earn('thorns', belongings.some((item) => item.kind === 'artifact.cape'));
   earn('bags', ['bag.seeds', 'bag.scrolls', 'bag.wands'].every((kind) => me.items.some((item) => item.kind === kind)));
 
   const known = new Set(world.known);
@@ -124,7 +125,7 @@ export function checkBadges(progress: BadgeProgress, world: World, me: Hero, eff
   let grimAt = -1;
   for (const effect of effects) {
     if (effect.type === 'combo' && effect.hero === me.id) earn('combo', effect.count >= 7);
-    if (effect.type === 'enchanted' && effect.enchant === 'death') grimAt = effect.pos;
+    if (effect.type === 'enchanted' && effect.enchant === 'grim') grimAt = effect.pos;
     if (effect.type === 'died' && effect.by === me.id) {
       if (effect.pos === grimAt) earn('grim');
       if (effect.kind && RARE_KINDS.includes(effect.kind)) remember(progress.rare, effect.kind);

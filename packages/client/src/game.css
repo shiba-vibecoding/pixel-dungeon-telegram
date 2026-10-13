@@ -197,7 +197,10 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* Six classes (design system v17): the narrow title's faces come from the 144-wide avatars too. */
 @media (max-height: 700px) { .pd-class .pd-class-face { background-size: 216px 48px; } }
 /* Shattered's buff icons (the hero stream: the warrior's shield, a sealed floor), from its own buffs.png, 18 a row. */
-.pd-buff i.spd { background-image: url("/assets/spd/buffs.png"); background-size: 384px 192px; }
+/* (And the wands stream's conditions: chill, corrosion, barrier, magic charge...; `i.spd[data-b]` in the buff list.) */
+.pd-buff i.spd, i.spd[data-b] { background-image: url("/assets/spd/buffs.png"); background-size: 384px 192px; }
+/* A question's text may come in paragraphs (MagesStaff's imbue: what it makes of the staff, what it costs). */
+.pd-window .pd-info.center { white-space: pre-line; }
 /* Shattered's quick slots (QuickSlot.SIZE 6; the hero stream): the toolbar grows a column for each slot shown; a slot whose item is used up keeps it greyed. */
 .pd-toolbar { grid-template-columns: repeat(var(--tools, 5), 1fr); gap: 4px; }
 .pd-tool[hidden] { display: none; }
@@ -217,3 +220,25 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* The bestiary (mobs stream): a monster not seen yet is its dark shape. */
 .pd-portrait.silhouette canvas { filter: brightness(0) opacity(0.45); }
 .pd-catalog .pd-portrait canvas { max-width: 32px; max-height: 32px; image-rendering: pixelated; }
+/* The alchemy pot (alchemyui.ts): AlchemyScene's emitters over the window, a puff of smoke and bubbles over the
+   result (Speck.WOOL, Speck.BUBBLE), the catalyst's glow, sparks over the energy counter (SparkParticle). */
+.pd-alch-fx { position: absolute; inset: 0; pointer-events: none; z-index: 1000; }
+.pd-energy { position: relative; }
+.pd-slot.disabled .pd-sitem { opacity: .3; }
+.pd-alch-fx i { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; background: #e8e8e8; opacity: 0;
+  animation: pd-alch-puff 700ms ease-out forwards; }
+.pd-alch-fx.brew i:nth-child(odd) { width: 3px; height: 3px; margin: -1.5px; background: transparent; box-shadow: inset 0 0 0 1px #9ad4ff; }
+.pd-alch-fx.catalyst i { background: #ffe070; }
+.pd-alch-fx.energy i { width: 2px; height: 2px; margin: -1px; background: #fff; box-shadow: 0 0 3px var(--energy, #44ccff); animation-duration: 450ms; }
+@keyframes pd-alch-puff {
+  0% { opacity: .95; transform: translate(0, 0) scale(.6); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.4); }
+}
+@media (prefers-reduced-motion: reduce) { .pd-alch-fx { display: none; } }
+/* A choice an item asks for (alchemyui.ts showChoice): the option's picture before its words, long words wrapping. */
+.pd-button.pd-choice { display: flex; align-items: center; justify-content: center; gap: 6px; white-space: normal; text-align: left; }
+.pd-button.pd-choice .pd-sitem { --u: 2px; }
+
+/* The artifacts' buff icons tinted as Shattered tints them: the cloak's stealth dimmed (cloakStealth.tintIcon), the time freeze orange (timeFreeze.tintIcon). */
+.pd-buff i[data-buff="stealth"] { filter: brightness(0.6); }
+.pd-buff i[data-buff="timeFreeze"] { filter: sepia(1) saturate(4) hue-rotate(-15deg); }

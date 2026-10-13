@@ -58,7 +58,7 @@ describe('the dwarven city', () => {
       if (!(hero.degraded ?? 0)) continue;
       // Warlock.zap: a bolt from afar (a dark one), and Degrade for thirty turns, which wears off.
       expect(effects.some((e) => e.type === 'mobZap' && e.mob === '#warlock' && e.bolt === 'shadow')).toBe(true);
-      expect(effects.some((e) => e.type === 'debuffed' && e.by === 'degrade')).toBe(true);
+      expect(effects.some((e) => e.type === 'afflicted' && e.by === 'degrade')).toBe(true);
       expect(hero.degraded).toBeLessThanOrEqual(30);
       expect(heroStr(hero)).toBe(hero.str);
       floorAt(world, 17).mobs = [];
@@ -131,7 +131,8 @@ describe("the King of Dwarves' hall", () => {
     for (const seed of [31, 32]) {
       const world = at(16, seed);
       const hero = heroById(world, 'p')!;
-      Object.assign(hero, { attackSkill: 400, defenseSkill: 80, ht: 20000, hp: 20000 });
+      // Strong enough to fight on bare-handed once a monk disarms it, before Shattered's hunger starves it.
+      Object.assign(hero, { attackSkill: 400, defenseSkill: 80, ht: 20000, hp: 20000, str: 25 });
       for (let i = 0; i < 6000 && isAlive(hero) && hero.depth < 20; i++) {
         const result = act(world, 'p', botAction(world, 'p', 20));
         if (!result.ok) act(world, 'p', { type: 'wait' });

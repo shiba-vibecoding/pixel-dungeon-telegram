@@ -1,0 +1,21 @@
+<!-- @dsCard group="Привал" height=812 width=1173 page subtitle="Живой главный экран: сцена у входа в подземелье (арка с лестницей вниз, костёр с искрами и отсветом, факелы, ночное небо), в центре герой выбранного класса. Поверх ненавязчиво — карточка игрока с рамкой, значки по краям (Задания, Почта, Рейтинг, Пиксель-Март, Настройки), подземелье дня с правилами и кнопки. Лето, осень (листья), зима (снег)" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Привал</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .phone { position: relative; width: 375px; height: 812px; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get("lang") || "ru", en = L === "en";
+  function phone() { var p = document.createElement("div"); p.className = "phone pd-phone"; document.getElementById("row").appendChild(p); return p; }
+  PD.demo.campScreen(phone(), { lang: L, season: "summer", hero: 0, frame: "gold" });
+  PD.demo.campScreen(phone(), { lang: L, season: "autumn", hero: 4, frame: "bronze", demo: "tap", mail: "1" });
+  PD.demo.campScreen(phone(), { lang: L, season: "winter", hero: 5, effect: "snow", frame: "shadow", quests: "" });
+  PD.sprite(document.body);
+</script>
+</body>
+</html>

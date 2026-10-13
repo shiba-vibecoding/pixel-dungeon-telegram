@@ -1,3 +1,4 @@
+import { RAT_SKULL, sundialMultiplier, trinketLevel } from './trinkets';
 import { createMob, type Mob, type MobKind } from './actors';
 import { rollForChampion } from './champions';
 import { castShadow, terrainBlocksSight } from './fov';
@@ -31,9 +32,9 @@ function randomShaman(rng: Rng): MobKind {
 
 /**
  * RatSkull.exoticChanceMultiplier: how much likelier the rare kinds are (MobSpawner.swapMobAlts,
- * Elemental.random, Piranha.random, Statue.random, Wraith.spawnAt). SEAM(alchemy): the rat skull, a trinket; 1 until then.
+ * Elemental.random, Piranha.random, Statue.random, Wraith.spawnAt), with the rat skull (a trinket) carried.
  */
-export const exoticChanceMultiplier = (_world?: World): number => 1;
+export const exoticChanceMultiplier = (world?: World): number => RAT_SKULL.exoticChanceMultiplier(trinketLevel(world?.heroes[0], 'trinket.ratSkull'));
 
 /** Elemental.random(): one in fifty a chaos elemental; else fire four times in ten, frost four, shock two. */
 function randomElemental(rng: Rng, world?: World): MobKind {
@@ -162,16 +163,19 @@ export const TIME_TO_RESPAWN = 50;
 /**
  * Level.respawnCooldown: fifty turns between monsters (two thirds of that on a dark level: SEAM(levels));
  * once the Amulet is taken, much sooner — on the first depth a twenty-fifth of it for every monster there,
- * elsewhere a tenth, from five to twenty-five turns. SEAM(alchemy): the dimensional sundial, a trinket.
+ * elsewhere a tenth, from five to twenty-five turns. The dimensional sundial (a trinket) makes it longer by day,
+ * shorter by night (DimensionalSundial.spawnMultiplierAtCurrentTime).
  */
 export function respawnCooldown(world: World, level: Level, count: number): number {
+  let cooldown: number;
   if (world.amuletTaken) {
-    if (level.depth === 1) return count * (TIME_TO_RESPAWN / 25);
-    return Math.round(Math.min(TIME_TO_RESPAWN / 2, Math.max(TIME_TO_RESPAWN / 10, count * (TIME_TO_RESPAWN / 10))));
+    if (level.depth === 1) cooldown = count * (TIME_TO_RESPAWN / 25);
+    else cooldown = Math.round(Math.min(TIME_TO_RESPAWN / 2, Math.max(TIME_TO_RESPAWN / 10, count * (TIME_TO_RESPAWN / 10))));
+  } else {
+    const dark = (Feeling as unknown as Record<string, number>).DARK;
+    cooldown = dark !== undefined && level.feeling === dark ? (2 * TIME_TO_RESPAWN) / 3 : TIME_TO_RESPAWN;
   }
-  const dark = (Feeling as unknown as Record<string, number>).DARK;
-  if (dark !== undefined && level.feeling === dark) return (2 * TIME_TO_RESPAWN) / 3;
-  return TIME_TO_RESPAWN;
+  return cooldown / sundialMultiplier(world);
 }
 
 /** Room.random(1): a cell inside a room, off its walls. */

@@ -1,10 +1,14 @@
-import { createMob, type Hero, isAlive, isHungry, type Mob, type MobKind } from './actors';
+import { createMob, type Hero, heroBelongings, isAlive, isHungry, type Mob, type MobKind } from './actors';
 import { rollMob } from './spawner';
 import { canEnter, charAt, type Ctx, dropItem, enterCell, type Floor, freeCellNear, leaveCell, observe } from './floor';
 import { collect } from './inventory';
-import { createItem, type Item, itemDef, type ItemKind, ITEMS, missileStats, rollFood } from './items';
+import { createItem, type Item, itemDef, type ItemKind, ITEMS, rollFood } from './items';
+import { missileStr } from './missiles';
+import { meleeStr } from './weapons';
+import { armorStr } from './armor';
 import { ARENA_CENTRE, ARENA_DEPTHS, ARENA_RADIUS, ARENA_STANDS, buildArenaLevel, insideArena, ringDistance } from './level/arena';
 import { identify } from './ident';
+import { isInvisible } from './artifacts';
 import { isBossDepth, LAST_SHOP_DEPTH } from './level/builder';
 import { discoverable } from './level/flags';
 import type { Level } from './level/generate';
@@ -152,15 +156,15 @@ export function arenaLevelAt(world: World, depth: number): Level {
 }
 
 /** Why an action is not for the arena now; null if it is fine; undefined if the arena has no say in it. */
-export function arenaProblem(world: World, hero: Hero, action: { type: string; mode?: unknown; choice?: unknown }): string | null | undefined {
+export function arenaProblem(world: World, hero: Hero, action: { type: string; use?: unknown; choice?: unknown }): string | null | undefined {
   const arena = world.arena;
   switch (action.type) {
     case 'descend':
     case 'ascend':
     case 'jump':
       return arena ? 'there is no way out of the arena' : undefined;
-    case 'beacon':
-      return arena && action.mode === 'return' ? 'a strong force prevents the beacon from working here' : undefined;
+    case 'artifact':
+      return arena && action.use === 'return' ? 'art:lloydsbeacon.preventing' : undefined;
     case 'arenaReady':
       if (!arena) return 'not in the arena';
       return arena.phase === 'rest' ? null : 'the wave is on';
@@ -355,7 +359,7 @@ const nearest = (heroes: readonly Hero[], pos: number): Hero =>
  * too long are driven out too.
  */
 function hunt(ctx: Ctx, stalled: boolean): void {
-  const heroes = ctx.world.heroes.filter((hero) => isAlive(hero) && hero.depth === ctx.depth && hero.invisible <= 0);
+  const heroes = ctx.world.heroes.filter((hero) => isAlive(hero) && hero.depth === ctx.depth && !isInvisible(hero));
   if (heroes.length === 0) return;
   for (const mob of ctx.floor.mobs) {
     if (!hostile(mob)) continue;
@@ -483,7 +487,7 @@ type Pool = ReadonlyArray<readonly [number, Make]>;
 
 const kindOf = (kind: ItemKind, qty = 1): Make => () => createItem(kind, qty);
 const has = (hero: Hero, kind: ItemKind): boolean =>
-  hero.items.some((item) => item.kind === kind) || hero.weapon?.kind === kind || hero.armor.kind === kind || hero.rings.some((ring) => ring.kind === kind);
+  heroBelongings(hero).some((item) => item.kind === kind);
 const wands = (hero: Hero): number => hero.items.filter((item) => itemDef(item.kind).category === 'wand').length;
 
 /** To stay alive through the next wave. */
@@ -499,8 +503,8 @@ const SURVIVE: Pool = [
 
 /** Thrown weapons by the wave (kind, from wave, fewest, most): darts first, javelins and tomahawks later. */
 const MISSILES: ReadonlyArray<readonly [ItemKind, number, number, number]> = [
-  ['missile.dart', 0, 10, 16], ['missile.curare', 3, 3, 6], ['missile.incendiary', 3, 3, 6], ['missile.shuriken', 6, 6, 10],
-  ['missile.javelin', 8, 4, 8], ['missile.tomahawk', 12, 4, 7],
+  ['missile.dart', 0, 10, 16], ['missile.paralyticDart', 3, 3, 6], ['missile.incendiaryDart', 3, 3, 6], ['missile.shuriken', 6, 3, 3],
+  ['missile.javelin', 8, 3, 3], ['missile.tomahawk', 12, 3, 3],
 ];
 
 /** For the next wave's crowd: blasts, clouds, fear and sleep, and something to throw. */
@@ -517,18 +521,19 @@ const CROWD: Pool = [
   [4, (rng, wave, hero) => {
     const [kind, , fewest, most] = rng.oneOf(MISSILES.filter(([, from]) => wave >= from));
     // Heavy ones only for an arm strong enough to throw them well.
-    if (missileStats(createItem(kind)).str > hero.str + 2) return createItem('missile.dart', rng.intRange(10, 16));
+    if (missileStr(createItem(kind)) > hero.str + 2) return createItem('missile.dart', rng.intRange(10, 16));
     return createItem(kind, rng.intRange(fewest, most));
   }],
 ];
 
 /** Battle wands worth carrying into a wave, and rings worth wearing in one. */
 const BATTLE_WANDS: readonly ItemKind[] = [
-  'wand.magicMissile', 'wand.firebolt', 'wand.lightning', 'wand.poison', 'wand.slowness', 'wand.amok', 'wand.flock', 'wand.teleportation',
+  'wand.magicMissile', 'wand.fireblast', 'wand.lightning', 'wand.frost', 'wand.corrosion', 'wand.blastWave', 'wand.corruption',
+  'wand.transfusion',
 ];
-const LATE_WANDS: readonly ItemKind[] = ['wand.avalanche', 'wand.disintegration'];
+const LATE_WANDS: readonly ItemKind[] = ['wand.disintegration', 'wand.livingEarth', 'wand.prismaticLight', 'wand.warding'];
 const FIGHTING_RINGS: readonly ItemKind[] = [
-  'ring.haste', 'ring.evasion', 'ring.accuracy', 'ring.mending', 'ring.elements', 'ring.thorns', 'ring.satiety',
+  'ring.haste', 'ring.evasion', 'ring.accuracy', 'ring.elements', 'ring.furor', 'ring.might', 'ring.tenacity', 'ring.force',
 ];
 
 /**
@@ -545,9 +550,11 @@ function betterGear(rng: Rng, wave: number, hero: Hero, slot: 'weapon' | 'armor'
     return def.category === slot && def.tier === tier && kind !== 'weapon.pickaxe';
   });
   const kind = rng.oneOf(kinds);
-  const def = itemDef(kind);
-  const needs = slot === 'weapon' ? (def.str ?? 8 + tier * 2) : 7 + tier * 2;
-  let level = Math.max(Math.min(3, rng.int(2) + Math.trunc(wave / 7)), needs - hero.str);
+  // Upgrades lower the strength wanted at +1, +3, +6...: as many as it takes to fit the hero's.
+  const needs = (lvl: number): number => (slot === 'weapon' ? meleeStr(createItem(kind), lvl) : armorStr(createItem(kind), lvl));
+  let fits = 0;
+  while (needs(fits) > hero.str && fits < 30) fits++;
+  let level = Math.max(Math.min(3, rng.int(2) + Math.trunc(wave / 7)), fits);
   // Of the same kind, it must still be the better of the two.
   if (worn && kind === worn.kind) level = Math.max(level, worn.level + 1);
   return createItem(kind, 1, Math.max(0, level));
@@ -563,14 +570,14 @@ const GROW: Pool = [
     return kinds.length > 0 ? createItem(rng.oneOf(kinds), 1, 1 + rng.int(2) + Math.trunc(wave / 8)) : null;
   }],
   [2, (rng, wave, hero) => {
-    const kinds = [...FIGHTING_RINGS, ...(wands(hero) > 0 ? ['ring.power' as const] : [])].filter((kind) => !has(hero, kind));
+    const kinds = [...FIGHTING_RINGS, ...(wands(hero) > 0 ? ['ring.energy' as const] : [])].filter((kind) => !has(hero, kind));
     return kinds.length > 0 ? createItem(rng.oneOf(kinds), 1, 1 + rng.int(2) + Math.trunc(wave / 8)) : null;
   }],
   [1, (_rng, _wave, hero) => (hero.weapon ? createItem('scroll.enchantment') : null)],
   [2, (_rng, _wave, hero) => (wands(hero) > 0 ? createItem('scroll.recharging') : null)],
   [2, kindOf('potion.experience')],
-  [1, (_rng, wave) => (wave >= 8 ? createItem('potion.might') : null)],
-  [1, (_rng, _wave, hero) => (has(hero, 'missile.boomerang') ? null : createItem('missile.boomerang', 1, 1))],
+  [1, (_rng, wave) => (wave >= 8 ? createItem('elixir.might') : null)],
+  [1, (_rng, _wave, hero) => (has(hero, 'missile.heavyBoomerang') ? null : createItem('missile.heavyBoomerang', 3))],
 ];
 
 /** One thing from a pool, not of a kind already on offer. */

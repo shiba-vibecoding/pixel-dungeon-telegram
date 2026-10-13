@@ -34,7 +34,7 @@ describe('harmful potions', () => {
     hero.items = [createItem('potion.toxicGas')];
     const result = act(world, 'p', { type: 'use', item: 0 });
     expect(result.ok && result.effects.find((e) => e.type === 'used')).toMatchObject({ identified: true });
-    expect(result.ok && result.effects.some((e) => e.type === 'burst' && e.kind === 'toxic')).toBe(true);
+    expect(result.ok && result.effects.some((e) => e.type === 'splash' && e.kind === 'potion.toxicGas')).toBe(true);
     // The cloud lingers about the drinker, and hurts every turn spent in it.
     expect(floorAt(world, 1).gas?.toxic?.length).toBeGreaterThan(0);
     const before = hero.hp;
@@ -115,8 +115,14 @@ describe('fire', () => {
         hero.depth = depth;
         hero.pos = NEIGHBOURS8.map((n) => barricade + n).find((c) => canEnter(level, c))!;
         hero.items = [createItem('potion.liquidFlame')];
-        const result = act(world, 'p', { type: 'use', item: 0 });
-        expect(result.ok && result.effects.some((e) => e.type === 'burnt' && e.pos === barricade)).toBe(true);
+        Object.assign(hero, { hp: 500, ht: 500 });
+        const effects = [];
+        // Liquid flame (Fire): the fire catches what can burn beside it, and burns it down as it goes out.
+        for (const action of [{ type: 'use', item: 0 }, ...Array(6).fill({ type: 'wait' })] as const) {
+          const result = act(world, 'p', action);
+          if (result.ok) effects.push(...result.effects);
+        }
+        expect(effects.some((e) => e.type === 'burnt' && e.pos === barricade)).toBe(true);
         expect(level.map[barricade]).toBe(T.EMBERS);
         return;
       }
@@ -126,13 +132,18 @@ describe('fire', () => {
 });
 
 describe('scroll of recharging', () => {
-  it('fills every wand', () => {
+  it('charges every wand a quarter of a charge faster a turn, for thirty turns (Recharging)', () => {
     const world = solo('mage');
     const hero = heroById(world, 'p')!;
-    hero.items = [createItem('wand.magicMissile'), createItem('scroll.recharging')];
+    hero.items = [createItem('wand.frost'), createItem('scroll.recharging')];
     hero.items[0]!.charges = 0;
+    hero.weapon!.wand!.charges = 0;
     const result = act(world, 'p', { type: 'use', item: 1 });
-    expect(result.ok && result.effects.find((e) => e.type === 'scroll')).toMatchObject({ kind: 'recharging', count: 1 });
-    expect(hero.items[0]!.charges).toBe(3);
+    // The wand in the pack and the one in the staff.
+    expect(result.ok && result.effects.find((e) => e.type === 'scroll')).toMatchObject({ kind: 'recharging', count: 2 });
+    expect(hero.recharging).toBeGreaterThan(28);
+    for (let i = 0; i < 4; i++) act(world, 'p', { type: 'wait' });
+    expect(hero.items[0]!.charges).toBe(1);
+    expect(hero.weapon!.wand!.charges).toBe(1);
   });
 });

@@ -2,26 +2,42 @@ import {
   type Action, adjacent, blockers, liveBlockers, distance, type Mob, trapAt, buyPrice, cellX, cellY, createHero, createWorld, type Effect, exploredCells, F, findPath, hasFlag,
   HEAP_SPRITES,
   type Hero, type Item, type Level,
-  type Bones, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
+  BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
-  visibleCells, chargesKnown, WIDTH,
-  type World, charAt, swapsWithHero, visibleEnemies,
+  visibleCells, chargesKnown, staffReach, WIDTH,
+  type World, charAt, swapsWithHero, canReach, heroReach, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
 import './game.css';
 import { mobDescription, mobName, plantText, tileText, wellText } from './examine';
-import { chooseQuickslot, isPlaceholder, quickIndex, quickKind, quickUse, syncQuickslots, visibleQuickslots } from './quickslot';
+import {
+  chooseQuickslot, isPlaceholder, quickArtifact, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
+} from './quickslot';
+import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookChoice } from './artifactui';
+import { artText, chargeOf } from './artifacttext';
+import { glowOf } from './gearfx';
 import { fx } from './fx';
-import { ambientFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
+import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
 import { mobAmbient } from './mobfx';
+
+/** The clouds' tints (Blob emitters' Speck colours): Pixel Dungeon's two, and Shattered's from alchemy. */
+const GAS_TINTS: Readonly<Record<string, string | readonly string[]>> = {
+  toxic: '80, 200, 60', paralytic: '230, 220, 70', corrosive: '170, 160, 140', smoke: '20, 20, 20', storm: '138, 216, 216',
+  stench: '20, 70, 20', confusion: ['255, 96, 160', '96, 160, 255', '160, 255, 96', '255, 160, 96'], inferno: '238, 119, 34',
+  blizzard: '235, 245, 255', regrowth: '90, 180, 60', freezing: '200, 230, 255', fire: '255, 140, 40',
+};
 /** The visual clock's last reading, for frame-to-frame particle steps. */
 let lastVisual = 0;
 /** When my hero fell, on the visual clock, or 0 while alive. */
 let fallenAt = 0;
 import { adoptBadges, BADGES, type BadgeId, badgeText, checkBadges, countGame, earnedBadges, reloadBadges } from './badges';
 import { pullCloud, pushCloud } from './cloud';
-import { audio } from './audio';
+import { audio, CROSSFADE } from './audio';
+import { stepSound } from './sfx';
+import {
+  aheadOf, DangerMeter, fadeFor, type FightSeen, MUSIC_BOSSES, placeTune, sameTune, TITLE, VICTORY, withDanger,
+} from './soundtrack';
 import { type ArenaHud, type BuffName, heroBuffs, Hud, type HudStatus, type QuickState } from './hud';
 import { arenaBest, recordArena, showArenaEnd, showArenaReward } from './arenaui';
 import { ArenaView } from './arenaview';
@@ -31,7 +47,7 @@ import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
 import { bakeLevel, type Camera, patchLevel, render } from './render';
 import {
   armorTier, closeOverlay, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showReforge, showHelp, showHero,
-  refreshBackpack, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTitle, showTrade, showWaiting, slot, toast, type ShareChoice,
+  refreshBackpack, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTitle, showTrade, showWaiting, slot, toast, type ShareChoice,
 } from './screens';
 import { profileCard, rankingBlock, showBoards, trophyText } from './rankui';
 import { mart } from './mart';
@@ -57,6 +73,7 @@ import {
   homeScreenStatus, addToHomeScreen,
 } from './telegram';
 import { startReporting } from './report';
+import { alchemyOpen, refreshAlchemy, showAlchemy } from './alchemyui';
 import { STEP_MS, TILE, View } from './view';
 
 /*
@@ -245,7 +262,7 @@ const mapControlsActions = {
     const target = world && me ? attackTarget(world, me) : null;
     if (!world || !me || !target || session!.busy) return;
     walk.reset();
-    if (adjacent(me.pos, target.pos)) send({ type: 'attack', target: target.id }, performance.now());
+    if (inReach(world, me, target.pos)) send({ type: 'attack', target: target.id }, performance.now());
     else walk.chase = target.id;
   },
   resume: () => {
@@ -282,7 +299,7 @@ function coachMove(me: Hero): void {
  */
 function attackTarget(world: World, me: Hero): Mob | null {
   const visible = visibleCells(world, me.depth);
-  const foes = (world.floors[me.depth]?.mobs ?? []).filter((m) => m.state !== 'passive' && visible[m.pos] && m.hp > 0 && !m.image);
+  const foes = (world.floors[me.depth]?.mobs ?? []).filter((m) => m.state !== 'passive' && !m.ally && visible[m.pos] && m.hp > 0 && !m.image);
   // The enemy picked with the danger indicator comes first (AttackIndicator.target).
   const rank = (m: Mob): number => (m.id === dangerTarget ? -1 : m.enemy === me.id && m.state === 'hunting' ? 0 : m.state === 'sleeping' ? 2 : 1) * 1000 + distance(m.pos, me.pos);
   return foes.sort((a, b) => rank(a) - rank(b) || (a.id < b.id ? -1 : 1))[0] ?? null;
@@ -365,7 +382,6 @@ function enterGame(next: Session, roomId: string | null, welcome = t.welcome): v
   seenGeneration = -1;
   deathShown = -1;
   walk.reset();
-  audio.playMusic('game');
   // Telegram's back button opens the menu, or closes whatever window is open.
   backButton(() => (overlayOpen() ? closeOverlay() : openMenu()));
   hud.show(true);
@@ -621,7 +637,7 @@ function toTitle(ask = true): void {
   aim = null;
   examining = false;
   held.code = '';
-  audio.playMusic('theme');
+  audio.playMusic(TITLE);
   audio.ambience(null);
   audio.muffle(false);
   backButton(null);
@@ -731,7 +747,30 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
   (world.floors[depth]?.heaps ?? []).some((heap) => heap.pos === pos && heap.kind !== 'hidden');
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
-let aim: { index: number; kind: 'throw' | 'zap' | 'special' } | null = null;
+let aim: { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' } | { index: -1; kind: 'artifact'; action: ArtifactAction } | null = null;
+
+/** What artifacts ask of the game outside the backpack (a quick slot's default action, the spellbook's window). */
+function artifactHost(world: World, me: Hero): ArtifactHost {
+  const back = (): void => hideOverlay();
+  return {
+    world,
+    hero: me,
+    act: (action) => {
+      hideOverlay();
+      send(action, performance.now());
+    },
+    stay: (action) => send(action, performance.now()),
+    aim: (action) => {
+      hideOverlay();
+      aim = { index: -1, kind: 'artifact', action };
+    },
+    pick: (title, targets, onPick, onCancel) => showBackpack({
+      world, hero: me, onAction: (action) => send(action, performance.now()), onAim: () => undefined, onClose: hideOverlay,
+      pick: { title, targets, onPick, onCancel: onCancel ?? back },
+    }),
+    back,
+  };
+}
 
 /** QuickSlotButton.onClick: use what the slot holds; an empty slot, or one whose item ran out, asks what to put in it. */
 function quickTap(slot: number): void {
@@ -749,18 +788,40 @@ function toggleQuickslot(slot = 0): void {
     aim = null;
     return;
   }
+  // An artifact, worn or carried: its default action (Artifact.defaultAction).
+  const artifact = quickArtifact(me, slot);
+  if (artifact) {
+    walk.reset();
+    const run = defaultArtifactAction(artifactHost(world, me), artifact.item, artifact.ref);
+    if (run) run();
+    return;
+  }
   const index = quickIndex(me, slot);
-  if (index < 0) return;
-  const item = me.items[index]!;
-  // Wand.actions: no zapping a wand known to be empty (one of unknown charges may be tried, and fizzle).
-  if (item.charges === 0 && chargesKnown(item)) {
+  const item = quickItem(me, slot);
+  if (!item) return;
+  // Wand.actions: no zapping a wand known to be empty (one of unknown charges may be tried, and fizzle); the staff's, not at all.
+  const wand = item.kind === 'weapon.magesStaff' ? item.wand : item;
+  if (wand?.charges === 0 && (chargesKnown(wand) || wand !== item)) {
     view.say(t.noCharges, '#cccccc');
     return;
   }
   walk.reset();
   const use = quickUse(item.kind);
   if (use === 'use') send({ type: 'use', item: index }, performance.now());
-  else if (use) aim = { index, kind: use };
+  // Shattered's potions, scrolls, stones, spells...: whatever the item's first action is (it may want a target or a choice).
+  else if (use === 'item') quickAction(backpackOptions(world!, me), index);
+  else if (use && use !== 'artifact') aim = { index, kind: use };
+}
+
+/**
+ * Hero.canAttack: next to it, or within the weapon's reach (a spear, a glaive, a whip; MagesStaff.reachFactor: a
+ * battlemage's staff of disintegration), but an ally only face to face.
+ */
+function inReach(world: World, me: Hero, pos: number): boolean {
+  if (adjacent(me.pos, pos)) return true;
+  const there = charAt(world, me.depth, pos);
+  if (there && 'kind' in there && there.ally) return false;
+  return canReach(world, levelAt(world, me.depth), me, pos, Math.max(heroReach(me), staffReach(me)));
 }
 
 /** Awake monsters the party could see last frame (a walk goes no further while there are any). */
@@ -942,7 +1003,7 @@ function step(world: World, now: number, visible: readonly boolean[]): void {
     const mob = mobById(world, me.depth, walk.chase);
     if (!mob || !visible[mob.pos]) {
       walk.chase = null;
-    } else if (adjacent(me.pos, mob.pos)) {
+    } else if (inReach(world, me, mob.pos) && (adjacent(me.pos, mob.pos) || mob.state !== 'passive')) {
       walk.chase = null;
       send({ type: 'attack', target: mob.id }, now);
       return;
@@ -1033,12 +1094,22 @@ function takeHere(world: World, me: Hero, now: number): void {
   else send({ type: 'pickup' }, now);
 }
 
+/** The master thieves' armband's offer for a ware (WndTradeItem's steal button), if it is worn and charged. */
+function stealOffer(world: World, me: Hero, item: Item): { label: string; sure: boolean; onSteal(): void } | undefined {
+  const offer = shopliftOffer(world, me, item);
+  const armband = thievery(me);
+  const ref = armband && (me.artifact === armband ? 'artifact' : 'misc');
+  if (!offer || !ref) return undefined;
+  return { ...offer, onSteal: () => send({ type: 'artifact', item: ref, use: 'shoplift' }, performance.now()) };
+}
+
 function openTrade(world: World, me: Hero, item: Item): void {
   walk.reset();
   showTrade({
     world, hero: me, item,
-    price: buyPrice(item, me.depth, world.known.includes(item.kind), me.rings.some((ring) => ring.kind === 'ring.haggler')),
+    price: buyPrice(item, me.depth, world.known.includes(item.kind), haggles(me)),
     onBuy: () => send({ type: 'buy' }, performance.now()),
+    steal: stealOffer(world, me, item),
     onClose: hideOverlay,
   });
 }
@@ -1097,27 +1168,77 @@ function announceBadges(ids: readonly BadgeId[]): void {
   }
 }
 
-/** The region's tune for each region (the sewers keep the original's), and the bosses that have the boss's. */
-const REGION_MUSIC = ['game', 'prison', 'caves', 'city', 'halls'] as const;
-const MUSIC_BOSSES: ReadonlySet<string> = new Set(['goo', 'tengu', 'dm300', 'king', 'yog']);
-/** A boss fight on my depth: from the boss's cry until it falls, or the hero leaves, or the run starts over. */
-let bossFight: { session: Session; generation: number; depth: number } | null = null;
+/**
+ * The boss fight on my depth as its effects tell it, for the music (soundtrack.ts): from the boss's cry until it
+ * falls, its finale, and its fall, until the hero leaves or the run starts over.
+ */
+let bossFight: { session: Session; generation: number; depth: number; seen: FightSeen } | null = null;
+const NO_FIGHT: FightSeen = { fighting: false, finale: false, slain: null };
+/** The depth the music last fetched ahead for. */
+let musicAhead = -1;
+/** Real danger turns the region's music tense (soundtrack.ts DangerMeter); a monster's blow on me this frame. */
+const danger = new DangerMeter();
+let dangerOf: { session: Session; generation: number } | null = null;
+let struckByMonster = false;
+
+/** The fight on my depth, made on first word of it. */
+function fightHere(depth: number): FightSeen | null {
+  if (!session) return null;
+  if (!bossFight || bossFight.session !== session || bossFight.generation !== session.generation || bossFight.depth !== depth) {
+    bossFight = { session, generation: session.generation, depth, seen: { ...NO_FIGHT } };
+  }
+  return bossFight.seen;
+}
 
 function handleMyEffects(effects: readonly Effect[], myId: string): void {
   const world = session?.world;
   const me = world && heroById(world, myId);
   if (world && me) announceBadges([...countGame(world.run.seed), ...checkBadges(world, me, effects)]);
   for (const effect of effects) {
-    if (effect.type === 'yell' && effect.line === 'notice' && MUSIC_BOSSES.has(effect.kind) && session && me && effect.depth === me.depth) {
-      bossFight = { session, generation: session.generation, depth: effect.depth };
+    if (effect.type === 'attack' && effect.hit && effect.target === myId && effect.attacker.startsWith('#')) struckByMonster = true;
+    // The boss's cry starts the fight's music; its fall ends it (Level.unseal: the music fades out).
+    if (effect.type === 'yell' && effect.line === 'notice' && MUSIC_BOSSES.has(effect.kind) && me && effect.depth === me.depth) {
+      const seen = fightHere(effect.depth);
+      if (seen) seen.fighting = true;
     }
-    if (effect.type === 'bossSlain' && effect.depth === bossFight?.depth) bossFight = null;
+    if (effect.type === 'bossSlain' && me && effect.depth === me.depth && MUSIC_BOSSES.has(effect.kind)) {
+      const seen = fightHere(effect.depth);
+      if (seen) Object.assign(seen, { fighting: false, finale: false, slain: effect.kind });
+    }
+    // Seam for the bosses stream: its `bossFight` effect (start, phase, finale: BossHealthBar.bleed, end).
+    const course = effect as { type: string; depth?: number; kind?: string; state?: string };
+    if (course.type === 'bossFight' && me && course.depth === me.depth) {
+      const seen = fightHere(me.depth);
+      if (seen && course.state === 'start') seen.fighting = true;
+      if (seen && course.state === 'finale') seen.finale = true;
+      if (seen && course.state === 'end') Object.assign(seen, { fighting: false, finale: false, slain: course.kind ?? 'boss' });
+    }
     if (effect.type === 'ghost' && effect.hero === myId) talkWithGhost(effect.line, effect.errand);
     if (effect.type === 'ratKing' && effect.hero === myId) talkWithRatKing(effect.line);
     if (effect.type === 'wandmaker' && effect.hero === myId) talkWithWandmaker(effect.line);
     if (effect.type === 'imp' && effect.hero === myId) talkWithImp(effect.line);
     if (effect.type === 'smith' && effect.hero === myId) talkWithSmith(effect.line);
     if (effect.type === 'shop' && effect.hero === myId) openShop();
+    // The unstable spellbook's scroll to settle: its window (and again, if some other action was refused meanwhile).
+    const pendingWorld = session?.world;
+    const pendingHero = pendingWorld && heroById(pendingWorld, myId);
+    if (pendingWorld && pendingHero?.pendingScroll && ((effect.type === 'spellbook' && effect.hero === myId) ||
+      (effect.type === 'interrupted' && effect.hero === myId && effect.reason === 'art:unstablespellbook.prompt'))) {
+      walk.reset();
+      showSpellbookChoice(artifactHost(pendingWorld, pendingHero), pendingHero.pendingScroll.kind, pendingHero.pendingScroll.exotic, hideOverlay);
+    }
+    // AlchemistsToolkit.AC_BREW: the alchemy window, wherever the hero is (alchemyui.ts).
+    if (effect.type === 'alchemy' && effect.hero === myId) openAlchemy();
+    // Ward.interact: dismiss the ward?
+    if (effect.type === 'ward' && effect.hero === myId) {
+      walk.reset();
+      const ward = effect.mob;
+      showConfirm(t.dismissTitle, t.dismissInfo, t.dismissYes, t.dismissNo, () => send({ type: 'dismiss', target: ward }, performance.now()), hideOverlay);
+    }
+    // CursedWand.AbortRetryFail: the game seems to crash (in English only: the joke would not translate).
+    if (effect.type === 'cursedZap' && effect.hero === myId && effect.effect === 'abortRetryFail' && t.crashTitle) {
+      showConfirm(t.crashTitle, t.crashBody, t.crashButtons[0] ?? '', t.crashButtons[2] ?? '', hideOverlay, hideOverlay);
+    }
     // The Amulet of Yendor: its question for whoever takes it (once a run); the party hears of it.
     if (effect.type === 'amulet' && world && me) {
       if (effect.hero === myId) {
@@ -1286,11 +1407,22 @@ function tapCell(cell: number, quiet = false): void {
   if (aim) {
     const shot = aim;
     aim = null;
-    if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
+    if (shot.kind === 'artifact') send({ ...shot.action, cell }, performance.now());
+    else if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
+    // A spell cast, dragon's breath breathed, a siren's song sung at the cell.
+    else if (shot.kind === 'cast') {
+      if (cell !== me.pos && me.items[shot.index]) send({ type: 'use', item: shot.index, cell }, performance.now());
+    }
+    else if (cell !== me.pos && shot.index === WEAPON_SLOT && shot.kind === 'zap' && me.weapon) send({ type: 'zap', item: 'weapon', target: cell }, performance.now());
     else if (cell !== me.pos && me.items[shot.index]) send({ type: shot.kind, item: shot.index, target: cell }, performance.now());
     return;
   }
 
+  // Hero.actAlchemy: the pot, tapped from beside it (or standing in it), opens AlchemyScene.
+  if (level.map[cell] === T.ALCHEMY && atPot(world, me) && (cell === me.pos || adjacent(cell, me.pos))) {
+    openAlchemy();
+    return;
+  }
   if (cell === me.pos) {
     if (heapAt(world, me.depth, me.pos)) takeHere(world, me, performance.now());
     // Hero.handle on the hero's own cell: standing in tall grass or on a plant, it is trampled where the hero stands.
@@ -1392,7 +1524,12 @@ function showBuff(name: BuffName, turns?: number): void {
     ? shield.shield > 0 ? t.hero.shieldActive(shield.shield, shield.cooldown) : t.hero.shieldCooldown(shield.cooldown)
     : name === 'lockedFloor' ? t.hero.lockedFloorDesc
       : name === 'hunger' ? t.hero.hungryIntro + t.hero.hungerDesc
-        : name === 'starvation' ? t.hero.starvingIntro + t.hero.hungerDesc : null;
+        : name === 'starvation' ? t.hero.starvingIntro + t.hero.hungerDesc
+          // The artifacts' buffs: Shattered's own descriptions.
+          : name === 'stealth' ? artText('cloakofshadows$cloakstealth.desc', [turns ?? 0])
+          : name === 'timeFreeze' ? artText('timekeepershourglass$timefreeze.desc', [turns ?? 0])
+          : name === 'thorns' ? artText('capeofthorns$thorns.desc', [turns ?? 0])
+          : name === 'foresight' ? artText('talismanofforesight$foresight.desc') || null : null;
   if (long) {
     walk.reset();
     showInfo(t.buffs[name], long.split('\n\n'), hideOverlay);
@@ -1413,6 +1550,35 @@ function openHero(): void {
   });
 }
 
+/** What the backpack (and the windows it opens) are given. */
+function backpackOptions(world: World, me: Hero): Parameters<typeof showBackpack>[0] {
+  return {
+    world,
+    hero: me,
+    onAction: (action) => send(action, performance.now()),
+    onAim: (index, kind) => {
+      aim = { index, kind };
+    },
+    onClose: hideOverlay,
+  };
+}
+
+/** The alchemy pot's window (alchemyui.ts), over the map until closed. */
+function openAlchemy(): void {
+  walk.reset();
+  aim = null;
+  audio.play('click');
+  showAlchemy({
+    current: () => {
+      const world = session?.world;
+      const me = world && heroById(world, session!.myId);
+      return world && me && isAlive(me) ? { world, hero: me } : null;
+    },
+    onAction: (action) => send(action, performance.now()),
+    onClose: hideOverlay,
+  });
+}
+
 function openBackpack(): void {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
@@ -1426,6 +1592,9 @@ function openBackpack(): void {
     onAction: (action) => send(action, performance.now()),
     onAim: (index, kind) => {
       aim = { index, kind };
+    },
+    onAimArtifact: (action) => {
+      aim = { index: -1, kind: 'artifact', action };
     },
     onClose: hideOverlay,
   });
@@ -1621,7 +1790,7 @@ addEventListener('pd-save-failed', () => {
 
 const HINT_CATEGORIES: ReadonlySet<string> = new Set([
   'potion', 'scroll', 'weapon', 'armor', 'ring', 'wand', 'food', 'seed', 'missile', 'bomb', 'key', 'gold', 'vial', 'bag',
-  'ankh', 'honeypot', 'torch', 'tome', 'kit', 'beacon', 'weightstone',
+  'ankh', 'honeypot', 'torch', 'tome', 'kit', 'beacon',
 ]);
 const NPCS: ReadonlySet<string> = new Set(['ghost', 'wandmaker', 'blacksmith', 'imp', 'ratKing']);
 const BOSS_DEPTHS: ReadonlySet<number> = new Set([5, 10, 15, 20, 25]);
@@ -2057,8 +2226,8 @@ function flyToBag(launch: Launch): void {
 /** When the low-health heartbeat last pulsed, on the visual clock. */
 let lastBeat = 0;
 
-/** Which foot: footsteps alternate a touch in pitch. */
-let stride = 1;
+/** What lay around my hero a frame ago: the cell stepped onto as it was before the step (high grass, trampled by it). */
+let around = new Map<number, number>();
 
 /** The soft camera: where it looks, eased after the hero (see tick). */
 const follow = { x: 0, y: 0, depth: 0, ready: false };
@@ -2228,7 +2397,9 @@ function tick(now: number): void {
   // Footsteps, doors and stairs of my own hero.
   if (lastPlace.generation === session.generation && isAlive(me)) {
     if (me.depth !== lastPlace.depth) {
-      audio.play(justFell ? 'falling' : 'descend');
+      // Chasm.heroFall: the fall; GameScene: down (stairs or a fall) onto the deepest floor yet, the descent.
+      if (justFell) audio.play('falling');
+      if (me.depth > lastPlace.depth && me.depth >= (world.reached ?? me.depth)) audio.play('descend');
       // A new depth comes up out of the dark.
       fx.flash('0, 0, 0', 1, 650, vnow);
       // GameScene's greetings: the depth, a new region, and the level's feeling (the arena, sinking, has its own: handleArenaEffects).
@@ -2250,14 +2421,10 @@ function tick(now: number): void {
       // The view comes home to the walking hero.
       if (pan.x !== 0 || pan.y !== 0) pan.home = true;
       const terrain = level.map[me.pos]!;
-      // Footsteps: never quite the same twice, left foot and right a touch apart.
-      stride = -stride;
-      // Each surface underfoot sounds its own: stone, water, grass, the wood of a doorway, hot embers.
-      const pitch = 1 + stride * 0.05;
-      if (terrain >= T.WATER_TILES && terrain <= T.WATER) audio.play('water', pitch, 0.5);
-      else if (terrain === T.OPEN_DOOR || terrain === T.DOOR) audio.play('stepWood', pitch, 0.55);
-      else audio.play('step', pitch, 0.45);
-      if (terrain === T.GRASS || terrain === T.HIGH_GRASS) audio.play('stepGrass', pitch, 0.4);
+      // Hero.move: each surface underfoot sounds its own (water, the sturdy floor of special rooms, grass,
+      // high grass trampled on the way in, stone), and hot embers hiss a little.
+      const step = stepSound(terrain, around.get(me.pos) === T.HIGH_GRASS && terrain !== T.HIGH_GRASS);
+      audio.play(step.sound, step.rate, 0.6);
       if (terrain === T.EMBERS) audio.play('sizzle', 1.3, 0.12);
       // And what the step stirs where it left: dust, a splash, a few blades of grass.
       stepFx(level.map[lastPlace.pos] ?? terrain, lastPlace.pos, vnow);
@@ -2281,6 +2448,7 @@ function tick(now: number): void {
     view.arenaSinks(0, t.arena.title, t.arena.sub, vnow);
   } else if (lastPlace.generation !== session.generation && me.depth === 1 && world.turn < 3) view.enterRegion(1, vnow);
   lastPlace = { generation: session.generation, depth: me.depth, pos: me.pos };
+  around = new Map(NEIGHBOURS8.map((d) => [me.pos + d, level.map[me.pos + d] ?? -1]));
 
   const key = `${me.depth}:${world.turn}:${session.generation}`;
   if (key !== bakedKey) {
@@ -2319,6 +2487,8 @@ function tick(now: number): void {
     // The backpack, if open, shows the pack as it is now (an item put on, dropped, picked up).
     const mine = session.myId;
     if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
+    // The pot's window, if open, shows the pack and the energy as they are now.
+    if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
     for (const effect of effects) effectFx(effect, view, world, session.myId, vnow);
     motion.effects(effects, world, me.depth, (e) => itemSprite(e.item, world.run.labels));
     scenery.effects(effects, me.depth, vnow);
@@ -2336,6 +2506,7 @@ function tick(now: number): void {
   ambientFx(view, vnow, dt);
   mobAmbient(view, vnow, dt);
   regionFx(level, visible, vnow, dt);
+  blobFx(world.floors[me.depth]?.gas ?? {}, visible, vnow, dt);
 
   const mine = view.puppets.get(me.id);
   const at = mine ? view.position(mine, vnow) : { x: cellX(me.pos) * TILE, y: cellY(me.pos) * TILE };
@@ -2347,11 +2518,30 @@ function tick(now: number): void {
   const region = level.region ?? regionIndex(me.depth);
   audio.ambience(levelRegion(level));
   preloadSheets(levelRegion(level));
-  // Each region has its tune, and a boss fight its own while it lasts.
+  // Shattered's music, as its levels play it (soundtrack.ts); the run won, the victory's.
   if (bossFight && (bossFight.session !== session || bossFight.generation !== session.generation || bossFight.depth !== me.depth)) bossFight = null;
-  // A champions' wave in the arena is a boss fight from its first monster to its last.
-  const champions = world.arena?.phase === 'fight' && core.isChampionsWave(world.arena.wave);
-  audio.playMusic(bossFight || champions ? 'boss' : REGION_MUSIC[region]!);
+  // Beyond Shattered: an enemy hunting me for a while, or a monster's blow, turns the region's tracks tense until
+  // the danger has been gone a good while; the list comes back where it left off.
+  if (dangerOf?.session !== session || dangerOf.generation !== session.generation) {
+    dangerOf = { session, generation: session.generation };
+    danger.reset();
+  }
+  const hunted = isAlive(me) && visibleEnemies(world, me).some((mob) => mob.state === 'hunting');
+  const wasTense = danger.on;
+  const inDanger = danger.update(now, hunted, struckByMonster && isAlive(me));
+  struckByMonster = false;
+  const placed = world.over && world.victory ? VICTORY : placeTune(world, me, region, bossFight?.seen ?? NO_FIGHT);
+  const tune = world.over ? placed : withDanger(placed, region, inDanger);
+  if (!sameTune(audio.tune, tune)) {
+    // In and out of danger, a crossfade both ways; otherwise as Shattered fades.
+    const fade = wasTense !== inDanger ? CROSSFADE : fadeFor(audio.tune, tune);
+    audio.playMusic(tune, fade, fade !== CROSSFADE);
+  }
+  // What will be wanted soon is fetched ahead, a little at a time.
+  if (musicAhead !== me.depth) {
+    musicAhead = me.depth;
+    audio.prefetch(aheadOf(me.depth, region, !!world.arena));
+  }
   audio.muffle(overlayOpen() || !isAlive(me));
   const kick = fx.shakeOffset(vnow);
   // The hero stands in the middle of the band the HUD and the toolbar leave free, not of the screen.
@@ -2414,6 +2604,8 @@ function tick(now: number): void {
     // Rings and wands lying about glow, gold and blue.
     ...(heap.kind === 'heap' && heap.items[0]!.kind.startsWith('ring.') ? { aura: '#ffd27a' }
       : heap.kind === 'heap' && heap.items[0]!.kind.startsWith('wand.') ? { aura: '#8fc4ff' } : {}),
+    // ItemSprite.Glowing: an enchanted weapon or inscribed armour lying about glows in its magic's colour.
+    ...((heap.kind === 'heap' || heap.kind === 'forSale') && glowOf(heap.items[0]!) ? { glow: glowOf(heap.items[0]!)! } : {}),
   }));
   motion.update(level, heaps, visible, view, session.myId, `${session.generation}:${me.depth}`, vnow);
   for (const launch of motion.takeLaunches()) if (!launch.gold) launches.push(launch);
@@ -2423,12 +2615,16 @@ function tick(now: number): void {
     return false;
   });
   const plants = (world.floors[me.depth]?.plants ?? []).map((p) => ({ pos: p.pos, index: PLANT_KINDS.indexOf(p.kind) }));
-  // Clouds of gas: green toxic, yellow paralytic.
+  // Clouds of gas: green toxic, yellow paralytic, and Shattered's (their Speck's hardlight colour; the
+  // confusion gas's changes from cell to cell, as its specks do).
   const clouds = world.floors[me.depth]?.gas ?? {};
-  const gas = [
-    ...(clouds.toxic ?? []).map(([pos, volume]) => ({ pos, volume, color: '80, 200, 60' })),
-    ...(clouds.paralytic ?? []).map(([pos, volume]) => ({ pos, volume, color: '230, 220, 70' })),
-  ];
+  const gas = Object.entries(GAS_TINTS).flatMap(([kind, tint]) =>
+    (clouds[kind as keyof typeof clouds] ?? []).map(([pos, volume]) => ({
+      pos,
+      // Fire is thick for the few turns it burns.
+      volume: kind === 'fire' ? 30 + volume * 10 : volume,
+      color: Array.isArray(tint) ? tint[pos % tint.length]! : tint as string,
+    })));
   const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
   const explored = exploredCells(world, me.depth);
   const scene = {
@@ -2519,16 +2715,17 @@ function tick(now: number): void {
   syncQuickslots(world, me);
   const quickState = (slot: number): QuickState | null => {
     const kind = quickKind(slot);
-    // (A kit's stand-in kind no stream has brought yet: KIT_SEAMS.)
-    if (!kind || !(kind in core.ITEMS)) return null;
-    const item = me.items[quickIndex(me, slot)];
+    if (!kind) return null;
+    // An artifact may be worn: Shattered's quick slots hold it all the same; the mage's staff is zapped from the hand (quickItem).
+    const item = quickArtifact(me, slot)?.item ?? quickItem(me, slot);
     if (!item || isPlaceholder(me, slot)) {
       return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };
     }
     return {
       sprite: itemSprite(item, world.run.labels),
       label: chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
-      aiming: aim !== null && aim.index === quickIndex(me, slot),
+      aiming: aim !== null && (aim.kind === 'artifact' ? itemAt(me, aim.action.item) === item : aim.index === quickIndex(me, slot)),
+      charge: itemDef(item.kind).category === 'artifact' ? chargeOf(world, me, item) : null,
       wear: wearOf(world, item),
     };
   };
@@ -2538,7 +2735,8 @@ function tick(now: number): void {
     examining = false;
   };
   // One state at a time, the most pressing: the connection, death, a target to choose, examining, companions.
-  const aimed = aim && aim.index >= 0 ? me.items[aim.index] : undefined;
+  const aimed = aim && aim.kind === 'artifact' ? itemAt(me, aim.action.item)
+    : aim && aim.index >= 0 ? me.items[aim.index] : aim?.index === WEAPON_SLOT ? me.weapon ?? undefined : undefined;
   const status: HudStatus | null =
     session.status ? { kind: session.status === t.reconnecting ? 'reconnecting' : 'connecting', text: session.status }
     : !isAlive(me) && !world.over ? { kind: 'dead', text: `${t.youDied}. ${world.arena ? t.arena.fallenCoop : t.youDiedCoop}` }
@@ -2600,7 +2798,7 @@ function tick(now: number): void {
     const solo = session.mode === 'solo';
     const victory = world.victory;
     // Bones.leave: a hero fallen alone in an ordinary run leaves something for the next.
-    if (!victory && solo && !dailyRun && !session.checked) store(BONES_KEY, JSON.stringify(leaveBones(me, Math.floor(Math.random() * 4), Math.random())));
+    if (!victory && solo && !dailyRun && !session.checked) store(BONES_KEY, JSON.stringify(leaveBones(me, Math.floor(Math.random() * BONES_ROLLS), Math.random())));
     if (victory) {
       audio.play('levelup');
       haptic('success');

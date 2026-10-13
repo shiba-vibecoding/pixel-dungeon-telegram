@@ -4,7 +4,9 @@ import {
   type MobKind, type MobState, mobStats, T, WIDTH, type World,
 } from '../src/index';
 import { dealMob } from '../src/spawner';
-import { baseLootChance } from '../src/mobs';
+import { baseLootChance, createLoot, lootChanceMultiplier } from '../src/mobs';
+import { exoticChanceMultiplier, respawnCooldown, TIME_TO_RESPAWN } from '../src/spawner';
+import { Rng } from '../src/rng';
 import { meleeDamageFactor, damageTakenFactor, evasionAndAccuracyFactor } from '../src/champions';
 import { pacify } from './helpers';
 
@@ -370,5 +372,64 @@ describe('ChampionEnemy (hostile champions)', () => {
     rat.champion = 'giant';
     const effects = run(world, 3);
     expect(effects.some((e) => e.type === 'attack' && e.attacker === rat.id)).toBe(true);
+  });
+});
+
+describe("with the other streams' things", () => {
+  it('a DM-201 lobs corrosive gas; a fetid rat struck lets out stench it breathes unharmed', () => {
+    const world = openGround(13);
+    const dm = addMob(world, 'dm201', CENTRE + 3);
+    dm.threatened = true;
+    run(world, 2);
+    expect((floorAt(world, 13).gas?.corrosive ?? []).length).toBeGreaterThan(0);
+    expect(floorAt(world, 13).gasStrength?.corrosive).toBe(8);
+
+    const sewer = openGround(3);
+    const rat = addMob(sewer, 'fetidRat', CENTRE + 1);
+    rat.hp = rat.ht = 1000;
+    const hero = heroById(sewer, 'p')!;
+    hero.attackSkill = 1000;
+    for (let i = 0; i < 5 && (floorAt(sewer, 3).gas?.stench ?? []).length === 0; i++) act(sewer, 'p', { type: 'attack', target: rat.id });
+    expect((floorAt(sewer, 3).gas?.stench ?? []).length).toBeGreaterThan(0);
+    run(sewer, 2);
+    expect(rat.paralysed ?? 0).toBe(0);
+  });
+
+  it("monsters go for the heroes' allies in sight, and allies for the monsters", () => {
+    const world = openGround(4);
+    const hero = heroById(world, 'p')!;
+    hero.pos = CENTRE - 6 * WIDTH + 6;
+    const guardian = addMob(world, 'gnoll', CENTRE + 2, 'wandering');
+    Object.assign(guardian, { ally: true, corrupted: true, hp: 500, ht: 500 });
+    const gnoll = addMob(world, 'gnoll', CENTRE - 1, 'wandering');
+    gnoll.hp = gnoll.ht = 500;
+    const effects = run(world, 20);
+    expect(effects.some((e) => e.type === 'attack' && e.attacker === gnoll.id && e.target === guardian.id)).toBe(true);
+    expect(effects.some((e) => e.type === 'attack' && e.attacker === guardian.id && e.target === gnoll.id)).toBe(true);
+  });
+
+  it('the trinkets: a rat skull makes rarities likelier, exotic crystals exotic loot, the sundial slower spawns by day', () => {
+    const world = openGround(16);
+    const hero = heroById(world, 'p')!;
+    expect(exoticChanceMultiplier(world)).toBe(1);
+    hero.items.push(createItem('trinket.ratSkull'));
+    expect(exoticChanceMultiplier(world)).toBe(2);
+    hero.items.push(createItem('trinket.exoticCrystals', 1, 3));
+    const ctx = { world, depth: 16, level: levelAt(world, 16), floor: floorAt(world, 16), rng: Rng.seeded(5), effects: [] };
+    const kinds = new Set(Array.from({ length: 40 }, () => createLoot(ctx, createMob('#e', 'elemental', CENTRE, 'hunting', 0))!.kind));
+    expect(kinds.has('potion.liquidFlame')).toBe(true);
+    expect([...kinds].some((k) => k !== 'potion.liquidFlame')).toBe(true);
+    const level = levelAt(world, 16);
+    expect(respawnCooldown(world, level, 3)).toBe(TIME_TO_RESPAWN);
+    hero.items.push(createItem('trinket.sundial'));
+    expect(respawnCooldown(world, level, 3)).toBeGreaterThan(TIME_TO_RESPAWN);
+  });
+
+  it('a ring of wealth makes loot likelier', () => {
+    const world = openGround(2);
+    const hero = heroById(world, 'p')!;
+    expect(lootChanceMultiplier(world, hero)).toBe(1);
+    hero.ring = { ...createItem('ring.wealth'), level: 3 };
+    expect(lootChanceMultiplier(world, hero)).toBeGreaterThan(1.5);
   });
 });

@@ -450,7 +450,7 @@ function paintStorage(level: LevelBuilder, room: Room): void {
  * ShopPainter: the wares laid out along the walls, starting opposite the
  * door, and the shopkeeper among them. Depth 6 sells a quarterstaff or a
  * spear and leather armour, depth 11 a sword or a mace and mail armour;
- * both potions, scrolls and food, a weightstone and a bag.
+ * both potions, scrolls and food, a stone of augmentation and a bag.
  */
 function paintShop(level: LevelBuilder, room: Room): void {
   const { rng } = level;
@@ -472,20 +472,21 @@ function paintShop(level: LevelBuilder, room: Room): void {
     return cell(room.left + 1, room.bottom - 1 - (p - (w * 2 + h)));
   };
 
-  // Each shop's weapon and armour (ShopPainter.range): depths 6, 11 and 16.
-  const pick = <K>(a: K, b: K): K => (rng.int(2) === 0 ? a : b);
-  // The last one, the imp's on depth 21 (LastShopLevel), has a single piece of the best gear and torches for the dark halls.
-  const gear: ItemKind[] =
-    level.depth < 11 ? [pick('weapon.quarterstaff', 'weapon.spear'), 'armor.leather']
-    : level.depth < 16 ? [pick('weapon.sword', 'weapon.mace'), 'armor.mail']
-    : level.depth < 21 ? [pick('weapon.longsword', 'weapon.battleAxe'), 'armor.scale']
-    : [rng.oneOf(['weapon.glaive', 'weapon.warHammer', 'armor.plate'] as ItemKind[]), 'torch', 'torch'];
-  if (level.depth < 21) gear.push('weightstone');
+  // ShopRoom.generateItems, as to gear: a melee weapon and a set of thrown weapons of the chapter's next tier
+  // (plain, +0, known), its armour, two tipped darts and a stone of augmentation; the last shop (the imp's on depth
+  // 21, as ShopRoom's depth 20) tier 5, plate armour and three torches for the dark halls.
+  const tier = level.depth < 11 ? 2 : level.depth < 16 ? 3 : level.depth < 21 ? 4 : 5;
+  const armour: ItemKind = (['armor.leather', 'armor.mail', 'armor.scale', 'armor.plate'] as const)[tier - 2]!;
+  const gear: ItemSpec[] = [
+    { roll: 'shopWeapon', tier }, { roll: 'shopMissile', tier }, { roll: 'kind', kind: armour }, { roll: 'tippedDarts' },
+    { roll: 'kind', kind: 'stone.augmentation' },
+  ];
+  if (level.depth >= 21) gear.push({ roll: 'kind', kind: 'torch' }, { roll: 'kind', kind: 'torch' }, { roll: 'kind', kind: 'torch' });
   // A bag for each of the first three shops: seeds, then scrolls, then wands.
   const bag: ItemKind | undefined = level.depth < 11 ? 'bag.seeds' : level.depth < 16 ? 'bag.scrolls' : level.depth < 21 ? 'bag.wands' : undefined;
-  if (bag) gear.push(bag);
+  if (bag) gear.push({ roll: 'kind', kind: bag });
   const wares: ItemSpec[] = [
-    ...gear.map((kind): ItemSpec => ({ roll: 'kind', kind })),
+    ...gear,
     { roll: 'kind', kind: 'potion.healing' },
     { roll: 'category', categories: ['potion'], tries: 1 },
     { roll: 'category', categories: ['potion'], tries: 1 },
@@ -499,6 +500,15 @@ function paintShop(level: LevelBuilder, room: Room): void {
     // Shops also keep an ankh, for those who fear the end.
     { roll: 'kind', kind: 'ankh' },
   ];
+  // ShopRoom.generateItems: and now and then something rare (the last shop, LastShopLevel's, keeps to its own), where
+  // the room has the space for it and the shopkeeper.
+  if (level.depth < 21 && wares.length + 2 <= (room.width() - 2) * (room.height() - 2)) wares.push({ roll: 'rare' });
+  // ShopRoom sizes itself by its stock; a room here may be too small for all of it, and lets the lesser wares go
+  // first (seam: the levels stream's ShopRoom).
+  while (wares.length > (room.width() - 1) * (room.height() - 1) - 1) {
+    const lesser = wares.map((ware, i) => (ware.roll === 'category' || (ware.roll === 'kind' && ware.kind === 'food.overpriced') ? i : -1)).filter((i) => i >= 0);
+    wares.splice(lesser.length > 0 ? lesser[lesser.length - 1]! : wares.length - 1, 1);
+  }
   rng.shuffle(wares);
   const door = entranceOf(room);
   let p = toRim(door.x, door.y) + Math.trunc((perimeter - wares.length) / 2);
@@ -523,8 +533,9 @@ function paintShop(level: LevelBuilder, room: Room): void {
 }
 
 /**
- * LaboratoryPainter: an alchemy pot in the far corner, a few potions about,
- * and a locked door whose key lies somewhere on the level.
+ * LaboratoryRoom (Shattered): an alchemy pot in the far corner, five energy crystals and a prize or two (a
+ * potion or a runestone) about, and a locked door whose key lies somewhere on the level. (Its alchemy guide pages
+ * and the catalyst or strength it may draw from the level's own finds are the levels stream's to bring.)
  */
 function paintLaboratory(level: LevelBuilder, room: Room): void {
   const { rng } = level;
@@ -538,13 +549,18 @@ function paintLaboratory(level: LevelBuilder, room: Room): void {
     : door.y === room.top ? { x: side ? room.left + 1 : room.right - 1, y: room.bottom - 1 }
     : { x: side ? room.left + 1 : room.right - 1, y: room.top + 1 };
   level.setXY(pot.x, pot.y, T.ALCHEMY);
-  const n = rng.intRange(2, 3);
-  for (let i = 0; i < n; i++) {
+  const free = (): number => {
     let pos: number;
     do {
       pos = room.random(rng);
     } while (level.map[pos] !== T.EMPTY_SP || level.items.some((spawn) => spawn.pos === pos));
-    level.dropItem(pos, HeapType.HEAP, { roll: 'category', categories: ['potion'], tries: 1 });
+    return pos;
+  };
+  level.dropItem(free(), HeapType.HEAP, { roll: 'kind', kind: 'energy', qty: 5 });
+  const n = rng.normalIntRange(1, 2);
+  for (let i = 0; i < n; i++) {
+    // LaboratoryRoom.prize: Generator.random(Random.oneOf(POTION, STONE)).
+    level.dropItem(free(), HeapType.HEAP, { roll: 'category', categories: [rng.int(2) === 0 ? 'potion' : 'stone'], tries: 1 });
   }
   lockWithKey(level, room);
 }

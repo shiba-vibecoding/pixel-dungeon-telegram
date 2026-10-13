@@ -11,7 +11,7 @@ import { canAttackWithExtraReach, stepsAround } from './champions';
 import { attack, defenseOf, hurt } from './combat';
 import { type Char, charAt, type Ctx, enterCell, heroesOn, heroView, isHero, isPassable, isWater, landItem, leaveCell } from './floor';
 import { castShadow, terrainBlocksSight } from './fov';
-import { seedGas, seedWeb } from './gas';
+import { seedCorrosive, seedGas, seedWeb } from './gas';
 import { createItem, type Item, itemDef, ItemGenerator, randomEnchantment, randomGlyph } from './items';
 import { fits, isOpenSpace, mimicPrize } from './mobs';
 import type { Rng } from './rng';
@@ -19,6 +19,10 @@ import type { World } from './world';
 import { exoticChanceMultiplier } from './spawner';
 import { distanceMap, getStep, pathLength, reached } from './pathfinder';
 import { hasProp } from './props';
+import { teleportChar } from './cursed';
+import { randomArmor, randomWeapon } from './gear';
+import { weaponRch } from './weapons';
+import { shieldUp } from './status';
 import { burst } from './traps';
 import { looseItems } from './bags';
 import { isBossDepth } from './level/builder';
@@ -146,7 +150,12 @@ export function canAttackSpecial(ctx: Ctx, mob: Mob, enemy: Char): boolean | und
     // GnollExile.canAttack: its spear reaches two steps, around whoever stands in the way.
     case 'gnollExile':
       return near || (distance(mob.pos, enemy.pos) <= 2 && stepsAround(ctx, enemy.pos, mob.pos, 2) <= 2);
-    // Statue.canAttack: a reaching weapon reaches. SEAM(gear): Weapon.canReach (whips, spears, glaives).
+    // Statue.canAttack: a reaching weapon reaches (Weapon.canReach: spears, glaives, whips), around nobody in the way.
+    case 'statue': case 'armoredStatue': {
+      const reach = mob.item ? weaponRch(mob.item.kind) : 1;
+      if (near || reach <= 1) return undefined;
+      return distance(mob.pos, enemy.pos) <= reach && bolt(ctx, mob.pos, enemy.pos, PROJECTILE).collisionPos === enemy.pos;
+    }
     default:
       return undefined;
   }
@@ -177,7 +186,7 @@ export function attackSpecial(ctx: Ctx, mob: Mob, enemy: Char): boolean {
           if (kind === 'shamanRed') weaken(enemy);
           else if (kind === 'shamanBlue') makeVulnerable(enemy);
           else hex(enemy);
-          if (isHero(enemy)) ctx.effects.push({ type: 'debuffed', hero: enemy.id, by: kind === 'shamanRed' ? 'weakness' : kind === 'shamanBlue' ? 'vulnerable' : 'hex' });
+          if (isHero(enemy)) ctx.effects.push({ type: 'afflicted', hero: enemy.id, by: kind === 'shamanRed' ? 'weakness' : kind === 'shamanBlue' ? 'vulnerable' : 'hex' });
         }
         boltHits(ctx, mob, enemy, ctx.rng.normalIntRange(6, 15));
       } else {
@@ -193,7 +202,7 @@ export function attackSpecial(ctx: Ctx, mob: Mob, enemy: Char): boolean {
       if (magicHit(ctx, mob, enemy)) {
         if (isHero(enemy) && ctx.rng.int(2) === 0) {
           degrade(enemy);
-          ctx.effects.push({ type: 'debuffed', hero: enemy.id, by: 'degrade' });
+          ctx.effects.push({ type: 'afflicted', hero: enemy.id, by: 'degrade' });
         }
         boltHits(ctx, mob, enemy, ctx.rng.normalIntRange(12, 18));
       } else {
@@ -253,7 +262,7 @@ function rangedProc(ctx: Ctx, mob: Mob, enemy: Char): void {
       break;
     case 'shockElemental':
       blind(enemy, 5);
-      if (isHero(enemy)) ctx.effects.push({ type: 'debuffed', hero: enemy.id, by: 'blindness' });
+      if (isHero(enemy)) ctx.effects.push({ type: 'afflicted', hero: enemy.id, by: 'blindness' });
       break;
     case 'chaosElemental':
       cursedEffect(ctx, mob, enemy);
@@ -263,18 +272,15 @@ function rangedProc(ctx: Ctx, mob: Mob, enemy: Char): void {
 
 /**
  * CursedWand.cursedZap / randomValidEffect, a chaos elemental's wild magic at its target. SEAM(wands): the cursed
- * wand's effects (cursed.ts); until they are in, one of four of the simplest — flames, frost, toxic gas, or the
- * target sent somewhere else on the level.
+ * wand's effects (cursed.ts cursedZap) are cast by a hero there; for a monster, four of the commonest stand in —
+ * flames, frost (Freezing), toxic gas, or the target sent elsewhere (ScrollOfTeleportation.teleportChar).
  */
-export function cursedEffect(ctx: Ctx, mob: Mob, target: Char): void {
+export function cursedEffect(ctx: Ctx, _mob: Mob, target: Char): void {
   switch (ctx.rng.int(4)) {
     case 0: burst(ctx, target.pos, 'fire', 1, true); break;
     case 1: freezeCell(ctx, target.pos); break;
     case 2: seedGas(ctx, target.pos, 'toxic', 200); break;
-    default: {
-      const to = randomDestination(ctx, mob);
-      if (to !== -1 && !charAt(ctx.world, ctx.depth, to)) appear(ctx, target, to);
-    }
+    default: teleportChar(ctx, target);
   }
 }
 
@@ -381,7 +387,8 @@ export function mobAttackProc(ctx: Ctx, mob: Mob, enemy: Char, damage: number): 
         const shield = mob.hp - mob.ht + 5 + damage;
         if (shield > 0) {
           mob.hp = mob.ht;
-          mob.barrier = Math.max(mob.barrier ?? 0, shield);
+          // Barrier.setShield: shielding raised to this much (status.ts).
+          shieldUp(mob, shield);
         } else {
           mob.hp += 5 + damage;
         }
@@ -421,9 +428,9 @@ export function mobDefenseProc(ctx: Ctx, mob: Mob, enemy: Char, damage: number):
     case 'thief': case 'bandit':
       if (mob.state === 'fleeing') landItem(ctx, mob.pos, createItem('gold', 1));
       break;
-    // FetidRat.defenseProc: StenchGas, which paralyses (the paralytic gas stands in for it).
+    // FetidRat.defenseProc: StenchGas, which paralyses for a moment.
     case 'fetidRat':
-      seedGas(ctx, mob.pos, 'paralytic', 20);
+      seedGas(ctx, mob.pos, 'stench', 20);
       break;
     case 'acidic':
       if (adjacent(mob.pos, enemy.pos)) oozeOn(ctx, enemy);
@@ -1024,21 +1031,20 @@ export function spawnWraith(ctx: Ctx, at: number, kind?: 'wraith' | 'tormentedSp
 
 /**
  * TormentedSpirit.cleanse: its curse lifted, the spirit thanks its saviour and leaves a weapon (enchanted) or an
- * armour (inscribed), uncursed, half the time a level better if it was +0 — and is gone, teaching nothing.
- * SEAM(gear): Generator.randomWeapon / randomArmor and Shattered's enchantments and glyphs.
+ * armour (inscribed) — Generator.randomWeapon / randomArmor — uncursed, half the time a level better if it was +0,
+ * and is gone, teaching nothing.
  */
 export function cleanseSpirit(ctx: Ctx, spirit: Mob): void {
-  const generator = new ItemGenerator(ctx.rng, ctx.depth);
   let prize: Item;
   if (ctx.rng.int(2) === 0) {
-    do prize = generator.of('weapon');
-    while (itemDef(prize.kind).category !== 'weapon');
+    prize = randomWeapon(ctx.rng, ctx.depth);
     prize.enchant = randomEnchantment(ctx.rng);
   } else {
-    prize = generator.of('armor');
+    prize = randomArmor(ctx.rng, ctx.depth);
     prize.glyph = randomGlyph(ctx.rng);
   }
   prize.cursed = false;
+  delete prize.curseUnknown;
   if (prize.level <= 0) prize.level = 0;
   if (prize.level === 0 && ctx.rng.int(2) === 0) prize.level = 1;
   ctx.effects.push({ type: 'mobSays', depth: ctx.depth, mob: spirit.id, line: 'thankYou' });
@@ -1141,7 +1147,7 @@ export function golemWander(ctx: Ctx, mob: Mob): boolean {
 
 /**
  * DM201.Hunting: threatened (struck from afar, or its enemy not beside it), it lobs a corrosive grenade at its
- * enemy in sight; it never moves. SEAM(wands): CorrosiveGas (strength 8); toxic gas until then.
+ * enemy in sight (CorrosiveGas, strength 8); it never moves.
  */
 function dm201Hunt(ctx: Ctx, mob: Mob, enemy: Char | undefined, enemyInFov: boolean): boolean {
   if (!mob.threatened || !enemy || !enemyInFov) return false;
@@ -1150,8 +1156,8 @@ function dm201Hunt(ctx: Ctx, mob: Mob, enemy: Char | undefined, enemyInFov: bool
   spend(mob, TICK);
   zapFx(ctx, mob, enemy.pos, 'corrosion');
   ctx.effects.push({ type: 'mobSays', depth: ctx.depth, mob: mob.id, line: 'vent' });
-  seedGas(ctx, enemy.pos, 'toxic', 15);
-  for (const n of NEIGHBOURS8) if (!solid(ctx, enemy.pos + n)) seedGas(ctx, enemy.pos + n, 'toxic', 5);
+  seedCorrosive(ctx, enemy.pos, 15, 8);
+  for (const n of NEIGHBOURS8) if (!solid(ctx, enemy.pos + n)) seedCorrosive(ctx, enemy.pos + n, 5, 8);
   return true;
 }
 

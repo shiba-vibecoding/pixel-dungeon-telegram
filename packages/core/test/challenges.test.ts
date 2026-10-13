@@ -198,18 +198,25 @@ describe('what each class knows from the start (HeroClass.initHero)', () => {
 });
 
 describe('Generator and Bestiary odds, as in the original', () => {
-  it('wands of amok, reach and flock come up 10, 6 and 10 times in 113', () => {
-    const generator = new ItemGenerator(Rng.seeded(9), 5);
+  it("wands come from a deck of three of each of Shattered's thirteen, drawn the same whenever they turn up", () => {
+    const run = createWorld(9).run;
+    const generator = new ItemGenerator(Rng.seeded(9), 5, { run });
     const counts: Record<string, number> = {};
-    const n = 30000;
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < 39; i++) {
       const kind = generator.of('wand').kind;
       counts[kind] = (counts[kind] ?? 0) + 1;
     }
-    expect(counts['wand.magicMissile']).toBeUndefined();
-    for (const [kind, weight] of [['wand.amok', 10], ['wand.reach', 6], ['wand.flock', 10], ['wand.firebolt', 15]] as const) {
-      expect(Math.abs(counts[kind]! / n - weight / 113)).toBeLessThan(0.01);
-    }
+    expect(Object.keys(counts)).toHaveLength(13);
+    expect(Object.values(counts).every((n) => n === 3)).toBe(true);
+    // A new deck once one is spent; the draws depend on the run alone.
+    const again = new ItemGenerator(Rng.seeded(1234), 7, { run: createWorld(9).run });
+    const first = new ItemGenerator(Rng.seeded(9), 5, { run: createWorld(9).run });
+    for (let i = 0; i < 20; i++) expect(again.of('wand').kind).toBe(first.of('wand').kind);
+    // Without a run (Generator.randomUsingDefaults), any kind as likely as another.
+    const loose = new ItemGenerator(Rng.seeded(3), 5);
+    const seen = new Set<string>();
+    for (let i = 0; i < 3000; i++) seen.add(loose.of('wand').kind);
+    expect(seen.size).toBe(13);
   });
 
   it("MobSpawner: each depth's rotation, now and then a visitor from the region below, one in fifty of a kind its rare one", () => {

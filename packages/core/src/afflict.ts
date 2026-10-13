@@ -1,17 +1,19 @@
-import { type Char, type Ctx, isHero } from './floor';
+import { isAlive } from './actors';
+import { type Char, charAt, type Ctx, isHero, isWater } from './floor';
+import { freezeHeaps } from './cooking';
+import { chill, CHILL_TURNS, freeze, FROST_TURNS, ignite as igniteChar, ooze, OOZE_TURNS } from './status';
 import { championImmune } from './champions';
-import { hasProp } from './props';
-import { burst, immuneTo } from './traps';
+import { hasProp, isImmune, resistance } from './props';
+import { immuneTo } from './traps';
 import type { Rng } from './rng';
 
 /*
  * What Shattered's monsters do to whom they strike (actors/buffs, as the
  * monsters use them): Bleeding, Burning, Freezing's chill, Ooze, Weakness,
  * Vulnerable, Hex, Degrade, Cripple, Blindness, Poison, Charm, Roots,
- * Adrenaline. Kept as turns left on the creature; heroes count theirs down
- * in world.ts spend, monsters in traps.ts mobConditions.
- * SEAM(wands): Chill, Frost and Ooze on a monster are the wands stream's
- * (status.ts); until they are in, the nearest Pixel Dungeon has stands in.
+ * Adrenaline. Kept as turns left on the creature; Chill, Frost, Ooze and the
+ * curses wear off as status.ts has them, the rest in world.ts spend (a hero)
+ * and traps.ts mobConditions (a monster).
  */
 
 /** Weakness.DURATION, Vulnerable.DURATION, Hex.DURATION, Degrade.DURATION, Cripple.DURATION, Blindness.DURATION, Charm.DURATION, Roots.DURATION. */
@@ -49,25 +51,36 @@ export function bleedTick(rng: Rng, char: Char): number {
 
 /** Burning.reignite: alight for the whole of the time (Burning.DURATION) again, unless it cannot burn (water puts it out). */
 export function ignite(char: Char, turns = BURNING_TURNS): void {
-  if (immuneTo(char, 'burning') || championImmune(char, 'burning') || hasProp(char, 'fiery')) return;
+  if (immuneTo(char, 'burning') || championImmune(char, 'burning') || isImmune(char, 'burning')) return;
+  igniteChar(char);
   char.burning = Math.max(char.burning ?? 0, turns);
 }
 
 /**
- * Freezing.freeze on a cell: a chill there, longer in water, until the chill is full and freezes it solid.
- * SEAM(wands): Chill and Frost (status.ts); until then a frost burst on that one cell stands in.
+ * Freezing.freeze on a cell: whoever is there is chilled (longer in water), up to Chill.DURATION, and once full of
+ * chill frozen solid; the frozen stay frozen a little longer; what lies there freezes.
  */
 export function freezeCell(ctx: Ctx, cell: number): void {
-  burst(ctx, cell, 'frost', 0, true);
+  const ch = charAt(ctx.world, ctx.depth, cell);
+  if (ch && isAlive(ch) && !isImmune(ch, 'frost')) {
+    if ((ch.frozen ?? 0) > 0) {
+      ch.frozen = ch.frozen! + 2;
+    } else {
+      const before = ch.chill ?? 0;
+      let add = isWater(ctx.level.map[cell]!) ? 5 : 3;
+      if (before > 0) add = Math.min(add, (CHILL_TURNS - before) / Math.max(resistance(ch, 'chill'), 0.01));
+      if (add > 0) chill(ch, add);
+      if (before > 0 && (ch.chill ?? 0) >= CHILL_TURNS) freeze(ctx, ch, FROST_TURNS);
+    }
+  }
+  freezeHeaps(ctx, cell, 0);
 }
 
-/** Ooze.set(Ooze.DURATION): caustic ooze that eats away until washed off in water. SEAM(wands): Ooze on a monster. */
+/** Ooze.set(Ooze.DURATION): caustic ooze that eats away until washed off in water (status.ts; not on the acidic). */
 export function oozeOn(ctx: Ctx, char: Char): void {
   if (hasProp(char, 'acidic')) return;
-  if (isHero(char)) {
-    if (char.ooze < 0) ctx.effects.push({ type: 'oozed', hero: char.id });
-    char.ooze = 0;
-  }
+  if (isHero(char) && char.ooze < 0) ctx.effects.push({ type: 'oozed', hero: char.id });
+  ooze(char, OOZE_TURNS);
 }
 
 /** Buff.prolong(Weakness / Vulnerable / Hex / Cripple / Blindness, DURATION): at least that long. */
@@ -107,9 +120,3 @@ export function degrade(char: Char, turns = DEGRADE_TURNS): void {
  */
 export const degradedLevel = (level: number): number => (level <= 0 ? level : Math.round(Math.sqrt(2 * (level - 1)) + 1));
 
-/** Hex: a fifth worse; Bless: a quarter better (a hero's, Hero.blessed); champions as their kind (Char.hit). */
-export function rollFactor(char: Char): number {
-  let factor = 1;
-  if ((char.hexed ?? 0) > 0) factor *= 0.8;
-  return factor;
-}

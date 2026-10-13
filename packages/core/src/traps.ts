@@ -1,4 +1,5 @@
 import { beckon, createMob, type Hero, heroArmor, isAlive, type Mob, type MobKind, MOBS, mobStats } from './actors';
+import { mobGearTick } from './throwing';
 import { dealMob } from './spawner';
 import { bleedTick } from './afflict';
 import { hasProp } from './props';
@@ -10,6 +11,8 @@ import { clearGas, seedGas } from './gas';
 import { burnHeaps, chillPack, freezeHeaps } from './cooking';
 import { scaleMob } from './party';
 import { stepOnPlant } from './plants';
+import { tickMob } from './buffs';
+import { flies, mobStatusTurn } from './status';
 
 /*
  * Traps (levels/traps): set off by stepping on them, visible or hidden; then
@@ -45,10 +48,22 @@ export type Burst = 'toxic' | 'paralytic' | 'fire' | 'frost' | 'purity';
  * IMMUNITIES: Yog-Dzewa breathes no gas and does not burn, nor does its
  * burning fist; piranhas in their pool fear neither gas, fire nor frost.
  */
-export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost'): boolean {
-  if (isHero(char)) return harm === 'gas' && (char.gasImmune ?? 0) > 0;
+export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost' | 'toxic' | 'shock'): boolean {
+  if (isHero(char)) {
+    const b = char.buffs;
+    // BlobImmunity (purity), and the imbues: fire (FireImbue), frost and chill (FrostImbue), toxic gas (ToxicImbue);
+    // armour of brimstone keeps fire off its wearer (Char.isImmune: Burning).
+    if (harm === 'gas') return (char.gasImmune ?? 0) > 0;
+    if (harm === 'burning') return (b?.fireImbue ?? 0) > 0 || char.armor.glyph === 'brimstone';
+    if (harm === 'frost') return (b?.frostImbue ?? 0) > 0;
+    if (harm === 'toxic') return (b?.toxicImbue ?? 0) > 0;
+    return false;
+  }
   // Piranha: the blobs but electricity and freezing, and burning.
-  if (char.kind === 'piranha' || char.kind === 'phantomPiranha') return harm !== 'frost';
+  if (char.kind === 'piranha' || char.kind === 'phantomPiranha') return harm !== 'frost' && harm !== 'shock';
+  if (harm === 'shock') return false;
+  // Char.Property.INORGANIC: no toxic gas.
+  if (harm === 'toxic') return hasProp(char, 'inorganic');
   // Char.Property: the fiery do not burn, the icy do not freeze (FIERY, ICY immunities); a blazing champion does not burn.
   if (harm === 'burning' && (hasProp(char, 'fiery') || char.champion === 'blazing')) return true;
   if (harm === 'frost' && hasProp(char, 'icy')) return true;
@@ -129,7 +144,13 @@ export function triggerTrap(ctx: Ctx, victim: Char | null, pos: number): void {
   // A monster only ever sets off a trap the party could see already: no need to map it for them.
   if (!mob) exploredCells(ctx.world, depth)[pos] = true;
   ctx.effects.push({ type: 'trap', depth, pos, kind, hero: victim && isHero(victim) ? victim.id : '', ...(mob ? { mob: mob.id } : {}) });
+  springTrap(ctx, kind, victim, pos);
+}
 
+/** Trap.activate: what a trap of a kind does at a cell, to whoever is there (a reclaimed trap set off by a spell too). */
+export function springTrap(ctx: Ctx, kind: TrapKind, victim: Char | null, pos: number): void {
+  const { level, rng, depth } = ctx;
+  const mob = victim && !isHero(victim) ? victim : null;
   switch (kind) {
     case 'poison':
       if (victim && isHero(victim)) victim.poison = Math.max(victim.poison, 4 + Math.trunc(depth / 2));
@@ -169,23 +190,28 @@ export function triggerTrap(ctx: Ctx, victim: Char | null, pos: number): void {
       hurt(ctx, victim, damage, 'gripping');
       break;
     }
-    case 'summoning': {
-      let count = 1;
-      if (rng.int(2) === 0) {
-        count++;
-        if (rng.int(2) === 0) count++;
-      }
-      const cells = NEIGHBOURS8.map((n) => pos + n).filter((c) => isPassable(level, c) && !charAt(ctx.world, depth, c));
-      for (let i = 0; i < count && cells.length > 0; i++) {
-        const cell = cells.splice(rng.index(cells.length), 1)[0]!;
-        // SummoningTrap: the level's next monsters (Level.createMob), wandering towards the trap.
-        const summoned: Mob = dealMob(ctx.world, level, rng, `#${++ctx.world.nextId}`, cell, ctx.floor.now + 1);
-        if (summoned.state !== 'passive') summoned.state = 'wandering';
-        summoned.target = pos;
-        ctx.floor.mobs.push(summoned);
-      }
+    case 'summoning':
+      summonAround(ctx, pos);
       break;
-    }
+  }
+}
+
+/** SummoningTrap.activate: one to three monsters of the depth on free cells around, on their way to it. */
+export function summonAround(ctx: Ctx, pos: number): void {
+  const { level, rng, depth } = ctx;
+  let count = 1;
+  if (rng.int(2) === 0) {
+    count++;
+    if (rng.int(2) === 0) count++;
+  }
+  const cells = NEIGHBOURS8.map((n) => pos + n).filter((c) => isPassable(level, c) && !charAt(ctx.world, depth, c));
+  for (let i = 0; i < count && cells.length > 0; i++) {
+    const cell = cells.splice(rng.index(cells.length), 1)[0]!;
+    // SummoningTrap: the level's next monsters (Level.createMob), wandering towards the trap.
+    const summoned: Mob = dealMob(ctx.world, level, rng, `#${++ctx.world.nextId}`, cell, ctx.floor.now + 1);
+    if (summoned.state !== 'passive') summoned.state = 'wandering';
+    summoned.target = pos;
+    ctx.floor.mobs.push(summoned);
   }
 }
 
@@ -201,7 +227,7 @@ const POISON_RESISTANT: ReadonlySet<MobKind> = new Set<MobKind>(['spinner', 'sco
 export function mobPress(ctx: Ctx, mob: Mob): void {
   const cell = mob.pos;
   const terrain = ctx.level.map[cell]!;
-  if (hasFlag(terrain, F.PIT) && !MOBS[mob.kind].flying) {
+  if (hasFlag(terrain, F.PIT) && !flies(mob)) {
     mobFall(ctx, mob);
     return;
   }
@@ -229,6 +255,12 @@ export function mobFall(ctx: Ctx, mob: Mob): void {
 
 /** Hurt a monster's turn by the conditions traps leave behind; true if it loses the turn. */
 export function mobConditions(ctx: Ctx, mob: Mob): boolean {
+  // What gear left on it: adrenaline, a lucky blow's tracker (throwing.ts).
+  if (mobGearTick(ctx, mob)) return true;
+  // Shattered's conditions first: corrosion, ooze, corruption, frost and the rest (status.ts); then alchemy's
+  // buffs (buffs.ts): dread, aggression, a magical sleep...
+  if (mobStatusTurn(ctx, mob)) return true;
+  if (tickMob(ctx, mob)) return true;
   // IMMUNITIES: the fetid rat breathes its own paralytic cloud unharmed, and nothing holds the curse.
   if (mob.kind === 'fetidRat' || mob.kind === 'curse') mob.paralysed = 0;
   if (mob.kind === 'curse') mob.rooted = 0;
@@ -237,11 +269,7 @@ export function mobConditions(ctx: Ctx, mob: Mob): boolean {
   if ((mob.rooted ?? 0) > 0) mob.rooted!--;
   if ((mob.rage ?? 0) > 0) mob.rage!--;
   if ((mob.blind ?? 0) > 0) mob.blind!--;
-  if ((mob.weakened ?? 0) > 0) mob.weakened!--;
-  if ((mob.vulnerable ?? 0) > 0) mob.vulnerable!--;
-  if ((mob.hexed ?? 0) > 0) mob.hexed!--;
-  // Barrier.act: a succubus's shield fades, a point once a twentieth of it a turn (at most a point) has gathered.
-  if ((mob.barrier ?? 0) > 0 && --mob.barrier! <= 0) delete mob.barrier;
+  // (Weakness, Vulnerable, Hex and a Barrier's shield wear off in status.ts mobStatusTurn.)
   // Bleeding: it hurts every turn as much as it bleeds, and eases, until it stops (Bleeding.act).
   if ((mob.bleeding ?? 0) > 0) {
     const damage = bleedTick(ctx.rng, mob);

@@ -1,9 +1,24 @@
 import { effectiveLevel } from './wear';
-import { armorStats, type Item, type ItemKind, missileStats, type WeaponStats, weaponStats } from './items';
+import { createItem, type Item, itemDef, type ItemKind } from './items';
+import { armorDrMax, armorDrMin, armorEvasionBonus, armorStr } from './armor';
+import {
+  augmentDamage, augmentDelay, bowLevel, bowMax, bowMin, bowStr, crossbowDartMax, crossbowDartMin, gearLevel, jround, meleeMax, meleeMin,
+  meleeStr, surpriseShare, weaponAcc, weaponDefense, weaponDly, weaponRch, type WeaponStats, weaponStats,
+} from './weapons';
+import { isDart, missileMax, missileMin, missileStr, missileSurprise } from './missiles';
+import { type Buffs, buffSpeed } from './buffs';
+import { CLOVER, FERRET_TUFT, trinketLevel } from './trinkets';
 import { type HeroClass, startingKit } from './heroclass';
 import { isStarving } from './hero';
+import {
+  accuracyMultiplier, attackSpeedMultiplier, evasionMultiplier, forceArmedBonus, forceRange, mightStrength, sharpshootingBonus, speedMultiplier,
+} from './rings';
 import type { Rng } from './rng';
+import { adjacent } from './level/geometry';
+import { T } from './level/terrain';
 import type { Action, PlanStep } from './world';
+import type { Awareness, PendingScroll } from './artifacts';
+import type { WealthCounters } from './rings';
 
 /*
  * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
@@ -58,8 +73,13 @@ export interface Hero {
   /** The weapon in hand; none after a monk's disarming blow, until the hero takes one up again. */
   weapon: Item | null;
   armor: Item;
-  /** Rings worn, two at most. */
-  rings: Item[];
+  /**
+   * Belongings' artifact, misc and ring slots (KindofMisc): an artifact, a second artifact or ring,
+   * and a ring. Read them through heroRings and heroArtifacts.
+   */
+  artifact: Item | null;
+  misc: Item | null;
+  ring: Item | null;
   items: Item[];
   gold: number;
   /** Turns left of sensing every monster on the level / of being unseen. */
@@ -108,17 +128,53 @@ export interface Hero {
   levitating?: number;
   /** Turns left of breathing no gas (a potion of purity). */
   gasImmune?: number;
+  /* Shattered's wands (wands.ts, status.ts). */
+  /** Barrier (ShieldBuff): shielding that takes blows before health, and fades a little every turn. */
+  shield?: number;
+  shieldDecay?: number;
+  /** WandOfLivingEarth.RockArmor: earthen armour gathered from zaps, which takes half of every blow, and the wand level it is of. */
+  rockArmor?: { armor: number; level: number };
+  /** WandOfMagicMissile.MagicCharge: turns left in which the other wands zap as strong as the magic missile that charged them. */
+  magicCharge?: { level: number; turns: number; fresh?: boolean };
+  /** WandOfLightning.LightningCharge: turns left of arcs reaching a cell further (a battlemage's staff of lightning). */
+  lightningCharge?: number;
+  /** Recharging (ScrollOfRecharging): turns left of every wand charging faster. */
+  recharging?: number;
+  /** Chill: turns left of moving slower, the more the colder; Frost: turns left frozen solid (a cursed wand's doing). */
+  chill?: number;
+  frozen?: number;
+  /** Corrosion: turns left, and how hard it eats away now (it grows every turn). */
+  corrosion?: { left: number; damage: number };
+  /** Hex (missing and being hit more), Vulnerable (taking a third more), Invulnerability: turns left (Bless: below). */
+  hexed?: number;
+  vulnerable?: number;
+  invulnerable?: number;
+  /** HeroDisguise: turns left of looking like a hero of another class. */
+  disguise?: { heroClass: HeroClass; turns: number };
+  /** TimeStasis: turns left of being frozen in time, untouchable and still (a cursed wand's, or the timekeeper's hourglass's stasis, unseen too). */
+  stasis?: number;
+  /** CursedWand's lingering effects: a supernova building up, gravity gone wild, the ground about to give way. */
+  supernova?: { pos: number; turns: number; harmsAllies: boolean };
+  gravity?: { turns: number; positiveOnly: boolean; next?: number };
+  sinkhole?: { cells: number[]; turns: number; depth: number };
+  /** Sungrass.Health (a battlemage's staff of regrowth): health still to come back while standing there, and what has gathered. */
+  herbal?: { level: number; pos: number; partial: number };
+  /** The unstable spellbook's scroll the player has yet to settle: read as it is or empowered, and on what. */
+  pendingScroll?: PendingScroll;
+  /** Creatures and heaps the talisman of foresight shows for a while (CharAwareness, HeapAwareness). */
+  aware?: Awareness[];
+  /** The ring of wealth's counters (TriesToDropTracker, DropsToEquipTracker), once one has been worn. */
+  wealth?: WealthCounters;
   /** Hunger.level: 0 when fed, hungry from HUNGRY, starving at STARVING (it grows a point a turn). */
   hunger: number;
   /** Unused since Shattered's hunger (kept for the shape of older saves). */
   hungerTime: number;
+  /** Shattered's buffs from alchemy (buffs.ts): haste, shielding, healing over time, imbues and the like. */
+  buffs?: Buffs;
   /** Hunger.partialDamage: starvation's damage building up towards the next point. */
   starve?: number;
   /** Turns left of Bless (from experience at the level cap): a quarter more accurate and evasive. */
   blessed?: number;
-  /** Turns left of Vulnerable (a blue shaman's bolt: a third more harm, after the armour), Hex (a purple one's: a fifth worse at hitting and dodging). */
-  vulnerable?: number;
-  hexed?: number;
   /** Turns left of Degrade (a warlock's bolt): upgraded gear works as if less upgraded (Degrade.reduceLevel). */
   degraded?: number;
   /** LockedFloor.left: on a boss's sealed floor, the turns passive healing goes on (see hero.ts). */
@@ -130,6 +186,28 @@ export interface Hero {
   /** For the end of the run: monsters slain, and what dealt the killing blow. */
   kills: number;
   killedBy: string | null;
+  /** Thrown sets upgraded since some of them were thrown: the level a copy must have to be picked up (MissileWeapon.UpgradedSetTracker). */
+  upgradedSets?: Record<number, number>;
+  /** Heavy boomerangs on their way back (HeavyBoomerang.CircleBack). */
+  circling?: CircleBack[];
+  /** Turns left before a shuriken flies instantly again (Shuriken.ShurikenInstantTracker). */
+  shuriken?: number;
+  /** A blocking weapon's shield (Blocking.BlockBuff): how much it holds, and the turns it lasts. */
+  blocking?: { shield: number; left: number };
+  /** Damage a kinetic weapon kept from a blow that overkilled (Kinetic.ConservedDamage). */
+  kinetic?: number;
+  /** Turns left of a wayward weapon's poor aim (Wayward.WaywardBuff). */
+  wayward?: number;
+}
+
+/** HeavyBoomerang.CircleBack: a boomerang flying back to where it was thrown from, in `left` turns. */
+export interface CircleBack {
+  item: Item;
+  /** Where it fell, and where it returns to, on which depth. */
+  from: number;
+  to: number;
+  depth: number;
+  left: number;
 }
 
 export interface RunStats {
@@ -170,7 +248,9 @@ export function createHero(player: PlayerInfo, depth: number, pos: number, time:
     ooze: -1,
     weapon: kit.weapon,
     armor: kit.armor,
-    rings: kit.rings,
+    artifact: kit.artifact,
+    misc: null,
+    ring: null,
     items: kit.items,
     gold: 0,
     mindVision: 0,
@@ -202,111 +282,228 @@ export const STARTING_STR = 10;
 
 export const isAlive = (char: { hp: number }): boolean => char.hp > 0;
 
-/** The levels of every worn ring of a kind, added up (several buffs of a kind stack in the original). */
-export const ringBonus = (hero: Hero, kind: ItemKind): number =>
-  (hero.rings ?? []).reduce((sum, ring) => (ring.kind === kind ? sum + effectiveLevel(ring) : sum), 0);
+/* Belongings: the equipment slots of a hero */
 
-/** Hero.STR. (Shattered's Weakness takes nothing from strength: a weakened blow is two thirds as hard, combat.ts.) */
-export const heroStr = (hero: Hero): number => hero.str;
+/** The three slots of KindofMisc: an artifact, an artifact or a ring, a ring. */
+export type MiscSlot = 'artifact' | 'misc' | 'ring';
+export const MISC_SLOTS: readonly MiscSlot[] = ['artifact', 'misc', 'ring'];
+
+/** The rings a hero wears: in the ring slot, and one in the misc slot. */
+export const heroRings = (hero: Hero): Item[] =>
+  [hero.misc, hero.ring].filter((item): item is Item => item != null && itemDef(item.kind).category === 'ring');
+
+/** The artifacts a hero wears: in the artifact slot, and one in the misc slot. */
+export const heroArtifacts = (hero: Hero): Item[] =>
+  [hero.artifact, hero.misc].filter((item): item is Item => item != null && itemDef(item.kind).category === 'artifact');
+
+/** Everything a hero wears or holds in hand (Belongings' equipped items), in the order of its slots. */
+export const heroEquipped = (hero: Hero): Item[] =>
+  [hero.weapon, hero.armor, hero.artifact, hero.misc, hero.ring].filter((item): item is Item => item != null);
+
+/** Everything a hero has: what is worn, then the pack (Belongings.iterator). */
+export const heroBelongings = (hero: Hero): Item[] => [...heroEquipped(hero), ...hero.items];
+
+/** Ring.getBonus: what the worn rings of a kind add (rings.ts). */
+export { ringBonus } from './rings';
+
+/** Hero.STR: rings of might add to it (RingOfMight.strengthBonus). (Shattered's Weakness takes nothing from strength: a weakened blow is two thirds as hard, combat.ts.) */
+export const heroStr = (hero: Hero): number => hero.str + mightStrength(hero);
 
 /** Fury.LEVEL: below this share of health, a berserker flies into a fury. */
 export const FURY_LEVEL = 0.4;
 
-/** The numbers of the weapon in hand, or of bare fists (RingOfForce.damageRoll without a ring: 1 to STR-8). */
+/** The numbers of the weapon in hand, or of bare fists (RingOfForce.damageRoll: as a weapon of the strength's tier with a ring of force, else 1 to STR-8). */
 export function heroWeapon(hero: Hero): WeaponStats {
-  return hero.weapon ? weaponStats(hero.weapon) : { min: 1, max: Math.max(1, heroStr(hero) - 8), str: 0, accuracy: 1, delay: 1 };
+  if (hero.weapon) return weaponStats(hero.weapon);
+  const force = forceRange(hero, heroStr(hero));
+  return { min: force?.[0] ?? 1, max: force?.[1] ?? Math.max(1, heroStr(hero) - 8), str: 0, accuracy: 1, delay: 1, reach: 1 };
+}
+
+/** What a hero strikes with: the weapon in hand, or a thrown weapon (or the spirit bow, for its arrow) in flight. */
+export type Strike = Item | null;
+
+/** The strength a weapon wants: a melee weapon's, a thrown one's, the spirit bow's (at its bearer's level). */
+export function strikeStr(hero: Hero, weapon: Item): number {
+  const category = itemDef(weapon.kind).category;
+  if (category === 'bow') return bowStr(hero.lvl, weapon);
+  return category === 'missile' ? missileStr(weapon) : meleeStr(weapon);
+}
+
+/**
+ * Weapon.accuracyFactor (and MissileWeapon's): its accuracy, worse the heavier it is for the hero (1.5× a point of
+ * strength short); a wayward weapon aims at a fifth while its curse holds; thrown, half as accurate point-blank and
+ * half as accurate again from afar (adjacentAccFactor).
+ */
+function accuracyFactor(hero: Hero, weapon: Item, targetPos?: number): number {
+  const category = itemDef(weapon.kind).category;
+  let acc = category === 'weapon' ? weaponAcc(weapon.kind) : 1;
+  if ((hero.wayward ?? 0) > 0 && weapon.enchant === 'wayward') acc = f32(acc / 5);
+  const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
+  let factor = encumbrance > 0 ? f32(acc / 1.5 ** encumbrance) : acc;
+  if ((category === 'missile' || category === 'bow') && targetPos !== undefined) {
+    // Seam: the point blank talent (talents stream) adds a quarter a point.
+    factor = f32(factor * (adjacent(hero.pos, targetPos) ? 0.5 : 1.5));
+  }
+  return factor;
 }
 
 /** Char.hit with Bless: the blessed roll a quarter higher, attacking and defending alike. */
 const blessing = (hero: Hero): number => ((hero.blessed ?? 0) > 0 ? 1.25 : 1);
 
-/** Pixel Dungeon's ring of accuracy (1.4 a level), until rings are Shattered's (RingOfAccuracy.accuracyMultiplier). */
-const accuracyMultiplier = (hero: Hero): number => {
-  const bonus = ringBonus(hero, 'ring.accuracy');
-  return bonus === 0 ? 1 : f32(1.4 ** bonus);
-};
-
-/**
- * Hero.attackSkill: the hero's accuracy, times the rings' and the weapon's (Weapon.accuracyFactor:
- * its own, divided by 1.5 for every point of strength it wants more); at least 1.
- */
-export function heroAttackSkill(hero: Hero): number {
+/** Hero.attackSkill: with a weapon, times its accuracy factor; a ring of accuracy helps either way (RingOfAccuracy.accuracyMultiplier). */
+export function heroAttackSkill(hero: Hero, targetPos?: number, weapon: Strike = hero.weapon): number {
   const accuracy = f32(accuracyMultiplier(hero) * blessing(hero));
-  if (!hero.weapon) return Math.max(1, Math.round(f32(hero.attackSkill * accuracy)));
-  const weapon = heroWeapon(hero);
-  const encumbrance = weapon.str - heroStr(hero);
-  const factor = encumbrance > 0 ? f32(weapon.accuracy / 1.5 ** encumbrance) : f32(weapon.accuracy);
-  return Math.max(1, Math.round(f32(f32(hero.attackSkill * accuracy) * factor)));
+  if (!weapon) return Math.max(1, jround(f32(hero.attackSkill * accuracy)));
+  return Math.max(1, jround(f32(f32(hero.attackSkill * accuracy) * accuracyFactor(hero, weapon, targetPos))));
 }
 
 /**
- * Hero.defenseSkill: the hero's evasion, times the rings' (Pixel Dungeon's ring of evasion, 1.2 a
- * level, until rings are Shattered's), halved while paralysed, divided by 1.5 for every point of
- * strength the armour wants more (Armor.evasionFactor); at least 1. A freerunner on the move is
- * twice as hard to hit (Pixel Dungeon's subclass, until the talents stream).
+ * Hero.defenseSkill: a ring of evasion helps, paralysis halves it; then the armour (Armor.evasionFactor): 1.5× worse
+ * a point of strength short, and its augment's evasion added. Armour of stone is never dodged.
  */
 export function heroDefenseSkill(hero: Hero): number {
-  const bonus = ringBonus(hero, 'ring.evasion');
-  let evasion = f32(f32(hero.defenseSkill * (bonus === 0 ? 1 : f32(1.2 ** bonus))) * blessing(hero));
+  // RingOfEvasion.evasionMultiplier.
+  let evasion = f32(f32(hero.defenseSkill * evasionMultiplier(hero)) * blessing(hero));
   if (hero.paralysed > 0) evasion = f32(evasion / 2);
-  const encumbrance = armorStats(hero.armor).str - heroStr(hero);
+  if (hero.armor.glyph === 'stone') return 0;
+  const encumbrance = armorStr(hero.armor) - heroStr(hero);
   if (encumbrance > 0) evasion = f32(evasion / 1.5 ** encumbrance);
-  if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) evasion *= 2;
-  return Math.max(1, Math.round(evasion));
+  // Seam (talents stream): Momentum's evasion. Here the 1.9 freerunner still doubles it, unburdened and fed.
+  if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) evasion = f32(evasion * 2);
+  // FerretTuft.evasionMultiplier.
+  const tuft = trinketLevel(hero, 'trinket.ferretTuft');
+  if (tuft >= 0) evasion = f32(evasion * FERRET_TUFT.evasionMultiplier(tuft));
+  evasion = f32(evasion + armorEvasionBonus(hero.armor));
+  return Math.max(1, jround(evasion));
 }
 
 /**
- * Accuracy with a thrown weapon (Hero.attackSkill with a missile weapon): divided by 1.5 for every
- * point of strength it wants more, and nobody throws well point-blank (the gear stream ports
- * MissileWeapon.adjacentAccFactor). Shattered has no class bonuses here: Pixel Dungeon's clumsy
- * warrior and deft huntress are gone.
+ * Hero.drRoll: a roll of the armour's protection, two less a point of strength short; a roll of the weapon's
+ * parrying (0 to its defence factor), the same way; and a warden's bark (Barkskin).
  */
-export function heroRangedSkill(hero: Hero, item: Item, pointBlank: boolean): number {
-  const encumbrance = missileStats(item).str - heroStr(hero);
-  let factor = encumbrance > 0 ? f32(1 / 1.5 ** encumbrance) : 1;
-  if (pointBlank) factor = f32(factor * 0.5);
-  return Math.max(1, Math.round(f32(f32(hero.attackSkill * f32(accuracyMultiplier(hero) * blessing(hero))) * factor)));
-}
-
-/**
- * Hero.speed: crippled, half as fast (Char.speed); armour too heavy slows its wearer, divided by 1.2
- * for every point of strength it wants more (Armor.speedFactor). A freerunner not starving nor
- * weighed down runs (Pixel Dungeon's subclass). Haste rings act on the time spent instead.
- */
-export function heroSpeed(hero: Hero): number {
-  const encumbrance = armorStats(hero.armor).str - heroStr(hero);
-  const crippled = hero.crippled > 0 ? 0.5 : 1;
-  const running = hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0 ? 1.6 : 1;
-  return (encumbrance > 0 ? 1 / 1.2 ** encumbrance : 1) * crippled * running;
-}
-
-/**
- * Hero.damageRoll: the weapon's roll (KindOfWeapon.damageRoll, a normal one), and up to a point more
- * for every point of strength to spare, for every class (MeleeWeapon.damageRoll); bare-handed, 1 to
- * STR-8 (RingOfForce.damageRoll).
- */
-export function heroDamageRoll(hero: Hero, rng: Rng): number {
-  const weapon = heroWeapon(hero);
-  let damage = rng.normalIntRange(weapon.min, weapon.max);
-  // Fury: a berserker badly hurt hits half as hard again (Pixel Dungeon's subclass).
-  if (hero.subclass === 'berserker' && hero.hp > 0 && hero.hp <= hero.ht * FURY_LEVEL) damage = Math.trunc(damage * 1.5);
-  if (hero.weapon) {
-    const excess = heroStr(hero) - weapon.str;
-    if (excess > 0) damage += rng.intRange(0, excess);
+export function heroDrRoll(hero: Hero, rng: Rng): number {
+  let dr = 0;
+  const str = heroStr(hero);
+  let armor = rng.normalIntRange(armorDrMin(hero.armor), armorDrMax(hero.armor));
+  if (str < armorStr(hero.armor)) armor -= 2 * (armorStr(hero.armor) - str);
+  if (armor > 0) dr += armor;
+  if (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon') {
+    let parry = rng.normalIntRange(0, weaponDefense(hero.weapon));
+    if (str < meleeStr(hero.weapon)) parry -= 2 * (meleeStr(hero.weapon) - str);
+    if (parry > 0) dr += parry;
   }
-  return damage;
+  const bark = Math.ceil(hero.barkskin ?? 0);
+  if (bark > 0) dr += rng.normalIntRange(0, bark);
+  // Barkskin (a potion of earthen armour): up to its level more.
+  const earthen = hero.buffs?.barkskin?.level ?? 0;
+  if (earthen > 0) dr += rng.normalIntRange(0, earthen);
+  return dr;
 }
 
-/** Hero.attackDelay: the weapon's (Weapon.delayFactor), slower by 1.2 for every point of strength it wants more. */
-export function heroAttackDelay(hero: Hero): number {
-  const weapon = heroWeapon(hero);
-  const encumbrance = weapon.str - heroStr(hero);
-  return encumbrance > 0 ? f32(weapon.delay * 1.2 ** encumbrance) : weapon.delay;
+/**
+ * Hero.damageRoll: the weapon's roll (NormalIntRange of its min and max, augmented), plus up to the strength to spare
+ * (heroDamageIntRange(0, excess)); a dagger, dirk, assassin's blade, throwing knife or kunai rolls from nearer its
+ * most on a surprise attack. Bare-handed: 1 to STR-8. Darts thrown with a crossbow in hand take its numbers; a spirit
+ * arrow the bow's. Seam: the thirteen-leaf clover (a trinket) would alter the hero's rolls.
+ */
+export function heroDamageRoll(hero: Hero, rng: Rng, surprised = false, weapon: Strike = hero.weapon): number {
+  let damage: number;
+  if (!weapon) {
+    // RingOfForce.damageRoll: bare-handed, as a weapon of the strength's tier with a ring of force; else 1 to STR-8.
+    const force = forceRange(hero, heroStr(hero));
+    damage = force ? rng.normalIntRange(force[0], force[1]) : rng.normalIntRange(1, Math.max(heroStr(hero) - 8, 1));
+  } else {
+    const category = itemDef(weapon.kind).category;
+    let min: number;
+    let max: number;
+    let share = 0;
+    // RingOfSharpshooting.levelDamageBonus: levels more for thrown weapons and the spirit bow's arrows.
+    const sharp = category === 'bow' || category === 'missile' ? sharpshootingBonus(hero) : 0;
+    if (category === 'bow') {
+      min = bowMin(hero.lvl, weapon, sharp);
+      max = bowMax(hero.lvl, weapon, sharp);
+    } else if (category === 'missile') {
+      const crossbow = hero.weapon?.kind === 'weapon.crossbow' && isDart(weapon.kind) ? hero.weapon : null;
+      min = crossbow ? crossbowDartMin(crossbow) + sharp : missileMin(weapon, gearLevel(weapon) + sharp);
+      max = crossbow ? crossbowDartMax(crossbow) + 2 * sharp : missileMax(weapon, gearLevel(weapon) + sharp);
+      share = missileSurprise(weapon.kind);
+    } else {
+      min = meleeMin(weapon);
+      max = meleeMax(weapon);
+      share = surpriseShare(weapon.kind);
+    }
+    damage = surprised && share > 0
+      ? augmentDamage(weapon, rng.normalIntRange(min + jround((max - min) * share), max))
+      : augmentDamage(weapon, rng.normalIntRange(min, max));
+    // ThirteenLeafClover.alterDamageRoll: now and then the most or the least it could be.
+    const leaf = trinketLevel(hero, 'trinket.clover');
+    if (leaf >= 0 && rng.float() < CLOVER.alterHeroDamageChance(leaf)) damage = augmentDamage(weapon, CLOVER.alterDamageRoll(rng, min, max));
+    const excess = heroStr(hero) - strikeStr(hero, weapon);
+    if (excess > 0) damage += rng.normalIntRange(0, excess);
+    // RingOfForce.armedDamageBonus: rings of force add to a weapon's blow as well.
+    damage += forceArmedBonus(hero);
+  }
+  // Fury: a berserker badly hurt hits half as hard again (seam: Shattered's Berserk is the talents stream's).
+  if (hero.subclass === 'berserker' && hero.hp > 0 && hero.hp <= hero.ht * FURY_LEVEL) damage = Math.trunc(damage * 1.5);
+  return Math.max(0, damage);
 }
 
-/** Hero.dr: the armour's, and a warden's bark. */
-export const heroArmor = (hero: Hero): number => armorStats(hero.armor).dr + Math.max(0, Math.ceil(hero.barkskin ?? 0));
-export const heroStealth = (hero: Hero): number => ringBonus(hero, 'ring.shadows');
+/**
+ * Hero.attackDelay: the weapon's delay (Weapon.delayFactor: augmented, 1.2× slower a point of strength short); bare
+ * hands, a turn; quicker with rings of furor (RingOfFuror.attackSpeedMultiplier).
+ */
+export function heroAttackDelay(hero: Hero, weapon: Strike = hero.weapon): number {
+  if (!weapon) return f32(1 / attackSpeedMultiplier(hero));
+  const category = itemDef(weapon.kind).category;
+  let delay = augmentDelay(weapon, category === 'weapon' ? weaponDly(weapon.kind) : 1);
+  const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
+  if (encumbrance > 0) delay = f32(delay * 1.2 ** encumbrance);
+  // Seam: the scimitar's sword dance (classes) would speed it up.
+  return f32(delay / attackSpeedMultiplier(hero));
+}
+
+/** Weapon.reachFactor: how far the weapon in hand strikes (a projecting one a cell further). */
+export function heroReach(hero: Hero): number {
+  if (!hero.weapon || itemDef(hero.weapon.kind).category !== 'weapon') return 1;
+  const reach = weaponRch(hero.weapon.kind);
+  return hero.weapon.enchant === 'projecting' ? reach + 1 : reach;
+}
+
+/** A weapon's level as its enchantment counts it (Weapon.buffedLvl): the spirit bow grows with its bearer. */
+export const enchantLevel = (hero: Hero, weapon: Item): number =>
+  itemDef(weapon.kind).category === 'bow' ? bowLevel(hero.lvl, weapon) : gearLevel(weapon);
+
+/** What a hero's speed depends on besides the hero: the ground underfoot, and whether an enemy is near (Swiftness). */
+export interface Footing {
+  terrain: number;
+  enemyNear: boolean;
+}
+
+/**
+ * Hero.speed: crippled, half as fast (Char.speed); a freerunner unburdened and fed, faster (the 1.9 subclass, a seam
+ * for the talents stream's Momentum); armour 1.2× slower a point of strength short (Armor.speedFactor); armour of
+ * swiftness quicker with no enemy near, of flow in water, of bulk slow in doorways.
+ */
+export function heroSpeed(hero: Hero, footing?: Footing): number {
+  const encumbrance = armorStr(hero.armor) - heroStr(hero);
+  let speed = hero.crippled > 0 ? 0.5 : 1;
+  if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) speed *= 1.6;
+  if (encumbrance > 0) speed = f32(speed / 1.2 ** encumbrance);
+  const glyph = hero.armor.glyph;
+  const level = gearLevel(hero.armor);
+  if (footing && glyph === 'swiftness' && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));
+  if (footing && glyph === 'flow' && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
+  if (footing && glyph === 'bulk' && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
+  // RingOfHaste.speedMultiplier; stamina, haste (buffs.ts).
+  return f32(speed * speedMultiplier(hero) * buffSpeed(hero));
+}
+
+/** A hero's armour at its most (Armor.DRMax, with the weapon's parrying and the bark at theirs), for what wants one figure. */
+export const heroArmor = (hero: Hero): number =>
+  armorDrMax(hero.armor) + (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon' ? weaponDefense(hero.weapon) : 0) +
+  Math.max(0, Math.ceil(hero.barkskin ?? 0)) + (hero.buffs?.barkskin?.level ?? 0);
+/** Hero.stealth: armour of obfuscation adds 1 and a third a level (Obfuscation.stealthBoost); talents add to it in their stream. */
+export const heroStealth = (hero: Hero): number => (hero.armor.glyph === 'obfuscation' ? Math.fround(1 + gearLevel(hero.armor) / 3) : 0);
 /** Hero.maxExp: what the next level costs. */
 export const maxExp = (hero: Hero): number => 5 + hero.lvl * 5;
 
@@ -320,7 +517,11 @@ export type MobKind =
   | 'succubus' | 'eye' | 'scorpio' | 'yog' | 'rottingFist' | 'burningFist' | 'larva' | 'mimic'
   | 'statue' | 'piranha' | 'imp' | 'sheep' | 'blacksmith' | 'mirror'
   | 'albino' | 'bandit' | 'shielded' | 'senior' | 'acidic'
-  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper'
+  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper' | 'ghostHero'
+  /** Alchemy's prismatic image (PrismaticGuard). */
+  | 'prismatic'
+  /** WandOfWarding.Ward, WandOfLivingEarth.EarthGuardian, WandOfRegrowth.Lotus. */
+  | 'ward' | 'guardian' | 'lotus'
   /* Shattered's roster (MobSpawner): the sewers' snakes and slimes, */
   | 'snake' | 'slime' | 'causticSlime' | 'gnollExile' | 'hermitCrab'
   /* the prison's DM-100s, guards and necromancers (and their skeletons), */
@@ -460,6 +661,8 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   tormentedSpirit: { name: 'tormented spirit', ht: 1, attack: 11, defense: 55, damage: [1, 3], dr: 0, exp: 0, maxLvl: -2, speed: 1, flying: true },
   sheep: { name: 'sheep', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   mirror: { name: 'mirror image', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** PrismaticImage: the hero's ally out of a scroll of prismatic image, as strong as its hero's level (see mobStats). */
+  prismatic: { name: 'prismatic image', ht: 10, attack: 10, defense: 5, damage: [2, 4], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   blacksmith: { name: 'troll blacksmith', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   imp: { name: 'ambitious imp', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   curse: { name: 'curse personification', ht: 16, attack: 12, defense: 12, damage: [3, 5], dr: 1, exp: 0, maxLvl: 5, speed: 0.5, flying: true },
@@ -467,10 +670,18 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   bee: { name: 'golden bee', ht: 12, attack: 10, defense: 10, damage: [1, 3], dr: 0, exp: 0, maxLvl: ANY_LVL, speed: 1, flying: true },
   /** Asleep (or so he says) in his hidden treasury beside Goo's lair. */
   ratKing: { name: 'rat king', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 2 },
+  /** A ward of the wand of warding (NPC: one hit point, until it grows into a sentry); it never misses. */
+  ward: { name: 'ward', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** The wand of living earth's guardian, as strong as the wand and the hero (see mobStats). */
+  guardian: { name: 'earthen guardian', ht: 1, attack: 0, defense: 0, damage: [2, 4], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** The wand of regrowth's lotus, which withers a little every turn. */
+  lotus: { name: 'golden lotus', ht: 25, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** DriedRose.GhostHero: the sad ghost come back as a companion (its numbers come from its rose and its hero, see mobStats). */
+  ghostHero: { name: 'sad ghost', ht: 40, attack: 10, defense: 5, damage: [1, 5], dr: 0, exp: 0, maxLvl: 0, speed: 1, flying: true },
 };
 
-/** Generator.Category.WEAPON's defenseFactor (a shield's): SEAM(gear) — Shattered's weapons stand behind it; none until then. */
-export const weaponDefenseFactor = (_weapon: Item): number => 0;
+/** Weapon.defenseFactor (a shield's, a greatsword's...): the armour a statue's weapon adds to its own. */
+export const weaponDefenseFactor = (weapon: Item): number => weaponDefense(weapon);
 
 /**
  * A monster's numbers: the table's, or as strong as the depth it is on — an animated statue with its
@@ -480,6 +691,15 @@ export const weaponDefenseFactor = (_weapon: Item): number => 0;
  */
 export function mobStats(mob: Mob): MobStats {
   const depth = mob.level ?? 1;
+  if (mob.kind === 'ghostHero' && mob.ghostGear) {
+    // GhostHero: as accurate as the hero (lvl + 9) and as nimble (lvl + 4), striking with its weapon or bare-handed.
+    const { lvl, str, weapon, armor } = mob.ghostGear;
+    const w = weapon ? weaponStats(weapon) : null;
+    return {
+      ...MOBS.ghostHero, ht: mob.ht, attack: Math.trunc((lvl + 9) * (w?.accuracy ?? 1)), defense: lvl + 4,
+      damage: w ? [w.min, w.max] : [1, Math.max(1, str - 8)], dr: armor ? armorDrMax(armor) : 0, attackDelay: w?.delay ?? 1,
+    };
+  }
   if ((mob.kind === 'statue' || mob.kind === 'armoredStatue') && mob.item) {
     // Statue: its numbers grow with the depth, and it fights with the weapon it holds.
     const weapon = weaponStats(mob.item);
@@ -494,6 +714,17 @@ export function mobStats(mob: Mob): MobStats {
     const ht = (2 + depth) * 4;
     return { ...MOBS.bee, ht, attack: 9 + depth, defense: 9 + depth, damage: [Math.trunc(ht / 10), Math.trunc(ht / 4)] };
   }
+  if (mob.kind === 'prismatic') {
+    // PrismaticImage: the hero's accuracy and evasion (9 + lvl, 4 + lvl) and its own damage, by the hero's level.
+    return { ...MOBS.prismatic, ht: mob.ht, attack: 9 + depth, defense: 4 + depth, damage: [2 + Math.trunc(depth / 4), 4 + Math.trunc(depth / 2)] };
+  }
+  if (mob.kind === 'guardian') {
+    // EarthGuardian: half the hero's evasion, and as accurate as the hero; damageRoll grows with the depth.
+    const defense = mob.guardian?.defense ?? 0;
+    return { ...MOBS.guardian, ht: mob.ht, attack: 2 * defense + 5, defense, damage: [2, 4 + Math.trunc(depth / 2)] };
+  }
+  // Ward.defenseSkill: a sentry dodges as well as the depth allows.
+  if (mob.kind === 'ward') return { ...MOBS.ward, ht: mob.ht, defense: (mob.ward?.tier ?? 1) > 3 ? 4 + depth : 0 };
   if (mob.kind === 'wraith') {
     const attack = 10 + depth;
     return { ...MOBS.wraith, attack, defense: attack * 5, damage: [1 + Math.trunc(depth / 2), 2 + depth] };
@@ -523,8 +754,8 @@ export const isMimic = (kind: MobKind): boolean => kind === 'mimic' || kind === 
  * ... and no faster or slower otherwise here (Char.speed's cripple and the rest act on the time spent).
  */
 export function mobSpeed(mob: Mob): number {
-  // Haste: three times as fast (a crystal mimic on the run).
-  const speed = MOBS[mob.kind].speed * ((mob.haste ?? 0) > 0 ? 3 : 1);
+  // Char.speed: Haste three times as fast (a crystal mimic on the run), Adrenaline twice, and alchemy's buffs (dread, stamina).
+  const speed = MOBS[mob.kind].speed * ((mob.haste ?? 0) > 0 ? 3 : 1) * ((mob.adrenaline ?? 0) > 0 ? 2 : 1) * buffSpeed(mob);
   return (mob.kind === 'thief' || mob.kind === 'bandit') && mob.item ? (5 * speed) / 6 : speed;
 }
 
@@ -602,10 +833,68 @@ export interface Mob {
   bleeding?: number;
   /** A mirror image: whose twin it is, and the skill and strength it took from them. */
   image?: { owner: string; attack: number; damage: number };
+  /** Shattered's buffs from alchemy (buffs.ts): dread, aggression, a magical sleep and the like. */
+  buffs?: Buffs;
+  /** The hero an ally from alchemy follows (a prismatic image, an enthralled monster, a summoned elemental). */
+  owner?: string;
+  /** Thrown weapons stuck in it, dropped where it dies (PinCushion). */
+  pinned?: Item[];
+  /** Turns left of acting twice as fast (Adrenaline). */
+  adrenaline?: number;
+  /** A lucky blow landed (Lucky.LuckProc): should it die before it acts again, it drops something (at this ring level). */
+  luck?: number;
+
+  /* Shattered's wands (wands.ts, allies.ts, status.ts). */
+  /** Char.Alignment.ALLY: it fights for the heroes (a ward, the earth guardian, a corrupted monster). */
+  ally?: boolean;
+  /** Corruption: an ally now, wasting away a hundredth of its health a turn (and the share of a point gathered so far). */
+  corrupted?: boolean;
+  corruptDecay?: number;
+  /** An ally it is fighting (Mob.enemy, when that is not a hero). */
+  foe?: string;
+  /** Chill, Frost, Ooze, Weakness, Vulnerable, Hex, SoulMark, Bless, Invulnerability: turns left. */
+  chill?: number;
+  frozen?: number;
+  ooze?: number;
+  weakened?: number;
+  vulnerable?: number;
+  hexed?: number;
+  soulMarked?: number;
+  blessed?: number;
+  invulnerable?: number;
+  /** Corrosion: turns left, and how hard it eats away now. */
+  corrosion?: { left: number; damage: number };
+  /** Doom: it takes two thirds more harm, for good. */
+  doomed?: boolean;
+  /** Barrier: shielding that takes blows before health, fading a little every turn. */
+  shield?: number;
+  shieldDecay?: number;
+  /** Charm.ignoreHeroAllies: blows from the heroes' allies do not shake off the charm (a wand of transfusion's). */
+  charmFirm?: boolean;
+  /** Charm.ignoreNextHit: the blow that charmed it (a friendly weapon's) does not shake the charm off. */
+  charmIgnoreNext?: boolean;
+  /** WandOfBlastWave.BWaveOnHitTracker: turns left before a battlemage's blast can strike it again. */
+  blasted?: number;
+  /** Levitation (a cursed wand's): turns left of floating over chasms and traps. */
+  levitating?: number;
+  /** A ward: its tier (2 and 3 sturdier wards, from 4 on a sentry), the wand level it shoots with, and its shots so far. */
+  ward?: { tier: number; level: number; zaps: number };
+  /** The earth guardian: the wand level it is of, and its evasion (half the hero's). */
+  guardian?: { level: number; defense: number };
+  /** The lotus: the level of the wand that grew it. */
+  lotus?: { level: number };
+  /** When its conditions last wore on (status.ts mobStatusTurn), so that they do so once a turn. */
+  statusAt?: number;
+  /** The rose's ghost (DirectableAlly, an ally too): whose it is, and the place it was told to hold (-1: none) and whether it is on its way. */
+  directed?: { owner: string; defend: number; moving: boolean };
+  /** The rose's ghost: its hero's level, its strength and the gear the rose gave it (GhostHero.updateRose). */
+  ghostGear?: { lvl: number; str: number; weapon?: Item; armor?: Item };
+  /** MasterThievesArmband.StolenTracker: robbed by the armband (nothing more to drop), or tried. */
+  robbed?: 'stolen' | 'tried';
 
   /* Shattered's monsters (mobs.ts, mobskills.ts, champions.ts). */
-  /** Char.Alignment.ALLY: it fights for the heroes. SEAM(wands): the allies (allies.ts). */
-  ally?: boolean;
+  /** Necromancer's skeleton: its master (Adrenaline, from a zap of its master: adrenaline below). */
+  master?: string;
   /** ChampionEnemy: the champion it is (challenges.ts CHAMPION_ENEMIES), and a growing one's multiplier (Growing.multiplier). */
   champion?: ChampionKind;
   growth?: number;
@@ -635,9 +924,6 @@ export interface Mob {
   summoned?: boolean;
   minion?: string;
   wraiths?: string[];
-  /** Necromancer's skeleton: its master; Adrenaline from a zap of its master, turns left. */
-  master?: string;
-  adrenaline?: number;
   /** Elemental.rangedCooldown. */
   rangedCooldown?: number;
   /** Monk.focusCooldown, and Focus (it parries the next blow). */
@@ -645,8 +931,6 @@ export interface Mob {
   focused?: boolean;
   /** Succubus.blinkCooldown. */
   blinkCooldown?: number;
-  /** A succubus's Barrier: shielding from life drawn out of a charmed hero. */
-  barrier?: number;
   /** Eye: beamTarget, beamCooldown, beamCharged. */
   beamTarget?: number;
   beamCooldown?: number;
@@ -673,10 +957,6 @@ export interface Mob {
   haste?: number;
   /** Mob.die from a fall (Chasm.class): half the experience. */
   fell?: boolean;
-  /** Weakness (a red shaman's bolt: two thirds as hard a blow), Vulnerable, Hex, Roots (a web): turns left. */
-  weakened?: number;
-  vulnerable?: number;
-  hexed?: number;
   /** Mob.timeSeenAt for swarm intelligence: since when it has kept its enemy in sight (the call goes further the longer). */
   seenSince?: number;
 }
