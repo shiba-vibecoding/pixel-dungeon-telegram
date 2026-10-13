@@ -180,7 +180,15 @@ export interface Puppet {
   dim?: number;
   /** LotusSprite: how far its leaves fall about it (cells). */
   reach?: number;
+  /** A prismatic image: drawn from prismatic.png, its own glass figure with four colour phases (design v19). */
+  prismatic?: boolean;
+  /** An ally of the heroes: marked with a heart over its head (ally-heart.png, design v19). */
+  ally?: boolean;
 }
+
+/** The ethereal chains fly out in this long (design v19: ShMapFx), then pull in this long. */
+export const CHAIN_MS = 600;
+export const CHAIN_PULL_MS = 250;
 
 /** MobSprite.FALL_TIME: how long a monster takes to drop out of sight into a chasm. */
 export const FALL_MS = 1000;
@@ -502,6 +510,8 @@ export class View {
         place(mob.id, 'mirror', this.assets.heroes[twin.heroClass], false, mob.pos, mob.hp, mob.ht, false, false, true);
         this.puppets.get(mob.id)!.sprite = heroSprite(this.assets, twin.heroClass, this.looks[twin.id]?.skin);
         this.puppets.get(mob.id)!.row = itemDef(twin.armor.kind).tier ?? 0;
+        this.puppets.get(mob.id)!.prismatic = mob.kind === 'prismatic';
+        this.puppets.get(mob.id)!.ally = mob.kind === 'prismatic';
         continue;
       }
       place(mob.id, mob.kind, this.assets.mobs[mob.kind], false, mob.pos, mob.hp, mob.ht,
@@ -510,6 +520,7 @@ export class View {
       const puppet = this.puppets.get(mob.id)!;
       // WardSprite.updateTier: a ward drawn as its tier is (one a row of its sheet).
       if (mob.kind === 'ward') puppet.row = (mob.ward?.tier ?? 1) - 1;
+      puppet.ally = mob.ally === true && mob.kind !== 'ward' && mob.kind !== 'lotus';
       puppet.levitating = (mob.levitating ?? 0) > 0;
       puppet.burning = (mob.burning ?? 0) > 0;
       puppet.poisoned = (mob.poison ?? 0) > 0;
@@ -1691,12 +1702,12 @@ export class View {
           this.busy(effect.hero, now);
           break;
         case 'chained':
-          // EtherealChains: Sounds.CHAINS, and the ethereal chain thrown out (Chains: 200 ms, and 50 a cell).
+          // EtherealChains: Sounds.CHAINS, and the ethereal chain thrown out (design v19: links fly out in 600 ms).
           if (effect.depth !== this.depth) break;
           audio.play('chains', 1, 1, cellMiddle(effect.from));
           this.chains.push({
             from: effect.from, to: effect.to, start: now,
-            duration: 200 + (Math.hypot(cellX(effect.to) - cellX(effect.from), cellY(effect.to) - cellY(effect.from)) * TILE * 1000) / 320,
+            duration: CHAIN_MS + CHAIN_PULL_MS,
           });
           break;
         case 'ghostSummoned':

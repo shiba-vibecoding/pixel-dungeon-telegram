@@ -9,6 +9,9 @@ import {
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
+import { loop } from './lifecycle';
+import { reloadForUpdate } from './update';
+import { preloadMapFx } from './shfx';
 import './game.css';
 import { mobDescription, mobName, plantText, tileText, wellText } from './examine';
 import {
@@ -77,7 +80,7 @@ import {
   homeScreenStatus, addToHomeScreen,
 } from './telegram';
 import { startReporting } from './report';
-import { alchemyOpen, refreshAlchemy, showAlchemy } from './alchemyui';
+import { alchemyOpen, noteCrafted, refreshAlchemy, showAlchemy } from './alchemyui';
 import { STEP_MS, TILE, View } from './view';
 
 /*
@@ -152,6 +155,8 @@ const assets = await loadAssets(`${import.meta.env.BASE_URL}assets/`, (done) => 
 await Promise.all([document.fonts.load('18px Galmuri11'), document.fonts.load('15px Galmuri9')]).catch(() => undefined);
 loading.remove();
 setAssets(assets);
+// The map's effects of design v19 (bolts, the glass image, hearts, chains): loaded behind the first screen.
+preloadMapFx();
 
 const view = new View(assets);
 /** The world answering touch: doors, grass, water, what falls and what is taken (motion.ts). */
@@ -575,7 +580,7 @@ async function startRun(key: string, mode: 'dungeon' | 'arena', fresh: boolean, 
       ? { run: carried.run, world: carried.world }
       : await api.start(slot, heroClass, chosen);
     if (answer === 'rules') {
-      location.reload();
+      reloadForUpdate();
       return;
     }
     if (typeof answer === 'string') {
@@ -983,6 +988,7 @@ function nextDanger(): void {
   pan.y = (cellY(mob.pos) - cellY(me.pos)) * TILE;
   pan.home = false;
   feedback.aim(mob.pos, true, fx.now, mob.id);
+  feedback.danger(mob.id, mob.pos, fx.now);
 }
 
 /**
@@ -2457,8 +2463,25 @@ function noteFrame(now: number): void {
   }
 }
 
-function frame(now: number): void {
-  requestAnimationFrame(frame);
+/**
+ * The game came back from being out of sight (a hidden tab, Telegram Desktop's minimised window): clocks measured
+ * between frames start over (the long gap must not look like a struggling phone or a jump in the visual clock),
+ * the canvas is sized afresh (a WebView may have dropped its pixels) and the map is baked and drawn anew.
+ */
+function restoreAfterPause(): void {
+  lastFrame = 0;
+  lastVisual = 0;
+  lastUnderWindow = 0;
+  frames.prev = 0;
+  frames.since = 0;
+  bakedKey = '';
+  bakedFor = '';
+  vignetteState = '';
+  resize();
+}
+
+function frame(now: number, resumed = false): void {
+  if (resumed) restoreAfterPause();
   noteFrame(now);
   if (session && windowOverMap()) {
     if (now - lastUnderWindow < UNDER_WINDOW_MS) return;
@@ -2619,6 +2642,7 @@ function tick(now: number): void {
     if (dangerTarget && !enemiesInSight.includes(dangerTarget)) {
       dangerTarget = null;
       dangerIndex = -1;
+      feedback.clearDanger();
     }
   }
 
@@ -2629,6 +2653,7 @@ function tick(now: number): void {
     const mine = session.myId;
     if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
     // The pot's window, if open, shows the pack and the energy as they are now.
+    for (const e of effects) if (e.type === 'crafted' && e.hero === mine && alchemyOpen()) noteCrafted(e.item);
     if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
     for (const effect of effects) effectFx(effect, view, world, session.myId, vnow);
     motion.effects(effects, world, me.depth, (e) => itemSprite(e.item, world.run.labels));
@@ -2871,7 +2896,7 @@ function tick(now: number): void {
       wear: wearOf(world, item),
     };
   };
-  const quick = Array.from({ length: visibleQuickslots(hud.wide, innerWidth) }, (_, slot) => quickState(slot));
+  const quick = Array.from({ length: visibleQuickslots(hud.wide) }, (_, slot) => quickState(slot));
   const cancelChoice = (): void => {
     aim = null;
     examining = false;
@@ -3179,7 +3204,7 @@ function shareChoices(card: () => Promise<ShareCard>, text: string, start: 'dail
   return choices;
 }
 
-requestAnimationFrame(frame);
+loop(frame);
 
 addEventListener('pd-run-restored', () => toast(t.ranked.restored));
 
@@ -3214,5 +3239,5 @@ if (import.meta.env.DEV) {
       await new Promise((resolve) => setTimeout(resolve, 33));
     }
   };
-  Object.assign(window, { __pd: { get session() { return session; }, camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
+  Object.assign(window, { __pd: { get session() { return session; }, openAlchemy, openBackpack, camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
 }

@@ -84,7 +84,7 @@ export {
 } from './wands';
 export { chargeLimit } from './regrowth';
 export type { CursedEffect } from './cursed';
-export { friendly } from './allies';
+export { friendly, prismaticMaxHp } from './allies';
 export { mobRotation, RARE_ALTS, rollMob } from './spawner';
 export { CHAMPION_AURA, CHAMPIONS } from './champions';
 export { isEnemy as isHostileMob, isOpenSpace, spawningWeight } from './mobs';
