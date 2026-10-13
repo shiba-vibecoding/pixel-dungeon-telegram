@@ -66,3 +66,10 @@ export * from './trinkets';
 export { type GasKind, GAS_KINDS, gasAt, smokeCells } from './gas';
 export { TARGETED, TARGET_PROBLEMS, defaultTarget, isTargetedScroll, uncursable } from './scrolls';
 export { circleCells } from './fov';
+export {
+  type Bolt, buffedLevel, chargesPerCast, heldWands, maxCharges, staffReach, wandAt, wandDamage, type WandNote, zapProblem,
+} from './wands';
+export { chargeLimit } from './regrowth';
+export type { CursedEffect } from './cursed';
+export { friendly } from './allies';
+export { type Property, propertiesOf } from './props';

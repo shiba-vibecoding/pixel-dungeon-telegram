@@ -176,14 +176,15 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
     expect(scrollTargets(world, hero, 'scroll.identify')).toEqual([]);
   });
 
-  it('a wand of unknown charges may be zapped empty: it fizzles, and its level is known', () => {
+  it('a wand of unknown charges may be zapped empty: it fizzles, taking no time, and tells nothing', () => {
     const world = pacify(createWorld(5));
     const hero = addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
-    hero.items = [{ ...unknown(createItem('wand.slowness', 1, 1)), charges: 0 }];
+    hero.items = [{ ...unknown(createItem('wand.frost', 1, 1)), charges: 0 }];
+    const time = hero.time;
     const result = act(world, 'p', { type: 'zap', item: 0, target: hero.pos + 2 });
-    expect(result.ok && result.effects.some((e) => e.type === 'fizzled')).toBe(true);
-    expect(hero.items[0]).toMatchObject({ charges: 0, chargesUnknown: true });
-    expect(hero.items[0]!.levelUnknown).toBeUndefined();
+    expect(result.ok && result.effects.some((e) => e.type === 'wand' && e.note === 'fizzles')).toBe(true);
+    expect(hero.time).toBe(time);
+    expect(hero.items[0]).toMatchObject({ charges: 0, chargesUnknown: true, levelUnknown: true });
     // Known to be empty, it is not zapped at all.
     hero.items[0]!.chargesUnknown = false;
     expect(act(world, 'p', { type: 'zap', item: 0, target: hero.pos + 2 }).ok).toBe(false);
@@ -249,7 +250,7 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
         if (!well) continue;
         const hero = addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
         Object.assign(hero, { depth, pos: well.pos, time: floorAt(world, depth).now });
-        hero.items = [unknown(createItem('wand.blink', 1, 2))];
+        hero.items = [unknown(createItem('wand.frost', 1, 2))];
         const result = act(world, 'p', { type: 'drop', item: 0 });
         expect(result.ok && result.effects.some((e) => e.type === 'revealed')).toBe(true);
         const wand = floorAt(world, depth).heaps.find((h) => h.pos === well.pos)!.items[0]!;

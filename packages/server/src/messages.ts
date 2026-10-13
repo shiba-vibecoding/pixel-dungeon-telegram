@@ -134,12 +134,26 @@ export function sanitizeAction(raw: unknown): Action | null {
       const item = slot(a.item);
       return item === null ? null : { type: a.type, item };
     }
-    case 'throw':
-    case 'zap': {
+    case 'throw': {
       const item = slot(a.item);
       const target = cell(a.target);
       return item === null || target === null ? null : { type: a.type, item, target };
     }
+    case 'zap': {
+      // A wand in the pack (its slot), or the mage's staff: in hand ('weapon') or in the pack.
+      const item = a.item === 'weapon' ? 'weapon' : slot(a.item);
+      const target = cell(a.target);
+      return item === null || target === null ? null : { type: 'zap', item, target };
+    }
+    case 'imbue': {
+      // MagesStaff.AC_IMBUE: a wand from the pack into the staff (in hand, or in the pack).
+      const staff = a.staff === 'weapon' ? 'weapon' : slot(a.staff);
+      const wand = slot(a.wand);
+      return staff === null || wand === null ? null : { type: 'imbue', staff, wand };
+    }
+    case 'dismiss':
+      // Ward.interact: the ward beside the hero dismissed.
+      return typeof a.target === 'string' && a.target.length > 0 && a.target.length <= MAX_ID ? { type: 'dismiss', target: a.target } : null;
     case 'unequip':
       return { type: 'unequip' };
     case 'remove': {

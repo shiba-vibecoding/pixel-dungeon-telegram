@@ -40,14 +40,15 @@ describe('the classes (HeroClass.initHero)', () => {
 
   it("each class's own kit, through the seams other streams fill (KIT_SEAMS)", () => {
     expect(heroById(solo('warrior'), 'p')!.weapon!.kind).toBe(KIT_SEAMS.wornShortsword.kind);
-    expect(heroById(solo('mage'), 'p')!.weapon!.kind).toBe(KIT_SEAMS.magesStaff.kind);
+    // The mage's staff is the real one (the wands stream's MagesStaff), with a wand of magic missile imbued.
+    expect(heroById(solo('mage'), 'p')!.weapon).toMatchObject({ kind: 'weapon.magesStaff', wand: { kind: 'wand.magicMissile' } });
     expect(heroById(solo('rogue'), 'p')!.weapon!.kind).toBe('weapon.dagger');
     expect(heroById(solo('rogue'), 'p')!.rings[0]!.kind).toBe(KIT_SEAMS.cloakOfShadows.kind);
     expect(heroById(solo('huntress'), 'p')!.weapon!.kind).toBe(KIT_SEAMS.gloves.kind);
     expect(heroById(solo('huntress'), 'p')!.items[0]!.kind).toBe(KIT_SEAMS.spiritBow.kind);
     // The quick slots each class starts with (Dungeon.quickslot.setSlot).
     expect(startingKit('warrior').quickslots).toEqual([KIT_SEAMS.throwingStones.kind]);
-    expect(startingKit('mage').quickslots).toEqual(['wand.magicMissile']);
+    expect(startingKit('mage').quickslots).toEqual(['weapon.magesStaff']);
   });
 
   it("the warrior's armour comes with the broken seal affixed; nobody else's", () => {

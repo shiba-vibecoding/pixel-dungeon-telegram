@@ -1,5 +1,6 @@
-import { type Effect, HEAP_SPRITES, heroById, type Level, LENGTH, T, WIDTH, type World } from '@pd/core';
+import { type Effect, HEAP_SPRITES, heroById, type Level, LENGTH, S, T, WIDTH, type World } from '@pd/core';
 import { audio } from './audio';
+import { between, dropSound } from './sfx';
 import { fx } from './fx';
 import { quality } from './quality';
 import { type Assets, levelRegion } from './sprites';
@@ -251,7 +252,7 @@ export class Motion {
         this.tiles.push({ cell, from: was, to: is, start: now, kind: 'trample', ms: this.animMs(`grass${r}`, 'trample', TRAMPLE_MS) });
         const x = (cell % WIDTH) * TILE + TILE / 2;
         const y = Math.trunc(cell / WIDTH) * TILE + TILE - 3;
-        audio.play('rustle', 1, 0.45, centre(cell));
+        // HighGrass.trample makes no sound of its own: the hero's step into it does (main.ts), as in Hero.move.
         fx.burst(x, y, now, {
           count: 9, colors: ['#6aa84f', '#93c47d', '#38761d', '#b6d7a8'], speed: [14, 34], life: [380, 700], gravity: 150, drag: 0.25,
           angle: -Math.PI / 2, cone: 2.6, size: [1, 1], spread: 5,
@@ -373,7 +374,12 @@ export class Motion {
       const x = (pos % WIDTH) * TILE + TILE / 2;
       const y = Math.trunc(pos / WIDTH) * TILE + TILE - 3;
       fx.burst(x, y, now, { count: 4, colors: ['rgba(200, 190, 170, 0.8)', 'rgba(150, 140, 120, 0.7)'], speed: [6, 16], life: [250, 420], rise: 4, drag: 0.3, size: [1, 1], spread: 4 });
-      if (visible[pos]) audio.play('knock', 1.4, 0.35, centre(pos));
+      // ItemSprite.drop: gold rings as it comes; whatever lands sounds what it lands on.
+      if (visible[pos]) {
+        if (present.get(pos) === S.GOLD) audio.play('gold', between(0.9, 1.1), 1, centre(pos));
+        const landing = dropSound(level.map[pos]!);
+        audio.play(landing.sound, landing.rate, 0.8, centre(pos));
+      }
     }
 
     // Gold taken: coins spin up off the pile and fall away.
@@ -439,8 +445,7 @@ export class Motion {
     const y = Math.trunc(pos / WIDTH) * TILE + TILE / 2;
     fx.burst(x, y - 2, at, { count: 14, colors: ['#ffe9a0', '#fff6c0', '#ffffff', '#e0a020'], glow: true, speed: [20, 60], life: [350, 800], rise: 26, drag: 0.35, size: [1, 1], spread: 4 });
     fx.burst(x, y + 4, at, { count: 8, colors: ['rgba(200, 190, 170, 0.8)', 'rgba(150, 140, 120, 0.7)'], speed: [10, 30], life: [300, 520], gravity: 60, drag: 0.3, size: [1, 2], spread: 6 });
-    audio.play('unlock', 1, 0.4, centre(pos));
-    audio.later(CHEST_SHAKE_MS, 'sparkle', 1, 0.45, centre(pos));
+    // The chest's own sound (Hero.actOpenChest: UNLOCK) is the view's, from the 'opened' effect.
   }
 
   /** How a heap lying at `pos` is drawn this frame. */

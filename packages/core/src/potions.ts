@@ -2,7 +2,7 @@ import { type Hero, isAlive, maxExp, type Mob } from './actors';
 import { earnExp, hurt } from './combat';
 import {
   buffsOf, cleanse, cure, FEATHER_TURNS, HASTE_TURNS, healOverTime, IMBUE_TURNS, isFiery, MAGICAL_SIGHT_TURNS, OOZE_TURNS,
-  ROOTS_TURNS, setArcaneArmor, setBarkskin, setShield, snapFreeze, STAMINA_TURNS, updateMight,
+  ROOTS_TURNS, setArcaneArmor, setBarkskin, setShield, snapFreeze, STAMINA_TURNS, updateMight, addOoze,
 } from './buffs';
 import { isChallenged, NO_HEALING } from './challenges';
 import { type Char, charAt, type Ctx, enterCell, heroesOn, heroView, isHero, leaveCell } from './floor';
@@ -155,11 +155,8 @@ export function drinkPotion(ctx: Ctx, hero: Hero, kind: ItemKind, use: PotionUse
       return;
     case 'elixir.icyTouch':
       b.frostImbue = Math.max(b.frostImbue ?? 0, IMBUE_TURNS);
-      delete b.chill;
-      if (b.frost) {
-        delete b.frost;
-        hero.paralysed = 0;
-      }
+      delete hero.chill;
+      delete hero.frozen;
       return;
     case 'elixir.might':
       // ElixirOfMight: a point of strength, and a boost to health for the next five levels.
@@ -235,7 +232,7 @@ export function shatterPotion(ctx: Ctx, thrower: Hero | null, kind: ItemKind, ce
   if (friend && (isHero(friend) || friend.ally)) {
     friend.burning = 0;
     if (isHero(friend)) friend.ooze = -1;
-    if (friend.buffs) delete friend.buffs.ooze;
+    if (!isHero(friend)) delete friend.ooze;
   }
   let shows = SHATTER_SHOWS.has(kind);
   switch (kind) {
@@ -303,7 +300,7 @@ export function shatterPotion(ctx: Ctx, thrower: Hero | null, kind: ItemKind, ce
       // CausticBrew: everyone within three steps is covered in caustic ooze.
       for (const c of reachable(ctx, cell, 3)) {
         const char = charAt(ctx.world, ctx.depth, c);
-        if (char && isAlive(char)) buffsOf(char).ooze = OOZE_TURNS;
+        if (char && isAlive(char)) addOoze(char);
       }
       break;
     case 'brew.shocking':

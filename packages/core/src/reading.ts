@@ -1,3 +1,4 @@
+import { heldWands } from './wands';
 import { beckon, type Hero, isAlive, type Mob } from './actors';
 import { randomRespawnCell } from './ai';
 import { conjureImages, enthrall, prismaticMaxHp } from './allies';
@@ -92,8 +93,9 @@ export function readScroll(ctx: Ctx, hero: Hero, kind: ItemKind, target: Item | 
       return;
     case 'scroll.recharging':
       // ScrollOfRecharging: wands charge faster for thirty turns.
-      buffsOf(hero).recharging = Math.max(buffsOf(hero).recharging ?? 0, RECHARGING_TURNS);
-      ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'recharging', count: 1 });
+      // (Recharging: Hero.recharging, which the wands' chargers read, wands.ts.)
+      hero.recharging = Math.max(hero.recharging ?? 0, RECHARGING_TURNS);
+      ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'recharging', count: heldWands(hero).length });
       return;
     case 'scroll.teleportation':
       teleportPreferringUnseen(ctx, hero);
@@ -170,7 +172,7 @@ export function readScroll(ctx: Ctx, hero: Hero, kind: ItemKind, target: Item | 
     }
     case 'scroll.prismaticImage': {
       // ScrollOfPrismaticImage: a prismatic image already about is healed; else one waits at the hero's side.
-      const image = ctx.floor.mobs.find((mob) => mob.kind === 'prismatic' && mob.ally === hero.id);
+      const image = ctx.floor.mobs.find((mob) => mob.kind === 'prismatic' && mob.owner === hero.id);
       if (image) image.hp = image.ht;
       else buffsOf(hero).prismaticGuard = prismaticMaxHp(hero);
       return;

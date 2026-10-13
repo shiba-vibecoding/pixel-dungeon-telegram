@@ -1,3 +1,4 @@
+import { heldWands, gainCharge } from './wands';
 import { type Hero, isAlive } from './actors';
 import { AGGRESSION_TURNS, buffsOf, deepSleep, isBoss, isMiniboss, TERROR_TURNS } from './buffs';
 import { explode, stoneFlock } from './bombs';
@@ -158,7 +159,8 @@ export function activateStone(ctx: Ctx, hero: Hero, kind: ItemKind, cell: number
       }
       if (hits > 0) {
         // Belongings.charge(1 + hits): a charge for each, into every wand.
-        for (const wand of hero.items) if (wand.charges !== undefined) wand.charges = Math.min(wandMaxCharges(wand), wand.charges + 1 + hits);
+        // Belongings.charge(1 + hits): every wand charged so much.
+        for (const { wand, staff } of heldWands(hero)) gainCharge(wand, staff, 1 + hits);
       }
       ctx.effects.push({ type: 'shock', depth, pos: cell, count: hits });
       return;

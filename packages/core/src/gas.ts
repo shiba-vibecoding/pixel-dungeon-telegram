@@ -6,6 +6,7 @@ import { F, hasFlag, T } from './level/terrain';
 import { immuneTo } from './traps';
 import { burnHeaps } from './cooking';
 import { addCorrosion, freezeCell, igniteChar, isFiery } from './buffs';
+import { PARALYSIS_TURNS } from './status';
 
 /*
  * Clouds of gas and other blobs (Blob and its kinds). A cloud is so much gas per cell; every turn it spreads
@@ -37,7 +38,6 @@ const AIRBORNE: readonly GasKind[] = ['toxic', 'paralytic', 'confusion', 'corros
 const CLEANSED: readonly GasKind[] = [...AIRBORNE, 'fire', 'freezing', 'electricity', 'web'];
 
 /** How long paralytic gas holds whoever breathes it, after the last breath. */
-const PARALYSIS_TURNS = 5;
 
 export const hasGas = (floor: Floor): boolean => GAS_KINDS.some((kind) => (floor.gas?.[kind]?.length ?? 0) > 0);
 
@@ -71,12 +71,23 @@ export function seedGas(ctx: Ctx, pos: number, kind: GasKind, amount: number): v
   floor.gasAt ??= floor.now;
 }
 
-/** CorrosiveGas.setStrength: the cloud is as strong as the strongest that went into it. */
+/**
+ * CorrosiveGas.setStrength: how hard the cloud on the depth eats away, the strongest it was set to
+ * (one strength for the whole cloud, as in Shattered).
+ */
+export function setGasStrength(ctx: Ctx, kind: GasKind, strength: number): void {
+  const strengths = (ctx.floor.gasStrength ??= {});
+  if (strength > (strengths[kind] ?? 0)) strengths[kind] = strength;
+}
+
+/** A corrosive cloud let out, as strong as the strongest that went into it. */
 export function seedCorrosive(ctx: Ctx, pos: number, amount: number, strength: number): void {
   seedGas(ctx, pos, 'corrosive', amount);
-  const strengths = (ctx.floor.gasStrength ??= {});
-  strengths.corrosive = Math.max(strengths.corrosive ?? 0, strength);
+  setGasStrength(ctx, 'corrosive', strength);
 }
+
+/** Fire.seed: so much fire on a cell (fire does not spread like a gas: see evolveFire). */
+export const seedFire = (ctx: Ctx, cell: number, amount: number): void => seedGas(ctx, cell, 'fire', amount);
 
 /** Web.seed: a web is spun on a cell; it is as thick as the thickest spun there, never thicker. */
 export function seedWeb(ctx: Ctx, pos: number, amount: number): void {
@@ -255,7 +266,8 @@ function afterSpreading(ctx: Ctx, kind: GasKind, cells: number[], cur: Int32Arra
           ctx.effects.push({ type: 'grown', depth, pos: cell });
         }
         const held = charIn(cell);
-        if (held && volume > 1 && !(isHero(held) ? false : MOBS[held.kind].flying)) held.rooted = Math.max(held.rooted ?? 0, 1);
+        // (A monster's own turn wears a turn of roots off first: two, to be held on that turn.)
+        if (held && volume > 1 && !(isHero(held) ? false : MOBS[held.kind].flying)) held.rooted = Math.max(held.rooted ?? 0, isHero(held) ? 1 : 2);
       }
       return;
     case 'inferno':
@@ -401,6 +413,9 @@ export function destroyTerrain(ctx: Ctx, cell: number): void {
   clearGasAt(ctx.floor, 'web', cell);
 }
 
+/** Level.destroy, as the wands call it. */
+export const destroyCell = destroyTerrain;
+
 /** Level.setCellToWater: bare floor, grass and embers turn to water. */
 export function setCellToWater(ctx: Ctx, cell: number): boolean {
   const terrain = ctx.level.map[cell];
@@ -456,7 +471,12 @@ function breathe(ctx: Ctx, char: Char, kind: GasKind): void {
 /** Drops empty clouds, and the gas clock with the last of them. */
 function tidy(floor: Floor): void {
   if (!floor.gas) return;
-  for (const kind of GAS_KINDS) if (floor.gas[kind]?.length === 0) delete floor.gas[kind];
+  for (const kind of GAS_KINDS) {
+    if (floor.gas[kind]?.length === 0) {
+      delete floor.gas[kind];
+      if (floor.gasStrength?.[kind]) delete floor.gasStrength[kind];
+    }
+  }
   if (!hasGas(floor)) {
     delete floor.gas;
     delete floor.gasAt;

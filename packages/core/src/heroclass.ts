@@ -1,4 +1,5 @@
 import { createItem, type Item, type ItemKind } from './items';
+import { staffWith } from './staff';
 
 /*
  * HeroClass.initHero as Shattered Pixel Dungeon sets the four classes out:
@@ -10,9 +11,9 @@ import { createItem, type Item, type ItemKind } from './items';
  * Seams (docs/SHATTERED.md): what other streams port is stood in for by
  * Pixel Dungeon's items until their stream lands, each marked in KIT_SEAMS —
  * gear: the worn shortsword, the throwing stones and knives, the studded
- * gloves and the spirit bow; wands: the mage's staff (a wand of magic missile
- * in a staff); artifacts: the rogue's cloak of shadows. The stream that ports
- * one replaces its line there.
+ * gloves and the spirit bow; artifacts: the rogue's cloak of shadows. The
+ * stream that ports one replaces its line there (the wands stream has: the
+ * mage's staff is MagesStaff, staff.ts).
  */
 
 export type HeroClass = 'warrior' | 'mage' | 'rogue' | 'huntress';
@@ -35,9 +36,6 @@ export const KIT_SEAMS = {
   wornShortsword: { kind: 'weapon.shortSword', for: 'WornShortsword (gear)' },
   /** ThrowingStone, three of them (gear); Pixel Dungeon's warrior had eight darts. */
   throwingStones: { kind: 'missile.dart', qty: 8, for: 'ThrowingStone ×3 (gear)' },
-  /** MagesStaff with a WandOfMagicMissile imbued (wands): the knuckles in hand, the wand in the pack. */
-  magesStaff: { kind: 'weapon.knuckles', for: 'MagesStaff (wands)' },
-  magicMissile: { kind: 'wand.magicMissile', for: 'MagesStaff\'s WandOfMagicMissile (wands)' },
   /** CloakOfShadows (artifacts): worn as Pixel Dungeon's rogue wore his ring of shadows. */
   cloakOfShadows: { kind: 'ring.shadows', level: 1, for: 'CloakOfShadows (artifacts)' },
   /** ThrowingKnife, three of them (gear). */
@@ -82,11 +80,11 @@ export function startingKit(heroClass: HeroClass): StartingKit {
       };
     }
     case 'mage': {
-      // initMage: the staff, with a wand of magic missile, in the first quick slot.
-      const wand = seamed(KIT_SEAMS.magicMissile);
+      // initMage: the staff, with a wand of magic missile imbued, in the first quick slot.
+      const staff = staffWith(createItem('wand.magicMissile'));
       return {
-        weapon: seamed(KIT_SEAMS.magesStaff), armor, rings: [], items: [wand, ...common],
-        known: [...known, 'scroll.upgrade', 'potion.liquidFlame'], quickslots: [wand.kind],
+        weapon: staff, armor, rings: [], items: common,
+        known: [...known, 'scroll.upgrade', 'potion.liquidFlame'], quickslots: [staff.kind],
       };
     }
     case 'rogue': {

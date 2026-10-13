@@ -2,15 +2,15 @@ import { baseKind, type Hero, isAlive, type Mob, MOBS } from './actors';
 import { hurt } from './combat';
 import { type Char, charAt, type Ctx, exploredCells, heroView, isHero, isWater } from './floor';
 import { circleCells } from './fov';
-import { createItem, itemDef, type ItemKind, WAND_RECHARGE, wandMaxCharges } from './items';
+import { createItem, itemDef, type ItemKind } from './items';
+import { shatterPotion } from './potions';
 import { distance, LENGTH, NEIGHBOURS8 } from './level/geometry';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { clearGasAt, seedGas } from './gas';
 import { freezeHeaps } from './cooking';
-import { looseItems } from './bags';
 import { prismaticGuard } from './allies';
 import { censerTurn } from './trinkets';
-import { shatterPotion } from './potions';
+import { chill, corrode, freeze, ignite, ooze, shieldUp } from './status';
 import type { TrapKind } from './traps';
 import { VIAL_OF_BLOOD, trinketLevel } from './trinkets';
 
@@ -19,7 +19,8 @@ import { VIAL_OF_BLOOD, trinketLevel } from './trinkets';
  * elixirs do to heroes and monsters for a while. Kept on the character as `buffs`, turns left or a little state,
  * and played out a turn at a time: for a hero as time passes (world.ts spend), for a monster on its own turn
  * (traps.ts mobConditions). The older conditions of the original (poison, burning, paralysis...) stay where they
- * were, on the characters themselves.
+ * were, on the characters themselves, and so do the ones the wands brought (status.ts: chill, frost, corrosion,
+ * ooze, a barrier, levitation): alchemy's potions and bombs put those on through status.ts.
  */
 
 export interface Buffs {
@@ -29,9 +30,6 @@ export interface Buffs {
   magicalSight?: number;
   magicImmune?: number;
   foresight?: number;
-  /** Recharging: wands charge a quarter faster for so many turns; ArtifactRecharge (artifacts' seam). */
-  recharging?: number;
-  artifactRecharge?: number;
   /** FireImbue (immune to fire, setting what it strikes alight), FrostImbue (chilling what it strikes), ToxicImbue (a cloud of poison around): turns left. */
   fireImbue?: number;
   frostImbue?: number;
@@ -43,20 +41,13 @@ export interface Buffs {
   /** Drowsy (falls into a magical sleep when it runs out) and MagicalSleep. */
   drowsy?: number;
   magicalSleep?: boolean;
-  /** Chill: slowed, the more the longer it lasts; Frost: frozen stiff (with paralysis). */
-  chill?: number;
-  frost?: number;
-  /** Ooze (a caustic brew): it burns a little every turn, until washed off in water. */
-  ooze?: number;
-  /** Corrosion: so much harm a turn, growing, for so many turns. */
-  corrosion?: { left: number; damage: number };
   /** Healing: health back over time (PotionOfHealing), at most so much a turn with a vial of blood. */
   healing?: { left: number; percent: number; flat: number; limit?: number };
-  /** Barrier: a shield that takes the blows, and wanes. */
-  barrier?: { shield: number; partial: number };
   /** ArcaneArmor and Barkskin (earthen armour): a level that wanes a point every `interval` turns. */
   arcaneArmor?: { level: number; interval: number; next: number };
   barkskin?: { level: number; interval: number; next: number };
+  /** ArtifactRecharge (the artifacts stream's seam; a hero's Recharging is Hero.recharging, wands.ts). */
+  artifactRecharge?: number;
   /** ElixirOfAquaticRejuvenation.AquaHealing: health back while standing in water, so much in all. */
   aquaHealing?: number;
   /** ElixirOfMight.HTBoost: levels left that the boost to health lasts. */
@@ -127,8 +118,8 @@ export function buffSpeed(char: Char): number {
   return (has(b.stamina) ? 1.5 : 1) * (has(b.haste) ? 3 : 1) * (has(b.dread) ? 2 : 1);
 }
 
-/** Chill.speedFactor: everything takes longer the longer the chill lasts, twice as long at most (Char.spend). */
-export const chillFactor = (char: Char): number => (has(char.buffs?.chill) ? Math.max(0.5, 1 - char.buffs!.chill! * 0.1) : 1);
+/** Chill.speedFactor (status.ts). */
+export { chillFactor } from './status';
 
 /** MagicImmune: no magic of one's own works, nor any on one (rings, scrolls, wands, spells, runestones). */
 export const isMagicImmune = (char: Char): boolean => has(char.buffs?.magicImmune);
@@ -148,62 +139,37 @@ export const cleansed = (char: Char): boolean => has(char.buffs?.cleanse);
 
 /* Fire and frost */
 
-/** Burning.reignite: on fire for the full time, unless immune (fire imbue) or standing in water. */
+/** Burning.reignite: on fire for the full time (status.ts ignite), unless immune (fire imbue), cleansed or in water. */
 export function igniteChar(ctx: Ctx, char: Char): void {
   if (!isAlive(char) || cleansed(char)) return;
   if (isHero(char) ? has(char.buffs?.fireImbue) : char.kind === 'piranha' || char.kind === 'yog' || char.kind === 'burningFist') return;
   if (isWater(ctx.level.map[char.pos]!)) return;
-  // Burning.attachTo: chill and frost give way.
-  if (char.buffs) {
-    delete char.buffs.chill;
-    if (has(char.buffs.frost)) {
-      char.paralysed = 0;
-      delete char.buffs.frost;
-    }
-  }
-  char.burning = Math.max(char.burning ?? 0, BURNING_TURNS);
+  // Burning.attachTo: frost gives way too.
+  if (has(char.frozen)) char.frozen = 0;
+  ignite(char);
 }
 
 /** Frost and Chill cannot take hold of those imbued with frost, nor of piranhas. */
 const frostImmune = (char: Char): boolean => (isHero(char) ? has(char.buffs?.frostImbue) : char.kind === 'piranha');
 
-/** Buff.affect(ch, Chill.class, turns): more chill, which puts fire out (Chill.attachTo). */
+/** Buff.affect(ch, Chill.class, turns): more chill, which puts fire out (status.ts chill). */
 export function chillChar(char: Char, turns: number): void {
   if (frostImmune(char) || cleansed(char) || !isAlive(char)) return;
-  const b = buffsOf(char);
-  b.chill = (b.chill ?? 0) + turns;
-  char.burning = 0;
+  chill(char, turns);
 }
 
 /**
- * Frost.attachTo: frozen stiff (paralysed) for so long, fire out, chill gone; a frozen hero's random potion
- * shatters and a piece of meat freezes; a thief's stolen potion shatters too. `add` adds to frost already there
- * (Buff.affect), else it lasts at least so long (Buff.prolong).
+ * Frost.attachTo (status.ts freeze: fire out, chill gone, a frozen hero's pack feels it): frozen for so long. `add`
+ * adds to frost already there (Buff.affect), else it lasts at least so long (Buff.prolong). A thief's stolen
+ * potion shatters, its meat freezes.
  */
 export function freezeChar(ctx: Ctx, char: Char, turns: number, add = false): void {
   if (frostImmune(char) || cleansed(char) || !isAlive(char)) return;
-  const b = buffsOf(char);
-  const fresh = !has(b.frost);
-  b.frost = add ? (b.frost ?? 0) + turns : Math.max(b.frost ?? 0, turns);
-  delete b.chill;
-  char.burning = 0;
-  char.paralysed = Math.max(char.paralysed ?? 0, b.frost);
-  if (!fresh) return;
-  if (isHero(char)) {
-    const freezable = looseItems(char).filter((item) =>
-      (itemDef(item.kind).category === 'potion' && item.kind !== 'potion.strength' && item.kind !== 'potion.mastery') || item.kind === 'food.meat');
-    const item = ctx.rng.element(freezable);
-    if (!item) return;
-    if (--item.qty <= 0) char.items.splice(char.items.indexOf(item), 1);
-    if (item.kind === 'food.meat') {
-      const stack = char.items.find((i) => i.kind === 'food.carpaccio');
-      if (stack) stack.qty++;
-      else char.items.push(createItem('food.carpaccio'));
-    } else {
-      ctx.effects.push({ type: 'frozenPotion', hero: char.id, kind: item.kind });
-      shatterPotion(ctx, char, item.kind, char.pos);
-    }
-  } else if (char.item && itemDef(char.item.kind).category === 'potion') {
+  const before = char.frozen ?? 0;
+  freeze(ctx, char, turns);
+  if (add && before > 0) char.frozen = before + turns;
+  if (before > 0 || isHero(char)) return;
+  if (char.item && itemDef(char.item.kind).category === 'potion') {
     const kind = char.item.kind;
     delete char.item;
     shatterPotion(ctx, null, kind, char.pos);
@@ -219,14 +185,14 @@ export function freezeChar(ctx: Ctx, char: Char, turns: number, add = false): vo
 export function freezeCell(ctx: Ctx, cell: number): void {
   const char = charAt(ctx.world, ctx.depth, cell);
   if (char && isAlive(char) && !frostImmune(char)) {
-    if (has(char.buffs?.frost)) {
+    if (has(char.frozen)) {
       freezeChar(ctx, char, 2, true);
     } else {
-      const chill = char.buffs?.chill ?? 0;
+      const chilled = char.chill ?? 0;
       let turns = isWater(ctx.level.map[cell]!) ? 5 : 3;
-      if (chill > 0) turns = Math.min(turns, CHILL_TURNS - chill);
+      if (chilled > 0) turns = Math.min(turns, CHILL_TURNS - chilled);
       if (turns > 0) chillChar(char, turns);
-      if (chill > 0 && chill >= CHILL_TURNS) freezeChar(ctx, char, FROST_TURNS);
+      if (chilled > 0 && (char.chill ?? 0) >= CHILL_TURNS) freezeChar(ctx, char, FROST_TURNS);
     }
   }
   if (ctx.floor.heaps.some((heap) => heap.pos === cell)) freezeHeaps(ctx, cell, 0);
@@ -242,11 +208,16 @@ export function snapFreeze(ctx: Ctx, cell: number): void {
 
 /* Lasting harm and help */
 
-/** Corrosion.set: lasts at least so long, and hurts at least so much. */
+/** Corrosion.set (status.ts corrode): lasts at least so long, and hurts at least so much. */
 export function addCorrosion(char: Char, turns: number, damage: number): void {
   if (cleansed(char) || !isAlive(char)) return;
-  const b = buffsOf(char);
-  b.corrosion = { left: Math.max(turns, b.corrosion?.left ?? 0), damage: Math.max(damage, b.corrosion?.damage ?? 1) };
+  corrode(char, turns, damage);
+}
+
+/** Ooze.set (status.ts ooze): a caustic brew's ooze, for its twenty turns. */
+export function addOoze(char: Char): void {
+  if (cleansed(char) || !isAlive(char)) return;
+  ooze(char, OOZE_TURNS);
 }
 
 /** Healing.setHeal: health back over time; with a vial of blood (applyVialEffect), more of it, a little at a time. */
@@ -266,25 +237,9 @@ export function healOverTime(char: Char, amount: number, percent: number, flat: 
   };
 }
 
-/** Barrier.setShield: a shield at least this strong. */
+/** Barrier.setShield (status.ts shieldUp): a shield at least this strong. */
 export function setShield(char: Char, amount: number): void {
-  const b = buffsOf(char);
-  if ((b.barrier?.shield ?? 0) <= amount) b.barrier = { shield: amount, partial: 0 };
-}
-
-/** ShieldBuff.processDamage: a barrier takes what it can of a blow. */
-export function absorbShield(char: Char, damage: number): number {
-  const barrier = char.buffs?.barrier;
-  if (!barrier || barrier.shield <= 0 || damage <= 0) return damage;
-  if (barrier.shield >= damage) {
-    barrier.shield -= damage;
-    damage = 0;
-  } else {
-    damage -= barrier.shield;
-    barrier.shield = 0;
-  }
-  if (barrier.shield <= 0) delete char.buffs!.barrier;
-  return damage;
+  shieldUp(char, amount);
 }
 
 /** ArcaneArmor.set: kept if it is the stronger over time (sqrt(interval) * level). */
@@ -361,8 +316,14 @@ export function cleanse(char: Char, turns = CLEANSE_TURNS): void {
     char.charmed = 0;
     char.rage = 0;
   }
+  // The wands' conditions (status.ts) too.
+  for (const key of ['chill', 'frozen', 'corrosion', 'hexed', 'vulnerable'] as const) delete char[key];
+  if (!isHero(char)) {
+    delete char.ooze;
+    delete char.weakened;
+  }
   const b = buffsOf(char);
-  for (const key of ['chill', 'frost', 'corrosion', 'drowsy', 'magicalSleep', 'aggression', 'dread'] as const) delete b[key];
+  for (const key of ['drowsy', 'magicalSleep', 'aggression', 'dread'] as const) delete b[key];
   b.cleanse = Math.max(b.cleanse ?? 0, turns);
 }
 
@@ -407,8 +368,8 @@ const turnsIn = (now: number, time: number): number => Math.floor(now) - Math.fl
 export function tickHero(ctx: Ctx, hero: Hero, time: number): void {
   const b = hero.buffs;
   if (!b) return;
-  for (const key of ['haste', 'stamina', 'magicalSight', 'magicImmune', 'foresight', 'recharging', 'artifactRecharge', 'frostImbue',
-    'featherFall', 'cleanse', 'chill'] as const) {
+  for (const key of ['haste', 'stamina', 'magicalSight', 'magicImmune', 'foresight', 'artifactRecharge', 'frostImbue',
+    'featherFall', 'cleanse'] as const) {
     if (b[key] !== undefined) {
       b[key] = b[key]! - time;
       if (b[key]! <= 0) delete b[key];
@@ -417,10 +378,6 @@ export function tickHero(ctx: Ctx, hero: Hero, time: number): void {
   if (b.cleanse) cleanseAgain(hero);
   const turns = turnsIn(hero.time, time);
   for (let i = 0; i < turns && isAlive(hero); i++) heroTurn(ctx, hero, b);
-  if (b.frost !== undefined) {
-    b.frost -= time;
-    if (b.frost <= 0) frostEnds(ctx, hero);
-  }
 }
 
 /** While cleansed, whatever harm has taken hold since is shaken off again. */
@@ -442,15 +399,6 @@ function heroTurn(ctx: Ctx, hero: Hero, b: Buffs): void {
     }
     b.healing.left -= heal;
     if (b.healing.left <= 0) delete b.healing;
-  }
-  // Barrier.act: it wanes, the faster the stronger (a twentieth of it a turn, a point at most).
-  if (b.barrier) {
-    b.barrier.partial += Math.min(1, b.barrier.shield / 20);
-    if (b.barrier.partial >= 1) {
-      b.barrier.shield--;
-      b.barrier.partial = 0;
-    }
-    if (b.barrier.shield <= 0) delete b.barrier;
   }
   for (const key of ['arcaneArmor', 'barkskin'] as const) {
     const armor = b[key];
@@ -497,22 +445,8 @@ function heroTurn(ctx: Ctx, hero: Hero, b: Buffs): void {
     if (b.wellFed < 0) delete b.wellFed;
     else if (b.wellFed % 18 === 0 && hero.hp < hero.ht) hero.hp++;
   }
-  // Recharging: wands charge a quarter of a charge more a turn (Wand.Charger, CHARGE_BUFF_BONUS).
-  if (has(b.recharging)) {
-    for (const wand of hero.items) {
-      if (wand.charges === undefined || wand.charges >= wandMaxCharges(wand)) continue;
-      wand.recharge = (wand.recharge ?? 0) + WAND_RECHARGE / 4;
-      while (wand.recharge >= WAND_RECHARGE && wand.charges < wandMaxCharges(wand)) {
-        wand.recharge -= WAND_RECHARGE;
-        wand.charges++;
-      }
-    }
-  }
   // Foresight: every turn a search reaching far around, that finds whatever is hidden there (Hero.search).
   if (has(b.foresight)) foresee(ctx, hero);
-  // Corrosion.act and Ooze.act.
-  if (b.corrosion) corrode(ctx, hero, b);
-  if (b.ooze !== undefined && isAlive(hero)) oozeTurn(ctx, hero, b);
   // Drowsy, then MagicalSleep: asleep until fully healed (a point a turn) or struck.
   if (b.drowsy !== undefined && --b.drowsy <= 0) {
     delete b.drowsy;
@@ -537,45 +471,6 @@ function heroTurn(ctx: Ctx, hero: Hero, b: Buffs): void {
   if (b.censer !== undefined || trinketLevel(hero, 'trinket.chaoticCenser') >= 0) censerTurn(ctx, hero);
 }
 
-/** Corrosion.act: it hurts, and the next turn a point more (half a point, once strong), until it ends. */
-function corrode(ctx: Ctx, char: Char, b: Buffs): void {
-  const corrosion = b.corrosion!;
-  const damage = Math.trunc(corrosion.damage);
-  if (damage > 0) {
-    ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: char.id, damage });
-    hurt(ctx, char, damage, 'corrosion');
-  }
-  corrosion.damage += corrosion.damage < Math.trunc(ctx.depth / 2) + 2 ? 1 : 0.5;
-  if (--corrosion.left <= 0 && char.buffs) delete char.buffs.corrosion;
-}
-
-/**
- * Ooze.act: water washes it off (once it has burned at all); otherwise it hurts by the depth (half a point a turn
- * in the sewers, one at Goo's, more below) for its twenty turns.
- */
-function oozeTurn(ctx: Ctx, char: Char, b: Buffs): void {
-  const inWater = isWater(ctx.level.map[char.pos]!) && !flies(char);
-  const left = b.ooze!;
-  if (left < OOZE_TURNS && inWater) {
-    delete b.ooze;
-    return;
-  }
-  const depth = ctx.depth;
-  const damage = depth > 5 ? 1 + Math.trunc(depth / 5) : depth === 5 ? 1 : Math.trunc(left) % 2 === 0 ? 1 : 0;
-  if (damage > 0) {
-    ctx.effects.push({ type: 'hurt', depth, who: char.id, damage });
-    hurt(ctx, char, damage, 'ooze');
-  }
-  b.ooze = left - 1;
-  if (b.ooze <= 0 || inWater) delete b.ooze;
-}
-
-/** Frost.detach: thawing out in water, one is left chilled a while. */
-function frostEnds(ctx: Ctx, char: Char): void {
-  delete char.buffs!.frost;
-  if (isWater(ctx.level.map[char.pos]!)) chillChar(char, CHILL_TURNS / 2);
-}
-
 /**
  * Hero.search with foresight: everything within its reach is mapped, and whatever is hidden there is found, the
  * hero's own cell first scanned once.
@@ -596,19 +491,10 @@ function foresee(ctx: Ctx, hero: Hero): void {
 export function tickMob(ctx: Ctx, mob: Mob): boolean {
   const b = mob.buffs;
   if (!b) return false;
-  for (const key of ['chill', 'aggression', 'frostImbue', 'cleanse', 'haste', 'stamina', 'magicImmune'] as const) {
+  for (const key of ['aggression', 'frostImbue', 'cleanse', 'haste', 'stamina', 'magicImmune'] as const) {
     if (b[key] !== undefined && --b[key]! <= 0) delete b[key];
   }
   if (b.cleanse) cleanseAgain(mob);
-  if (b.corrosion) {
-    corrode(ctx, mob, b);
-    if (!isAlive(mob)) return true;
-  }
-  if (b.ooze !== undefined) {
-    oozeTurn(ctx, mob, b);
-    if (!isAlive(mob)) return true;
-  }
-  if (b.frost !== undefined && --b.frost <= 0) frostEnds(ctx, mob);
   // Dread.act: out of every hero's sight and six cells away, it is gone for good; else it wears off.
   if (b.dread !== undefined) {
     const heroes = ctx.world.heroes.filter((h) => h.depth === ctx.depth && isAlive(h));
@@ -665,8 +551,8 @@ export function deepSleep(mob: Mob): void {
 export const isBoss = (mob: Mob): boolean => ['goo', 'tengu', 'dm300', 'king', 'yog'].includes(mob.kind);
 /** Char.Property.MINIBOSS among the dungeon's people and guardians. */
 export const isMiniboss = (mob: Mob): boolean => ['fetidRat', 'curse', 'statue', 'rottingFist', 'burningFist'].includes(mob.kind);
-/** Flying creatures (Char.flying). */
-export const flies = (char: Char): boolean => (isHero(char) ? has(char.levitating) : MOBS[char.kind].flying === true);
+/** Flying creatures (Char.flying; status.ts). */
+export { flies } from './status';
 
 export type { ItemKind };
 export const LEVEL_LENGTH = LENGTH;

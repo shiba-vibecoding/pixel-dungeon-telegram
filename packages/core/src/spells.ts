@@ -1,3 +1,4 @@
+import { heldWands, gainCharge } from './wands';
 import { createMob, type Hero } from './actors';
 import { randomDestinationFor } from './ai';
 import { buffsOf, isBoss, isMagicImmune, isMiniboss, PARALYSIS_TURNS } from './buffs';
@@ -188,9 +189,10 @@ export function castSpell(ctx: Ctx, hero: Hero, kind: ItemKind, use: SpellUse): 
       // artifacts charged (the artifacts stream's) and eight turns of recharging.
       const bolt = castRay(ctx, hero.pos, use.cell!, PROJECTILE);
       ctx.effects.push({ type: 'zapped', depth: ctx.depth, from: hero.pos, to: bolt.collision, bolt: 'wild' });
-      for (const wand of hero.items) if (wand.charges !== undefined) wand.charges = Math.min(wandMaxCharges(wand), wand.charges + 1);
+      // Belongings.charge(1): every wand a charge more (the artifacts' with the artifacts stream).
+      for (const { wand, staff } of heldWands(hero)) gainCharge(wand, staff, 1);
       const b = buffsOf(hero);
-      b.recharging = Math.max(b.recharging ?? 0, 8);
+      hero.recharging = Math.max(hero.recharging ?? 0, 8);
       b.artifactRecharge = (b.artifactRecharge ?? 0) + 8;
       return { time: 1, used: true };
     }
@@ -309,7 +311,8 @@ function summonElemental(ctx: Ctx, hero: Hero): void {
   const free = NEIGHBOURS8.map((n) => hero.pos + n).filter((c) => isPassable(ctx.level, c) && !charAt(ctx.world, ctx.depth, c));
   const cell = ctx.rng.element(free)!;
   const elemental = createMob(`#${++ctx.world.nextId}`, 'elemental', cell, 'wandering', ctx.floor.now + 1);
-  elemental.ally = hero.id;
+  elemental.ally = true;
+  elemental.owner = hero.id;
   elemental.target = hero.pos;
   ctx.floor.mobs.push(elemental);
   enterCell(ctx.level, cell);

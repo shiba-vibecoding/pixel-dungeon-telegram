@@ -252,7 +252,7 @@ describe('exotic potions and scrolls', () => {
     // Shielding: a barrier of 60% of the most health, and ten, that takes the blows.
     act(world, 'p', { type: 'use', item: 0 });
     // (It has waned a point over the turn the drinking took.)
-    expect(hero.buffs?.barrier?.shield).toBe(189);
+    expect(hero.shield).toBe(189);
   });
 
   it('a potion of mastery makes a weapon easier to wield', () => {
@@ -302,7 +302,8 @@ describe('exotic potions and scrolls', () => {
     const rat = ratAt(world, far, 8);
     hero.items = [createItem('scroll.sirensSong')];
     expect(act(world, 'p', { type: 'use', item: 0, cell: far }).ok).toBe(true);
-    expect(rat.ally).toBe('p');
+    expect(rat.ally).toBe(true);
+    expect(rat.owner).toBe('p');
     // Walking into an ally swaps places with it.
     const other = ratAt(world, lineFrom(world, hero, 4), 50);
     for (let i = 0; i < 20 && other.hp === 50; i++) act(world, 'p', { type: 'wait' });
@@ -405,7 +406,7 @@ describe('runestones, spells and bombs', () => {
     act(world, 'p', { type: 'throw', item: 0, target: far });
     act(world, 'p', { type: 'wait' });
     act(world, 'p', { type: 'wait' });
-    expect(rat.buffs?.frost).toBeGreaterThan(0);
+    expect(rat.frozen).toBeGreaterThan(0);
   });
 
   it('picking a lit bomb up snuffs it', () => {
@@ -445,7 +446,7 @@ describe('the blobs', () => {
   });
 
   it('an infernal brew burns, and a blizzard freezes, those in it', () => {
-    for (const [brew, check] of [['brew.infernal', (r: { burning?: number }) => (r.burning ?? 0) > 0], ['brew.blizzard', (r: { buffs?: { chill?: number; frost?: number } }) => (r.buffs?.chill ?? r.buffs?.frost ?? 0) > 0]] as const) {
+    for (const [brew, check] of [['brew.infernal', (r: { burning?: number }) => (r.burning ?? 0) > 0], ['brew.blizzard', (r: { chill?: number; frozen?: number }) => (r.chill ?? 0) + (r.frozen ?? 0) > 0]] as const) {
       const { world, hero } = atPot();
       const far = lineFrom(world, hero, 3);
       const rat = ratAt(world, far, 1000);

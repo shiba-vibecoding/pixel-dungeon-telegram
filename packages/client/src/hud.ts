@@ -24,12 +24,15 @@ export const BUFF_ICONS = {
   mindVision: 0, fire: 2, poison: 3, paralysis: 4, hunger: 5, starvation: 6, slow: 7, ooze: 8, roots: 11, invisible: 12,
   weakness: 14, combo: 17, fury: 18, healing: 19, bark: 20, charm: 21, light: 22, cripple: 23, barkskin: 24, dizzy: 29,
   levitation: 1, blindness: 16, immunity: 25, deferred: 28, bleeding: 26, sacrifice: 31,
+  // Shattered's own (BuffIndicator), from its sheet (assets/spd/buffs.png): 1000 and its index.
+  chill: 1015, frozen: 1015, corrosion: 1003, shield: 1020, rockArmor: 1020, magicCharge: 1050, lightningCharge: 1055,
+  recharging: 1034, hexed: 1047, vulnerable: 1046, invulnerable: 1037, disguise: 1071, stasis: 1007, herbal: 1019,
   // From 1000: Shattered's buffs.png (assets/spd/buffs.png), BuffIndicator.SEAL_SHIELD and LOCKED_FLOOR.
   sealShield: 1084, lockedFloor: 1035, bless: 1037,
   // Alchemy's buffs (core buffs.ts), BuffIndicator's icons in the same sheet (tints are the designer's to draw).
-  haste: 1041, stamina: 1041, magicalSight: 1000, magicImmune: 1017, foresight: 1032, recharging: 1034, fireImbue: 1055,
-  frostImbue: 1055, toxicImbue: 1055, featherFall: 1001, cleanse: 1025, drowsy: 1029, magicalSleep: 1030, chill: 1015, frost: 1015,
-  corrosion: 1003, potionHealing: 1044, barrier: 1020, arcaneArmor: 1020, aquaHealing: 1044, htBoost: 1044, wellFed: 1043,
+  haste: 1041, stamina: 1041, magicalSight: 1000, magicImmune: 1017, foresight: 1032, fireImbue: 1055,
+  frostImbue: 1055, toxicImbue: 1055, featherFall: 1001, cleanse: 1025, drowsy: 1029, magicalSleep: 1030,
+  potionHealing: 1044, arcaneArmor: 1020, aquaHealing: 1044, htBoost: 1044, wellFed: 1043,
   prismaticGuard: 1020, challengeArena: 1054,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
@@ -62,6 +65,21 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
     ...(me.subclass === 'gladiator' && me.combo >= 3 && me.time <= me.comboUntil ? [{ name: 'combo' as const }] : []),
     ...(me.subclass === 'berserker' && me.hp > 0 && me.hp <= me.ht * FURY_LEVEL ? [{ name: 'fury' as const }] : []),
     ...(me.barkskin > 0 ? [{ name: 'barkskin' as const, turns: turns(me.barkskin) }] : []),
+    // Shattered's wands' conditions (core status.ts).
+    ...((me.chill ?? 0) > 0 ? [{ name: 'chill' as const, turns: turns(me.chill!) }] : []),
+    ...((me.frozen ?? 0) > 0 ? [{ name: 'frozen' as const, turns: turns(me.frozen!) }] : []),
+    ...(me.corrosion ? [{ name: 'corrosion' as const, turns: turns(me.corrosion.left) }] : []),
+    ...((me.shield ?? 0) > 0 ? [{ name: 'shield' as const, turns: me.shield! }] : []),
+    ...(me.rockArmor ? [{ name: 'rockArmor' as const, turns: me.rockArmor.armor }] : []),
+    ...(me.magicCharge ? [{ name: 'magicCharge' as const, turns: turns(me.magicCharge.turns) }] : []),
+    ...((me.lightningCharge ?? 0) > 0 ? [{ name: 'lightningCharge' as const, turns: turns(me.lightningCharge!) }] : []),
+    ...((me.recharging ?? 0) > 0 ? [{ name: 'recharging' as const, turns: turns(me.recharging!) }] : []),
+    ...((me.hexed ?? 0) > 0 ? [{ name: 'hexed' as const, turns: turns(me.hexed!) }] : []),
+    ...((me.vulnerable ?? 0) > 0 ? [{ name: 'vulnerable' as const, turns: turns(me.vulnerable!) }] : []),
+    ...((me.invulnerable ?? 0) > 0 ? [{ name: 'invulnerable' as const, turns: turns(me.invulnerable!) }] : []),
+    ...(me.disguise ? [{ name: 'disguise' as const, turns: turns(me.disguise.turns) }] : []),
+    ...((me.stasis ?? 0) > 0 ? [{ name: 'stasis' as const, turns: turns(me.stasis!) }] : []),
+    ...(me.herbal ? [{ name: 'herbal' as const, turns: me.herbal.level }] : []),
     ...(isStarving(me) ? [{ name: 'starvation' as const }] : isHungry(me) ? [{ name: 'hunger' as const }] : []),
     // WarriorShield.icon: while shielded or cooling down; the shield left, else the cooldown.
     ...(me.sealShield && (me.sealShield.shield > 0 || me.sealShield.cooldown !== 0)
@@ -85,7 +103,6 @@ function alchemyBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
   timed('magicalSight', b.magicalSight);
   timed('magicImmune', b.magicImmune);
   timed('foresight', b.foresight);
-  timed('recharging', b.recharging);
   timed('fireImbue', b.fireImbue);
   timed('frostImbue', b.frostImbue);
   timed('toxicImbue', b.toxicImbue);
@@ -93,12 +110,7 @@ function alchemyBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
   timed('cleanse', b.cleanse);
   timed('drowsy', b.drowsy);
   if (b.magicalSleep) list.push({ name: 'magicalSleep' });
-  timed('chill', b.chill);
-  timed('frost', b.frost);
-  timed('ooze', b.ooze);
-  if (b.corrosion && b.corrosion.left > 0) list.push({ name: 'corrosion', turns: Math.ceil(b.corrosion.left) });
   if (b.healing && b.healing.left > 0) list.push({ name: 'potionHealing', turns: Math.ceil(b.healing.left) });
-  if (b.barrier && b.barrier.shield > 0) list.push({ name: 'barrier', turns: Math.ceil(b.barrier.shield) });
   if (b.arcaneArmor && b.arcaneArmor.level > 0) list.push({ name: 'arcaneArmor', turns: b.arcaneArmor.level });
   if (b.barkskin && b.barkskin.level > 0) list.push({ name: 'barkskin', turns: b.barkskin.level });
   timed('aquaHealing', b.aquaHealing);

@@ -7,6 +7,7 @@ import { fx } from './fx';
 import { CHEST_ANIMS, type HeapLook } from './motion';
 import { drawFrame, frameAt as sheetFrame, lookIndex, regionIndex, sheet, tintedImage } from './worldsheets';
 import { quality } from './quality';
+import { tintSprite, wandFx } from './wandfx';
 import { t } from './i18n';
 
 /* Canvas renderer for the world, using the original 16px tiles and sprites. */
@@ -166,7 +167,9 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   const knock = knockback(puppet, now);
   const dx = snap(x + (TILE - sheet.w) / 2 + lunge * (puppet.lungeX ?? 0)) + knock * (puppet.knockX ?? 0);
   // Floating: a few pixels up, bobbing slowly, with its shadow left on the floor.
-  const hover = puppet.levitating && puppet.alive ? 4 + Math.round(Math.sin(now / 320)) : 0;
+  const hover = (puppet.levitating && puppet.alive ? 4 + Math.round(Math.sin(now / 320)) : 0)
+    // WardSprite.update: a sentry rises and sinks a pixel, slowly (sin of the time in seconds).
+    + (puppet.bob && puppet.alive ? Math.round(Math.sin(now / 1000)) : 0);
   const dy = snap(y + TILE - sheet.h + lunge * (puppet.lungeY ?? 0)) + knock * (puppet.knockY ?? 0) - hover;
   if (hover) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
@@ -203,6 +206,23 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.translate(dx, dy);
   }
   ctx.drawImage(sheet.image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+  if (puppet.alive) {
+    // IceBlock: tinted (0.83, 1.17, 1.33) at 0.6. DarkBlock: brightness 0.4. WardSprite.resetColor: a ward dims as it shoots.
+    if (puppet.frozen) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, 'rgb(212, 255, 255)', 0.6);
+    else if (puppet.darkened) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#000000', 0.6);
+    else if (puppet.dim !== undefined && puppet.dim < 1) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#000000', 1 - puppet.dim);
+    if (puppet.shielded) {
+      // ShieldHalo: a soft glow of 0xBBAACC about the sprite, as wide as its diagonal.
+      const r = Math.hypot(sheet.w / 2, sheet.h / 2);
+      const halo = ctx.createRadialGradient(sheet.w / 2, sheet.h / 2, 0, sheet.w / 2, sheet.h / 2, r);
+      halo.addColorStop(0, 'rgba(187, 170, 204, 0.4)');
+      halo.addColorStop(1, 'rgba(187, 170, 204, 0)');
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = halo;
+      ctx.fillRect(sheet.w / 2 - r, sheet.h / 2 - r, r * 2, r * 2);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  }
   if (now < puppet.flashUntil) {
     // Hit flash: adding the sprite onto itself brightens only its own pixels.
     ctx.globalCompositeOperation = 'lighter';
@@ -493,7 +513,13 @@ export function render(
     const k = Math.min(1, (now - p.start) / p.duration);
     const x = ((p.from % WIDTH) + ((p.to % WIDTH) - (p.from % WIDTH)) * k) * TILE + TILE / 2;
     const y = (Math.trunc(p.from / WIDTH) + (Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)) * k) * TILE + TILE / 2;
-    if (p.sprite === null) {
+    if (p.sprite === null && p.trail) {
+      // MagicMissile: no body of its own, only the particles it pours (wandfx.ts) about a bright point.
+      ctx.fillStyle = `rgba(${p.color ?? '255, 255, 255'}, 0.6)`;
+      ctx.fillRect(Math.round(x) - 2, Math.round(y) - 2, 4, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
+    } else if (p.sprite === null) {
       ctx.fillStyle = `rgba(${p.color ?? '120, 180, 255'}, 0.5)`;
       ctx.fillRect(Math.round(x) - 3, Math.round(y) - 3, 6, 6);
       ctx.fillStyle = '#ffffff';
@@ -515,6 +541,8 @@ export function render(
   }
 
   fx.draw(ctx, now, seen);
+  // Beams, lightning's arcs, the blast wave's ripple.
+  wandFx.draw(ctx, now);
 
   // Floating numbers and words, drawn at screen resolution so text stays crisp.
   ctx.setTransform(1, 0, 0, 1, 0, 0);

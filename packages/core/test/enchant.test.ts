@@ -241,10 +241,10 @@ describe('the remaining scrolls and potions', () => {
     hero.items = [createItem('potion.frost')];
     act(world, 'p', { type: 'throw', item: 0, target: far });
     // Freezing: the rat is chilled at once, and frozen solid once fully chilled (or thawed if it got out).
-    expect(rat.buffs?.chill).toBeGreaterThan(0);
+    expect(rat.chill).toBeGreaterThan(0);
     rat.paralysed = 0;
     for (let i = 0; i < 4; i++) act(world, 'p', { type: 'wait' });
-    expect(rat.buffs?.frost ?? rat.buffs?.chill).toBeGreaterThan(0);
+    expect(rat.frozen || rat.chill).toBeGreaterThan(0);
     expect(hero.paralysed).toBe(0);
   });
 
