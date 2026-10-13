@@ -177,6 +177,8 @@ export interface Puppet {
   jump?: { start: number; duration: number; height: number };
   /** ScrollOfTeleportation.appear: faded in from nothing over 0.4 s from this time. */
   appearAt?: number;
+  /** DeathMark: marked for death (a pulse of red over it). */
+  marked?: boolean;
 }
 
 /** MobSprite.FALL_TIME: how long a monster takes to drop out of sight into a chasm. */
@@ -328,6 +330,8 @@ export class View {
     flight?: Flight;
     /** A glow over a missile's own pixels (the spectral blades). */
     tint?: string;
+    /** Leaves pour off it (the spirit bow's arrows under Nature's Power). */
+    leaves?: boolean;
   }> = [];
   /** Shattered's Chains effects: the ethereal chains thrown out from a cell to a cell (effects/Chains.java). */
   chains: Array<{ from: number; to: number; start: number; duration: number }> = [];
@@ -336,6 +340,8 @@ export class View {
   /** A leap about to be seen (the hero's new cell is not yet drawn), and creatures to fade in once they are drawn. */
   private readonly jumps = new Map<string, { duration: number; height: number }>();
   private readonly appearing = new Map<string, number>();
+  /** Where the heroes' warp beacons stand on this depth (WarpBeaconTracker.fx pours ward particles there). */
+  beacons: number[] = [];
   /** TimekeepersHourglass.timeFreeze.fx: while my hero freezes time, everything else is drawn still and grey. */
   timeFrozen = false;
 
@@ -520,6 +526,7 @@ export class View {
         puppet.label = hero.id === myId ? '' : hero.name;
       }
     }
+    this.beacons = world.heroes.flatMap((hero) => (hero.abil?.beacon?.depth === this.depth ? [hero.abil.beacon.pos] : []));
     for (const mob of world.floors[this.depth]?.mobs ?? []) {
       // A mirror image looks like its hero, only fainter.
       // A prismatic image too, its hero's ally.
@@ -540,6 +547,7 @@ export class View {
       // ShadowSprite is drawn with the class armour's row of the hero sheets (6); a spirit hawk flies.
       if (mob.kind === 'shadow') puppet.row = 6;
       if (mob.kind === 'hawk') puppet.levitating = true;
+      puppet.marked = mob.deathMark !== undefined;
       if (mob.kind !== 'hawk') puppet.levitating = (mob.levitating ?? 0) > 0;
       puppet.burning = (mob.burning ?? 0) > 0;
       puppet.poisoned = (mob.poison ?? 0) > 0;
@@ -1309,6 +1317,10 @@ export class View {
           break;
         case 'missile':
           if (effect.depth === this.depth) this.shoot(effect.from, effect.to, effect.sprite, now);
+          // SpiritBow.emitter under Nature's Power: leaves pour off the arrow in flight.
+          if (effect.depth === this.depth && effect.sprite === S.SPIRIT_ARROW && world.heroes.some((h) => h.depth === this.depth && h.abil?.nature)) {
+            this.projectiles[this.projectiles.length - 1]!.leaves = true;
+          }
           // SpiritArrow.throwSound: the spirit bow's own.
           if (effect.sprite === S.SPIRIT_ARROW) audio.play('atk_spiritbow', 0.87 + Math.random() * 0.28);
           else audio.play('miss', 1.4, 0.6);

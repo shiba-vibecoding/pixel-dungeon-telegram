@@ -236,6 +236,7 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   if (puppet.kind === 'shadow') tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#000000', 1);
   if (puppet.alive) {
     // IceBlock: tinted (0.83, 1.17, 1.33) at 0.6. DarkBlock: brightness 0.4. WardSprite.resetColor: a ward dims as it shoots.
+    if (puppet.marked) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#ff2020', 0.2 + 0.15 * Math.sin(now / 120));
     if (puppet.frozen) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, 'rgb(212, 255, 255)', 0.6);
     else if (puppet.darkened) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#000000', 0.6);
     else if (puppet.dim !== undefined && puppet.dim < 1) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#000000', 1 - puppet.dim);

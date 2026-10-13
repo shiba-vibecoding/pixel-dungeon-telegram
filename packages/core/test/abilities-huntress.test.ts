@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, createItem, floorAt, heroById, heroSpeed, heroView, levelAt, T, WIDTH, type AbilityKind, type Talent, type World } from '../src/index';
+import { act, createItem, floorAt, heroById, heroSpeed, heroView, itemPrice, leaveBones, levelAt, T, WIDTH, type AbilityKind, type Talent, type World } from '../src/index';
 import { observe } from '../src/floor';
 import { CENTRE, foeAt, ready, special, wait } from './abilities-helpers';
 
@@ -116,5 +116,30 @@ describe("the huntress's spirit hawk", () => {
     special(world);
     wait(world, 105);
     expect(floorAt(world, 1).mobs.some((m) => m.kind === 'hawk')).toBe(false);
+  });
+});
+
+describe('class armour beyond the abilities', () => {
+  it('is worth nothing to a shop and never left in bones', () => {
+    const world = huntress('naturesPower');
+    const hero = heroById(world, 'p')!;
+    expect(itemPrice(hero.armor, true)).toBe(0);
+    const bones = leaveBones(hero, 1, 0.5);
+    expect(bones.item.kind).toBe('gold');
+  });
+
+  it('a hawk sent past a wall shows the huntress what is there', () => {
+    const world = huntress('spiritHawk', { eagleEye: 4 });
+    const hero = heroById(world, 'p')!;
+    special(world);
+    const hawk = floorAt(world, 1).mobs.find((m) => m.kind === 'hawk')!;
+    // A wall across the room, and the hawk on its far side.
+    const map = levelAt(world, 1).map;
+    for (let dy = -4; dy <= 4; dy++) map[hero.pos + 3 + dy * WIDTH] = T.WALL;
+    hawk.pos = hero.pos + 5;
+    const fov = heroView(world, hero);
+    expect(fov[hero.pos + 6]).toBe(true);
+    expect(fov[hero.pos + 8]).toBe(true);
+    wait(world, 1);
   });
 });

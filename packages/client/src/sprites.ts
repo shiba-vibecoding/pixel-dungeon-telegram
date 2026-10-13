@@ -312,7 +312,7 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimNam
   lotus: { w: 19, h: 16, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(1, [0])) },
   // The armour abilities' allies: ShadowSprite (the rogue's own frames, class armour's row, drawn as a dark shadow: render.ts),
   // SpiritHawk.HawkSprite and SmokeBomb.NinjaLogSprite (assets/spd).
-  shadow: { w: 12, h: 15, anims: HERO_ANIMS },
+  shadow: { w: 12, h: 15, anims: basic(anim(1, [0, 0, 0, 1, 0, 0, 1, 1], true), anim(20, [2, 3, 4, 5, 6, 7], true), anim(15, [13, 14, 15, 0]), anim(20, [0])) },
   hawk: {
     w: 15,
     h: 15,

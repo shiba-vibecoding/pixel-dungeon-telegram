@@ -83,7 +83,7 @@ export function showAbilityPick(host: AbilityHost, crownIndex: number): void {
     windowOf(
       { title: capital(itemName(world, crown)), icon: el('div', { className: 'pd-slot' }, itemIcon(world, crown)) },
       el('p', { className: 'pd-tpick-intro', textContent: artText('windows.wndchooseability.message') }),
-      el('div', { className: 'pd-tpicks' }, ...cards),
+      el('div', { className: 'pd-scroll' }, el('div', { className: 'pd-tpicks' }, ...cards)),
       button(AT.random, () => ask(artText('windows.wndchooseability.random_title'), artText('windows.wndchooseability.random_sure'), () => choose(3)), 'quiet'),
       button(AT.later, host.back, 'quiet'),
     ),

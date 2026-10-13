@@ -1094,9 +1094,22 @@ export function ambientFx(view: View, now: number, dt: number): void {
       fx.burst(x - 8 + Math.random() * 32, y - 14, now, { count: 1, colors: SNOW, speed: [2, 6], life: [900, 1400], gravity: 18, drag: 0.6, size: [1, 1], spread: 0 });
     }
   }
+  // WarpBeacon.WarpBeaconTracker.fx: ward particles pouring up from the beacon (a pour every 0.05 s).
+  for (const cell of view.beacons) {
+    if (!chance(20)) continue;
+    const at = cellCentre(cell);
+    fx.burst(at.x + (Math.random() - 0.5) * 8, at.y + 2, now, { count: 1, colors: ['#8822ff', '#b070ff', '#d8b0ff'], glow: true, speed: [2, 8], life: [400, 800], rise: 22, size: [1, 1], spread: 1 });
+  }
   // The wands' missiles pour their particles; snow about the chilled, leaves about a lotus (wandfx.ts).
   wandFx.emit(view.projectiles, view.puppets.values(), (cell) => ({ x: (cell % WIDTH) * TILE + TILE / 2, y: Math.trunc(cell / WIDTH) * TILE + TILE / 2 }), now);
   for (const p of view.projectiles) {
+    if (p.leaves && chance(100)) {
+      // LeafParticle.GENERAL, poured off the arrow (an emitter at 0.01 s).
+      const k = Math.min(1, (now - p.start) / p.duration);
+      const lx = ((p.from % WIDTH) + ((p.to % WIDTH) - (p.from % WIDTH)) * k) * TILE + TILE / 2;
+      const ly = (Math.trunc(p.from / WIDTH) + (Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)) * k) * TILE + TILE / 2;
+      fx.burst(lx, ly, now, { count: 1, colors: ['#2a7a22', '#88cc44', '#4cc24c'], speed: [2, 10], life: [300, 600], gravity: 30, size: [1, 2], spread: 1 });
+    }
     if (p.sprite !== null || p.trail || !chance(90)) continue;
     const k = Math.min(1, (now - p.start) / p.duration);
     const x = ((p.from % WIDTH) + ((p.to % WIDTH) - (p.from % WIDTH)) * k) * TILE + TILE / 2;

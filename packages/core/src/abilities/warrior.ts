@@ -8,7 +8,7 @@ import { dispelInvisibility } from '../artifacts';
 import { isMagicImmune } from '../buffs';
 import { pointsInTalent } from '../talents';
 import { isImmune } from '../props';
-import { occupyCell, throwChar } from '../wands';
+import { occupyCell, powi, throwChar } from '../wands';
 import { harm, isFoe, notAlly, prolong, stateOf, trueDistance } from './common';
 import { comboAddTime, comboHit } from './seams';
 
@@ -25,7 +25,7 @@ const SHOCKWAVE_CRIPPLE = 5;
 export function leapCharge(hero: Hero, base: number): number {
   const jump = hero.abil?.doubleJump;
   if (jump === undefined) return base;
-  return base * 0.84 ** pointsInTalent(hero, 'doubleJump');
+  return base * powi(0.84, pointsInTalent(hero, 'doubleJump'));
 }
 
 /** Why the hero cannot leap (HeroicLeap.activate: a rooted hero cannot; nothing says where to). */
@@ -173,7 +173,7 @@ export function endureAdjust(hero: Hero, now: number, damage: number): number {
   tracker.damageBonus = Math.trunc(tracker.damageBonus + damage / 2);
   let multi = 0.5;
   const shrug = pointsInTalent(hero, 'shrugItOff');
-  if (shrug > 0) multi *= 0.8 ** shrug;
+  if (shrug > 0) multi *= powi(0.8, shrug);
   return damage * multi;
 }
 

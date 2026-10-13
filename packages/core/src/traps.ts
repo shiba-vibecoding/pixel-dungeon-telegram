@@ -57,6 +57,8 @@ export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost' | 'toxic'
     if (harm === 'toxic') return (b?.toxicImbue ?? 0) > 0;
     return false;
   }
+  // SpiritHawk.HawkAlly: immune to all area-bound effects (BlobImmunity): gas, fire, frost and the rest of the blobs.
+  if (char.kind === 'hawk') return true;
   if (harm === 'toxic' || harm === 'shock') return false;
   if (char.kind === 'piranha') return true;
   // DM-300 breathes its own fumes unharmed.

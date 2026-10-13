@@ -8,7 +8,7 @@ import { adjacent, LENGTH, NEIGHBOURS8, WIDTH } from '../level/geometry';
 import { F, hasFlag } from '../level/terrain';
 import { pointsInTalent } from '../talents';
 import { isImmune } from '../props';
-import { occupyCell } from '../wands';
+import { occupyCell, powi } from '../wands';
 import { isFoe, prolong, relocate, stateOf } from './common';
 
 /*
@@ -20,7 +20,7 @@ import { isFoe, prolong, relocate, stateOf } from './common';
 /** SmokeBomb.chargeUse: cheaper while the rogue is unseen with Shadow Step (16%, 30%, 41%, 50% off). */
 export function smokeCharge(hero: Hero, base: number): number {
   if (pointsInTalent(hero, 'shadowStep') <= 0 || hero.invisible <= 0) return base;
-  return base * 0.84 ** pointsInTalent(hero, 'shadowStep');
+  return base * powi(0.84, pointsInTalent(hero, 'shadowStep'));
 }
 
 /** Cells within six steps of walkable ground (PathFinder.buildDistanceMap(hero.pos, passable | avoid, 6)). */
@@ -61,7 +61,7 @@ function leaveLog(ctx: Ctx, hero: Hero, pos: number): void {
   const old = ninjaLogOf(ctx);
   if (old) finishOff(ctx, old);
   const points = pointsInTalent(hero, 'bodyReplacement');
-  const log = createMob(`#${++ctx.world.nextId}`, 'ninjaLog', pos, 'passive', ctx.floor.now + 1);
+  const log = createMob(`#${++ctx.world.nextId}`, 'ninjaLog', pos, 'wandering', ctx.floor.now + 1);
   log.ally = true;
   log.owner = hero.id;
   log.ht = log.hp = 20 * points;
@@ -112,7 +112,7 @@ export const MARK_TURNS = 5;
 /** DeathMark.chargeUse: a second mark in a row costs less with Double Mark (30%, 50%, 65%, 75% off). */
 export function markCharge(hero: Hero, base: number): number {
   if (hero.abil?.doubleMark === undefined || hero.abil.doubleMark !== hero.time) return base;
-  return base * 0.707 ** pointsInTalent(hero, 'doubleMark');
+  return base * powi(0.707, pointsInTalent(hero, 'doubleMark'));
 }
 
 export function deathMarkProblem(ctx: Ctx, hero: Hero, target: number | undefined): string | null {

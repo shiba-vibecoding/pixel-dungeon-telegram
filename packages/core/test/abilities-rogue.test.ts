@@ -42,6 +42,11 @@ describe("the rogue's smoke bomb", () => {
     expect(log.pos).toBe(from);
     expect(log.hp).toBe(60);
     expect(log.ally).toBe(true);
+    // Monsters go for it, and it can be hurt (and spent).
+    const rat = foeAt(world, from + 1);
+    rat.enemy = log.id;
+    hurt(ctxOf(world), log, 5, rat);
+    expect(log.hp).toBe(55);
     // A second bomb replaces it.
     hero.armor.charge = 100;
     special(world, { target: from + 3 });

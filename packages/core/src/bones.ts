@@ -7,6 +7,7 @@ import { F, hasFlag } from './level/terrain';
 import type { Rng } from './rng';
 import type { RunState } from './run';
 import { artifactValue, removeArtifact } from './artifacts';
+import { CLASS_ARMOR } from './classArmor';
 
 /*
  * Bones (Bones.java): a fallen hero leaves one thing behind — the weapon, the
@@ -31,11 +32,12 @@ export const BONES_ROLLS = 5;
 
 /**
  * Bones.leave: what a hero who has just fallen leaves, chosen with `roll` (0 to BONES_ROLLS-1) and `share` (0-1, of
- * the gold). The cloak of shadows is never left behind (Item.bones false).
+ * the gold). The cloak of shadows and class armour are never left behind (Item.bones false).
  */
 export function leaveBones(hero: Hero, roll: number, share: number): Bones {
   const picked = [hero.weapon, hero.armor, hero.artifact, hero.misc, hero.ring][roll];
-  const worn = picked && picked.kind !== 'artifact.cloak' ? picked : null;
+  // (Nor is class armour: ClassArmor.bones is false.)
+  const worn = picked && picked.kind !== 'artifact.cloak' && !CLASS_ARMOR.includes(picked.kind) ? picked : null;
   const item = worn ? (JSON.parse(JSON.stringify(worn)) as Item) : createItem('gold', hero.gold > 0 ? 1 + Math.floor(share * hero.gold) : 1);
   return { depth: hero.depth, item };
 }

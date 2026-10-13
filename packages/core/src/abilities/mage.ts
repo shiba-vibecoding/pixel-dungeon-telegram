@@ -16,7 +16,7 @@ import { hasProp, type Harm, isImmune, resistance } from '../props';
 import { floorLocked } from '../hero';
 import { pointsInTalent } from '../talents';
 import { hasAmulet } from '../world';
-import { occupyCell, throwChar, wildZap } from '../wands';
+import { occupyCell, powi, throwChar, wildZap } from '../wands';
 import { harm, livingAt, notAlly, openSpace, prolong, relocate, stateOf, trueDistance } from './common';
 
 /*
@@ -253,7 +253,7 @@ export function elementalBlast(ctx: Ctx, hero: Hero): number {
 /* Wild magic */
 
 /** WildMagic.chargeUsePerShot: half a charge a shot, a third less with each point of Conserved Magic. */
-const shotCost = (hero: Hero): number => 0.5 * 0.67 ** pointsInTalent(hero, 'conservedMagic');
+const shotCost = (hero: Hero): number => 0.5 * powi(0.67, pointsInTalent(hero, 'conservedMagic'));
 
 /** The wands in the pack Wild Magic may fire (the staff's is left alone). */
 function packWands(hero: Hero): Item[] {
