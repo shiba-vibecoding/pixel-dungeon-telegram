@@ -1,0 +1,59 @@
+import sys; sys.path.insert(0,'/home/claude/world')
+from lib import *
+O='/home/claude/world/camp/'
+def C(h): h=h.lstrip('#'); return (int(h[0:2],16),int(h[2:4],16),int(h[4:6],16),255)
+pal={'v':V,'w':C('#f2edd0'),'p':C('#d8cfa8'),'s':C('#a89c78'),'d':C('#6a5f45'),'r':C('#c0302a'),'R':C('#ff6a4a'),'g':C('#ffcc66'),'G':C('#c8902e'),'b':C('#5a8ad8'),'B':C('#9ac0ff'),'k':C('#3a2a18'),'o':C('#e08a2a'),'O':C('#ffb04a'),'n':C('#7a5532'),'N':C('#a8784a'),'e':C('#44c844'),'E':C('#a0ff90')}
+mail=['................',
+      '................',
+      '................',
+      '.vvvvvvvvvvvvvv.',
+      '.vwvpppppppppwv.',
+      '.vpwvppppppvwpv.',
+      '.vppwvppppvwppv.',
+      '.vpppwvrrvwpppv.',
+      '.vppppvrRrvpppv.',
+      '.vpppvwvrvwvppv.',
+      '.vppvwppvvpwvpv.',
+      '.vpvwppppppwvpv.',
+      '.vvwsssssssssvv.',
+      '.vvvvvvvvvvvvvv.',
+      '................',
+      '................']
+quest=['................',
+       '..vvvvvvvvvvvv..',
+       '.vpwwwwwwwwwwpv.',
+       '.vvppppppppppvv.',
+       '..vpddddsppppv..',
+       '..vppppppppppv..',
+       '..vpdddsppppev..',
+       '..vpppppppevEv..',
+       '..vpddsvpevEvv..',
+       '..vppppvevEvpv..',
+       '..vpdddvEvvppv..',
+       '..vppppvvppppv..',
+       '.vvpppppppppppvv',
+       '.vpssssssssssspv',
+       '..vvvvvvvvvvvvv.',
+       '................']
+mart=['................',
+      '.vvvvvvvvvvvvvv.',
+      'vrwrwrwrwrwrwrwv',
+      'vRwRwRwRwRwRwRwv',
+      '.vvvvvvvvvvvvvv.',
+      '..vnvkkkkkkvnv..',
+      '..vnvkkkkkkvnv..',
+      '..vnvkvggvkvnv..',
+      '..vnvkgGGgkvnv..',
+      '..vnvkvggvkvnv..',
+      '..vnvkkkkkkvnv..',
+      '.vvvvvvvvvvvvvv.',
+      '.vNNNNNNNNNNNNv.',
+      '.vnnnnnnnnnnnnv.',
+      '.vvvvvvvvvvvvvv.',
+      '................']
+for n,a in [('icon-mail',mail),('icon-quests',quest),('icon-mart',mart)]:
+    from_ascii(a,pal).save(O+n+'.png')
+# реплика-«обида»: знак раздражения 7x7
+vein=['.r...r.','rRr.rRr','.r...r.','.......','.r...r.','rRr.rRr','.r...r.']
+vein=['..r.r..','.rR.Rr.','r.....r','.......','r.....r','.rR.Rr.','..r.r..']
+from_ascii(vein,pal).save(O+'sulk.png')

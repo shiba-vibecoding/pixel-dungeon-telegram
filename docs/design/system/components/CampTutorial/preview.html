@@ -1,0 +1,19 @@
+<!-- @dsCard group="Привал" height=812 width=1572 page subtitle="Подсказка-облачко с золотой рамкой вокруг нужного места: враг, лестница вниз, рюкзак, быстрый слот. Остальной экран затемнён, рамка «дышит» раз в секунду. Шаг N из 4, «Дальше» и «Пропустить обучение»" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Обучение по шагу</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .phone { position: relative; width: 375px; height: 812px; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get("lang") || "ru", en = L === "en";
+  function phone() { var p = document.createElement("div"); p.className = "phone pd-phone"; document.getElementById("row").appendChild(p); return p; }
+  [0, 1, 2, 3].forEach(function (k) { var p = phone(); PD.demo.game(p, { mates: false, lvl: 1, log: [[en ? "Welcome to the sewers. Find the stairs down!" : "Добро пожаловать в канализацию. Найдите лестницу вниз!", ""]] }); setTimeout(function () { PD.demo.coach(p, k, L); }, 60); });
+  PD.sprite(document.body);
+</script>
+</body>
+</html>
