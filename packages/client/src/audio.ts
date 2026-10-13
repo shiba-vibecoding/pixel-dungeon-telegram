@@ -50,6 +50,14 @@ interface Music {
   stopped: boolean;
   /** Not before this time (performance.now): it waits for the last one to fade out. */
   notBefore: number;
+  /** The track playing: its decoded sound, when it started on the context's clock, and from how far in. */
+  buffer: AudioBuffer | null;
+  startedAt: number;
+  offset: number;
+  /** Set aside (a list left for the tense track): faded out, its place kept, to go on from there. */
+  parked: boolean;
+  /** The timer that lets it go (or sets it aside) once faded out. */
+  timer: number;
 }
 
 /** Shattered's tracks are wanted at this rate: lower than the context's, a decoded track takes less memory. */
@@ -342,6 +350,8 @@ class Audio {
   private musicDuck: GainNode | null = null;
   private musicFilter: BiquadFilterNode | null = null;
   private music: Music | null = null;
+  /** A list set aside for a while (see park), to go on from where it was. */
+  private parked: Music | null = null;
   /** Shattered's tracks, fetched (the files) and decoded (a few): kept as promises, the oldest let go. */
   private readonly fetched = new Map<Ost, Promise<ArrayBuffer>>();
   private readonly decoded = new Map<Ost, Promise<AudioBuffer>>();
@@ -539,13 +549,80 @@ class Audio {
   playMusic(tune: Tune | null, fade = CROSSFADE, after = false): void {
     if (this.music && sameTune(this.music.tune, tune)) return;
     const old = this.music;
-    this.music = {
-      tune, queue: tune ? new TrackQueue(tune) : null, gain: null, source: null, element: null, player: null,
-      started: false, stopped: false, notBefore: after && old?.started ? performance.now() + fade * 1000 : 0,
-    };
-    if (old) this.fadeOut(old, fade);
+    const back = this.parked && sameTune(this.parked.tune, tune) ? this.parked : null;
+    if (back) {
+      // The list set aside comes back where it was, rather than starting over.
+      this.parked = null;
+      this.music = back;
+    } else {
+      this.music = {
+        tune, queue: tune ? new TrackQueue(tune) : null, gain: null, source: null, element: null, player: null,
+        started: false, stopped: false, notBefore: after && old?.started ? performance.now() + fade * 1000 : 0,
+        buffer: null, startedAt: 0, offset: 0, parked: false, timer: 0,
+      };
+    }
+    if (old) {
+      // A list left for a while (the tense track in a fight) is set aside to go on later; anything else is let go.
+      if (old.tune && 'tracks' in old.tune && old.started && !after) this.park(old, fade);
+      else this.fadeOut(old, fade);
+    }
+    if (back) this.resume(back);
     if (this.music.notBefore > 0) window.setTimeout(() => this.startMusic(), fade * 1000 + 20);
     this.startMusic();
+  }
+
+  /** Fades a list out and keeps its place: the track and how far into it, its queue. */
+  private park(old: Music, seconds: number): void {
+    if (this.parked && this.parked !== old) this.fadeOut(this.parked, 0);
+    this.parked = old;
+    old.stopped = true;
+    const ctx = this.context;
+    if (!ctx || !old.gain) return;
+    old.gain.gain.cancelScheduledValues(ctx.currentTime);
+    old.gain.gain.setTargetAtTime(0, ctx.currentTime, Math.max(0.05, seconds / 3));
+    window.clearTimeout(old.timer);
+    old.timer = window.setTimeout(() => {
+      if (this.parked !== old) return;
+      old.parked = true;
+      const source = old.source;
+      if (source && old.buffer) {
+        const played = ctx.currentTime - old.startedAt + old.offset;
+        old.offset = source.loop ? played % old.buffer.duration : Math.min(played, old.buffer.duration);
+        source.onended = null;
+        try {
+          source.stop();
+        } catch {
+          // Not started.
+        }
+        source.disconnect();
+        old.source = null;
+      }
+      old.element?.pause();
+      old.player?.pause();
+    }, seconds * 1000 + 300);
+  }
+
+  /** A list set aside comes back: faded in, from where it was. */
+  private resume(music: Music): void {
+    const ctx = this.context;
+    window.clearTimeout(music.timer);
+    music.stopped = false;
+    music.notBefore = 0;
+    if (ctx && music.gain) {
+      music.gain.gain.cancelScheduledValues(ctx.currentTime);
+      music.gain.gain.setTargetAtTime(1, ctx.currentTime + 0.05, CROSSFADE / 3);
+    }
+    const wasParked = music.parked;
+    music.parked = false;
+    // Still sounding (back before it had faded), or the music from before (startMusic plays it again).
+    if (music.source || music.element || music.player || !music.started) return;
+    if (wasParked && music.buffer && ctx && music.gain && this.enabled) {
+      this.startSource(music, music.buffer, music.offset);
+    } else if (music.queue) {
+      // Its track ended, or had not come yet, while it was set aside: the next one.
+      const next = music.queue.next();
+      if (next) this.playTrack(music, next);
+    }
   }
 
   /** Fades a tune out over `seconds` (while the next comes in), then lets it go. */
@@ -562,7 +639,8 @@ class Audio {
       old.player?.dispose();
       old.gain?.disconnect();
     };
-    if (ctx && old.gain && old.started) {
+    window.clearTimeout(old.timer);
+    if (ctx && old.gain && old.started && seconds > 0) {
       // Its own fade-in may not have begun yet: that is dropped, and the fade-out starts from where it is.
       old.gain.gain.cancelScheduledValues(ctx.currentTime);
       old.gain.gain.setTargetAtTime(0, ctx.currentTime, Math.max(0.05, seconds / 3));
@@ -577,7 +655,7 @@ class Audio {
     const gain = ctx.createGain();
     gain.gain.value = 0;
     gain.connect(filter);
-    gain.gain.setTargetAtTime(1, ctx.currentTime + 0.05, 0.6);
+    gain.gain.setTargetAtTime(1, ctx.currentTime + 0.05, CROSSFADE / 3);
     return gain;
   }
 
@@ -608,21 +686,8 @@ class Audio {
     }
     this.decode(track).then(
       (buffer) => {
-        const ctx = this.context;
-        if (music !== this.music || music.stopped || !ctx || !music.gain || !this.enabled) return;
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = 'loop' in music.tune!;
-        source.connect(music.gain);
-        source.onended = () => {
-          source.disconnect();
-          if (music.source !== source || music.stopped || music !== this.music) return;
-          music.source = null;
-          const next = music.queue!.next();
-          if (next) this.playTrack(music, next);
-        };
-        music.source = source;
-        source.start();
+        if (music !== this.music || music.stopped || !this.context || !music.gain || !this.enabled) return;
+        this.startSource(music, buffer, 0);
         // The next is fetched and decoded while this one plays, to follow it without a gap.
         const next = music.queue!.peek();
         if (next && next !== track) void this.decode(next).catch(() => undefined);
@@ -633,6 +698,27 @@ class Audio {
         if (music === this.music && !music.stopped) this.startFallback(music, fallbackFor(track));
       },
     );
+  }
+
+  /** A decoded track playing into the tune's fade, from `offset` seconds in; a list goes on to its next as it ends. */
+  private startSource(music: Music, buffer: AudioBuffer, offset: number): void {
+    const ctx = this.context!;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = 'loop' in music.tune!;
+    source.connect(music.gain!);
+    source.onended = () => {
+      source.disconnect();
+      if (music.source !== source || music.stopped || music !== this.music) return;
+      music.source = null;
+      const next = music.queue!.next();
+      if (next) this.playTrack(music, next);
+    };
+    music.source = source;
+    music.buffer = buffer;
+    music.startedAt = ctx.currentTime;
+    music.offset = offset;
+    source.start(0, offset);
   }
 
   /** The music from before in the place of a track: the original's tunes from files, or one played here. */
