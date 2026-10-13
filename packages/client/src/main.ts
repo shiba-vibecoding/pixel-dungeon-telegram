@@ -2,7 +2,7 @@ import {
   type Action, adjacent, blockers, liveBlockers, distance, type Mob, trapAt, buyPrice, cellX, cellY, createHero, createWorld, type Effect, exploredCells, F, findPath, hasFlag,
   HEAP_SPRITES,
   type Hero, type Item, type Level,
-  type Bones, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
+  BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
   visibleCells, chargesKnown, WIDTH,
   type World, charAt, swapsWithHero, visibleEnemies,
@@ -1036,7 +1036,7 @@ function openTrade(world: World, me: Hero, item: Item): void {
   walk.reset();
   showTrade({
     world, hero: me, item,
-    price: buyPrice(item, me.depth, world.known.includes(item.kind), me.rings.some((ring) => ring.kind === 'ring.haggler')),
+    price: buyPrice(item, me.depth, world.known.includes(item.kind), haggles(me)),
     onBuy: () => send({ type: 'buy' }, performance.now()),
     onClose: hideOverlay,
   });
@@ -2597,7 +2597,7 @@ function tick(now: number): void {
     const solo = session.mode === 'solo';
     const victory = world.victory;
     // Bones.leave: a hero fallen alone in an ordinary run leaves something for the next.
-    if (!victory && solo && !dailyRun && !session.checked) store(BONES_KEY, JSON.stringify(leaveBones(me, Math.floor(Math.random() * 4), Math.random())));
+    if (!victory && solo && !dailyRun && !session.checked) store(BONES_KEY, JSON.stringify(leaveBones(me, Math.floor(Math.random() * BONES_ROLLS), Math.random())));
     if (victory) {
       audio.play('levelup');
       haptic('success');

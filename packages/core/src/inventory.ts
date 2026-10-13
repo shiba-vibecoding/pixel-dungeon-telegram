@@ -1,11 +1,14 @@
 import { mend, wear } from './wear';
 import { chargesKnown, identify, isIdentified, learn, WAND_USAGES_TO_KNOW } from './ident';
 import {
-  BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, heroRangedSkill, isAlive, maxExp, type Mob, mobStats, type SubClass,
-  SUBCLASSES,
+  BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, heroEquipped, heroRangedSkill, heroRings, isAlive, maxExp, MISC_SLOTS,
+  type MiscSlot, type Mob, mobStats, type SubClass, SUBCLASSES,
 } from './actors';
 import { affectHunger, growHT } from './hero';
 import { affixProblem, affixSeal, detachProblem, detachSeal, type SealSource } from './seal';
+import {
+  artifactPutOn, artifactTakenOff, carriedOf, dispelInvisibility, foodValue, levelCap, pickPetal, say, upgradeArtifact,
+} from './artifacts';
 import { ballistica, randomRespawnCell } from './ai';
 import { attack, charArmor, CRIPPLE_TURNS, earnExp, hurt } from './combat';
 import { fearless, TERROR_TURNS } from './enchant';
@@ -54,7 +57,11 @@ export type InventoryAction =
    * clients chose between the weapon and the armour worn.
    */
   | { type: 'use'; item: number; on?: ItemRef; target?: 'weapon' | 'armor' }
-  | { type: 'equip'; item: number }
+  /**
+   * Put on a weapon, armour, ring or artifact. With the artifact, misc and ring slots taken, a ring or
+   * an artifact needs `replace`: which of them to take off for it (KindofMisc's window).
+   */
+  | { type: 'equip'; item: number; replace?: MiscSlot }
   | { type: 'drop'; item: number }
   /** Throw a dart, the boomerang or a potion at a cell; it flies until it hits someone or something. */
   | { type: 'throw'; item: number; target: number }
@@ -64,8 +71,8 @@ export type InventoryAction =
   | { type: 'buy' }
   /** Sell an item from the pack to the shopkeeper next to the hero. */
   | { type: 'sell'; item: number }
-  /** Take off a worn ring, back into the pack. */
-  | { type: 'remove'; ring: number }
+  /** Take off a worn ring or artifact, back into the pack (or, with no room there, at the hero's feet). */
+  | { type: 'remove'; slot: MiscSlot }
   /** Put the weapon in hand away (KindOfWeapon's UNEQUIP), into the pack or, with no room there, at the hero's feet. */
   | { type: 'unequip' }
   /** Read the Tome of Mastery and master one of the two ways of the hero's class. */
@@ -152,9 +159,9 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     return hero.weapon.cursed ? CURSED : null;
   }
   if (action.type === 'remove') {
-    if (!Number.isInteger(action.ring) || !hero.rings[action.ring]) return 'no such ring';
-    if (hero.rings[action.ring]!.cursed) return CURSED;
-    return hasRoom(hero, hero.rings[action.ring]!) ? null : 'your pack is full';
+    const worn = MISC_SLOTS.includes(action.slot) ? hero[action.slot] : null;
+    if (!worn) return 'nothing worn there';
+    return worn.cursed ? CURSED : null;
   }
   if (action.type === 'buy') {
     const heap = heapAt(world, hero);
@@ -178,9 +185,9 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
       if (action.on !== undefined && !isItemRef(action.on)) return 'bad target';
       return isTargetedScroll(item.kind) ? scrollTargetProblem(world, hero, item.kind, action) : null;
     case 'equip': {
-      if (category !== 'weapon' && category !== 'armor' && category !== 'ring') return 'that cannot be equipped';
+      if (category !== 'weapon' && category !== 'armor' && category !== 'ring' && category !== 'artifact') return 'that cannot be equipped';
+      if (category === 'ring' || category === 'artifact') return miscEquipProblem(hero, item, action.replace);
       // A cursed item, once worn, will not come off (EquipableItem.doUnequip).
-      if (category === 'ring') return hero.rings.length >= 2 && hero.rings.every((ring) => ring.cursed) ? CURSED : null;
       // ClassArmor.doEquip: class armour is for its own class only.
       if (CLASS_ARMOR.includes(item.kind) && item.kind !== CLASS_ARMOR_OF[hero.heroClass]) return 'that armour is not made for you';
       return hero[category]?.cursed ? CURSED : null;
@@ -305,22 +312,17 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       return TIME_TO_EQUIP;
     }
     case 'remove': {
-      const ring = hero.rings.splice(action.ring, 1)[0]!;
-      hero.items.push(ring);
-      ctx.effects.push({ type: 'dropped', hero: hero.id, item: ring });
+      // KindofMisc.doUnequip: into the pack, or with no room there, at the hero's feet.
+      const worn = takeOffMisc(ctx, hero, action.slot);
+      if (hasRoom(hero, worn)) hero.items.push(worn);
+      else dropItem(ctx.floor, hero.pos, worn);
+      ctx.effects.push({ type: 'dropped', hero: hero.id, item: worn });
       return TIME_TO_EQUIP;
     }
     case 'equip': {
       const item = hero.items[action.item]!;
-      if (itemDef(item.kind).category === 'ring') {
-        // Two rings at most: a third takes the place of the first that is not cursed.
-        hero.items.splice(action.item, 1);
-        if (hero.rings.length >= 2) hero.items.push(hero.rings.splice(hero.rings.findIndex((ring) => !ring.cursed), 1)[0]!);
-        hero.rings.push(item);
-        ctx.effects.push({ type: 'equipped', hero: hero.id, item });
-        // Ring.doEquip: put on, a ring's curse is known (it binds itself at once, if it is cursed).
-        delete item.curseUnknown;
-        if (item.cursed) ctx.effects.push({ type: 'cursedEquip', hero: hero.id, item });
+      if (itemDef(item.kind).category === 'ring' || itemDef(item.kind).category === 'artifact') {
+        equipMisc(ctx, hero, action.item, action.replace);
         return TIME_TO_EQUIP;
       }
       const slot = itemDef(item.kind).category as 'weapon' | 'armor';
@@ -390,7 +392,9 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       const item = heap.items.shift()!;
       const price = buyPrice(item, hero.depth, ctx.world.known.includes(item.kind), haggles(hero));
       hero.gold -= price;
-      collect(hero, item);
+      // A sandbag goes into the hourglass (sandBag.doPickUp); without one it stays on the counter.
+      if (item.kind === 'sandbag' && !artifactPiece(ctx, hero, item)) dropItem(ctx.floor, hero.pos, item);
+      else if (item.kind !== 'sandbag') collect(hero, item);
       if (heap.items.length === 0) ctx.floor.heaps.splice(ctx.floor.heaps.indexOf(heap), 1);
       ctx.effects.push({ type: 'bought', hero: hero.id, item, price });
       return TIME_TO_PICK_UP;
@@ -406,8 +410,119 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
   }
 }
 
+/**
+ * DriedRose.Petal.doPickUp and TimekeepersHourglass.sandBag.doPickUp: a petal makes the rose carried stronger
+ * (with no room left it is discarded), a sandbag the hourglass carried, if it is not cursed. False: left lying.
+ */
+function artifactPiece(ctx: Ctx, hero: Hero, item: Item): boolean {
+  if (item.kind === 'petal') {
+    for (let i = 0; i < item.qty; i++) if (pickPetal(ctx, hero) === 'none') return false;
+    return true;
+  }
+  const hourglass = carriedOf(hero, 'artifact.hourglass');
+  if (!hourglass || hourglass.cursed) {
+    say(ctx, hero, 'timekeepershourglass$sandbag.no_hourglass', 'w');
+    return false;
+  }
+  upgradeArtifact(ctx, hourglass, item.qty);
+  say(ctx, hero, hourglass.level >= levelCap(hourglass) ? 'timekeepershourglass$sandbag.maxlevel' : 'timekeepershourglass$sandbag.levelup',
+    hourglass.level >= levelCap(hourglass) ? 'p' : 'i');
+  return true;
+}
+
 /** Wearing a ring of haggler, shops ask half. */
-const haggles = (hero: Hero): boolean => hero.rings.some((ring) => ring.kind === 'ring.haggler');
+export const haggles = (hero: Hero): boolean => heroRings(hero).some((ring) => ring.kind === 'ring.haggler');
+
+/*
+ * KindofMisc: rings and artifacts share three slots — the artifact slot, the misc slot (either) and
+ * the ring slot. A new one goes where its kind goes, else into the misc slot; with those taken, what
+ * is worn may be moved over to make room, or else the player chooses what to take off for it.
+ */
+
+const isRingItem = (item: Item | null): boolean => !!item && itemDef(item.kind).category === 'ring';
+const isArtifactItem = (item: Item | null): boolean => !!item && itemDef(item.kind).category === 'artifact';
+
+/** KindofMisc.doEquip: whether no slot is free for it, even after moving what is in the misc slot over. */
+function miscFull(hero: Hero, item: Item): boolean {
+  if (isArtifactItem(item)) return !!hero.artifact && !!hero.misc && !(isRingItem(hero.misc) && !hero.ring);
+  return !!hero.misc && !!hero.ring && !(isArtifactItem(hero.misc) && !hero.artifact);
+}
+
+/**
+ * KindofMisc's window: what may be taken off for it, with every slot taken. A ring with a ring in the
+ * misc slot must take the place of a ring; an artifact with an artifact there, of an artifact.
+ */
+export function miscChoices(hero: Hero, item: Item): MiscSlot[] {
+  if (!miscFull(hero, item)) return [];
+  return MISC_SLOTS.filter((slot) => {
+    if (!hero[slot]) return false;
+    if (slot === 'artifact' && isRingItem(item) && isRingItem(hero.misc)) return false;
+    if (slot === 'ring' && isArtifactItem(item) && isArtifactItem(hero.misc)) return false;
+    return true;
+  });
+}
+
+function miscEquipProblem(hero: Hero, item: Item, replace: MiscSlot | undefined): string | null {
+  // Artifact.doEquip: never two of one kind.
+  if (isArtifactItem(item) && [hero.artifact, hero.misc].some((worn) => worn?.kind === item.kind)) {
+    return 'you cannot wear two of the same artifact';
+  }
+  if (!miscFull(hero, item)) return null;
+  if (replace === undefined) return 'choose what to take off';
+  if (!miscChoices(hero, item).includes(replace)) return 'bad choice';
+  // EquipableItem.doUnequip: a cursed thing will not come off.
+  return hero[replace]!.cursed ? CURSED : null;
+}
+
+/** Takes a ring or an artifact off its slot, ending what the artifact had under way (Artifact.doUnequip). */
+function takeOffMisc(ctx: Ctx, hero: Hero, slot: MiscSlot): Item {
+  const worn = hero[slot]!;
+  hero[slot] = null;
+  if (isArtifactItem(worn)) artifactTakenOff(ctx, hero, worn);
+  return worn;
+}
+
+/** KindofMisc.doEquip, with the window's choice (`replace`) when every slot is taken. */
+function equipMisc(ctx: Ctx, hero: Hero, index: number, replace: MiscSlot | undefined): void {
+  const item = hero.items.splice(index, 1)[0]!;
+  if (miscFull(hero, item)) {
+    // The window's onSelect: the chosen one comes off (into the pack, whose room the new one just left),
+    // and what is in the misc slot moves over where it must.
+    hero.items.push(takeOffMisc(ctx, hero, replace!));
+    if (replace === 'artifact' && isRingItem(item)) {
+      hero.artifact = hero.misc;
+      hero.misc = null;
+    } else if (replace === 'ring' && isArtifactItem(item)) {
+      hero.ring = hero.misc;
+      hero.misc = null;
+    }
+  }
+  // See if what is worn can be rearranged first.
+  if (isArtifactItem(item) && hero.artifact && hero.misc && isRingItem(hero.misc) && !hero.ring) {
+    hero.ring = hero.misc;
+    hero.misc = null;
+  } else if (isRingItem(item) && hero.misc && hero.ring && isArtifactItem(hero.misc) && !hero.artifact) {
+    hero.artifact = hero.misc;
+    hero.misc = null;
+  }
+  if (isArtifactItem(item)) {
+    if (!hero.artifact) hero.artifact = item;
+    else hero.misc = item;
+  } else if (!hero.ring) {
+    hero.ring = item;
+  } else {
+    hero.misc = item;
+  }
+  ctx.effects.push({ type: 'equipped', hero: hero.id, item });
+  // KindofMisc.doEquip: put on, its curse is known (it binds itself at once, if it is cursed).
+  delete item.curseUnknown;
+  if (item.cursed) ctx.effects.push({ type: 'cursedEquip', hero: hero.id, item });
+  if (isArtifactItem(item)) {
+    // Artifact.doEquip: an artifact put on is known through and through.
+    identify(ctx.world, item);
+    artifactPutOn(ctx, hero, item);
+  }
+}
 
 /** A shopkeeper standing next to the hero, ready to trade. */
 export function shopkeeperBeside(world: World, hero: Hero): boolean {
@@ -614,7 +729,7 @@ function zap(ctx: Ctx, hero: Hero, index: number, target: number): void {
     return;
   }
   wand.charges = (wand.charges ?? 1) - 1;
-  hero.invisible = 0;
+  dispelInvisibility(ctx, hero);
   zapWand(ctx, hero, wand, target);
   // Wand.wandUsed: zapped often enough, a wand is known through and through.
   if (!isIdentified(ctx.world, wand) && (wand.familiarity = (wand.familiarity ?? 0) + 1) >= WAND_USAGES_TO_KNOW) {
@@ -666,6 +781,10 @@ function pickUp(ctx: Ctx, hero: Hero): void {
     if (item.kind === 'dew') {
       // Dewdrop.doPickUp: an unhurt hero with a full waterskin leaves it lying.
       if (!pickUpDew(ctx, hero, heap.pos, item.qty)) left.push(item);
+    } else if (item.kind === 'petal' || item.kind === 'sandbag') {
+      // DriedRose.Petal and sandBag.doPickUp: into the artifact, or left where they lie.
+      if (artifactPiece(ctx, hero, item)) ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
+      else left.push(item);
     } else if (collect(hero, item)) {
       ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
       if (item.kind === 'seed.rotberry') rotberryRoar(ctx, hero);
@@ -679,7 +798,7 @@ function pickUp(ctx: Ctx, hero: Hero): void {
       left.push(item);
     }
   }
-  if (left.some((item) => item.kind !== 'dew')) ctx.effects.push({ type: 'packFull', hero: hero.id });
+  if (left.some((item) => item.kind !== 'dew' && item.kind !== 'petal' && item.kind !== 'sandbag')) ctx.effects.push({ type: 'packFull', hero: hero.id });
   heap.items = left;
   if (left.length === 0) ctx.floor.heaps.splice(ctx.floor.heaps.indexOf(heap), 1);
 }
@@ -703,7 +822,7 @@ function disturb(ctx: Ctx, hero: Hero, heap: Heap): void {
 }
 
 /** Wraith.spawnAt: a wraith rises on a free open cell, already after the hero, and acts a little later. */
-function spawnWraith(ctx: Ctx, pos: number): boolean {
+export function spawnWraith(ctx: Ctx, pos: number): boolean {
   if (!isPassable(ctx.level, pos) || charAt(ctx.world, ctx.depth, pos)) return false;
   const wraith = createMob(`#${++ctx.world.nextId}`, 'wraith', pos, 'hunting', ctx.floor.now + WRAITH_SPAWN_DELAY);
   wraith.level = ctx.depth;
@@ -788,7 +907,8 @@ function eat(ctx: Ctx, hero: Hero, index: number): void {
   const item = hero.items[index]!;
   const kind = item.kind;
   if (--item.qty <= 0) hero.items.splice(index, 1);
-  affectHunger(ctx, hero, itemDef(kind).energy!);
+  // Food.satisfy: a cursed horn worn takes its share.
+  affectHunger(ctx, hero, foodValue(ctx, hero, itemDef(kind).energy!));
   statsOf(hero).food++;
   let outcome: MeatOutcome | null = null;
   if (kind === 'food.meat') {
@@ -886,12 +1006,19 @@ function scrollTargetProblem(world: World, hero: Hero, kind: TargetedScroll, act
 }
 
 function use(ctx: Ctx, hero: Hero, index: number, target: Item | undefined): void {
-  const { world } = ctx;
   const item = hero.items[index]!;
   const kind = item.kind;
   if (--item.qty <= 0) hero.items.splice(index, 1);
-  ctx.effects.push({ type: 'used', hero: hero.id, kind, identified: learn(world, kind) });
+  ctx.effects.push({ type: 'used', hero: hero.id, kind, identified: learn(ctx.world, kind) });
+  applyItem(ctx, hero, kind, target);
+}
 
+/**
+ * What a potion drunk or a scroll read does (its apply or doRead), once it has left the pack; the
+ * unstable spellbook reads its scrolls through here too.
+ */
+export function applyItem(ctx: Ctx, hero: Hero, kind: ItemKind, target: Item | undefined): void {
+  const { world } = ctx;
   switch (kind) {
     case 'potion.healing': {
       const amount = hero.ht - hero.hp;
@@ -1015,8 +1142,8 @@ function use(ctx: Ctx, hero: Hero, index: number, target: Item | undefined): voi
     case 'scroll.removeCurse': {
       // ScrollOfRemoveCurse: every curse on what the reader wears or carries is lifted, and weakness with them.
       let count = 0;
-      for (const item of [...hero.items, hero.weapon, hero.armor, ...hero.rings]) {
-        if (!item?.cursed) continue;
+      for (const item of [...hero.items, ...heroEquipped(hero)]) {
+        if (!item.cursed) continue;
         delete item.cursed;
         count++;
       }
@@ -1044,7 +1171,7 @@ function use(ctx: Ctx, hero: Hero, index: number, target: Item | undefined): voi
       // Everyone in sight is struck and blinded for a while, the reader too.
       const fov = heroView(world, hero);
       // Yog-Dzewa is beyond its reach (Yog's IMMUNITIES).
-      const struck = ctx.floor.mobs.filter((mob) => fov[mob.pos] && mob.state !== 'passive' && mob.kind !== 'yog');
+      const struck = ctx.floor.mobs.filter((mob) => fov[mob.pos] && mob.state !== 'passive' && mob.kind !== 'yog' && mob.kind !== 'ghostHero');
       ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'psionic', count: struck.length });
       for (const mob of struck) {
         mob.dizzy = Math.max(mob.dizzy ?? 0, ctx.rng.intBetween(3, 6));

@@ -21,6 +21,7 @@ import type { Rng } from './rng';
 import type { World } from './world';
 import { S } from './spd-sprites';
 import { mobCount, partySize, respawnTime, scaleMob } from './party';
+import { ghostAct, ghostSeesBoss, isInvisible } from './artifacts';
 
 /*
  * Monster behaviour, ported from Mob: sleeping monsters may notice a hero in
@@ -38,19 +39,19 @@ export const TIME_TO_RESPAWN = 50;
  * Never the DARKNESS challenge's: in the original only the hero's sight follows the level's.
  */
 
-function mobSight(mob: Mob, depth: number): number {
+export function mobSight(mob: Mob, depth: number): number {
   const demon = mob.kind === 'succubus' || mob.kind === 'eye' || baseKind(mob.kind) === 'scorpio';
   return demon ? Math.max(viewDistance(depth), LIGHT_DISTANCE) : viewDistance(depth);
 }
 
-function spend(mob: Mob, time: number): void {
+export function spend(mob: Mob, time: number): void {
   // Slowed, everything takes twice as long.
   mob.time += (mob.slowed ?? 0) > 0 ? time * 2 : time;
 }
 
 function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Hero | undefined {
   // Invisible heroes cannot be picked out.
-  const heroes = heroesOn(ctx.world, ctx.depth).filter((hero) => hero.invisible <= 0);
+  const heroes = heroesOn(ctx.world, ctx.depth).filter((hero) => !isInvisible(hero));
   const current = heroes.find((hero) => hero.id === mob.enemy);
   if (current && fov[current.pos]) return current;
 
@@ -77,6 +78,12 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
   }
   if (mob.kind === 'bee') {
     beeAct(ctx, mob);
+    return;
+  }
+  // The rose's ghost: an ally, with its own ways (DirectableAlly).
+  if (mob.kind === 'ghostHero') {
+    if (!mobConditions(ctx, mob)) ghostAct(ctx, mob);
+    else spend(mob, TICK);
     return;
   }
   // A magic sheep just stands there, until it fades away.
@@ -423,6 +430,7 @@ function notice(ctx: Ctx, mob: Mob, enemy: Hero, state: MobState): void {
   ctx.effects.push({ type: 'noticed', depth: ctx.depth, mob: mob.id });
   if (mob.kind === 'goo' || mob.kind === 'tengu' || mob.kind === 'dm300' || mob.kind === 'king') {
     ctx.effects.push({ type: 'yell', depth: ctx.depth, mob: mob.id, kind: mob.kind, line: 'notice', hero: enemy.id });
+    ghostSeesBoss(ctx);
   }
 }
 
@@ -692,7 +700,7 @@ export function ballistica(ctx: Ctx, from: number, to: number, hitChars = true, 
   return trace;
 }
 
-function getCloser(ctx: Ctx, mob: Mob, target: number, fov: boolean[]): boolean {
+export function getCloser(ctx: Ctx, mob: Mob, target: number, fov: boolean[]): boolean {
   // Rooted, it cannot move a step.
   if ((mob.rooted ?? 0) > 0) return false;
   if (mob.kind === 'goo') mob.pumped = false;

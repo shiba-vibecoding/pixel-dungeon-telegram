@@ -1,4 +1,4 @@
-import type { Hero, MobKind } from './actors';
+import { type Hero, heroBelongings, type MobKind } from './actors';
 import { heroView } from './floor';
 import { Feeling } from './level/builder';
 import { cellX, cellY } from './level/geometry';
@@ -81,7 +81,7 @@ export function noteLandmarks(world: World, hero: Hero): void {
   }
   // BeaconOfReturning: where a hero's beacon is set (Lloyd's beacon, here).
   for (const other of world.heroes) {
-    for (const item of other.items) if (item.kind === 'beacon' && item.returnTo) add(world, 'beaconLocation', item.returnTo.depth);
+    for (const item of heroBelongings(other)) if (item.kind === 'artifact.beacon' && item.returnTo) add(world, 'beaconLocation', item.returnTo.depth);
   }
   prune(world);
 }
@@ -112,7 +112,7 @@ function stillUseful(world: World, { landmark, depth }: Note): boolean {
     case 'imp': return !world.impQuest?.done;
     case 'troll': return !world.smithQuest?.done;
     case 'beaconLocation':
-      return world.heroes.some((hero) => hero.items.some((item) => item.kind === 'beacon' && item.returnTo?.depth === depth));
+      return world.heroes.some((hero) => heroBelongings(hero).some((item) => item.kind === 'artifact.beacon' && item.returnTo?.depth === depth));
     default:
       return true;
   }

@@ -1,9 +1,10 @@
 import { effectiveLevel } from './wear';
-import { armorStats, type Item, type ItemKind, missileStats, type WeaponStats, weaponStats } from './items';
+import { armorStats, type Item, itemDef, type ItemKind, missileStats, type WeaponStats, weaponStats } from './items';
 import { type HeroClass, startingKit } from './heroclass';
 import { isStarving } from './hero';
 import type { Rng } from './rng';
 import type { Action, PlanStep } from './world';
+import type { Awareness, PendingScroll } from './artifacts';
 
 /*
  * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
@@ -58,8 +59,13 @@ export interface Hero {
   /** The weapon in hand; none after a monk's disarming blow, until the hero takes one up again. */
   weapon: Item | null;
   armor: Item;
-  /** Rings worn, two at most. */
-  rings: Item[];
+  /**
+   * Belongings' artifact, misc and ring slots (KindofMisc): an artifact, a second artifact or ring,
+   * and a ring. Read them through heroRings and heroArtifacts.
+   */
+  artifact: Item | null;
+  misc: Item | null;
+  ring: Item | null;
   items: Item[];
   gold: number;
   /** Turns left of sensing every monster on the level / of being unseen. */
@@ -106,6 +112,12 @@ export interface Hero {
   levitating?: number;
   /** Turns left of breathing no gas (a potion of purity). */
   gasImmune?: number;
+  /** Turns left in the timekeeper's hourglass's stasis: out of time, unseen and untouchable (timeStasis). */
+  stasis?: number;
+  /** The unstable spellbook's scroll the player has yet to settle: read as it is or empowered, and on what. */
+  pendingScroll?: PendingScroll;
+  /** Creatures and heaps the talisman of foresight shows for a while (CharAwareness, HeapAwareness). */
+  aware?: Awareness[];
   /** Hunger.level: 0 when fed, hungry from HUNGRY, starving at STARVING (it grows a point a turn). */
   hunger: number;
   /** Unused since Shattered's hunger (kept for the shape of older saves). */
@@ -163,7 +175,9 @@ export function createHero(player: PlayerInfo, depth: number, pos: number, time:
     ooze: -1,
     weapon: kit.weapon,
     armor: kit.armor,
-    rings: kit.rings,
+    artifact: kit.artifact,
+    misc: null,
+    ring: null,
     items: kit.items,
     gold: 0,
     mindVision: 0,
@@ -195,9 +209,30 @@ export const STARTING_STR = 10;
 
 export const isAlive = (char: { hp: number }): boolean => char.hp > 0;
 
+/* Belongings: the equipment slots of a hero */
+
+/** The three slots of KindofMisc: an artifact, an artifact or a ring, a ring. */
+export type MiscSlot = 'artifact' | 'misc' | 'ring';
+export const MISC_SLOTS: readonly MiscSlot[] = ['artifact', 'misc', 'ring'];
+
+/** The rings a hero wears: in the ring slot, and one in the misc slot. */
+export const heroRings = (hero: Hero): Item[] =>
+  [hero.misc, hero.ring].filter((item): item is Item => item != null && itemDef(item.kind).category === 'ring');
+
+/** The artifacts a hero wears: in the artifact slot, and one in the misc slot. */
+export const heroArtifacts = (hero: Hero): Item[] =>
+  [hero.artifact, hero.misc].filter((item): item is Item => item != null && itemDef(item.kind).category === 'artifact');
+
+/** Everything a hero wears or holds in hand (Belongings' equipped items), in the order of its slots. */
+export const heroEquipped = (hero: Hero): Item[] =>
+  [hero.weapon, hero.armor, hero.artifact, hero.misc, hero.ring].filter((item): item is Item => item != null);
+
+/** Everything a hero has: what is worn, then the pack (Belongings.iterator). */
+export const heroBelongings = (hero: Hero): Item[] => [...heroEquipped(hero), ...hero.items];
+
 /** The levels of every worn ring of a kind, added up (several buffs of a kind stack in the original). */
 export const ringBonus = (hero: Hero, kind: ItemKind): number =>
-  (hero.rings ?? []).reduce((sum, ring) => (ring.kind === kind ? sum + effectiveLevel(ring) : sum), 0);
+  heroRings(hero).reduce((sum, ring) => (ring.kind === kind ? sum + effectiveLevel(ring) : sum), 0);
 
 /** Hero.STR: weakness takes two points of strength away while it lasts. */
 export const heroStr = (hero: Hero): number => hero.str - (hero.weakened > 0 ? 2 : 0);
@@ -313,7 +348,7 @@ export type MobKind =
   | 'succubus' | 'eye' | 'scorpio' | 'yog' | 'rottingFist' | 'burningFist' | 'larva' | 'mimic'
   | 'statue' | 'piranha' | 'imp' | 'sheep' | 'blacksmith' | 'mirror'
   | 'albino' | 'bandit' | 'shielded' | 'senior' | 'acidic'
-  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper';
+  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper' | 'ghostHero';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
 export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
 
@@ -398,11 +433,22 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   /** Asleep (or so he says) in his hidden treasury beside Goo's lair. */
   ratKing: { name: 'rat king', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 2 },
   piranha: { name: 'giant piranha', ht: 15, attack: 22, defense: 12, damage: [1, 6], dr: 1, exp: 0, maxLvl: 30, speed: 2 },
+  /** DriedRose.GhostHero: the sad ghost come back as a companion (its numbers come from its rose and its hero, see mobStats). */
+  ghostHero: { name: 'sad ghost', ht: 40, attack: 10, defense: 5, damage: [1, 5], dr: 0, exp: 0, maxLvl: 0, speed: 1, flying: true },
 };
 
 /** A monster's numbers: the table's, but a mimic is as strong as the depth it lurks on (Mimic.adjustStats). */
 export function mobStats(mob: Mob): MobStats {
   const depth = mob.level ?? 1;
+  if (mob.kind === 'ghostHero' && mob.ghostGear) {
+    // GhostHero: as accurate as the hero (lvl + 9) and as nimble (lvl + 4), striking with its weapon or bare-handed.
+    const { lvl, str, weapon, armor } = mob.ghostGear;
+    const w = weapon ? weaponStats(weapon) : null;
+    return {
+      ...MOBS.ghostHero, ht: mob.ht, attack: Math.trunc((lvl + 9) * (w?.accuracy ?? 1)), defense: lvl + 4,
+      damage: w ? [w.min, w.max] : [1, Math.max(1, str - 8)], dr: armor ? armorStats(armor).dr : 0, attackDelay: w?.delay ?? 1,
+    };
+  }
   if (mob.kind === 'statue' && mob.item) {
     // Statue: its numbers grow with the depth, and it fights with the weapon it holds.
     const weapon = weaponStats(mob.item);
@@ -504,6 +550,12 @@ export interface Mob {
   bleeding?: number;
   /** A mirror image: whose twin it is, and the skill and strength it took from them. */
   image?: { owner: string; attack: number; damage: number };
+  /** The rose's ghost (DirectableAlly): whose it is, and the place it was told to hold (-1: none) and whether it is on its way. */
+  ally?: { owner: string; defend: number; moving: boolean };
+  /** The rose's ghost: its hero's level, its strength and the gear the rose gave it (GhostHero.updateRose). */
+  ghostGear?: { lvl: number; str: number; weapon?: Item; armor?: Item };
+  /** MasterThievesArmband.StolenTracker: robbed by the armband (nothing more to drop), or tried. */
+  robbed?: 'stolen' | 'tried';
 }
 
 /** Mob.beckon: called towards a spot. Statue.beckon: an animated statue does not stir for it. */

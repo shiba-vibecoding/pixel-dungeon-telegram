@@ -251,8 +251,8 @@ describe('a wave', () => {
   it('refuses the beacon\'s return, and its own actions outside the arena', () => {
     const world = arenaWorld(71);
     const hero = heroById(world, 'p')!;
-    hero.items.push({ ...createItem('beacon'), returnTo: { depth: 1, pos: ARENA_CENTRE } });
-    expect(act(world, 'p', { type: 'beacon', item: hero.items.length - 1, mode: 'return' })).toMatchObject({ ok: false });
+    hero.items.push({ ...createItem('artifact.beacon'), returnTo: { depth: 1, pos: ARENA_CENTRE } });
+    expect(act(world, 'p', { type: 'artifact', item: hero.items.length - 1, use: 'return' })).toMatchObject({ ok: false });
     const dungeon = createWorld(5);
     addHero(dungeon, { id: 'p', name: 'P', heroClass: 'mage' });
     expect(act(dungeon, 'p', { type: 'arenaReady' })).toMatchObject({ ok: false });

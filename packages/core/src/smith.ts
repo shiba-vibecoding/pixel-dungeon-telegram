@@ -150,9 +150,7 @@ export function reforge(ctx: Ctx, hero: Hero, first: ItemRef, second: ItemRef): 
   } else {
     // The worse one was worn: the better one, from the pack, takes its place.
     hero.items.splice(betterRef as number, 1);
-    if (worseRef === 'ring0' || worseRef === 'ring1') hero.rings[worseRef === 'ring0' ? 0 : 1] = better;
-    else hero[worseRef] = better;
-
+    hero[worseRef] = better;
   }
   ctx.world.smithQuest!.reforged = true;
   ctx.effects.push({ type: 'upgraded', hero: hero.id, item: better });

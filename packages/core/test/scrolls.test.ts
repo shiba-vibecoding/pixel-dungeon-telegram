@@ -29,8 +29,9 @@ describe('a scroll of upgrade, on the item chosen (WndBag)', () => {
 
   it('upgrades a worn ring, a ring in the pack, the boomerang and armour in the pack', () => {
     let { world, hero } = reader('rogue', 'scroll.upgrade');
-    expect(act(world, 'p', { type: 'use', item: 0, on: 'ring0' }).ok).toBe(true);
-    expect(hero.rings[0]).toMatchObject({ kind: 'ring.shadows', level: 2 });
+    hero.ring = createItem('ring.shadows', 1, 1);
+    expect(act(world, 'p', { type: 'use', item: 0, on: 'ring' }).ok).toBe(true);
+    expect(hero.ring).toMatchObject({ kind: 'ring.shadows', level: 2 });
     hero.items.push({ ...createItem('ring.haste', 1, -1), cursed: true });
     expect(act(world, 'p', { type: 'use', item: 0, on: slot(hero, 'ring.haste') }).ok).toBe(true);
     // Upgraded, the curse is lifted (ScrollOfRemoveCurse.uncurse).
@@ -66,7 +67,7 @@ describe('a scroll of upgrade, on the item chosen (WndBag)', () => {
     fails(slot(hero, 'ring.thorns'), 'that cannot be upgraded');
     fails(0, 'that cannot be upgraded');
     fails(99, 'no such item');
-    fails('ring1', 'no such item');
+    fails('ring', 'no such item');
     fails('ring5', 'bad target');
     hero.armor = createItem('armor.warrior');
     fails('armor', 'that cannot be upgraded');
@@ -120,8 +121,9 @@ describe('a scroll of identify, on the item chosen', () => {
 describe('scrollTargets', () => {
   it('lists what a scroll can be read on, worn items first', () => {
     const { world, hero } = reader('rogue', 'scroll.upgrade');
+    hero.ring = createItem('ring.shadows', 1, 1);
     hero.items.push(createItem('potion.healing'), createItem('wand.slowness'));
-    expect(scrollTargets(world, hero, 'scroll.upgrade')).toEqual(['weapon', 'armor', 'ring0', slot(hero, 'wand.slowness')]);
+    expect(scrollTargets(world, hero, 'scroll.upgrade')).toEqual(['weapon', 'armor', 'ring', slot(hero, 'wand.slowness')]);
     expect(scrollTargets(world, hero, 'scroll.enchantment')).toEqual(['weapon', 'armor']);
     expect(scrollTargets(world, hero, 'scroll.mapping')).toEqual([]);
   });

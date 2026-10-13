@@ -1,9 +1,10 @@
 import {
   armorStats, chargesKnown, durabilityOf, isBroken, kindKnown, levelKnown, maxDurability, CLASS_ARMOR, CLASS_ARMOR_OF, type Hero, type HeroClass,
   type Item, itemDef, type ItemKind, itemSprite, magicMissileDamage, missileStats, SCROLL_RUNES, visiblyCursed, wandMaxCharges, weaponStats,
-  sealShield, WATERSKIN_VOLUME, type World,
+  sealShield, visiblyUpgraded, WATERSKIN_VOLUME, type World,
 } from '@pd/core';
 import { t } from './i18n';
+import { artifactInfo, artifactName } from './artifacttext';
 
 /*
  * How items are called and described, given what the party knows: the kinds
@@ -20,6 +21,11 @@ export function itemName(world: World, item: Item): string {
   const category = itemDef(item.kind).category;
   if (category === 'gold') return `${item.qty} ${t.goldShort}`;
   if (category === 'vial') return `${t.items[item.kind]} (${item.volume ?? 0}/${WATERSKIN_VOLUME})`;
+  // Artifact: its own name (the sandals' grows), and the level shown +0 to +10 (visiblyUpgraded).
+  if (category === 'artifact') {
+    const level = visiblyUpgraded(item);
+    return level === 0 ? artifactName(item) : `${artifactName(item)} +${level}`;
+  }
   if (!isKnown(world, item)) {
     const label = world.run.labels[item.kind] ?? 0;
     // Wand.name and Ring.name go by the wood or the gem; Item.toString adds a known level all the same.
@@ -128,7 +134,10 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
     return [item.kind === 'key.golden' ? t.goldenKeyInfo(item.depth ?? 0) : t.keyInfo(item.depth ?? 0)];
   }
   if (category === 'gold') return [];
-  if (category === 'beacon') return [t.itemInfo[item.kind] ?? '', ...(item.returnTo ? [t.beaconSetAt(item.returnTo.depth)] : [])];
+  // Artifact.desc and info, Shattered's texts (artifacttext.ts).
+  if (category === 'artifact') {
+    return [...artifactInfo(world, hero, item, (kind) => t.items[kind as ItemKind] ?? kind), ...(visiblyCursed(item) ? [t.cursedInfo] : [])];
+  }
   return [isKnown(world, item) ? (t.itemInfo[item.kind] ?? '') : t.unknownInfo];
 }
 

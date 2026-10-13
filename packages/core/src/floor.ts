@@ -19,6 +19,7 @@ import { LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import type { Rng, RngState } from './rng';
 import type { World } from './world';
+import { awareCells } from './artifacts/talisman';
 
 /*
  * The live part of a depth: its monsters, its clock and its random stream.
@@ -265,6 +266,25 @@ export type Effect =
   | { type: 'arenaReady'; hero: string; ready: boolean }
   | { type: 'arenaSinks'; depth: number; tier: number }
   | { type: 'arenaGates'; depth: number; open: boolean; cells: number[] }
+  /*
+   * Artifacts (artifacts/): a line for the log by its message key (under items.artifacts, or a full key); the cloak's
+   * stealth and the hourglass's stasis and time freeze on or off; the talisman's sweep; the chains pulling someone
+   * (and the hero pulled); the rose's ghost appearing and speaking; the spellbook's scroll to settle and a scroll it read;
+   * a monster caught unawares by the armband; the alchemy window, opened by the toolkit.
+   */
+  | { type: 'artifact'; hero: string; msg: string; tone: 'i' | 'p' | 'w' | 'n'; args?: Array<string | number>; item?: Item }
+  | { type: 'stealth'; hero: string; on: boolean }
+  | { type: 'stasis'; hero: string; on: boolean }
+  | { type: 'timeFreeze'; hero: string; on: boolean }
+  | { type: 'scried'; depth: number; hero: string; to: number; cells: number[]; noticed: boolean }
+  | { type: 'chained'; depth: number; from: number; to: number; who: string }
+  | { type: 'pulled'; depth: number; hero: string; from: number; to: number }
+  | { type: 'ghostSummoned'; depth: number; mob: string; pos: number }
+  | { type: 'ghostSays'; depth: number; mob: string; line: string; args?: Array<string | number> }
+  | { type: 'spellbook'; hero: string; kind: ItemKind; exotic?: ItemKind }
+  | { type: 'spellbookRead'; hero: string; kind: ItemKind }
+  | { type: 'surprised'; depth: number; mob: string }
+  | { type: 'alchemy'; hero: string; toolkit: boolean }
   /** A queued action that became impossible before the hero's turn came. */
   | { type: 'interrupted'; hero: string; reason: string };
 
@@ -304,6 +324,8 @@ const SWAPPERS: ReadonlySet<string> = new Set(['ghost', 'sheep', 'wandmaker', 'i
  * them is still a bump into them; walking past simply trades cells.
  */
 export function swapsWithHero(char: Char | undefined): boolean {
+  // The rose's ghost, an ally, trades places too (Mob.interact).
+  if (char !== undefined && 'kind' in char && char.kind === 'ghostHero') return true;
   return char !== undefined && 'kind' in char && char.state === 'passive' && SWAPPERS.has(char.kind);
 }
 
@@ -322,6 +344,8 @@ export function heroView(world: World, hero: Hero): boolean[] {
     const cell = hero.pos + n;
     if (cell >= 0 && cell < LENGTH && Math.abs((cell % WIDTH) - (hero.pos % WIDTH)) <= 1) fov[cell] = true;
   }
+  // Dungeon.observe: what the talisman of foresight shows is seen, and the cells around it.
+  awareCells(world, hero, fov);
   return fov;
 }
 

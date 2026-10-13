@@ -26,6 +26,8 @@ export const BUFF_ICONS = {
   levitation: 1, blindness: 16, immunity: 25, deferred: 28, bleeding: 26, sacrifice: 31,
   // From 1000: Shattered's buffs.png (assets/spd/buffs.png), BuffIndicator.SEAL_SHIELD and LOCKED_FLOOR.
   sealShield: 1084, lockedFloor: 1035, bless: 1037,
+  // The artifacts': the cloak's stealth (INVISIBLE, dimmed), the hourglass's time freeze and stasis (TIME), the cape's THORNS, the talisman's FORESIGHT.
+  stealth: 1012, timeFreeze: 1007, stasis: 1007, thorns: 1031, foresight: 1032,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 

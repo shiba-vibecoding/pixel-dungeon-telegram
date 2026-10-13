@@ -1,5 +1,5 @@
 import {
-  type Action, type EffectId, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
+  type Action, ARTIFACT_USES, type EffectId, MISC_SLOTS, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
   type SubClass,
 } from '@pd/core';
 
@@ -14,6 +14,8 @@ import {
 
 /** A backpack slot or a worn ring's index: small and whole. */
 const MAX_SLOT = 255;
+/** The largest choice an artifact's window offers (the toolkit's levels at most). */
+const MAX_CHOICE = 10;
 /** Monster ids are short ('#12'); anything longer is not one. */
 const MAX_ID = 64;
 
@@ -78,10 +80,32 @@ export function sanitizeAction(raw: unknown): Action | null {
       const second = itemRef(a.second);
       return first === null || second === null ? null : { type: 'reforge', first, second };
     }
-    case 'beacon': {
-      const item = slot(a.item);
-      const mode = oneOf(a.mode, ['set', 'return'] as const);
-      return item === null || !mode ? null : { type: 'beacon', item, mode };
+    case 'artifact': {
+      // An artifact's action (the core's ArtifactAction): which artifact, which use, and what it is aimed at or takes.
+      const item = itemRef(a.item);
+      const use = oneOf(a.use, ARTIFACT_USES);
+      if (item === null || !use) return null;
+      const action: Action = { type: 'artifact', item, use };
+      if (a.cell !== undefined) {
+        const at = cell(a.cell);
+        if (at === null) return null;
+        action.cell = at;
+      }
+      if (a.with !== undefined) {
+        const taken = slot(a.with);
+        if (taken === null) return null;
+        action.with = taken;
+      }
+      if (a.choice !== undefined) {
+        if (!isInt(a.choice, 0, MAX_CHOICE)) return null;
+        action.choice = a.choice;
+      }
+      if (a.on !== undefined) {
+        const on = itemRef(a.on);
+        if (on === null) return null;
+        action.on = on;
+      }
+      return action;
     }
     case 'use': {
       const item = slot(a.item);
@@ -95,7 +119,14 @@ export function sanitizeAction(raw: unknown): Action | null {
       const target = oneOf(a.target, ['weapon', 'armor'] as const);
       return target ? { type: 'use', item, target } : null;
     }
-    case 'equip':
+    case 'equip': {
+      const item = slot(a.item);
+      if (item === null) return null;
+      // KindofMisc's window: which of the artifact, misc and ring slots to free for it.
+      if (a.replace === undefined) return { type: 'equip', item };
+      const replace = oneOf(a.replace, MISC_SLOTS);
+      return replace ? { type: 'equip', item, replace } : null;
+    }
     case 'drop':
     case 'sell': {
       const item = slot(a.item);
@@ -110,8 +141,9 @@ export function sanitizeAction(raw: unknown): Action | null {
     case 'unequip':
       return { type: 'unequip' };
     case 'remove': {
-      const ring = slot(a.ring);
-      return ring === null ? null : { type: 'remove', ring };
+      // A worn ring or artifact, by its slot.
+      const from = oneOf(a.slot, MISC_SLOTS);
+      return from ? { type: 'remove', slot: from } : null;
     }
     case 'master': {
       const item = slot(a.item);

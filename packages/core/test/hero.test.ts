@@ -42,7 +42,7 @@ describe('the classes (HeroClass.initHero)', () => {
     expect(heroById(solo('warrior'), 'p')!.weapon!.kind).toBe(KIT_SEAMS.wornShortsword.kind);
     expect(heroById(solo('mage'), 'p')!.weapon!.kind).toBe(KIT_SEAMS.magesStaff.kind);
     expect(heroById(solo('rogue'), 'p')!.weapon!.kind).toBe('weapon.dagger');
-    expect(heroById(solo('rogue'), 'p')!.rings[0]!.kind).toBe(KIT_SEAMS.cloakOfShadows.kind);
+    expect(heroById(solo('rogue'), 'p')!.artifact!.kind).toBe('artifact.cloak');
     expect(heroById(solo('huntress'), 'p')!.weapon!.kind).toBe(KIT_SEAMS.gloves.kind);
     expect(heroById(solo('huntress'), 'p')!.items[0]!.kind).toBe(KIT_SEAMS.spiritBow.kind);
     // The quick slots each class starts with (Dungeon.quickslot.setSlot).

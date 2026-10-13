@@ -4,7 +4,7 @@ import { bossHurt, earnExp } from './hero';
 import { shieldDamage } from './seal';
 import {
   baseKind, BRUTE_ENRAGED_DAMAGE, isShopkeeper, statsOf, createMob, type Hero, heroArmor, heroAttackSkill, heroDamageRoll, heroDefenseSkill, isAlive,
-  type Mob, MOBS, mobStats, ringBonus,
+  heroRings, type Mob, MOBS, mobStats, ringBonus,
 } from './actors';
 import {
   charAt, type Char, type Ctx, dropItem, enterCell, freeCellNear, heroesOn, isHero, isPassable, isWater, landItem, leaveCell,
@@ -24,6 +24,7 @@ import { mobPress } from './traps';
 import { isBossDepth } from './level/builder';
 import { underChallenges } from './challenges';
 import { arenaKill } from './arena';
+import { bossSlainBeacon, capeTakes, dispelInvisibility, ghostDied, ghostSeesHero } from './artifacts';
 
 /*
  * Melee combat as in Char.attack: an accuracy roll against an evasion roll,
@@ -61,8 +62,8 @@ export interface AttackOverride {
 
 /** One blow or shot; returns whether it hit. */
 export function attack(ctx: Ctx, attacker: Char, defender: Char, override: AttackOverride = {}): boolean {
-  // Striking gives an invisible hero away.
-  if (isHero(attacker)) attacker.invisible = 0;
+  // Striking gives an invisible hero away (Invisibility.dispel: the cloak's stealth and a time freeze too).
+  if (isHero(attacker)) dispelInvisibility(ctx, attacker);
   const skill = override.attack ?? attackSkill(attacker);
   const hit = ctx.rng.floatMax(skill) >= ctx.rng.floatMax(defenseSkill(defender));
   if (!hit) {
@@ -176,7 +177,7 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     attacker.weapon.bloody = true;
   }
   // Hero.defenseProc: a ring of thorns turns some of the blow back on the attacker.
-  if (isHero(defender) && !isHero(attacker) && isAlive(attacker) && defender.rings.some((r) => r.kind === 'ring.thorns')) {
+  if (isHero(defender) && !isHero(attacker) && isAlive(attacker) && heroRings(defender).some((r) => r.kind === 'ring.thorns')) {
     const back = ctx.rng.intRange(0, damage);
     if (back > 0) {
       ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: attacker.id, damage: back });
@@ -189,8 +190,8 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
 /** What a ring of elements can shield a hero from (RingOfElements.Resistance.FULL). */
 const ELEMENTAL: ReadonlySet<string> = new Set(['poison', 'burning', 'lightning', 'gas', 'shaman', 'warlock', 'eye', 'burningFist']);
 
-/** Shopkeeper.flee: attacked, he vanishes, and his wares with him. */
-function shopkeeperFlees(ctx: Ctx, keeper: Mob): void {
+/** Shopkeeper.flee: attacked (or caught stealing), he vanishes, and his wares with him. */
+export function shopkeeperFlees(ctx: Ctx, keeper: Mob): void {
   ctx.floor.heaps = ctx.floor.heaps.filter((heap) => heap.kind !== 'forSale');
   ctx.floor.mobs.splice(ctx.floor.mobs.indexOf(keeper), 1);
   leaveCell(ctx.world, ctx.level, ctx.depth, keeper.pos);
@@ -293,10 +294,14 @@ function split(ctx: Ctx, swarm: Mob, damage: number): void {
 }
 
 /** What hurts without being a character. */
-export type Hazard = 'poison' | 'burning' | 'ooze' | 'lightning' | 'gripping' | 'hunger' | 'bones' | 'gas' | 'fall' | 'deferred' | 'bleeding' | 'dry' | 'multiplicity' | 'bomb';
+export type Hazard =
+  | 'poison' | 'burning' | 'ooze' | 'lightning' | 'gripping' | 'hunger' | 'bones' | 'gas' | 'fall' | 'deferred' | 'bleeding' | 'dry'
+  | 'multiplicity' | 'bomb' | 'chalice' | 'noRose';
 
 export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Hazard): void {
   if (!isAlive(victim)) return;
+  // Hero.damage: in the hourglass's stasis nothing can touch the hero.
+  if (isHero(victim) && (victim.stasis ?? 0) > 0) return;
   // The sad ghost cannot be harmed; the shopkeeper will not stay to be.
   if (!isHero(victim) && victim.state === 'passive' && victim.kind !== 'bee') {
     if (isShopkeeper(victim)) shopkeeperFlees(ctx, victim);
@@ -319,6 +324,8 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   }
   // Earthroot's bark takes the blows first.
   if (isHero(victim)) damage = earthrootAbsorbs(victim, damage);
+  // Hero.damage: the cape of thorns takes its share of whatever hurts the hero.
+  if (isHero(victim) && damage > 0) damage = capeTakes(ctx, victim, damage, typeof source === 'string' ? null : source);
   // Char.damage: the warrior's seal may raise its shield, and shields take what they can (not hunger's).
   if (isHero(victim)) damage = shieldDamage(ctx, victim, damage, source === 'hunger');
   if (!isHero(victim) && victim.kind === 'yog') {
@@ -369,6 +376,11 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
     curseBroken(ctx, mob);
     return;
   }
+  // GhostHero.die: the rose's ghost bids farewell, and its rose empties.
+  if (mob.kind === 'ghostHero') {
+    ghostDied(ctx, mob);
+    return;
+  }
   sacrifice(ctx, mob);
   arenaKill(ctx, mob);
 
@@ -390,10 +402,11 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   if (mob.kind === 'fetidRat') dropItem(ctx.floor, mob.pos, createItem('quest.skull'));
   for (const item of mob.loot ?? []) landItem(ctx, mob.pos, item);
 
-  // Mob.dropLoot, unless the party has outgrown the monster.
-  if (heroes.some((h) => h.lvl <= stats.maxLvl + 2)) {
-    const loot = dropLoot(ctx, mob);
-    if (loot) landItem(ctx, mob.pos, loot);
+  // Mob.rollToDropLoot, unless the party has outgrown the monster, or the armband has robbed it already.
+  if (heroes.some((h) => h.lvl <= stats.maxLvl + 2) && mob.robbed !== 'stolen') {
+    const loot = lootOf(ctx, mob);
+    const item = ctx.rng.float() < loot.chance ? loot.make() : null;
+    if (item) landItem(ctx, mob.pos, item);
   }
 
 
@@ -427,6 +440,8 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
     ctx.effects.push({ type: 'bossSlain', depth: ctx.depth, kind: mob.kind });
     // King.die: the armour kit.
     if (mob.kind === 'king') dropItem(ctx.floor, mob.pos, createItem('kit.armor'));
+    // Tengu, DM-300 and the King: a beacon carried grows stronger.
+    if (mob.kind === 'tengu' || mob.kind === 'dm300' || mob.kind === 'king') bossSlainBeacon(ctx);
     // Tengu.die: a Tome of Mastery, here one for every hero who has not mastered yet.
     if (mob.kind === 'tengu') {
       for (const hero of ctx.world.heroes) if (!hero.subclass) dropItem(ctx.floor, mob.pos, createItem('tome.mastery'));
@@ -434,56 +449,60 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   }
 }
 
-/** What a monster leaves behind (Mob.loot and lootChance, or its own dropLoot). */
-function dropLoot(ctx: Ctx, mob: Mob): Item | null {
+/**
+ * What a monster may leave behind: the chance (Mob.lootChance) and what it is (Mob.createLoot), which
+ * the master thieves' armband can steal as well. A null loot is nothing after all.
+ */
+export function lootOf(ctx: Ctx, mob: Mob): { chance: number; make: () => Item | null } {
   const { rng } = ctx;
-  const generator = (): ItemGenerator => new ItemGenerator(rng, ctx.depth);
+  const generator = (): ItemGenerator => new ItemGenerator(rng, ctx.depth, ctx.world.run);
+  const loot = (chance: number, make: () => Item | null): { chance: number; make: () => Item | null } => ({ chance, make });
   switch (baseKind(mob.kind)) {
     case 'gnoll':
-      return rng.float() < 0.5 ? rollGold(rng, ctx.depth) : null;
+      return loot(0.5, () => rollGold(rng, ctx.depth));
     case 'crab':
-      return rng.float() < CRAB_MEAT_CHANCE ? createItem('food.meat') : null;
-    case 'skeleton': {
+      return loot(CRAB_MEAT_CHANCE, () => createItem('food.meat'));
+    case 'skeleton':
       // The worst of three weapons, one time in five.
-      if (rng.int(5) !== 0) return null;
-      let loot = generator().of('weapon');
-      for (let i = 0; i < 2; i++) {
-        const other = generator().of('weapon');
-        if (other.level < loot.level) loot = other;
-      }
-      return loot;
-    }
+      return loot(0.2, () => {
+        let worst = generator().of('weapon');
+        for (let i = 0; i < 2; i++) {
+          const other = generator().of('weapon');
+          if (other.level < worst.level) worst = other;
+        }
+        return worst;
+      });
     case 'swarm':
-      return rng.int(5 * ((mob.generation ?? 0) + 1)) === 0 ? createItem('potion.healing') : null;
+      return loot(1 / (5 * ((mob.generation ?? 0) + 1)), () => createItem('potion.healing'));
     case 'shaman':
-      return rng.float() < 0.33 ? generator().of('scroll') : null;
+      return loot(0.33, () => generator().of('scroll'));
     case 'bat':
-      return rng.float() < 0.125 ? createItem('potion.healing') : null;
+      return loot(0.125, () => createItem('potion.healing'));
     case 'brute':
-      return rng.float() < 0.5 ? rollGold(rng, ctx.depth) : null;
+      return loot(0.5, () => rollGold(rng, ctx.depth));
     case 'thief':
-      return rng.float() < 0.01 ? randomRing(rng, 'ring.haggler') : null;
+      return loot(0.01, () => randomRing(rng, 'ring.haggler'));
     case 'dm300':
-      return rng.float() < 0.333 ? randomRing(rng, 'ring.thorns') : null;
+      // Shattered's DM-300 once left the cape of thorns, known through and through, where the original's left a ring of thorns.
+      return loot(0.333, () => createItem('artifact.cape'));
     case 'goo':
-      return rng.float() < 0.333 ? createItem('beacon') : null;
+      return loot(0.333, () => createItem('artifact.beacon'));
     case 'spinner':
-      return rng.float() < 0.125 ? createItem('food.meat') : null;
+      return loot(0.125, () => createItem('food.meat'));
     case 'elemental':
-      return rng.float() < 0.1 ? createItem('potion.liquidFlame') : null;
+      return loot(0.1, () => createItem('potion.liquidFlame'));
     case 'monk':
-      return rng.float() < 0.083 ? createItem('food.ration') : null;
+      return loot(0.083, () => createItem('food.ration'));
     case 'warlock':
-      return rng.float() < 0.83 ? generator().of('potion') : null;
+      return loot(0.83, () => generator().of('potion'));
     case 'succubus':
-      return rng.float() < 0.05 ? createItem('scroll.lullaby') : null;
+      return loot(0.05, () => createItem('scroll.lullaby'));
     case 'eye':
-      return rng.float() < 0.5 ? createItem('dew') : null;
+      return loot(0.5, () => createItem('dew'));
     case 'scorpio':
-      if (rng.int(8) === 0) return createItem('potion.healing');
-      return rng.int(6) === 0 ? createItem('food.meat') : null;
+      return loot(1, () => (rng.int(8) === 0 ? createItem('potion.healing') : rng.int(6) === 0 ? createItem('food.meat') : null));
     default:
-      return null;
+      return loot(0, () => null);
   }
 }
 
@@ -503,8 +522,10 @@ function explode(ctx: Ctx, skeleton: Mob): void {
 function heroDied(ctx: Ctx, hero: Hero): void {
   if (hero.items.some((item) => item.kind === 'ankh')) {
     resurrect(ctx, hero);
+    ghostSeesHero(ctx, hero, 'blessed_ankh');
     return;
   }
+  ghostSeesHero(ctx, hero, 'player_killed');
   sacrifice(ctx, hero);
   hero.hp = 0;
   hero.intent = null;

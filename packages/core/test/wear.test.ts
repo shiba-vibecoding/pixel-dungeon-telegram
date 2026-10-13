@@ -84,15 +84,16 @@ describe('wear (Item.use)', () => {
     const { world } = sparring();
     const hero = heroById(world, 'p')!;
     floorAt(world, 1).mobs = [];
-    hero.rings = [createItem('ring.mending', 1, 1), createItem('ring.power', 1, 2)];
-    const turns = maxDurability(hero.rings[1]!);
-    expect(maxDurability(hero.rings[0]!)).toBe(Infinity);
+    hero.ring = createItem('ring.mending', 1, 1);
+    hero.misc = createItem('ring.power', 1, 2);
+    const turns = maxDurability(hero.misc);
+    expect(maxDurability(hero.ring)).toBe(Infinity);
     for (let i = 0; i < turns + 10; i++) {
       hero.hunger = 0;
       act(world, 'p', { type: 'wait' });
     }
-    expect(isBroken(hero.rings[0]!)).toBe(false);
-    expect(isBroken(hero.rings[1]!)).toBe(true);
-    expect(effectiveLevel(hero.rings[1]!)).toBe(1);
+    expect(isBroken(hero.ring)).toBe(false);
+    expect(isBroken(hero.misc)).toBe(true);
+    expect(effectiveLevel(hero.misc)).toBe(1);
   });
 });

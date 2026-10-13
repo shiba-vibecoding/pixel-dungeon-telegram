@@ -1,6 +1,6 @@
 import { type Hero, isAlive, MOBS } from './actors';
 import { randomRespawnCell } from './ai';
-import { charAt, type Char, type Ctx, dropItem, enterCell, heroesOn, isHero, leaveCell } from './floor';
+import { charAt, type Char, type Ctx, dropItem, enterCell, type Floor, heroesOn, isHero, leaveCell } from './floor';
 import { createItem, ItemGenerator, type ItemKind } from './items';
 import { distance, LENGTH } from './level/geometry';
 import { T } from './level/terrain';
@@ -48,17 +48,25 @@ export function plant(ctx: Ctx, pos: number, kind: PlantKind): void {
   ctx.effects.push({ type: 'planted', depth: ctx.depth, pos, kind });
 }
 
+/** Level.uproot: the plant on a cell is gone, unused. */
+export function uproot(floor: Floor, pos: number): void {
+  floor.plants = (floor.plants ?? []).filter((p) => p.pos !== pos);
+}
+
 const near = (ctx: Ctx, pos: number, radius: number): Char[] => [
   ...heroesOn(ctx.world, ctx.depth).filter((h) => distance(h.pos, pos) <= radius),
   ...ctx.floor.mobs.filter((m) => m.state !== 'passive' && distance(m.pos, pos) <= radius),
 ];
 
-/** Level.press / mobPress: whoever steps on a plant sets it off; so does an item landing on it (`who` null). */
-export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number): void {
+/**
+ * Level.press / mobPress: whoever steps on a plant sets it off; so does an item landing on it (`who` null).
+ * `activate`: set off on whoever is there, flier or not (Plant.activate, as the sandals of nature do it).
+ */
+export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number, activate = false): void {
   const found = ctx.floor.plants?.find((p) => p.pos === pos);
   if (!found) return;
   // Flying creatures pass over plants without touching them.
-  if (who && !isHero(who) && MOBS[who.kind].flying) return;
+  if (who && !isHero(who) && MOBS[who.kind].flying && !activate) return;
   ctx.floor.plants = ctx.floor.plants!.filter((p) => p !== found);
   ctx.effects.push({ type: 'plantTriggered', depth: ctx.depth, pos, kind: found.kind, who: who?.id ?? '' });
   const { world, depth, level, rng } = ctx;

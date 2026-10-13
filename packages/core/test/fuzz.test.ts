@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, type Action, addHero, canEnter, charAt, createItem, createWorld, floorAt, heroById, isAlive, ITEMS, type ItemKind, itemDef, levelAt,
+  act, type Action, addHero, ARTIFACT_USES, canEnter, charAt, createItem, createWorld, floorAt, heroById, isAlive, ITEMS, type ItemKind, itemDef, levelAt,
   NEIGHBOURS8, Rng, visibleCells, type World,
 } from '../src/index';
 import { checkInvariants, unblock } from './helpers';
@@ -43,12 +43,16 @@ function randomAction(world: World, id: string, rng: Rng): Action {
     case 6: return { type: 'drop', item };
     case 7: return { type: 'pickup' };
     case 8: return { type: 'special', target };
-    // The beacon, when the hero has one: a random slot would hardly ever hit it.
-    case 9: return { type: 'beacon', item: Math.max(0, hero.items.findIndex((i) => i.kind === 'beacon')), mode: rng.int(2) === 0 ? 'set' : 'return' };
+    // An artifact, worn or carried: any of the uses, aimed anywhere, with anything.
+    case 9: {
+      const carried = hero.items.findIndex((i) => itemDef(i.kind).category === 'artifact');
+      const ref = rng.int(2) === 0 && carried >= 0 ? carried : rng.oneOf(['artifact', 'misc'] as const);
+      return { type: 'artifact', item: ref, use: rng.element(ARTIFACT_USES)!, cell: target, with: item, choice: rng.int(2), on: rng.int(2) === 0 ? item : 'armor' };
+    }
     case 10: return { type: 'balance', item, imbue: rng.int(2) === 0 ? 'speed' : 'accuracy' };
     case 11: return hero.pos === level.exit ? { type: 'descend' } : { type: 'move', to: hero.pos + rng.element(NEIGHBOURS8)! };
     case 12: return { type: 'faceCurse' };
-    case 13: return { type: 'remove', ring: 0 };
+    case 13: return { type: 'remove', slot: rng.oneOf(['artifact', 'misc', 'ring'] as const) };
     case 14: return { type: 'sell', item };
     default: return { type: 'wait' };
   }
@@ -87,7 +91,7 @@ describe('chaos', () => {
       }
     }
     // Every kind of action got through at least now and then.
-    for (const type of ['move', 'attack', 'use', 'throw', 'zap', 'equip', 'drop', 'pickup', 'beacon', 'balance']) expect(accepted[type], type).toBeGreaterThan(0);
+    for (const type of ['move', 'attack', 'use', 'throw', 'zap', 'equip', 'drop', 'pickup', 'artifact', 'balance']) expect(accepted[type], type).toBeGreaterThan(0);
   }, 60000);
 
   it('a world saved as JSON in the middle of chaos carries on exactly like the original', () => {

@@ -11,10 +11,11 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'use', item: 2 })).toEqual({ type: 'use', item: 2 });
     // A scroll read on an item the player picked (scrolls.ts): a slot, the weapon, the armour or a worn ring.
     expect(sanitizeAction({ type: 'use', item: 2, on: 5 })).toEqual({ type: 'use', item: 2, on: 5 });
-    expect(sanitizeAction({ type: 'use', item: 2, on: 'ring1' })).toEqual({ type: 'use', item: 2, on: 'ring1' });
+    expect(sanitizeAction({ type: 'use', item: 2, on: 'misc' })).toEqual({ type: 'use', item: 2, on: 'misc' });
+    expect(sanitizeAction({ type: 'use', item: 2, on: 'ring1' })).toBeNull();
     expect(sanitizeAction({ type: 'use', item: 2, on: 'boots' })).toBeNull();
     expect(sanitizeAction({ type: 'open', cell: 300, junk: 1 })).toEqual({ type: 'open', cell: 300 });
-    expect(sanitizeAction({ type: 'reforge', first: 'ring0', second: 3 })).toEqual({ type: 'reforge', first: 'ring0', second: 3 });
+    expect(sanitizeAction({ type: 'reforge', first: 'ring', second: 3 })).toEqual({ type: 'reforge', first: 'ring', second: 3 });
     expect(sanitizeAction({ type: 'throw', item: 0, target: 100 })).toEqual({ type: 'throw', item: 0, target: 100 });
     expect(sanitizeAction({ type: 'reforge', first: 'weapon', second: 3 })).toEqual({ type: 'reforge', first: 'weapon', second: 3 });
     expect(sanitizeAction({ type: 'master', item: 1, subclass: 'warden' })).toEqual({ type: 'master', item: 1, subclass: 'warden' });
@@ -22,7 +23,14 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'balance', item: 1, weapon: 4, imbue: 'accuracy' })).toEqual({ type: 'balance', item: 1, weapon: 4, imbue: 'accuracy' });
     expect(sanitizeAction({ type: 'special' })).toEqual({ type: 'special' });
     expect(sanitizeAction({ type: 'special', target: 7 })).toEqual({ type: 'special', target: 7 });
-    expect(sanitizeAction({ type: 'beacon', item: 5, mode: 'return' })).toEqual({ type: 'beacon', item: 5, mode: 'return' });
+    // Artifacts (the core's ArtifactAction): worn by slot or carried by index, a use, and what it aims at or takes.
+    expect(sanitizeAction({ type: 'artifact', item: 5, use: 'return', mode: 'x' })).toEqual({ type: 'artifact', item: 5, use: 'return' });
+    expect(sanitizeAction({ type: 'artifact', item: 'artifact', use: 'cast', cell: 300 })).toEqual({ type: 'artifact', item: 'artifact', use: 'cast', cell: 300 });
+    expect(sanitizeAction({ type: 'artifact', item: 'misc', use: 'store', with: 3 })).toEqual({ type: 'artifact', item: 'misc', use: 'store', with: 3 });
+    expect(sanitizeAction({ type: 'artifact', item: 'artifact', use: 'resolve', choice: 1, on: 'weapon' }))
+      .toEqual({ type: 'artifact', item: 'artifact', use: 'resolve', choice: 1, on: 'weapon' });
+    expect(sanitizeAction({ type: 'equip', item: 2, replace: 'misc' })).toEqual({ type: 'equip', item: 2, replace: 'misc' });
+    expect(sanitizeAction({ type: 'remove', slot: 'ring', ring: 0 })).toEqual({ type: 'remove', slot: 'ring' });
     expect(sanitizeAction({ type: 'reward', choice: 'weapon' })).toEqual({ type: 'reward', choice: 'weapon' });
     // The warrior's broken seal: onto an armour, off one.
     expect(sanitizeAction({ type: 'affix', from: 'armor', to: 3, x: 1 })).toEqual({ type: 'affix', from: 'armor', to: 3 });
@@ -44,7 +52,9 @@ describe('client messages', () => {
       { type: 'attack', target: 5 }, { type: 'attack', target: '' }, { type: 'attack', target: 'x'.repeat(65) },
       { type: 'use', item: 1, target: 'ring' }, { type: 'drop', item: 1000 }, { type: 'reward', choice: 'gold' },
       { type: 'reforge', first: 'helmet', second: 1 }, { type: 'master', item: 1, subclass: 'pirate' },
-      { type: 'balance', item: 1, imbue: 'luck' }, { type: 'special', target: null }, { type: 'beacon', item: 1, mode: 'go' },
+      { type: 'balance', item: 1, imbue: 'luck' }, { type: 'special', target: null }, { type: 'artifact', item: 1, use: 'fly' }, { type: 'artifact', item: 'cape', use: 'zap' },
+      { type: 'artifact', item: 1, use: 'zap', cell: -1 }, { type: 'artifact', item: 1, use: 'resolve', choice: 99 },
+      { type: 'equip', item: 1, replace: 'belt' }, { type: 'remove', ring: 0 },
       { type: 'affix', from: 'weapon', to: 1 }, { type: 'affix', from: 1 }, { type: 'affix', from: 1, to: 1000 }, { type: 'detach' },
       { type: 'detach', armor: 'ring0' }, { type: 'detach', armor: -1 },
       { type: 'arenaPick' }, { type: 'arenaPick', choice: 3 }, { type: 'arenaPick', choice: -1 }, { type: 'arenaPick', choice: '1' },

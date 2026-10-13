@@ -1,5 +1,6 @@
 import type { EmoteKind, Enchantment, Glyph, HeroClass, ItemKind, Landmark, MobKind, PlantKind, SubClass, TrapKind } from '@pd/core';
 import type { BuffName } from './hud';
+import { ART_EN, ART_RU } from './i18n-artifacts';
 
 /* Interface text in Russian and English; the language follows Telegram or the browser. */
 
@@ -41,7 +42,35 @@ const RU_GLYPHS: Record<Glyph, string> = {
   stench: 'зловония', viscosity: 'вязкости', displacement: 'смещения', entanglement: 'опутывания', autoRepair: 'самопочинки',
 };
 
+/** The artifacts' names, from Shattered's own texts (i18n-artifacts.ts). */
+const artNames = (table: Record<string, string>) => ({
+  cloak: table['cloakofshadows.name']!, horn: table['hornofplenty.name']!, chalice: table['chaliceofblood.name']!,
+  hourglass: table['timekeepershourglass.name']!, talisman: table['talismanofforesight.name']!, spellbook: table['unstablespellbook.name']!,
+  chains: table['etherealchains.name']!, rose: table['driedrose.name']!, armband: table['masterthievesarmband.name']!,
+  sandals: table['sandalsofnature.name']!, cape: table['capeofthorns.name']!, toolkit: table['alchemiststoolkit.name']!,
+  beacon: table['lloydsbeacon.name']!, sandbag: table['timekeepershourglass$sandbag.name']!, petal: table['driedrose$petal.name']!,
+});
+const ART_NAMES_EN = artNames(ART_EN);
+const ART_NAMES_RU = artNames(ART_RU);
+
 const en = {
+  /** The artifacts' card and windows (design system's ShArtifact); their own texts are Shattered's (artifacttext.ts). */
+  art: {
+    level: 'Level',
+    charge: 'Charge',
+    takeOff: 'Take off',
+    giveWeapon: 'Give a weapon',
+    giveArmor: 'Give armour',
+    takeBack: (name: string) => `Take back: ${name}`,
+    chooseWith: 'Choose what to use',
+    stasisState: 'You are out of time.',
+    regular: 'The scroll as it is',
+    readOn: 'Choose what to read it on',
+    nothingToRead: 'Read it on nothing',
+    empty: '---',
+    noAlchemy: 'Alchemy is not here yet.',
+    energizeAll: (energy: number, levels: number) => `${energy} energy: +${levels} levels`,
+  },
   subtitle: 'Telegram edition',
   menu: 'Menu',
   history: 'History',
@@ -158,7 +187,7 @@ const en = {
     huntress: 'The Huntress is a master of thrown weapons and has a magical bow with infinite arrows. She also travels through tall grass without trampling it.',
   } as Record<HeroClass, string>,
   mobs: {
-    rat: 'marsupial rat', gnoll: 'gnoll scout', crab: 'sewer crab', goo: 'Goo', ghost: 'sad ghost',
+    rat: 'marsupial rat', gnoll: 'gnoll scout', crab: 'sewer crab', goo: 'Goo', ghost: 'sad ghost', ghostHero: ART_EN['driedrose$ghosthero.name']!,
     skeleton: 'skeleton', thief: 'crazy thief', swarm: 'swarm of flies', shaman: 'gnoll shaman', bat: 'vampire bat',
     brute: 'gnoll brute', tengu: 'Tengu', shopkeeper: 'shopkeeper', wandmaker: 'old wandmaker',
     spinner: 'cave spinner', dm300: 'DM-300',
@@ -420,7 +449,10 @@ const en = {
     'bag.scrolls': 'scroll holder',
     'bag.wands': 'wand holster',
     weightstone: 'weightstone',
-    beacon: "lloyd's beacon",
+    'artifact.cloak': ART_NAMES_EN.cloak, 'artifact.horn': ART_NAMES_EN.horn, 'artifact.chalice': ART_NAMES_EN.chalice, 'artifact.hourglass': ART_NAMES_EN.hourglass,
+    'artifact.talisman': ART_NAMES_EN.talisman, 'artifact.spellbook': ART_NAMES_EN.spellbook, 'artifact.chains': ART_NAMES_EN.chains, 'artifact.rose': ART_NAMES_EN.rose,
+    'artifact.armband': ART_NAMES_EN.armband, 'artifact.sandals': ART_NAMES_EN.sandals, 'artifact.cape': ART_NAMES_EN.cape, 'artifact.toolkit': ART_NAMES_EN.toolkit,
+    'artifact.beacon': ART_NAMES_EN.beacon, sandbag: ART_NAMES_EN.sandbag, petal: ART_NAMES_EN.petal,
     dew: 'dewdrop',
   } as Record<ItemKind, string>,
   itemInfo: {
@@ -515,7 +547,6 @@ const en = {
     seal: 'A wax seal, affixed to armor as a symbol of valor. It has a faded rune of protection engraved in the center, and is cracked in half across the middle.\n\nA memento from his home, the seal helps the warrior persevere. While wearing the seal the warrior will instantly gain shielding when he is about to be damaged to half health or lower.\n\nThe seal can be affixed to armor, and moved between armors. It can carry a single upgrade with it, so long as that upgrade was applied to the armor while the seal was attached to it.',
     honeypot: 'There is not much honey in this small honeypot, but there is a golden bee in it, and it does not want to leave. Broken, it lets the bee out to fight for you, for a while.',
     weightstone: 'With a weightstone, you can balance the weapon in your hands to make it faster or more accurate.',
-    beacon: "Lloyd's beacon is an intricate magic device that lets you return to a place you have already been.",
   } as Partial<Record<ItemKind, string>>,
   ghost: {
     intro:
@@ -859,10 +890,12 @@ const en = {
     combo: 'Combo', fury: 'Fury', barkskin: 'Barkskin', levitation: 'Levitating', immunity: 'Immune to gases',
     blindness: 'Blinded', deferred: 'Deferred damage', bleeding: 'Bleeding', sacrifice: 'Marked for sacrifice',
     sealShield: 'Warrior Shield', lockedFloor: 'Floor is locked', bless: 'Blessed',
+    stealth: 'Cloaked', timeFreeze: 'Time Freeze', stasis: 'Stasis', thorns: 'Thorns', foresight: 'Foresight',
   } as Record<BuffName, string>,
   causes: {
     poison: 'poison', burning: 'fire', ooze: 'caustic ooze', lightning: 'lightning', gripping: 'a gripping trap', hunger: 'starvation',
     bones: 'an explosion of bones', gas: 'toxic gas', fall: 'a fall into the chasm', deferred: 'deferred damage', bleeding: 'bleeding', multiplicity: 'armour of multiplicity', bomb: 'a bomb',
+    chalice: 'the chalice of blood', noRose: 'fading away',
   } as Record<string, string>,
   // Weapon.Enchantment and Armor.Glyph: what they are called and what they do.
   enchantName: (name: string, enchant: Enchantment, _kind: ItemKind): string => `${EN_ENCHANTMENTS[enchant]} ${name}`,
@@ -1191,6 +1224,22 @@ const en = {
 type Strings = typeof en;
 
 const ru: Strings = {
+  art: {
+    level: 'Уровень',
+    charge: 'Заряд',
+    takeOff: 'Снять',
+    giveWeapon: 'Дать оружие',
+    giveArmor: 'Дать броню',
+    takeBack: (name) => `Забрать: ${name}`,
+    chooseWith: 'Выберите, что использовать',
+    stasisState: 'Вы вне времени.',
+    regular: 'Свиток как есть',
+    readOn: 'Выберите, на что прочитать',
+    nothingToRead: 'Ни на что',
+    empty: '---',
+    noAlchemy: 'Алхимии здесь пока нет.',
+    energizeAll: (energy, levels) => `${energy} энергии: +${levels} ур.`,
+  },
   subtitle: 'издание для Telegram',
   menu: 'Меню',
   history: 'История',
@@ -1307,7 +1356,7 @@ const ru: Strings = {
   },
   // Names as in the Russian localisation of the original.
   mobs: {
-    rat: 'сумчатая крыса', gnoll: 'гнолл-следопыт', crab: 'сточный краб', goo: 'Жижа', ghost: 'печальное привидение',
+    rat: 'сумчатая крыса', gnoll: 'гнолл-следопыт', crab: 'сточный краб', goo: 'Жижа', ghost: 'печальное привидение', ghostHero: 'печальное привидение',
     skeleton: 'скелет', thief: 'безумный вор', swarm: 'рой мух', shaman: 'гнолл-шаман', bat: 'летучая мышь-вампир',
     brute: 'гнолл-громила', tengu: 'Тенгу', shopkeeper: 'торговец', wandmaker: 'старый мастер палочек',
     spinner: 'пещерный паук', dm300: 'DM-300',
@@ -1564,7 +1613,10 @@ const ru: Strings = {
     'bag.scrolls': 'футляр для свитков',
     'bag.wands': 'чехол для палочек',
     weightstone: 'грузило',
-    beacon: 'маяк Ллойда',
+    'artifact.cloak': ART_NAMES_RU.cloak, 'artifact.horn': ART_NAMES_RU.horn, 'artifact.chalice': ART_NAMES_RU.chalice, 'artifact.hourglass': ART_NAMES_RU.hourglass,
+    'artifact.talisman': ART_NAMES_RU.talisman, 'artifact.spellbook': ART_NAMES_RU.spellbook, 'artifact.chains': ART_NAMES_RU.chains, 'artifact.rose': ART_NAMES_RU.rose,
+    'artifact.armband': ART_NAMES_RU.armband, 'artifact.sandals': ART_NAMES_RU.sandals, 'artifact.cape': ART_NAMES_RU.cape, 'artifact.toolkit': ART_NAMES_RU.toolkit,
+    'artifact.beacon': ART_NAMES_RU.beacon, sandbag: ART_NAMES_RU.sandbag, petal: ART_NAMES_RU.petal,
     dew: 'капля росы',
   },
   itemInfo: {
@@ -1659,7 +1711,6 @@ const ru: Strings = {
     seal: 'Восковая печать, прикреплённая к броне как символ отваги. В её центре высечена поблёкшая руна защиты, а сама печать расколота надвое.\n\nБудучи памятью о доме, эта печать укрепляет воина. Когда он её носит, он будет мгновенно получать щит, как только будет ранен ниже половины здоровья.\n\nПечать можно прикрепить к броне, а так же переместить на другую. Она способна перенести один уровень улучшения, если улучшение было наложено на броню с печатью.',
     honeypot: 'Мёда в этом горшочке немного, зато в нём живёт золотая пчела, которая не хочет его покидать. Разбейте горшочек, и пчела будет недолго сражаться за вас.',
     weightstone: 'Грузилом можно сбалансировать оружие в руках: сделать его быстрее или точнее.',
-    beacon: 'Маяк Ллойда — хитроумное магическое устройство, которое позволяет вернуться туда, где вы уже побывали.',
   },
   // From the Russian localisation of the original.
   ghost: {
@@ -1993,10 +2044,13 @@ const ru: Strings = {
     combo: 'Комбо', fury: 'Ярость', barkskin: 'Кора', levitation: 'Левитация', immunity: 'Невосприимчивость к газам',
     blindness: 'Слепота', deferred: 'Отложенный урон', bleeding: 'Кровотечение', sacrifice: 'Отмечен для жертвы',
     sealShield: 'Щит Воина', lockedFloor: 'Уровень закрыт', bless: 'Вдохновлён',
+    stealth: ART_RU['cloakofshadows$cloakstealth.name']!, timeFreeze: ART_RU['timekeepershourglass$timefreeze.name']!, stasis: 'Стазис',
+    thorns: ART_RU['capeofthorns$thorns.name']!, foresight: ART_RU['talismanofforesight$foresight.name']!,
   },
   causes: {
     poison: 'яд', burning: 'огонь', ooze: 'едкая слизь', lightning: 'молния', gripping: 'капкан', hunger: 'голод',
     bones: 'взрыв костей', gas: 'ядовитый газ', fall: 'падение в пропасть', deferred: 'отложенный урон', bleeding: 'кровотечение', multiplicity: 'доспех множественности', bomb: 'взрыв бомбы',
+    chalice: 'чаша крови', noRose: 'угасание',
   },
   enchantName: (name, enchant, kind) => `${RU_ENCHANTMENTS[enchant][RU_GENDERS[kind] ?? 0]} ${name}`,
   brokenName: (name, kind) => `${['сломанный', 'сломанная', 'сломанное', 'сломанные'][brokenGender(kind)]} ${name}`,

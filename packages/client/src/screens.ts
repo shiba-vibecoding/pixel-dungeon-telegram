@@ -1,7 +1,9 @@
 import {
   type Action, BACKPACK_SIZE, scrollTargets, isBroken, isIdentified, type Hero, inBag, type HeroClass, type Item, itemDef, itemPrice, type ItemRef,
   itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, visiblyCursed, type World, CLASS_ARMOR_OF, heroById, offersSealTransfer, shielding,
+  type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
 } from '@pd/core';
+import { artifactActions, artifactCard, type ArtifactHost, chargeStrip, showMiscChooser } from './artifactui';
 import { audio } from './audio';
 import { chooseQuickslot, isQuickslotted, QUICKSLOTS, quickKind, quickUse } from './quickslot';
 import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
@@ -277,8 +279,10 @@ export function slot(world: World, item: Item | undefined, options: SlotOptions 
   } else if (item.qty > 1) {
     node.append(el('span', { className: 'pd-qty', textContent: String(item.qty) }));
   }
-  if (item.level !== 0 && levelKnown(item)) {
-    node.append(el('span', { className: `pd-lvl ${item.level > 0 ? 'up' : 'down'}`, textContent: `${item.level > 0 ? '+' : '−'}${Math.abs(item.level)}` }));
+  // Artifact.visiblyUpgraded: an artifact shows +0 to +10 whatever its own cap.
+  const shown = itemDef(item.kind).category === 'artifact' ? visiblyUpgraded(item) : item.level;
+  if (shown !== 0 && levelKnown(item)) {
+    node.append(el('span', { className: `pd-lvl ${shown > 0 ? 'up' : 'down'}`, textContent: `${shown > 0 ? '+' : '−'}${Math.abs(shown)}` }));
   }
   // WndBag's durability bars: how worn an upgraded item is; a broken one's level is struck through (it works as +0).
   const wear = wearOf(world, item);
@@ -294,6 +298,9 @@ export function slot(world: World, item: Item | undefined, options: SlotOptions 
   }
   if (cursed) node.append(el('span', { className: 'pd-mark curse' }));
   if (options.hero && inQuickslot(options.hero, item)) node.append(el('span', { className: 'pd-mark quick' }));
+  // ShArtifact: the artifact's charge as a strip along the icon's bottom.
+  const strip = options.hero ? chargeStrip(world, options.hero, item) : null;
+  if (strip) node.append(strip);
   node.onclick = () => {
     audio.play('click');
     options.onClick?.();
@@ -1141,6 +1148,8 @@ export interface BackpackOptions {
   onAction(action: Action): void;
   /** Throw or zap the item at a cell the player picks next. */
   onAim(index: number, kind: 'throw' | 'zap' | 'special'): void;
+  /** An artifact's use aimed at a cell the player picks next (talisman, chains, rose, armband, sandals, beacon). */
+  onAimArtifact?(action: ArtifactAction): void;
   onClose(): void;
   /**
    * WndBag's selector: the backpack with only what a scroll can be read on to tap (worn
@@ -1150,7 +1159,7 @@ export interface BackpackOptions {
 }
 
 /** What is chosen in the backpack: an item in the pack (by slot) or one worn. */
-type BagChoice = { index: number } | { worn: 'weapon' | 'armor' } | { ring: number };
+type BagChoice = { index: number } | { worn: 'weapon' | 'armor' } | { slot: MiscSlot };
 
 /** The backpack's filters (design system v10): the rest dims but stays where it is. */
 type BagFilter = 'all' | 'potions' | 'scrolls' | 'gear';
@@ -1171,7 +1180,7 @@ export function refreshBackpack(world: World, hero: Hero): void {
 function chosenItem(hero: Hero, choice: BagChoice | null): Item | undefined {
   if (!choice) return undefined;
   if ('index' in choice) return hero.items[choice.index];
-  if ('ring' in choice) return hero.rings[choice.ring];
+  if ('slot' in choice) return hero[choice.slot] ?? undefined;
   return choice.worn === 'weapon' ? hero.weapon ?? undefined : hero.armor;
 }
 
@@ -1180,7 +1189,7 @@ function passes(filter: BagFilter, item: Item): boolean {
   const category = itemDef(item.kind).category;
   if (filter === 'potions') return category === 'potion';
   if (filter === 'scrolls') return category === 'scroll';
-  if (filter === 'gear') return ['weapon', 'armor', 'ring', 'wand', 'missile'].includes(category);
+  if (filter === 'gear') return ['weapon', 'armor', 'ring', 'artifact', 'wand', 'missile'].includes(category);
   return true;
 }
 
@@ -1200,7 +1209,7 @@ export function showBackpack(options: BackpackOptions, choice: BagChoice | null 
   if (!chosenItem(hero, choice)) choice = null;
   const choose = (next: BagChoice): void => {
     if (pick) {
-      const ref: ItemRef = 'index' in next ? next.index : 'ring' in next ? (next.ring === 0 ? 'ring0' : 'ring1') : next.worn;
+      const ref: ItemRef = 'index' in next ? next.index : 'slot' in next ? next.slot : next.worn;
       if (targets.has(String(ref))) pick.onPick(ref);
       return;
     }
@@ -1217,7 +1226,7 @@ export function showBackpack(options: BackpackOptions, choice: BagChoice | null 
       const opts = { ...options, item, ...where(here) };
       holdToUse(node, () => firstActionName(opts), () => firstAction(opts));
       // What can be dragged: anything in the pack, and a worn ring or the weapon in hand (to take it off).
-      if ('index' in here || 'ring' in here || ('worn' in here && here.worn === 'weapon')) node.dataset.from = JSON.stringify(here);
+      if ('index' in here || 'slot' in here || ('worn' in here && here.worn === 'weapon')) node.dataset.from = JSON.stringify(here);
     }
     node.dataset.drop = String(ref);
     return node;
@@ -1282,7 +1291,10 @@ export function showBackpack(options: BackpackOptions, choice: BagChoice | null 
     // Bare-handed after a monk's blow: the weapon's silhouette.
     worn(hero.weapon ?? undefined, S.WEAPON_HOLDER, 'weapon', { worn: 'weapon' }),
     worn(hero.armor, S.ARMOR_HOLDER, 'armor', { worn: 'armor' }),
-    ...[0, 1].map((i) => worn(hero.rings[i], S.RING_HOLDER, i === 0 ? 'ring0' : 'ring1', { ring: i })),
+    // Belongings: the artifact, misc and ring slots (KindofMisc).
+    worn(hero.artifact ?? undefined, S.ARTIFACT_HOLDER, 'artifact', { slot: 'artifact' }),
+    worn(hero.misc ?? undefined, S.SOMETHING, 'misc', { slot: 'misc' }),
+    worn(hero.ring ?? undefined, S.RING_HOLDER, 'ring', { slot: 'ring' }),
     keyring,
   );
   const item = chosenItem(hero, choice);
@@ -1344,9 +1356,9 @@ function dragAndDrop(box: HTMLElement, options: BackpackOptions): void {
   /** What letting go of `from` on each place would do. */
   const dropsFor = (from: BagChoice, item: Item): Map<string, Action> => {
     const drops = new Map<string, Action>();
-    if ('ring' in from) {
-      drops.set('pack', { type: 'remove', ring: from.ring });
-      hero.items.forEach((_, i) => drops.set(String(i), { type: 'remove', ring: from.ring }));
+    if ('slot' in from) {
+      drops.set('pack', { type: 'remove', slot: from.slot });
+      hero.items.forEach((_, i) => drops.set(String(i), { type: 'remove', slot: from.slot }));
       return drops;
     }
     // The weapon in hand back into the pack.
@@ -1360,9 +1372,13 @@ function dragAndDrop(box: HTMLElement, options: BackpackOptions): void {
     const category = itemDef(item.kind).category;
     if (category === 'weapon') drops.set('weapon', { type: 'equip', item: index });
     if (category === 'armor') drops.set('armor', { type: 'equip', item: index });
-    if (category === 'ring') {
-      drops.set('ring0', { type: 'equip', item: index });
-      drops.set('ring1', { type: 'equip', item: index });
+    if (category === 'ring' || category === 'artifact') {
+      // KindofMisc: onto a slot that is taken, it takes that one's place (where its kind may go).
+      const choices = miscChoices(hero, item);
+      for (const slot of ['artifact', 'misc', 'ring'] as const) {
+        const fits = category === 'ring' ? slot !== 'artifact' : slot !== 'ring';
+        if (choices.length === 0 ? fits : choices.includes(slot)) drops.set(slot, { type: 'equip', item: index, ...(choices.length > 0 ? { replace: slot } : {}) });
+      }
     }
     if (category === 'scroll' && isKnown(world, item) && (TARGETED_SCROLLS as readonly string[]).includes(item.kind)) {
       for (const ref of scrollTargets(world, hero, item.kind)) drops.set(String(ref), { type: 'use', item: index, on: ref });
@@ -1472,8 +1488,8 @@ function itemIconAt(sprite: number): HTMLElement {
 }
 
 /** Where a choice sits, as the item window's options say it. */
-function where(choice: BagChoice): { index: number | null; ring?: number } {
-  return 'index' in choice ? { index: choice.index } : 'ring' in choice ? { index: null, ring: choice.ring } : { index: null };
+function where(choice: BagChoice): { index: number | null; slot?: MiscSlot } {
+  return 'index' in choice ? { index: choice.index } : 'slot' in choice ? { index: null, slot: choice.slot } : { index: null };
 }
 
 /**
@@ -1527,8 +1543,8 @@ interface ItemOptions extends BackpackOptions {
   item: Item;
   /** Backpack slot, or null for equipped items. */
   index: number | null;
-  /** For a worn ring: which of the two it is. */
-  ring?: number;
+  /** For a worn ring or artifact: its slot. */
+  slot?: MiscSlot;
 }
 
 /** The chosen item's panel: its picture and name («worn»), what it is, «drop» in the corner, and its actions. */
@@ -1553,6 +1569,7 @@ function itemDetail(options: ItemOptions): HTMLElement {
     'div',
     { className: 'pd-pick' },
     el('div', { className: 'pd-pick-head' }, slot(world, item, { hero, equipped: index === null }), title, drop),
+    ...(itemDef(item.kind).category === 'artifact' ? artifactCard(world, hero, item) : []),
     ...describedItem(world, hero, item),
     all.length > 0 && el('div', { className: 'pd-pick-actions' }, ...all),
   );
@@ -1574,7 +1591,7 @@ function firstAction(options: ItemOptions): void {
 
 /** The old item window, kept for what still opens an item on its own: now the backpack with it chosen. */
 function showItem(options: ItemOptions): void {
-  const choice: BagChoice = options.index !== null ? { index: options.index } : options.ring !== undefined ? { ring: options.ring } : { worn: options.item === options.hero.armor ? 'armor' : 'weapon' };
+  const choice: BagChoice = options.index !== null ? { index: options.index } : options.slot !== undefined ? { slot: options.slot } : { worn: options.item === options.hero.armor ? 'armor' : 'weapon' };
   showBackpack(options, choice);
 }
 
@@ -1640,20 +1657,31 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         use(t.read, () => act({ type: 'use', item: index }));
       }
     }
-    if (category === 'weapon' || category === 'armor' || category === 'ring') {
-      const worn: BagChoice = category === 'ring' ? { ring: hero.rings.length < 2 ? hero.rings.length : 0 } : { worn: category === 'armor' ? 'armor' : 'weapon' };
-      use(category === 'ring' ? t.putOn : t.equip, () => {
+    if (category === 'ring' || category === 'artifact') {
+      // KindofMisc.doEquip: every slot taken, the player says which to take off for it.
+      use(t.putOn, () => {
+        const choices = miscChoices(hero, item);
+        if (choices.length === 0) {
+          stay({ type: 'equip', item: index }, null);
+          return;
+        }
+        showMiscChooser(world, hero, item, choices, (replace) => {
+          showBackpack(options);
+          stay({ type: 'equip', item: index, replace }, null);
+        }, () => showBackpack(options, { index }));
+      });
+    }
+    if (category === 'weapon' || category === 'armor') {
+      const worn: BagChoice = { worn: category === 'armor' ? 'armor' : 'weapon' };
+      use(t.equip, () => {
         stay({ type: 'equip', item: index }, worn);
         if (category === 'armor') offerSealTransfer(options, index);
       });
     }
+    // Artifact.actions, from the pack (the beacon's set and return, the rose's outfit; the rest want it worn).
+    if (category === 'artifact') for (const action of artifactActions(artifactHost(options, index), item, index)) use(action.label, action.run);
     // Armor.AC_DETACH: the warrior's seal off an armour in the pack.
     if (item.seal) more.push(button(t.hero.detach, () => stay({ type: 'detach', armor: index }, null)));
-    if (category === 'beacon') {
-      // LloydsBeacon: set it here, or go back to where it was set.
-      if (item.returnTo) use(t.beaconReturn, () => act({ type: 'beacon', item: index, mode: 'return' }));
-      use(t.beaconSet, () => act({ type: 'beacon', item: index, mode: 'set' }));
-    }
     if (category === 'weightstone' && hero.weapon) {
       // Weightstone.WndBalance: the weapon in hand, balanced the way it is not yet.
       for (const imbue of ['speed', 'accuracy'] as const) {
@@ -1685,9 +1713,11 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       }));
     }
     danger.push(button(t.dropItem, () => stay({ type: 'drop', item: index }), 'danger'));
-  } else if (options.ring !== undefined) {
-    const ring = options.ring;
-    use(t.takeOff, () => stay({ type: 'remove', ring }));
+  } else if (options.slot !== undefined) {
+    const slot = options.slot;
+    // Artifact.actions on a worn artifact, then taking it off.
+    if (itemDef(item.kind).category === 'artifact') for (const action of artifactActions(artifactHost(options, slot), item, slot)) use(action.label, action.run);
+    use(t.takeOff, () => stay({ type: 'remove', slot }));
   } else if (item === hero.weapon) {
     use(t.takeOff, () => stay({ type: 'unequip' }));
   } else if (item === hero.armor && item.kind === CLASS_ARMOR_OF[hero.heroClass]) {
@@ -1733,6 +1763,31 @@ function offerSealTransfer(options: ItemOptions, index: number): void {
     options.onAction({ type: 'affix', from: index, to: 'armor' });
     refreshBackpack(options.world, options.hero);
   }, () => showBackpack(options, { worn: 'armor' }));
+}
+
+/** What the backpack lends an artifact's actions (artifactui.ts): acting, aiming, picking from the pack. */
+function artifactHost(options: ItemOptions, ref: ItemRef): ArtifactHost {
+  const back = (): void => showBackpack(options, typeof ref === 'number' ? { index: ref } : ref === 'weapon' || ref === 'armor' ? { worn: ref } : { slot: ref });
+  return {
+    world: options.world,
+    hero: options.hero,
+    act: (action) => {
+      openBag = null;
+      options.onAction(action);
+      options.onClose();
+    },
+    stay: (action) => {
+      options.onAction(action);
+      refreshBackpack(options.world, options.hero);
+    },
+    aim: (action) => {
+      openBag = null;
+      options.onClose();
+      options.onAimArtifact?.(action);
+    },
+    pick: (title, targets, onPick) => showBackpack({ ...options, pick: { title, targets, onPick, onCancel: back } }),
+    back,
+  };
 }
 
 /** TomeOfMastery: the two ways of the hero's class, as equal cards; the choice can wait. */

@@ -7,7 +7,7 @@ import { Rng } from '../src/rng';
 const USELESS: readonly ItemKind[] = [
   'scroll.mapping', 'scroll.identify', 'scroll.removeCurse', 'scroll.teleportation', 'scroll.challenge', 'potion.mindVision', 'potion.levitation',
   'potion.purity', 'potion.invisibility', 'ring.detection', 'ring.shadows', 'ring.haggler', 'ring.herbalism', 'seed.fadeleaf', 'seed.rotberry',
-  'wand.blink', 'wand.reach', 'wand.regrowth', 'torch', 'beacon',
+  'wand.blink', 'wand.reach', 'wand.regrowth', 'torch', 'artifact.beacon',
 ];
 
 describe('the arena\'s rewards', () => {

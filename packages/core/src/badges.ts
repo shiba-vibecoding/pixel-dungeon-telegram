@@ -1,4 +1,4 @@
-import type { Hero } from './actors';
+import { type Hero, heroBelongings } from './actors';
 import { wavesCleared } from './arena';
 import type { Effect } from './floor';
 import { ITEMS, type Item, itemDef, type ItemKind } from './items';
@@ -105,7 +105,7 @@ export function checkBadges(progress: BadgeProgress, world: World, me: Hero, eff
   // The arena of waves: so many waves held.
   if (world.arena) tiers(['arena5', 'arena10', 'arena20'], wavesCleared(world.arena), [5, 10, 20]);
 
-  const belongings: Item[] = [...me.items, ...me.rings, me.armor, ...(me.weapon ? [me.weapon] : [])];
+  const belongings: Item[] = heroBelongings(me);
   // Badges.validateItemLevelAquired: only a level that is known counts.
   const best = Math.max(0, ...belongings.filter(levelKnown).map((item) => item.level));
   tiers(['item1', 'item2', 'item3', 'item4'], best, [3, 6, 9, 12]);
