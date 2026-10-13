@@ -25,7 +25,7 @@ function range(heroClass: HeroClass, seed = 7): { world: World; ratPos: number }
 }
 
 describe('thrown weapons and wands', () => {
-  it('starting kits: darts for the warrior and rogue, a boomerang for the huntress, a wand for the mage', () => {
+  it('starting kits: darts for the warrior and rogue, a boomerang for the huntress, the staff of magic missile for the mage', () => {
     const world = createWorld(1);
     for (const heroClass of ['warrior', 'mage', 'rogue', 'huntress'] as const) addHero(world, { id: heroClass, name: heroClass, heroClass });
     expect(heroById(world, 'warrior')!.items).toEqual([
@@ -34,7 +34,8 @@ describe('thrown weapons and wands', () => {
     ]);
     expect(heroById(world, 'rogue')!.items[0]).toMatchObject({ kind: 'missile.dart', qty: 8 });
     expect(heroById(world, 'huntress')!.items[0]).toMatchObject({ kind: 'missile.boomerang' });
-    expect(heroById(world, 'mage')!.items[0]).toMatchObject({ kind: 'wand.magicMissile', charges: 3 });
+    expect(heroById(world, 'mage')!.weapon).toMatchObject({ kind: 'weapon.magesStaff', wand: { kind: 'wand.magicMissile', charges: 4 } });
+    expect(heroById(world, 'mage')!.items).toEqual([{ kind: 'food.ration', qty: 1, level: 0 }]);
   });
 
   it('a dart flies to the first creature in line; misses land on the floor, hits are used up', () => {
@@ -71,18 +72,21 @@ describe('thrown weapons and wands', () => {
     expect(floorAt(world, 1).heaps.some((h) => h.items.some((i) => i.kind === 'missile.boomerang'))).toBe(false);
   });
 
-  it('the wand never misses, spends charges and recharges over time', () => {
+  it("the staff's magic missile never misses, spends charges and recharges over time", () => {
     const { world, ratPos } = range('mage');
     const hero = heroById(world, 'p')!;
-    const result = act(world, 'p', { type: 'zap', item: 0, target: ratPos });
-    expect(result.ok && result.effects.some((e) => e.type === 'attack' && e.hit && e.damage >= 1 && e.damage <= 5)).toBe(true);
-    expect(hero.items[0]!.charges).toBe(2);
-    act(world, 'p', { type: 'zap', item: 0, target: ratPos });
-    act(world, 'p', { type: 'zap', item: 0, target: ratPos });
-    expect(act(world, 'p', { type: 'zap', item: 0, target: ratPos })).toEqual({ ok: false, reason: 'the wand is out of charges' });
+    const wand = hero.weapon!.wand!;
+    const result = act(world, 'p', { type: 'zap', item: 'weapon', target: ratPos });
+    expect(result.ok && result.effects.some((e) => e.type === 'attack' && e.hit && e.damage >= 1 && e.damage <= 8)).toBe(true);
+    expect(wand.charges).toBe(3);
+    for (let i = 0; i < 3; i++) act(world, 'p', { type: 'zap', item: 'weapon', target: ratPos });
+    expect(act(world, 'p', { type: 'zap', item: 'weapon', target: ratPos })).toEqual({ ok: false, reason: 'the wand is out of charges' });
     floorAt(world, 1).mobs = [];
+    // Wand.Charger in the staff: 10 + 40 * 0.75^4 turns for the first charge, 10 + 40 * 0.75^3 for the next.
     for (let i = 0; i < 41; i++) act(world, 'p', { type: 'wait' });
-    expect(hero.items[0]!.charges).toBe(1);
+    expect(wand.charges).toBe(1);
+    for (let i = 0; i < 10; i++) act(world, 'p', { type: 'wait' });
+    expect(wand.charges).toBe(2);
   });
 
   it('warriors throw clumsily, huntresses deftly, nobody well point-blank', () => {

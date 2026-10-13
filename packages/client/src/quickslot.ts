@@ -1,12 +1,16 @@
-import { type Hero, type ItemKind, itemDef } from '@pd/core';
+import { type Hero, type Item, type ItemKind, itemDef } from '@pd/core';
 
 /*
  * The quick slots (QuickSlot): the items the player keeps one tap away. The
  * first is on every screen; a wide screen shows a second beside it (keys 1
  * and 2). The player may put any usable item in either; until then the first
  * holds the first thrown weapon or wand in the pack, and the second nothing.
- * The choices are kept on this device.
+ * The choices are kept on this device. The mage's staff in hand counts too
+ * (WEAPON_SLOT): Shattered puts it in the first slot from the start.
  */
+
+/** The «slot» of the weapon in hand, where the mage's staff is zapped from. */
+export const WEAPON_SLOT = -2;
 
 const KEYS = ['pd-quickslot', 'pd-quickslot2'] as const;
 
@@ -38,24 +42,34 @@ export const isQuickslotted = (kind: ItemKind): boolean => chosen.includes(kind)
 /** What a quickslot tap does with an item: aim a throw or a zap, or use it at once. */
 export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'use' | null {
   const category = itemDef(kind).category;
-  if (category === 'wand') return 'zap';
+  if (category === 'wand' || kind === 'weapon.magesStaff') return 'zap';
   if (category === 'missile' || category === 'bomb' || category === 'honeypot' || category === 'seed') return 'throw';
   if (['potion', 'scroll', 'food', 'torch', 'vial', 'wipeout'].includes(category) || kind === 'quest.fish') return 'use';
   return null;
 }
 
-/** The backpack slot shown in a quick slot (0 or 1), or -1. */
+/** The backpack slot shown in a quick slot (0 or 1), WEAPON_SLOT for the staff in hand, or -1. */
 export function quickIndex(hero: Hero, slot = 0): number {
   const kind = chosen[slot];
+  const staff = hero.weapon?.kind === 'weapon.magesStaff' && hero.weapon.wand !== undefined;
   if (kind) {
+    if (kind === 'weapon.magesStaff' && staff) return WEAPON_SLOT;
     const index = hero.items.findIndex((item) => item.kind === kind);
     if (index >= 0) return index;
   }
   if (slot === 1) return -1;
+  // The mage's staff in hand, unless it is in the second slot.
+  if (staff && chosen[1] !== 'weapon.magesStaff') return WEAPON_SLOT;
   // The first slot, empty: the first thrown weapon or wand, unless that is in the second already.
   const other = chosen[1] ? hero.items.findIndex((item) => item.kind === chosen[1]) : -1;
   return hero.items.findIndex((item, i) => {
     const category = itemDef(item.kind).category;
     return i !== other && (category === 'missile' || category === 'wand');
   });
+}
+
+/** The item a quick slot shows, if any: in the pack, or the staff in hand. */
+export function quickItem(hero: Hero, slot = 0): Item | undefined {
+  const index = quickIndex(hero, slot);
+  return index === WEAPON_SLOT ? hero.weapon ?? undefined : hero.items[index];
 }

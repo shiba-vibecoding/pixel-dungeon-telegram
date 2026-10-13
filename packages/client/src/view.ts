@@ -30,9 +30,10 @@ const HARMFUL: ReadonlySet<ItemKind> = new Set([
 
 /** Colours of magic bolts in flight. */
 const BOLT_COLORS: Record<string, string> = {
-  magic: '120, 180, 255', lightning: '255, 255, 200', fire: '255, 130, 40', poison: '120, 220, 60', slow: '230, 220, 120',
-  teleport: '170, 230, 255', blink: '255, 255, 255', beam: '200, 90, 255', rocks: '170, 160, 140', shadow: '90, 40, 120',
-  amok: '255, 60, 150', reach: '230, 230, 230', flock: '255, 255, 255', regrowth: '120, 255, 120',
+  magic: '255, 255, 255', lightning: '255, 255, 200', fire: '255, 130, 40', poison: '120, 220, 60', beam: '200, 90, 255', shadow: '90, 40, 120',
+  // Shattered's wands (MagicMissile and Beam kinds).
+  frost: '136, 204, 255', corrosion: '255, 136, 0', force: '102, 68, 34', earth: '128, 85, 0', ward: '136, 34, 255', corruption: '40, 0, 40',
+  rainbow: '255, 120, 220', foliage: '68, 170, 68', death: '120, 0, 160', light: '255, 255, 210', blood: '204, 0, 0',
 };
 
 /** Tints of the clouds: green poison, yellow paralysis, orange flames. */
@@ -395,7 +396,8 @@ export class View {
         );
         const puppet = this.puppets.get(hero.id)!;
         // Pixel-Mart: the hero's look, once its sheet has loaded.
-        puppet.sprite = heroSprite(this.assets, hero.heroClass, this.looks[hero.id]?.skin);
+        // HeroDisguise (a cursed wand's): the hero looks like one of another class for a while.
+        puppet.sprite = hero.disguise ? this.assets.heroes[hero.disguise.heroClass] : heroSprite(this.assets, hero.heroClass, this.looks[hero.id]?.skin);
         puppet.look = this.looks[hero.id];
         puppet.burning = hero.burning > 0;
         puppet.poisoned = hero.poison > 0;
@@ -417,6 +419,9 @@ export class View {
         // A statue biding its time shows no sign of sleep.
         mob.state === 'sleeping' && mob.kind !== 'statue', mob.pumped);
       const puppet = this.puppets.get(mob.id)!;
+      // WardSprite.updateTier: a ward drawn as its tier is (one a row of its sheet).
+      if (mob.kind === 'ward') puppet.row = (mob.ward?.tier ?? 1) - 1;
+      puppet.levitating = (mob.levitating ?? 0) > 0;
       puppet.burning = (mob.burning ?? 0) > 0;
       puppet.poisoned = (mob.poison ?? 0) > 0;
     }
@@ -945,7 +950,77 @@ export class View {
         case 'plantTriggered':
           if (effect.depth !== this.depth) break;
           this.flashes.push({ cell: effect.pos, start: now, color: '120, 220, 120', duration: 700 });
-          if (effect.who === myId) this.say(t.plants[effect.kind], COLORS.warning, now);
+          if (effect.who === myId && t.plants[effect.kind]) this.say(t.plants[effect.kind], COLORS.warning, now);
+          break;
+        /* Shattered's wands */
+        case 'wand': {
+          if (effect.hero !== myId) break;
+          const note = t.wandNotes[effect.note];
+          if (!note) break;
+          const name = effect.item ? t.items[effect.item] : '';
+          const tone = effect.note === 'curseDiscover' ? COLORS.negative
+            : effect.note === 'staffImbued' || effect.note === 'charged' ? COLORS.positive
+            : effect.note === 'selfTarget' ? COLORS.default : COLORS.warning;
+          this.say(note(name), tone, now);
+          if (effect.note === 'curseDiscover') audio.play('cursed');
+          if (effect.note === 'staffImbued') audio.play('burning');
+          break;
+        }
+        case 'cone': {
+          // MagicMissile's cones: a missile to the tip of every outer ray (every other one, if there are many).
+          if (effect.depth !== this.depth) break;
+          const step = effect.cells.length > 16 ? 2 : 1;
+          for (let i = 0; i < effect.cells.length; i += step) this.shoot(effect.from, effect.cells[i]!, null, now, BOLT_COLORS[effect.bolt]);
+          audio.play(effect.bolt === 'fire' ? 'burning' : 'zap', 1, 1, cellMiddle(effect.from));
+          break;
+        }
+        case 'blast':
+          // WandOfBlastWave.BlastWave: a ripple out from where it struck.
+          if (effect.depth !== this.depth) break;
+          for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) {
+            this.flashes.push({ cell: effect.pos + x + y * WIDTH, start: now, color: '255, 255, 255', duration: 300 });
+          }
+          audio.play('blast', 1, 1, cellMiddle(effect.pos));
+          break;
+        case 'shielded':
+          if (effect.depth === this.depth && effect.amount > 0) this.float(effect.who, `+${effect.amount}`, '#a0a0ff', now);
+          break;
+        case 'mobHealed':
+          if (effect.depth === this.depth && effect.amount > 0) this.float(effect.mob, `+${effect.amount}`, COLORS.positive, now);
+          break;
+        case 'ally': {
+          if (effect.depth !== this.depth) break;
+          const word = t.allyEvents[effect.event];
+          if (word) this.float(effect.mob, word, effect.event === 'doomed' ? COLORS.negative : '#cc66ff', now, true);
+          if (effect.event === 'dissolved') this.puppets.delete(effect.mob);
+          audio.play(effect.event === 'corrupted' || effect.event === 'doomed' ? 'cursed' : 'zap', 1, 1);
+          break;
+        }
+        case 'debuffed': {
+          if (effect.depth !== this.depth) break;
+          const word = t.debuffNames[effect.debuff];
+          if (word) this.float(effect.mob, word, COLORS.warning, now, true);
+          break;
+        }
+        case 'cursedZap': {
+          if (effect.hero !== myId) break;
+          const line = t.cursedEffects[effect.effect];
+          if (line) this.say(line, effect.effect === 'massInvuln' ? COLORS.positive : COLORS.warning, now);
+          break;
+        }
+        case 'supernova':
+          // SuperNovaTracker: the ball of energy grows, turn by turn, where the wand struck.
+          if (effect.depth !== this.depth) break;
+          this.flashes.push({ cell: effect.pos, start: now, color: '255, 255, 80', duration: 700 });
+          if (effect.turns > 0) this.say(`${effect.turns}...`, COLORS.warning, now);
+          else audio.play('blast');
+          break;
+        case 'sinkhole':
+          if (effect.depth !== this.depth) break;
+          for (const cell of effect.cells) this.flashes.push({ cell, start: now, color: '90, 70, 50', duration: 800 });
+          audio.play('rocks');
+          break;
+        case 'ward':
           break;
         case 'planted':
           break;

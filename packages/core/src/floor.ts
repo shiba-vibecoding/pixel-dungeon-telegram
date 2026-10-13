@@ -12,7 +12,8 @@ import type { Burst, TrapKind } from './traps';
 import type { WandmakerLine } from './wandmaker';
 import type { ImpLine } from './imp';
 import type { SmithLine } from './smith';
-import type { Bolt } from './wands';
+import type { Bolt, WandNote } from './wands';
+import type { CursedEffect } from './cursed';
 import type { GasKind } from './gas';
 import type { Level } from './level/generate';
 import { LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
@@ -48,6 +49,8 @@ export interface Floor {
   /** Clouds of gas, as [cell, volume] pairs in cell order, and when they next spread (see gas.ts). */
   gas?: Partial<Record<GasKind, Array<[number, number]>>>;
   gasAt?: number;
+  /** How strong a cloud is, where the kind has a strength (CorrosiveGas.strength). */
+  gasStrength?: Partial<Record<GasKind, number>>;
   /** An altar room's sacrificial fire: where it burns, and how much more it hungers for (0 once it has gone out). */
   altar?: { pos: number; volume: number };
   /** What this depth gave every hero (strength, upgrades): a hero who joins later gets theirs too (party.ts). */
@@ -257,6 +260,27 @@ export type Effect =
   | { type: 'arenaReady'; hero: string; ready: boolean }
   | { type: 'arenaSinks'; depth: number; tier: number }
   | { type: 'arenaGates'; depth: number; open: boolean; cells: number[] }
+  /* Shattered's wands */
+  /** What a wand tells its wielder (it fizzles, there is no room for more wards, its curse shows...). */
+  | { type: 'wand'; hero: string; note: WandNote; item?: ItemKind }
+  /** A cone of fire, growth or colours from `from`, its rays reaching these cells. */
+  | { type: 'cone'; depth: number; from: number; cells: number[]; bolt: Bolt }
+  /** A blast wave rippling out from a cell. */
+  | { type: 'blast'; depth: number; pos: number; radius: number }
+  /** Someone shielded (a Barrier), and a monster healed. */
+  | { type: 'shielded'; depth: number; who: string; amount: number }
+  | { type: 'mobHealed'; depth: number; mob: string; amount: number }
+  /** An ally made, grown or gone: a corrupted (or doomed) monster, a ward, a sentry, the guardian, the lotus. */
+  | { type: 'ally'; depth: number; mob: string; event: 'corrupted' | 'doomed' | 'warded' | 'upgraded' | 'guardian' | 'dissolved' | 'lotus' }
+  /** The wand of corruption weakened a monster it could not corrupt. */
+  | { type: 'debuffed'; depth: number; mob: string; debuff: string }
+  /** A cursed wand did something random. */
+  | { type: 'cursedZap'; depth: number; hero: string; effect: CursedEffect }
+  /** A supernova about to go off (turns left), and the ground giving way under a sinkhole. */
+  | { type: 'supernova'; depth: number; pos: number; turns: number }
+  | { type: 'sinkhole'; depth: number; cells: number[] }
+  /** A ward the hero bumped into: dismiss it? (WndOptions) */
+  | { type: 'ward'; hero: string; mob: string }
   /** A queued action that became impossible before the hero's turn came. */
   | { type: 'interrupted'; hero: string; reason: string };
 
@@ -296,7 +320,10 @@ const SWAPPERS: ReadonlySet<string> = new Set(['ghost', 'sheep', 'wandmaker', 'i
  * them is still a bump into them; walking past simply trades cells.
  */
 export function swapsWithHero(char: Char | undefined): boolean {
-  return char !== undefined && 'kind' in char && char.state === 'passive' && SWAPPERS.has(char.kind);
+  if (char === undefined || !('kind' in char)) return false;
+  // Mob.interact for an ally: the hero swaps places with it (with nothing immovable, a ward).
+  if (char.ally) return char.kind !== 'ward' && char.kind !== 'lotus';
+  return char.state === 'passive' && SWAPPERS.has(char.kind);
 }
 
 /** Level.viewDistance for heroes on a depth: shorter under the DARKNESS challenge. */

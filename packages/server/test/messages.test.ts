@@ -16,6 +16,12 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'open', cell: 300, junk: 1 })).toEqual({ type: 'open', cell: 300 });
     expect(sanitizeAction({ type: 'reforge', first: 'ring0', second: 3 })).toEqual({ type: 'reforge', first: 'ring0', second: 3 });
     expect(sanitizeAction({ type: 'throw', item: 0, target: 100 })).toEqual({ type: 'throw', item: 0, target: 100 });
+    // Shattered's wands: zapping a wand or the mage's staff, imbuing a wand into the staff, dismissing a ward.
+    expect(sanitizeAction({ type: 'zap', item: 3, target: 100, x: 1 })).toEqual({ type: 'zap', item: 3, target: 100 });
+    expect(sanitizeAction({ type: 'zap', item: 'weapon', target: 100 })).toEqual({ type: 'zap', item: 'weapon', target: 100 });
+    expect(sanitizeAction({ type: 'imbue', staff: 'weapon', wand: 2 })).toEqual({ type: 'imbue', staff: 'weapon', wand: 2 });
+    expect(sanitizeAction({ type: 'imbue', staff: 4, wand: 2, junk: true })).toEqual({ type: 'imbue', staff: 4, wand: 2 });
+    expect(sanitizeAction({ type: 'dismiss', target: '#12' })).toEqual({ type: 'dismiss', target: '#12' });
     expect(sanitizeAction({ type: 'reforge', first: 'weapon', second: 3 })).toEqual({ type: 'reforge', first: 'weapon', second: 3 });
     expect(sanitizeAction({ type: 'master', item: 1, subclass: 'warden' })).toEqual({ type: 'master', item: 1, subclass: 'warden' });
     expect(sanitizeAction({ type: 'balance', item: 1, imbue: 'speed' })).toEqual({ type: 'balance', item: 1, imbue: 'speed' });
@@ -41,6 +47,8 @@ describe('client messages', () => {
       { type: 'reforge', first: 'helmet', second: 1 }, { type: 'master', item: 1, subclass: 'pirate' },
       { type: 'balance', item: 1, imbue: 'luck' }, { type: 'special', target: null }, { type: 'beacon', item: 1, mode: 'go' },
       { type: 'arenaPick' }, { type: 'arenaPick', choice: 3 }, { type: 'arenaPick', choice: -1 }, { type: 'arenaPick', choice: '1' },
+      { type: 'zap', item: 'armor', target: 5 }, { type: 'zap', item: 1, target: LENGTH }, { type: 'imbue', staff: 'ring0', wand: 1 },
+      { type: 'imbue', staff: 'weapon' }, { type: 'dismiss', target: 4 }, { type: 'dismiss' },
     ]) {
       expect(sanitizeAction(bad), JSON.stringify(bad)).toBeNull();
     }

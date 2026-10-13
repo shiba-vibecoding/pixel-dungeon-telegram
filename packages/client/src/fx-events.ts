@@ -167,9 +167,11 @@ const burst = (at: { x: number; y: number } | null, now: number, o: BurstOptions
 
 /** Bolt colours (as in view.ts) for the light a spell leaves where it strikes. */
 const BOLT_GLOW: Readonly<Record<string, readonly string[]>> = {
-  fire: FIRE, lightning: ['#ffffff', '#fffcc0', '#c0e8ff'], poison: ICHOR, magic: ['#90c8ff', '#ffffff', '#5090ff'],
-  slow: ['#f0e890', '#ffffff'], teleport: ECTO, blink: ['#ffffff'], beam: VOID, rocks: DUST, shadow: VOID, amok: ['#ff60a0', '#ffffff'],
-  reach: ['#e8e8e8', '#ffffff'], flock: ['#ffffff'], regrowth: HEAL,
+  fire: FIRE, lightning: ['#ffffff', '#fffcc0', '#c0e8ff'], poison: ICHOR, magic: ['#ffffff', '#d0e8ff'], beam: VOID, shadow: VOID,
+  // Shattered's wands (MagicMissile's particles).
+  frost: ['#88ccff', '#ffffff', '#b8e0ff'], corrosion: ['#aaaaaa', '#ff8800'], force: DUST, earth: ['#805500', '#332500', '#fff568'],
+  ward: ['#8822ff', '#c080ff'], corruption: VOID, rainbow: ['#ff4040', '#ffd040', '#40ff60', '#40c0ff', '#c060ff'], foliage: HEAL,
+  death: VOID, light: ['#ffffff', '#fff8c0'], blood: ['#cc0000', '#ff4040'],
 };
 
 /** The look of one effect; called after the view has taken it in. */

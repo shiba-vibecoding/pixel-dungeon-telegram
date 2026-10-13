@@ -1,7 +1,7 @@
 import {
-  armorStats, chargesKnown, durabilityOf, isBroken, kindKnown, levelKnown, maxDurability, CLASS_ARMOR, CLASS_ARMOR_OF, type Hero, type HeroClass,
-  type Item, itemDef, type ItemKind, itemSprite, magicMissileDamage, missileStats, SCROLL_RUNES, visiblyCursed, wandMaxCharges, weaponStats,
-  type World,
+  armorStats, buffedLevel, chargeLimit, chargesKnown, chargesPerCast, durabilityOf, isBroken, isIdentified, kindKnown, levelKnown, maxCharges,
+  maxDurability, CLASS_ARMOR, CLASS_ARMOR_OF, type Hero, type HeroClass, type Item, itemDef, type ItemKind, itemSprite, missileStats, SCROLL_RUNES,
+  visiblyCursed, wandDamage, weaponStats, type World,
 } from '@pd/core';
 import { t } from './i18n';
 
@@ -13,7 +13,7 @@ import { t } from './i18n';
 
 const CLASS_OF = Object.fromEntries(Object.entries(CLASS_ARMOR_OF).map(([cls, kind]) => [kind, cls])) as Partial<Record<ItemKind, HeroClass>>;
 
-/** Whether the party knows what kind of thing it is (unknown potions, scrolls, wands and rings go by their looks). */
+/** Whether the party knows what kind of thing it is (unknown potions, scrolls and rings go by their looks). */
 export const isKnown = (world: World, item: Item): boolean => kindKnown(world, item);
 
 export function itemName(world: World, item: Item): string {
@@ -22,12 +22,12 @@ export function itemName(world: World, item: Item): string {
   if (category === 'vial') return `${t.items[item.kind]} (${item.volume ?? 0}/10)`;
   if (!isKnown(world, item)) {
     const label = world.run.labels[item.kind] ?? 0;
-    // Wand.name and Ring.name go by the wood or the gem; Item.toString adds a known level all the same.
-    if (category === 'wand') return levelled(t.unknownWand(t.woods[label]!), item);
+    // Ring.name goes by the gem; Item.toString adds a known level all the same.
     if (category === 'ring') return levelled(t.unknownRing(t.gems[label]!), item);
     return category === 'potion' ? t.unknownPotion(t.colors[label]!) : t.unknownScroll(SCROLL_RUNES[label]!);
   }
-  let name = t.items[item.kind];
+  // MagesStaff.name: the staff of its wand.
+  let name = item.kind === 'weapon.magesStaff' && item.wand ? t.staffNames[item.wand.kind] ?? t.items[item.kind] : t.items[item.kind];
   // Weapon.name and Armor.name: the enchantment or glyph is part of the name.
   if (item.enchant) name = t.enchantName(name, item.enchant, item.kind);
   if (item.glyph) name = t.glyphName(name, item.glyph);
@@ -43,10 +43,51 @@ export function itemName(world: World, item: Item): string {
 const levelled = (name: string, item: Item): string =>
   item.level === 0 || !levelKnown(item) ? name : `${name} ${item.level > 0 ? '+' : ''}${item.level}`;
 
-/** Wand.status: charges left of the most, once the wand's level is known, with «?» while the charges left are not; null otherwise. */
+/**
+ * Wand.status: charges left of the most, once the wand's level is known, with «?» while the charges left are not;
+ * MagesStaff.status: its wand's; null otherwise.
+ */
 export function chargesOf(item: Item): string | null {
+  if (item.kind === 'weapon.magesStaff') return item.wand ? `${item.wand.charges ?? 0}/${maxCharges(item.wand, item)}` : null;
   if (item.charges === undefined || !levelKnown(item)) return null;
-  return `${chargesKnown(item) ? item.charges : '?'}/${wandMaxCharges(item)}`;
+  return `${chargesKnown(item) ? item.charges : '?'}/${maxCharges(item, null)}`;
+}
+
+/** Wand.statsDesc of each kind: what it does, with its numbers (as strong as it zaps, once its level is known; plain, until then). */
+export function wandStats(hero: Hero, wand: Item, staff: Item | null): string {
+  const known = staff !== null || levelKnown(wand);
+  const level = known ? buffedLevel(hero, wand, staff) : 0;
+  const cursed = staff ? !!staff.cursed : !!wand.cursed;
+  const stats = t.wandStats[wand.kind];
+  if (!stats) return '';
+  switch (wand.kind) {
+    case 'wand.fireblast': {
+      const charges = chargesPerCast(wand, cursed);
+      const [min, max] = wandDamage(wand.kind, level, charges)!;
+      return stats(charges, min, max);
+    }
+    case 'wand.corrosion':
+      return stats(2 + level);
+    case 'wand.warding':
+      return stats(2 + (known ? (staff ?? wand).level : 0));
+    case 'wand.transfusion': {
+      const self = Math.round(hero.ht * 0.05);
+      const [min, max] = wandDamage(wand.kind, level)!;
+      return stats(self, self + 3 * level, 5 + level, min, max);
+    }
+    case 'wand.corruption':
+      return stats();
+    case 'wand.regrowth': {
+      const text = stats(chargesPerCast(wand, cursed));
+      // The charges it may still spend before its growth fails (once it is known through and through).
+      const left = chargeLimit(hero.lvl, (staff ?? wand).level) - (wand.grown ?? 0);
+      return (staff !== null || (levelKnown(wand) && chargesKnown(wand))) && left < 10000 ? `${text} ${t.regrowthLimit(Math.max(left, 0))}` : text;
+    }
+    default: {
+      const [min, max] = wandDamage(wand.kind, level)!;
+      return stats(min, max);
+    }
+  }
 }
 
 /** The item as it would be plain and whole: what is typical of its kind (MeleeWeapon.typicalSTR, Armor.typicalDR). */
@@ -84,6 +125,12 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
       ...(item.enchant ? [t.enchantInfo[item.enchant]] : []),
       ...(item.imbue ? [t.imbueInfo[item.imbue]] : []),
       ...(item.kind === 'weapon.pickaxe' ? [t.pickaxeInfo(!!item.bloody)] : []),
+      // MagesStaff.info: the wand it holds, what it does (unless the staff's curse is known), and a battlemage's blow with it.
+      ...(item.kind === 'weapon.magesStaff' ? [t.itemInfo[item.kind] ?? ''] : []),
+      ...(item.kind === 'weapon.magesStaff' && item.wand
+        ? [`${t.staffHasWand(t.items[item.wand.kind])} ${visiblyCursed(item) ? t.staffCursedWand : wandStats(hero, item.wand, item)}`]
+        : []),
+      ...(item.kind === 'weapon.magesStaff' && item.wand && hero.subclass === 'battlemage' ? [t.battlemageInfo[item.wand.kind] ?? ''] : []),
       ...(visiblyCursed(item) ? [t.cursedInfo] : []),
       ...(stats.str > hero.str ? [known ? t.tooHeavy : t.probablyTooHeavy] : []),
     ];
@@ -103,12 +150,15 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
     return [t.itemInfo[item.kind] ?? '', t.missileInfo(stats.min, stats.max)];
   }
   if (category === 'wand') {
+    // Wand.info: what it is, what it does, its curse (once known) or that it is free of one, a battlemage's staff of it.
     const status = chargesOf(item);
-    const charges = status === null ? [] : [t.charges(status)];
-    if (!isKnown(world, item)) return [t.unknownWandInfo, ...charges];
-    if (item.kind !== 'wand.magicMissile' || !levelKnown(item)) return [t.itemInfo[item.kind] ?? '', ...charges];
-    const [min, max] = magicMissileDamage(item);
-    return [t.itemInfo[item.kind] ?? '', t.wandDamage(min, max), ...charges];
+    return [
+      t.itemInfo[item.kind] ?? '',
+      wandStats(hero, item, null),
+      ...(visiblyCursed(item) ? [t.wandCursed] : !item.curseUnknown && !isIdentified(world, item) ? [t.wandNotCursed] : []),
+      ...(hero.subclass === 'battlemage' ? [t.battlemageInfo[item.kind] ?? ''] : []),
+      ...(status === null ? [] : [t.charges(status)]),
+    ];
   }
   if (category === 'ring') {
     // Ring.info: the curse once it is known, whether or not the gem is.

@@ -1,5 +1,5 @@
 import { mend, wear } from './wear';
-import { chargesKnown, identify, isIdentified, learn, WAND_USAGES_TO_KNOW } from './ident';
+import { identify, isIdentified, learn } from './ident';
 import {
   BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, heroRangedSkill, isAlive, maxExp, type Mob, mobStats, STARVING, type SubClass,
   SUBCLASSES,
@@ -12,15 +12,15 @@ import {
   canEnter, charAt, type Ctx, dropItem, enterCell, exploredCells, heroView, isHero, isPassable, isWater, landItem, leaveCell,
 } from './floor';
 import {
-  buyPrice, createItem, type Heap, isStackable, type Item, itemDef, ItemGenerator, type ItemKind, itemPrice,
-  magicMissileDamage, missileStats, wandMaxCharges,
+  buyPrice, createItem, type Heap, isStackable, type Item, itemDef, ItemGenerator, type ItemKind, itemPrice, missileStats,
 } from './items';
 import { discoverable } from './level/flags';
 import { adjacent, distance, LENGTH, NEIGHBOURS4, NEIGHBOURS8, NEIGHBOURS9 } from './level/geometry';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { type Burst, burst, immuneTo, trapAt, triggerTrap } from './traps';
 import { plant, SEED_PLANTS, stepOnPlant } from './plants';
-import { zapWand } from './wands';
+import { gainCharge, heldWands, maxCharges, RECHARGING_TURNS, zap, zapProblem } from './wands';
+import { imbue, imbueProblem } from './staff';
 import { mine, mineProblem, TIME_TO_MINE } from './smith';
 import { transmute } from './transmute';
 import { DEW_VIAL_VOLUME, drinkFromVial } from './vial';
@@ -56,8 +56,10 @@ export type InventoryAction =
   | { type: 'drop'; item: number }
   /** Throw a dart, the boomerang or a potion at a cell; it flies until it hits someone or something. */
   | { type: 'throw'; item: number; target: number }
-  /** Zap a wand at a cell. */
-  | { type: 'zap'; item: number; target: number }
+  /** Zap a wand at a cell: one in the pack (its slot), or the mage's staff in hand ('weapon') or in the pack. */
+  | { type: 'zap'; item: ItemRef; target: number }
+  /** MagesStaff.AC_IMBUE: a wand from the pack into the mage's staff (in hand, or in the pack). */
+  | { type: 'imbue'; staff: ItemRef; wand: number }
   /** Buy the shop's ware the hero stands on. */
   | { type: 'buy' }
   /** Sell an item from the pack to the shopkeeper next to the hero. */
@@ -77,6 +79,7 @@ export type InventoryAction =
 
 const INVENTORY_ACTIONS: ReadonlySet<string> = new Set([
   'pickup', 'open', 'use', 'equip', 'drop', 'throw', 'zap', 'buy', 'sell', 'remove', 'unequip', 'master', 'mine', 'special', 'balance',
+  'imbue',
 ]);
 
 export function isInventoryAction(action: { type: string }): action is InventoryAction {
@@ -93,7 +96,6 @@ const TIME_TO_USE = 1;
 const TIME_TO_EQUIP = 1;
 const TIME_TO_DROP = 1;
 const TIME_TO_THROW = 1;
-const TIME_TO_ZAP = 1;
 const TIME_TO_EAT = 3;
 /** PhantomFish.TIME_TO_EAT. */
 const TIME_TO_EAT_FISH = 2;
@@ -134,6 +136,13 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     return null;
   }
   if (action.type === 'mine') return mineProblem(world, hero);
+  if (action.type === 'imbue') return isItemRef(action.staff) ? imbueProblem(hero, action.staff, action.wand) : 'that is no staff';
+  if (action.type === 'zap') {
+    if (!isItemRef(action.item)) return 'no such item';
+    if (!Number.isInteger(action.target) || action.target < 0 || action.target >= LENGTH || action.target === hero.pos) return 'bad target';
+    // Wand.actions: no zapping a wand known to be empty; one of unknown charges may be tried, and fizzle.
+    return zapProblem(hero, action.item);
+  }
   if (action.type === 'special') return specialProblem(world, hero, action.target);
   if (action.type === 'unequip') {
     if (!hero.weapon) return 'nothing in hand';
@@ -190,16 +199,13 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     case 'sell':
       if (!shopkeeperBeside(world, hero)) return 'nobody to sell to';
       return itemPrice(item, world.known.includes(item.kind)) > 0 ? null : 'nobody would buy that';
-    case 'throw':
-    case 'zap': {
+    case 'throw': {
       // Item.AC_THROW: anything in the pack may be thrown (a bag would scatter what it holds: not that).
-      const fits = action.type === 'throw' ? category !== 'bag' : category === 'wand';
-      if (!fits) return `that cannot be ${action.type === 'throw' ? 'thrown' : 'zapped'}`;
+      if (category === 'bag') return 'that cannot be thrown';
       if (!Number.isInteger(action.target) || action.target < 0 || action.target >= LENGTH || action.target === hero.pos) {
         return 'bad target';
       }
-      // Wand.actions: no zapping a wand known to be empty; one of unknown charges may be tried, and fizzle.
-      return action.type === 'zap' && (item.charges ?? 0) <= 0 && chargesKnown(item) ? 'the wand is out of charges' : null;
+      return null;
     }
   }
 }
@@ -366,8 +372,11 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       return TIME_TO_THROW * delay;
     }
     case 'zap':
-      zap(ctx, hero, action.item, action.target);
-      return TIME_TO_ZAP;
+      return zap(ctx, hero, action.item, action.target);
+    case 'imbue':
+      // MagesStaff.itemSelector.applyWand: no time is taken.
+      imbue(ctx, hero, action.staff, action.wand);
+      return 0;
     case 'buy': {
       // WndTradeItem.buy: the gold goes, the ware comes into the pack.
       const heap = heapAt(ctx.world, hero)!;
@@ -584,31 +593,6 @@ const BURSTS: Partial<Record<ItemKind, { kind: Burst; radius: number }>> = {
   'potion.purity': { kind: 'purity', radius: 2 },
 };
 
-/**
- * Wand.zapper: using a wand tells the party what it is, and a charge is spent;
- * with none left (which only a wand of unknown charges lets one try) it
- * fizzles, and its level is known.
- */
-function zap(ctx: Ctx, hero: Hero, index: number, target: number): void {
-  const wand = hero.items[index]!;
-  if (learn(ctx.world, wand.kind)) ctx.effects.push({ type: 'identified', hero: hero.id, kind: wand.kind });
-  if ((wand.charges ?? 0) <= 0) {
-    delete wand.levelUnknown;
-    ctx.effects.push({ type: 'fizzled', hero: hero.id, item: wand });
-    return;
-  }
-  wand.charges = (wand.charges ?? 1) - 1;
-  hero.invisible = 0;
-  zapWand(ctx, hero, wand, target);
-  // Wand.wandUsed: zapped often enough, a wand is known through and through.
-  if (!isIdentified(ctx.world, wand) && (wand.familiarity = (wand.familiarity ?? 0) + 1) >= WAND_USAGES_TO_KNOW) {
-    identify(ctx.world, wand);
-    ctx.effects.push({ type: 'familiar', hero: hero.id, item: wand, learned: false });
-  }
-  // Wand.wandUsed: each zap wears the wand.
-  wear(ctx, hero, wand);
-}
-
 /** Adds an item to the backpack, stacking where possible; false if there is no room. */
 export function collect(hero: Hero, item: Item): boolean {
   if (item.kind === 'gold') {
@@ -779,10 +763,8 @@ function eat(ctx: Ctx, hero: Hero, index: number): void {
     ctx.effects.push({ type: 'healed', hero: hero.id, amount });
   }
   if (hero.heroClass === 'mage') {
-    // Belongings.charge: a charge more in every wand that is not full.
-    for (const wand of hero.items) {
-      if (wand.charges !== undefined && wand.charges < wandMaxCharges(wand)) wand.charges++;
-    }
+    // Belongings.charge (Pixel Dungeon's mage): a charge more in every wand that is not full.
+    for (const { wand, staff } of heldWands(hero)) if ((wand.charges ?? 0) < maxCharges(wand, staff)) gainCharge(wand, staff, 1);
   }
   let outcome: MeatOutcome | null = null;
   if (kind === 'food.meat') {
@@ -1004,14 +986,9 @@ function use(ctx: Ctx, hero: Hero, index: number, target: Item | undefined): voi
       break;
     }
     case 'scroll.recharging': {
-      // ScrollOfRecharging: every wand in the pack is full again.
-      let count = 0;
-      for (const wand of hero.items) {
-        if (wand.charges === undefined || wand.charges >= wandMaxCharges(wand)) continue;
-        wand.charges = wandMaxCharges(wand);
-        count++;
-      }
-      ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'recharging', count });
+      // ScrollOfRecharging: for thirty turns, every wand gathers a quarter of a charge more a turn (Recharging).
+      hero.recharging = Math.max(hero.recharging ?? 0, RECHARGING_TURNS);
+      ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'recharging', count: heldWands(hero).length });
       break;
     }
     case 'scroll.upgrade':

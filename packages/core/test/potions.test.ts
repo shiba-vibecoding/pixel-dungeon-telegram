@@ -126,13 +126,18 @@ describe('fire', () => {
 });
 
 describe('scroll of recharging', () => {
-  it('fills every wand', () => {
+  it('charges every wand a quarter of a charge faster a turn, for thirty turns (Recharging)', () => {
     const world = solo('mage');
     const hero = heroById(world, 'p')!;
-    hero.items = [createItem('wand.magicMissile'), createItem('scroll.recharging')];
+    hero.items = [createItem('wand.frost'), createItem('scroll.recharging')];
     hero.items[0]!.charges = 0;
+    hero.weapon!.wand!.charges = 0;
     const result = act(world, 'p', { type: 'use', item: 1 });
-    expect(result.ok && result.effects.find((e) => e.type === 'scroll')).toMatchObject({ kind: 'recharging', count: 1 });
-    expect(hero.items[0]!.charges).toBe(3);
+    // The wand in the pack and the one in the staff.
+    expect(result.ok && result.effects.find((e) => e.type === 'scroll')).toMatchObject({ kind: 'recharging', count: 2 });
+    expect(hero.recharging).toBeGreaterThan(28);
+    for (let i = 0; i < 4; i++) act(world, 'p', { type: 'wait' });
+    expect(hero.items[0]!.charges).toBe(1);
+    expect(hero.weapon!.wand!.charges).toBe(1);
   });
 });

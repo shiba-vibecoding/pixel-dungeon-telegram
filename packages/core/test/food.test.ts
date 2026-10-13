@@ -79,7 +79,8 @@ describe('eating', () => {
   it('recharges the mage\'s wands', () => {
     const world = solo('mage');
     const hero = heroById(world, 'p')!;
-    const wand = hero.items.find((i) => i.kind === 'wand.magicMissile')!;
+    // The wand in the mage's staff.
+    const wand = hero.weapon!.wand!;
     wand.charges = 0;
     act(world, 'p', { type: 'use', item: hero.items.findIndex((i) => i.kind === 'food.ration') });
     expect(wand.charges).toBe(1);

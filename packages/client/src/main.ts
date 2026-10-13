@@ -4,14 +4,14 @@ import {
   type Hero, type Item, type Level,
   type Bones, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
-  visibleCells, chargesKnown, WIDTH,
+  visibleCells, chargesKnown, staffReach, WIDTH,
   type World, charAt, swapsWithHero,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
 import './game.css';
-import { mobDescription, plantText, tileText, wellText } from './examine';
-import { quickIndex, quickUse } from './quickslot';
+import { mobDescription, mobName, plantText, tileText, wellText } from './examine';
+import { quickIndex, quickItem, quickUse, WEAPON_SLOT } from './quickslot';
 import { fx } from './fx';
 import { ambientFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
 /** The visual clock's last reading, for frame-to-frame particle steps. */
@@ -279,7 +279,7 @@ function coachMove(me: Hero): void {
  */
 function attackTarget(world: World, me: Hero): Mob | null {
   const visible = visibleCells(world, me.depth);
-  const foes = (world.floors[me.depth]?.mobs ?? []).filter((m) => m.state !== 'passive' && visible[m.pos] && m.hp > 0 && !m.image);
+  const foes = (world.floors[me.depth]?.mobs ?? []).filter((m) => m.state !== 'passive' && !m.ally && visible[m.pos] && m.hp > 0 && !m.image);
   const rank = (m: Mob): number => (m.enemy === me.id && m.state === 'hunting' ? 0 : m.state === 'sleeping' ? 2 : 1) * 1000 + distance(m.pos, me.pos);
   return foes.sort((a, b) => rank(a) - rank(b) || (a.id < b.id ? -1 : 1))[0] ?? null;
 }
@@ -738,10 +738,11 @@ function toggleQuickslot(slot = 0): void {
     return;
   }
   const index = quickIndex(me, slot);
-  if (index < 0) return;
-  const item = me.items[index]!;
-  // Wand.actions: no zapping a wand known to be empty (one of unknown charges may be tried, and fizzle).
-  if (item.charges === 0 && chargesKnown(item)) {
+  const item = quickItem(me, slot);
+  if (!item) return;
+  // Wand.actions: no zapping a wand known to be empty (one of unknown charges may be tried, and fizzle); the staff's, not at all.
+  const wand = item.kind === 'weapon.magesStaff' ? item.wand : item;
+  if (wand?.charges === 0 && (chargesKnown(wand) || wand !== item)) {
     view.say(t.noCharges, '#cccccc');
     return;
   }
@@ -878,7 +879,8 @@ function step(world: World, now: number, visible: readonly boolean[]): void {
     const mob = mobById(world, me.depth, walk.chase);
     if (!mob || !visible[mob.pos]) {
       walk.chase = null;
-    } else if (adjacent(me.pos, mob.pos)) {
+    } else if (adjacent(me.pos, mob.pos) || (staffReach(me) > 1 && distance(me.pos, mob.pos) <= staffReach(me) && !mob.ally && mob.state !== 'passive')) {
+      // MagesStaff.reachFactor: a battlemage's staff of disintegration strikes from a cell further.
       walk.chase = null;
       send({ type: 'attack', target: mob.id }, now);
       return;
@@ -1054,6 +1056,16 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
     if (effect.type === 'imp' && effect.hero === myId) talkWithImp(effect.line);
     if (effect.type === 'smith' && effect.hero === myId) talkWithSmith(effect.line);
     if (effect.type === 'shop' && effect.hero === myId) openShop();
+    // Ward.interact: dismiss the ward?
+    if (effect.type === 'ward' && effect.hero === myId) {
+      walk.reset();
+      const ward = effect.mob;
+      showConfirm(t.dismissTitle, t.dismissInfo, t.dismissYes, t.dismissNo, () => send({ type: 'dismiss', target: ward }, performance.now()), hideOverlay);
+    }
+    // CursedWand.AbortRetryFail: the game seems to crash (in English only: the joke would not translate).
+    if (effect.type === 'cursedZap' && effect.hero === myId && effect.effect === 'abortRetryFail' && t.crashTitle) {
+      showConfirm(t.crashTitle, t.crashBody, t.crashButtons[0] ?? '', t.crashButtons[2] ?? '', hideOverlay, hideOverlay);
+    }
     // The Amulet of Yendor: its question for whoever takes it (once a run); the party hears of it.
     if (effect.type === 'amulet' && world && me) {
       if (effect.hero === myId) {
@@ -1223,6 +1235,7 @@ function tapCell(cell: number, quiet = false): void {
     const shot = aim;
     aim = null;
     if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
+    else if (cell !== me.pos && shot.index === WEAPON_SLOT && shot.kind === 'zap' && me.weapon) send({ type: 'zap', item: 'weapon', target: cell }, performance.now());
     else if (cell !== me.pos && me.items[shot.index]) send({ type: shot.kind, item: shot.index, target: cell }, performance.now());
     return;
   }
@@ -1706,7 +1719,7 @@ function examineCell(pos: number): void {
   if (char && 'kind' in char) {
     const state = char.state === 'passive' ? '' : t.mobStates[char.state] ?? '';
     const health = char.state === 'passive' ? '' : t.examineHealth(Math.max(0, char.hp), char.ht);
-    showInfo(t.mobs[char.kind], [mobDescription(char), state], hideOverlay, {
+    showInfo(mobName(char), [mobDescription(char), state], hideOverlay, {
       icon: portrait(char.kind),
       ...(health ? { health: [Math.max(0, char.hp), char.ht] as const } : {}),
     });
@@ -2216,7 +2229,7 @@ function tick(now: number): void {
     // A newly spotted awake monster stops a walk, as in the original.
     const inSight = new Set(
       (world.floors[me.depth]?.mobs ?? [])
-        .filter((m) => m.state !== 'sleeping' && m.state !== 'passive' && visible[m.pos])
+        .filter((m) => m.state !== 'sleeping' && m.state !== 'passive' && !m.ally && visible[m.pos])
         .map((m) => m.id),
     );
     // (Under live turns the player steers as things happen, and a fight slows the clock: a walk goes on.)
@@ -2427,8 +2440,8 @@ function tick(now: number): void {
     holdingSince = 0;
     holdingFelt = false;
   }
-  const quickItem = me.items[quickIndex(me, 0)];
-  const quickItem2 = hud.wide ? me.items[quickIndex(me, 1)] : undefined;
+  const quick1 = quickItem(me, 0);
+  const quick2 = hud.wide ? quickItem(me, 1) : undefined;
   const quickState = (item: Item | undefined, aiming: boolean): QuickState | null =>
     item
       ? {
@@ -2443,7 +2456,7 @@ function tick(now: number): void {
     examining = false;
   };
   // One state at a time, the most pressing: the connection, death, a target to choose, examining, companions.
-  const aimed = aim && aim.index >= 0 ? me.items[aim.index] : undefined;
+  const aimed = aim && aim.index >= 0 ? me.items[aim.index] : aim?.index === WEAPON_SLOT ? me.weapon ?? undefined : undefined;
   const status: HudStatus | null =
     session.status ? { kind: session.status === t.reconnecting ? 'reconnecting' : 'connecting', text: session.status }
     : !isAlive(me) && !world.over ? { kind: 'dead', text: `${t.youDied}. ${world.arena ? t.arena.fallenCoop : t.youDiedCoop}` }
@@ -2464,8 +2477,8 @@ function tick(now: number): void {
       newLoot,
       looks: session.looks,
       keys: me.items.filter((i) => (i.kind === 'key.iron' || i.kind === 'key.skeleton') && i.depth === me.depth).length,
-      quick: quickState(quickItem, aim !== null && aim.index === quickIndex(me, 0)),
-      quick2: quickState(quickItem2, aim !== null && aim.index === quickIndex(me, 1)),
+      quick: quickState(quick1, aim !== null && aim.index === quickIndex(me, 0)),
+      quick2: quickState(quick2, aim !== null && aim.index === quickIndex(me, 1)),
       waitingFor: session.mode === 'online' ? holders.filter((id) => id !== me.id) : [],
       arena: arenaHud(world, me, session.mode === 'online'),
     },

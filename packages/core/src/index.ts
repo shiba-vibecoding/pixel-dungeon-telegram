@@ -40,3 +40,10 @@ export * from './verify';
 export * from './badges';
 export * from './daily';
 export * from './spd-sprites';
+export {
+  type Bolt, buffedLevel, chargesPerCast, heldWands, maxCharges, staffReach, wandAt, wandDamage, type WandNote, zapProblem,
+} from './wands';
+export { chargeLimit } from './regrowth';
+export type { CursedEffect } from './cursed';
+export { friendly } from './allies';
+export { type Property, propertiesOf } from './props';

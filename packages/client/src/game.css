@@ -194,3 +194,6 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 .pd-item.silhouette {
   -webkit-mask-size: calc(256 * var(--u)) calc(512 * var(--u)); mask-size: calc(256 * var(--u)) calc(512 * var(--u));
 }
+
+/* Shattered's buff icons (BuffIndicator, 7×7, 18 a row), for the conditions Pixel Dungeon's sheet has none of. */
+.pd-buff i.spd, i.spd[data-b] { background-image: url("/assets/spd/buffs.png"); background-size: 384px 192px; }

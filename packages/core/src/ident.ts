@@ -10,8 +10,9 @@ import type { World } from './world';
  * it on tells the curse (a cursed thing binds itself at once); striking with a
  * weapon, being struck in armour, zapping a wand or wearing a ring long enough
  * tells the rest; a scroll of identify, a well of awareness and the end of the
- * run tell everything. Potions, scrolls, wands and rings also hide their kind,
- * which the party learns together (World.known). Thrown weapons, class armour
+ * run tell everything. Potions, scrolls and rings also hide their kind, which
+ * the party learns together (World.known); Shattered's wands are known by
+ * their look, and only hide their level, curse and charges (Wand.isKnown). Thrown weapons, class armour
  * and everything else hide nothing (MissileWeapon, ClassArmor: levelKnown).
  *
  * Kept on the item as what is not known yet, absent once known; so an item
@@ -22,8 +23,8 @@ import type { World } from './world';
 /** Weapon.HITS_TO_KNOW and Armor.HITS_TO_KNOW: blows struck, and blows taken, before the level is known. */
 export const WEAPON_HITS_TO_KNOW = 20;
 export const ARMOR_HITS_TO_KNOW = 10;
-/** Wand.USAGES_TO_KNOW: zaps before a wand is known through and through. */
-export const WAND_USAGES_TO_KNOW = 40;
+/** Wand.USES_TO_ID: zaps before a wand is known through and through, of which half may be counted at first (availableUsesToID). */
+export const WAND_USES_TO_ID = 10;
 
 export const levelKnown = (item: Item): boolean => !item.levelUnknown;
 export const cursedKnown = (item: Item): boolean => !item.curseUnknown;
@@ -33,11 +34,15 @@ export const chargesKnown = (item: Item): boolean => !item.chargesUnknown;
 /** Item.visiblyCursed: cursed, and known to be. */
 export const visiblyCursed = (item: Item): boolean => !!item.cursed && cursedKnown(item);
 
-/** Potion, Scroll, Ring and Wand.isKnown: whether the party knows what kind of thing it is; the rest show it. */
-export function kindKnown(world: World, item: Item): boolean {
+/** Potions, scrolls and rings hide their kind until the party learns it. */
+const hidesKind = (item: Item): boolean => {
   const category = itemDef(item.kind).category;
-  const hides = category === 'potion' || category === 'scroll' || category === 'wand' || category === 'ring';
-  return !hides || world.known.includes(item.kind);
+  return category === 'potion' || category === 'scroll' || category === 'ring';
+};
+
+/** Potion, Scroll and Ring.isKnown: whether the party knows what kind of thing it is; the rest show it. */
+export function kindKnown(world: World, item: Item): boolean {
+  return !hidesKind(item) || world.known.includes(item.kind);
 }
 
 /** Item.isIdentified (and Ring.isIdentified, Wand.isIdentified): nothing more to learn about it. */
@@ -52,15 +57,15 @@ export function learn(world: World, kind: ItemKind): boolean {
   return true;
 }
 
-/** Item.identify (Potion, Scroll, Ring and Wand.identify: the kind too); true if the party learned the kind. */
+/** Item.identify (Potion, Scroll and Ring.identify: the kind too; Wand.identify: the charges too); true if the party learned the kind. */
 export function identify(world: World, item: Item): boolean {
   delete item.levelUnknown;
   delete item.curseUnknown;
   delete item.chargesUnknown;
   delete item.familiarity;
-  const category = itemDef(item.kind).category;
-  const hides = category === 'potion' || category === 'scroll' || category === 'wand' || category === 'ring';
-  return hides && learn(world, item.kind);
+  delete item.usesToId;
+  delete item.usesAvailable;
+  return hidesKind(item) && learn(world, item.kind);
 }
 
 /** As the Generator makes them (a new Item: levelKnown and cursedKnown false): a melee weapon, armour, ring or wand tells nothing yet. */
