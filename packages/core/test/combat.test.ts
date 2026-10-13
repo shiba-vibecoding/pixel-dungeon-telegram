@@ -33,10 +33,12 @@ function freeNeighbour(world: World, depth: number, pos: number): number {
 }
 
 describe('monsters', () => {
-  it('populate sewer levels as the bestiary says, asleep in standard rooms', () => {
-    // Bestiary.mob: never a rare variant at first; now and then a visitor from the prison below.
+  it("populate sewer levels from MobSpawner's rotations, asleep in standard rooms", () => {
+    // MobSpawner: each depth's rotation, one in fifty of a kind its rare one, now and then a visitor from the prison below.
     const allowed: Record<number, string[]> = {
-      1: ['rat'], 2: ['rat', 'gnoll'], 3: ['rat', 'gnoll', 'crab', 'swarm'], 4: ['rat', 'gnoll', 'crab', 'swarm', 'skeleton', 'thief'],
+      1: ['rat', 'snake', 'albino'], 2: ['rat', 'snake', 'gnoll', 'albino', 'gnollExile'],
+      3: ['rat', 'snake', 'gnoll', 'swarm', 'crab', 'albino', 'gnollExile', 'hermitCrab'],
+      4: ['gnoll', 'swarm', 'crab', 'slime', 'thief', 'gnollExile', 'hermitCrab', 'causticSlime', 'bandit'],
     };
 
     for (let seed = 1; seed <= 25; seed++) {
@@ -44,10 +46,11 @@ describe('monsters', () => {
       for (let depth = 1; depth <= 4; depth++) {
         const level = levelAt(world, depth);
         // The sad ghost may haunt one level besides its monsters, and special rooms have guardians of their own.
-        const mobs = floorAt(world, depth).mobs.filter((mob) => mob.kind !== 'ghost' && mob.kind !== 'statue' && mob.kind !== 'piranha');
-        const base = 2 + (depth % 5);
-        expect(mobs.length).toBeGreaterThanOrEqual(base);
-        expect(mobs.length).toBeLessThanOrEqual(base + 2);
+        const mobs = floorAt(world, depth).mobs.filter((mob) => !['ghost', 'statue', 'armoredStatue', 'piranha', 'phantomPiranha'].includes(mob.kind));
+        // RegularLevel.createMobs: eight on the first depth, else RegularLevel.mobLimit (3 + depth % 5, and up to two more).
+        const base = depth === 1 ? 8 : 3 + (depth % 5);
+        expect(mobs.length).toBeGreaterThanOrEqual(depth === 1 ? 6 : base);
+        expect(mobs.length).toBeLessThanOrEqual(depth === 1 ? 8 : base + 2);
         expect(new Set(mobs.map((m) => m.pos)).size).toBe(mobs.length);
         for (const mob of mobs) {
           expect(allowed[depth]).toContain(mob.kind);
@@ -266,27 +269,22 @@ describe('rare variants', () => {
 });
 
 describe('dwarf monks', () => {
-  it("may knock the weapon out of the hero's hands, who then fights bare-handed", () => {
+  it('gain focus while they hunt, and a focused monk parries any blow, then needs six or seven turns to focus again', () => {
     const world = pacify(createWorld(4));
     addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
     const hero = heroById(world, 'p')!;
-    Object.assign(hero, { hp: 5000, ht: 5000, defenseSkill: 0 });
+    Object.assign(hero, { hp: 5000, ht: 5000, defenseSkill: 0, attackSkill: 100000 });
     const monk = createMob('#monk', 'monk', freeNeighbour(world, 1, hero.pos), 'hunting', floorAt(world, 1).now);
     Object.assign(monk, { enemy: 'p', target: hero.pos, enemySeen: true, hp: 100000, ht: 100000 });
     floorAt(world, 1).mobs.push(monk);
-    const sword = hero.weapon!;
-    for (let i = 0; i < 200 && hero.weapon; i++) act(world, 'p', { type: 'wait' });
-    expect(hero.weapon).toBeNull();
-    const heap = floorAt(world, 1).heaps.find((h) => h.pos === hero.pos)!;
-    expect(heap.items).toContain(sword);
-    // Bare fists still strike.
-    expect(act(world, 'p', { type: 'attack', target: '#monk' }).ok).toBe(true);
-    // Picked up and wielded again, nothing is lost.
-    floorAt(world, 1).mobs = [];
-    act(world, 'p', { type: 'pickup' });
-    const index = hero.items.indexOf(sword);
-    expect(act(world, 'p', { type: 'equip', item: index }).ok).toBe(true);
-    expect(hero.weapon).toBe(sword);
-    expect(hero.items).not.toContain(sword);
+    for (let i = 0; i < 3 && !monk.focused; i++) act(world, 'p', { type: 'wait' });
+    expect(monk.focused).toBe(true);
+    const result = act(world, 'p', { type: 'attack', target: '#monk' });
+    expect(result.ok && result.effects.some((e) => e.type === 'attack' && e.attacker === 'p' && !e.hit)).toBe(true);
+    expect(result.ok && result.effects.some((e) => e.type === 'mobSays' && e.line === 'parried')).toBe(true);
+    expect(monk.focused).toBe(false);
+    expect(monk.focusCooldown).toBeGreaterThan(4);
+    // And the weapon stays in the hero's hands: Shattered's monks do not disarm.
+    expect(hero.weapon).not.toBeNull();
   });
 });

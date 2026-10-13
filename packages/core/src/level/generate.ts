@@ -1,3 +1,4 @@
+import type { MobKind } from '../actors';
 import type { PlantInfo } from '../plants';
 import type { ArenaRing } from './arena';
 import { deriveSeed, Rng, Stream } from '../rng';
@@ -73,6 +74,10 @@ export interface Level {
    * cells stay HIGH_GRASS and are listed here.
    */
   furrowed?: number[];
+  /** Level.mobsToSpawn: what is left of the depth's rotation of monsters (MobSpawner, spawner.ts). */
+  mobRotation?: MobKind[];
+  /** Where a demon spawner pulses (DemonSpawnerRoom). SEAM(levels): the room places it; the monsters' stream raises it (ai.ts populate). */
+  demonSpawner?: number;
 }
 
 /** How each depth is laid out (Dungeon.newLevel): each region's levels and its boss's, the last shop, the Amulet's hall. */

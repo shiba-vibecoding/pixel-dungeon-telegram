@@ -6,12 +6,14 @@
  */
 
 import type { HeroClass } from './actors';
-import { HERO_CLASSES } from './heroclass';
+import { startingKit } from './heroclass';
 
-export type OfferKind = 'skin' | 'effect' | 'frame' | 'patron' | 'tip';
+export type OfferKind = 'skin' | 'effect' | 'frame' | 'camp' | 'patron' | 'tip';
 export type SkinVariant = 'ash' | 'royal' | 'shadow';
 export type EffectId = 'sparks' | 'fireflies' | 'snow';
 export type FrameId = 'bronze' | 'gold' | 'shadow' | 'patron';
+/** A camp on the home screen («Привал»): the cave with crystals, the prison yard, the dwarven hall. The plain one at the dungeon's gate is free. */
+export type CampId = 'cave' | 'prison' | 'hall';
 
 export interface Offer {
   sku: string;
@@ -29,10 +31,22 @@ export interface Offer {
   skin?: SkinVariant;
   effect?: EffectId;
   frame?: FrameId;
+  camp?: CampId;
 }
 
-// Every class has its three looks (the design's v19 added the Duelist's and the Cleric's sheets).
-const HEROES: readonly HeroClass[] = HERO_CLASSES;
+/** The classes the home screen and the shop know of, in the sheets' order: Shattered's six. */
+export const CLASS_ORDER: readonly string[] = ['warrior', 'mage', 'rogue', 'huntress', 'duelist', 'cleric'];
+
+/** Whether the rules have a class yet (core's kits): the Duelist and the Cleric arrive with the classes stream, and their looks and camp slot with them. */
+export function classOffered(name: string): boolean {
+  try {
+    return Boolean(startingKit(name as HeroClass));
+  } catch {
+    return false;
+  }
+}
+
+const HEROES = CLASS_ORDER.filter(classOffered) as HeroClass[];
 
 /** Thirty days, the length of a Telegram Stars subscription. */
 export const SUBSCRIPTION_SECONDS = 2_592_000;
@@ -53,6 +67,10 @@ export const OFFERS: readonly Offer[] = [
   { sku: 'frame.gold', kind: 'frame', stars: 50, frame: 'gold' },
   { sku: 'frame.shadow', kind: 'frame', stars: 50, frame: 'shadow' },
   { sku: 'frame.patron', kind: 'frame', stars: 0, frame: 'patron' },
+  // Camps for the home screen: the same scene, another place around the fire.
+  { sku: 'camp.cave', kind: 'camp', stars: 100, camp: 'cave' },
+  { sku: 'camp.prison', kind: 'camp', stars: 100, camp: 'prison' },
+  { sku: 'camp.hall', kind: 'camp', stars: 100, camp: 'hall' },
   // The patron: a month's subscription.
   { sku: 'patron', kind: 'patron', stars: 99, subscription: true },
   // Treating the developer.

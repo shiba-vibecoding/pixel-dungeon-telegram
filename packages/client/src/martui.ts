@@ -1,5 +1,6 @@
 import { type EffectId, type HeroClass, inSeason, type Offer, offerBySku, OFFERS } from '@pd/core';
 import { audio } from './audio';
+import { Camp, type CampScene, campClasses, seasonOf } from './camp';
 import { badgeText } from './badges';
 import { t } from './i18n';
 import { mart, shelf } from './mart';
@@ -112,18 +113,21 @@ function offerName(offer: Offer): string {
   if (offer.kind === 'skin') return t.skinNames[offer.skin!];
   if (offer.kind === 'effect') return t.effectNames[offer.effect!];
   if (offer.kind === 'frame') return t.frameNames[offer.frame!];
+  if (offer.kind === 'camp') return t.campNames[offer.camp!];
   return t.patron;
 }
 
 function offerInfo(offer: Offer): string {
   if (offer.kind === 'skin') return t.skinInfo[offer.skin!];
   if (offer.kind === 'effect') return t.effectInfo[offer.effect!];
+  if (offer.kind === 'camp') return t.campInfo[offer.camp!];
   return t.frameInfo;
 }
 
 function offerArt(offer: Offer, heroClass: HeroClass): HTMLElement {
   if (offer.kind === 'skin') return heroCanvas(offer.heroClass!, offer.skin, 5, 2);
   if (offer.kind === 'effect') return effectCanvas(offer.effect!, heroClass, 2);
+  if (offer.kind === 'camp') return campPreview(offer.camp!, heroClass, 'small');
   return framedPortrait(offer.frame!, heroClass);
 }
 
@@ -134,6 +138,21 @@ function smallArt(offer: Offer, heroClass: HeroClass): HTMLElement {
   const frame = el('i', { className: 'pd-perk-frame' });
   frame.style.borderImageSource = `var(--spr-frame-${offer.frame})`;
   return frame;
+}
+
+/** A camp of the home screen as a picture: the same runtime, cropped to the fire, the hero and what stands around them. */
+function campPreview(scene: CampScene, heroClass: HeroClass, size: 'small' | 'big'): HTMLElement {
+  const host = el('div', { className: 'pd-camp-preview' });
+  const big = size === 'big';
+  const crop = big ? ([4, 70, 86, 56] as const) : ([10, 82, 74, 46] as const);
+  const scale = big ? 3 : 2;
+  host.style.width = `${crop[2] * scale}px`;
+  host.style.height = `${crop[3] * scale}px`;
+  new Camp(host, {
+    scene, season: seasonOf(new Date()), hero: Math.max(0, campClasses().indexOf(heroClass)), skinOf: (name) => mart.skinOf(name), effect: mart.effectWorn(),
+    crop, scale, interactive: false, own: true,
+  });
+  return host;
 }
 
 const stars = (amount: number, small = false): HTMLElement => el('span', { className: `pd-stars${small ? ' small' : ''}`, textContent: String(amount) });
@@ -192,7 +211,7 @@ function card(offer: Offer, heroClass: HeroClass, refresh: () => void, reopen: (
   }
   const node = el(
     'article',
-    { className: `pd-offer${worn ? ' worn' : owned ? ' owned' : byBadge ? ' badge' : !inside ? ' offseason' : ''}` },
+    { className: `pd-offer${worn ? ' worn' : owned ? ' owned' : byBadge ? ' badge' : !inside ? ' offseason' : ''}${offer.kind === 'camp' ? ' camp' : ''}` },
     art,
     el('h3', { className: 'pd-offer-name', textContent: offerName(offer) }),
     meta,
@@ -214,7 +233,20 @@ export function setBadgeImages(map: Record<string, number>): void {
   badgeImages = map;
 }
 
-type Shelf = 'skin' | 'effect' | 'frame' | 'patron';
+/** The camp every hero has: the dungeon's gate, in the season's colours. Worn when no other camp is. */
+function plainCamp(heroClass: HeroClass, refresh: () => void): HTMLElement {
+  const worn = mart.campWorn() === undefined;
+  const art = el('div', { className: 'pd-offer-art' }, campPreview('outdoor', heroClass, 'small'));
+  if (worn) art.append(el('span', { className: 'pd-chip', textContent: t.worn }));
+  const meta = el('p', { className: 'pd-offer-meta', textContent: worn ? t.worn : t.ownedLabel });
+  const action = worn
+    ? button(t.takeOffLook, () => undefined, 'small quiet')
+    : button(t.wear, () => { mart.wearCamp(undefined); refresh(); }, 'small');
+  (action as HTMLButtonElement).disabled = worn;
+  return el('article', { className: `pd-offer camp${worn ? ' worn' : ' owned'}` }, art, el('h3', { className: 'pd-offer-name', textContent: t.campPlain }), meta, action);
+}
+
+type Shelf = 'skin' | 'effect' | 'frame' | 'camp' | 'patron';
 
 export interface MartOptions {
   heroClass: HeroClass;
@@ -238,14 +270,20 @@ export function showMart(options: MartOptions): void {
     } else {
       const offers = current === 'skin' ? OFFERS.filter((o) => o.kind === 'skin' && o.heroClass === options.heroClass) : shelf(current, options.heroClass);
       body.replaceChildren(
-        el('div', { className: 'pd-shop-grid' }, ...offers.filter((o) => o.frame !== 'patron' || mart.patron).map((offer) => card(offer, options.heroClass, render, reopen))),
+        el(
+          'div',
+          { className: 'pd-shop-grid' },
+          ...(current === 'camp' ? [plainCamp(options.heroClass, render)] : []),
+          ...offers.filter((o) => o.frame !== 'patron' || mart.patron).map((offer) => card(offer, options.heroClass, render, reopen)),
+        ),
         ...(mart.open ? [] : [info(t.martClosed, 'pd-note center')]),
       );
     }
     sprites(body);
   };
-  for (const id of ['skin', 'effect', 'frame', 'patron'] as const) {
-    const tab = el('button', { className: 'pd-tab' }, id === 'patron' ? el('i', { className: 'pd-icon', style: 'background-image: var(--spr-patron)' } as never) : null, t.martTabs[id]);
+  for (const id of ['skin', 'effect', 'frame', 'camp', 'patron'] as const) {
+    const tab = el('button', { className: `pd-tab${id === 'patron' ? ' patron' : ''}` }, id === 'patron' ? el('i', { className: 'pd-icon', style: 'background-image: var(--spr-patron)' } as never) : null, el('span', { className: 'pd-tab-text', textContent: t.martTabs[id] }));
+    tab.ariaLabel = t.martTabs[id];
     tab.dataset.shelf = id;
     tab.setAttribute('role', 'tab');
     tab.onclick = () => {
@@ -263,7 +301,8 @@ export function showMart(options: MartOptions): void {
 /** An offer up close: the look running and on every armour tier, what it is, and the red «Buy». */
 function showOffer(offer: Offer, heroClass: HeroClass, back: () => void): void {
   const owner = offer.heroClass ?? heroClass;
-  const big = offer.kind === 'skin' ? runningHero(owner, offer.skin, 8) : offer.kind === 'effect' ? effectCanvas(offer.effect!, owner, 4) : framedPortrait(offer.frame!, owner);
+  const big = offer.kind === 'skin' ? runningHero(owner, offer.skin, 8) : offer.kind === 'effect' ? effectCanvas(offer.effect!, owner, 4)
+    : offer.kind === 'camp' ? campPreview(offer.camp!, owner, 'big') : framedPortrait(offer.frame!, owner);
   const tiers = offer.kind === 'skin'
     ? el('div', { className: 'pd-tiers' }, ...t.tiers.map((name, tier) => el('div', { title: name, ariaLabel: name }, heroCanvas(owner, offer.skin, 3, tier), el('span', { textContent: String(tier + 1) }))))
     : null;

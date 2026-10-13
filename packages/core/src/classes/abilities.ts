@@ -1,3 +1,4 @@
+import { ipow } from '../fmath';
 import type { Hero } from '../actors';
 import { regenOn } from '../hero';
 import { armorChargeMultiplier } from '../rings';
@@ -59,7 +60,7 @@ export function chargeUse(hero: Hero, def: AbilityDef, choice?: number, world?: 
     case 3: use *= Math.fround(0.68); break;
     case 4: use *= Math.fround(0.6); break;
   }
-  if (def.id === 'challenge' && eliminationActive(hero)) use *= 0.84 ** pointsIn(hero, 'ELIMINATION_MATCH');
+  if (def.id === 'challenge' && eliminationActive(hero)) use *= ipow(0.84, pointsIn(hero, 'ELIMINATION_MATCH'));
   return Math.fround(use);
 }
 

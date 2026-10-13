@@ -8,6 +8,7 @@ import type { RunApi, RunMeta, SyncAnswer } from './checked';
 import { guestSecret } from './guest';
 import { netlog, sendNetlog, startNetlog } from './netlog';
 import { report } from './report';
+import { reloadForUpdate } from './update';
 
 /*
  * Where the world comes from. A solo session runs the core directly and keeps
@@ -255,7 +256,7 @@ export function soloSession(
     if (reply === 'rules') {
       // The game was updated: the new version picks the run up where the server has it.
       flush();
-      location.reload();
+      reloadForUpdate();
       return;
     }
     if (reply.reason === 'none') {

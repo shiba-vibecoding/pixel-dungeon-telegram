@@ -8,7 +8,7 @@ import { isChallenged, NO_HEALING } from './challenges';
 import { type Char, charAt, type Ctx, enterCell, heroesOn, heroView, isHero, leaveCell } from './floor';
 import { clearGas, clearGasAt, reachable, seedCorrosive, seedGas, setCellToWater } from './gas';
 import { type Item, itemDef, type ItemKind } from './items';
-import { adjacent, cellX, cellY, LENGTH, NEIGHBOURS4, NEIGHBOURS8, NEIGHBOURS9 } from './level/geometry';
+import { adjacent, cellX, cellY, LENGTH, NEIGHBOURS4, NEIGHBOURS8, NEIGHBOURS9, squaredDistance } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import { castRay, coneCells, MAGIC_BOLT, PROJECTILE, STOP_TARGET_ONLY, WONT_STOP } from './ray';
 import { mobPress, trapAt, triggerTrap } from './traps';
@@ -345,7 +345,7 @@ function dragonsBreath(ctx: Ctx, hero: Hero, target: number): void {
       char.crippled = Math.max(char.crippled ?? 0, 5);
     }
   }
-  const far = (c: number): number => Math.hypot(cellX(c) - cellX(hero.pos), cellY(c) - cellY(hero.pos));
+  const far = (c: number): number => squaredDistance(c, hero.pos);
   for (const cell of near) {
     for (const n of NEIGHBOURS4) {
       const next = cell + n;

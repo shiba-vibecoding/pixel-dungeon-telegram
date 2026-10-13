@@ -1,6 +1,7 @@
 import { charAt, type Ctx } from './floor';
 import { cellX, cellY, LENGTH, WIDTH } from './level/geometry';
 import { F, hasFlag } from './level/terrain';
+import { atan2, cos, sin } from './ballistica';
 
 /*
  * Shattered's Ballistica with its collision modes: a straight line from a cell towards another, carried on past it
@@ -79,17 +80,17 @@ export function coneCells(ctx: Ctx, core: Ray, maxDist: number, degrees: number,
   const fy = cellY(source) + 0.5;
   let tx = cellX(core.collision) + 0.5;
   let ty = cellY(core.collision) + 0.5;
-  const length = Math.hypot(tx - fx, ty - fy);
+  const length = Math.sqrt((tx - fx) * (tx - fx) + (ty - fy) * (ty - fy));
   if (length > maxDist) {
     tx = fx + ((tx - fx) * maxDist) / length;
     ty = fy + ((ty - fy) * maxDist) / length;
   }
-  const radius = Math.fround(Math.hypot(tx - fx, ty - fy) + 0.5);
-  const initial = (Math.atan2(ty - fy, tx - fx) * 180) / Math.PI;
+  const radius = Math.fround(Math.sqrt((tx - fx) * (tx - fx) + (ty - fy) * (ty - fy)) + 0.5);
+  const initial = (atan2(ty - fy, tx - fx) * 180) / 3.141592653589793;
   const targets: number[] = [];
   const arcCell = (a: number, r: number): number => {
-    let x = fx + Math.cos((a * Math.PI) / 180) * r;
-    let y = fy + Math.sin((a * Math.PI) / 180) * r;
+    let x = fx + cos((a * 3.141592653589793) / 180) * r;
+    let y = fy + sin((a * 3.141592653589793) / 180) * r;
     x += fx > x ? 0.5 : -0.5;
     y += fy > y ? 0.5 : -0.5;
     const cx = Math.min(WIDTH - 1, Math.max(0, Math.floor(x)));

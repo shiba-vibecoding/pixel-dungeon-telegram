@@ -315,6 +315,15 @@ const AIRS: readonly Air[] = [
   },
 ];
 
+/** The camp's air (the home screen): the night's low wind, and the fire crackling now and then. */
+const CAMP_AIR: Air = {
+  noise: { type: 'lowpass', hz: 320, gain: 0.035, sway: 90 },
+  events: [
+    { sound: 'sizzle', every: [700, 2200], volume: 0.1, rate: [0.9, 1.4] },
+    { sound: 'puff', every: [6000, 14000], volume: 0.03, rate: [1.2, 1.7] },
+  ],
+};
+
 /** A region's air, playing: its nodes, faded out and stopped when the region changes. */
 interface Playing {
   gain: GainNode;
@@ -359,7 +368,7 @@ class Audio {
   private oggUnsupported = false;
   private prefetching: Ost[] = [];
   private prefetchTimer = 0;
-  private region: number | null = null;
+  private region: number | 'camp' | null = null;
   private playing: Playing | null = null;
   private noise: AudioBuffer | null = null;
   /** Where the hero is, world pixels: sounds with a place are heard from there. */
@@ -868,7 +877,7 @@ class Audio {
   }
 
   /** The air of a region (0 sewers ... 4 demon halls), or none (the title). */
-  ambience(region: number | null): void {
+  ambience(region: number | 'camp' | null): void {
     if (region === this.region) return;
     this.region = region;
     this.stopAir();
@@ -896,7 +905,7 @@ class Audio {
 
   private startAir(): void {
     const ctx = this.context;
-    const air = this.region === null ? undefined : AIRS[this.region];
+    const air = this.region === null ? undefined : this.region === 'camp' ? CAMP_AIR : AIRS[this.region];
     if (!ctx || !this.air || !this.noise || !air || this.playing) return;
     const gain = ctx.createGain();
     gain.gain.value = 0;

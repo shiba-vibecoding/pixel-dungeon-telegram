@@ -1,3 +1,4 @@
+import { ipow } from '../fmath';
 import { BY_ID, registerSpells } from './cleric-registry';
 import type { Hero, Mob } from '../actors';
 import { isAlive } from '../actors';
@@ -76,7 +77,7 @@ export function spendCharge(hero: Hero, tome: Item, spent: number): boolean {
   // The target hero level is 1 + 2 × the tome's level, and an extra one for each level after 6.
   let diff = hero.lvl - (1 + tome.level * 2);
   if (tome.level >= 7) diff -= tome.level - 6;
-  tome.exp = (tome.exp ?? 0) + Math.round(diff >= 0 ? spent * 10 * Math.fround(1.1) ** diff : spent * 10 * Math.fround(0.75) ** -diff);
+  tome.exp = (tome.exp ?? 0) + Math.round(diff >= 0 ? spent * 10 * ipow(Math.fround(1.1), diff) : spent * 10 * ipow(Math.fround(0.75), -diff));
   if (tome.exp >= (tome.level + 1) * 50 && tome.level < 10) {
     tome.level++;
     tome.exp -= tome.level * 50;

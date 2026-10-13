@@ -1,4 +1,5 @@
 import type { Hero } from '../actors';
+import { dpow } from '../fmath';
 import type { Ctx } from '../floor';
 import type { Item } from '../items';
 import { chargeCap, levelCap } from './artifact';
@@ -91,7 +92,7 @@ function stealthAct(ctx: Ctx, hero: Hero, item: Item): void {
   // The level the hero is aimed at is 1 + 2 a cloak level, and one more for each level past 6.
   let diff = hero.lvl - (1 + item.level * 2);
   if (item.level >= 7) diff -= item.level - 6;
-  item.exp = (item.exp ?? 0) + (diff >= 0 ? Math.round(10 * Math.fround(1.1) ** diff) : Math.round(10 * 0.75 ** -diff));
+  item.exp = (item.exp ?? 0) + (diff >= 0 ? Math.round(10 * dpow(Math.fround(1.1), diff)) : Math.round(10 * dpow(0.75, -diff)));
   if (item.exp >= (item.level + 1) * 50 && item.level < levelCap(item)) {
     upgradeArtifact(ctx, item);
     item.exp -= item.level * 50;

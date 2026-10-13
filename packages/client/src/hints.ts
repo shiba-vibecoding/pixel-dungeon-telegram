@@ -55,7 +55,7 @@ const RU: Record<HintId, Text> = {
   vial: ['Бурдюк', 'В него собирается роса. Выпейте из бурдюка, чтобы вылечиться: вы выпьете ровно столько, сколько нужно.'],
   bag: ['Сумка', 'Сумка держит семена, свитки или палочки отдельно и бережёт их от огня и холода.'],
   ankh: ['Анх', 'Если вы погибнете, анх вернёт вас к жизни один раз.'],
-  honeypot: ['Горшок с мёдом', 'Разбейте его, и пчела будет сражаться за вас.'],
+  honeypot: ['Горшок с мёдом', 'Разбитый, он выпускает пчелу, которая бросается на всех рядом с горшком — и на того, кто его несёт.'],
   torch: ['Факел', 'Зажгите факел, чтобы видеть дальше в тёмных местах.'],
   tome: ['Книга мастерства', 'Прочитайте её, чтобы выбрать путь героя: один из двух подклассов.'],
   kit: ['Набор для брони', 'Превращает надетую броню в броню класса со своей особой способностью.'],
@@ -101,7 +101,7 @@ const EN: Record<HintId, Text> = {
   vial: ['The waterskin', 'It collects dew. Drink from it to heal: you only drink as much as you need.'],
   bag: ['A bag', 'A bag keeps seeds, scrolls or wands apart and safe from fire and frost.'],
   ankh: ['An ankh', 'Should you die, the ankh brings you back to life once.'],
-  honeypot: ['A honeypot', 'Shatter it and the bee inside fights for you.'],
+  honeypot: ['A honeypot', 'Shattered, it lets out its bee, which goes for anyone near the pot — and for whoever carries it.'],
   torch: ['A torch', 'Light it to see further in dark places.'],
   tome: ['The tome of mastery', 'Read it to choose your hero\'s way: one of two subclasses.'],
   kit: ['An armour kit', 'Turns the armour worn into class armour, with a special ability.'],
@@ -273,6 +273,11 @@ class Hints {
   /** A button the card means that is not on screen yet (the attack shows a moment after the enemy). */
   private wanted: Target | null = null;
 
+  /** Hints another guide covers (the step tutorial): never queued while it does. */
+  suppress: (id: HintId) => boolean = () => false;
+  /** A card waits while this holds (the tutorial's bubble is up). */
+  hold: () => boolean = () => false;
+
   /** Where the cards appear (the interface layer). */
   attach(root: HTMLElement): void {
     this.root = root;
@@ -292,7 +297,7 @@ class Hints {
 
   /** The first time something is met, its hint (if learning is on); later times, nothing. */
   first(id: HintId, icon?: () => HTMLElement): void {
-    if (!this.enabled || this.seen.has(id) || this.queue.some((q) => q.id === id)) return;
+    if (!this.enabled || this.seen.has(id) || this.suppress(id) || this.queue.some((q) => q.id === id)) return;
     this.queue.push({ id, icon });
     this.pump();
   }
@@ -300,7 +305,7 @@ class Hints {
   /** Called every frame: keeps the arrow by its button, and shows the next hint once the last has gone and a moment has passed. */
   pump(): void {
     this.placeArrow();
-    if (!this.root || this.card || this.queue.length === 0) return;
+    if (!this.root || this.card || this.queue.length === 0 || this.hold()) return;
     if (performance.now() - this.lastShown < GAP_MS) return;
     const { id, icon } = this.queue.shift()!;
     this.seen.add(id);

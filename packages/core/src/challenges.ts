@@ -6,7 +6,7 @@ import { createItem, type Item, itemDef, itemPrice, type ItemKind, knownIn } fro
  * masks are the original's, so a run's choice reads the same in both games.
  */
 
-export type ChallengeId = 'noFood' | 'noArmor' | 'noHealing' | 'noHerbalism' | 'swarm' | 'darkness' | 'noScrolls';
+export type ChallengeId = 'noFood' | 'noArmor' | 'noHealing' | 'noHerbalism' | 'swarm' | 'darkness' | 'noScrolls' | 'champions';
 
 export const NO_FOOD = 1;
 export const NO_ARMOR = 2;
@@ -15,6 +15,8 @@ export const NO_HERBALISM = 8;
 export const SWARM_INTELLIGENCE = 16;
 export const DARKNESS = 32;
 export const NO_SCROLLS = 64;
+/** Shattered's «Hostile champions»: now and then a monster comes as a champion (ChampionEnemy, champions.ts). */
+export const CHAMPION_ENEMIES = 128;
 
 /** Challenges.MASKS, in the original's order (the order its window lists them in). */
 export const CHALLENGES: ReadonlyArray<{ readonly id: ChallengeId; readonly mask: number }> = [
@@ -25,6 +27,7 @@ export const CHALLENGES: ReadonlyArray<{ readonly id: ChallengeId; readonly mask
   { id: 'swarm', mask: SWARM_INTELLIGENCE },
   { id: 'darkness', mask: DARKNESS },
   { id: 'noScrolls', mask: NO_SCROLLS },
+  { id: 'champions', mask: CHAMPION_ENEMIES },
 ];
 
 /** What a world needs to answer for its challenges; worlds saved before challenges existed have none. */

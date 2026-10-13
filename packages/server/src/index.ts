@@ -14,7 +14,7 @@ import {
 } from './reports';
 import { boardTtl } from './boards';
 import { CORS, json, jsonBody } from './http';
-import { boardRoute, meRoute, Player, runRoute } from './player';
+import { boardRoute, mailRoute, meRoute, Player, runRoute } from './player';
 import { Card, cardRoute, challengeRoute } from './sharing';
 import { Notifier, notifierStub, notifyRoute } from './notifier';
 import { readBody, sameSecret } from './secret';
@@ -765,6 +765,7 @@ export default {
     if (url.pathname === '/report' || url.pathname === '/reports') return reports(request, env);
     if (url.pathname === '/run') return runRoute(request, env);
     if (url.pathname === '/me') return meRoute(request, env);
+    if (url.pathname === '/mail') return mailRoute(request, env);
     if (url.pathname === '/board') return boardRoute(request, env);
     if (url.pathname === '/card' || url.pathname.startsWith('/card/')) return cardRoute(request, env, url);
     if (url.pathname === '/challenge') return challengeRoute(request, env);

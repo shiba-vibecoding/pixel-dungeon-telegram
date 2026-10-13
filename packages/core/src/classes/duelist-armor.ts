@@ -1,3 +1,4 @@
+import { ipow } from '../fmath';
 import { createMob, type Hero, heroAttackDelay, isAlive, type Mob } from '../actors';
 import { type Ballistica, ballistica, cone, STOP_SOLID, STOP_TARGET, WONT_STOP, MAGIC_BOLT } from '../ballistica';
 import { chillChar, igniteChar, setShield } from '../buffs';
@@ -165,7 +166,7 @@ function endDuel(ctx: Ctx, hero: Hero, won: boolean): void {
     const points = pointsIn(hero, 'INVIGORATING_VICTORY');
     if (points > 0) {
       // Heals for 30%/50%/65%/75% of the harm taken plus 5/10/15/20, by the talent's points.
-      let heal = Math.round(duel.taken * (1 - Math.fround(0.707) ** points)) + 5 * points;
+      let heal = Math.round(duel.taken * (1 - ipow(Math.fround(0.707), points))) + 5 * points;
       heal = Math.min(heal, hero.ht - hero.hp);
       if (heal > 0) {
         hero.hp += heal;

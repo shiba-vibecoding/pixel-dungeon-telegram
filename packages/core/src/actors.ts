@@ -1,5 +1,6 @@
 import { hasGlyph } from './classes/state';
 import { effectiveLevel } from './wear';
+import { dpow } from './fmath';
 import { createItem, type Item, itemDef, type ItemKind } from './items';
 import { armorDrMax, armorDrMin, armorEvasionBonus, armorStr } from './armor';
 import {
@@ -97,7 +98,7 @@ export interface Hero {
   /** Turns left of being rooted to the spot and of moving at half speed (mystery meat). */
   rooted: number;
   slowed: number;
-  /** Turns left of weakness (a warlock's shadow bolt): two points of strength less. */
+  /** Turns left of Weakness (a red shaman's bolt): blows two thirds as hard. */
   weakened: number;
   /** Turns left of being crippled (moving at half speed), of a torch's light, and of a succubus's charm. */
   crippled: number;
@@ -105,6 +106,8 @@ export interface Hero {
   charmed: number;
   /** Whom the hero is charmed by, and cannot bring themselves to attack. */
   charmedBy: string | null;
+  /** Charm.ignoreNextHit: the next blow taken does not shake the charm (a succubus's kiss is one). */
+  charmShrug?: boolean;
   /** Turns left of staggering about (dreamweed's confusion gas). */
   dizzy: number;
   /** The way the hero has mastered, once they have read the Tome of Mastery. */
@@ -178,6 +181,8 @@ export interface Hero {
   starve?: number;
   /** Turns left of Bless (from experience at the level cap): a quarter more accurate and evasive. */
   blessed?: number;
+  /** Turns left of Degrade (a warlock's bolt): upgraded gear works as if less upgraded (Degrade.reduceLevel). */
+  degraded?: number;
   /** LockedFloor.left: on a boss's sealed floor, the turns passive healing goes on (see hero.ts). */
   lockedFloor?: number;
   /** BrokenSeal.WarriorShield: the shield left, the cooldown, turns without an enemy in sight, the shield as raised (seal.ts). */
@@ -318,8 +323,8 @@ export const heroBelongings = (hero: Hero): Item[] => [...heroEquipped(hero), ..
 /** Ring.getBonus: what the worn rings of a kind add (rings.ts). */
 export { ringBonus } from './rings';
 
-/** Hero.STR: rings of might add to it (RingOfMight.strengthBonus); weakness takes two points away while it lasts. */
-export const heroStr = (hero: Hero): number => hero.str + mightStrength(hero) - (hero.weakened > 0 ? 2 : 0);
+/** Hero.STR: rings of might add to it (RingOfMight.strengthBonus). (Shattered's Weakness takes nothing from strength: a weakened blow is two thirds as hard, combat.ts.) */
+export const heroStr = (hero: Hero): number => hero.str + mightStrength(hero);
 
 /** Fury.LEVEL: below this share of health, a berserker flies into a fury. */
 export const FURY_LEVEL = 0.4;
@@ -351,7 +356,7 @@ function accuracyFactor(hero: Hero, weapon: Item, targetPos?: number): number {
   let acc = category === 'weapon' ? weaponAcc(weapon.kind) : 1;
   if ((hero.wayward ?? 0) > 0 && weapon.enchant === 'wayward') acc = f32(acc / 5);
   const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
-  let factor = encumbrance > 0 ? f32(acc / 1.5 ** encumbrance) : acc;
+  let factor = encumbrance > 0 ? f32(acc / dpow(1.5, encumbrance)) : acc;
   if ((category === 'missile' || category === 'bow') && targetPos !== undefined) {
     // Seam: the point blank talent (talents stream) adds a quarter a point.
     factor = f32(factor * (adjacent(hero.pos, targetPos) ? 0.5 : 1.5));
@@ -379,7 +384,7 @@ export function heroDefenseSkill(hero: Hero): number {
   if (hero.paralysed > 0) evasion = f32(evasion / 2);
   if (hasGlyph(hero, 'stone')) return 0;
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
-  if (encumbrance > 0) evasion = f32(evasion / 1.5 ** encumbrance);
+  if (encumbrance > 0) evasion = f32(evasion / dpow(1.5, encumbrance));
   // Seam (talents stream): Momentum's evasion. Here the 1.9 freerunner still doubles it, unburdened and fed.
   if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) evasion = f32(evasion * 2);
   // FerretTuft.evasionMultiplier.
@@ -472,7 +477,7 @@ export function heroAttackDelay(hero: Hero, weapon: Strike = hero.weapon): numbe
   const category = itemDef(weapon.kind).category;
   let delay = augmentDelay(weapon, category === 'weapon' ? weaponDly(weapon.kind) : 1);
   const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
-  if (encumbrance > 0) delay = f32(delay * 1.2 ** encumbrance);
+  if (encumbrance > 0) delay = f32(delay * dpow(1.2, encumbrance));
   // Scimitar.SwordDance: 0.6 faster (Weapon.speedMultiplier adds it to the furor ring's).
   return f32(delay / (attackSpeedMultiplier(hero) + (hero.cls && hasTimer(hero, 'dance') ? 0.6 : 0)));
 }
@@ -505,7 +510,7 @@ export function heroSpeed(hero: Hero, footing?: Footing): number {
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
   let speed = hero.crippled > 0 ? 0.5 : 1;
   if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) speed *= 1.6;
-  if (encumbrance > 0) speed = f32(speed / 1.2 ** encumbrance);
+  if (encumbrance > 0) speed = f32(speed / dpow(1.2, encumbrance));
   const level = gearLevel(hero.armor);
   if (footing && hasGlyph(hero, 'swiftness') && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));
   if (footing && hasGlyph(hero, 'flow') && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
@@ -541,7 +546,21 @@ export type MobKind =
   /** Feint.AfterImage: the Duelist's decoy, which enemies strike at and lose track of the hero. */
   | 'afterImage'
   /** PowerOfMany.LightAlly: the Cleric's ally of solid light, a copy of one of the heroes (it takes after its hero's level). */
-  | 'lightAlly';
+  | 'lightAlly'
+  /* Shattered's roster (MobSpawner): the sewers' snakes and slimes, */
+  | 'snake' | 'slime' | 'causticSlime' | 'gnollExile' | 'hermitCrab'
+  /* the prison's DM-100s, guards and necromancers (and their skeletons), */
+  | 'dm100' | 'guard' | 'necromancer' | 'spectralNecromancer' | 'necroSkeleton'
+  /* the caves' shamans of three masks and DM-200s, */
+  | 'blueShaman' | 'purpleShaman' | 'dm200' | 'dm201'
+  /* the city's ghouls and elementals of four kinds, */
+  | 'ghoul' | 'frostElemental' | 'shockElemental' | 'chaosElemental'
+  /* the halls' ripper demons and their spawners, */
+  | 'ripper' | 'spawner'
+  /* and anywhere: tormented spirits, mimics of three more kinds, armoured statues, phantom piranhas; */
+  | 'tormentedSpirit' | 'goldenMimic' | 'crystalMimic' | 'ebonyMimic' | 'armoredStatue' | 'phantomPiranha'
+  /* the sad ghost's foes besides the fetid rat (Ghost.Quest). */
+  | 'gnollTrickster' | 'greatCrab';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
 export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
 
@@ -551,10 +570,15 @@ export const isShopkeeper = (mob: { kind: MobKind }): boolean => mob.kind === 's
 export interface MobStats {
   name: string;
   ht: number;
+  /** Mob.attackSkill and defenseSkill. */
   attack: number;
   defense: number;
+  /** Mob.damageRoll: a NormalIntRange. */
   damage: readonly [number, number];
+  /** Mob.drRoll: a NormalIntRange(0, dr), then a second one up to `dr2` and a flat `drFlat` for those that add theirs to their kind's. */
   dr: number;
+  dr2?: number;
+  drFlat?: number;
   exp: number;
   /** Heroes above this level no longer learn anything from it. */
   maxLvl: number;
@@ -565,69 +589,112 @@ export interface MobStats {
   flying?: boolean;
 }
 
+/** Hero.MAX_LEVEL - 1: Mob.maxLvl unless a monster says otherwise. */
+const ANY_LVL = 29;
+
+/*
+ * The monsters' numbers: Shattered's for every monster of its roster (the
+ * HP, defenseSkill, EXP and maxLvl each sets, its attackSkill, damageRoll and
+ * drRoll), Pixel Dungeon's still for the bosses and their minions, which the
+ * bosses stream ports, and for the folk who never fight.
+ */
 export const MOBS: Readonly<Record<MobKind, MobStats>> = {
-  rat: { name: 'marsupial rat', ht: 8, attack: 8, defense: 3, damage: [1, 5], dr: 1, exp: 1, maxLvl: 5, speed: 1 },
-  gnoll: { name: 'gnoll scout', ht: 12, attack: 11, defense: 4, damage: [2, 5], dr: 2, exp: 2, maxLvl: 8, speed: 1 },
-  crab: { name: 'sewer crab', ht: 15, attack: 12, defense: 5, damage: [3, 6], dr: 4, exp: 3, maxLvl: 9, speed: 2 },
+  // The sewers (depths 1-4).
+  rat: { name: 'marsupial rat', ht: 8, attack: 8, defense: 2, damage: [1, 4], dr: 1, exp: 1, maxLvl: 5, speed: 1 },
+  albino: { name: 'albino rat', ht: 12, attack: 8, defense: 2, damage: [1, 4], dr: 1, exp: 2, maxLvl: 5, speed: 1 },
+  snake: { name: 'sewer snake', ht: 4, attack: 10, defense: 25, damage: [1, 4], dr: 0, exp: 2, maxLvl: 7, speed: 1 },
+  gnoll: { name: 'gnoll scout', ht: 12, attack: 10, defense: 4, damage: [1, 6], dr: 2, exp: 2, maxLvl: 8, speed: 1 },
+  /** GnollExile: twice a scout's health and half as good again, a cell more of reach. */
+  gnollExile: { name: 'gnoll exile', ht: 24, attack: 15, defense: 6, damage: [1, 10], dr: 2, dr2: 1, exp: 2, maxLvl: 8, speed: 1 },
+  crab: { name: 'sewer crab', ht: 15, attack: 12, defense: 5, damage: [1, 7], dr: 4, exp: 4, maxLvl: 9, speed: 2 },
+  hermitCrab: { name: 'hermit crab', ht: 25, attack: 12, defense: 5, damage: [1, 7], dr: 4, drFlat: 2, exp: 4, maxLvl: 9, speed: 1 },
+  swarm: { name: 'swarm of flies', ht: 50, attack: 10, defense: 5, damage: [1, 4], dr: 0, exp: 3, maxLvl: 9, speed: 1, flying: true },
+  slime: { name: 'slime', ht: 20, attack: 12, defense: 5, damage: [2, 5], dr: 0, exp: 4, maxLvl: 9, speed: 1 },
+  causticSlime: { name: 'caustic slime', ht: 20, attack: 12, defense: 5, damage: [2, 5], dr: 0, exp: 4, maxLvl: 9, speed: 1 },
+  // The sad ghost's foes (Ghost.Quest).
+  fetidRat: { name: 'fetid rat', ht: 20, attack: 12, defense: 5, damage: [1, 4], dr: 1, dr2: 2, exp: 4, maxLvl: 5, speed: 1 },
+  gnollTrickster: { name: 'gnoll trickster', ht: 20, attack: 16, defense: 5, damage: [1, 6], dr: 2, exp: 5, maxLvl: 8, speed: 1 },
+  greatCrab: { name: 'great crab', ht: 25, attack: 12, defense: 0, damage: [1, 7], dr: 4, exp: 6, maxLvl: 9, speed: 1 },
   goo: { name: 'Goo', ht: 80, attack: 15, defense: 12, damage: [2, 12], dr: 2, exp: 10, maxLvl: 30, speed: 1 },
   ghost: { name: 'sad ghost', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 0.5, flying: true },
   shopkeeper: { name: 'shopkeeper', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** ImpShopkeeper: an imp keeps the last shop, in the demon halls. */
   impShopkeeper: { name: 'ambitious imp', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   wandmaker: { name: 'old wandmaker', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
-  // The prison (depths 6-10).
-  skeleton: { name: 'skeleton', ht: 25, attack: 12, defense: 9, damage: [3, 8], dr: 5, exp: 5, maxLvl: 10, speed: 1 },
-  thief: { name: 'crazy thief', ht: 20, attack: 12, defense: 12, damage: [1, 7], dr: 3, exp: 5, maxLvl: 10, speed: 1, attackDelay: 0.5 },
-  swarm: { name: 'swarm of flies', ht: 80, attack: 12, defense: 5, damage: [1, 4], dr: 0, exp: 1, maxLvl: 10, speed: 1, flying: true },
-  shaman: { name: 'gnoll shaman', ht: 18, attack: 11, defense: 8, damage: [2, 6], dr: 4, exp: 6, maxLvl: 14, speed: 1 },
-  bat: { name: 'vampire bat', ht: 30, attack: 16, defense: 15, damage: [6, 12], dr: 4, exp: 7, maxLvl: 15, speed: 2, flying: true },
-  brute: { name: 'gnoll brute', ht: 40, attack: 20, defense: 15, damage: [8, 18], dr: 8, exp: 8, maxLvl: 15, speed: 1 },
+  // The prison (depths 6-9).
+  skeleton: { name: 'skeleton', ht: 25, attack: 12, defense: 9, damage: [2, 10], dr: 5, exp: 5, maxLvl: 10, speed: 1 },
+  /** Necromancer.NecroSkeleton: a skeleton that teaches nothing and leaves nothing (maxLvl -5); it rises with 20 health. */
+  necroSkeleton: { name: "necromancer's skeleton", ht: 25, attack: 12, defense: 9, damage: [2, 10], dr: 5, exp: 5, maxLvl: -5, speed: 1 },
+  thief: { name: 'crazy thief', ht: 20, attack: 12, defense: 12, damage: [1, 10], dr: 3, exp: 5, maxLvl: 11, speed: 1, attackDelay: 0.5 },
+  bandit: { name: 'crazy bandit', ht: 20, attack: 12, defense: 12, damage: [1, 10], dr: 3, exp: 5, maxLvl: 11, speed: 1, attackDelay: 0.5 },
+  dm100: { name: 'DM-100', ht: 20, attack: 11, defense: 8, damage: [2, 8], dr: 4, exp: 6, maxLvl: 13, speed: 1 },
+  guard: { name: 'prison guard', ht: 40, attack: 12, defense: 10, damage: [4, 12], dr: 7, exp: 7, maxLvl: 14, speed: 1 },
+  /** Necromancer: no blow of its own (Char.damageRoll, attackSkill), its skeleton fights for it. */
+  necromancer: { name: 'necromancer', ht: 40, attack: 0, defense: 14, damage: [1, 1], dr: 5, exp: 7, maxLvl: 14, speed: 1 },
+  spectralNecromancer: { name: 'spectral necromancer', ht: 40, attack: 0, defense: 14, damage: [1, 1], dr: 5, exp: 7, maxLvl: 14, speed: 1 },
   tengu: { name: 'Tengu', ht: 120, attack: 20, defense: 20, damage: [8, 15], dr: 5, exp: 20, maxLvl: 30, speed: 1 },
-  // The caves (depths 11-15).
-  spinner: { name: 'cave spinner', ht: 50, attack: 20, defense: 14, damage: [12, 16], dr: 6, exp: 9, maxLvl: 16, speed: 1 },
+  // The caves (depths 11-14).
+  bat: { name: 'vampire bat', ht: 30, attack: 16, defense: 15, damage: [5, 18], dr: 4, exp: 7, maxLvl: 15, speed: 2, flying: true },
+  brute: { name: 'gnoll brute', ht: 40, attack: 20, defense: 15, damage: [5, 25], dr: 8, exp: 8, maxLvl: 16, speed: 1 },
+  /** ArmoredBrute ('shielded', as Pixel Dungeon called its rare brute). */
+  shielded: { name: 'armored brute', ht: 40, attack: 20, defense: 15, damage: [5, 25], dr: 8, drFlat: 4, exp: 8, maxLvl: 16, speed: 1 },
+  /** Shaman.RedShaman; the blue and the purple are the same but for the spell their bolt carries. */
+  shaman: { name: 'gnoll shaman', ht: 35, attack: 18, defense: 15, damage: [5, 10], dr: 6, exp: 8, maxLvl: 16, speed: 1 },
+  blueShaman: { name: 'gnoll shaman', ht: 35, attack: 18, defense: 15, damage: [5, 10], dr: 6, exp: 8, maxLvl: 16, speed: 1 },
+  purpleShaman: { name: 'gnoll shaman', ht: 35, attack: 18, defense: 15, damage: [5, 10], dr: 6, exp: 8, maxLvl: 16, speed: 1 },
+  spinner: { name: 'cave spinner', ht: 50, attack: 22, defense: 17, damage: [10, 20], dr: 6, exp: 9, maxLvl: 17, speed: 1 },
+  dm200: { name: 'DM-200', ht: 80, attack: 20, defense: 12, damage: [10, 25], dr: 8, exp: 9, maxLvl: 17, speed: 1 },
+  dm201: { name: 'DM-201', ht: 120, attack: 20, defense: 12, damage: [15, 25], dr: 8, exp: 9, maxLvl: 17, speed: 1 },
   dm300: { name: 'DM-300', ht: 200, attack: 28, defense: 18, damage: [18, 24], dr: 10, exp: 30, maxLvl: 30, speed: 1 },
-  // The dwarven city (depths 16-20).
-  elemental: { name: 'fire elemental', ht: 65, attack: 25, defense: 20, damage: [16, 20], dr: 5, exp: 10, maxLvl: 20, speed: 1, flying: true },
-  monk: { name: 'dwarf monk', ht: 70, attack: 30, defense: 30, damage: [12, 16], dr: 2, exp: 11, maxLvl: 21, speed: 1, attackDelay: 0.5 },
-  warlock: { name: 'dwarf warlock', ht: 70, attack: 25, defense: 18, damage: [12, 20], dr: 8, exp: 11, maxLvl: 21, speed: 1 },
-  golem: { name: 'golem', ht: 85, attack: 28, defense: 18, damage: [20, 40], dr: 12, exp: 12, maxLvl: 22, speed: 1, attackDelay: 1.5 },
+  // The dwarven city (depths 16-19).
+  ghoul: { name: 'dwarven ghoul', ht: 45, attack: 24, defense: 20, damage: [16, 22], dr: 4, exp: 5, maxLvl: 20, speed: 1 },
+  /** Elemental.FireElemental, and its frost, shock and chaos kin. */
+  elemental: { name: 'fire elemental', ht: 60, attack: 25, defense: 20, damage: [20, 25], dr: 5, exp: 10, maxLvl: 20, speed: 1, flying: true },
+  frostElemental: { name: 'frost elemental', ht: 60, attack: 25, defense: 20, damage: [20, 25], dr: 5, exp: 10, maxLvl: 20, speed: 1, flying: true },
+  shockElemental: { name: 'shock elemental', ht: 60, attack: 25, defense: 20, damage: [20, 25], dr: 5, exp: 10, maxLvl: 20, speed: 1, flying: true },
+  chaosElemental: { name: 'chaos elemental', ht: 60, attack: 25, defense: 20, damage: [20, 25], dr: 5, exp: 10, maxLvl: 20, speed: 1, flying: true },
+  monk: { name: 'dwarf monk', ht: 70, attack: 30, defense: 30, damage: [12, 25], dr: 2, exp: 11, maxLvl: 21, speed: 1, attackDelay: 0.5 },
+  senior: { name: 'senior monk', ht: 70, attack: 30, defense: 30, damage: [16, 25], dr: 2, exp: 11, maxLvl: 21, speed: 1, attackDelay: 0.5 },
+  warlock: { name: 'dwarf warlock', ht: 70, attack: 25, defense: 18, damage: [12, 18], dr: 8, exp: 11, maxLvl: 21, speed: 1 },
+  golem: { name: 'golem', ht: 120, attack: 28, defense: 15, damage: [25, 30], dr: 12, exp: 12, maxLvl: 22, speed: 1 },
   king: { name: 'King of Dwarves', ht: 300, attack: 32, defense: 25, damage: [20, 38], dr: 14, exp: 40, maxLvl: 30, speed: 1 },
   undead: { name: 'undead dwarf', ht: 28, attack: 16, defense: 15, damage: [12, 16], dr: 5, exp: 0, maxLvl: 30, speed: 1 },
-  // The demon halls (depths 22-25).
-  succubus: { name: 'succubus', ht: 80, attack: 40, defense: 25, damage: [15, 25], dr: 10, exp: 12, maxLvl: 25, speed: 1 },
-  eye: { name: 'evil eye', ht: 100, attack: 30, defense: 20, damage: [14, 20], dr: 10, exp: 13, maxLvl: 25, speed: 1, attackDelay: 1.6, flying: true },
-  scorpio: { name: 'scorpio', ht: 95, attack: 36, defense: 24, damage: [20, 32], dr: 16, exp: 14, maxLvl: 25, speed: 1 },
+  // The demon halls (depths 21-24).
+  succubus: { name: 'succubus', ht: 80, attack: 40, defense: 25, damage: [25, 30], dr: 10, exp: 12, maxLvl: 25, speed: 1 },
+  eye: { name: 'evil eye', ht: 100, attack: 30, defense: 20, damage: [20, 30], dr: 10, exp: 13, maxLvl: 26, speed: 1, flying: true },
+  scorpio: { name: 'scorpio', ht: 110, attack: 36, defense: 24, damage: [30, 40], dr: 16, exp: 14, maxLvl: 27, speed: 1 },
+  acidic: { name: 'acidic scorpio', ht: 110, attack: 36, defense: 24, damage: [30, 40], dr: 16, exp: 14, maxLvl: 27, speed: 1 },
+  /** RipperDemon: teaches nothing (maxLvl -2), out of a demon spawner. */
+  ripper: { name: 'ripper demon', ht: 60, attack: 30, defense: 22, damage: [15, 25], dr: 4, exp: 9, maxLvl: -2, speed: 1, attackDelay: 0.5 },
+  /** DemonSpawner: never strikes nor moves, and dodges nothing. */
+  spawner: { name: 'demon spawner', ht: 120, attack: 0, defense: 0, damage: [1, 1], dr: 12, exp: 15, maxLvl: 29, speed: 1 },
   yog: { name: 'Yog-Dzewa', ht: 300, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 50, maxLvl: 30, speed: 1 },
   rottingFist: { name: 'rotting fist', ht: 300, attack: 36, defense: 25, damage: [24, 36], dr: 15, exp: 0, maxLvl: 30, speed: 1 },
   burningFist: { name: 'burning fist', ht: 200, attack: 36, defense: 25, damage: [20, 32], dr: 15, exp: 0, maxLvl: 30, speed: 1 },
   larva: { name: "god's larva", ht: 25, attack: 30, defense: 20, damage: [15, 20], dr: 8, exp: 0, maxLvl: 30, speed: 1 },
-  // A chest that bites; its numbers grow with the depth (see mobStats).
-  mimic: { name: 'mimic', ht: 16, attack: 10, defense: 5, damage: [1, 4], dr: 0, exp: 2, maxLvl: 30, speed: 1 },
-  // Guardians of special rooms, as strong as their depth (see mobStats): a statue that comes alive, armed;
-  // piranhas that never leave their pool.
-  statue: { name: 'animated statue', ht: 20, attack: 10, defense: 5, damage: [1, 4], dr: 1, exp: 0, maxLvl: 30, speed: 1 },
-  // Rare variants (Bestiary.mutable): one monster in thirty of these kinds is something worse.
-  albino: { name: 'albino rat', ht: 15, attack: 8, defense: 3, damage: [1, 5], dr: 1, exp: 2, maxLvl: 5, speed: 1 },
-  bandit: { name: 'crazy bandit', ht: 20, attack: 12, defense: 12, damage: [1, 7], dr: 3, exp: 5, maxLvl: 10, speed: 1, attackDelay: 0.5 },
-  shielded: { name: 'shielded brute', ht: 40, attack: 20, defense: 20, damage: [8, 18], dr: 10, exp: 8, maxLvl: 15, speed: 1 },
-  senior: { name: 'senior monk', ht: 70, attack: 30, defense: 30, damage: [12, 20], dr: 2, exp: 11, maxLvl: 21, speed: 1, attackDelay: 0.5 },
-  acidic: { name: 'acidic scorpio', ht: 95, attack: 36, defense: 24, damage: [20, 32], dr: 16, exp: 14, maxLvl: 25, speed: 1 },
+  // Anywhere: as strong as the depth they are on (see mobStats).
+  mimic: { name: 'mimic', ht: 6, attack: 6, defense: 2, damage: [1, 2], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 1 },
+  goldenMimic: { name: 'golden mimic', ht: 6, attack: 6, defense: 2, damage: [1, 2], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 1 },
+  crystalMimic: { name: 'crystal mimic', ht: 6, attack: 6, defense: 2, damage: [1, 2], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 1 },
+  ebonyMimic: { name: 'ebony mimic', ht: 6, attack: 6, defense: 2, damage: [1, 2], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 1 },
+  statue: { name: 'animated statue', ht: 20, attack: 10, defense: 5, damage: [1, 4], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 1 },
+  armoredStatue: { name: 'armored statue', ht: 40, attack: 10, defense: 5, damage: [1, 4], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 1 },
+  piranha: { name: 'giant piranha', ht: 15, attack: 22, defense: 12, damage: [1, 6], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 2 },
+  phantomPiranha: { name: 'phantom piranha', ht: 15, attack: 22, defense: 12, damage: [1, 6], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 2 },
+  /** A vengeful spirit: one blow kills it, but it is very hard to hit (Wraith.adjustStats; teaches nothing, maxLvl -2). */
+  wraith: { name: 'wraith', ht: 1, attack: 11, defense: 55, damage: [1, 3], dr: 0, exp: 0, maxLvl: -2, speed: 1, flying: true },
+  tormentedSpirit: { name: 'tormented spirit', ht: 1, attack: 11, defense: 55, damage: [1, 3], dr: 0, exp: 0, maxLvl: -2, speed: 1, flying: true },
   sheep: { name: 'sheep', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   mirror: { name: 'mirror image', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** PrismaticImage: the hero's ally out of a scroll of prismatic image, as strong as its hero's level (see mobStats). */
   prismatic: { name: 'prismatic image', ht: 10, attack: 10, defense: 5, damage: [2, 4], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   blacksmith: { name: 'troll blacksmith', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   imp: { name: 'ambitious imp', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
-  // The sad ghost's errands: the rat that killed it, and the curse that binds it (its numbers grow with the depth).
-  fetidRat: { name: 'fetid rat', ht: 15, attack: 12, defense: 5, damage: [2, 6], dr: 2, exp: 3, maxLvl: 5, speed: 1 },
   curse: { name: 'curse personification', ht: 16, attack: 12, defense: 12, damage: [3, 5], dr: 1, exp: 0, maxLvl: 5, speed: 0.5, flying: true },
-  /** A vengeful spirit out of disturbed remains: one blow kills it, but it is very hard to hit (its numbers grow with the depth). */
-  wraith: { name: 'wraith', ht: 1, attack: 11, defense: 55, damage: [1, 4], dr: 0, exp: 0, maxLvl: 30, speed: 1, flying: true },
-  /** Out of a honeypot: it fights for whoever broke it, and lives a turn less every turn (its numbers grow with the depth). */
-  bee: { name: 'golden bee', ht: 20, attack: 10, defense: 10, damage: [2, 5], dr: 0, exp: 0, maxLvl: 0, speed: 1, flying: true },
+  /** Out of a honeypot: it guards the pot's pieces against anyone near them (its numbers grow with the depth). */
+  bee: { name: 'golden bee', ht: 12, attack: 10, defense: 10, damage: [1, 3], dr: 0, exp: 0, maxLvl: ANY_LVL, speed: 1, flying: true },
   /** Asleep (or so he says) in his hidden treasury beside Goo's lair. */
   ratKing: { name: 'rat king', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 2 },
-  piranha: { name: 'giant piranha', ht: 15, attack: 22, defense: 12, damage: [1, 6], dr: 1, exp: 0, maxLvl: 30, speed: 2 },
   /** A ward of the wand of warding (NPC: one hit point, until it grows into a sentry); it never misses. */
   ward: { name: 'ward', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** The wand of living earth's guardian, as strong as the wand and the hero (see mobStats). */
@@ -642,7 +709,15 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   ghostHero: { name: 'sad ghost', ht: 40, attack: 10, defense: 5, damage: [1, 5], dr: 0, exp: 0, maxLvl: 0, speed: 1, flying: true },
 };
 
-/** A monster's numbers: the table's, but a mimic is as strong as the depth it lurks on (Mimic.adjustStats). */
+/** Weapon.defenseFactor (a shield's, a greatsword's...): the armour a statue's weapon adds to its own. */
+export const weaponDefenseFactor = (weapon: Item): number => weaponDefense(weapon);
+
+/**
+ * A monster's numbers: the table's, or as strong as the depth it is on — an animated statue with its
+ * weapon (Statue), an armoured one twice as sturdy (ArmoredStatue), a mimic as its level (Mimic.adjustStats,
+ * a golden one a third stronger), a piranha (Piranha), a wraith (Wraith.adjustStats, a tormented spirit's
+ * half as good again).
+ */
 export function mobStats(mob: Mob): MobStats {
   const depth = mob.level ?? 1;
   if (mob.kind === 'ghostHero' && mob.ghostGear) {
@@ -654,16 +729,18 @@ export function mobStats(mob: Mob): MobStats {
       damage: w ? [w.min, w.max] : [1, Math.max(1, str - 8)], dr: armor ? armorDrMax(armor) : 0, attackDelay: w?.delay ?? 1,
     };
   }
-  if (mob.kind === 'statue' && mob.item) {
+  if ((mob.kind === 'statue' || mob.kind === 'armoredStatue') && mob.item) {
     // Statue: its numbers grow with the depth, and it fights with the weapon it holds.
     const weapon = weaponStats(mob.item);
     return {
-      ...MOBS.statue, ht: 15 + depth * 5, attack: Math.trunc((9 + depth) * weapon.accuracy), defense: 4 + depth,
-      damage: [weapon.min, weapon.max], dr: depth, attackDelay: weapon.delay,
+      ...MOBS[mob.kind], ht: mob.kind === 'armoredStatue' ? 30 + depth * 10 : 15 + depth * 5,
+      attack: Math.trunc((9 + depth) * weapon.accuracy), defense: 4 + depth,
+      damage: [weapon.min, weapon.max], dr: depth + weaponDefenseFactor(mob.item), attackDelay: weapon.delay,
     };
   }
   if (mob.kind === 'bee') {
-    const ht = (3 + depth) * 5;
+    // Bee.spawn: (2 + level) * 4 health, as accurate as it is evasive (9 + level), a tenth to a quarter of its health a sting.
+    const ht = (2 + depth) * 4;
     return { ...MOBS.bee, ht, attack: 9 + depth, defense: 9 + depth, damage: [Math.trunc(ht / 10), Math.trunc(ht / 4)] };
   }
   if (mob.kind === 'prismatic') {
@@ -672,7 +749,6 @@ export function mobStats(mob: Mob): MobStats {
   }
   // LightAlly: equal to the hero's own accuracy and evasion at its level.
   if (mob.kind === 'lightAlly') return { ...MOBS.lightAlly, attack: depth + 9, defense: depth + 4 };
-  if (mob.kind === 'wraith') return { ...MOBS.wraith, attack: 10 + depth, defense: (10 + depth) * 5, damage: [1, 3 + depth] };
   if (mob.kind === 'guardian') {
     // EarthGuardian: half the hero's evasion, and as accurate as the hero; damageRoll grows with the depth.
     const defense = mob.guardian?.defense ?? 0;
@@ -680,22 +756,42 @@ export function mobStats(mob: Mob): MobStats {
   }
   // Ward.defenseSkill: a sentry dodges as well as the depth allows.
   if (mob.kind === 'ward') return { ...MOBS.ward, ht: mob.ht, defense: (mob.ward?.tier ?? 1) > 3 ? 4 + depth : 0 };
-  if (mob.kind === 'curse') return { ...MOBS.curse, ht: 10 + depth * 3, attack: 10 + depth, defense: 10 + depth };
-  if (mob.kind === 'piranha') {
-    return { ...MOBS.piranha, ht: 10 + depth * 5, attack: 20 + depth * 2, defense: 10 + depth * 2, damage: [depth, 4 + depth * 2], dr: depth };
+  if (mob.kind === 'wraith') {
+    const attack = 10 + depth;
+    return { ...MOBS.wraith, attack, defense: attack * 5, damage: [1 + Math.trunc(depth / 2), 2 + depth] };
   }
-  if (mob.kind !== 'mimic') return MOBS[mob.kind];
-  const level = depth;
-  const ht = (3 + level) * 4;
-  const attack = 9 + level;
+  if (mob.kind === 'tormentedSpirit') {
+    const scaled = Math.round(1.5 * depth);
+    return { ...MOBS.tormentedSpirit, attack: 10 + scaled, defense: (10 + scaled) * 5, damage: [1 + Math.trunc(scaled / 2), 2 + scaled] };
+  }
+  if (mob.kind === 'curse') return { ...MOBS.curse, ht: 10 + depth * 3, attack: 10 + depth, defense: 10 + depth };
+  if (mob.kind === 'piranha' || mob.kind === 'phantomPiranha') {
+    return { ...MOBS[mob.kind], ht: 10 + depth * 5, attack: 20 + depth * 2, defense: 10 + depth * 2, damage: [depth, 4 + depth * 2], dr: depth };
+  }
+  if (!isMimic(mob.kind)) return MOBS[mob.kind];
+  // GoldenMimic.setLevel: a third stronger.
+  const level = mob.kind === 'goldenMimic' ? Math.round(depth * 1.33) : depth;
   return {
-    ...MOBS.mimic, ht, attack, defense: Math.trunc(attack / 2),
-    damage: [Math.trunc(ht / 10), Math.trunc(ht / 4)], exp: 2 + Math.trunc((2 * (level - 1)) / 5),
+    ...MOBS[mob.kind], ht: (1 + level) * 6, attack: 6 + level, defense: 2 + Math.trunc(level / 2),
+    damage: [1 + level, 2 + 2 * level], dr: 1 + Math.trunc(level / 2),
   };
 }
 
-/** The brute, enraged when badly hurt: much harder hits. */
-export const BRUTE_ENRAGED_DAMAGE = [10, 40] as const;
+/** The four kinds of mimic (Mimic and its kin). */
+export const isMimic = (kind: MobKind): boolean => kind === 'mimic' || kind === 'goldenMimic' || kind === 'crystalMimic' || kind === 'ebonyMimic';
+
+/**
+ * Mob.speed: its kind's; a thief carrying off its loot goes at five sixths of it (Thief.speed); a champion
+ * ... and no faster or slower otherwise here (Char.speed's cripple and the rest act on the time spent).
+ */
+export function mobSpeed(mob: Mob): number {
+  // Char.speed: Haste three times as fast (a crystal mimic on the run), Adrenaline twice, and alchemy's buffs (dread, stamina).
+  const speed = MOBS[mob.kind].speed * ((mob.haste ?? 0) > 0 ? 3 : 1) * ((mob.adrenaline ?? 0) > 0 ? 2 : 1) * buffSpeed(mob);
+  return (mob.kind === 'thief' || mob.kind === 'bandit') && mob.item ? (5 * speed) / 6 : speed;
+}
+
+/** Brute.damageRoll while raging (BruteRage), and ArmoredBrute's. */
+export const BRUTE_ENRAGED_DAMAGE = [15, 40] as const;
 
 /** Goo, pumped up: harder hits from up to two cells away. */
 export const GOO_PUMPED = { attack: 30, jumpAttack: 15, damage: [5, 30] as const, delay: 2 };
@@ -828,12 +924,91 @@ export interface Mob {
   robbed?: 'stolen' | 'tried';
   /** What the Duelist's and the Cleric's abilities and spells have left on it (classes/state.ts). */
   marks?: MobMarks;
+
+  /* Shattered's monsters (mobs.ts, mobskills.ts, champions.ts). */
+  /** Necromancer's skeleton: its master (Adrenaline, from a zap of its master: adrenaline below). */
+  master?: string;
+  /** ChampionEnemy: the champion it is (challenges.ts CHAMPION_ENEMIES), and a growing one's multiplier (Growing.multiplier). */
+  champion?: ChampionKind;
+  growth?: number;
+  /** When a growing champion grows next (Growing.act: every four turns). */
+  growAt?: number;
+  /** An armoured statue's armour (ArmoredStatue.armor). */
+  armor?: Item;
+  /** Brute.hasRaged, and what is left of the rage's shield (BruteRage: it dies when that is spent). */
+  hasRaged?: boolean;
+  rageShield?: number;
+  /** Spinner.webCoolDown and lastEnemyPos; RipperDemon.lastEnemyPos too. */
+  webCooldown?: number;
+  lastEnemyPos?: number;
+  /** DM200.ventCooldown. */
+  ventCooldown?: number;
+  /** DM201.threatened: struck from afar, it lobs a grenade. */
+  threatened?: boolean;
+  /** Golem: teleporting itself next turn, and the cooldowns of its teleports (selfTeleCooldown, enemyTeleCooldown). */
+  teleporting?: boolean;
+  selfTele?: number;
+  enemyTele?: number;
+  /** Guard.chainsUsed. */
+  chainsUsed?: boolean;
+  /** Necromancer: summoning (and where), its first summon still to come, its skeleton (a spectral one's wraiths). */
+  summoning?: boolean;
+  summonPos?: number;
+  summoned?: boolean;
+  minion?: string;
+  wraiths?: string[];
+  /** Elemental.rangedCooldown. */
+  rangedCooldown?: number;
+  /** Monk.focusCooldown, and Focus (it parries the next blow). */
+  focusCooldown?: number;
+  focused?: boolean;
+  /** Succubus.blinkCooldown. */
+  blinkCooldown?: number;
+  /** Eye: beamTarget, beamCooldown, beamCharged. */
+  beamTarget?: number;
+  beamCooldown?: number;
+  beamCharged?: boolean;
+  /** RipperDemon: where it is about to leap, and leapCooldown. */
+  leapPos?: number;
+  leapCooldown?: number;
+  /** Ghoul: its partner, and how often it has been downed (GhoulLifeLink lasts five turns more each time). */
+  partner?: string;
+  timesDowned?: number;
+  /** DemonSpawner.spawnCooldown. */
+  spawnCooldown?: number;
+  /** GnollExile: passive until provoked (Mob.PASSIVE then WANDERING), and how long since it told of itself. */
+  provoked?: boolean;
+  seenCooldown?: number;
+  /** GnollTrickster.combo; GreatCrab.moving. */
+  combo?: number;
+  moving?: number;
+  /** A golden bee's pot (Bee.potPos and potHolder): where its pieces lie (-1: carried, or gone), and who carries them. */
+  pot?: { pos: number; holder: string | null };
+  /** An ebony mimic still hidden (Char.Alignment.NEUTRAL, Mimic.stealthy): a faint outline, waiting to be bumped into. */
+  hidden?: boolean;
+  /** Crystal mimic: Haste, turns left (it moves three times as fast). */
+  haste?: number;
+  /** Mob.die from a fall (Chasm.class): half the experience. */
+  fell?: boolean;
+  /** Mob.timeSeenAt for swarm intelligence: since when it has kept its enemy in sight (the call goes further the longer). */
+  seenSince?: number;
 }
 
-/** Mob.beckon: called towards a spot. Statue.beckon: an animated statue does not stir for it. */
+/** ChampionEnemy's six kinds. */
+export type ChampionKind = 'blazing' | 'projecting' | 'antiMagic' | 'giant' | 'blessed' | 'growing';
+
+/**
+ * Mob.beckon: called towards a spot — it stirs (if it was not hunting or fleeing, it wanders) and heads there.
+ * Not those that keep still until provoked: an animated statue (Statue.beckon), a demon spawner, a gnoll exile
+ * (only drawn there, still passive, now and then: GnollExile.beckon).
+ */
 export function beckon(mob: Mob, pos: number): void {
-  if (mob.state === 'passive' || (mob.kind === 'statue' && mob.state === 'sleeping')) return;
-  if (mob.state !== 'hunting') mob.state = 'wandering';
+  if (mob.state === 'passive' || mob.kind === 'spawner' || ((mob.kind === 'statue' || mob.kind === 'armoredStatue') && mob.state === 'sleeping')) return;
+  if (mob.kind === 'gnollExile' && !mob.provoked) {
+    if ((mob.seenCooldown ?? 0) <= 0) mob.target = pos;
+    return;
+  }
+  if (mob.state !== 'hunting' && mob.state !== 'fleeing') mob.state = 'wandering';
   mob.target = pos;
 }
 
@@ -842,59 +1017,17 @@ export function createMob(id: string, kind: MobKind, pos: number, state: MobStat
   return { id, kind, pos, hp: ht, ht, state, target: -1, enemy: null, enemySeen: false, alerted: false, time };
 }
 
-/*
- * Who lives where (Bestiary.mobClass), with the original's rare visitors from
- * the region below: a swarm of flies, a skeleton or a thief in the sewers,
- * fire elementals and dwarf monks in the caves, a succubus in the city.
- * Depth 21, the last shop (LastShopLevel), has no monsters and no row: like
- * any depth beyond the table it would get the default.
- */
-const BESTIARY: Readonly<Record<number, ReadonlyArray<readonly [MobKind, number]>>> = {
-  1: [['rat', 1]],
-  2: [['rat', 1], ['gnoll', 1]],
-  3: [['rat', 1], ['gnoll', 2], ['crab', 1], ['swarm', 0.02]],
-  4: [['rat', 1], ['gnoll', 2], ['crab', 3], ['swarm', 0.02], ['skeleton', 0.01], ['thief', 0.01]],
-  5: [['goo', 1]],
-  6: [['skeleton', 4], ['thief', 2], ['swarm', 1], ['shaman', 0.2]],
-  7: [['skeleton', 3], ['shaman', 1], ['thief', 1], ['swarm', 1]],
-  8: [['skeleton', 3], ['shaman', 2], ['gnoll', 1], ['thief', 1], ['swarm', 1], ['bat', 0.02]],
-  9: [['skeleton', 3], ['shaman', 3], ['thief', 1], ['swarm', 1], ['bat', 0.02], ['brute', 0.01]],
-  10: [['tengu', 1]],
-  11: [['bat', 1], ['brute', 0.2]],
-  12: [['bat', 1], ['brute', 1], ['spinner', 0.2]],
-  13: [['bat', 1], ['brute', 3], ['shaman', 1], ['spinner', 1], ['elemental', 0.02]],
-  14: [['bat', 1], ['brute', 3], ['shaman', 1], ['spinner', 4], ['elemental', 0.02], ['monk', 0.01]],
-  15: [['dm300', 1]],
-  16: [['elemental', 1], ['warlock', 1], ['monk', 0.2]],
-  17: [['elemental', 1], ['monk', 1], ['warlock', 1]],
-  18: [['elemental', 1], ['monk', 2], ['golem', 1], ['warlock', 1]],
-  19: [['elemental', 1], ['monk', 2], ['golem', 3], ['warlock', 1], ['succubus', 0.02]],
-  20: [['king', 1]],
-  22: [['succubus', 1], ['eye', 1]],
-  23: [['succubus', 1], ['eye', 2], ['scorpio', 1]],
-  24: [['succubus', 1], ['eye', 2], ['scorpio', 3]],
-  25: [['yog', 1]],
-};
-
 /**
- * Bestiary.mutable (Bestiary.mob when not `mutable`): a monster for the depth,
- * now and then (one in thirty) the rare variant of its kind. Beyond the
- * table, the original's default: an evil eye.
+ * The kind a monster is a version of, as Shattered's classes extend one another (an albino rat is a Rat, an
+ * armoured brute a Brute, a frost elemental an Elemental): what it shares with it unless it says otherwise.
  */
-export function rollMob(rng: Rng, depth: number, mutable = true): MobKind {
-  const table = BESTIARY[depth] ?? [['eye', 1] as const];
-  const kind = table[rng.chances(table.map(([, chance]) => chance))]![0];
-  if (!mutable) return kind;
-  // Random.Int(30) is drawn whatever the kind, as in the original.
-  const rare = rng.int(30) === 0;
-  const variant = VARIANTS[kind];
-  return variant && rare ? variant : kind;
-}
-
-
-/** Bestiary.mutable: the rare variant of a kind, which behaves like it in most respects. */
-const VARIANTS: Partial<Record<MobKind, MobKind>> = { rat: 'albino', thief: 'bandit', brute: 'shielded', monk: 'senior', scorpio: 'acidic' };
-const BASE_KINDS: Partial<Record<MobKind, MobKind>> = Object.fromEntries(Object.entries(VARIANTS).map(([base, variant]) => [variant, base]));
+const BASE_KINDS: Partial<Record<MobKind, MobKind>> = {
+  albino: 'rat', fetidRat: 'rat', gnollExile: 'gnoll', gnollTrickster: 'gnoll', hermitCrab: 'crab', greatCrab: 'crab',
+  causticSlime: 'slime', bandit: 'thief', necroSkeleton: 'skeleton', spectralNecromancer: 'necromancer', tormentedSpirit: 'wraith',
+  shielded: 'brute', blueShaman: 'shaman', purpleShaman: 'shaman', dm201: 'dm200',
+  frostElemental: 'elemental', shockElemental: 'elemental', chaosElemental: 'elemental', senior: 'monk', acidic: 'scorpio',
+  goldenMimic: 'mimic', crystalMimic: 'mimic', ebonyMimic: 'mimic', armoredStatue: 'statue', phantomPiranha: 'piranha',
+};
 
 /** The ordinary kind a rare variant is a version of (an albino rat is a rat). */
 export const baseKind = (kind: MobKind): MobKind => BASE_KINDS[kind] ?? kind;
