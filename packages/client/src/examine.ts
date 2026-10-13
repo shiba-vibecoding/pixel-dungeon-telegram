@@ -173,7 +173,7 @@ const EN_TILES: Record<Tile, readonly [string, string]> = {
   trap: ['Trap', 'Stepping onto a hidden pressure plate will set off the trap.'],
   spentTrap: ['Triggered trap', 'The trap has been set off before, and is not dangerous any more.'],
   bookshelf: ['Bookshelf', ''],
-  alchemy: ['Alchemy pot', 'Drop some seeds here to brew a potion.'],
+  alchemy: ['Alchemy pot', 'This pot is filled with magical water. Items can be mixed into the pot to create something new!'],
 };
 
 const RU_TILES: Record<Tile, readonly [string, string]> = {
@@ -200,7 +200,7 @@ const RU_TILES: Record<Tile, readonly [string, string]> = {
   trap: ['Ловушка', 'Если наступить на скрытую нажимную плиту, ловушка сработает.'],
   spentTrap: ['Сработавшая ловушка', 'Ловушка уже срабатывала и больше не опасна.'],
   bookshelf: ['Книжная полка', ''],
-  alchemy: ['Алхимический котёл', 'Бросьте сюда семена, чтобы сварить зелье.'],
+  alchemy: ['Алхимический котёл', 'Этот котёл наполнен волшебной водой. В нём можно смешать разные предметы для того, чтобы получить что-то новое!'],
 };
 
 function tileOf(terrain: number): Tile {

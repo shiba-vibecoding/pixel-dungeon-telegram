@@ -13,7 +13,14 @@ import './game.css';
 import { mobDescription, plantText, tileText, wellText } from './examine';
 import { chooseQuickslot, isPlaceholder, quickIndex, quickKind, quickUse, syncQuickslots, visibleQuickslots } from './quickslot';
 import { fx } from './fx';
-import { ambientFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
+import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
+
+/** The clouds' tints (Blob emitters' Speck colours): Pixel Dungeon's two, and Shattered's from alchemy. */
+const GAS_TINTS: Readonly<Record<string, string | readonly string[]>> = {
+  toxic: '80, 200, 60', paralytic: '230, 220, 70', corrosive: '170, 160, 140', smoke: '20, 20, 20', storm: '138, 216, 216',
+  stench: '20, 70, 20', confusion: ['255, 96, 160', '96, 160, 255', '160, 255, 96', '255, 160, 96'], inferno: '238, 119, 34',
+  blizzard: '235, 245, 255', regrowth: '90, 180, 60', freezing: '200, 230, 255', fire: '255, 140, 40',
+};
 /** The visual clock's last reading, for frame-to-frame particle steps. */
 let lastVisual = 0;
 /** When my hero fell, on the visual clock, or 0 while alive. */
@@ -2377,6 +2384,7 @@ function tick(now: number): void {
   fx.update(vnow, dt);
   ambientFx(view, vnow, dt);
   regionFx(level, visible, vnow, dt);
+  blobFx(world.floors[me.depth]?.gas ?? {}, visible, vnow, dt);
 
   const mine = view.puppets.get(me.id);
   const at = mine ? view.position(mine, vnow) : { x: cellX(me.pos) * TILE, y: cellY(me.pos) * TILE };
@@ -2464,12 +2472,11 @@ function tick(now: number): void {
     return false;
   });
   const plants = (world.floors[me.depth]?.plants ?? []).map((p) => ({ pos: p.pos, index: PLANT_KINDS.indexOf(p.kind) }));
-  // Clouds of gas: green toxic, yellow paralytic.
+  // Clouds of gas: green toxic, yellow paralytic, and Shattered's (their Speck's hardlight colour; the
+  // confusion gas's changes from cell to cell, as its specks do).
   const clouds = world.floors[me.depth]?.gas ?? {};
-  const gas = [
-    ...(clouds.toxic ?? []).map(([pos, volume]) => ({ pos, volume, color: '80, 200, 60' })),
-    ...(clouds.paralytic ?? []).map(([pos, volume]) => ({ pos, volume, color: '230, 220, 70' })),
-  ];
+  const gas = Object.entries(GAS_TINTS).flatMap(([kind, tint]) =>
+    (clouds[kind as keyof typeof clouds] ?? []).map(([pos, volume]) => ({ pos, volume, color: Array.isArray(tint) ? tint[pos % tint.length]! : tint as string })));
   const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
   const explored = exploredCells(world, me.depth);
   const scene = {

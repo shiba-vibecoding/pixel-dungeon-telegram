@@ -28,7 +28,7 @@ interface PotState {
   /** Pack slots put in, in order (a slot twice for two of a stack). */
   inputs: number[];
   /** What is shown: the pot, the energy picker (with what is picked), or the book at a page. */
-  screen: { kind: 'pot' } | { kind: 'energize'; picked: Set<number> } | { kind: 'guide'; page: number };
+  screen: { kind: 'pot' } | { kind: 'energize'; picked: Set<number> } | { kind: 'guide'; page: number } | { kind: 'trinket' };
   /** The pack as it was when the inputs were chosen: they are dropped if it changes under them. */
   pack: string;
 }
@@ -45,7 +45,12 @@ function sitem(sprite: number): HTMLElement {
 }
 
 const spriteOf = (world: World, item: Item): number => itemSprite(item, world.run.labels);
-const kindSprite = (world: World, kind: ItemKind): number => spriteOf(world, createItem(kind));
+/** A kind's sprite; in the book, a potion or scroll not known yet shows only its holder (its colour would give it away). */
+const kindSprite = (world: World, kind: ItemKind): number => {
+  const category = itemDef(kind).category;
+  if ((category === 'potion' || category === 'scroll') && !knownIn(world.known, kind)) return category === 'potion' ? S.POTION_HOLDER : S.SCROLL_HOLDER;
+  return spriteOf(world, createItem(kind));
+};
 
 function energyIcon(small = false): HTMLElement {
   return el('i', { className: `pd-energy-ico${small ? ' x1' : ''}` });
@@ -102,6 +107,7 @@ function draw(): void {
   }
   if (pot.screen.kind === 'energize') return drawEnergize(world, hero, pot.screen.picked);
   if (pot.screen.kind === 'guide') return drawGuide(world, hero, pot.screen.page);
+  if (pot.screen.kind === 'trinket') return drawTrinkets(world, hero);
   drawPot(world, hero);
 }
 
@@ -163,6 +169,11 @@ function drawPot(world: World, hero: Hero): void {
     window.setTimeout(() => {
       draw();
       puff(document.querySelector<HTMLElement>('.pd-alch .pd-slot.out'), offer.id === 'trinketCatalyst' ? 'catalyst' : 'brew');
+      // TrinketCatalyst.Recipe: WndTrinket opens at once with what the catalyst offers.
+      if (offer.id === 'trinketCatalyst') {
+        state.screen = { kind: 'trinket' };
+        draw();
+      }
     }, 0);
   }, 'primary');
   brew.disabled = !offer || short;
@@ -193,6 +204,28 @@ function drawPot(world: World, hero: Hero): void {
   box.setAttribute('role', 'dialog');
   box.setAttribute('aria-label', t.alch.title);
   show(box, close);
+}
+
+/** TrinketCatalyst.WndTrinket at the pot: three trinkets shown and a fourth unknown; closing it leaves the choice for later. */
+function drawTrinkets(world: World, hero: Hero): void {
+  const state = pot!;
+  const back = (): void => {
+    state.screen = { kind: 'pot' };
+    draw();
+  };
+  const index = hero.items.findIndex((item) => item.kind === 'trinket.catalyst' && item.rolled);
+  const catalyst = hero.items[index];
+  // Not rolled yet (the world has not answered): the pot until it has.
+  if (!catalyst?.rolled) return drawPot(world, hero);
+  showChoice(world, t.alch.chooseTrinket, t.alch.catalystText, catalyst, catalyst.rolled.map((kind, choice) => ({
+    label: choice < 3 ? capitalize(t.items[kind]) : capitalize(t.alch.catalystRandom),
+    sprite: choice < 3 ? kindSprite(world, kind) : S.TRINKET_HOLDER,
+    onPick: () => {
+      state.options.onAction({ type: 'use', item: index, choice });
+      audio.play('puff');
+      back();
+    },
+  })), back, 'pd-alch-sub');
 }
 
 /** The silhouette under the «?» of a surprise result. */
@@ -303,7 +336,7 @@ function drawEnergize(world: World, hero: Hero, picked: Set<number>): void {
     el('p', { className: 'pd-info', textContent: t.alch.energizeHint }),
     el('div', { className: 'pd-scroll' }, grid),
     sum,
-    el('div', { className: 'pd-row' }, button(t.alch.back, back, 'quiet'), primary),
+    el('div', { className: 'pd-actions' }, primary, el('div', { className: 'pd-row' }, button(t.back, back, 'quiet'))),
   );
   box.setAttribute('role', 'dialog');
   show(box, back);
@@ -478,7 +511,7 @@ function drawGuide(world: World, hero: Hero, pageIndex: number): void {
     head(world, t.alch.guideTitle, back, 'book'),
     tabs,
     el('div', { className: 'pd-scroll' }, el('p', { className: 'pd-info', textContent: pageBody(page) }), list),
-    el('div', { className: 'pd-row' }, button(t.alch.back, back, 'quiet')),
+    el('div', { className: 'pd-row' }, button(t.back, back, 'quiet')),
   );
   box.setAttribute('role', 'dialog');
   show(box, back);
@@ -503,7 +536,10 @@ export function puff(at: HTMLElement | null, kind: 'brew' | 'catalyst' | 'energy
     bit.style.animationDelay = `${Math.round(Math.random() * 120)}ms`;
     layer.append(bit);
   }
-  at.append(layer);
+  // Over the page rather than in the window, so that the window drawn again (the world answering) does not cut it short.
+  const box = at.getBoundingClientRect();
+  Object.assign(layer.style, { position: 'fixed', left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: `${box.height}px`, inset: 'auto' });
+  document.body.append(layer);
   window.setTimeout(() => layer.remove(), 900);
 }
 
@@ -521,14 +557,15 @@ export interface ChoiceOption {
  * A choice an item asks for (WndOptions: an enchantment, an augmentation, a guess, a talent tier, a
  * trinket, a beacon's set or return, what to alchemize into): one window, the options as buttons.
  */
-export function showChoice(world: World, title: string, text: string, item: Item | null, choices: readonly ChoiceOption[], onCancel: () => void): void {
+export function showChoice(
+  world: World, title: string, text: string, item: Item | null, choices: readonly ChoiceOption[], onCancel: () => void, className?: string,
+): void {
   const icon = item ? el('div', { className: 'pd-slot' }, sitem(spriteOf(world, item))) : null;
   const list = el('div', { className: 'pd-actions' });
   for (const choice of choices) {
-    const node = el('button', { className: 'pd-button' });
+    const node = el('button', { className: 'pd-button pd-choice' });
     if (choice.sprite !== undefined) {
       const picture = sitem(choice.sprite);
-      picture.style.setProperty('--u', '1px');
       node.append(picture);
     }
     node.append(choice.label);
@@ -539,7 +576,7 @@ export function showChoice(world: World, title: string, text: string, item: Item
     };
     list.append(node);
   }
-  const box = windowOf({ title, icon, onClose: onCancel, narrow: true }, text ? el('p', { className: 'pd-info', textContent: text }) : null, list);
+  const box = windowOf({ title, icon, onClose: onCancel, narrow: true, ...(className ? { className } : {}) }, text ? el('p', { className: 'pd-info', textContent: text }) : null, list);
   show(box, onCancel);
   sprites(box);
 }

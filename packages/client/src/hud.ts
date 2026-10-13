@@ -26,6 +26,11 @@ export const BUFF_ICONS = {
   levitation: 1, blindness: 16, immunity: 25, deferred: 28, bleeding: 26, sacrifice: 31,
   // From 1000: Shattered's buffs.png (assets/spd/buffs.png), BuffIndicator.SEAL_SHIELD and LOCKED_FLOOR.
   sealShield: 1084, lockedFloor: 1035, bless: 1037,
+  // Alchemy's buffs (core buffs.ts), BuffIndicator's icons in the same sheet (tints are the designer's to draw).
+  haste: 1041, stamina: 1041, magicalSight: 1000, magicImmune: 1017, foresight: 1032, recharging: 1034, fireImbue: 1055,
+  frostImbue: 1055, toxicImbue: 1055, featherFall: 1001, cleanse: 1025, drowsy: 1029, magicalSleep: 1030, chill: 1015, frost: 1015,
+  corrosion: 1003, potionHealing: 1044, barrier: 1020, arcaneArmor: 1020, aquaHealing: 1044, htBoost: 1044, wellFed: 1043,
+  prismaticGuard: 1020, challengeArena: 1054,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 
@@ -63,7 +68,45 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
       ? [{ name: 'sealShield' as const, turns: me.sealShield.shield > 0 ? me.sealShield.shield : me.sealShield.cooldown }] : []),
     ...(me.lockedFloor !== undefined ? [{ name: 'lockedFloor' as const }] : []),
     ...((me.blessed ?? 0) > 0 ? [{ name: 'bless' as const, turns: Math.ceil(me.blessed!) }] : []),
+    ...alchemyBuffs(me),
   ];
+}
+
+/** Alchemy's buffs on a hero (core buffs.ts), with their turns or amounts as BuffIndicator shows them. */
+function alchemyBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
+  const b = me.buffs;
+  if (!b) return [];
+  const list: Array<{ name: BuffName; turns?: number }> = [];
+  const timed = (name: BuffName, left: number | undefined): void => {
+    if ((left ?? 0) > 0) list.push({ name, turns: Math.ceil(left!) });
+  };
+  timed('haste', b.haste);
+  timed('stamina', b.stamina);
+  timed('magicalSight', b.magicalSight);
+  timed('magicImmune', b.magicImmune);
+  timed('foresight', b.foresight);
+  timed('recharging', b.recharging);
+  timed('fireImbue', b.fireImbue);
+  timed('frostImbue', b.frostImbue);
+  timed('toxicImbue', b.toxicImbue);
+  timed('featherFall', b.featherFall);
+  timed('cleanse', b.cleanse);
+  timed('drowsy', b.drowsy);
+  if (b.magicalSleep) list.push({ name: 'magicalSleep' });
+  timed('chill', b.chill);
+  timed('frost', b.frost);
+  timed('ooze', b.ooze);
+  if (b.corrosion && b.corrosion.left > 0) list.push({ name: 'corrosion', turns: Math.ceil(b.corrosion.left) });
+  if (b.healing && b.healing.left > 0) list.push({ name: 'potionHealing', turns: Math.ceil(b.healing.left) });
+  if (b.barrier && b.barrier.shield > 0) list.push({ name: 'barrier', turns: Math.ceil(b.barrier.shield) });
+  if (b.arcaneArmor && b.arcaneArmor.level > 0) list.push({ name: 'arcaneArmor', turns: b.arcaneArmor.level });
+  if (b.barkskin && b.barkskin.level > 0) list.push({ name: 'barkskin', turns: b.barkskin.level });
+  timed('aquaHealing', b.aquaHealing);
+  timed('htBoost', b.htBoost);
+  timed('wellFed', b.wellFed);
+  timed('prismaticGuard', b.prismaticGuard);
+  if (b.challenge && b.challenge.left > 0) list.push({ name: 'challengeArena', turns: Math.ceil(b.challenge.left) });
+  return list;
 }
 
 export interface HudHandlers {

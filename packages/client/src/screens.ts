@@ -1788,7 +1788,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       const rolled = item.rolled;
       use(t.alchUi.choose, () => choose(t.alch.chooseTrinket, t.alch.catalystText, item, rolled.map((kind, choice) => ({
         label: choice < 3 ? capitalize(t.items[kind]) : capitalize(t.alch.catalystRandom),
-        ...(choice < 3 ? { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels) } : {}),
+        sprite: choice < 3 ? itemSprite({ kind, qty: 1, level: 0 }, world.run.labels) : S.TRINKET_HOLDER,
         onPick: () => act({ type: 'use', item: index, choice }),
       }))));
     }

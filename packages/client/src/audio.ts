@@ -34,7 +34,17 @@ export type Synth =
   | 'creak' | 'thud' | 'rustle' | 'coin' | 'pop' | 'whoosh' | 'tick' | 'sizzle' | 'clank' | 'drip' | 'pebble' | 'sparkle'
   | 'stepWood' | 'stepGrass' | 'knock' | 'crowd';
 
-export type Sound = Sample | Synth;
+/**
+ * Shattered's sounds (Assets.Sounds) that alchemy's items play and this game has no file for yet: each plays
+ * the nearest sound there is until the audio stream brings the file (then it moves to SAMPLES).
+ */
+export type StandIn = 'gas' | 'lullaby' | 'chargeup' | 'challenge' | 'sheep' | 'meld' | 'charms' | 'mastery' | 'hit_magic';
+const STAND_IN: Readonly<Record<StandIn, Sample>> = {
+  gas: 'puff', lullaby: 'read', chargeup: 'evoke', challenge: 'alert', sheep: 'puff', meld: 'teleport', charms: 'evoke',
+  mastery: 'levelup', hit_magic: 'zap',
+};
+
+export type Sound = Sample | Synth | StandIn;
 
 /** The music: the original's tunes from files, or one played here. */
 export type Track = 'theme' | 'game' | SongName;
@@ -488,7 +498,7 @@ class Audio {
   play(name: Sound, rate = 1, volume = 1, at?: Place, pan?: number): void {
     const ctx = this.context;
     if (!this.enabled || !ctx || !this.sfx || document.hidden || ctx.state !== 'running') return;
-    const buffer = this.buffers.get(name);
+    const buffer = this.buffers.get(name) ?? (name in STAND_IN ? this.buffers.get(STAND_IN[name as StandIn]) : undefined);
     if (!buffer) return;
     const now = performance.now();
     // Not the same sound on top of itself, nor too many at once.

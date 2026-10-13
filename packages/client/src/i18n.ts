@@ -1572,7 +1572,7 @@ const en = {
     sniper: 'Sniper: her missiles find the weak points in an enemy\'s armour and ignore it.',
     warden: 'Warden: trampling tall grass and touching plants gives her a bark armour, and plants yield her seeds and dewdrops.',
   } as Record<SubClass, string>,
-  alchemyPot: 'An alchemy pot: drop or throw three seeds into it to brew a potion.',
+  alchemyPot: 'An alchemy pot: stand by it and tap it to brew.',
   brewed: 'The seeds in the pot brew into a potion!',
   plants: {
     firebloom: 'The Firebloom bursts into flames!', icecap: 'The Icecap freezes everything around!',
@@ -1703,6 +1703,8 @@ const en = {
     combo: 'Combo', fury: 'Fury', barkskin: 'Barkskin', levitation: 'Levitating', immunity: 'Immune to gases',
     blindness: 'Blinded', deferred: 'Deferred damage', bleeding: 'Bleeding', sacrifice: 'Marked for sacrifice',
     sealShield: 'Warrior Shield', lockedFloor: 'Floor is locked', bless: 'Blessed',
+    // Alchemy's buffs (their Shattered names).
+    haste: ALCH_EN.buff_haste, stamina: ALCH_EN.buff_stamina, magicalSight: ALCH_EN.buff_magicalSight, magicImmune: ALCH_EN.buff_magicImmune, foresight: ALCH_EN.buff_foresight, recharging: ALCH_EN.buff_recharging, fireImbue: ALCH_EN.buff_fireImbue, frostImbue: ALCH_EN.buff_frostImbue, toxicImbue: ALCH_EN.buff_toxicImbue, featherFall: ALCH_EN.buff_featherFall, cleanse: ALCH_EN.buff_cleanse, drowsy: ALCH_EN.buff_drowsy, magicalSleep: ALCH_EN.buff_magicalSleep, chill: ALCH_EN.buff_chill, frost: ALCH_EN.buff_frost, corrosion: ALCH_EN.buff_corrosion, potionHealing: ALCH_EN.buff_healing, barrier: ALCH_EN.buff_barrier, arcaneArmor: ALCH_EN.buff_arcaneArmor, aquaHealing: ALCH_EN.buff_aquaHealing, htBoost: ALCH_EN.buff_htBoost, wellFed: ALCH_EN.buff_wellFed, prismaticGuard: ALCH_EN.buff_prismaticGuard, challengeArena: ALCH_EN.buff_challenge,
   } as Record<BuffName, string>,
   causes: {
     poison: 'poison', burning: 'fire', ooze: 'caustic ooze', lightning: 'lightning', gripping: 'a gripping trap', hunger: 'starvation',
@@ -2980,7 +2982,7 @@ const ru: Strings = {
     sniper: 'Снайпер: её метательное оружие находит слабые места в броне врага и не замечает её.',
     warden: 'Хранительница: вытаптывая высокую траву и касаясь растений, обретает защиту коры, а растения дарят ей семена и росу.',
   },
-  alchemyPot: 'Алхимический котёл: бросьте в него три семени, чтобы сварить зелье.',
+  alchemyPot: 'Алхимический котёл: встаньте рядом и коснитесь его, чтобы варить.',
   brewed: 'Семена в котле превращаются в зелье!',
   plants: {
     firebloom: 'Огнецвет вспыхивает пламенем!', icecap: 'Ледянка замораживает всё вокруг!',
@@ -3107,6 +3109,8 @@ const ru: Strings = {
     combo: 'Комбо', fury: 'Ярость', barkskin: 'Кора', levitation: 'Левитация', immunity: 'Невосприимчивость к газам',
     blindness: 'Слепота', deferred: 'Отложенный урон', bleeding: 'Кровотечение', sacrifice: 'Отмечен для жертвы',
     sealShield: 'Щит Воина', lockedFloor: 'Уровень закрыт', bless: 'Вдохновлён',
+    // Alchemy's buffs (their Shattered names).
+    haste: ALCH_RU.buff_haste, stamina: ALCH_RU.buff_stamina, magicalSight: ALCH_RU.buff_magicalSight, magicImmune: ALCH_RU.buff_magicImmune, foresight: ALCH_RU.buff_foresight, recharging: ALCH_RU.buff_recharging, fireImbue: ALCH_RU.buff_fireImbue, frostImbue: ALCH_RU.buff_frostImbue, toxicImbue: ALCH_RU.buff_toxicImbue, featherFall: ALCH_RU.buff_featherFall, cleanse: ALCH_RU.buff_cleanse, drowsy: ALCH_RU.buff_drowsy, magicalSleep: ALCH_RU.buff_magicalSleep, chill: ALCH_RU.buff_chill, frost: ALCH_RU.buff_frost, corrosion: ALCH_RU.buff_corrosion, potionHealing: ALCH_RU.buff_healing, barrier: ALCH_RU.buff_barrier, arcaneArmor: ALCH_RU.buff_arcaneArmor, aquaHealing: ALCH_RU.buff_aquaHealing, htBoost: ALCH_RU.buff_htBoost, wellFed: ALCH_RU.buff_wellFed, prismaticGuard: ALCH_RU.buff_prismaticGuard, challengeArena: ALCH_RU.buff_challenge,
   },
   causes: {
     poison: 'яд', burning: 'огонь', ooze: 'едкая слизь', lightning: 'молния', gripping: 'капкан', hunger: 'голод',
