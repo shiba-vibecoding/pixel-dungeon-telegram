@@ -1,0 +1,28 @@
+<!-- @dsCard group="Shattered" height=812 width=1173 page subtitle="Панель на 4 быстрых слота в один ряд (ждать, искать, 4 слота, рюкзак; осмотр — долгое касание поиска) и на 6 — отдельным рядом над панелью; в слотах заряды, полоска заряда артефакта, пустой слот. Браслет вора: кнопка «Украсть» с иконкой. В снаряжении — пустая ячейка «разное»" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Быстрые слоты и снаряжение</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .phone { position: relative; width: 375px; height: 812px; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+  .tag { position: absolute; left: 8px; top: 150px; z-index: 40; padding: 2px 8px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--gold); background: rgba(11,11,9,.8); clip-path: var(--notch); }
+  .eqbox { position: absolute; left: 8px; right: 8px; top: 300px; z-index: 30; display: flex; flex-direction: column; gap: 6px; padding: 8px; background: rgba(31,33,28,.95); clip-path: var(--notch); font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .eqbox b { font-weight: 400; color: var(--gold); }
+  .pd-equip-v19 { display: flex; gap: 6px; } .pd-equip-v19 .pd-slot { width: 52px; height: 52px; } .pd-equip-v19 .pd-sitem { --u: 2px; margin: auto; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get('lang') || 'ru', en = L === 'en';
+  function phone() { var p = document.createElement('div'); p.className = 'phone pd-phone'; document.getElementById('row').appendChild(p); return p; }
+  function tag(p, t) { var s = document.createElement('span'); s.className = 'tag'; s.textContent = t; p.appendChild(s); return s; }
+  var a = phone(); PD.demo.game(a, { mates: false, names: false, quickslots: 4, danger: 2 }); tag(a, en ? '4 quickslots' : '4 быстрых слота');
+  var b = phone(); PD.demo.game(b, { mates: false, names: false, quickslots: 6 }); tag(b, en ? '6 quickslots' : '6 быстрых слотов');
+  var c = phone(); PD.demo.game(c, { mates: false, names: false, quickslots: 4, av: 2 }); PD.demo.overlay(c, PD.demo.win.artifact(L, 'armband'));
+  var eq = '<div class="pd-equip-v19"><span class="pd-slot equipped"><i class="pd-sitem" data-s="120"></i><span class="pd-lvl up">+2</span></span><span class="pd-slot equipped"><i class="pd-sitem" data-s="179"></i></span><span class="pd-slot equipped"><i class="pd-sitem" data-s="241"></i></span><span class="pd-slot placeholder misc" aria-label="' + (en ? 'Misc — empty' : 'Разное — пусто') + '"></span><span class="pd-slot placeholder misc"></span></div>';
+  b.insertAdjacentHTML('beforeend', '<div class="eqbox"><b>' + (en ? 'Equipment: weapon, armor, 3 misc slots' : 'Снаряжение: оружие, броня, 3 ячейки «разное»') + '</b>' + eq + '</div>');
+  PD.sprite(document.body);
+</script>
+</body>
+</html>

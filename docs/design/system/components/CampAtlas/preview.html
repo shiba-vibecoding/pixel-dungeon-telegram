@@ -22,7 +22,7 @@
   [['summer', en ? 'Entrance · summer' : 'Вход · лето'], ['autumn', en ? 'Entrance · autumn' : 'Вход · осень'], ['winter', en ? 'Entrance · winter' : 'Вход · зима'], ['cave', en ? 'Crystal cave' : 'Пещера с кристаллами'], ['prison', en ? 'Prison yard' : 'Тюремный двор'], ['hall', en ? 'Dwarf hall' : 'Зал гномов']].forEach(function (b) { cell(r1, b[1], b[0], 0, 0, 94, 130, 1.5); });
   var r2 = sec(en ? 'Fire, torch, heroes, icons' : 'Пламя, факел, герои, значки', en ? 'fire 100 ms a frame, torch 130 ms; heroes — row 1 of each sheet' : 'костёр 100 мс на кадр, факел 130 мс; герои — ряд 1 каждого листа');
   cell(r2, en ? 'fire ×3' : 'костёр ×3', 'fire', 0, 0, 78, 17, 3); cell(r2, en ? 'torch ×4' : 'факел ×4', 'torch', 0, 0, 20, 7, 4);
-  cell(r2, en ? 'camp-heroes.png: idle 0–1, run 2–7, attack 13–15 ×2' : 'camp-heroes.png: покой 0–1, бег 2–7, удар 13–15 ×2', 'heroes', 0, 0, 192, 90, 2);
+  cell(r2, en ? 'camp-heroes.png: idle 0–1, run 2–7, attack 13–15 ×2' : 'camp-heroes.png: покой 0–1, бег 2–7, удар 13–15 ×2', 'heroes', 0, 0, 192, 240, 1);
   cell(r2, en ? 'sulk ×4' : 'обида ×4', 'sulk', 0, 0, 7, 7, 4);
   [['quests', en ? 'quests' : 'задания'], ['mail', en ? 'mail' : 'почта'], ['mart', en ? 'Pixel-Mart' : 'Пиксель-Март']].forEach(function (k) { r2.insertAdjacentHTML('beforeend', '<div class="cell"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-' + k[0] + ')"></i><span>' + k[1] + ' ×2</span></div>'); });
 </script>

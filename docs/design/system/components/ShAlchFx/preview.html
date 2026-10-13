@@ -1,0 +1,23 @@
+<!-- @dsCard group="Shattered" height=812 width=1572 page subtitle="Котёл на canvas вместо CSS-частиц: кипит (6 кадров по 150 мс), варит (6 кадров нагрева по 90 мс и «пуф» 4×110 мс), с катализатором — лиловый; катализатор в ячейке результата пульсирует. Энергия: осколки летят дугой от вещей к счётчику, у счётчика «+9». Учебник: страница, которую ещё не нашли" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Алхимия: анимации</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; }
+  .phone { position: relative; width: 375px; height: 812px; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+  .dim .pd-overlay:first-of-type { filter: brightness(.55); }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get("lang") || "ru", en = L === "en";
+  function phone() { var p = document.createElement("div"); p.className = "phone pd-phone"; document.getElementById("row").appendChild(p); return p; }
+  var a = phone(); PD.demo.game(a, { mates: false }); PD.alchMount(PD.demo.overlay(a, PD.demo.win.alchemy(L, { state: "seeds" })));
+  var b = phone(); PD.demo.game(b, { mates: false }); PD.alchMount(PD.demo.overlay(b, PD.demo.win.alchemy(L, { state: "cata" })));
+  var c = phone(); PD.demo.game(c, { mates: false }); var w = PD.demo.overlay(c, PD.demo.win.energize(L)); PD.sprite(w); setTimeout(function () { var win = w.querySelector(".pd-window"); win.style.position = "relative"; PD.alchEnergy(win, [].slice.call(win.querySelectorAll(".pd-slot.picked")), win.querySelector(".pd-energy"), 9, true); }, 80);
+  var d = phone(); PD.demo.game(d, { mates: false }); PD.demo.overlay(d, PD.demo.win.recipes(L, { lost: true }));
+  PD.sprite(document.body);
+</script>
+</body>
+</html>
