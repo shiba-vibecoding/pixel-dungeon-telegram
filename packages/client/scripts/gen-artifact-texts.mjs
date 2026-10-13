@@ -1,5 +1,6 @@
 // Generates packages/client/src/i18n-artifacts.ts from Shattered Pixel Dungeon's message files: the artifacts'
-// texts (items.artifacts.*, keyed without that prefix) and the few other lines their rules say, in English and Russian.
+// texts (items.artifacts.*, keyed without that prefix), the rings' (items.rings.*) and the few other lines their
+// rules say, in English and Russian.
 // Usage: node packages/client/scripts/gen-artifact-texts.mjs [path/to/spd-src]
 // Default source: ../spd-src (next to pd-ts). The output is committed; the message files are only a reference.
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -49,6 +50,8 @@ function texts(lang) {
     result[short] = clean(value);
   }
   for (const key of EXTRA) if (all.has(key)) result[key] = clean(all.get(key));
+  // Shattered's rings (items.rings.*), whole keys: names, descriptions and their stats lines.
+  for (const [key, value] of all) if (key.startsWith('items.rings.')) result[key] = clean(value);
   return result;
 }
 

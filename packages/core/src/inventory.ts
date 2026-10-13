@@ -6,6 +6,8 @@ import {
 } from './actors';
 import { affectHunger, growHT } from './hero';
 import { affixProblem, affixSeal, detachProblem, detachSeal, type SealSource } from './seal';
+import { refreshMightHT } from './hero';
+import { wealthBonusDrops } from './rings';
 import {
   artifactPutOn, artifactTakenOff, carriedOf, dispelInvisibility, foodValue, levelCap, pickPetal, say, upgradeArtifact,
 } from './artifacts';
@@ -431,7 +433,7 @@ function artifactPiece(ctx: Ctx, hero: Hero, item: Item): boolean {
 }
 
 /** Wearing a ring of haggler, shops ask half. */
-export const haggles = (hero: Hero): boolean => heroRings(hero).some((ring) => ring.kind === 'ring.haggler');
+export const haggles = (_hero: Hero): boolean => false;
 
 /*
  * KindofMisc: rings and artifacts share three slots — the artifact slot, the misc slot (either) and
@@ -479,6 +481,8 @@ function takeOffMisc(ctx: Ctx, hero: Hero, slot: MiscSlot): Item {
   const worn = hero[slot]!;
   hero[slot] = null;
   if (isArtifactItem(worn)) artifactTakenOff(ctx, hero, worn);
+  // RingOfMight.doUnequip: Hero.updateHT.
+  if (worn.kind === 'ring.might') refreshMightHT(hero, false);
   return worn;
 }
 
@@ -514,6 +518,8 @@ function equipMisc(ctx: Ctx, hero: Hero, index: number, replace: MiscSlot | unde
     hero.misc = item;
   }
   ctx.effects.push({ type: 'equipped', hero: hero.id, item });
+  // RingOfMight.doEquip: Hero.updateHT.
+  if (item.kind === 'ring.might') refreshMightHT(hero, false);
   // KindofMisc.doEquip: put on, its curse is known (it binds itself at once, if it is cursed).
   delete item.curseUnknown;
   if (item.cursed) ctx.effects.push({ type: 'cursedEquip', hero: hero.id, item });
@@ -769,6 +775,8 @@ function openHeap(ctx: Ctx, hero: Hero, heap: Heap): boolean {
     ctx.effects.push({ type: 'opened', depth: ctx.depth, pos: heap.pos, heap: heap.kind });
     disturb(ctx, hero, heap);
     heap.kind = 'heap';
+    // Heap.open: rings of wealth find something more in it.
+    heap.items.unshift(...wealthBonusDrops(ctx, hero, 1));
   }
   return true;
 }

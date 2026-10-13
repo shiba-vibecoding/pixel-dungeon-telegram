@@ -29,8 +29,7 @@ function mobAt(ctx: Ctx, cell: number): Mob | undefined {
 
 export function zapWand(ctx: Ctx, hero: Hero, wand: Item, target: number): void {
   const { world, depth, level, rng } = ctx;
-  // A ring of power makes every wand stronger (Wand.power).
-  const power = Math.max(0, effectiveLevel(wand) + ringBonus(hero, 'ring.power'));
+  const power = Math.max(0, effectiveLevel(wand));
   const fx = (to: number, bolt: Bolt, from = hero.pos): void => {
     ctx.effects.push({ type: 'zapped', depth, from, to, bolt });
   };

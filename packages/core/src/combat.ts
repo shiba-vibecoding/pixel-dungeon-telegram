@@ -24,6 +24,7 @@ import { mobPress } from './traps';
 import { isBossDepth } from './level/builder';
 import { underChallenges } from './challenges';
 import { arenaKill } from './arena';
+import { elementsResist, tenacityMultiplier, wealthBonusDrops, wealthDropMultiplier } from './rings';
 import { bossSlainBeacon, capeTakes, dispelInvisibility, ghostDied, ghostSeesHero } from './artifacts';
 
 /*
@@ -176,19 +177,11 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   if (isHero(attacker) && attacker.weapon?.kind === 'weapon.pickaxe' && !thrown && !isHero(defender) && defender.kind === 'bat' && !isAlive(defender)) {
     attacker.weapon.bloody = true;
   }
-  // Hero.defenseProc: a ring of thorns turns some of the blow back on the attacker.
-  if (isHero(defender) && !isHero(attacker) && isAlive(attacker) && heroRings(defender).some((r) => r.kind === 'ring.thorns')) {
-    const back = ctx.rng.intRange(0, damage);
-    if (back > 0) {
-      ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: attacker.id, damage: back });
-      hurt(ctx, attacker, back, defender);
-    }
-  }
   return true;
 }
 
 /** What a ring of elements can shield a hero from (RingOfElements.Resistance.FULL). */
-const ELEMENTAL: ReadonlySet<string> = new Set(['poison', 'burning', 'lightning', 'gas', 'shaman', 'warlock', 'eye', 'burningFist']);
+const ELEMENTAL: ReadonlySet<string> = new Set(['poison', 'burning', 'ooze', 'lightning', 'gas', 'shaman', 'warlock', 'eye', 'burningFist']);
 
 /** Shopkeeper.flee: attacked (or caught stealing), he vanishes, and his wares with him. */
 export function shopkeeperFlees(ctx: Ctx, keeper: Mob): void {
@@ -316,16 +309,17 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
     // Terror.recover: struck again, a frightened monster pulls itself together.
     if ((victim.terror ?? 0) > 0 && victim.terror! < TERROR_TURNS) victim.terror = 0;
   }
-  // A ring of elements: now and then, elemental harm is much reduced (Char.damage with a resistance).
+  // Char.damage with RingOfElements.resist: the elements (fire, poison, ooze, lightning, gas, magic) do less.
   if (isHero(victim)) {
-    const elements = ringBonus(victim, 'ring.elements');
     const what = typeof source === 'string' ? source : isHero(source) ? '' : source.kind;
-    if (elements > 0 && ELEMENTAL.has(what) && ctx.rng.int(elements + 3) >= 3) damage = ctx.rng.intRange(0, damage);
+    if (ELEMENTAL.has(what)) damage = Math.round(damage * elementsResist(victim));
   }
   // Earthroot's bark takes the blows first.
   if (isHero(victim)) damage = earthrootAbsorbs(victim, damage);
-  // Hero.damage: the cape of thorns takes its share of whatever hurts the hero.
+  // Hero.damage: the cape of thorns takes its share of whatever hurts the hero; rings of tenacity ease the rest,
+  // the more the hero is hurt (RingOfTenacity.damageMultiplier, rounded up).
   if (isHero(victim) && damage > 0) damage = capeTakes(ctx, victim, damage, typeof source === 'string' ? null : source);
+  if (isHero(victim) && damage > 0) damage = Math.ceil(damage * tenacityMultiplier(victim));
   // Char.damage: the warrior's seal may raise its shield, and shields take what they can (not hunger's).
   if (isHero(victim)) damage = shieldDamage(ctx, victim, damage, source === 'hunger');
   if (!isHero(victim) && victim.kind === 'yog') {
@@ -405,8 +399,15 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   // Mob.rollToDropLoot, unless the party has outgrown the monster, or the armband has robbed it already.
   if (heroes.some((h) => h.lvl <= stats.maxLvl + 2) && mob.robbed !== 'stolen') {
     const loot = lootOf(ctx, mob);
-    const item = ctx.rng.float() < loot.chance ? loot.make() : null;
+    // Mob.lootChance: rings of wealth make it likelier (RingOfWealth.dropChanceMultiplier).
+    const wearer = heroes[0];
+    const item = ctx.rng.float() < loot.chance * (wearer ? wealthDropMultiplier(wearer) : 1) ? loot.make() : null;
     if (item) landItem(ctx, mob.pos, item);
+    // RingOfWealth.tryForBonusDrop: a try for every monster, fifteen for a boss.
+    if (wearer) {
+      const boss = ['goo', 'tengu', 'dm300', 'king', 'yog'].includes(mob.kind);
+      for (const bonus of wealthBonusDrops(ctx, wearer, boss ? 15 : 1)) landItem(ctx, mob.pos, bonus);
+    }
   }
 
 
@@ -481,7 +482,8 @@ export function lootOf(ctx: Ctx, mob: Mob): { chance: number; make: () => Item |
     case 'brute':
       return loot(0.5, () => rollGold(rng, ctx.depth));
     case 'thief':
-      return loot(0.01, () => randomRing(rng, 'ring.haggler'));
+      // Thief: now and then a ring or an artifact (Random.oneOf(RING, ARTIFACT), lootChance 0.03).
+      return loot(0.03, () => (rng.int(2) === 0 ? generator().of('ring') : generator().of('artifact')));
     case 'dm300':
       // Shattered's DM-300 once left the cape of thorns, known through and through, where the original's left a ring of thorns.
       return loot(0.333, () => createItem('artifact.cape'));

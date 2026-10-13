@@ -2,9 +2,13 @@ import { effectiveLevel } from './wear';
 import { armorStats, type Item, itemDef, type ItemKind, missileStats, type WeaponStats, weaponStats } from './items';
 import { type HeroClass, startingKit } from './heroclass';
 import { isStarving } from './hero';
+import {
+  accuracyMultiplier, attackSpeedMultiplier, evasionMultiplier, forceArmedBonus, forceRange, mightStrength, speedMultiplier,
+} from './rings';
 import type { Rng } from './rng';
 import type { Action, PlanStep } from './world';
 import type { Awareness, PendingScroll } from './artifacts';
+import type { WealthCounters } from './rings';
 
 /*
  * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
@@ -118,6 +122,8 @@ export interface Hero {
   pendingScroll?: PendingScroll;
   /** Creatures and heaps the talisman of foresight shows for a while (CharAwareness, HeapAwareness). */
   aware?: Awareness[];
+  /** The ring of wealth's counters (TriesToDropTracker, DropsToEquipTracker), once one has been worn. */
+  wealth?: WealthCounters;
   /** Hunger.level: 0 when fed, hungry from HUNGRY, starving at STARVING (it grows a point a turn). */
   hunger: number;
   /** Unused since Shattered's hunger (kept for the shape of older saves). */
@@ -230,29 +236,24 @@ export const heroEquipped = (hero: Hero): Item[] =>
 /** Everything a hero has: what is worn, then the pack (Belongings.iterator). */
 export const heroBelongings = (hero: Hero): Item[] => [...heroEquipped(hero), ...hero.items];
 
-/** The levels of every worn ring of a kind, added up (several buffs of a kind stack in the original). */
-export const ringBonus = (hero: Hero, kind: ItemKind): number =>
-  heroRings(hero).reduce((sum, ring) => (ring.kind === kind ? sum + effectiveLevel(ring) : sum), 0);
+/** Ring.getBonus: what the worn rings of a kind add (rings.ts). */
+export { ringBonus } from './rings';
 
-/** Hero.STR: weakness takes two points of strength away while it lasts. */
-export const heroStr = (hero: Hero): number => hero.str - (hero.weakened > 0 ? 2 : 0);
+/** Hero.STR: rings of might add to it (RingOfMight.strengthBonus); weakness takes two points away while it lasts. */
+export const heroStr = (hero: Hero): number => hero.str + mightStrength(hero) - (hero.weakened > 0 ? 2 : 0);
 
 /** Fury.LEVEL: below this share of health, a berserker flies into a fury. */
 export const FURY_LEVEL = 0.4;
 
-/** The numbers of the weapon in hand, or of bare fists (RingOfForce.damageRoll without a ring: 1 to STR-8). */
+/** The numbers of the weapon in hand, or of bare fists (RingOfForce.damageRoll: as a weapon of the strength's tier with a ring of force, else 1 to STR-8). */
 export function heroWeapon(hero: Hero): WeaponStats {
-  return hero.weapon ? weaponStats(hero.weapon) : { min: 1, max: Math.max(1, heroStr(hero) - 8), str: 0, accuracy: 1, delay: 1 };
+  if (hero.weapon) return weaponStats(hero.weapon);
+  const force = forceRange(hero, heroStr(hero));
+  return { min: force?.[0] ?? 1, max: force?.[1] ?? Math.max(1, heroStr(hero) - 8), str: 0, accuracy: 1, delay: 1 };
 }
 
 /** Char.hit with Bless: the blessed roll a quarter higher, attacking and defending alike. */
 const blessing = (hero: Hero): number => ((hero.blessed ?? 0) > 0 ? 1.25 : 1);
-
-/** Pixel Dungeon's ring of accuracy (1.4 a level), until rings are Shattered's (RingOfAccuracy.accuracyMultiplier). */
-const accuracyMultiplier = (hero: Hero): number => {
-  const bonus = ringBonus(hero, 'ring.accuracy');
-  return bonus === 0 ? 1 : f32(1.4 ** bonus);
-};
 
 /**
  * Hero.attackSkill: the hero's accuracy, times the rings' and the weapon's (Weapon.accuracyFactor:
@@ -268,14 +269,13 @@ export function heroAttackSkill(hero: Hero): number {
 }
 
 /**
- * Hero.defenseSkill: the hero's evasion, times the rings' (Pixel Dungeon's ring of evasion, 1.2 a
- * level, until rings are Shattered's), halved while paralysed, divided by 1.5 for every point of
+ * Hero.defenseSkill: the hero's evasion, times the rings' (RingOfEvasion.evasionMultiplier),
+ * halved while paralysed, divided by 1.5 for every point of
  * strength the armour wants more (Armor.evasionFactor); at least 1. A freerunner on the move is
  * twice as hard to hit (Pixel Dungeon's subclass, until the talents stream).
  */
 export function heroDefenseSkill(hero: Hero): number {
-  const bonus = ringBonus(hero, 'ring.evasion');
-  let evasion = f32(f32(hero.defenseSkill * (bonus === 0 ? 1 : f32(1.2 ** bonus))) * blessing(hero));
+  let evasion = f32(f32(hero.defenseSkill * evasionMultiplier(hero)) * blessing(hero));
   if (hero.paralysed > 0) evasion = f32(evasion / 2);
   const encumbrance = armorStats(hero.armor).str - heroStr(hero);
   if (encumbrance > 0) evasion = f32(evasion / 1.5 ** encumbrance);
@@ -298,14 +298,14 @@ export function heroRangedSkill(hero: Hero, item: Item, pointBlank: boolean): nu
 
 /**
  * Hero.speed: crippled, half as fast (Char.speed); armour too heavy slows its wearer, divided by 1.2
- * for every point of strength it wants more (Armor.speedFactor). A freerunner not starving nor
- * weighed down runs (Pixel Dungeon's subclass). Haste rings act on the time spent instead.
+ * for every point of strength it wants more (Armor.speedFactor); rings of haste quicken it
+ * (RingOfHaste.speedMultiplier). A freerunner not starving nor weighed down runs (Pixel Dungeon's subclass).
  */
 export function heroSpeed(hero: Hero): number {
   const encumbrance = armorStats(hero.armor).str - heroStr(hero);
   const crippled = hero.crippled > 0 ? 0.5 : 1;
   const running = hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0 ? 1.6 : 1;
-  return (encumbrance > 0 ? 1 / 1.2 ** encumbrance : 1) * crippled * running;
+  return (encumbrance > 0 ? 1 / 1.2 ** encumbrance : 1) * crippled * running * speedMultiplier(hero);
 }
 
 /**
@@ -321,20 +321,27 @@ export function heroDamageRoll(hero: Hero, rng: Rng): number {
   if (hero.weapon) {
     const excess = heroStr(hero) - weapon.str;
     if (excess > 0) damage += rng.intRange(0, excess);
+    // RingOfForce.armedDamageBonus: rings of force add to a weapon's blow as well.
+    damage += forceArmedBonus(hero);
   }
   return damage;
 }
 
-/** Hero.attackDelay: the weapon's (Weapon.delayFactor), slower by 1.2 for every point of strength it wants more. */
+/**
+ * Hero.attackDelay: the weapon's (Weapon.delayFactor), slower by 1.2 for every point of strength it wants more,
+ * quicker with rings of furor (RingOfFuror.attackSpeedMultiplier).
+ */
 export function heroAttackDelay(hero: Hero): number {
   const weapon = heroWeapon(hero);
   const encumbrance = weapon.str - heroStr(hero);
-  return encumbrance > 0 ? f32(weapon.delay * 1.2 ** encumbrance) : weapon.delay;
+  const delay = encumbrance > 0 ? f32(weapon.delay * 1.2 ** encumbrance) : weapon.delay;
+  return f32(delay / attackSpeedMultiplier(hero));
 }
 
 /** Hero.dr: the armour's, and a warden's bark. */
 export const heroArmor = (hero: Hero): number => armorStats(hero.armor).dr + Math.max(0, Math.ceil(hero.barkskin ?? 0));
-export const heroStealth = (hero: Hero): number => ringBonus(hero, 'ring.shadows');
+/** Hero.stealth: nothing of its own (talents and glyphs add to it, in their streams). */
+export const heroStealth = (_hero: Hero): number => 0;
 /** Hero.maxExp: what the next level costs. */
 export const maxExp = (hero: Hero): number => 5 + hero.lvl * 5;
 

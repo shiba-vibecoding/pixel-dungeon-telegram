@@ -80,20 +80,18 @@ describe('wear (Item.use)', () => {
     expect(result.ok && result.effects.some((e) => e.type === 'mended')).toBe(true);
   });
 
-  it('a +1 ring never wears; a +2 ring wears turn by turn and then works as +1', () => {
+  it("Shattered's rings never wear", () => {
     const { world } = sparring();
     const hero = heroById(world, 'p')!;
     floorAt(world, 1).mobs = [];
-    hero.ring = createItem('ring.mending', 1, 1);
-    hero.misc = createItem('ring.power', 1, 2);
-    const turns = maxDurability(hero.misc);
-    expect(maxDurability(hero.ring)).toBe(Infinity);
-    for (let i = 0; i < turns + 10; i++) {
+    hero.ring = createItem('ring.energy', 1, 1);
+    hero.misc = createItem('ring.haste', 1, 4);
+    expect(maxDurability(hero.misc)).toBe(Infinity);
+    for (let i = 0; i < 50; i++) {
       hero.hunger = 0;
       act(world, 'p', { type: 'wait' });
     }
-    expect(isBroken(hero.ring)).toBe(false);
-    expect(isBroken(hero.misc)).toBe(true);
-    expect(effectiveLevel(hero.misc)).toBe(1);
+    expect(isBroken(hero.misc)).toBe(false);
+    expect(effectiveLevel(hero.misc)).toBe(4);
   });
 });

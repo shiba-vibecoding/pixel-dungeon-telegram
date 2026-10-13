@@ -528,7 +528,7 @@ const BATTLE_WANDS: readonly ItemKind[] = [
 ];
 const LATE_WANDS: readonly ItemKind[] = ['wand.avalanche', 'wand.disintegration'];
 const FIGHTING_RINGS: readonly ItemKind[] = [
-  'ring.haste', 'ring.evasion', 'ring.accuracy', 'ring.mending', 'ring.elements', 'ring.thorns', 'ring.satiety',
+  'ring.haste', 'ring.evasion', 'ring.accuracy', 'ring.elements', 'ring.furor', 'ring.might', 'ring.tenacity', 'ring.force',
 ];
 
 /**
@@ -563,7 +563,7 @@ const GROW: Pool = [
     return kinds.length > 0 ? createItem(rng.oneOf(kinds), 1, 1 + rng.int(2) + Math.trunc(wave / 8)) : null;
   }],
   [2, (rng, wave, hero) => {
-    const kinds = [...FIGHTING_RINGS, ...(wands(hero) > 0 ? ['ring.power' as const] : [])].filter((kind) => !has(hero, kind));
+    const kinds = [...FIGHTING_RINGS, ...(wands(hero) > 0 ? ['ring.energy' as const] : [])].filter((kind) => !has(hero, kind));
     return kinds.length > 0 ? createItem(rng.oneOf(kinds), 1, 1 + rng.int(2) + Math.trunc(wave / 8)) : null;
   }],
   [1, (_rng, _wave, hero) => (hero.weapon ? createItem('scroll.enchantment') : null)],

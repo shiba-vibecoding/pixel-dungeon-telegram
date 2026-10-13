@@ -1,4 +1,5 @@
-import { type Hero, isAlive, type Mob, type MobKind, ringBonus } from './actors';
+import { type Hero, heroRings, isAlive, type Mob, type MobKind } from './actors';
+import { mightHTMultiplier } from './rings';
 import { hurt } from './combat';
 import { type Ctx, exploredCells, heroView } from './floor';
 import { heroGainsExp } from './ident';
@@ -33,8 +34,21 @@ export const heroHT = (hero: Hero): number => 20 + 5 * (hero.lvl - 1) + (hero.ht
  * set to otherwise: the tests' sturdy heroes.)
  */
 export function growHT(hero: Hero, amount: number, boostHP: boolean): void {
+  // With rings of might worn, Hero.updateHT itself: the base health times their multiplier.
+  if (heroRings(hero).some((ring) => ring.kind === 'ring.might')) {
+    refreshMightHT(hero, boostHP);
+    return;
+  }
   hero.ht += amount;
   if (boostHP) hero.hp += Math.max(amount, 0);
+  hero.hp = Math.min(hero.hp, hero.ht);
+}
+
+/** Hero.updateHT with rings of might: twenty, five a level and the boosts, times RingOfMight.HTMultiplier. */
+export function refreshMightHT(hero: Hero, boostHP: boolean): void {
+  const before = hero.ht;
+  hero.ht = Math.round(mightHTMultiplier(hero) * heroHT(hero));
+  if (boostHP) hero.hp += Math.max(hero.ht - before, 0);
   hero.hp = Math.min(hero.hp, hero.ht);
 }
 
@@ -109,7 +123,7 @@ function hungerTurn(ctx: Ctx, hero: Hero): void {
     }
     return;
   }
-  const level = hero.hunger + 1 - ringBonus(hero, 'ring.satiety') / 10;
+  const level = hero.hunger + 1;
   if (level >= STARVING) {
     // Hunger.act: the moment starving begins hurts.
     hero.hunger = STARVING;
@@ -164,7 +178,7 @@ export const REGENERATION_DELAY = 10;
 function regenerationTurn(ctx: Ctx, hero: Hero): void {
   if (!regenOn(ctx.world, hero) || hero.hp >= hero.ht || isStarving(hero)) return;
   // The chalice of blood worn quickens it (cursed, slows it).
-  const delay = chaliceRegenDelay(hero, REGENERATION_DELAY / 1.2 ** ringBonus(hero, 'ring.mending'));
+  const delay = chaliceRegenDelay(hero, REGENERATION_DELAY);
   hero.regen = Math.fround(hero.regen + Math.fround(1 / delay));
   if (hero.regen >= 1) {
     const heal = Math.trunc(hero.regen);
@@ -260,7 +274,7 @@ const HUNGER_FOR_SEARCH = 6;
 export function search(ctx: Ctx, hero: Hero, intentional: boolean): boolean {
   if (!isAlive(hero)) return false;
   // Pixel Dungeon's ring of detection, while it is still found, widens it.
-  const distance = Math.max(0, (hero.heroClass === 'rogue' ? 2 : 1) + ringBonus(hero, 'ring.detection'));
+  const distance = hero.heroClass === 'rogue' ? 2 : 1;
   const fov = heroView(ctx.world, hero);
   const cx = cellX(hero.pos);
   const cy = cellY(hero.pos);

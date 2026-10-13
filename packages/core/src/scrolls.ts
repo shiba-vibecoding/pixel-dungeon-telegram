@@ -56,7 +56,7 @@ export function isUpgradable(item: Item): boolean {
     case 'wand':
       return true;
     case 'ring':
-      return item.kind !== 'ring.haggler' && item.kind !== 'ring.thorns';
+      return true;
     case 'missile':
       return item.kind === 'missile.boomerang';
     // BrokenSeal.isUpgradable: a scroll of upgrade can be read on the seal itself, once.

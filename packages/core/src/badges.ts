@@ -109,8 +109,9 @@ export function checkBadges(progress: BadgeProgress, world: World, me: Hero, eff
   // Badges.validateItemLevelAquired: only a level that is known counts.
   const best = Math.max(0, ...belongings.filter(levelKnown).map((item) => item.level));
   tiers(['item1', 'item2', 'item3', 'item4'], best, [3, 6, 9, 12]);
-  earn('haggler', belongings.some((item) => item.kind === 'ring.haggler'));
-  earn('thorns', belongings.some((item) => item.kind === 'ring.thorns'));
+  // Pixel Dungeon's rare rings are Shattered's master thieves' armband and cape of thorns.
+  earn('haggler', belongings.some((item) => item.kind === 'artifact.armband'));
+  earn('thorns', belongings.some((item) => item.kind === 'artifact.cape'));
   earn('bags', ['bag.seeds', 'bag.scrolls', 'bag.wands'].every((kind) => me.items.some((item) => item.kind === kind)));
 
   const known = new Set(world.known);

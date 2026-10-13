@@ -29,9 +29,9 @@ describe('a scroll of upgrade, on the item chosen (WndBag)', () => {
 
   it('upgrades a worn ring, a ring in the pack, the boomerang and armour in the pack', () => {
     let { world, hero } = reader('rogue', 'scroll.upgrade');
-    hero.ring = createItem('ring.shadows', 1, 1);
+    hero.ring = createItem('ring.evasion', 1, 1);
     expect(act(world, 'p', { type: 'use', item: 0, on: 'ring' }).ok).toBe(true);
-    expect(hero.ring).toMatchObject({ kind: 'ring.shadows', level: 2 });
+    expect(hero.ring).toMatchObject({ kind: 'ring.evasion', level: 2 });
     hero.items.push({ ...createItem('ring.haste', 1, -1), cursed: true });
     expect(act(world, 'p', { type: 'use', item: 0, on: slot(hero, 'ring.haste') }).ok).toBe(true);
     // Upgraded, the curse is lifted (ScrollOfRemoveCurse.uncurse).
@@ -58,13 +58,13 @@ describe('a scroll of upgrade, on the item chosen (WndBag)', () => {
 
   it('refuses what cannot be upgraded before the scroll is used up', () => {
     const { world, hero } = reader('warrior', 'scroll.upgrade');
-    hero.items.push(createItem('potion.healing'), createItem('ring.thorns', 1, 1));
+    hero.items.push(createItem('potion.healing'), createItem('artifact.cape', 1, 1));
     const fails = (on: unknown, reason: string): void => {
       expect(act(world, 'p', { type: 'use', item: 0, on } as never)).toEqual({ ok: false, reason });
     };
     fails(slot(hero, 'potion.healing'), 'that cannot be upgraded');
     fails(slot(hero, 'missile.dart'), 'that cannot be upgraded');
-    fails(slot(hero, 'ring.thorns'), 'that cannot be upgraded');
+    fails(slot(hero, 'artifact.cape'), 'that cannot be upgraded');
     fails(0, 'that cannot be upgraded');
     fails(99, 'no such item');
     fails('ring', 'no such item');
@@ -121,7 +121,7 @@ describe('a scroll of identify, on the item chosen', () => {
 describe('scrollTargets', () => {
   it('lists what a scroll can be read on, worn items first', () => {
     const { world, hero } = reader('rogue', 'scroll.upgrade');
-    hero.ring = createItem('ring.shadows', 1, 1);
+    hero.ring = createItem('ring.evasion', 1, 1);
     hero.items.push(createItem('potion.healing'), createItem('wand.slowness'));
     expect(scrollTargets(world, hero, 'scroll.upgrade')).toEqual(['weapon', 'armor', 'ring', slot(hero, 'wand.slowness')]);
     expect(scrollTargets(world, hero, 'scroll.enchantment')).toEqual(['weapon', 'armor']);

@@ -126,18 +126,20 @@ export const ITEMS = {
   'wand.flock': { category: 'wand' },
   'wand.regrowth': { category: 'wand' },
   // Rings, two of which can be worn at once; they go by their gem until worn a while.
-  'ring.mending': { category: 'ring' },
-  'ring.detection': { category: 'ring' },
-  'ring.shadows': { category: 'ring' },
-  'ring.power': { category: 'ring' },
+  // Shattered's twelve (items/rings/, see rings.ts): Pixel Dungeon's mending, detection, shadows, power, satiety,
+  // thorns, haggler and herbalism are gone (the ring of thorns became the cape of thorns, an artifact).
   'ring.accuracy': { category: 'ring' },
-  'ring.evasion': { category: 'ring' },
-  'ring.satiety': { category: 'ring' },
-  'ring.haste': { category: 'ring' },
+  'ring.arcana': { category: 'ring' },
   'ring.elements': { category: 'ring' },
-  'ring.thorns': { category: 'ring' },
-  'ring.haggler': { category: 'ring' },
-  'ring.herbalism': { category: 'ring' },
+  'ring.energy': { category: 'ring' },
+  'ring.evasion': { category: 'ring' },
+  'ring.force': { category: 'ring' },
+  'ring.furor': { category: 'ring' },
+  'ring.haste': { category: 'ring' },
+  'ring.might': { category: 'ring' },
+  'ring.sharpshooting': { category: 'ring' },
+  'ring.tenacity': { category: 'ring' },
+  'ring.wealth': { category: 'ring' },
   // Seeds, thrown where a plant should grow.
   'seed.firebloom': { category: 'seed', sprite: S.SEED_FIREBLOOM },
   'seed.icecap': { category: 'seed', sprite: S.SEED_ICECAP },
@@ -424,8 +426,9 @@ export function itemPrice(item: Item, known: boolean): number {
       return levelled(50);
     case 'torch':
       return 10 * item.qty;
+    // Ring.value.
     case 'ring':
-      return levelled(80);
+      return levelled(75);
     case 'seed':
       return 10 * item.qty;
     case 'ankh':
@@ -630,9 +633,10 @@ const KIND_CHANCES: Readonly<Record<Exclude<GeneratedCategory, 'gold' | 'food' |
     ['seed.earthroot', 1], ['seed.fadeleaf', 1],
   ],
   // Thorns and haggler are only dropped by DM-300 and thieves.
+  // Generator.Category.RING: the twelve alike.
   ring: [
-    ['ring.mending', 1], ['ring.detection', 1], ['ring.shadows', 1], ['ring.power', 1], ['ring.accuracy', 1],
-    ['ring.evasion', 1], ['ring.satiety', 1], ['ring.haste', 1], ['ring.elements', 1], ['ring.herbalism', 1],
+    ['ring.accuracy', 3], ['ring.arcana', 3], ['ring.elements', 3], ['ring.energy', 3], ['ring.evasion', 3], ['ring.force', 3],
+    ['ring.furor', 3], ['ring.haste', 3], ['ring.might', 3], ['ring.sharpshooting', 3], ['ring.tenacity', 3], ['ring.wealth', 3],
   ],
   wand: [
     ['wand.teleportation', 10], ['wand.slowness', 10], ['wand.firebolt', 15], ['wand.regrowth', 6], ['wand.poison', 10],
@@ -649,11 +653,15 @@ export function rollGold(rng: Rng, depth: number): Item {
   return createItem('gold', rng.intBetween(20 + depth * 10, 40 + depth * 20));
 }
 
-/** Ring.random: one or two levels, and three rings in ten the wrong way. */
+/** Ring.random: +0 two times in three, +1 four in fifteen, +2 one in fifteen; three in ten cursed (which works against its wearer). */
 export function randomRing(rng: Rng, kind: ItemKind): Item {
-  const level = rng.intBetween(1, 3);
-  const ring = createItem(kind, 1, rng.float() < 0.3 ? -level : level);
-  if (ring.level < 0) ring.cursed = true;
+  let level = 0;
+  if (rng.int(3) === 0) {
+    level++;
+    if (rng.int(5) === 0) level++;
+  }
+  const ring = createItem(kind, 1, level);
+  if (rng.float() < 0.3) ring.cursed = true;
   return ring;
 }
 

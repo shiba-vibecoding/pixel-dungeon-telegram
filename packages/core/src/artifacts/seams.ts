@@ -3,6 +3,7 @@ import type { Hero } from '../actors';
 import type { Item, ItemKind } from '../items';
 import type { World } from '../world';
 import { regenOn as heroRegenOn } from '../hero';
+import { energyArtifactMultiplier } from '../rings';
 
 /*
  * Seams: where artifacts meet systems other streams of the Shattered port are
@@ -25,9 +26,9 @@ export function artifactProc(_ctx: Ctx, _target: Char, _visibleLevel: number, _c
   // Nothing until talents exist.
 }
 
-/** Seam (whoever ports Shattered's rings): RingOfEnergy.artifactChargeMultiplier; 1 without a ring of energy. */
-export function artifactChargeMultiplier(_hero: Hero): number {
-  return 1;
+/** RingOfEnergy.artifactChargeMultiplier (rings.ts; the talents' light cloak aside). */
+export function artifactChargeMultiplier(hero: Hero): number {
+  return energyArtifactMultiplier(hero);
 }
 
 /** Seam (talents stream): the rogue's light cloak talent, points in it (the cloak works from the pack, slower). */

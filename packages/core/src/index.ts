@@ -54,3 +54,4 @@ export * from './spd-sprites';
 export * from './artifacts';
 export { BONES_ROLLS } from './bones';
 export { miscChoices, haggles } from './inventory';
+export * from './rings';

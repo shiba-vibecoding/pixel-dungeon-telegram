@@ -37,6 +37,7 @@ import { discover, F, hasFlag, T } from './level/terrain';
 import { deriveSeed, Rng, seedRng, Stream } from './rng';
 import { createRun, type RunState } from './run';
 import { isChallenged, NO_HERBALISM, underChallenges } from './challenges';
+import { wandChargeMultiplier } from './rings';
 import { arenaJoined, arenaLevelAt, arenaPick, arenaProblem, arenaReady, type ArenaState, arenaTurn, newArena } from './arena';
 import {
   type ArtifactAction, artifactProblem, artifactsAct, artifactsTime, carriedOf, chaliceRegenDelay, disarmPresses, freezeTime, frozenBy,
@@ -868,8 +869,6 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   }
   if (!constant) {
     if (hero.slowed > 0) time *= 2;
-    const haste = ringBonus(hero, 'ring.haste');
-    if (haste !== 0) time *= 1.1 ** -haste;
   }
   const from = hero.time;
   hero.time += time;
@@ -908,7 +907,8 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   for (const item of hero.items) {
     if (item.charges === undefined) continue;
     const max = wandMaxCharges(item);
-    item.recharge = item.charges >= max ? 0 : (item.recharge ?? 0) + time;
+    // RingOfEnergy.wandChargeMultiplier: rings of energy recharge wands faster.
+    item.recharge = item.charges >= max ? 0 : (item.recharge ?? 0) + time * wandChargeMultiplier(hero);
     while (item.recharge >= WAND_RECHARGE && item.charges < max) {
       item.recharge -= WAND_RECHARGE;
       item.charges++;
@@ -1339,21 +1339,12 @@ function trample(ctx: Ctx, pos: number, hero?: Hero): void {
   }
   // A warden draws bark from the grass.
   if (hero?.subclass === 'warden') hero.barkskin = Math.max(hero.barkskin, Math.trunc(hero.ht / 3));
-  // HighGrass.trample with the sandals of nature worn: they draw strength from it, and the grass gives more
-  // (seeds from one in 25 to one in 9, dew from one in 6 to one in 4); cursed, nothing at all.
-  const nature = naturalism(hero);
-  if (nature !== null) {
-    if (nature < 0 || isChallenged(ctx.world, NO_HERBALISM)) return;
-    if (ctx.rng.float() < 1 / (25 - nature * 4)) dropItem(ctx.floor, pos, new ItemGenerator(ctx.rng, ctx.depth).of('seed'));
-    if (ctx.rng.float() < 1 / (6 - nature / 2)) dropItem(ctx.floor, pos, createItem('dew'));
-    return;
-  }
-  // A ring of herbalism makes both more likely (HighGrass.trample).
-  const herbalism = hero ? ringBonus(hero, 'ring.herbalism') : 0;
-  // Barren land: the grass sheds nothing at all.
-  if (herbalism < 0 || isChallenged(ctx.world, NO_HERBALISM)) return;
-  if (ctx.rng.int(18) <= ctx.rng.int(herbalism + 1)) dropItem(ctx.floor, pos, new ItemGenerator(ctx.rng, ctx.depth).of('seed'));
-  if (ctx.rng.int(6) <= ctx.rng.int(herbalism + 1)) dropItem(ctx.floor, pos, createItem('dew'));
+  // HighGrass.trample: a seed one time in 25 and a dewdrop in 6; the sandals of nature worn draw strength from it,
+  // and the grass gives more (seeds up to one in 9, dew up to one in 4); cursed, nothing at all; barren land, nothing.
+  const nature = naturalism(hero) ?? 0;
+  if (nature < 0 || isChallenged(ctx.world, NO_HERBALISM)) return;
+  if (ctx.rng.float() < 1 / (25 - nature * 4)) dropItem(ctx.floor, pos, new ItemGenerator(ctx.rng, ctx.depth).of('seed'));
+  if (ctx.rng.float() < 1 / (6 - nature / 2)) dropItem(ctx.floor, pos, createItem('dew'));
 }
 
 /** Terrain.FURROWED_GRASS, kept beside the map until the levels stream brings the terrain (Level.furrowed). */
