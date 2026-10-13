@@ -15,7 +15,9 @@ import {
 /** A backpack slot or a worn ring's index: small and whole. */
 const MAX_SLOT = 255;
 /** An item's choice (an enchantment, a guess, a recipe...): small and whole. */
-const MAX_CHOICE = 255;
+const MAX_CHOICE = 63;
+/** A used item's choice: a scroll of metamorphosis names a talent and one of its options (target * 8 + option). */
+const MAX_USE_CHOICE = 255;
 /** The largest choice an artifact's window offers (the toolkit's levels at most). */
 const MAX_ARTIFACT_CHOICE = 10;
 /** Monster ids are short ('#12'); anything longer is not one. */

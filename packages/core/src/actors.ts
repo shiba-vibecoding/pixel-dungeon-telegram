@@ -37,12 +37,12 @@ const f32 = Math.fround;
 export type { HeroClass } from './heroclass';
 export { HUNGRY, isHungry, isStarving, STARVING } from './hero';
 
-/** HeroSubClass: the two ways each class can master with the Tome of Mastery. */
+/** HeroSubClass: the two ways each class can master with Tengu's mask (HeroClass's subclasses, in its order). */
 export type SubClass = 'gladiator' | 'berserker' | 'battlemage' | 'warlock' | 'freerunner' | 'assassin' | 'sniper' | 'warden';
 export const SUBCLASSES: Readonly<Record<HeroClass, readonly [SubClass, SubClass]>> = {
-  warrior: ['gladiator', 'berserker'],
+  warrior: ['berserker', 'gladiator'],
   mage: ['battlemage', 'warlock'],
-  rogue: ['freerunner', 'assassin'],
+  rogue: ['assassin', 'freerunner'],
   huntress: ['sniper', 'warden'],
 };
 

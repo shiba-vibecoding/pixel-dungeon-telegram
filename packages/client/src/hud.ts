@@ -1,8 +1,9 @@
-import { FURY_LEVEL, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING, stealthCloak } from '@pd/core';
+import { berserkOf, comboOf, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING, stealthCloak, momentumOf, prepTurns } from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
 import { AVATAR, durabilityBar, markWear, sprites } from './screens';
 import { QUICKSLOTS } from './quickslot';
+import { hasFreePoints } from './talentui';
 import type { LogLine } from './view';
 
 /*
@@ -36,6 +37,11 @@ export const BUFF_ICONS = {
   prismaticGuard: 1020, challengeArena: 1054,
   // The artifacts': the cloak's stealth (INVISIBLE, dimmed), the hourglass's time freeze and stasis (TIME), the cape's THORNS, the talisman's FORESIGHT.
   stealth: 1012, timeFreeze: 1007, thorns: 1031,
+  // The talents' and subclasses' (their BuffIndicator icons): rage, the combo, momentum, preparation, the sniper's mark, hold fast,
+  // trackers that add to the next blow (WEAPON), cooldowns (TIME), empowered wands (WAND), enhanced rings and a surge (UPGRADE).
+  berserk: 1040, berserking: 1040, exhausted: 1040, comboChain: 1017, momentum: 1051, freerunning: 1051, preparation: 1042, sniperMark: 1027,
+  holdFast: 1020, trackerBlow: 1045, cooldown: 1007, wandEmpower: 1072, enhancedRings: 1050, surge: 1050, revealedArea: 1000,
+  parry: 1061, followup: 1057,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 
@@ -64,8 +70,7 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
     ...((me.marked ?? 0) > 0 ? [{ name: 'sacrifice' as const, turns: turns(me.marked!) }] : []),
     ...(me.sungrass !== undefined && me.sungrass === me.pos ? [{ name: 'healing' as const }] : []),
     ...(me.earthroot && me.earthroot.pos === me.pos ? [{ name: 'bark' as const }] : []),
-    ...(me.subclass === 'gladiator' && me.combo >= 3 && me.time <= me.comboUntil ? [{ name: 'combo' as const }] : []),
-    ...(me.subclass === 'berserker' && me.hp > 0 && me.hp <= me.ht * FURY_LEVEL ? [{ name: 'fury' as const }] : []),
+    ...talentBuffs(me),
     ...(me.barkskin > 0 ? [{ name: 'barkskin' as const, turns: turns(me.barkskin) }] : []),
     // Shattered's wands' conditions (core status.ts).
     ...((me.chill ?? 0) > 0 ? [{ name: 'chill' as const, turns: turns(me.chill!) }] : []),
@@ -91,6 +96,40 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
     ...alchemyBuffs(me),
     ...artifactBuffs(me),
   ];
+}
+
+/** The talents' trackers and the subclasses' buffs on a hero (core talents/), with what BuffIndicator shows beside each. */
+function talentBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
+  const list: Array<{ name: BuffName; turns?: number }> = [];
+  const b = me.tal;
+  if (!b) return list;
+  const rage = berserkOf(me);
+  if (rage) {
+    if (rage.state === 'berserk') list.push({ name: 'berserking', turns: rage.shield });
+    else if (rage.state === 'recovering') list.push({ name: 'exhausted', turns: rage.levelRecovery > 0 ? Math.ceil(rage.levelRecovery) : rage.turnRecovery });
+    else list.push({ name: 'berserk', turns: Math.floor(rage.power * 100) });
+  }
+  const combo = comboOf(me);
+  if (combo) list.push({ name: 'comboChain', turns: combo.count });
+  if (b.parry) list.push({ name: 'parry' });
+  const momentum = momentumOf(me);
+  if (momentum) {
+    if (momentum.freerunTurns > 0) list.push({ name: 'freerunning', turns: momentum.freerunTurns });
+    else if (momentum.freerunCooldown > 0) list.push({ name: 'momentum', turns: momentum.freerunCooldown });
+    else if (momentum.stacks > 0) list.push({ name: 'momentum', turns: momentum.stacks });
+  }
+  if (prepTurns(me) !== undefined) list.push({ name: 'preparation', turns: Math.min(9, prepTurns(me)!) });
+  if (b.sniper) list.push({ name: 'sniperMark', turns: Math.ceil(b.sniper.left) });
+  if (b.holdFast !== undefined && b.holdFast === me.pos) list.push({ name: 'holdFast' });
+  for (const key of ['provoked', 'lingering', 'empowered'] as const) if (b[key] !== undefined) list.push({ name: 'trackerBlow', turns: Math.ceil(b[key]!) });
+  if (b.followup) list.push({ name: 'followup', turns: Math.ceil(b.followup.left) });
+  for (const key of ['improvised', 'rejuvenating', 'seerShot'] as const) if (b[key] !== undefined) list.push({ name: 'cooldown', turns: Math.ceil(b[key]!) });
+  if (b.wandEmpower) list.push({ name: 'wandEmpower', turns: b.wandEmpower.left });
+  if (b.scrollEmpower) list.push({ name: 'wandEmpower', turns: b.scrollEmpower });
+  if (b.enhancedRings !== undefined) list.push({ name: 'enhancedRings', turns: Math.ceil(b.enhancedRings) });
+  if (b.surge !== undefined) list.push({ name: 'surge', turns: Math.ceil(b.surge) });
+  if (b.revealed) list.push({ name: 'revealedArea', turns: Math.ceil(b.revealed.left) });
+  return list;
 }
 
 /**
@@ -307,6 +346,7 @@ export class Hud {
   private readonly band: HTMLElement;
   private readonly avatar: HTMLElement;
   private readonly level: HTMLElement;
+  private readonly talentBadge: HTMLElement;
   private readonly hp: HTMLElement;
   private readonly hpText: HTMLElement;
   private readonly hpLag: HTMLElement;
@@ -360,6 +400,9 @@ export class Hud {
     avatarButton.append(this.avatar);
     avatarButton.onclick = tap(() => handlers.hero());
     this.level = el('span', 'pd-hero-lvl');
+    // The golden «+» while talent points are free (TalentsPane / StatusPane.talentBlink).
+    this.talentBadge = el('i', 'pd-talent-badge');
+    this.talentBadge.hidden = true;
     this.hpText = el('span', 'pd-bar-text');
     // The wound's trace: a pale stretch where health was, melting away a moment after a blow.
     this.hpLag = el('span', 'pd-bar-lag');
@@ -389,7 +432,7 @@ export class Hud {
     this.main = el(
         'div',
         'pd-hud-main',
-        el('div', 'pd-avatar-wrap', avatarButton, this.level),
+        el('div', 'pd-avatar-wrap', avatarButton, this.level, this.talentBadge),
         el(
           'div',
           'pd-hud-bars',
@@ -598,6 +641,11 @@ export class Hud {
       portrait.className = `pd-avatar${frame ? ` framed frame-${frame}` : ''}`;
     }
     if (this.changed('lvl', String(me.lvl))) this.level.textContent = String(me.lvl);
+    const free = !dead && hasFreePoints(me);
+    if (this.changed('talent', String(free))) {
+      this.talentBadge.hidden = !free;
+      this.talentBadge.parentElement?.classList.toggle('talent', free);
+    }
     const hp = Math.max(0, me.hp);
     // StatusPane: the shield (the warrior's seal) over the health bar, and «hp+shield/ht».
     const shield = shielding(me);

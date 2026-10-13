@@ -156,7 +156,12 @@ export function initClassTalents(hero: Hero): void {
 /** Talent.initSubclassTalents: the subclass's talents of the third tier. */
 export function initSubclassTalents(hero: Hero): void {
   if (!hero.subclass) return;
-  const book = hero.talents!;
+  // A hero with no book yet gets the whole of it, the subclass's talents too.
+  if (!hero.talents) {
+    talentBook(hero);
+    return;
+  }
+  const book = hero.talents;
   for (const id of SUBCLASS_TALENTS[hero.subclass]) book.tiers[2]![id] ??= 0;
 }
 

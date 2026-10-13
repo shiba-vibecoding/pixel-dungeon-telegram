@@ -13,6 +13,8 @@ import { type AnimName, type Assets, type CharSprite, duration, heroSprite } fro
 import { haptic } from './telegram';
 import { DEPTH_CARD_MS } from './cards';
 import { BOLT_MS_PER_CELL, wandFx } from './wandfx';
+import { SPELL_FRAMES, SPELL_LIFE, type Spell } from './spellfx';
+import { subclassName, tal, talentMessage, talentTitle } from './talenttext';
 
 /*
  * What the player sees, as opposed to what the world is: characters slide
@@ -297,6 +299,8 @@ export class View {
   /** How long a step takes on screen (ms): STEP_MS, or under live turns the room's beat, so walks never pause. */
   stepMs = STEP_MS;
   floaters: Floater[] = [];
+  /** SpellSprites over characters (spellfx.ts). */
+  spells: Spell[] = [];
   /** Cells lit up for a moment: discoveries and traps, or tinted clouds of gas and flame. */
   flashes: Array<{ cell: number; start: number; color?: string; duration?: number }> = [];
   log: LogLine[] = [];
@@ -527,6 +531,7 @@ export class View {
       }
     }
     this.floaters = this.floaters.filter((floater) => now - floater.start < 1200);
+    this.spells = this.spells.filter((spell) => now - spell.start < SPELL_LIFE);
     this.flashes = this.flashes.filter((flash) => now - flash.start < (flash.duration ?? 600));
     this.projectiles = this.projectiles.filter((p) => now - p.start < p.duration);
   }
@@ -1284,14 +1289,76 @@ export class View {
           if (effect.depth === this.depth && seen(effect.pos)) audio.play('plant', 1, 1, cellMiddle(effect.pos));
           break;
         case 'combo':
-          if (effect.hero === myId) this.float(effect.hero, t.combo(effect.count), COLORS.highlight, now);
+          if (effect.hero === myId) this.float(effect.hero, tal('actors.buffs.combo.combo', effect.count), COLORS.highlight, now, true);
           break;
         case 'mastered':
           // TengusMask: MASTERY.
           if (effect.hero === myId) {
-            this.say(t.mastered(t.subclasses[effect.subclass]), COLORS.highlight, now);
+            this.say(t.mastered(capital(subclassName(effect.subclass))), COLORS.highlight, now);
             audio.play('mastery');
           }
+          break;
+        case 'talent':
+          // TalentButton.upgradeTalent: LEVELUP, a little higher and quieter.
+          if (effect.hero === myId) {
+            audio.play('levelup', 0.7, 1.2);
+            this.say(`${capital(talentTitle(effect.talent))} (${effect.points})`, COLORS.positive, now);
+          }
+          break;
+        case 'spell':
+          // SpellSprite.show.
+          if (this.puppets.has(effect.hero)) this.spells.push({ hero: effect.hero, frame: SPELL_FRAMES[effect.sprite], ...(effect.tint ? { tint: effect.tint } : {}), start: now });
+          break;
+        case 'charged':
+          // ScrollOfRecharging.charge: energy sparks around the hero.
+          if (effect.hero === myId) audio.play('chargeup');
+          break;
+        case 'berserk':
+          // Berserk.startBerserking: SpellSprite.BERSERK, CHALLENGE, the screen flashing red, the shield's worth floating.
+          if (this.puppets.has(effect.hero)) this.spells.push({ hero: effect.hero, frame: SPELL_FRAMES.berserk, start: now });
+          this.float(effect.hero, `+${effect.amount}`, COLORS.shield, now);
+          if (effect.hero === myId) audio.play('challenge');
+          break;
+        case 'comboMove':
+          // Combo.doAttack: the strike's own sound is the hit's; a parry rings.
+          if (effect.move === 'parry') audio.play('hit_parry', 1, 0.96 + Math.random() * 0.09);
+          if (effect.hero === myId) this.float(effect.hero, capital(tal(`actors.buffs.combo$combomove.${effect.move}.name`)), COLORS.highlight, now, true);
+          break;
+        case 'comboEnd':
+          break;
+        case 'leapt':
+          // Hero.jump: a leap to the target (enhanced combo).
+          if (effect.depth === this.depth) audio.play('miss', 1, 0.8);
+          break;
+        case 'freerun':
+          // Momentum.doAction: MISS at a lower pitch, a jet of speed, SpellSprite.HASTE in yellow.
+          audio.play('miss', 1, 0.8);
+          if (this.puppets.has(effect.hero)) this.spells.push({ hero: effect.hero, frame: SPELL_FRAMES.haste, tint: [1, 1, 0], start: now });
+          break;
+        case 'snipe':
+          // SpiritBow.sniperSpecial: the special shot's name over the hero.
+          if (effect.hero === myId) this.float(effect.hero, capital(tal(`actors.buffs.snipersmark.action_name_${effect.kind === 'none' ? 'snapshot' : effect.kind === 'speed' ? 'volley' : 'sniper'}`)), COLORS.highlight, now, true);
+          break;
+        case 'hit':
+          // WandEmpower and PhysicalEmpower: HIT_STRONG at 0.75, 1.2.
+          if (effect.hero === myId) audio.play('hit_strong', 0.75, 1.2);
+          break;
+        case 'tmsg':
+          if (effect.hero === myId) {
+            const line = talentMessage(effect.key, ...(effect.args ?? []));
+            if (line) this.say(capital(line), effect.tone === 'w' ? COLORS.warning : effect.tone === 'n' ? COLORS.negative : effect.tone === 'p' ? COLORS.positive : COLORS.default, now);
+          }
+          break;
+        case 'metamorphed':
+          // ScrollOfMetamorphosis.onMetamorph: READ, a swirl of change over the hero.
+          if (effect.hero === myId) {
+            audio.play('read');
+            this.say(`${capital(talentTitle(effect.from))} → ${capital(talentTitle(effect.to))}`, COLORS.highlight, now);
+          }
+          break;
+        case 'assassinated':
+          // Preparation: «assassinated» over the foe.
+          if (effect.depth === this.depth) this.float(effect.mob, tal('actors.buffs.preparation.assassinated'), COLORS.negative, now, true);
           break;
         case 'brewed':
           if (effect.depth !== this.depth) break;

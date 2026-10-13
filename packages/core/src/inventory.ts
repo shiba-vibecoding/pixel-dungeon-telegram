@@ -53,7 +53,7 @@ import { tbOf } from './talents/state';
 import { consumeLethalMomentum } from './talents/turns';
 import { improvisedProjectile } from './talents/combat';
 import { directChargeCloak } from './artifacts/cloak';
-import { initSubclassTalents, talentBook } from './talents/data';
+import { hasTalent, initSubclassTalents, talentBook } from './talents/data';
 import { CAN_THROW, drinkPotion, drinkProblem, MUST_THROW, shatterPotion } from './potions';
 import { readProblem, readScroll, scrollUseProblem } from './reading';
 import { activateStone, INVENTORY_STONES, stoneProblem, useStone } from './stones';
@@ -204,7 +204,8 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
   if (action.type === 'imbue') return isItemRef(action.staff) ? imbueProblem(hero, action.staff, action.wand) : 'that is no staff';
   if (action.type === 'zap') {
     if (!isItemRef(action.item)) return 'no such item';
-    if (!Number.isInteger(action.target) || action.target < 0 || action.target >= LENGTH || action.target === hero.pos) return 'bad target';
+    // (Shield battery lets the mage zap a wand at themselves.)
+    if (!Number.isInteger(action.target) || action.target < 0 || action.target >= LENGTH || (action.target === hero.pos && !hasTalent(hero, 'shield_battery'))) return 'bad target';
     // Wand.actions: no zapping a wand known to be empty; one of unknown charges may be tried, and fizzle.
     return zapProblem(hero, action.item);
   }
@@ -1202,9 +1203,9 @@ function use(ctx: Ctx, hero: Hero, action: Extract<InventoryAction, { type: 'use
     takeOne();
     ctx.effects.push({ type: 'used', hero: hero.id, kind, identified: learn(world, kind) });
     // Scroll.readAnimation: Talent.onScrollUsed.
-    const scrollTalent = talentUse(kind);
-    if (ctx.rng.float() < scrollTalent.chance) onScrollUsed(ctx, hero, scrollTalent.factor);
     readScroll(ctx, hero, kind, target, { cell: action.cell, choice: action.choice });
+    const scrollTalent = talentUse(kind);
+    if (isAlive(hero) && ctx.rng.float() < scrollTalent.chance) onScrollUsed(ctx, hero, scrollTalent.factor);
     return TIME_TO_USE;
   }
   // A potion, a brew or an elixir, drunk (Potion.drink).

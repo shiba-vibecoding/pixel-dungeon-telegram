@@ -15,6 +15,9 @@ import { BUFF_ICONS, type BuffName } from './hud';
 import { capitalize, fill, fmt, locale, t } from './i18n';
 import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
 import { mart } from './mart';
+import { showHeroWindow } from './talentui';
+import { showMetamorphosis, showSubclassPick } from './talentui';
+import { subclassName, tal } from './talenttext';
 import { rankIcon, trophyKind } from './trophyicons';
 import { countChallenges } from './meta';
 import type { RunRecord } from './rankings';
@@ -664,6 +667,11 @@ export function showBadges(onClose: () => void): void {
 
 export interface HeroOptions {
   hero: Hero;
+  world: World;
+  /** The hero's actions (a talent point spent). */
+  act(action: Action): void;
+  /** The tab to open on (the talents', after a level gained). */
+  tab?: 'stats' | 'talents';
   /** Pixel-Mart's «Look» rows, if the shop is there. */
   looks?: HTMLElement;
   /** The look the hero wears, for their portrait. */
@@ -689,13 +697,9 @@ export function showHero(options: HeroOptions): void {
     const text = buff.turns ? `${t.buffs[buff.name]} (${t.turnsLeft(buff.turns)})` : t.buffs[buff.name];
     return el('div', { className: 'pd-row' }, el('span', { className: 'pd-buff' }, icon), info(text));
   });
-  show(
-    windowOf(
-      {
-        title: t.heroTitle(hero.subclass ? capitalize(t.subclasses[hero.subclass]) : t.classes[hero.heroClass], hero.lvl),
-        icon: portrait(hero.heroClass, armorTier(hero), options.skin),
-        onClose: options.onClose,
-      },
+  showHeroWindow(
+    { world: options.world, hero, act: options.act, onClose: options.onClose },
+    [
       stats([
         [t.strength, String(hero.str)],
         // WndHero: health, and the shield over it (the warrior's seal).
@@ -708,8 +712,11 @@ export function showHero(options: HeroOptions): void {
       ...(buffs.length > 0 ? buffs : [info(t.noConditions, 'pd-note')]),
       options.looks && el('h3', { className: 'pd-subhead', textContent: t.looksTitle }),
       options.looks,
-    ),
-    options.onClose,
+    ].filter((node): node is HTMLElement => !!node),
+    t.heroTitle(hero.subclass ? capitalize(subclassName(hero.subclass)) : t.classes[hero.heroClass], hero.lvl),
+    '',
+    portrait(hero.heroClass, armorTier(hero), options.skin),
+    options.tab ?? 'stats',
   );
 }
 
@@ -1742,7 +1749,13 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     }
     if (category === 'food' || item.kind === 'quest.fish') use(t.eat, () => act({ type: 'use', item: index }));
     if (category === 'torch') use(t.light, () => act({ type: 'use', item: index }));
-    if (category === 'tome') use(t.readTome, () => showWays(options, index, act));
+    if (category === 'tome') {
+      // TengusMask.AC_WEAR: the choice of a way (talentui.ts); the old Tome of Mastery too.
+      use(item.kind === 'mask.tengu' ? capitalize(tal('items.tengusmask.ac_wear').toLowerCase()) || t.readTome : t.readTome, () => {
+        openBag = null;
+        showSubclassPick({ world, hero, act: (action) => options.onAction(action), onClose: options.onClose }, index, () => showBackpack(options));
+      });
+    }
     if (item.kind === 'weapon.pickaxe') use(t.mine, () => act({ type: 'mine' }));
     if (item.kind === 'quest.amulet') {
       use(t.amuletEndGame, () => {
@@ -1770,6 +1783,12 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         }));
       } else if (known && item.kind === 'scroll.sirensSong') {
         use(t.read, () => aimWith('cast', index));
+      } else if (known && item.kind === 'scroll.metamorphosis') {
+        // ScrollOfMetamorphosis: a talent to change, then one of those offered for it (talentui.ts).
+        use(t.read, () => {
+          openBag = null;
+          showMetamorphosis({ world, hero, act: (action) => options.onAction(action), onClose: options.onClose }, index, back);
+        });
       } else {
         use(t.read, () => act({ type: 'use', item: index }));
       }
@@ -2127,32 +2146,6 @@ function artifactHost(options: ItemOptions, ref: ItemRef): ArtifactHost {
     pick: (title, targets, onPick, onCancel) => showBackpack({ ...options, pick: { title, targets, onPick, onCancel: onCancel ?? back } }),
     back,
   };
-}
-
-/** TomeOfMastery: the two ways of the hero's class, as equal cards; the choice can wait. */
-function showWays(options: ItemOptions, index: number, act: (action: Action) => void): void {
-  const { hero } = options;
-  const back = (): void => showBackpack(options);
-  const book = el('div', { className: 'pd-slot' }, itemIcon(options.world, hero.items[index]!));
-  show(
-    windowOf(
-      { title: t.chooseWay, icon: book },
-      el(
-        'div',
-        { className: 'pd-choices' },
-        ...SUBCLASSES[hero.heroClass].map((way) =>
-          el(
-            'div',
-            { className: 'pd-choice' },
-            el('span', { className: 'pd-choice-name', textContent: capitalize(t.subclasses[way]) }),
-            el('p', { className: 'pd-choice-desc', textContent: t.subclassInfo[way] }),
-            button(t.choose, () => act({ type: 'master', item: index, subclass: way }), 'small'),
-          )),
-      ),
-      button(t.later, back, 'quiet'),
-    ),
-    back,
-  );
 }
 
 /* Toast */

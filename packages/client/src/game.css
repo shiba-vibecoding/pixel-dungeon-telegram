@@ -239,3 +239,25 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* The artifacts' buff icons tinted as Shattered tints them: the cloak's stealth dimmed (cloakStealth.tintIcon), the time freeze orange (timeFreeze.tintIcon). */
 .pd-buff i[data-buff="stealth"] { filter: brightness(0.6); }
 .pd-buff i[data-buff="timeFreeze"] { filter: sepia(1) saturate(4) hue-rotate(-15deg); }
+
+/* ---------- Talents: the action indicator (ActionIndicator) ---------- */
+.pd-actionind {
+  position: absolute; right: calc(var(--safe-r, 0px) + 8px); top: calc(var(--safe-t, 0px) + 156px); z-index: var(--z-hud, 10);
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+}
+.pd-actionind[hidden] { display: none; }
+.pd-actionbtn {
+  position: relative; width: 48px; height: 48px; display: grid; place-items: center; padding: 0; background: var(--stone-800);
+  clip-path: var(--notch); box-shadow: inset 0 0 0 2px var(--gold-deep), inset 0 0 0 4px var(--void); cursor: pointer;
+}
+.pd-actionbtn .pd-hicon { --u: 2px; }
+.pd-actionbtn b {
+  position: absolute; right: 3px; bottom: 1px; font: var(--text-caption, 400 15px/16px var(--font-small)); color: var(--good, #8f8);
+  text-shadow: 1px 1px 0 var(--void);
+}
+.pd-actionbtn:active { background: var(--stone-900); }
+.pd-actionbtn.berserk { box-shadow: inset 0 0 0 2px #c02020, inset 0 0 0 4px var(--void); }
+@media (prefers-reduced-motion: no-preference) {
+  .pd-actionbtn { animation: pd-blink 1.6s steps(1) infinite; }
+}
+.pd-choice.dim { opacity: .55; }

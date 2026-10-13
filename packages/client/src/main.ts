@@ -73,6 +73,9 @@ import {
 } from './telegram';
 import { startReporting } from './report';
 import { alchemyOpen, refreshAlchemy, showAlchemy } from './alchemyui';
+import { ActionIndicator, type ActionKind } from './actionind';
+import { hasFreePoints, refreshHeroWindow, showComboWindow } from './talentui';
+import { tal as talentLine, talentReason } from './talenttext';
 import { STEP_MS, TILE, View } from './view';
 
 /*
@@ -746,7 +749,13 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
   (world.floors[depth]?.heaps ?? []).some((heap) => heap.pos === pos && heap.kind !== 'hidden');
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
-let aim: { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' } | { index: -1; kind: 'artifact'; action: ArtifactAction } | null = null;
+let aim:
+  | { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' }
+  | { index: -1; kind: 'artifact'; action: ArtifactAction }
+  /** A subclass's action that wants a target: a combo move, the assassin's prepared strike. */
+  | { index: -1; kind: 'ability'; ability: 'combo'; move: core.ComboMove }
+  | { index: -1; kind: 'ability'; ability: 'ambush' }
+  | null = null;
 
 /** What artifacts ask of the game outside the backpack (a quick slot's default action, the spellbook's window). */
 function artifactHost(world: World, me: Hero): ArtifactHost {
@@ -1218,6 +1227,12 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
     if (effect.type === 'imp' && effect.hero === myId) talkWithImp(effect.line);
     if (effect.type === 'smith' && effect.hero === myId) talkWithSmith(effect.line);
     if (effect.type === 'shop' && effect.hero === myId) openShop();
+    // Hero.earnExp: a level with a talent point to spend (+1 Talent Point!); the hero window opens on the talents next.
+    if (effect.type === 'mastered' && effect.hero === myId && me && hasFreePoints(me)) newTalents = true;
+    if (effect.type === 'levelUp' && effect.hero === myId && me && hasFreePoints(me)) {
+      newTalents = true;
+      view.say(talentLine('actors.hero.hero.new_talent'), '#44ff44');
+    }
     // The unstable spellbook's scroll to settle: its window (and again, if some other action was refused meanwhile).
     const pendingWorld = session?.world;
     const pendingHero = pendingWorld && heroById(pendingWorld, myId);
@@ -1407,13 +1422,23 @@ function tapCell(cell: number, quiet = false): void {
     const shot = aim;
     aim = null;
     if (shot.kind === 'artifact') send({ ...shot.action, cell }, performance.now());
+    else if (shot.kind === 'ability') {
+      // The subclasses' actions on a target: the monster on the cell.
+      const target = world.floors[me.depth]?.mobs.find((m) => m.pos === cell && visible[cell]);
+      const action: Action = shot.ability === 'combo'
+        ? { type: 'ability', ability: 'combo', move: shot.move, ...(target ? { target: target.id } : {}) }
+        : { type: 'ability', ability: 'ambush', target: target?.id ?? '' };
+      const problem = core.actionProblem(world, me, action);
+      if (problem) toast(talentReason(problem) || t.reasons[problem] || problem);
+      else send(action, performance.now());
+    }
     else if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
     // A spell cast, dragon's breath breathed, a siren's song sung at the cell.
     else if (shot.kind === 'cast') {
       if (cell !== me.pos && me.items[shot.index]) send({ type: 'use', item: shot.index, cell }, performance.now());
     }
-    else if (cell !== me.pos && shot.index === WEAPON_SLOT && shot.kind === 'zap' && me.weapon) send({ type: 'zap', item: 'weapon', target: cell }, performance.now());
-    else if (cell !== me.pos && me.items[shot.index]) send({ type: shot.kind, item: shot.index, target: cell }, performance.now());
+    else if ((cell !== me.pos || core.hasTalent(me, 'shield_battery')) && shot.index === WEAPON_SLOT && shot.kind === 'zap' && me.weapon) send({ type: 'zap', item: 'weapon', target: cell }, performance.now());
+    else if ((cell !== me.pos || (shot.kind === 'zap' && core.hasTalent(me, 'shield_battery'))) && me.items[shot.index]) send({ type: shot.kind, item: shot.index, target: cell }, performance.now());
     return;
   }
 
@@ -1537,6 +1562,35 @@ function showBuff(name: BuffName, turns?: number): void {
   toast(turns ? `${t.buffs[name]} (${t.turnsLeft(turns)})` : t.buffs[name]);
 }
 
+/** A level gained with a point to spend: the hero window opens on the talents (WndHero.lastIdx). */
+let newTalents = false;
+
+/** The action indicator's buttons (actionind.ts). */
+const actionInd = new ActionIndicator({
+  use: (kind) => useAction(kind),
+});
+
+function useAction(kind: ActionKind): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me || !isAlive(me)) return;
+  walk.reset();
+  const host = { world, hero: me, act: (action: Action) => send(action, performance.now()), onClose: hideOverlay };
+  switch (kind) {
+    case 'berserk': send({ type: 'ability', ability: 'berserk' }, performance.now()); break;
+    case 'freerun': send({ type: 'ability', ability: 'freerun' }, performance.now()); break;
+    case 'snipe': send({ type: 'ability', ability: 'snipe' }, performance.now()); break;
+    case 'combo':
+      showComboWindow(host, (move) => {
+        // Parry needs no target; the rest ask for one (Combo.useMove).
+        if (move === 'parry') send({ type: 'ability', ability: 'combo', move }, performance.now());
+        else aim = { index: -1, kind: 'ability', ability: 'combo', move };
+      });
+      break;
+    case 'ambush': aim = { index: -1, kind: 'ability', ability: 'ambush' }; break;
+  }
+}
+
 function openHero(): void {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
@@ -1544,9 +1598,11 @@ function openHero(): void {
   walk.reset();
   aim = null;
   showHero({
-    hero: me, buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
+    hero: me, world, act: (action) => send(action, performance.now()), tab: newTalents ? 'talents' : 'stats',
+    buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
     looks: looksRows(me.heroClass, (shelf) => showMart({ heroClass: me.heroClass, shelf, onClose: openHero })),
   });
+  newTalents = false;
 }
 
 /** What the backpack (and the windows it opens) are given. */
@@ -2486,6 +2542,8 @@ function tick(now: number): void {
     // The backpack, if open, shows the pack as it is now (an item put on, dropped, picked up).
     const mine = session.myId;
     if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
+    // The hero window, if open, shows the talents as they are now (a point spent, a level gained, a way chosen).
+    if (effects.some((e) => ('hero' in e && e.hero === mine) && (e.type === 'talent' || e.type === 'levelUp' || e.type === 'mastered' || e.type === 'metamorphed'))) refreshHeroWindow(world, me);
     // The pot's window, if open, shows the pack and the energy as they are now.
     if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
     for (const effect of effects) effectFx(effect, view, world, session.myId, vnow);
@@ -2743,6 +2801,7 @@ function tick(now: number): void {
     : waitingFor.length > 0 ? { kind: 'waiting', text: t.waitingShort, names: waitingFor }
     : holdingFelt ? { kind: 'waiting', text: t.partyWaitsForYou }
     : null;
+  actionInd.update(world, me);
   hud.update(
     {
       me,

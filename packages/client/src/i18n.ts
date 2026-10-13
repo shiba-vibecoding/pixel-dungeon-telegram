@@ -1,6 +1,7 @@
 import type { EmoteKind, Enchantment, Glyph, HeroClass, ItemKind, Landmark, MobKind, PlantKind, SubClass, TrapKind } from '@pd/core';
 import type { BuffName } from './hud';
 import { ART_EN, ART_RU } from './i18n-artifacts';
+import { TAL_EN, TAL_RU } from './i18n-talents';
 
 /* Interface text in Russian and English; the language follows Telegram or the browser. */
 
@@ -967,6 +968,17 @@ const ALCH_RU: typeof ALCH_EN = {
 };
 /* (end of the generated alchemy strings) */
 
+/** The names of the talents' and subclasses' buffs, from Shattered's own texts (i18n-talents.ts). */
+const talentBuffNames = (table: Record<string, string>) => ({
+  berserk: table['actors.buffs.berserk.angered']!, berserking: table['actors.buffs.berserk.berserk']!, exhausted: table['actors.buffs.berserk.recovering']!,
+  comboChain: table['actors.buffs.combo.name']!, momentum: table['actors.buffs.momentum.momentum']!, freerunning: table['actors.buffs.momentum.running']!,
+  preparation: table['actors.buffs.preparation.name']!, sniperMark: table['actors.buffs.snipersmark.name']!, holdFast: table['actors.buffs.holdfast.name']!,
+  trackerBlow: table['actors.hero.talent$provokedangertracker.name']!, cooldown: table['actors.hero.talent$improvisedprojectilecooldown.name']!,
+  wandEmpower: table['actors.buffs.wandempower.name']!, enhancedRings: table['actors.hero.talent.enhanced_rings.title']!,
+  surge: table['actors.hero.talent.strongman.title']!, revealedArea: table['actors.hero.talent.seer_shot.title']!,
+  parry: table['actors.buffs.combo$combomove.parry.name']!, followup: table['actors.hero.talent$followupstriketracker.name']!,
+});
+
 /** The artifacts' names, from Shattered's own texts (i18n-artifacts.ts). */
 const artNames = (table: Record<string, string>) => ({
   cloak: table['cloakofshadows.name']!, horn: table['hornofplenty.name']!, chalice: table['chaliceofblood.name']!,
@@ -1334,6 +1346,9 @@ const en = {
     'ring.tenacity': ART_EN['items.rings.ringoftenacity.name']!,
     'ring.wealth': ART_EN['items.rings.ringofwealth.name']!,
     'tome.mastery': 'Tome of Mastery',
+    'mask.tengu': "Tengu's mask",
+    'food.supply': "supply ration",
+    'food.berry': "dungeon berry",
     'seed.firebloom': 'seed of Firebloom',
     'seed.icecap': 'seed of Icecap',
     'seed.sorrowmoss': 'seed of Sorrowmoss',
@@ -1592,6 +1607,9 @@ const en = {
     'ring.tenacity': ART_EN['items.rings.ringoftenacity.desc']!,
     'ring.wealth': ART_EN['items.rings.ringofwealth.desc']!,
     'tome.mastery': 'This worn leather book is not that thick, but you feel somehow that you can gather a lot from it. Reading it takes a while: choose one of the two ways of your class.',
+    'mask.tengu': "This mask fell off Tengu's face as he died, you can feel great magical power emanating from it. Was the mask Tengu's source of strength?\n\nWhen worn, the tremendous power of the mask will be transferred into you, enabling you to choose a subclass for your hero.\n\nWhich subclass will you choose?",
+    'food.supply': "This ration was left in the dungeon by and for members of the thieves guild. It's specifically designed to be eaten on the go, and aid with general skullduggery.\n\nWhile it doesn't fill you up as much as a regular ration, it can be eaten quickly, provides a little direct healing, and will restore a charge to the Rogue's cloak of shadows.",
+    'food.berry': "This small berry was found by the Huntress among the dungeon's vegetation. It can be eaten quickly, restores a small amount of satiety, and might contain a usable seed!",
     'seed.firebloom': 'Throw it where you want a Firebloom to grow: whoever touches it bursts into flames.',
     'seed.icecap': 'Throw it where you want an Icecap to grow: touched, it freezes everyone around.',
     'seed.sorrowmoss': 'Throw it where you want a Sorrowmoss to grow: whoever touches it is poisoned.',
@@ -2198,6 +2216,8 @@ const en = {
     // Alchemy's buffs (their Shattered names).
     haste: ALCH_EN.buff_haste, stamina: ALCH_EN.buff_stamina, magicalSight: ALCH_EN.buff_magicalSight, magicImmune: ALCH_EN.buff_magicImmune, foresight: ALCH_EN.buff_foresight, fireImbue: ALCH_EN.buff_fireImbue, frostImbue: ALCH_EN.buff_frostImbue, toxicImbue: ALCH_EN.buff_toxicImbue, featherFall: ALCH_EN.buff_featherFall, cleanse: ALCH_EN.buff_cleanse, drowsy: ALCH_EN.buff_drowsy, magicalSleep: ALCH_EN.buff_magicalSleep, potionHealing: ALCH_EN.buff_healing, arcaneArmor: ALCH_EN.buff_arcaneArmor, aquaHealing: ALCH_EN.buff_aquaHealing, htBoost: ALCH_EN.buff_htBoost, wellFed: ALCH_EN.buff_wellFed, prismaticGuard: ALCH_EN.buff_prismaticGuard, challengeArena: ALCH_EN.buff_challenge,
     stealth: 'Cloaked', timeFreeze: 'Time Freeze', thorns: 'Thorns',
+    // The talents' and subclasses' buffs (their Shattered names, talenttext.ts).
+    ...talentBuffNames(TAL_EN),
   } as Record<BuffName, string>,
   causes: {
     poison: 'poison', burning: 'fire', ooze: 'caustic ooze', lightning: 'lightning', gripping: 'a gripping trap', hunger: 'starvation',
@@ -2960,6 +2980,9 @@ const ru: Strings = {
     'ring.tenacity': ART_RU['items.rings.ringoftenacity.name']!,
     'ring.wealth': ART_RU['items.rings.ringofwealth.name']!,
     'tome.mastery': 'Книга Мастерства',
+    'mask.tengu': "маска Тенгу",
+    'food.supply': "паёк",
+    'food.berry': "подземельная ягода",
     'seed.firebloom': 'семя огнецвета',
     'seed.icecap': 'семя ледянки',
     'seed.sorrowmoss': 'семя скорбного мха',
@@ -3218,6 +3241,9 @@ const ru: Strings = {
     'ring.tenacity': ART_RU['items.rings.ringoftenacity.desc']!,
     'ring.wealth': ART_RU['items.rings.ringofwealth.desc']!,
     'tome.mastery': 'Эта потёртая кожаная книга не так уж толста, но вы чувствуете, что можете многое из неё почерпнуть. Чтение займёт время: выберите один из двух путей своего класса.',
+    'mask.tengu': "Эта маска упала с лица Тенгу после его смерти, и вы чувствуете огромную магическую силу, исходящую от неё. Была ли маска источником силы Тенгу?\n\nПри ношении маска передаст вам свою огромную силу, что позволит вам выбрать подкласс своего героя.\n\nКакой подкласс вы выберете?",
+    'food.supply': "Этот паёк был оставлен в подземелье членами гильдии воров для её же участников. Он был специально разработан для перекуса на ходу и для помощи в тёмных делах.\n\nХотя он и не насытит вас так же, как и обычный рацион, паёк может быть съеден моментально. Он восстановит немного здоровья и один заряд Плаща Теней Разбойника.",
+    'food.berry': "Это небольшая ягода, найденная охотницей среди растительности. Ее можно очень быстро съесть, она восполняет небольшое количество сытости, а также может содержать полезное семя!",
     'seed.firebloom': 'Бросьте туда, где должен вырасти огнецвет: тот, кто его коснётся, вспыхнет.',
     'seed.icecap': 'Бросьте туда, где должна вырасти ледянка: от прикосновения она замораживает всех вокруг.',
     'seed.sorrowmoss': 'Бросьте туда, где должен вырасти скорбный мох: тот, кто его коснётся, отравится.',
@@ -3815,6 +3841,8 @@ const ru: Strings = {
     haste: ALCH_RU.buff_haste, stamina: ALCH_RU.buff_stamina, magicalSight: ALCH_RU.buff_magicalSight, magicImmune: ALCH_RU.buff_magicImmune, foresight: ALCH_RU.buff_foresight, fireImbue: ALCH_RU.buff_fireImbue, frostImbue: ALCH_RU.buff_frostImbue, toxicImbue: ALCH_RU.buff_toxicImbue, featherFall: ALCH_RU.buff_featherFall, cleanse: ALCH_RU.buff_cleanse, drowsy: ALCH_RU.buff_drowsy, magicalSleep: ALCH_RU.buff_magicalSleep, potionHealing: ALCH_RU.buff_healing, arcaneArmor: ALCH_RU.buff_arcaneArmor, aquaHealing: ALCH_RU.buff_aquaHealing, htBoost: ALCH_RU.buff_htBoost, wellFed: ALCH_RU.buff_wellFed, prismaticGuard: ALCH_RU.buff_prismaticGuard, challengeArena: ALCH_RU.buff_challenge,
     stealth: ART_RU['cloakofshadows$cloakstealth.name']!, timeFreeze: ART_RU['timekeepershourglass$timefreeze.name']!,
     thorns: ART_RU['capeofthorns$thorns.name']!,
+    // The talents' and subclasses' buffs (their Shattered names, talenttext.ts).
+    ...talentBuffNames(TAL_RU),
   },
   causes: {
     poison: 'яд', burning: 'огонь', ooze: 'едкая слизь', lightning: 'молния', gripping: 'капкан', hunger: 'голод',

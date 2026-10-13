@@ -88,7 +88,7 @@ export { friendly } from './allies';
 export { type Property, propertiesOf } from './props';
 // Shattered's talents and subclasses (talents/).
 export {
-  bonusTalentPoints, CLASS_OF_TALENT, CLASS_TALENTS, hasTalent, pointsInTalent, SUBCLASS_TALENTS, TALENT_TIERS, TALENTS, talentBook,
+  bonusTalentPoints, CLASS_OF_TALENT, initSubclassTalents, CLASS_TALENTS, hasTalent, pointsInTalent, SUBCLASS_TALENTS, TALENT_TIERS, TALENTS, talentBook,
   type TalentBook, type TalentDef, type TalentId, talentPointsAvailable, talentPointsFree, talentPointsSpent, talentsOfTier, tierOfTalent,
   tierPoints, TIER_LEVELS, upgradeProblem,
 } from './talents/data';

@@ -1,3 +1,4 @@
+import { drawSpell } from './spellfx';
 import { HEIGHT, type Level, LENGTH, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
 import { FALL_MS, type Puppet, TILE, type View } from './view';
@@ -622,6 +623,16 @@ export function render(
     const sx = (x + TILE / 2 - camera.x) * camera.zoom;
     const top = (y + TILE - puppet.sprite.sheet.h - camera.y) * camera.zoom;
     nameplate(ctx, puppet.label, sx, top, px, { patron: puppet.look?.patron });
+  }
+  ctx.globalAlpha = 1;
+
+  // SpellSprites over characters (spellfx.ts): food, charge, rage, haste.
+  for (const spell of view.spells) {
+    const puppet = view.puppets.get(spell.hero);
+    if (!puppet) continue;
+    const at = view.position(puppet, now);
+    const top = at.y + TILE - puppet.sprite.sheet.h;
+    drawSpell(ctx, spell, (at.x + TILE / 2 - camera.x) * camera.zoom, (top - camera.y) * camera.zoom, camera.zoom, now);
   }
   ctx.globalAlpha = 1;
 

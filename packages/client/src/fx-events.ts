@@ -757,6 +757,39 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
       if (effect.kind === 'scroll.rage' || effect.kind === 'scroll.challenge') fx.flash('255, 0, 0', 0.25, 400, now);
       return;
     }
+    case 'charged':
+      // ScrollOfRecharging.charge: EnergyParticle, fifteen of them around the hero.
+      burst(centreOf(view, effect.hero, now), now, { count: 15, colors: ['#ffffff', '#80e0ff', '#40b0ff'], glow: true, speed: [20, 50], life: [300, 600], drag: 0.5, size: [1, 1] });
+      return;
+    case 'berserk':
+      // Berserk.startBerserking: the screen flashes red and a red glow bursts from the hero.
+      fx.flash('255, 0, 0', 0.4, 500, now);
+      burst(centreOf(view, effect.hero, now), now, { count: 24, colors: ['#ff3030', '#ff8040', '#a00000'], glow: true, speed: [30, 90], life: [300, 700], drag: 0.4, size: [1, 2] });
+      return;
+    case 'talent':
+      // A point put in a talent: a golden sparkle (TalentButton.upgradeTalent has no more than the sound).
+      burst(centreOf(view, effect.hero, now), now, { count: 12, colors: GOLD, glow: true, speed: [10, 40], life: [400, 800], rise: 14, size: [1, 1] });
+      return;
+    case 'freerun':
+      // Momentum.doAction: Speck.JET, a few more with every stack.
+      burst(centreOf(view, effect.hero, now), now, { count: 5 + effect.stacks, colors: ['#ffffa0', '#ffffff', '#ffe040'], glow: true, speed: [40, 100], life: [200, 450], drag: 0.6, size: [1, 2] });
+      return;
+    case 'metamorphed':
+      // Speck.CHANGE over the hero.
+      burst(centreOf(view, effect.hero, now), now, { count: 10, colors: ['#ffffff', '#c0a0ff', '#80c0ff'], glow: true, speed: [10, 50], life: [400, 900], rise: 10, size: [1, 1] });
+      return;
+    case 'comboMove':
+      if (effect.move === 'parry') burst(centreOf(view, effect.hero, now), now, { count: 8, colors: SPARK, glow: true, speed: [30, 80], life: [150, 350], size: [1, 1] });
+      return;
+    case 'assassinated': {
+      if (!here(effect.depth)) return;
+      const puppet = view.puppets.get(effect.mob);
+      if (puppet) {
+        const at = view.position(puppet, now);
+        burst({ x: at.x + TILE / 2, y: at.y + TILE / 2 }, now, { count: 14, colors: BLOOD, speed: [30, 90], life: [250, 500], gravity: 200, size: [1, 2] });
+      }
+      return;
+    }
     case 'healing':
       // Healing.act: Speck.HEALING rising off the healed for a while.
       burst(centreOf(view, effect.hero, now), now, { count: 12, colors: HEAL, glow: true, speed: [3, 10], life: [700, 1200], rise: 20, drag: 0.4, size: [1, 2], spread: 5 });

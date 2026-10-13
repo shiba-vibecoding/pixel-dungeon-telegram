@@ -521,6 +521,9 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
   }
 }
 
+/** Why an action cannot be done now (the client asks before it sends a targeted one). */
+export const actionProblem = (world: World, hero: Hero, action: Action): string | null => problemWith(world, hero, action);
+
 /** Hero.canAttack with reach: a way within so many steps over open ground (or what is to be avoided), whoever stands there. */
 function reaches(level: Level, from: number, to: number, reach: number): boolean {
   if (distance(from, to) > reach) return false;
