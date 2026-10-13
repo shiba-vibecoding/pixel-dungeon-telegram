@@ -6,7 +6,7 @@ import {
 import { artText, capital } from './artifacttext';
 import { audio, type Sound } from './audio';
 import { between, hitSound, openSound, readSounds, TRAP_SOUNDS, weaponHit, woundSound } from './sfx';
-import { capitalize, t } from './i18n';
+import { capitalize, fill, t } from './i18n';
 import { itemName, magicColor, plainName } from './itemtext';
 import { type Flight, flightOf } from './gearfx';
 import { type AnimName, type Assets, type CharSprite, duration, heroSprite } from './sprites';
@@ -38,6 +38,8 @@ const BOLT_COLORS: Record<string, string> = {
   // Shattered's wands (MagicMissile and Beam kinds).
   frost: '136, 204, 255', corrosion: '255, 136, 0', force: '102, 68, 34', earth: '128, 85, 0', ward: '136, 34, 255', corruption: '40, 0, 40',
   rainbow: '255, 120, 220', foliage: '68, 170, 68', death: '120, 0, 160', light: '255, 255, 210', blood: '204, 0, 0',
+  // Alchemy's spells: wild energy's chaotic bolt, a telekinetic grab.
+  wild: '210, 130, 255', grab: '240, 240, 255',
   // LloydsBeacon's zap (MagicMissile.BEACON).
   beacon: '255, 255, 255',
 };
@@ -53,6 +55,34 @@ const CURSED_SOUNDS: Partial<Record<string, Sound[]>> = {
   randomGas: ['gas'], selfOoze: ['shatter'], healthTransfer: ['cursed'], alarm: ['challenge', 'alert'], sheepPolymorph: ['puff', 'sheep'],
   summonSheep: ['puff', 'sheep'], fireBall: ['blast', 'burning'], massInvuln: ['teleport'], petrify: ['teleport'], forestFire: ['teleport'],
   spawnGoldenMimic: ['mimic'], gravityChaos: ['teleport'], randomTeleport: ['teleport'], interFloorTeleport: ['teleport'],
+};
+
+/** The energy counter's colour (FloatingText.ENERGY, 0x44CCFF). */
+const ENERGY_COLOR = '#44ccff';
+
+/** What a potion's splash sounds like beyond the shatter (Potion.shatter overrides: GAS, BURNING, LIGHTNING). */
+const SPLASH_SOUNDS: Partial<Record<ItemKind, Sound>> = {
+  'potion.toxicGas': 'gas', 'potion.paralyticGas': 'gas', 'potion.corrosiveGas': 'gas', 'potion.shroudingFog': 'gas', 'potion.stormClouds': 'gas',
+  'potion.levitation': 'gas', 'potion.liquidFlame': 'burning', 'brew.infernal': 'gas', 'brew.blizzard': 'gas', 'brew.shocking': 'lightning',
+};
+
+/** Each runestone's sound where it lands (StoneOfX.activate). */
+const STONE_SOUNDS: Partial<Record<ItemKind, readonly Sound[]>> = {
+  'stone.blast': [], 'stone.blink': ['teleport'], 'stone.clairvoyance': ['secret', 'teleport'], 'stone.deepSleep': ['lullaby'],
+  'stone.flock': ['puff', 'sheep'], 'stone.shock': [], 'stone.aggression': ['read'], 'stone.fear': ['read'],
+};
+
+/** What each potion drunk and scroll read sounds like beyond DRINK and READ (Assets.Sounds in each class). */
+const USE_SOUNDS: Partial<Record<ItemKind, Sound>> = {
+  'potion.invisibility': 'meld', 'potion.divineInspiration': 'levelup', 'potion.dragonsBreath': 'burning',
+  'scroll.lullaby': 'lullaby', 'scroll.rage': 'challenge', 'scroll.retribution': 'blast', 'scroll.recharging': 'chargeup',
+  'scroll.mapping': 'secret', 'scroll.teleportation': 'teleport', 'scroll.challenge': 'challenge', 'scroll.psionicBlast': 'blast',
+  'scroll.sirensSong': 'lullaby', 'scroll.mysticalEnergy': 'chargeup', 'scroll.passage': 'teleport',
+};
+
+/** What a hero says on drinking (Potion.apply's GLog lines). */
+const DRINK_LINES: Partial<Record<ItemKind, 'haste' | 'invisible' | 'seeMobs' | 'featherLight'>> = {
+  'potion.haste': 'haste', 'potion.invisibility': 'invisible', 'potion.mindVision': 'seeMobs', 'elixir.featherFall': 'featherLight',
 };
 
 /** Tints of the clouds: green poison, yellow paralysis, orange flames. */
@@ -454,7 +484,9 @@ export class View {
     }
     for (const mob of world.floors[this.depth]?.mobs ?? []) {
       // A mirror image looks like its hero, only fainter.
-      const twin = mob.image && world.heroes.find((hero) => hero.id === mob.image!.owner);
+      // A prismatic image too, its hero's ally.
+      const owner = mob.image?.owner ?? (mob.kind === 'prismatic' ? mob.owner : undefined);
+      const twin = owner !== undefined ? world.heroes.find((hero) => hero.id === owner) : undefined;
       if (twin) {
         place(mob.id, 'mirror', this.assets.heroes[twin.heroClass], false, mob.pos, mob.hp, mob.ht, false, false, true);
         this.puppets.get(mob.id)!.sprite = heroSprite(this.assets, twin.heroClass, this.looks[twin.id]?.skin);
@@ -825,9 +857,15 @@ export class View {
           if (effect.hero === myId) this.say(t.equippedItem(itemName(world, effect.item)), COLORS.default, now);
           break;
         case 'used': {
-          // Potion.drink: DRINK; a scroll read: READ, or its own (sfx.ts readSounds).
-          const potion = effect.kind.startsWith('potion.');
-          for (const sound of potion ? (['drink'] as const) : readSounds(effect.kind)) audio.play(sound, 1, 1, this.placeOf(effect.hero, now));
+          const category = itemDef(effect.kind).category;
+          const potion = category === 'potion' || category === 'brew' || category === 'elixir';
+          // Potion.drink: DRINK; a scroll read: READ, or its own (sfx.ts readSounds); and what the item adds (USE_SOUNDS).
+          const sounds = potion ? (['drink'] as const) : readSounds(effect.kind);
+          for (const sound of sounds) audio.play(sound, 1, 1, this.placeOf(effect.hero, now));
+          const extra = USE_SOUNDS[effect.kind];
+          if (extra && !(sounds as readonly Sound[]).includes(extra)) audio.later(160, extra, 1, 1, this.placeOf(effect.hero, now));
+          const line = DRINK_LINES[effect.kind];
+          if (effect.hero === myId && line) this.say(t.alch[line], COLORS.default, now);
           this.busy(effect.hero, now);
           if (effect.identified) this.say(t.itWas(t.items[effect.kind]), COLORS.highlight, now);
           if (effect.hero === myId && effect.kind === 'potion.levitation') this.say(t.floating, COLORS.default, now);
@@ -1424,6 +1462,14 @@ export class View {
           audio.play(effect.mode === 'set' ? 'beacon' : 'teleport');
           if (effect.hero === myId && effect.mode === 'set') this.say(t.beaconDone, COLORS.default, now);
           break;
+        /* Shattered's alchemy: the pot, its items and their effects (sounds as Assets.Sounds, texts as Shattered's). */
+        case 'crafted':
+          // AlchemyScene's own puff plays in its window; a trinket chosen from the catalyst puffs here (TrinketCatalyst).
+          if (effect.hero === myId && effect.item) {
+            if (itemDef(effect.item.kind).category === 'trinket' && effect.cost === 0) audio.play('puff');
+            this.say(capitalize(fill(t.alch.youNowHave, itemName(world, effect.item))), COLORS.positive, now);
+          }
+          break;
         case 'dust':
           if (effect.hero === myId) this.say(t.gear.dust, COLORS.warning, now);
           break;
@@ -1461,10 +1507,126 @@ export class View {
           this.flashes.push({ cell: effect.to, start: now, color: '255, 255, 255', duration: 400 });
           audio.play('teleport');
           break;
-        case 'augmented':
-          audio.play('evoke');
-          if (effect.hero === myId) this.say(t.augmented(itemName(world, effect.item)), COLORS.positive, now);
+        case 'energized':
+          if (effect.hero === myId) {
+            this.say(fill(t.alch.energized, itemName(world, effect.item), effect.energy), COLORS.highlight, now);
+            this.float(effect.hero, `+${effect.energy}`, ENERGY_COLOR, now);
+          }
           break;
+        case 'catalyst':
+          if (effect.hero === myId) this.say(t.alch.catalystRolled, COLORS.highlight, now);
+          break;
+        case 'enthralled':
+          // ScrollOfSirensSong.Enthralled: hearts over the monster, and CHARMS.
+          audio.play('charms', 1, 1, effect.depth === this.depth ? this.placeOf(effect.mob, now) : undefined);
+          if (effect.hero === myId) this.say(fill(t.alch.enthralledLine, capitalize(this.name(world, effect.mob))), COLORS.positive, now);
+          break;
+        case 'summoned':
+          if (effect.depth === this.depth) audio.play('burning', 1.2, 0.8, cellMiddle(effect.pos));
+          break;
+        case 'snuffed':
+          if (effect.hero === myId) this.say(t.alch.snuffFuse, COLORS.default, now);
+          break;
+        case 'noise':
+          // Noisemaker: its ALERT, heard from wherever it lies.
+          if (effect.depth === this.depth) audio.play('alert', 1, 1, cellMiddle(effect.pos));
+          break;
+        case 'frozenPotion':
+          if (effect.hero === myId) {
+            audio.play('shatter');
+            this.say(t.alch.frozenPotion, COLORS.warning, now);
+          }
+          break;
+        case 'arenaGone':
+          if (effect.hero === myId) this.say(t.alch.arenaGone, COLORS.default, now);
+          break;
+        case 'healing':
+          if (effect.hero === myId) this.say(t.alch.heal, COLORS.positive, now);
+          break;
+        case 'splash':
+          // Potion.shatter's sound for what the splash leaves: a gas hisses (GAS), fire roars (BURNING).
+          if (effect.depth === this.depth) {
+            const sound = SPLASH_SOUNDS[effect.kind];
+            if (sound) audio.play(sound, 1, 1, cellMiddle(effect.pos));
+          }
+          break;
+        case 'breath':
+          if (effect.depth === this.depth) {
+            audio.play('burning', 1, 1, cellMiddle(effect.from));
+            for (const cell of effect.cells) this.flashes.push({ cell, start: now, color: '255, 120, 30', duration: 900 });
+          }
+          break;
+        case 'geyser':
+          if (effect.depth === this.depth) audio.play('water', 0.8, 1, cellMiddle(effect.pos));
+          break;
+        case 'unstable':
+          break;
+        case 'masteryPotion':
+          if (effect.hero === myId) {
+            audio.play('mastery');
+            this.say(itemDef(effect.item.kind).category === 'armor' ? t.alch.armorEasier : t.alch.weaponEasier, COLORS.positive, now);
+          }
+          break;
+        case 'inspired':
+          audio.play('levelup');
+          if (effect.hero === myId) this.say(fill(t.alch.inspiredLine, effect.tier), COLORS.positive, now);
+          break;
+        case 'metamorphosis':
+          if (effect.hero === myId) this.say(t.alch.metamorphNoTalents, COLORS.default, now);
+          break;
+        case 'divined':
+          if (effect.hero === myId) {
+            this.say(effect.kinds.length > 0 ? `${t.alch.divinationText} ${effect.kinds.map((kind) => t.items[kind]).join(', ')}` : t.alch.divinationNone, COLORS.highlight, now);
+          }
+          break;
+        case 'curseInfused':
+          audio.play('cursed');
+          break;
+        case 'reclaimed':
+          audio.play('lightning', 1.3, 0.6);
+          break;
+        case 'augmented':
+          if (effect.hero === myId) {
+            audio.play('read');
+            const augment = effect.item.augment;
+            const line = augment === 'speed' ? t.alch.augmentedSpeed : augment === 'damage' ? t.alch.augmentedDamage
+              : augment === 'evasion' ? t.alch.augmentedEvasion : augment === 'defense' ? t.alch.augmentedDefense : null;
+            if (line) this.say(line, COLORS.positive, now);
+          }
+          break;
+        case 'detected':
+          if (effect.hero === myId) {
+            audio.play('read');
+            const line = { none: t.alch.detectedNone, good: t.alch.detectedGood, bad: t.alch.detectedBad, both: t.alch.detectedBoth }[effect.result];
+            this.say(line, effect.result === 'bad' ? COLORS.warning : effect.result === 'none' ? COLORS.default : COLORS.positive, now);
+          }
+          break;
+        case 'guessed':
+          if (effect.hero === myId) {
+            audio.play('read');
+            this.say(effect.right ? t.alch.guessRight : t.alch.guessWrong, effect.right ? COLORS.positive : COLORS.warning, now);
+          }
+          break;
+        case 'stone': {
+          // Each runestone's own sound where it lands (StoneOfX.activate).
+          if (effect.depth !== this.depth) break;
+          const sounds = STONE_SOUNDS[effect.kind] ?? ['read'];
+          for (const sound of sounds) audio.play(sound, 1, 1, cellMiddle(effect.pos));
+          break;
+        }
+        case 'shock':
+          if (effect.depth === this.depth) {
+            audio.play('lightning', 1, 1, cellMiddle(effect.pos));
+            this.flashes.push({ cell: effect.pos, start: now, color: '255, 255, 255', duration: 300 });
+          }
+          break;
+        case 'censer': {
+          // ChaoticCenser: a warning first in Shattered; here its puff of gas, and GAS.
+          if (effect.depth === this.depth) audio.play('gas', 1, 1, cellMiddle(effect.to));
+          const gas = (t.alch as Record<string, string>)[`gas_${effect.gas}`];
+          if (effect.hero === myId && gas) this.say(fill(t.alch.spew, gas), COLORS.warning, now);
+          break;
+        }
         case 'artifact': {
           // GLog's lines of the artifacts' rules, by Shattered's message keys; %s names the item, if there is one.
           if (effect.hero !== myId) break;

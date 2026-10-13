@@ -194,7 +194,8 @@ describe('the wand of disintegration', () => {
     expect(a.hp).toBeLessThan(500);
     expect(b.hp).toBeLessThan(500);
     expect(far.hp).toBe(500);
-    expect(map[hero.pos + 2]).toBe(T.EMPTY);
+    // Level.destroy: what can burn is embers.
+    expect(map[hero.pos + 2]).toBe(T.EMBERS);
   });
 });
 

@@ -575,7 +575,7 @@ const GROW: Pool = [
   [1, (_rng, _wave, hero) => (hero.weapon ? createItem('scroll.enchantment') : null)],
   [2, (_rng, _wave, hero) => (wands(hero) > 0 ? createItem('scroll.recharging') : null)],
   [2, kindOf('potion.experience')],
-  [1, (_rng, wave) => (wave >= 8 ? createItem('potion.might') : null)],
+  [1, (_rng, wave) => (wave >= 8 ? createItem('elixir.might') : null)],
   [1, (_rng, _wave, hero) => (has(hero, 'missile.heavyBoomerang') ? null : createItem('missile.heavyBoomerang', 3))],
 ];
 

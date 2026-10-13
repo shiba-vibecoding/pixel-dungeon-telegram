@@ -29,6 +29,7 @@ import { F, hasFlag, T } from './level/terrain';
 import { mobPress } from './traps';
 import { isBossDepth } from './level/builder';
 import { arenaKill } from './arena';
+import { challengeFactor, chillChar, igniteChar, isMagicImmune, onHurt } from './buffs';
 import { elementsResist, tenacityMultiplier, wealthBonusDrops, wealthDropMultiplier } from './rings';
 import { bossSlainBeacon, capeTakes, dispelInvisibility, ghostDied, ghostSeesHero } from './artifacts';
 
@@ -212,7 +213,11 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     // MagesStaff.proc: a battlemage's staff does what its wand does on a hit, before its enchantment.
     if (!thrown && attacker.weapon?.kind === 'weapon.magesStaff') staffAfter = staffBlow(ctx, attacker, attacker.weapon, defender, damage);
     if (thrown) damage = missileProc(ctx, attacker, defender, damage, override.weapon!);
-    if (damage >= 0 && isAlive(defender)) damage = weaponProc(ctx, attacker, defender, damage, strike, blow);
+    // (No enchantment works while magic will not: MagicImmune.)
+    if (damage >= 0 && isAlive(defender) && !isMagicImmune(attacker)) damage = weaponProc(ctx, attacker, defender, damage, strike, blow);
+    // FireImbue.proc and FrostImbue.proc: half the blows set the foe alight; every one chills it.
+    if (isAlive(defender) && (attacker.buffs?.fireImbue ?? 0) > 0 && ctx.rng.int(2) === 0) igniteChar(ctx, defender);
+    if (isAlive(defender) && (attacker.buffs?.frostImbue ?? 0) > 0) chillChar(defender, 3);
     // Weapon.proc: every blow that lands makes the weapon in hand better known (a thrown one, see throwing.ts).
     if (!thrown && attacker.weapon) familiarise(ctx, attacker, attacker.weapon);
     damage = Math.max(0, damage);
@@ -396,7 +401,9 @@ export type Hazard =
   | 'poison' | 'burning' | 'ooze' | 'lightning' | 'gripping' | 'hunger' | 'bones' | 'gas' | 'fall' | 'deferred' | 'bleeding' | 'dry'
   | 'multiplicity' | 'bomb' | 'chill' | 'magic' | 'holy' | 'chalice' | 'noRose'
   /** Shattered's wands: a wand's own harm to the hero, corrosion, corruption wasting an ally away, a knock against a wall. */
-  | 'wand' | 'corrosion' | 'corruption' | 'knockback';
+  | 'wand' | 'corrosion' | 'corruption' | 'knockback'
+  /** Alchemy's: electricity, an aqua brew's geyser, the psionic blast, the special bombs. */
+  | 'electricity' | 'geyser' | 'psionic' | 'arcaneBomb' | 'flashbang' | 'holy' | 'shrapnel';
 
 export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Hazard): void {
   if (!isAlive(victim)) return;
@@ -426,6 +433,8 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   // Earthroot's bark takes the blows first; then armour of anti-magic soaks magic, and a blocking weapon's shield.
   if (isHero(victim)) damage = earthrootAbsorbs(victim, damage);
   if (isHero(victim)) damage = gearSoaks(ctx, victim, damage, source);
+  // ScrollOfChallenge.ChallengeArena: two thirds of the harm inside it.
+  if (isHero(victim)) damage = Math.round(damage * challengeFactor(victim));
   // Hero.damage: the cape of thorns takes its share of whatever hurts the hero; rings of tenacity ease the rest,
   // the more the hero is hurt (RingOfTenacity.damageMultiplier, rounded up).
   if (isHero(victim) && damage > 0) damage = capeTakes(ctx, victim, damage, typeof source === 'string' ? null : source);
@@ -434,6 +443,7 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   damage = damageTaken(ctx, victim, damage, by);
   // Char.damage: the warrior's seal may raise its shield, and shields take what they can (not hunger's).
   if (isHero(victim)) damage = shieldDamage(ctx, victim, damage, source === 'hunger');
+  onHurt(victim);
   if (!isHero(victim) && victim.kind === 'yog') {
     // Yog.damage: each living fist halves the harm, and they all come to defend it.
     const fists = ctx.floor.mobs.filter(isFist);
@@ -597,7 +607,7 @@ export function lootAndExp(ctx: Ctx, mob: Mob, hero: Hero): void {
  */
 export function lootOf(ctx: Ctx, mob: Mob): { chance: number; make: () => Item | null } {
   const { rng } = ctx;
-  const generator = (): ItemGenerator => new ItemGenerator(rng, ctx.depth, ctx.world.run);
+  const generator = (): ItemGenerator => new ItemGenerator(rng, ctx.depth, { run: ctx.world.run });
   const loot = (chance: number, make: () => Item | null): { chance: number; make: () => Item | null } => ({ chance, make });
   switch (baseKind(mob.kind)) {
     case 'gnoll':

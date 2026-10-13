@@ -5,7 +5,7 @@ import {
   BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
   visibleCells, chargesKnown, staffReach, WIDTH,
-  type World, charAt, swapsWithHero, canReach, heroReach, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8,
+  type World, charAt, swapsWithHero, canReach, heroReach, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
@@ -18,7 +18,14 @@ import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookC
 import { artText, chargeOf } from './artifacttext';
 import { glowOf } from './gearfx';
 import { fx } from './fx';
-import { ambientFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
+import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
+
+/** The clouds' tints (Blob emitters' Speck colours): Pixel Dungeon's two, and Shattered's from alchemy. */
+const GAS_TINTS: Readonly<Record<string, string | readonly string[]>> = {
+  toxic: '80, 200, 60', paralytic: '230, 220, 70', corrosive: '170, 160, 140', smoke: '20, 20, 20', storm: '138, 216, 216',
+  stench: '20, 70, 20', confusion: ['255, 96, 160', '96, 160, 255', '160, 255, 96', '255, 160, 96'], inferno: '238, 119, 34',
+  blizzard: '235, 245, 255', regrowth: '90, 180, 60', freezing: '200, 230, 255', fire: '255, 140, 40',
+};
 /** The visual clock's last reading, for frame-to-frame particle steps. */
 let lastVisual = 0;
 /** When my hero fell, on the visual clock, or 0 while alive. */
@@ -39,7 +46,7 @@ import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
 import { bakeLevel, type Camera, patchLevel, render } from './render';
 import {
   armorTier, closeOverlay, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showReforge, showHelp, showHero,
-  refreshBackpack, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTitle, showTrade, showWaiting, slot, toast, type ShareChoice,
+  refreshBackpack, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTitle, showTrade, showWaiting, slot, toast, type ShareChoice,
 } from './screens';
 import { profileCard, rankingBlock, showBoards, trophyText } from './rankui';
 import { mart } from './mart';
@@ -65,6 +72,7 @@ import {
   homeScreenStatus, addToHomeScreen,
 } from './telegram';
 import { startReporting } from './report';
+import { alchemyOpen, refreshAlchemy, showAlchemy } from './alchemyui';
 import { STEP_MS, TILE, View } from './view';
 
 /*
@@ -738,7 +746,7 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
   (world.floors[depth]?.heaps ?? []).some((heap) => heap.pos === pos && heap.kind !== 'hidden');
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
-let aim: { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' } | { index: -1; kind: 'artifact'; action: ArtifactAction } | null = null;
+let aim: { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' } | { index: -1; kind: 'artifact'; action: ArtifactAction } | null = null;
 
 /** What artifacts ask of the game outside the backpack (a quick slot's default action, the spellbook's window). */
 function artifactHost(world: World, me: Hero): ArtifactHost {
@@ -799,6 +807,8 @@ function toggleQuickslot(slot = 0): void {
   walk.reset();
   const use = quickUse(item.kind);
   if (use === 'use') send({ type: 'use', item: index }, performance.now());
+  // Shattered's potions, scrolls, stones, spells...: whatever the item's first action is (it may want a target or a choice).
+  else if (use === 'item') quickAction(backpackOptions(world!, me), index);
   else if (use && use !== 'artifact') aim = { index, kind: use };
 }
 
@@ -1216,8 +1226,8 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
       walk.reset();
       showSpellbookChoice(artifactHost(pendingWorld, pendingHero), pendingHero.pendingScroll.kind, pendingHero.pendingScroll.exotic, hideOverlay);
     }
-    // Seam (alchemy stream): the toolkit's BREW opens the alchemy window.
-    if (effect.type === 'alchemy' && effect.hero === myId) toast(t.art.noAlchemy);
+    // AlchemistsToolkit.AC_BREW: the alchemy window, wherever the hero is (alchemyui.ts).
+    if (effect.type === 'alchemy' && effect.hero === myId) openAlchemy();
     // Ward.interact: dismiss the ward?
     if (effect.type === 'ward' && effect.hero === myId) {
       walk.reset();
@@ -1398,11 +1408,20 @@ function tapCell(cell: number, quiet = false): void {
     aim = null;
     if (shot.kind === 'artifact') send({ ...shot.action, cell }, performance.now());
     else if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
+    // A spell cast, dragon's breath breathed, a siren's song sung at the cell.
+    else if (shot.kind === 'cast') {
+      if (cell !== me.pos && me.items[shot.index]) send({ type: 'use', item: shot.index, cell }, performance.now());
+    }
     else if (cell !== me.pos && shot.index === WEAPON_SLOT && shot.kind === 'zap' && me.weapon) send({ type: 'zap', item: 'weapon', target: cell }, performance.now());
     else if (cell !== me.pos && me.items[shot.index]) send({ type: shot.kind, item: shot.index, target: cell }, performance.now());
     return;
   }
 
+  // Hero.actAlchemy: the pot, tapped from beside it (or standing in it), opens AlchemyScene.
+  if (level.map[cell] === T.ALCHEMY && atPot(world, me) && (cell === me.pos || adjacent(cell, me.pos))) {
+    openAlchemy();
+    return;
+  }
   if (cell === me.pos) {
     if (heapAt(world, me.depth, me.pos)) takeHere(world, me, performance.now());
     // Hero.handle on the hero's own cell: standing in tall grass or on a plant, it is trampled where the hero stands.
@@ -1527,6 +1546,35 @@ function openHero(): void {
   showHero({
     hero: me, buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
     looks: looksRows(me.heroClass, (shelf) => showMart({ heroClass: me.heroClass, shelf, onClose: openHero })),
+  });
+}
+
+/** What the backpack (and the windows it opens) are given. */
+function backpackOptions(world: World, me: Hero): Parameters<typeof showBackpack>[0] {
+  return {
+    world,
+    hero: me,
+    onAction: (action) => send(action, performance.now()),
+    onAim: (index, kind) => {
+      aim = { index, kind };
+    },
+    onClose: hideOverlay,
+  };
+}
+
+/** The alchemy pot's window (alchemyui.ts), over the map until closed. */
+function openAlchemy(): void {
+  walk.reset();
+  aim = null;
+  audio.play('click');
+  showAlchemy({
+    current: () => {
+      const world = session?.world;
+      const me = world && heroById(world, session!.myId);
+      return world && me && isAlive(me) ? { world, hero: me } : null;
+    },
+    onAction: (action) => send(action, performance.now()),
+    onClose: hideOverlay,
   });
 }
 
@@ -1741,7 +1789,7 @@ addEventListener('pd-save-failed', () => {
 
 const HINT_CATEGORIES: ReadonlySet<string> = new Set([
   'potion', 'scroll', 'weapon', 'armor', 'ring', 'wand', 'food', 'seed', 'missile', 'bomb', 'key', 'gold', 'vial', 'bag',
-  'ankh', 'honeypot', 'torch', 'tome', 'kit', 'beacon', 'weightstone',
+  'ankh', 'honeypot', 'torch', 'tome', 'kit', 'beacon',
 ]);
 const NPCS: ReadonlySet<string> = new Set(['ghost', 'wandmaker', 'blacksmith', 'imp', 'ratKing']);
 const BOSS_DEPTHS: ReadonlySet<number> = new Set([5, 10, 15, 20, 25]);
@@ -2438,6 +2486,8 @@ function tick(now: number): void {
     // The backpack, if open, shows the pack as it is now (an item put on, dropped, picked up).
     const mine = session.myId;
     if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
+    // The pot's window, if open, shows the pack and the energy as they are now.
+    if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
     for (const effect of effects) effectFx(effect, view, world, session.myId, vnow);
     motion.effects(effects, world, me.depth, (e) => itemSprite(e.item, world.run.labels));
     scenery.effects(effects, me.depth, vnow);
@@ -2454,6 +2504,7 @@ function tick(now: number): void {
   fx.update(vnow, dt);
   ambientFx(view, vnow, dt);
   regionFx(level, visible, vnow, dt);
+  blobFx(world.floors[me.depth]?.gas ?? {}, visible, vnow, dt);
 
   const mine = view.puppets.get(me.id);
   const at = mine ? view.position(mine, vnow) : { x: cellX(me.pos) * TILE, y: cellY(me.pos) * TILE };
@@ -2562,17 +2613,16 @@ function tick(now: number): void {
     return false;
   });
   const plants = (world.floors[me.depth]?.plants ?? []).map((p) => ({ pos: p.pos, index: PLANT_KINDS.indexOf(p.kind) }));
-  // Clouds of gas: green toxic, yellow paralytic.
+  // Clouds of gas: green toxic, yellow paralytic, and Shattered's (their Speck's hardlight colour; the
+  // confusion gas's changes from cell to cell, as its specks do).
   const clouds = world.floors[me.depth]?.gas ?? {};
-  const gas = [
-    ...(clouds.toxic ?? []).map(([pos, volume]) => ({ pos, volume, color: '80, 200, 60' })),
-    ...(clouds.paralytic ?? []).map(([pos, volume]) => ({ pos, volume, color: '230, 220, 70' })),
-    // Shattered's: orange corrosive gas, pale confusion gas, green regrowth; fire, thick for the few turns it burns.
-    ...(clouds.corrosive ?? []).map(([pos, volume]) => ({ pos, volume, color: '220, 140, 40' })),
-    ...(clouds.confusion ?? []).map(([pos, volume]) => ({ pos, volume, color: '200, 170, 230' })),
-    ...(clouds.regrowth ?? []).map(([pos, volume]) => ({ pos, volume, color: '90, 200, 90' })),
-    ...(clouds.fire ?? []).map(([pos, volume]) => ({ pos, volume: 30 + volume * 10, color: '255, 110, 20' })),
-  ];
+  const gas = Object.entries(GAS_TINTS).flatMap(([kind, tint]) =>
+    (clouds[kind as keyof typeof clouds] ?? []).map(([pos, volume]) => ({
+      pos,
+      // Fire is thick for the few turns it burns.
+      volume: kind === 'fire' ? 30 + volume * 10 : volume,
+      color: Array.isArray(tint) ? tint[pos % tint.length]! : tint as string,
+    })));
   const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
   const explored = exploredCells(world, me.depth);
   const scene = {

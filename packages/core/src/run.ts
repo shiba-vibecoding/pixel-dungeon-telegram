@@ -1,4 +1,4 @@
-import { type ItemKind, type Labels, rollLabels } from './items';
+import { type Deck, type DeckCategory, type ItemKind, type Labels, rollLabels } from './items';
 import { RoomType, SPECIALS } from './level/room';
 import { deriveSeed, Rng, Stream } from './rng';
 
@@ -16,6 +16,10 @@ export interface RunState {
   labels: Labels;
   /** The troll blacksmith has set up his forge in the caves (absent in older runs). */
   blacksmithSpawned?: boolean;
+  /** Shattered's decks of potions, scrolls, runestones and trinkets, as dealt so far (items.ts drawFromDeck). */
+  kindDecks?: Partial<Record<DeckCategory, Deck>>;
+  /** Dungeon.LimitedDrops: the stone of intuition, the trinket catalyst and the stone of enchantment have been laid out. */
+  drops?: { intStone?: boolean; catalyst?: boolean; enchStone?: boolean; cookingHp?: number };
   /**
    * Generator's decks for weapons and thrown weapons by tier (Generator.Category.probs, as gear.ts deals them),
    * and how many each has dealt (Category.dropped); absent until the first is dealt.

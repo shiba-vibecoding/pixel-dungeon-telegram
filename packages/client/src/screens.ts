@@ -1,15 +1,18 @@
 import {
+  ALCHEMIZE_CHOICES, augmentsFor, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
+  knownIn, MUST_THROW, TARGETED_SPELLS,
   type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass,
-  type Item, itemAt, itemDef, itemPrice, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS, visiblyCursed,
-  type World, CLASS_ARMOR_OF, heroById, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
+  type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
+  visiblyCursed, type World, CLASS_ARMOR_OF, heroById, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
 } from '@pd/core';
 import { artifactActions, artifactCard, type ArtifactHost, chargeStrip, showMiscChooser } from './artifactui';
 import { artText } from './artifacttext';
 import { audio } from './audio';
+import { type ChoiceOption, showChoice } from './alchemyui';
 import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse, WEAPON_SLOT } from './quickslot';
 import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
 import { BUFF_ICONS, type BuffName } from './hud';
-import { capitalize, fmt, locale, t } from './i18n';
+import { capitalize, fill, fmt, locale, t } from './i18n';
 import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
 import { mart } from './mart';
 import { rankIcon, trophyKind } from './trophyicons';
@@ -131,6 +134,12 @@ export function sprites(scope: ParentNode): void {
     const perRow = node.classList.contains('pd-item') ? 16 : 8;
     node.style.setProperty('--ix', String(i % perRow));
     node.style.setProperty('--iy', String(Math.floor(i / perRow)));
+  });
+  // Shattered's items.png in the design system's own markup (.pd-sitem, data-s: 16 a row).
+  scope.querySelectorAll<HTMLElement>('[data-s]').forEach((node) => {
+    const s = Number(node.dataset.s);
+    node.style.setProperty('--ix', String(s % 16));
+    node.style.setProperty('--iy', String(Math.floor(s / 16)));
   });
   scope.querySelectorAll<HTMLElement>('[data-b]').forEach((node) => {
     // From 1000: Shattered's buffs.png, the same 18 a row but more rows (see BUFF_ICONS).
@@ -1175,8 +1184,24 @@ export function showRankings(records: readonly RunRecord[], onClose: () => void,
   );
 }
 
-/** Scrolls read on one thing the player picks. */
-const TARGETED_SCROLLS = ['scroll.upgrade', 'scroll.enchantment', 'scroll.identify'] as const;
+/** Scrolls read on one thing the player picks, and nothing more to choose (so one can be dropped on its target). */
+const TARGETED_SCROLLS = ['scroll.upgrade', 'scroll.identify', 'scroll.removeCurse', 'scroll.transmutation'] as const;
+
+/** The selector's title for what an item is used on (WndBag's prompt). */
+function pickTitleOf(kind: ItemKind): string {
+  switch (kind) {
+    case 'scroll.upgrade': return t.alch.upgradeTitle;
+    case 'scroll.enchantment': return t.alch.enchantTitle;
+    case 'scroll.identify': return t.alch.identifyTitle;
+    case 'scroll.removeCurse': return t.alch.removeCurseTitle;
+    case 'scroll.transmutation': return t.alch.transmuteTitle;
+    case 'stone.augmentation': return t.alch.augmentTitle;
+    case 'stone.enchantment': return t.alch.enchantStoneTitle;
+    case 'stone.detectMagic': return t.alch.detectTitle;
+    case 'stone.intuition': return t.alch.intuitionTitle;
+    default: return t.chooseTarget;
+  }
+}
 
 /* Backpack */
 
@@ -1184,8 +1209,8 @@ export interface BackpackOptions {
   world: World;
   hero: Hero;
   onAction(action: Action): void;
-  /** Throw or zap the item at a cell the player picks next. */
-  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special'): void;
+  /** Throw, zap or shoot the item at a cell the player picks next (or cast it there: a spell, dragon's breath, a siren's song). */
+  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast'): void;
   /** An artifact's use aimed at a cell the player picks next (talisman, chains, rose, armband, sandals, beacon). */
   onAimArtifact?(action: ArtifactAction): void;
   onClose(): void;
@@ -1621,6 +1646,12 @@ function firstActionName(options: ItemOptions): string | null {
   return itemActions(options).main[0]?.textContent ?? null;
 }
 
+/** A quick slot's tap: the item's first action, as holding it in the backpack would do. */
+export function quickAction(options: BackpackOptions, index: number): void {
+  const item = options.hero.items[index];
+  if (item) firstAction({ ...options, item, index });
+}
+
 /** Holding an item: its first action, done. */
 function firstAction(options: ItemOptions): void {
   const first = itemActions(options).main[0];
@@ -1651,7 +1682,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     options.onAction(action);
     refreshBackpack(options.world, options.hero);
   };
-  const aimWith = (kind: 'throw' | 'zap' | 'shoot' | 'special', at: number): void => {
+  const aimWith = (kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast', at: number): void => {
     openBag = null;
     options.onClose();
     options.onAim(at, kind);
@@ -1663,7 +1694,52 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     (main.length === 0 ? main : more).push(button(label, onClick, main.length === 0 ? 'primary' : ''));
   };
   if (index !== null) {
-    if (category === 'potion') use(t.drink, () => act({ type: 'use', item: index }));
+    const known = isKnown(world, item);
+    const back = (): void => showBackpack(options, { index });
+    /** WndBag's selector for what an item acts on, then what follows. */
+    const pickThen = (title: string, targets: readonly ItemRef[], then: (on: ItemRef) => void): void => {
+      openBag = null;
+      showBackpack({ ...options, pick: { title, targets, onPick: then, onCancel: back } });
+    };
+    const pickFor = (kind: ItemKind, title: string, then: (on: ItemRef) => void): void => pickThen(title, scrollTargets(world, hero, kind), then);
+    const choose = (title: string, text: string, on: Item | null, choices: readonly ChoiceOption[]): void => {
+      openBag = null;
+      showChoice(world, title, text, on, choices, back);
+    };
+    if (category === 'potion' || category === 'brew' || category === 'elixir') {
+      // Potion.actions: known harmful potions (and brews) are thrown first; drinking one asks first.
+      const mustThrow = category === 'brew' ? item.kind !== 'brew.unstable' : known && MUST_THROW.has(item.kind);
+      const drink = (): void => {
+        if (known && item.kind === 'potion.dragonsBreath') return aimWith('cast', index);
+        if (known && item.kind === 'potion.mastery') return pickFor('potion.mastery', t.alch.masteryPrompt, (on) => act({ type: 'use', item: index, on }));
+        if (known && item.kind === 'potion.divineInspiration') {
+          // PotionOfDivineInspiration: a talent tier to boost, one not boosted yet.
+          const boosted = hero.buffs?.inspired ?? [];
+          return choose(t.items[item.kind], t.alch.selectTier, item, [1, 2, 3, 4].map((tier) => ({
+            label: fill(t.alch.tier1, tier), disabled: boosted.includes(tier), onPick: () => act({ type: 'use', item: index, choice: tier }),
+          })));
+        }
+        act({ type: 'use', item: index });
+      };
+      const throwIt = (): void => aimWith('throw', index);
+      if (mustThrow) {
+        use(t.throwItem, throwIt);
+        if (category === 'potion') {
+          more.push(button(t.drink, () => {
+            openBag = null;
+            showConfirm(t.alch.harmful, t.alch.sureDrink, t.drink, t.cancel, drink, back);
+          }));
+        }
+      } else {
+        use(t.drink, drink);
+        // A known potion that is better drunk asks before it is thrown away (Potion.doThrow's beneficial warning).
+        const beneficial = known && category !== 'brew' && !CAN_THROW.has(item.kind);
+        use(t.throwItem, beneficial ? () => {
+          openBag = null;
+          showConfirm(t.alch.beneficial, t.alch.sureThrow, t.throwItem, t.cancel, throwIt, back);
+        } : throwIt);
+      }
+    }
     if (category === 'food' || item.kind === 'quest.fish') use(t.eat, () => act({ type: 'use', item: index }));
     if (category === 'torch') use(t.light, () => act({ type: 'use', item: index }));
     if (category === 'tome') use(t.readTome, () => showWays(options, index, act));
@@ -1678,23 +1754,102 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     if (category === 'seed') use(t.plantSeed, () => aimWith('throw', index));
     if (category === 'scroll') {
       // A known scroll that acts on one thing asks which, from the whole pack and what is worn (WndBag's selector).
-      const targeted = isKnown(world, item) && (TARGETED_SCROLLS as readonly string[]).includes(item.kind);
-      const targets = targeted ? scrollTargets(world, hero, item.kind) : [];
-      if (targeted) {
-        use(t.readOn, () =>
-          showBackpack({
-            ...options,
-            pick: {
-              title: t.pickTitle[item.kind as 'scroll.upgrade' | 'scroll.enchantment' | 'scroll.identify'] ?? t.read,
-              targets,
-              onPick: (on) => act({ type: 'use', item: index, on }),
-              onCancel: () => showBackpack(options, { index }),
-            },
-          }));
+      if (known && isTargetedScroll(item.kind)) {
+        use(t.readOn, () => pickFor(item.kind, pickTitleOf(item.kind), (on) => {
+          const target = itemAt(hero, on);
+          // ScrollOfEnchantment: then one of three enchantments (WndEnchantSelect).
+          if (item.kind === 'scroll.enchantment' && target) {
+            const armor = itemDef(target.kind).category === 'armor';
+            const name = plainName(world, { ...target, enchant: undefined, glyph: undefined });
+            return choose(t.alch.enchantTitle, '', target, enchantOptions(world, hero, target).map((magic, choice) => ({
+              label: capitalize(armor ? t.glyphName(name, magic as never) : t.enchantName(name, magic as never, target.kind)),
+              onPick: () => act({ type: 'use', item: index, on, choice }),
+            })));
+          }
+          act({ type: 'use', item: index, on });
+        }));
+      } else if (known && item.kind === 'scroll.sirensSong') {
+        use(t.read, () => aimWith('cast', index));
       } else {
         use(t.read, () => act({ type: 'use', item: index }));
       }
     }
+    if (category === 'stone') {
+      if (INVENTORY_STONES.has(item.kind)) {
+        use(t.alchUi.use, () => pickFor(item.kind, pickTitleOf(item.kind), (on) => {
+          const target = itemAt(hero, on);
+          if (!target) return;
+          if (item.kind === 'stone.augmentation') {
+            // StoneOfAugmentation.WndAugment: for one property against the other, or none.
+            const label: Record<Augment | 'none', string> = {
+              speed: t.alch.augSpeed, damage: t.alch.augDamage, evasion: t.alch.augEvasion, defense: t.alch.augDefense, none: t.alch.augNone,
+            };
+            return choose(t.alch.augmentTitle, t.alch.augmentChoice, target, augmentsFor(target).map((augment, choice) => ({
+              label: label[augment ?? 'none'], disabled: (target.augment ?? null) === augment, onPick: () => act({ type: 'use', item: index, on, choice }),
+            })));
+          }
+          if (item.kind === 'stone.intuition') {
+            // StoneOfIntuition.WndGuess: what kind it might be.
+            return choose(t.alch.intuitionTitle, t.alch.guessText, target, intuitionChoices(world, target).map((kind, choice) => ({
+              label: capitalize(t.items[kind]), onPick: () => act({ type: 'use', item: index, on, choice }),
+            })));
+          }
+          act({ type: 'use', item: index, on });
+        }));
+      }
+      use(t.throwItem, () => aimWith('throw', index));
+    }
+    if (category === 'spell') {
+      if (TARGETED_SPELLS.has(item.kind)) {
+        use(t.alchUi.cast, () => aimWith('cast', index));
+      } else if (item.kind === 'spell.alchemize') {
+        use(t.alchUi.cast, () => pickFor(item.kind, t.alch.alchemizePrompt, (on) => {
+          const target = itemAt(hero, on);
+          if (!target) return;
+          // WndAlchemizeItem: sell or energize, one or all.
+          const knownKind = knownIn(world.known, target.kind);
+          const price = itemPrice({ ...target, qty: 1 }, knownKind);
+          const energy = energyValue({ ...target, qty: 1 }, knownKind);
+          const worn = heroEquipped(hero).includes(target);
+          const labels: Record<(typeof ALCHEMIZE_CHOICES)[number], string> = {
+            sellOne: fill(target.qty > 1 ? t.alch.sell1 : t.alch.sellIt, price), sellAll: fill(t.alch.sellAll, price * target.qty),
+            energizeOne: fill(target.qty > 1 ? t.alch.energizeOne : t.alch.energizeIt, energy), energizeAll: fill(t.alch.energizeAll, energy * target.qty),
+          };
+          const shown = ALCHEMIZE_CHOICES.map((what, choice) => ({ what, choice })).filter(({ what }) =>
+            (what.startsWith('sell') ? price > 0 && !worn : energy > 0) && (what.endsWith('All') ? target.qty > 1 : true));
+          choose(t.alch.alchemizePrompt, '', target, shown.map(({ what, choice }) => ({ label: labels[what], onPick: () => act({ type: 'use', item: index, on, choice }) })));
+        }));
+      } else if (item.kind === 'spell.beacon') {
+        // BeaconOfReturning: set it here, or go back to where it was set.
+        use(t.alchUi.cast, () => choose(t.items[item.kind], t.alch.beaconBody, item, [
+          { label: t.alch.beaconWndSet, onPick: () => act({ type: 'use', item: index, choice: 0 }) },
+          { label: t.alch.beaconWndReturn, disabled: !hero.buffs?.beacon, onPick: () => act({ type: 'use', item: index, choice: 1 }) },
+        ]));
+      } else if (isTargetedScroll(item.kind)) {
+        const title = item.kind === 'spell.recycle' ? t.alch.recycleTitle : item.kind === 'spell.curseInfusion' ? t.alch.curseInfusionTitle : t.alch.infuseTitle;
+        use(t.alchUi.cast, () => pickFor(item.kind, title, (on) => act({ type: 'use', item: index, on })));
+      } else {
+        use(t.alchUi.cast, () => act({ type: 'use', item: index }));
+      }
+      if (item.kind === 'spell.summonElemental') {
+        // SummonElemental: imbued with a known potion of liquid flame or frost, or scroll of recharging or transmutation.
+        const imbues: readonly ItemKind[] = ['potion.liquidFlame', 'potion.frost', 'scroll.recharging', 'scroll.transmutation'];
+        const targets = hero.items.flatMap((other, i) => (imbues.includes(other.kind) && isIdentified(world, other) ? [i] : []));
+        if (targets.length > 0) use(t.alchUi.imbue, () => pickThen(t.alch.imbuePrompt, targets, (on) => act({ type: 'use', item: index, on })));
+      }
+    }
+    if (category === 'catalyst' && item.rolled) {
+      // TrinketCatalyst.WndTrinket: three trinkets shown, the fourth a surprise.
+      const rolled = item.rolled;
+      use(t.alchUi.choose, () => choose(t.alch.chooseTrinket, t.alch.catalystText, item, rolled.map((kind, choice) => ({
+        label: choice < 3 ? capitalize(t.items[kind]) : capitalize(t.alch.catalystRandom),
+        sprite: choice < 3 ? itemSprite({ kind, qty: 1, level: 0 }, world.run.labels) : S.TRINKET_HOLDER,
+        onPick: () => act({ type: 'use', item: index, choice }),
+      }))));
+    }
+    if (item.kind === 'resin') use(t.alchUi.use, () => pickFor('resin', t.alch.resinTitle, (on) => act({ type: 'use', item: index, on })));
+    // LiquidMetal: a thrown weapon (no dart) to mend.
+    if (item.kind === 'liquidMetal') use(t.alchUi.use, () => pickFor('liquidMetal', t.alch.metalTitle, (on) => act({ type: 'use', item: index, on })));
     // MagesStaff.actions: zap (its default) and imbue, wherever the staff is.
     if (item.kind === 'weapon.magesStaff') {
       if (item.wand) use(t.zap, () => aimWith('zap', index));
@@ -1725,22 +1880,6 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     if (category === 'artifact') for (const action of artifactActions(artifactHost(options, index), item, index)) use(action.label, action.run);
     // Armor.AC_DETACH: the warrior's seal off an armour in the pack.
     if (item.seal) more.push(button(t.hero.detach, () => stay({ type: 'detach', armor: index }, null)));
-    if (category === 'weightstone') {
-      // StoneOfAugmentation: a weapon or armour to augment, from the whole pack and what is worn (WndBag's selector).
-      const targets = augmentTargets(hero);
-      if (targets.length > 0) {
-        use(t.augment, () =>
-          showBackpack({
-            ...options,
-            pick: {
-              title: t.gear.augmentTitle,
-              targets,
-              onPick: (on) => showAugment(options, index, on, act),
-              onCancel: () => showBackpack(options, { index }),
-            },
-          }));
-      }
-    }
     // SpiritBow.AC_SHOOT; Dart.AC_TIP; TippedDart.AC_CLEAN.
     if (category === 'bow') use(actionLabel(t.gear.shoot), () => aimWith('shoot', index));
     if (item.kind === 'missile.dart' && tippingSeeds(hero).length > 0) use(actionLabel(t.gear.tip), () => showTip(options, index, act));
@@ -1751,12 +1890,11 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     if (category === 'seal') use(t.hero.affix, () => pickArmorForSeal(options, index, stay));
     if (category === 'missile' || category === 'wand' || category === 'bomb' || category === 'honeypot') {
       const kind = category === 'wand' ? 'zap' : 'throw';
-      use(kind === 'throw' ? t.throwItem : t.zap, () => aimWith(kind, index));
+      use(category === 'bomb' && !item.fuse ? t.alchUi.lightThrow : kind === 'throw' ? t.throwItem : t.zap, () => aimWith(kind, index));
     }
-    if (category === 'potion') use(t.throwItem, () => aimWith('throw', index));
     if (category === 'honeypot') use(t.shatterPot, () => act({ type: 'use', item: index }));
     // Item.AC_THROW: anything in the pack can be thrown where the player taps (a bag would scatter what it holds).
-    if (!['bag', 'missile', 'bomb', 'honeypot', 'potion', 'seed'].includes(category)) use(t.throwItem, () => aimWith('throw', index));
+    if (!['bag', 'missile', 'bomb', 'honeypot', 'potion', 'seed', 'stone', 'brew', 'elixir'].includes(category)) use(t.throwItem, () => aimWith('throw', index));
     // QuickSlot: any item with a use can be kept one tap away: into the first free slot (or one whose item
     // ran out), else the first. Holding a slot on the toolbar chooses for that slot (Toolbar's quickslot_assign).
     if (quickUse(item.kind) && !isQuickslotted(item.kind)) more.push(quickslotButton(world, hero, item));

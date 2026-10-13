@@ -25,6 +25,13 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'dismiss', target: '#12' })).toEqual({ type: 'dismiss', target: '#12' });
     expect(sanitizeAction({ type: 'reforge', first: 'weapon', second: 3 })).toEqual({ type: 'reforge', first: 'weapon', second: 3 });
     expect(sanitizeAction({ type: 'master', item: 1, subclass: 'warden' })).toEqual({ type: 'master', item: 1, subclass: 'warden' });
+    // Alchemy: an item's cell and choice; the pot's ingredients and recipe; turning an item into energy.
+    expect(sanitizeAction({ type: 'use', item: 1, on: 'weapon', choice: 2, junk: 1 })).toEqual({ type: 'use', item: 1, on: 'weapon', choice: 2 });
+    expect(sanitizeAction({ type: 'use', item: 1, cell: 300 })).toEqual({ type: 'use', item: 1, cell: 300 });
+    expect(sanitizeAction({ type: 'alchemy', inputs: [3, 3, 0], recipe: 1, x: 1 })).toEqual({ type: 'alchemy', inputs: [3, 3, 0], recipe: 1 });
+    expect(sanitizeAction({ type: 'alchemy', inputs: [4] })).toEqual({ type: 'alchemy', inputs: [4] });
+    expect(sanitizeAction({ type: 'energize', item: 2, all: true })).toEqual({ type: 'energize', item: 2, all: true });
+    expect(sanitizeAction({ type: 'energize', item: 2, all: 'yes' })).toEqual({ type: 'energize', item: 2 });
     expect(sanitizeAction({ type: 'augment', item: 1, on: 'weapon', augment: 'speed' })).toEqual({ type: 'augment', item: 1, on: 'weapon', augment: 'speed' });
     expect(sanitizeAction({ type: 'augment', item: 1, on: 3, augment: 'none', x: 1 })).toEqual({ type: 'augment', item: 1, on: 3, augment: 'none' });
     expect(sanitizeAction({ type: 'shoot', item: 0, target: 40 })).toEqual({ type: 'shoot', item: 0, target: 40 });
@@ -63,6 +70,9 @@ describe('client messages', () => {
       { type: 'attack', target: 5 }, { type: 'attack', target: '' }, { type: 'attack', target: 'x'.repeat(65) },
       { type: 'use', item: 1, target: 'ring' }, { type: 'drop', item: 1000 }, { type: 'reward', choice: 'gold' },
       { type: 'reforge', first: 'helmet', second: 1 }, { type: 'master', item: 1, subclass: 'pirate' },
+      { type: 'use', item: 1, choice: 64 }, { type: 'use', item: 1, cell: -1 }, { type: 'use', item: 1, choice: 0.5 },
+      { type: 'alchemy', inputs: [] }, { type: 'alchemy', inputs: [1, 2, 3, 4] }, { type: 'alchemy', inputs: [1, 'a'] },
+      { type: 'alchemy', inputs: 1 }, { type: 'alchemy', inputs: [1], recipe: -1 }, { type: 'energize', item: -1 },
       { type: 'augment', item: 1, on: 'weapon', augment: 'luck' }, { type: 'augment', item: 1, on: 'ring9', augment: 'speed' },
       { type: 'shoot', item: 1 }, { type: 'tip', item: 1 }, { type: 'clean', item: -1 }, { type: 'balance', item: 1, imbue: 'speed' }, { type: 'special', target: null },
       { type: 'artifact', item: 1, use: 'fly' }, { type: 'artifact', item: 'cape', use: 'zap' },

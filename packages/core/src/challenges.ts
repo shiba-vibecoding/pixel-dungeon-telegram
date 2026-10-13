@@ -1,4 +1,4 @@
-import { createItem, type Item, itemDef, itemPrice, type ItemKind } from './items';
+import { createItem, type Item, itemDef, itemPrice, type ItemKind, knownIn } from './items';
 
 /*
  * Challenges (Challenges.java): optional handicaps chosen when a run starts,
@@ -60,5 +60,5 @@ function forbidden(world: Challenged, item: Item): boolean {
  */
 export function underChallenges(world: Challenged, item: Item): Item {
   if (!world.challenges || !forbidden(world, item)) return item;
-  return createItem('gold', itemPrice(item, world.known?.includes(item.kind) ?? false));
+  return createItem('gold', itemPrice(item, knownIn(world.known ?? [], item.kind)));
 }

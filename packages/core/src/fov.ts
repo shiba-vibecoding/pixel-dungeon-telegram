@@ -10,9 +10,12 @@ import { F, hasFlag } from './level/terrain';
 export const MAX_VIEW_DISTANCE = 8;
 
 /** rounding[r][p]: how far a row p cells out extends within a circle of radius r. */
+/** Shattered's ShadowCaster.MAX_DISTANCE: far enough for magical sight (12) and clairvoyance (20). */
+const ROUNDING_MAX = 20;
+
 const rounding: number[][] = (() => {
   const table: number[][] = [[]];
-  for (let r = 1; r <= MAX_VIEW_DISTANCE; r++) {
+  for (let r = 1; r <= ROUNDING_MAX; r++) {
     const row = new Array<number>(r + 1).fill(0);
     for (let p = 1; p <= r; p++) {
       row[p] = Math.min(p, Math.round(r * Math.cos(Math.asin(p / (r + 0.5)))));
@@ -87,7 +90,7 @@ pos: number, losBlocking: (cell: number) => boolean, distance = MAX_VIEW_DISTANC
   const fov = new Array<boolean>(LENGTH).fill(false);
   const cx = pos % WIDTH;
   const cy = Math.trunc(pos / WIDTH);
-  const limits = rounding[Math.min(distance, MAX_VIEW_DISTANCE)]!;
+  const limits = rounding[Math.min(distance, ROUNDING_MAX)]!;
   const obstacles = new Obstacles();
   fov[pos] = true;
 
@@ -127,4 +130,30 @@ pos: number, losBlocking: (cell: number) => boolean, distance = MAX_VIEW_DISTANC
 
 export function terrainBlocksSight(map: readonly number[]): (cell: number) => boolean {
   return (cell) => hasFlag(map[cell]!, F.LOS_BLOCKING);
+}
+
+/**
+ * The cells within a circle of `radius` around `pos`, row by row as StoneOfClairvoyance.activate and Hero.search
+ * (with foresight) lay it out from ShadowCaster.rounding.
+ */
+export function circleCells(pos: number, radius: number): number[] {
+  const r = Math.min(radius, ROUNDING_MAX);
+  const row = rounding[r]!;
+  const cx = pos % WIDTH;
+  const cy = Math.trunc(pos / WIDTH);
+  const cells: number[] = [];
+  for (let y = Math.max(0, cy - r); y <= Math.min(HEIGHT - 1, cy + r); y++) {
+    const dy = Math.abs(cy - y);
+    let left: number;
+    if (row[dy]! < dy) {
+      left = cx - row[dy]!;
+    } else {
+      left = r;
+      while (row[left]! < row[dy]!) left--;
+      left = cx - left;
+    }
+    const right = Math.min(WIDTH - 1, cx + cx - left);
+    for (let x = Math.max(0, left); x <= right; x++) cells.push(x + y * WIDTH);
+  }
+  return cells;
 }

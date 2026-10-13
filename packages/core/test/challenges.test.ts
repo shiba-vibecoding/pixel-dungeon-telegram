@@ -197,7 +197,7 @@ describe('what each class knows from the start (HeroClass.initHero)', () => {
 describe('Generator and Bestiary odds, as in the original', () => {
   it("wands come from a deck of three of each of Shattered's thirteen, drawn the same whenever they turn up", () => {
     const run = createWorld(9).run;
-    const generator = new ItemGenerator(Rng.seeded(9), 5, run);
+    const generator = new ItemGenerator(Rng.seeded(9), 5, { run });
     const counts: Record<string, number> = {};
     for (let i = 0; i < 39; i++) {
       const kind = generator.of('wand').kind;
@@ -206,8 +206,8 @@ describe('Generator and Bestiary odds, as in the original', () => {
     expect(Object.keys(counts)).toHaveLength(13);
     expect(Object.values(counts).every((n) => n === 3)).toBe(true);
     // A new deck once one is spent; the draws depend on the run alone.
-    const again = new ItemGenerator(Rng.seeded(1234), 7, createWorld(9).run);
-    const first = new ItemGenerator(Rng.seeded(9), 5, createWorld(9).run);
+    const again = new ItemGenerator(Rng.seeded(1234), 7, { run: createWorld(9).run });
+    const first = new ItemGenerator(Rng.seeded(9), 5, { run: createWorld(9).run });
     for (let i = 0; i < 20; i++) expect(again.of('wand').kind).toBe(first.of('wand').kind);
     // Without a run (Generator.randomUsingDefaults), any kind as likely as another.
     const loose = new ItemGenerator(Rng.seeded(3), 5);

@@ -1,6 +1,6 @@
 import { type Hero, heroBelongings, heroEquipped, heroRings } from './actors';
 import type { Ctx } from './floor';
-import { itemDef, type Item, type ItemKind } from './items';
+import { itemDef, type Item, type ItemKind, knownIn, labelKind } from './items';
 import type { World } from './world';
 
 /*
@@ -53,7 +53,7 @@ const hidesKind = (item: Item): boolean => {
 
 /** Potion, Scroll and Ring.isKnown: whether the party knows what kind of thing it is; the rest show it. */
 export function kindKnown(world: World, item: Item): boolean {
-  return !hidesKind(item) || world.known.includes(item.kind);
+  return !hidesKind(item) || knownIn(world.known, item.kind);
 }
 
 /** Item.isIdentified (and Ring.isIdentified, Wand.isIdentified): nothing more to learn about it. */
@@ -63,6 +63,8 @@ export function isIdentified(world: World, item: Item): boolean {
 
 /** ItemStatusHandler.know: the party learns a kind; true if it did not know it yet. */
 export function learn(world: World, kind: ItemKind): boolean {
+  // ExoticPotion.setKnown and ExoticScroll.setKnown: knowing an exotic is knowing its counterpart.
+  kind = labelKind(kind);
   if (world.known.includes(kind)) return false;
   world.known.push(kind);
   return true;

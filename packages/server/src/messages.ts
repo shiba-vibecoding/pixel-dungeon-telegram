@@ -14,8 +14,10 @@ import {
 
 /** A backpack slot or a worn ring's index: small and whole. */
 const MAX_SLOT = 255;
+/** An item's choice (an enchantment, a guess, a recipe...): small and whole. */
+const MAX_CHOICE = 63;
 /** The largest choice an artifact's window offers (the toolkit's levels at most). */
-const MAX_CHOICE = 10;
+const MAX_ARTIFACT_CHOICE = 10;
 /** Monster ids are short ('#12'); anything longer is not one. */
 const MAX_ID = 64;
 
@@ -97,7 +99,7 @@ export function sanitizeAction(raw: unknown): Action | null {
         action.with = taken;
       }
       if (a.choice !== undefined) {
-        if (!isInt(a.choice, 0, MAX_CHOICE)) return null;
+        if (!isInt(a.choice, 0, MAX_ARTIFACT_CHOICE)) return null;
         action.choice = a.choice;
       }
       if (a.on !== undefined) {
@@ -110,14 +112,45 @@ export function sanitizeAction(raw: unknown): Action | null {
     case 'use': {
       const item = slot(a.item);
       if (item === null) return null;
-      // What a scroll is read on: picked from the whole pack and what is worn (`target` is older clients' way).
+      const use: Extract<Action, { type: 'use' }> = { type: 'use', item };
+      // What a scroll (or stone, spell...) is used on: picked from the whole pack and what is worn (`target` is older clients' way).
       if (a.on !== undefined) {
         const on = itemRef(a.on);
-        return on === null ? null : { type: 'use', item, on };
+        if (on === null) return null;
+        use.on = on;
+      } else if (a.target !== undefined) {
+        const target = oneOf(a.target, ['weapon', 'armor'] as const);
+        if (!target) return null;
+        use.target = target;
       }
-      if (a.target === undefined) return { type: 'use', item };
-      const target = oneOf(a.target, ['weapon', 'armor'] as const);
-      return target ? { type: 'use', item, target } : null;
+      // Where a dragon's breath, a siren's song or a spell is aimed; which of an item's choices.
+      if (a.cell !== undefined) {
+        const at = cell(a.cell);
+        if (at === null) return null;
+        use.cell = at;
+      }
+      if (a.choice !== undefined) {
+        if (!isInt(a.choice, 0, MAX_CHOICE)) return null;
+        use.choice = a.choice;
+      }
+      return use;
+    }
+    case 'alchemy': {
+      // Up to three pack slots into the pot, and which of the recipes they make.
+      if (!Array.isArray(a.inputs) || a.inputs.length < 1 || a.inputs.length > 3) return null;
+      const inputs: number[] = [];
+      for (const raw of a.inputs as unknown[]) {
+        const s = slot(raw);
+        if (s === null) return null;
+        inputs.push(s);
+      }
+      if (a.recipe === undefined) return { type: 'alchemy', inputs };
+      return isInt(a.recipe, 0, MAX_CHOICE) ? { type: 'alchemy', inputs, recipe: a.recipe } : null;
+    }
+    case 'energize': {
+      const item = slot(a.item);
+      if (item === null) return null;
+      return a.all === true ? { type: 'energize', item, all: true } : { type: 'energize', item };
     }
     case 'equip': {
       const item = slot(a.item);

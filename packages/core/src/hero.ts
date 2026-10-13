@@ -1,5 +1,7 @@
 import { type Hero, heroRings, isAlive, type Mob, type MobKind } from './actors';
 import { mightHTMultiplier } from './rings';
+import { hungerPaused, mightOnLevelUp } from './buffs';
+import { SALT_CUBE, trinketLevel } from './trinkets';
 import { hurt } from './combat';
 import { type Ctx, exploredCells, heroView } from './floor';
 import { heroGainsExp } from './ident';
@@ -91,7 +93,11 @@ export function earnExp(ctx: Ctx, hero: Hero, exp: number, source?: 'potion'): v
       ctx.effects.push({ type: 'levelCap', hero: hero.id });
     }
   }
-  if (levelUp) ctx.effects.push({ type: 'levelUp', hero: hero.id, lvl: hero.lvl });
+  if (levelUp) {
+    ctx.effects.push({ type: 'levelUp', hero: hero.id, lvl: hero.lvl });
+    // ElixirOfMight.HTBoost.onLevelUp.
+    mightOnLevelUp(hero);
+  }
 }
 
 /* Hunger */
@@ -109,7 +115,8 @@ export const isHungry = (hero: Hero): boolean => hero.hunger >= HUNGRY;
  * hero's maximum a turn. Nothing of it while a boss has sealed the floor.
  */
 function hungerTurn(ctx: Ctx, hero: Hero): void {
-  if (floorLocked(ctx.world, hero.depth)) return;
+  // Hunger.act: none while well fed (a meat pie) or inside a challenge arena either.
+  if (floorLocked(ctx.world, hero.depth) || hungerPaused(hero)) return;
   if (isStarving(hero)) {
     hero.starve = (hero.starve ?? 0) + hero.ht / 1000;
     if (hero.starve > 1) {
@@ -120,7 +127,8 @@ function hungerTurn(ctx: Ctx, hero: Hero): void {
     }
     return;
   }
-  const level = hero.hunger + 1;
+  // SaltCube.hungerGainMultiplier: a salt cube makes hunger grow slower.
+  const level = hero.hunger + SALT_CUBE.hungerGainMultiplier(trinketLevel(hero, 'trinket.saltCube'));
   if (level >= STARVING) {
     // Hunger.act: the moment starving begins hurts.
     hero.hunger = STARVING;
@@ -174,8 +182,8 @@ export const REGENERATION_DELAY = 10;
  */
 function regenerationTurn(ctx: Ctx, hero: Hero): void {
   if (!regenOn(ctx.world, hero) || hero.hp >= hero.ht || isStarving(hero)) return;
-  // The chalice of blood worn quickens it (cursed, slows it).
-  const delay = chaliceRegenDelay(hero, REGENERATION_DELAY);
+  // The chalice of blood worn quickens it (cursed, slows it); a salt cube slows it (SaltCube.healthRegenMultiplier).
+  const delay = chaliceRegenDelay(hero, REGENERATION_DELAY) / SALT_CUBE.healthRegenMultiplier(trinketLevel(hero, 'trinket.saltCube'));
   hero.regen = Math.fround(hero.regen + Math.fround(1 / delay));
   if (hero.regen >= 1) {
     const heal = Math.trunc(hero.regen);

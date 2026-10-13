@@ -1,7 +1,7 @@
 import { type Hero, heroBelongings } from './actors';
 import { wavesCleared } from './arena';
 import type { Effect } from './floor';
-import { ITEMS, type Item, itemDef, type ItemKind } from './items';
+import { isExotic, ITEMS, type Item, itemDef, type ItemKind } from './items';
 import { levelKnown } from './ident';
 import type { World } from './world';
 
@@ -49,7 +49,7 @@ const DEATHS: Readonly<Record<string, BadgeId>> = {
 const LABELLED = new Map<string, ItemKind[]>();
 const labelled = (category: string): ItemKind[] => {
   if (!LABELLED.has(category)) {
-    LABELLED.set(category, (Object.keys(ITEMS) as ItemKind[]).filter((kind) => itemDef(kind).category === category && itemDef(kind).sprite === undefined));
+    LABELLED.set(category, (Object.keys(ITEMS) as ItemKind[]).filter((kind) => itemDef(kind).category === category && itemDef(kind).sprite === undefined && !isExotic(kind)));
   }
   return LABELLED.get(category)!;
 };
