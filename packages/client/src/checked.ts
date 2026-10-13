@@ -47,7 +47,7 @@ export type Gift = { type: 'trophy'; board: string; place: number };
 /** A letter of the mailbox: one a finished board the player placed on (the server's mail.ts). */
 export interface Letter {
   id: string;
-  kind: 'cup' | 'medal';
+  kind: 'cup' | 'medal' | 'pioneer';
   board: string;
   place: number;
   total?: number;
@@ -59,6 +59,23 @@ export interface Letter {
 }
 
 export type Trouble = 'offline' | 'unauthorized' | 'rules';
+
+/** A player's report of a problem (the server's problem.ts): their words, and when attached, the run's last actions and the console's last errors. */
+export interface ProblemReport {
+  text: string;
+  attach: boolean;
+  info: {
+    version: string;
+    rules: number;
+    build: string;
+    run?: { id: string; seed: number; depth: number; slot: string; seq: number };
+    device: string;
+    platform: string;
+    lang: string;
+  };
+  actions?: string[];
+  errors?: string[];
+}
 
 export interface Profile {
   name: string;
@@ -79,6 +96,10 @@ export interface Profile {
   mail: Letter[];
   /** The step tutorial was finished or skipped, on any device. */
   coachDone: boolean;
+  /** The last version of «Что нового» seen, on any device. */
+  newsSeen?: string | null;
+  /** What the admin gave: 'bughunter' for a confirmed problem report. */
+  honors?: string[];
   places: Partial<Record<BoardKind, number | null>>;
   /** How many players each board holds now. */
   totals?: Partial<Record<BoardKind, number>>;
@@ -130,6 +151,10 @@ export interface RunApi {
   mail(op: 'readAll' | 'claim' | 'claimAll', id?: string): Promise<{ mail: Letter[]; trophies: Profile['trophies'] } | null>;
   /** Tells the server the step tutorial is done, to keep it so on every device. */
   coachDone(): Promise<boolean>;
+  /** Tells the server the news of this version have been seen. */
+  news(version: string): Promise<boolean>;
+  /** «Сообщить о проблеме»: the report, its id on success; 'limit' past the day's five, null when it could not be sent. */
+  problem(report: ProblemReport): Promise<{ id: string } | 'limit' | null>;
   board(kind: BoardKind): Promise<BoardView | null>;
 }
 
@@ -169,6 +194,17 @@ export function runApi(server: string, identity: () => Identity, development: bo
     me: () => quiet('/me', {}),
     mail: (op, id) => quiet('/mail', { op, ...(id ? { letter: id } : {}) }),
     coachDone: async () => (await quiet<{ coachDone: boolean }>('/me', { coachDone: true }))?.coachDone === true,
+    news: async (version) => (await quiet<{ news: string }>('/me', { news: version }))?.news !== undefined,
+    problem: async (report) => {
+      // The report goes in the body only (never in a URL), and is sent whatever rules this build runs: an old build is the likeliest to need it.
+      try {
+        const response = await fetch(`${base}/problem`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...identity(), ...report }) });
+        if (response.status === 429) return 'limit';
+        return response.ok ? ((await response.json()) as { id: string }) : null;
+      } catch {
+        return null;
+      }
+    },
     card: async (png) => {
       try {
         const response = await fetch(`${base}/card`, { method: 'POST', headers: { 'Content-Type': 'image/png', 'X-Init-Data': identity().initData ?? '' }, body: png });

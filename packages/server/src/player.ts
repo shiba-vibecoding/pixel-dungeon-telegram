@@ -6,6 +6,7 @@ import type { Env } from './index';
 import { outageDays } from './outages';
 import { type DailyEntry, publicId } from './leaderboard';
 import { claimAll, claimLetter, collectMail, type Lookup, noteEntered, readAll } from './mail';
+import { newsSeenAfter, parseVersion } from './news';
 import { grantPioneer } from './pioneer';
 import { giveHonor, MAX_PROBLEM_BYTES, parseProblem, takeProblemSlot } from './problem';
 import { readBody } from './secret';
@@ -23,6 +24,7 @@ import { verifyInitData, WEEK_SECONDS } from './telegram-auth';
  *               { initData, rules, op: 'get', slot }                         the run as the server has it
  *   POST /me    { initData }                     the profile: records, streak, trophies, mail, places now
  *               { initData, coachDone: true }    the step tutorial is done (kept with the profile, for every device)
+ *               { initData, news: '2.4' }        the news of that version have been seen (kept the same way)
  *   POST /mail  { initData, op: 'readAll' | 'claim' | 'claimAll', letter }   the mailbox (mail.ts): its letters and trophies after
  *   POST /board { initData?, kind }              a board's best, and my place on it
  *   POST /problem { initData, text?, attach, info, actions?, errors? }   «Сообщить о проблеме» (problem.ts): at most five a day
@@ -83,7 +85,10 @@ export async function meRoute(request: Request, env: Env): Promise<Response> {
   if (!body) return json({ error: 'bad json' }, 400);
   const player = await who(body, env);
   if (!player) return json({ error: 'unauthorized' }, 401);
-  const response = await playerStub(env, player.key).fetch('https://player/me', { method: 'POST', body: JSON.stringify({ player, coachDone: body.coachDone === true }) });
+  const news = parseVersion(body.news);
+  const response = await playerStub(env, player.key).fetch('https://player/me', {
+    method: 'POST', body: JSON.stringify({ player, coachDone: body.coachDone === true, ...(news ? { news } : {}) }),
+  });
   return new Response(response.body, { status: response.status, headers: { 'Content-Type': 'application/json', ...CORS } });
 }
 
@@ -220,6 +225,14 @@ export class Player extends DurableObject<Env> {
           await this.persist(new Set(), new Map());
         }
         return json({ coachDone: true });
+      }
+      if (typeof body.news === 'string') {
+        const seen = newsSeenAfter(logic.profile.newsSeen, body.news);
+        if (seen !== logic.profile.newsSeen) {
+          logic.profile.newsSeen = seen;
+          await this.persist(new Set(), new Map());
+        }
+        return json({ news: seen });
       }
       return json(await this.me(logic, body.player, now));
     }
@@ -370,7 +383,7 @@ export class Player extends DurableObject<Env> {
     return {
       name: p.name, games: p.games, wins: p.wins, deepest: p.deepest, best: p.best, bestByClass: p.bestByClass,
       arenaWaves: p.arenaWaves, arenaBest: p.arenaBest, streak: streakNow(p.streak, today, await outageDays(this.env)), dailyDone: p.dailyDate === today,
-      badges: p.badges, history: p.history, trophies: p.trophies, mail: p.mail, coachDone: p.coachDone, honors: p.honors ?? [], places, totals, runs, today,
+      badges: p.badges, history: p.history, trophies: p.trophies, mail: p.mail, coachDone: p.coachDone, newsSeen: p.newsSeen ?? null, honors: p.honors ?? [], places, totals, runs, today,
     };
   }
 }

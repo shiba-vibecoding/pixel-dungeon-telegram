@@ -14,7 +14,7 @@ let sent = 0;
 const LIMIT = 15;
 
 /** The build: the hash in the name of the main script. */
-const build = ((): string => {
+export const build = ((): string => {
   if (typeof document === 'undefined') return 'test';
   const script = document.querySelector<HTMLScriptElement>('script[type="module"][src]');
   return /index-([\w-]+)\.js/.exec(script?.src ?? '')?.[1] ?? (import.meta.env.DEV ? 'dev' : '?');

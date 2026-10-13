@@ -139,6 +139,15 @@ function linkRow(label: string, onClick: () => void, external = false, sub?: str
   );
 }
 
+/** «Report a problem»: a row with the report's icon (design v20, .pd-linkrow.report). */
+function reportRow(onClick: () => void): HTMLElement {
+  const icon = el('i', { className: 'pd-icon' });
+  icon.style.cssText = 'width:24px;height:24px;background-image:var(--spr-report)';
+  const row = el('button', { className: 'pd-linkrow report', onclick: () => (click(), onClick()) }, icon, el('span', { textContent: t.rel.report.title }));
+  row.type = 'button';
+  return row;
+}
+
 const group = (head: string | null, ...rows: Array<HTMLElement | null | false>): HTMLElement =>
   el('section', { className: 'pd-set-group' }, head && el('h3', { className: 'pd-set-head', textContent: head }), ...rows);
 
@@ -154,6 +163,10 @@ export interface SettingsOptions {
   reminders?: { on: boolean; set(on: boolean): void };
   /** The hero's name, asked for where Telegram does not tell it (the camp has no field for it); absent in Telegram. */
   name?: { value: string; set(name: string): void };
+  /** «Report a problem» (reportui.ts): absent where the server cannot take one (no Telegram, no server). */
+  onReport?: () => void;
+  /** «What's new»: the window of the last update again. */
+  onNews?: () => void;
 }
 
 /** The settings, from the title's corner or the menu in a run. */
@@ -229,6 +242,8 @@ export function showSettings(options: SettingsOptions): void {
   );
   const more = group(
     t.meta.more,
+    options.onNews ? linkRow(t.rel.news.row, options.onNews) : null,
+    options.onReport ? reportRow(options.onReport) : null,
     linkRow(t.meta.about, () => showAbout(reopen)),
     linkRow(t.meta.privacy, () => openExternal(page('privacy.html')), true),
     linkRow(t.meta.terms, () => openExternal(page('terms.html')), true),

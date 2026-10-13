@@ -13,7 +13,8 @@ let reloading = false;
 export function reloadForUpdate(beforeReload?: () => void): void {
   if (reloading) return;
   reloading = true;
-  toast(t.newVersion, { tone: 'good' });
+  // Design v20 (.pd-toast.update): the icon turns in steps of 45 degrees, and stands still for those who ask for less motion.
+  toast(t.newVersion, { tone: 'update' });
   window.setTimeout(() => {
     try {
       beforeReload?.();

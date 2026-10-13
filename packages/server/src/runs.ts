@@ -107,6 +107,8 @@ export interface Profile {
   pioneer?: number;
   /** Honours the admin gave: 'bughunter' for a confirmed report (problem.ts). Kept by the server, shown in the profile. */
   honors?: string[];
+  /** The last version of the «Что нового» news the player has seen, on any device (news.ts). */
+  newsSeen?: string;
   /** The problem reports sent today, for the daily limit (problem.ts). */
   problems?: { day: string; count: number };
 }

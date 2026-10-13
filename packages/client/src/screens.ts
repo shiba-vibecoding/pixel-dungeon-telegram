@@ -2140,7 +2140,8 @@ function showWays(options: ItemOptions, index: number, act: (action: Action) => 
 let toastTimer = 0;
 
 export interface ToastOptions {
-  tone?: 'good' | 'warn' | 'ally' | 'badge';
+  /** `update`: the new-version notice of design v20 (a turning icon, update.ts). */
+  tone?: 'good' | 'warn' | 'ally' | 'badge' | 'update';
   /** An item sprite or a badge image beside the text. */
   item?: number;
   badge?: number;
