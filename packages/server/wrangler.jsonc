@@ -33,7 +33,13 @@
     "TERMS_URL": "https://shiba-vibecoding.github.io/pixel-dungeon-telegram/terms.html",
     // The admin's Telegram chat: error alerts and what players write after /paysupport come here, and only
     // here do /refund, /payments and /reply work.
-    "ADMIN_CHAT_ID": "364316344"
+    "ADMIN_CHAT_ID": "364316344",
+    // Days the server was down (YYYY-MM-DD, separated by commas): the daily streak takes them as played, breaking
+    // nothing and spending no freeze. The admin's bot command /outage <day> adds more without a deploy (outages.ts).
+    "OUTAGE_DAYS": "",
+    // The moment of the Shattered release (ISO, UTC): every profile made before it is sent the «Первопроходец»
+    // letter, as is every profile kept before profiles noted their birth (pioneer.ts). Set it before the deploy.
+    "RELEASE_AT": ""
   },
   // Secrets: npx wrangler secret put BOT_TOKEN, and WEBHOOK_SECRET for the bot's webhook (/telegram/webhook);
   // REPORT_KEY reads the error reports back (scripts/reports.mjs).
