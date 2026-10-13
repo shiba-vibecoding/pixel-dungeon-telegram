@@ -185,6 +185,8 @@ export function mobStatusTurn(ctx: Ctx, mob: Mob): boolean {
   // Once a turn: a monster that acts again at once (having just noticed someone) has not had another.
   if (mob.statusAt === mob.time) return (mob.frozen ?? 0) > 0;
   mob.statusAt = mob.time;
+  // Mob.act: a mob that struck a Feint's afterimage does nothing for a turn.
+  const confused = markTurns(mob, 'feint') > 0;
   corrosionTick(ctx, mob);
   if (!isAlive(mob)) return true;
   oozeTick(ctx, mob);
@@ -207,7 +209,7 @@ export function mobStatusTurn(ctx: Ctx, mob: Mob): boolean {
     mob.enemySeen = false;
     return true;
   }
-  return false;
+  return confused;
 }
 
 /** Sungrass.Health.act: health coming back, as long as the hero stays where they stood ((40 + HT) / 150 of a point a turn). */

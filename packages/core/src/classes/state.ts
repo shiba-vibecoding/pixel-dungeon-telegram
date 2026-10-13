@@ -31,6 +31,8 @@ export interface ClassState {
   charged?: boolean;
   /** RunicBlade.RunicSlashTracker: the damage factor of the slash under way. */
   runic?: number;
+  /** ElementalStrike.DirectedPowerTracker: the extra power the next blow's enchantment has. */
+  directed?: number;
   /** Sickle.HarvestBleedTracker: the blow under way turns its damage into bleeding. */
   harvest?: boolean;
   /** PatientStrikeTracker: where the hero has been waiting. */
@@ -80,7 +82,7 @@ export interface MobMarks {
   /** Turns left of the buffs a monster carries, counted down on its own turns (Daze, ...). */
   t?: Record<string, number>;
   /** SpectatorFreeze: frozen in place while a duel goes on. */
-  spectator?: boolean;
+  spectator?: number;
   /** Challenge.DuelParticipant: the duel's turns left and the harm taken. */
   duel?: { left: number; taken: number };
   /** GuidingLight.Illuminated: struck next, the blow does more. */

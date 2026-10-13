@@ -56,6 +56,7 @@ import { explode, lightFuse, snuff } from './bombs';
 import { isChallenged, NO_FOOD } from './challenges';
 import { classFoodEaten, classPotionUsed } from './classes/hooks';
 import { eatingTime } from './artifacts/seams';
+import { ARMOR_ABILITIES } from './talents';
 import { identifiesOnEquip } from './classes/duelist-talents';
 import { swiftEquip } from './classes/duelist';
 
@@ -296,6 +297,7 @@ function useProblem(world: World, hero: Hero, item: Item, action: Extract<Invent
     return 'that cannot be used';
   }
   if (category === 'kit' && CLASS_ARMOR.includes(hero.armor.kind)) return 'your armour is already a class armour';
+  if (category === 'kit' && ARMOR_ABILITIES[hero.heroClass] && (action.choice === undefined || action.choice >= ARMOR_ABILITIES[hero.heroClass]!.length)) return 'choose an ability';
   if (category === 'vial' && !item.volume) return 'your waterskin is empty';
   if (category === 'wipeout' && (hero.blind ?? 0) > 0) return 'you cannot read while blinded';
   if (action.target !== undefined && action.target !== 'weapon' && action.target !== 'armor') return 'bad target';
@@ -430,7 +432,7 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
         return TIME_TO_THROW;
       }
       if (itemDef(hero.items[action.item]!.kind).category === 'kit') {
-        applyArmorKit(ctx, hero, action.item);
+        applyArmorKit(ctx, hero, action.item, action.choice);
         return TIME_TO_APPLY_KIT;
       }
       if (itemDef(hero.items[action.item]!.kind).category === 'torch') {

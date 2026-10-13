@@ -155,3 +155,23 @@ export function classFoodEaten(ctx: Ctx, hero: Hero): void {
 export function classPotionUsed(ctx: Ctx, hero: Hero, factor: number): void {
   duelistPotionUsed(ctx, hero, factor);
 }
+
+/**
+ * Weapon.Enchantment.genericProcChanceMultiplier's additions from the classes: the runic blade's slash, a directed elemental strike
+ * (each used up by the blow that asks), and smite. The multiplier itself is enchant.ts procMultiplier's.
+ */
+export function classProcBonus(hero: Hero): number {
+  const state = hero.cls;
+  if (!state) return 0;
+  let bonus = 0;
+  if (state.runic !== undefined) {
+    bonus += state.runic;
+    delete state.runic;
+  }
+  if (state.directed !== undefined) {
+    bonus += state.directed;
+    delete state.directed;
+  }
+  if (hasTimer(hero, 'smite')) bonus += 3;
+  return bonus;
+}

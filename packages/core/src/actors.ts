@@ -535,7 +535,9 @@ export type MobKind =
   /** Alchemy's prismatic image (PrismaticGuard). */
   | 'prismatic'
   /** WandOfWarding.Ward, WandOfLivingEarth.EarthGuardian, WandOfRegrowth.Lotus. */
-  | 'ward' | 'guardian' | 'lotus';
+  | 'ward' | 'guardian' | 'lotus'
+  /** Feint.AfterImage: the Duelist's decoy, which enemies strike at and lose track of the hero. */
+  | 'afterImage';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
 export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
 
@@ -626,6 +628,8 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   ward: { name: 'ward', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** The wand of living earth's guardian, as strong as the wand and the hero (see mobStats). */
   guardian: { name: 'earthen guardian', ht: 1, attack: 0, defense: 0, damage: [2, 4], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** Feint's afterimage: the hero's shadow, struck at in vain (it fades before the hero's next turn). */
+  afterImage: { name: 'afterimage', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** The wand of regrowth's lotus, which withers a little every turn. */
   lotus: { name: 'golden lotus', ht: 25, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** DriedRose.GhostHero: the sad ghost come back as a companion (its numbers come from its rose and its hero, see mobStats). */

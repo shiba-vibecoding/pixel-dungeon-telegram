@@ -1,6 +1,7 @@
 import {
   baseKind, beckon, createMob, GOO_PUMPED, type Hero, heroStealth, isAlive, isShopkeeper, type Mob, type MobState, MOBS, mobStats, rollMob,
 } from './actors';
+import { afterImageAct } from './classes/duelist-armor';
 import { attack, defenseOf, hurt } from './combat';
 import { dissolveGuardian, lotusAct, wardCanAttack, wardZap } from './allies';
 import { hasProp } from './props';
@@ -91,6 +92,8 @@ function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Char | undefined {
   for (const ally of allies) {
     if (fov[ally.pos] && (!chosen || distance(mob.pos, ally.pos) < distance(mob.pos, chosen.pos))) chosen = ally;
   }
+  // Mob.chooseEnemy: going for the hero while a Feint's afterimage stands in sight, it goes for the afterimage instead.
+  if (chosen && isHero(chosen)) chosen = allies.find((ally) => ally.kind === 'afterImage' && fov[ally.pos]) ?? chosen;
   if (chosen && !isHero(chosen)) {
     mob.enemy = chosen.id;
     return chosen;
@@ -127,6 +130,11 @@ function chooseFoe(ctx: Ctx, mob: Mob, fov: boolean[]): Mob | undefined {
 }
 
 export function mobAct(ctx: Ctx, mob: Mob): void {
+  // Feint.AfterImage.act: it fades.
+  if (mob.kind === 'afterImage') {
+    afterImageAct(ctx, mob);
+    return;
+  }
   // Alchemy's allies (those that follow a hero: an enthralled monster, a prismatic image, a summoned elemental); the
   // wands' allies go the monsters' way, against the monsters (chooseFoe).
   if (mob.ally && mob.owner !== undefined && mob.kind !== 'mirror' && mob.kind !== 'bee') {

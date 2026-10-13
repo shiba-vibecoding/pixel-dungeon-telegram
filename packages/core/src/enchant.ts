@@ -2,6 +2,7 @@ import {
   baseKind, beckon, createMob, enchantLevel, type Hero, heroAttackDelay, heroDefenseSkill, isAlive, isShopkeeper, isStarving, type Mob, type MobKind,
   MOBS, mobStats, rollMob, STARVING,
 } from './actors';
+import { classProcBonus } from './classes/hooks';
 import { conjureImages } from './allies';
 import { hurt } from './combat';
 import { isEnemy as enemyMob } from './hero';
@@ -46,7 +47,7 @@ export const ADRENALINE_TURNS = 10;
  * 1 for the rest. Seam: a berserker's rage, the runic blade's slash, smite, the elemental strike, the spirit blades and
  * striking wave talents (classes, talents, abilities) would raise it.
  */
-export const procMultiplier = (char: Char): number => (isHero(char) ? enchantPowerMultiplier(char) : 1);
+export const procMultiplier = (char: Char): number => (isHero(char) ? enchantPowerMultiplier(char) + classProcBonus(char) : 1);
 
 /* Who is who (Char.Property; a seam for the mobs stream's own) */
 
@@ -191,6 +192,8 @@ export function corruptSlain(ctx: Ctx, slain: Mob, power: number): void {
  * (Char.attackProc); returns the damage that goes through. `weapon` is the weapon in hand, the thrown one, or the
  * spirit bow for its arrow. A dart thrown with a crossbow in hand carries the crossbow's enchantment first.
  */
+export { enchantProc };
+
 export function weaponProc(ctx: Ctx, hero: Hero, mob: Mob, damage: number, weapon: Item | null, blow: Blow): number {
   if (!weapon) return damage;
   if (isMissile(weapon.kind) && hero.weapon?.kind === 'weapon.crossbow' && isDart(weapon.kind) && hero.weapon.enchant) {

@@ -20,6 +20,7 @@ import {
 } from './enchant';
 import { missileProc } from './throwing';
 import { gainEnergy } from './classes/monk';
+import { afterImageStruck, duelFoeDied, noteDuelDamage } from './classes/duelist-armor';
 import { classDamageTaken, heroBlow, heroEvasion, markHarvest, meleeStrike } from './classes/hooks';
 import { earthrootAbsorbs } from './plants';
 import { impQuestKill } from './imp';
@@ -117,6 +118,11 @@ const GRIM_RESISTANT: ReadonlySet<string> = new Set(['goo', 'tengu', 'dm300', 'k
 export function attack(ctx: Ctx, attacker: Char, defender: Char, override: AttackOverride = {}): boolean {
   const strike = isHero(attacker) ? (override.weapon ?? override.ability ?? (override.unarmed ? null : meleeStrike(attacker))) : null;
   const thrown = isHero(attacker) && override.weapon !== undefined;
+  // Feint.AfterImage.defenseSkill: a blow at the decoy loses the attacker the hero.
+  if (!isHero(defender) && defender.kind === 'afterImage') {
+    if (!isHero(attacker)) afterImageStruck(ctx, attacker, defender);
+    return false;
+  }
   const wasEnemy = !isHero(defender) && isEnemy(defender);
   // The classes (classes/hooks.ts): what the Duelist's talents and weapons and the Cleric's blessings do to a blow.
   const mods = isHero(attacker) ? heroBlow(ctx, attacker, defender, strike, override, thrown) : null;
@@ -483,6 +489,8 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   damage = damageTaken(ctx, victim, damage, by);
   // Char.damage: the warrior's seal may raise its shield, and shields take what they can (not hunger's).
   if (isHero(victim)) damage = shieldDamage(ctx, victim, damage, source === 'hunger');
+  // Hero.damage: Challenge's duel counts what the hero takes.
+  if (isHero(victim)) noteDuelDamage(victim, damage);
   onHurt(victim);
   if (!isHero(victim) && victim.kind === 'yog') {
     // Yog.damage: each living fist halves the harm, and they all come to defend it.
@@ -524,6 +532,7 @@ const CRAB_MEAT_CHANCE = 0.167;
 
 function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   mob.hp = 0;
+  duelFoeDied(ctx, mob);
   ctx.floor.mobs.splice(ctx.floor.mobs.indexOf(mob), 1);
   leaveCell(ctx.world, ctx.level, ctx.depth, mob.pos);
   ctx.effects.push({ type: 'died', depth: ctx.depth, who: mob.id, pos: mob.pos, kind: mob.kind, ...(by ? { by } : {}) });

@@ -8,6 +8,8 @@ import { NEIGHBOURS8 } from './level/geometry';
 import { immuneTo, trapAt, triggerTrap } from './traps';
 import type { World } from './world';
 import { S } from './spd-sprites';
+import { ARMOR_ABILITIES } from './talents';
+import { abilityProblem, performAbility } from './classes/abilities';
 
 /*
  * The armour kit and class armour (ArmorKit, ClassArmor and its four kinds).
@@ -32,11 +34,17 @@ const BURNING_TURNS = 8;
  * level, glyph and curse; class armour hides nothing (ClassArmor: levelKnown
  * and cursedKnown).
  */
-export function applyArmorKit(ctx: Ctx, hero: Hero, index: number): void {
+export function applyArmorKit(ctx: Ctx, hero: Hero, index: number, choice?: number): void {
   hero.items.splice(index, 1);
   const old = hero.armor;
   hero.armor = { ...old, kind: CLASS_ARMOR_OF[hero.heroClass], base: old.base ?? old.kind };
   identify(ctx.world, hero.armor);
+  // WndChooseAbility and KingsCrown.upgradeArmor: the Duelist and the Cleric choose one of their three abilities; the armour starts half charged.
+  const abilities = ARMOR_ABILITIES[hero.heroClass];
+  if (abilities && choice !== undefined) {
+    hero.armorAbility = abilities[choice]!;
+    hero.armor.charge = 50;
+  }
   ctx.effects.push({ type: 'classArmor', hero: hero.id, item: hero.armor });
 }
 
@@ -44,6 +52,7 @@ const wearsClassArmor = (hero: Hero): boolean => hero.armor.kind === CLASS_ARMOR
 
 export function specialProblem(world: World, hero: Hero, target: number | undefined): string | null {
   if (!wearsClassArmor(hero)) return 'you wear no class armour';
+  if (ARMOR_ABILITIES[hero.heroClass]) return abilityProblem(world, hero, target);
   if (hero.hp < 3) return 'you are too weak for that';
   if (hero.heroClass === 'warrior') {
     return Number.isInteger(target) && target !== hero.pos && target! >= 0 ? null : 'choose where to leap';
@@ -64,6 +73,7 @@ export function specialProblem(world: World, hero: Hero, target: number | undefi
 /** ClassArmor.doSpecial: the ability of the hero's class; a third of their health is the price. Returns the time it took. */
 export function classSpecial(ctx: Ctx, hero: Hero, target: number | undefined): number {
   const { world, depth, level } = ctx;
+  if (ARMOR_ABILITIES[hero.heroClass]) return performAbility(ctx, hero, target);
   const seen = heroView(world, hero);
   const foes = (): Mob[] => ctx.floor.mobs.filter((mob) => seen[mob.pos] && mob.state !== 'passive' && isAlive(mob));
   const pay = (): void => {

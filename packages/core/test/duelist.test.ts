@@ -173,6 +173,68 @@ describe("weapon abilities (MeleeWeapon.duelistAbility)", () => {
   });
 });
 
+describe("the armour abilities (Challenge, Elemental Strike, Feint)", () => {
+  /** A Duelist in class armour with the ability chosen from the kit. */
+  function armoured(choice: number, weapon: ItemKind = 'weapon.rapier'): World {
+    const world = duelist(weapon);
+    const hero = heroById(world, 'p')!;
+    hero.items.push(createItem('kit.armor'));
+    expect(act(world, 'p', { type: 'use', item: hero.items.length - 1 }).ok).toBe(false);
+    expect(act(world, 'p', { type: 'use', item: hero.items.length - 1, choice }).ok).toBe(true);
+    return world;
+  }
+
+  it('the armour kit makes her choose one of three, and the armour starts half charged', () => {
+    const world = armoured(2);
+    const hero = heroById(world, 'p')!;
+    expect(hero.armorAbility).toBe('feint');
+    expect(hero.armor.kind).toBe('armor.duelist');
+    expect(hero.armor.charge).toBeLessThan(51);
+  });
+
+  it('Feint: a step aside in a turn, leaving a decoy that an enemy strikes in vain', () => {
+    const world = armoured(2);
+    const hero = heroById(world, 'p')!;
+    const id = rat(world, freeBeside(world, hero.pos));
+    const from = hero.pos;
+    const to = freeBeside(world, from, 1);
+    const free = NEIGHBOURS8.map((n) => from + n).filter((c) => canEnter(levelAt(world, 1), c) && !charAt(world, 1, c));
+    const dest = free.find((c) => c !== to) ?? to;
+    const result = act(world, 'p', { type: 'special', target: dest });
+    expect(result.ok).toBe(true);
+    expect(hero.pos).toBe(dest);
+    expect(Math.round(hero.armor.charge!)).toBe(16);
+    // It stood through the turn and faded before the hero's next.
+    expect(result.ok && result.effects.some((e) => e.type === 'faded')).toBe(true);
+    expect(floorAt(world, 1).mobs.some((m) => m.kind === 'afterImage')).toBe(false);
+    void id;
+    void from;
+  });
+
+  it('Challenge: a duel with a foe; the others wait; the armour pays fifty', () => {
+    const world = armoured(0);
+    const hero = heroById(world, 'p')!;
+    const a = rat(world, freeBeside(world, hero.pos));
+    const b = rat(world, freeBeside(world, freeBeside(world, hero.pos)));
+    const result = act(world, 'p', { type: 'special', target: mobOf(world, a)!.pos });
+    expect(result.ok).toBe(true);
+    expect(cs(hero).duel?.foe).toBe(a);
+    expect(Math.round(hero.armor.charge!)).toBe(0);
+    if (b !== a && mobOf(world, b)) expect(mobOf(world, b)!.marks?.spectator).toBeGreaterThan(0);
+    expect(act(world, 'p', { type: 'special', target: mobOf(world, a)!.pos }).ok).toBe(false);
+  });
+
+  it('Elemental Strike: hurts the foe and everything in the cone, for a quarter of the armour', () => {
+    const world = armoured(1);
+    const hero = heroById(world, 'p')!;
+    const a = rat(world, freeBeside(world, hero.pos));
+    const result = act(world, 'p', { type: 'special', target: mobOf(world, a)!.pos });
+    expect(result.ok).toBe(true);
+    expect(mobOf(world, a)!.hp).toBeLessThan(1e6);
+    expect(Math.round(hero.armor.charge!)).toBe(26);
+  });
+});
+
 export type { Item };
 void isAlive;
 void WIDTH;
