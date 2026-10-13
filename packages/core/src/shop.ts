@@ -7,10 +7,12 @@
 
 import type { HeroClass } from './actors';
 
-export type OfferKind = 'skin' | 'effect' | 'frame' | 'patron' | 'tip';
+export type OfferKind = 'skin' | 'effect' | 'frame' | 'camp' | 'patron' | 'tip';
 export type SkinVariant = 'ash' | 'royal' | 'shadow';
 export type EffectId = 'sparks' | 'fireflies' | 'snow';
 export type FrameId = 'bronze' | 'gold' | 'shadow' | 'patron';
+/** A camp on the home screen («Привал»): the cave with crystals, the prison yard, the dwarven hall. The plain one at the dungeon's gate is free. */
+export type CampId = 'cave' | 'prison' | 'hall';
 
 export interface Offer {
   sku: string;
@@ -28,6 +30,7 @@ export interface Offer {
   skin?: SkinVariant;
   effect?: EffectId;
   frame?: FrameId;
+  camp?: CampId;
 }
 
 const HEROES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
@@ -51,6 +54,10 @@ export const OFFERS: readonly Offer[] = [
   { sku: 'frame.gold', kind: 'frame', stars: 50, frame: 'gold' },
   { sku: 'frame.shadow', kind: 'frame', stars: 50, frame: 'shadow' },
   { sku: 'frame.patron', kind: 'frame', stars: 0, frame: 'patron' },
+  // Camps for the home screen: the same scene, another place around the fire.
+  { sku: 'camp.cave', kind: 'camp', stars: 100, camp: 'cave' },
+  { sku: 'camp.prison', kind: 'camp', stars: 100, camp: 'prison' },
+  { sku: 'camp.hall', kind: 'camp', stars: 100, camp: 'hall' },
   // The patron: a month's subscription.
   { sku: 'patron', kind: 'patron', stars: 99, subscription: true },
   // Treating the developer.

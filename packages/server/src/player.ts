@@ -1,9 +1,10 @@
 import { DurableObject } from 'cloudflare:workers';
 import { type Action, dayOf, type HeroClass, isPatron, RULES_VERSION, type Wallet } from '@pd/core';
-import { BOARD_KINDS, type BoardKind, boardName, boardOfRun, boardsFor, finishedBoards, trophyPlaces } from './boards';
+import { BOARD_KINDS, type BoardKind, boardName, boardOfRun, boardsFor } from './boards';
 import { CORS, json, jsonBody } from './http';
 import type { Env } from './index';
 import { type DailyEntry, publicId } from './leaderboard';
+import { claimAll, claimLetter, collectMail, type Lookup, noteEntered, readLetter } from './mail';
 import { sanitizeAction } from './messages';
 import { EntryWriter, fromEntries, toEntries } from './run-store';
 import { describe, ended, MAX_SYNC_ACTIONS, parseSlot, PlayerLogic, type RunSlot, type RunSummary, streakNow } from './runs';
@@ -16,7 +17,9 @@ import { verifyInitData, WEEK_SECONDS } from './telegram-auth';
  *   POST /run   { initData, rules, op: 'start', slot, hero, challenges }   a new run: its id and world
  *               { initData, rules, op: 'sync', slot, run, from, actions, hash }  moves played on the device
  *               { initData, rules, op: 'get', slot }                         the run as the server has it
- *   POST /me    { initData }                     the profile: records, streak, trophies, places now
+ *   POST /me    { initData }                     the profile: records, streak, trophies, mail, places now
+ *               { initData, coachDone: true }    the step tutorial is done (kept with the profile, for every device)
+ *   POST /mail  { initData, op: 'read' | 'claim' | 'claimAll', id }   the mailbox (mail.ts): its letters and trophies after
  *   POST /board { initData?, kind }              a board's best, and my place on it
  *
  * Each player's runs and profile live in their own Durable Object (Player), so a player's
@@ -75,7 +78,21 @@ export async function meRoute(request: Request, env: Env): Promise<Response> {
   if (!body) return json({ error: 'bad json' }, 400);
   const player = await who(body, env);
   if (!player) return json({ error: 'unauthorized' }, 401);
-  const response = await playerStub(env, player.key).fetch('https://player/me', { method: 'POST', body: JSON.stringify({ player }) });
+  const response = await playerStub(env, player.key).fetch('https://player/me', { method: 'POST', body: JSON.stringify({ player, coachDone: body.coachDone === true }) });
+  return new Response(response.body, { status: response.status, headers: { 'Content-Type': 'application/json', ...CORS } });
+}
+
+/** POST /mail: read, claim or claim all; the player's own object does it. */
+export async function mailRoute(request: Request, env: Env): Promise<Response> {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  const body = await jsonBody(request);
+  if (!body) return json({ error: 'bad json' }, 400);
+  const player = await who(body, env);
+  if (!player) return json({ error: 'unauthorized' }, 401);
+  const op = body.op === 'read' || body.op === 'claim' || body.op === 'claimAll' ? body.op : null;
+  if (!op) return json({ error: 'bad op' }, 400);
+  const id = typeof body.id === 'string' ? body.id.slice(0, 64) : '';
+  const response = await playerStub(env, player.key).fetch('https://player/mail', { method: 'POST', body: JSON.stringify({ player, op, id }) });
   return new Response(response.body, { status: response.status, headers: { 'Content-Type': 'application/json', ...CORS } });
 }
 
@@ -131,7 +148,18 @@ export class Player extends DurableObject<Env> {
     const body = (await request.json()) as Record<string, unknown> & { player: Who };
     const logic = await this.load();
     const now = Date.now();
-    if (url.pathname === '/me') return json(await this.me(logic, body.player, now));
+    if (url.pathname === '/mail') return json(await this.mail(logic, body, now));
+    if (url.pathname === '/me') {
+      // The tutorial's end is kept once and for good; a light answer, the profile comes with the next ask.
+      if (body.coachDone === true) {
+        if (!logic.profile.coachDone) {
+          logic.profile.coachDone = true;
+          await this.persist(new Set(), new Map());
+        }
+        return json({ coachDone: true });
+      }
+      return json(await this.me(logic, body.player, now));
+    }
     const slot = parseSlot(body.slot);
     if (!slot) return json({ error: 'bad slot' }, 400);
     switch (body.op) {
@@ -197,6 +225,7 @@ export class Player extends DurableObject<Env> {
         heroClass: summary.heroClass, depth: summary.depth, level: summary.level, gold: summary.gold, won: summary.won,
         score: summary.score, kills: summary.kills, at: now, ...(patron ? { patron } : {}),
       };
+      noteEntered(this.logic!.profile, name);
       try {
         const response = await boardStub(this.env, name).fetch(`https://board/put?name=${encodeURIComponent(name)}`, { method: 'POST', body: JSON.stringify(entry) });
         places[kind] = ((await response.json()) as { rank: number | null }).rank;
@@ -218,23 +247,35 @@ export class Player extends DurableObject<Env> {
     }
   }
 
+  /** What a finished board says of a player: their place and how many were on it (null: not on it, or the board is gone). */
+  private standing(key: string): Lookup {
+    return async (name) => {
+      try {
+        const response = await boardStub(this.env, name).fetch(`https://board/?name=${encodeURIComponent(name)}&owner=${encodeURIComponent(key)}&top=0`);
+        const { owner, total } = (await response.json()) as { owner?: { rank: number }; total?: number };
+        return owner ? { rank: owner.rank, ...(total ? { total } : {}) } : null;
+      } catch {
+        // Asked again next time.
+        return 'error';
+      }
+    };
+  }
+
+  /** The mailbox: a letter read or claimed, or all of them; the letters and the trophies as they stand. */
+  private async mail(logic: PlayerLogic, body: Record<string, unknown>, now: number): Promise<Record<string, unknown>> {
+    const p = logic.profile;
+    const op = body.op;
+    const id = typeof body.id === 'string' ? body.id : '';
+    const changed = op === 'claimAll' ? claimAll(p, now) > 0 : op === 'claim' ? claimLetter(p, id, now) === 'claimed' : op === 'read' ? readLetter(p, id) : false;
+    if (changed) await this.persist(new Set(), new Map());
+    return { mail: p.mail, trophies: p.trophies };
+  }
+
   /** The profile, with the places held now and any trophies of boards finished since last asked. */
   private async me(logic: PlayerLogic, player: Who, now: number): Promise<Record<string, unknown>> {
     const p = logic.profile;
-    let changed = false;
-    for (const name of finishedBoards(now)) {
-      if (p.claimed.includes(name)) continue;
-      try {
-        const response = await boardStub(this.env, name).fetch(`https://board/?name=${encodeURIComponent(name)}&owner=${encodeURIComponent(player.key)}&top=0`);
-        const { owner } = (await response.json()) as { owner?: { rank: number } };
-        if (owner && owner.rank <= trophyPlaces(name)) p.trophies = [{ board: name, place: owner.rank, at: now }, ...p.trophies].slice(0, 50);
-        p.claimed = [name, ...p.claimed].slice(0, 30);
-        changed = true;
-      } catch {
-        // Asked again next time.
-      }
-    }
-    if (changed) await this.persist(new Set(), new Map());
+    // Boards finished since last asked become letters (mail.ts); the trophies are claimed from them.
+    if (await collectMail(p, now, this.standing(player.key))) await this.persist(new Set(), new Map());
     const places: Partial<Record<BoardKind, number | null>> = {};
     const totals: Partial<Record<BoardKind, number>> = {};
     for (const kind of BOARD_KINDS) {
@@ -258,7 +299,7 @@ export class Player extends DurableObject<Env> {
     return {
       name: p.name, games: p.games, wins: p.wins, deepest: p.deepest, best: p.best, bestByClass: p.bestByClass,
       arenaWaves: p.arenaWaves, arenaBest: p.arenaBest, streak: streakNow(p.streak, today), dailyDone: p.dailyDate === today,
-      badges: p.badges, history: p.history, trophies: p.trophies, places, totals, runs, today,
+      badges: p.badges, history: p.history, trophies: p.trophies, mail: p.mail, coachDone: p.coachDone, places, totals, runs, today,
     };
   }
 }
