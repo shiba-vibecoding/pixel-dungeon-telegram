@@ -1,5 +1,6 @@
 import { F, hasFlag, type Mob, type MobKind, type PlantKind, T, trapAt } from '@pd/core';
 import { lang, t } from './i18n';
+import { artText } from './artifacttext';
 
 /*
  * What the examine tool tells about a cell (Toolbar's info button, Mob.description,
@@ -95,7 +96,7 @@ const SAME_AS: Partial<Record<MobKind, MobKind>> = {
   albino: 'rat', bandit: 'thief', shielded: 'brute', senior: 'monk', acidic: 'scorpio', larva: 'yog', rottingFist: 'yog', burningFist: 'yog',
 };
 
-export function mobDescription(mob: Mob): string {
+export function mobDescription(mob: Mob, now = 0): string {
   // Shattered's wands' creatures: what they can do, as strong as the wand that made them.
   if (mob.kind === 'ward') {
     const { tier, level } = mob.ward ?? { tier: 1, level: 0 };
@@ -109,9 +110,18 @@ export function mobDescription(mob: Mob): string {
     const level = mob.lotus?.level ?? 0;
     return t.lotusInfo(level, Math.round(Math.min(1, 0.4 + 0.04 * level) * 100));
   }
+  // The armour abilities' allies, in Shattered's words: the hawk says how long it has left.
+  if (mob.kind === 'shadow') return artText('actors.hero.abilities.rogue.shadowclone$shadowally.desc');
+  if (mob.kind === 'ninjaLog') return artText('actors.hero.abilities.rogue.smokebomb$ninjalog.desc');
+  if (mob.kind === 'hawk') {
+    const left = Math.max(0, Math.floor(mob.hawk?.remaining ?? 0));
+    return `${artText('actors.hero.abilities.huntress.spirithawk$hawkally.desc')}\n\n${artText('actors.hero.abilities.huntress.spirithawk$hawkally.desc_remaining', [left])}`;
+  }
   const table = lang === 'ru' ? RU_MOBS : EN_MOBS;
   const own = table[mob.kind] ?? table[SAME_AS[mob.kind] ?? mob.kind] ?? '';
-  return mob.corrupted ? `${own}\n\n${t.corruptedInfo}` : own;
+  // Death Mark: the mark and the turns it has left.
+  const marked = mob.deathMark ? `\n\n${artText('actors.hero.abilities.rogue.deathmark$deathmarktracker.desc', [Math.max(0, Math.ceil(mob.deathMark.until - now))])}` : '';
+  return mob.corrupted ? `${own}\n\n${t.corruptedInfo}${marked}` : `${own}${marked}`;
 }
 
 /** A creature's name, a ward's by its tier (Ward.name). */

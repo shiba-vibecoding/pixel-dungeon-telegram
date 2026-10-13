@@ -34,6 +34,8 @@ export interface Assets {
   plants: HTMLImageElement;
   /** Shattered's effects.png (Effects.get): the chains among them. */
   effects: HTMLImageElement;
+  /** Shattered's spell_icons.png (SpellSprite): 16 by 16 icons that swell in over a creature. */
+  spells: HTMLImageElement;
 }
 
 const anim = (fps: number, frames: number[], loop = false): Animation => ({ fps, frames, loop });
@@ -308,6 +310,15 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimNam
     anims: basic(anim(2, [0, 0, 0, 0, 0, 1, 1], true), anim(15, [2, 3, 4, 5, 6, 7], true), anim(12, [8, 9, 10]), anim(5, [11, 12, 13, 14, 15, 15])),
   },
   lotus: { w: 19, h: 16, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(1, [0])) },
+  // The armour abilities' allies: ShadowSprite (the rogue's own frames, class armour's row, drawn as a dark shadow: render.ts),
+  // SpiritHawk.HawkSprite and SmokeBomb.NinjaLogSprite (assets/spd).
+  shadow: { w: 12, h: 15, anims: HERO_ANIMS },
+  hawk: {
+    w: 15,
+    h: 15,
+    anims: basic(anim(6, [0, 1], true), anim(8, [0, 1], true), anim(12, [2, 3, 0, 1]), anim(12, [4, 5, 6])),
+  },
+  ninjaLog: { w: 11, h: 12, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(12, [1, 2, 3, 4])) },
   tengu: {
     w: 14,
     h: 16,
@@ -391,7 +402,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     'elemental', 'monk', 'warlock', 'golem', 'king', 'undead', 'tiles4', 'water4',
     'succubus', 'eye', 'scorpio', 'yog', 'rottingFist', 'burningFist', 'larva', 'mimic', 'statue', 'piranha', 'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'bee', 'warrior', 'mage', 'rogue', 'ranger', 'rat', 'gnoll', 'crab', 'goo', 'ghost',
     'skeleton', 'thief', 'swarm', 'shaman', 'bat', 'brute', 'tengu', 'shopkeeper', 'wandmaker', 'spd/ghost', 'spd/effects',
-    'icons', 'items', 'plants', 'spd/wards', 'spd/guardian', 'spd/lotus',
+    'icons', 'items', 'plants', 'spd/wards', 'spd/guardian', 'spd/lotus', 'spd/spirit_hawk', 'spd/ninja_log', 'spd/spell_icons',
   ] as const;
   let loaded = 0;
   const images = Object.fromEntries(
@@ -410,6 +421,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     // A mirror image is drawn with its hero's own sheet (see View.sync); the warrior's stands in here.
     const image = kind === 'mirror' || kind === 'prismatic' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp'
       : kind === 'ward' ? 'spd/wards' : kind === 'guardian' ? 'spd/guardian' : kind === 'lotus' ? 'spd/lotus' : kind === 'ghostHero' ? 'spd/ghost'
+      : kind === 'shadow' ? 'rogue' : kind === 'hawk' ? 'spd/spirit_hawk' : kind === 'ninjaLog' ? 'spd/ninja_log'
       : baseKind(kind);
     return { sheet: sheet(images[image as (typeof names)[number]], spec.w, spec.h), anims: spec.anims };
   };
@@ -427,6 +439,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     items: images.items,
     plants: images.plants,
     effects: images['spd/effects'],
+    spells: images['spd/spell_icons'],
   };
 }
 

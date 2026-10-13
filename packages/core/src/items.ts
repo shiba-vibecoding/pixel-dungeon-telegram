@@ -385,8 +385,11 @@ export const ITEMS = {
   'tome.mastery': { category: 'tome', sprite: S.MASTERY },
   /** Lit, it lets one see further in the dark halls for a while. */
   torch: { category: 'torch', sprite: S.TORCH },
-  /** The King of Dwarves' legacy: it turns the armour worn into the hero's class armour. */
-  'kit.armor': { category: 'kit', sprite: S.KIT },
+  /**
+   * KingsCrown: the Dwarf King's, it turns the armour worn into class armour (as the armour kit here).
+   * SEAM(abilities): the abilities stream gives it the choice of an armour ability.
+   */
+  'crown.king': { category: 'kit', sprite: S.CROWN },
   /** Brings its bearer back to life once, at a price: everything else in the pack, and all gold. */
   ankh: { category: 'ankh', sprite: S.ANKH },
   /** The Amulet of Yendor, at the very bottom of the dungeon. */

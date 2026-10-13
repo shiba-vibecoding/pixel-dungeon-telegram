@@ -36,6 +36,8 @@ export const BUFF_ICONS = {
   prismaticGuard: 1020, challengeArena: 1054,
   // The artifacts': the cloak's stealth (INVISIBLE, dimmed), the hourglass's time freeze and stasis (TIME), the cape's THORNS, the talisman's FORESIGHT.
   stealth: 1012, timeFreeze: 1007, thorns: 1031,
+  // The armour abilities': Endure's stored blows (BuffIndicator.ARMOR) and Nature's Power (NATURE_POWER).
+  endure: 1020, naturesPower: 1058,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 
@@ -90,6 +92,20 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
     ...((me.blessed ?? 0) > 0 ? [{ name: 'bless' as const, turns: Math.ceil(me.blessed!) }] : []),
     ...alchemyBuffs(me),
     ...artifactBuffs(me),
+    ...abilityBuffs(me),
+  ];
+}
+
+/**
+ * The armour abilities' buffs: Endure's blows to pay back (shown once the stance is over: the damage stored), Nature's Power
+ * (turns left).
+ */
+function abilityBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
+  const endure = me.abil?.endure;
+  const nature = me.abil?.nature;
+  return [
+    ...(endure && !endure.enduring && me.time < endure.until ? [{ name: 'endure' as const, turns: endure.damageBonus }] : []),
+    ...(nature && me.time < nature.until ? [{ name: 'naturesPower' as const, turns: Math.ceil(nature.until - me.time) }] : []),
   ];
 }
 

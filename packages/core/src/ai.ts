@@ -28,6 +28,7 @@ import { S } from './spd-sprites';
 import { mobCount, partySize, respawnTime, scaleMob } from './party';
 import { mobTimeScale } from './throwing';
 import { ghostAct, ghostSeesBoss, isInvisible } from './artifacts';
+import { directableAct } from './abilities';
 
 /*
  * Monster behaviour, ported from Mob: sleeping monsters may notice a hero in
@@ -127,6 +128,16 @@ function chooseFoe(ctx: Ctx, mob: Mob, fov: boolean[]): Mob | undefined {
 }
 
 export function mobAct(ctx: Ctx, mob: Mob): void {
+  // The armour abilities' allies (DirectableAlly): the shadow clone and the spirit hawk; the decoy only stands there.
+  if (mob.kind === 'shadow' || mob.kind === 'hawk') {
+    if (!mobConditions(ctx, mob)) directableAct(ctx, mob);
+    else spend(mob, TICK);
+    return;
+  }
+  if (mob.kind === 'ninjaLog') {
+    spend(mob, TICK);
+    return;
+  }
   // Alchemy's allies (those that follow a hero: an enthralled monster, a prismatic image, a summoned elemental); the
   // wands' allies go the monsters' way, against the monsters (chooseFoe).
   if (mob.ally && mob.owner !== undefined && mob.kind !== 'mirror' && mob.kind !== 'bee') {

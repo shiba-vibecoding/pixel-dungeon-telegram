@@ -35,8 +35,12 @@ function material(kind: string): { colors: readonly string[]; glow: boolean } {
       return { colors: BONE, glow: false };
     case 'golem': case 'dm300': case 'statue':
       return { colors: SPARK, glow: true };
-    case 'wraith': case 'curse': case 'ghost': case 'mirror':
+    case 'wraith': case 'curse': case 'ghost': case 'mirror': case 'hawk':
       return { colors: ECTO, glow: true };
+    case 'shadow':
+      return { colors: ['#201830', '#40305a', '#0a0610'], glow: false };
+    case 'ninjaLog':
+      return { colors: ['#966400', '#c89040', '#5a3c00'], glow: false };
     case 'elemental': case 'burningFist':
       return { colors: FIRE, glow: true };
     case 'eye': case 'yog':
@@ -82,6 +86,9 @@ const RUBBLE: Gore = {
 const EMBERS: Gore = {
   pieces: [['#ffcf60', '#ff7a20'], ['#ffefa0', '#ffb040'], ['#ff7a20', '#c03008']], smear: null, pool: null, corpse: false, embers: true,
 };
+const WOOD: Gore = {
+  pieces: [['#966400', '#5a3c00'], ['#c89040', '#6a4a10'], ['#7a5010', '#3a2808']], smear: null, pool: null, corpse: false,
+};
 const ECTOPLASM: Gore = { pieces: [], smear: null, pool: null, corpse: false, wisp: true };
 const VOID_FLESH: Gore = {
   pieces: [['#b050d0', '#4a1a6a'], ['#6a2a9a', '#30104a'], ['#e8a0ff', '#8a50b0']],
@@ -99,8 +106,10 @@ function goreOf(kind: string): Gore {
       return BONE_CHIPS;
     case 'golem': case 'dm300': case 'statue':
       return RUBBLE;
-    case 'wraith': case 'curse': case 'ghost': case 'mirror':
+    case 'wraith': case 'curse': case 'ghost': case 'mirror': case 'hawk': case 'shadow':
       return ECTOPLASM;
+    case 'ninjaLog':
+      return WOOD;
     case 'elemental': case 'burningFist':
       return EMBERS;
     case 'eye': case 'yog':
@@ -153,6 +162,10 @@ function layBody(view: View, puppet: Puppet, gore: Gore, boss: boolean, now: num
     pool: gore.pool ? { start: now + duration(die) * 0.4, radius: Math.max(4, Math.min(10, Math.round(sheet.w * 0.35))) + (boss ? 3 : 0), ...gore.pool } : undefined,
   });
 }
+
+/** HeroicLeap's jump takes a tenth of a second a cell: when it lands. */
+const duration100 = (effect: { from: number; to: number }): number =>
+  Math.max(1, Math.hypot((effect.to % WIDTH) - (effect.from % WIDTH), Math.trunc(effect.to / WIDTH) - Math.trunc(effect.from / WIDTH))) * 100;
 
 const cellCentre = (cell: number): { x: number; y: number } => ({ x: (cell % WIDTH) * TILE + TILE / 2, y: Math.trunc(cell / WIDTH) * TILE + TILE / 2 });
 
@@ -457,17 +470,69 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
       }
       fx.shake(6, 600, now);
       return;
-    case 'special': {
+    case 'ability': {
+      if (!here(effect.depth)) return;
+      const from = cellCentre(effect.from);
       const to = cellCentre(effect.to);
-      if (effect.ability === 'leap') {
-        fx.burst(to.x, to.y + 4, now + 150, { count: 30, colors: DUST, speed: [40, 110], life: [300, 650], gravity: 200, angle: -Math.PI / 2, cone: Math.PI, size: [1, 2] });
-        fx.shake(5, 350, now + 150);
-      } else if (effect.ability === 'smokeBomb') {
-        const from = cellCentre(effect.from);
-        fx.burst(from.x, from.y, now, { count: 40, colors: SMOKE, speed: [5, 30], life: [800, 1500], rise: 12, drag: 0.5, size: [2, 4], spread: 8 });
-      } else if (effect.ability === 'moltenEarth') {
-        fx.shake(3, 400, now);
+      switch (effect.ability) {
+        case 'heroicLeap':
+          // Where it lands: dust kicked up in a ring, the ground shaking (PixelScene.shake(2, 0.5)).
+          fx.burst(to.x, to.y + 4, now + duration100(effect), { count: 30, colors: DUST, speed: [40, 110], life: [300, 650], gravity: 200, angle: -Math.PI / 2, cone: Math.PI, size: [1, 2] });
+          fx.shake(2, 500, now + duration100(effect));
+          return;
+        case 'shockwave':
+          fx.shake(2, 500, now);
+          return;
+        case 'endure':
+          // Endure's end: Speck.SCREAM, a few rising shouts about the hero's head.
+          if (effect.cells) burst(centreOf(view, effect.hero, now), now, { count: 3, colors: ['#ffffff', '#ffd0d0'], glow: true, speed: [6, 18], life: [400, 800], rise: 20, size: [1, 2], spread: 4 });
+          return;
+        case 'elementalBlast':
+          burst(centreOf(view, effect.hero, now), now, { count: 12, colors: ['#ffffff', '#ffe9a0'], glow: true, speed: [20, 60], life: [200, 500], size: [1, 1] });
+          return;
+        case 'smokeBomb':
+          // CellEmitter.get(hero.pos).burst(Speck.WOOL, 10): a puff of wool, and light on those blinded.
+          fx.burst(from.x, from.y, now, { count: 10, colors: ['#f0f0f0', '#cfcfcf', '#aaaaaa'], speed: [10, 36], life: [500, 1000], rise: 6, drag: 0.5, size: [2, 4], spread: 5 });
+          for (const cell of effect.cells ?? []) {
+            const mob = cellCentre(cell);
+            fx.burst(mob.x, mob.y, now, { count: 4, colors: ['#ffffff', '#fff6b0'], glow: true, speed: [10, 30], life: [250, 500], size: [1, 1] });
+          }
+          return;
+        case 'shadowClone':
+        case 'perfectCopy':
+          // ShadowAlly.appear: SmokeParticle.FACTORY, ten puffs.
+          fx.burst(to.x, to.y, now, { count: 10, colors: SMOKE, speed: [6, 24], life: [500, 1000], rise: 10, drag: 0.5, size: [2, 3], spread: 4 });
+          if (effect.ability === 'perfectCopy') fx.burst(from.x, from.y, now, { count: 10, colors: SMOKE, speed: [6, 24], life: [500, 1000], rise: 10, drag: 0.5, size: [2, 3], spread: 4 });
+          return;
+        case 'naturesPower':
+          // LeafParticle.GENERAL burst: ten leaves about the hero.
+          burst(centreOf(view, effect.hero, now), now, { count: 10, colors: ['#2a7a22', '#88cc44', '#4cc24c'], speed: [14, 40], life: [500, 900], gravity: 30, size: [1, 2], spread: 4 });
+          return;
+        case 'warpBeacon':
+          fx.burst(to.x, to.y, now, { count: 8, colors: ['#8822ff', '#c080ff', '#ffffff'], glow: true, speed: [8, 28], life: [300, 600], rise: 16, size: [1, 1], spread: 3 });
+          return;
+        case 'spiritHawk':
+          fx.burst(to.x, to.y, now, { count: 8, colors: ['#78e0ff', '#ffffff'], glow: true, speed: [8, 28], life: [300, 600], rise: 10, size: [1, 1], spread: 3 });
+          return;
+        default:
+          return;
       }
+    }
+    case 'telefrag': {
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      fx.burst(at.x, at.y, now, { count: 30, colors: BLOOD, speed: [40, 120], life: [300, 700], gravity: 260, size: [1, 3], spread: 3 });
+      fx.shake(3, 300, now);
+      return;
+    }
+    case 'deathMarked': {
+      if (!here(effect.depth) || !effect.died) return;
+      // DeathMarkTracker.detach: it flashes and bursts into blood (HT * 2 of it).
+      const puppet = view.puppets.get(effect.mob);
+      if (!puppet) return;
+      const at = centreOf(view, effect.mob, now);
+      burst(at, now, { count: 30, colors: BLOOD, speed: [40, 120], life: [300, 700], gravity: 260, size: [1, 3], spread: 3 });
+      fx.shake(2, 220, now);
       return;
     }
     case 'enchanted': {
@@ -1010,6 +1075,10 @@ export function ambientFx(view: View, now: number, dt: number): void {
     if (puppet.hp < puppet.ht * 0.4 && now - puppet.moveStart < STEP_MS && chance(3.5)) {
       const smear = goreOf(puppet.kind).smear;
       if (smear) fx.splat(x + TILE / 2, y + TILE - 7, now, [smear], 1, 2.5);
+    }
+    // ShadowSprite: a smoke of darkness rises off the clone (CityLevel.Smoke every 0.2 s).
+    if (puppet.kind === 'shadow' && chance(5)) {
+      fx.burst(x + 4 + Math.random() * 8, y + 4, now, { count: 1, colors: ['#3a2f55', '#1a1226', '#50407a'], speed: [1, 4], life: [900, 1500], rise: 10, drag: 0.6, size: [2, 3], spread: 1 });
     }
     if (puppet.poisoned && chance(3)) {
       fx.burst(x + 4 + Math.random() * 8, y + 6, now, { count: 1, colors: ICHOR, speed: [1, 4], life: [500, 900], rise: 10, drag: 0.5, size: [1, 1], spread: 0 });
