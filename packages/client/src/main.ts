@@ -11,6 +11,7 @@ import * as core from '@pd/core';
 import './ui.css';
 import { loop } from './lifecycle';
 import { reloadForUpdate } from './update';
+import { preloadMapFx } from './shfx';
 import './game.css';
 import { mobDescription, mobName, plantText, tileText, wellText } from './examine';
 import {
@@ -78,7 +79,7 @@ import {
   homeScreenStatus, addToHomeScreen,
 } from './telegram';
 import { startReporting } from './report';
-import { alchemyOpen, refreshAlchemy, showAlchemy } from './alchemyui';
+import { alchemyOpen, noteCrafted, refreshAlchemy, showAlchemy } from './alchemyui';
 import { STEP_MS, TILE, View } from './view';
 
 /*
@@ -153,6 +154,8 @@ const assets = await loadAssets(`${import.meta.env.BASE_URL}assets/`, (done) => 
 await Promise.all([document.fonts.load('18px Galmuri11'), document.fonts.load('15px Galmuri9')]).catch(() => undefined);
 loading.remove();
 setAssets(assets);
+// The map's effects of design v19 (bolts, the glass image, hearts, chains): loaded behind the first screen.
+preloadMapFx();
 
 const view = new View(assets);
 /** The world answering touch: doors, grass, water, what falls and what is taken (motion.ts). */
@@ -2649,6 +2652,7 @@ function tick(now: number): void {
     const mine = session.myId;
     if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
     // The pot's window, if open, shows the pack and the energy as they are now.
+    for (const e of effects) if (e.type === 'crafted' && e.hero === mine && alchemyOpen()) noteCrafted(e.item);
     if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
     for (const effect of effects) effectFx(effect, view, world, session.myId, vnow);
     motion.effects(effects, world, me.depth, (e) => itemSprite(e.item, world.run.labels));

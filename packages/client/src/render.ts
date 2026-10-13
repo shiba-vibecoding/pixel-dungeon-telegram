@@ -1,4 +1,4 @@
-import { HEIGHT, type Level, LENGTH, T, WIDTH } from '@pd/core';
+import { HEIGHT, type Level, LENGTH, S, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
 import { CHAIN_MS, FALL_MS, type Puppet, TILE, type View } from './view';
 import { bossCard, depthCard, floatNumber, levelCard, nameplate, slainCard, waveCard } from './cards';
@@ -417,7 +417,9 @@ export function render(
     const chests = sheet('chests');
     const closed = CHEST_ANIMS.get(heap.sprite);
     const first = closed ? chests?.anims[closed]?.[0] : undefined;
-    if (chests && first) ctx.drawImage(chests.image, first.x, first.y, 16, 16, -8, -16, 16, 16);
+    // A heap of energy crystals glints in four frames of 200 ms (design v19: energy-pile.png).
+    if (heap.sprite === S.ENERGY && loaded(shImage('energy-pile'))) ctx.drawImage(shImage('energy-pile'), (quality.reducedMotion ? 0 : Math.floor(now / 200) % 4) * 16, 0, 16, 16, -8, -16, 16, 16);
+    else if (chests && first) ctx.drawImage(chests.image, first.x, first.y, 16, 16, -8, -16, 16, 16);
     else ctx.drawImage(assets.items, (heap.sprite % 16) * 16, Math.floor(heap.sprite / 16) * 16, 16, 16, -8, -16, 16, 16);
     // ItemSprite.Glowing: the sprite swells towards its glow's colour and back.
     if (heap.glow && visible[heap.pos]) {

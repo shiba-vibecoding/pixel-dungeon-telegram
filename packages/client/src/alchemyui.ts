@@ -7,6 +7,7 @@ import { audio } from './audio';
 import { capitalize, fill, t } from './i18n';
 import { itemName } from './itemtext';
 import { type BackpackOptions, button, el, show, showBackpack, showConfirm, sprites, windowOf } from './screens';
+import { BREW_HEAT_MS, BREW_MS, flyEnergy, mountPot, mountSprite, type PotState as PotAnim, preloadAlchemy } from './shfx';
 
 /*
  * Shattered's alchemy at the pot (AlchemyScene), in the design system's ShAlchemy markup: three
@@ -14,6 +15,10 @@ import { type BackpackOptions, button, el, show, showBackpack, showConfirm, spri
  * into energy» (WndEnergizeItem) with what each item is worth; and the recipe book
  * (Document.ALCHEMY_GUIDE) by pages. Also the small choices alchemy's items ask for (an
  * enchantment, an augmentation, a guess, a talent tier, a trinket...), as one window.
+ *
+ * Design v19 (ShAlchFx): the pot is a canvas that boils, heats and puffs (pot-idle / pot-brew / pot-catalyst); the
+ * catalyst pulses in the result slot; energy shards arc from what is turned into energy to the counter; the
+ * trinket window after the catalyst; the recipe book's pages not found yet.
  */
 
 /** Where the pot window gets the world as it is now, and sends what the player does. */
@@ -31,6 +36,14 @@ interface PotState {
   screen: { kind: 'pot' } | { kind: 'energize'; picked: Set<number> } | { kind: 'guide'; page: number } | { kind: 'trinket' };
   /** The pack as it was when the inputs were chosen: they are dropped if it changes under them. */
   pack: string;
+  /** The pot brewing (its animation runs from `start`): the window stands still until it is done. */
+  brew: (PotAnim & { recipe: string }) | null;
+  /** The window waits for an animation (a brew, energy flying): the world has moved on, the screen shows it afterwards. */
+  busy: boolean;
+  /** What the last brew made, to show in the result slot until the ingredients change. */
+  made: Item | null;
+  /** The trinket the choice window has framed. */
+  framed: number;
 }
 
 let pot: PotState | null = null;
@@ -73,8 +86,15 @@ function head(world: World, title: string, onClose: () => void, sprite = 'alchem
 /** Opens the pot (Hero.actAlchemy): tapped while standing by it. */
 export function showAlchemy(options: PotOptions): void {
   const now = options.current();
-  pot = { options, inputs: [], screen: { kind: 'pot' }, pack: now ? packKey(now.hero) : '' };
+  preloadAlchemy();
+  pot = { options, inputs: [], screen: { kind: 'pot' }, pack: now ? packKey(now.hero) : '', brew: null, busy: false, made: null, framed: 0 };
   draw();
+}
+
+/** The brew made this (the world's answer, `crafted`): shown in the result slot once the pot has done. */
+export function noteCrafted(item: Item | null): void {
+  if (!pot) return;
+  pot.made = item;
 }
 
 export const alchemyOpen = (): boolean => pot !== null && document.querySelector('.pd-alch-window, .pd-alch-sub') !== null;
@@ -89,6 +109,19 @@ export function refreshAlchemy(): void {
   draw();
 }
 
+/** Waits `ms` with the window standing (an animation plays over it), then shows what the world has become. */
+function wait(ms: number, then?: () => void): void {
+  const state = pot;
+  if (!state) return;
+  state.busy = true;
+  window.setTimeout(() => {
+    if (pot !== state) return;
+    state.busy = false;
+    then?.();
+    draw();
+  }, ms);
+}
+
 function close(): void {
   const options = pot?.options;
   pot = null;
@@ -97,6 +130,8 @@ function close(): void {
 
 function draw(): void {
   if (!pot) return;
+  // An animation is playing over the window: it is drawn again when that is done.
+  if (pot.busy) return;
   const now = pot.options.current();
   if (!now) return close();
   const { world, hero } = now;
@@ -130,6 +165,7 @@ function drawPot(world: World, hero: Hero): void {
       node.onclick = () => {
         audio.play('click');
         state.inputs.splice(i, 1);
+        state.made = null;
         draw();
       };
       row.append(node);
@@ -142,15 +178,29 @@ function drawPot(world: World, hero: Hero): void {
       row.append(add);
     }
   }
-  row.append(el('i', { className: `pd-alch-arrow${offer ? ' ready' : ''}` }));
-  const out = el('div', { className: `pd-slot out${!offer ? ' empty' : offer.output ? '' : ' unknown'}` });
-  if (offer) {
+  // The pot between the ingredients and the result: it boils, and heats and puffs when it brews (ShAlchFx).
+  const cauldron = el('canvas', { className: 'pd-alch-pot', ariaHidden: 'true' });
+  cauldron.dataset.mode = state.brew?.mode ?? 'idle';
+  mountPot(cauldron, () => pot?.brew ?? null);
+  row.append(cauldron);
+  const cataOut = offer?.id === 'trinketCatalyst';
+  const made = !offer && state.made ? state.made : null;
+  const out = el('div', { className: `pd-slot out${cataOut ? ' catalyst' : !offer && !made ? ' empty' : offer?.output || made ? '' : ' unknown'}` });
+  if (cataOut) {
+    // The catalyst pulses in the result slot (catalyst.png, 6 frames of 120 ms).
+    const pulse = el('canvas', { className: 'pd-catalyst', ariaHidden: 'true' });
+    mountSprite(pulse, 'catalyst', 6, 120);
+    out.append(pulse);
+  } else if (offer) {
     out.append(sitem(offer.output ? spriteOf(world, offer.output) : unknownSprite(offer.id)));
     if (offer.qty > 1) out.append(el('span', { className: 'pd-qty', textContent: String(offer.qty) }));
+  } else if (made) {
+    out.append(sitem(spriteOf(world, made)));
+    if (made.qty > 1) out.append(el('span', { className: 'pd-qty', textContent: String(made.qty) }));
   }
   row.append(out);
 
-  const name = !offer ? t.alchUi.nothing
+  const name = !offer ? (made ? capitalize(itemName(world, made)) : t.alchUi.nothing)
     : offer.output ? capitalize(offer.qty > 1 ? `${itemName(world, { ...offer.output, qty: 1 })} ×${offer.qty}` : itemName(world, offer.output))
     : unknownName(offer.id);
   const cost = !offer ? null
@@ -160,21 +210,23 @@ function drawPot(world: World, hero: Hero): void {
   if (state.inputs.length > 0 && !offer) result.append(el('span', { className: 'pd-alch-cost', textContent: t.alch.nothingMade }));
 
   const brew = button(t.alchUi.brew, () => {
-    if (!offer || short) return;
+    if (!offer || short || state.busy) return;
     const inputs = state.inputs;
     state.inputs = [];
+    state.made = null;
+    const catalyst = offer.id === 'trinketCatalyst';
+    // The world moves on at once; the pot shows it heat for 540 ms and puff for 440 (ShAlchFx), then the result.
+    state.brew = { mode: catalyst ? 'cata' : 'brew', start: performance.now(), recipe: offer.id };
     state.options.onAction({ type: 'alchemy', inputs, recipe: 0 });
-    // AlchemyScene.combine: bubbles and a puff of smoke over the output (Speck.WOOL), and its PUFF.
-    audio.play('puff');
-    window.setTimeout(() => {
-      draw();
-      puff(document.querySelector<HTMLElement>('.pd-alch .pd-slot.out'), offer.id === 'trinketCatalyst' ? 'catalyst' : 'brew');
-      // TrinketCatalyst.Recipe: WndTrinket opens at once with what the catalyst offers.
-      if (offer.id === 'trinketCatalyst') {
-        state.screen = { kind: 'trinket' };
-        draw();
-      }
-    }, 0);
+    box.classList.add('brewing');
+    for (const control of box.querySelectorAll<HTMLButtonElement>('button')) control.disabled = true;
+    // AlchemyScene.combine: its PUFF as the pot lets go.
+    window.setTimeout(() => audio.play('puff'), BREW_HEAT_MS);
+    wait(BREW_MS, () => {
+      state.brew = null;
+      // TrinketCatalyst.Recipe: WndTrinket opens with what the catalyst offers.
+      if (catalyst) state.screen = { kind: 'trinket' };
+    });
   }, 'primary');
   brew.disabled = !offer || short;
   const energize = el('button', { className: 'pd-button' }, energyIcon(), t.alchUi.toEnergy);
@@ -189,6 +241,7 @@ function drawPot(world: World, hero: Hero): void {
   }, 'quiet');
   const clear = button(t.alchUi.clear, () => {
     state.inputs = [];
+    state.made = null;
     draw();
   }, 'quiet');
   clear.disabled = state.inputs.length === 0;
@@ -206,7 +259,17 @@ function drawPot(world: World, hero: Hero): void {
   show(box, close);
 }
 
-/** TrinketCatalyst.WndTrinket at the pot: three trinkets shown and a fourth unknown; closing it leaves the choice for later. */
+/** The effect of a trinket in a line: the last sentence of its description (the first is how it looks). */
+function effectLine(text: string): string {
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  return sentences[sentences.length - 1] ?? text;
+}
+
+/**
+ * TrinketCatalyst.WndTrinket at the pot (design v19: ShIcons): the catalyst pulsing in the head, three trinkets as
+ * cards with their picture, name and what they do, and a fourth that is a surprise; «Take» on each, «Decide later»
+ * under them.
+ */
 function drawTrinkets(world: World, hero: Hero): void {
   const state = pot!;
   const back = (): void => {
@@ -217,15 +280,36 @@ function drawTrinkets(world: World, hero: Hero): void {
   const catalyst = hero.items[index];
   // Not rolled yet (the world has not answered): the pot until it has.
   if (!catalyst?.rolled) return drawPot(world, hero);
-  showChoice(world, t.alch.chooseTrinket, t.alch.catalystText, catalyst, catalyst.rolled.map((kind, choice) => ({
-    label: choice < 3 ? capitalize(t.items[kind]) : capitalize(t.alch.catalystRandom),
-    sprite: choice < 3 ? kindSprite(world, kind) : S.TRINKET_HOLDER,
-    onPick: () => {
-      state.options.onAction({ type: 'use', item: index, choice });
-      audio.play('puff');
-      back();
-    },
-  })), back, 'pd-alch-sub');
+  const cards = el('div', { className: 'pd-trinkets' });
+  catalyst.rolled.forEach((kind, choice) => {
+    const random = choice >= 3;
+    const art = el('span', { className: 'pd-trinket-art' }, sitem(random ? S.TRINKET_HOLDER : kindSprite(world, kind)));
+    const card = el(
+      'div',
+      { className: `pd-trinket${state.framed === choice ? ' selected' : ''}`, onclick: () => {
+        state.framed = choice;
+        cards.querySelectorAll('.pd-trinket').forEach((node, i) => node.classList.toggle('selected', i === choice));
+      } },
+      art,
+      el('span', { className: 'pd-trinket-name', textContent: random ? capitalize(t.alch.catalystRandom) : capitalize(t.items[kind]) }),
+      el('p', { className: 'pd-trinket-desc', textContent: random ? t.alchUi.randomTrinketNote : effectLine(t.itemInfo[kind] ?? '') }),
+      button(t.alchUi.takeTrinket, () => {
+        state.options.onAction({ type: 'use', item: index, choice });
+        audio.play('puff');
+        back();
+      }, state.framed === choice ? 'primary' : ''),
+    );
+    cards.append(card);
+  });
+  const pulse = el('canvas', { className: 'pd-catalyst', ariaHidden: 'true' });
+  mountSprite(pulse, 'catalyst', 6, 120);
+  const box = windowOf(
+    { title: capitalize(t.items['trinket.catalyst']), sub: t.alch.chooseTrinket, icon: el('div', { className: 'pd-slot' }, pulse), className: 'pd-alch-sub' },
+    cards,
+    button(t.alchUi.decideLater, back, 'quiet'),
+  );
+  box.setAttribute('role', 'dialog');
+  show(box, back);
 }
 
 /** The silhouette under the «?» of a surprise result. */
@@ -269,6 +353,7 @@ function pickIngredient(world: World, hero: Hero): void {
         if (typeof ref === 'number' && state.inputs.length < 3) {
           audio.play('item');
           state.inputs.push(ref);
+          state.made = null;
         }
         draw();
       },
@@ -309,15 +394,19 @@ function drawEnergize(world: World, hero: Hero, picked: Set<number>): void {
   const total = [...picked].reduce((sum, index) => sum + (hero.items[index] ? worth(hero.items[index]!) : 0), 0);
   const sum = el('div', { className: 'pd-energize-sum' }, el('span', { textContent: t.alchUi.youGet }), el('b', {}, energyIcon(), ` +${total}`));
   const go = (): void => {
+    if (state.busy) return;
+    const slots = [...picked].sort((a, b) => a - b).map((index) => grid.children[index] as HTMLElement | undefined).filter((node): node is HTMLElement => node !== undefined);
+    const counter = box.querySelector<HTMLElement>('.pd-energy');
     // From the last slot to the first, so each slot still names its item as the pack closes up.
     for (const index of [...picked].sort((a, b) => b - a)) state.options.onAction({ type: 'energize', item: index, all: true });
-    // AlchemyScene.energizeItem: sparks over the energy, and its LIGHTNING.
+    // AlchemyScene.energizeItem: its LIGHTNING, and shards of energy flying from each item to the counter (ShAlchFx).
     audio.play('lightning', 1.2, 0.6);
-    state.screen = { kind: 'pot' };
-    window.setTimeout(() => {
-      draw();
-      puff(document.querySelector<HTMLElement>('.pd-alch-window .pd-energy'), 'energy');
-    }, 0);
+    box.classList.add('brewing');
+    for (const control of box.querySelectorAll<HTMLButtonElement>('button')) control.disabled = true;
+    const flight = counter && slots.length > 0 ? flyEnergy(box, slots, counter, total) : 0;
+    wait(flight, () => {
+      state.screen = { kind: 'pot' };
+    });
   };
   const primary = button(t.alchUi.toEnergy, () => {
     if (total <= 0) return;
@@ -339,6 +428,7 @@ function drawEnergize(world: World, hero: Hero, picked: Set<number>): void {
     el('div', { className: 'pd-actions' }, primary, el('div', { className: 'pd-row' }, button(t.back, back, 'quiet'))),
   );
   box.setAttribute('role', 'dialog');
+  box.style.position = 'relative';
   show(box, back);
 }
 
@@ -471,8 +561,8 @@ function drawGuide(world: World, hero: Hero, pageIndex: number): void {
   const tabs = el('div', { className: 'pd-guide-pages' });
   tabs.setAttribute('role', 'tablist');
   PAGES.forEach((page, i) => {
-    // (Every page is known: finding them in the dungeon is the levels stream's, see SHATTERED.md.)
-    const tab = el('button', { textContent: pageTitle(page) });
+    const found = pageFound(world, page);
+    const tab = el('button', { textContent: pageTitle(page), className: found ? '' : 'lost' });
     tab.setAttribute('aria-pressed', String(i === pageIndex));
     tab.onclick = () => {
       audio.play('click');
@@ -482,6 +572,34 @@ function drawGuide(world: World, hero: Hero, pageIndex: number): void {
     tabs.append(tab);
   });
   const page = PAGES[pageIndex] ?? 'potions';
+  if (!pageFound(world, page)) {
+    // A page nobody has found: a torn leaf with a lock, where to look, how many are found, and the recipes in silhouette.
+    const count = PAGES.filter((p) => pageFound(world, p)).length;
+    const ghost = (inputs: number): HTMLElement =>
+      el('div', { className: 'pd-recipe' }, el('span', { className: 'pd-recipe-line' }, ...Array.from({ length: inputs }, (_, i) => [
+        ...(i > 0 ? [el('span', { className: 'op', textContent: '+' })] : []), el('i', { className: 'q' }),
+      ]).flat(), el('i', { className: 'pd-alch-arrow' }), el('i', { className: 'q' })));
+    const lost = el(
+      'div',
+      { className: 'pd-guide-lost' },
+      el('i', { className: 'pd-page-lost', ariaHidden: 'true' }),
+      el('b', { textContent: t.alchUi.pageLost }),
+      el('p', { textContent: t.alchUi.pageLostNote(count, PAGES.length) }),
+      el('div', { className: 'pd-recipes ghost', ariaHidden: 'true' }, ghost(2), ghost(3)),
+    );
+    const book = el(
+      'section',
+      { className: 'pd-window pd-alch-window pd-alch-sub' },
+      head(world, t.alch.guideTitle, back, 'book'),
+      tabs,
+      lost,
+      el('div', { className: 'pd-row' }, button(t.back, back, 'quiet')),
+    );
+    book.setAttribute('role', 'dialog');
+    show(book, back);
+    tabs.querySelector('[aria-pressed="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    return;
+  }
   const list = el('div', { className: 'pd-recipes' });
   for (const line of linesOf(world, page)) {
     const parts: HTMLElement[] = [];
@@ -515,32 +633,17 @@ function drawGuide(world: World, hero: Hero, pageIndex: number): void {
   );
   box.setAttribute('role', 'dialog');
   show(box, back);
-  tabs.querySelector('[aria-pressed="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  tabs.querySelector('[aria-pressed="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
 }
 
 /**
- * AlchemyScene's emitters in the window: a puff of wool-white smoke and bubbles over the result
- * (Speck.WOOL, Speck.BUBBLE), the catalyst's glow, or sparks over the energy counter (SparkParticle).
+ * Whether the recipe book has a page (Document.ALCHEMY_GUIDE's pagesStates: found or not).
+ * Seam (levels stream): the pages become things to find in the dungeon; the world will then list the ones found
+ * as `world.guidePages` (their keys: 'potions', 'stones', 'energy_food'…). Until it does, the book is unlocked.
  */
-export function puff(at: HTMLElement | null, kind: 'brew' | 'catalyst' | 'energy'): void {
-  if (!at) return;
-  const layer = el('span', { className: `pd-alch-fx ${kind}` });
-  layer.setAttribute('aria-hidden', 'true');
-  const count = kind === 'energy' ? 20 : 10;
-  for (let i = 0; i < count; i++) {
-    const bit = el('i');
-    const angle = Math.random() * Math.PI * 2;
-    const reach = kind === 'energy' ? 14 + Math.random() * 18 : 6 + Math.random() * 16;
-    bit.style.setProperty('--dx', `${Math.round(Math.cos(angle) * reach)}px`);
-    bit.style.setProperty('--dy', `${Math.round(Math.sin(angle) * reach - (kind === 'energy' ? 0 : 14))}px`);
-    bit.style.animationDelay = `${Math.round(Math.random() * 120)}ms`;
-    layer.append(bit);
-  }
-  // Over the page rather than in the window, so that the window drawn again (the world answering) does not cut it short.
-  const box = at.getBoundingClientRect();
-  Object.assign(layer.style, { position: 'fixed', left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: `${box.height}px`, inset: 'auto' });
-  document.body.append(layer);
-  window.setTimeout(() => layer.remove(), 900);
+function pageFound(world: World, page: Page): boolean {
+  const found = (world as { guidePages?: readonly string[] }).guidePages;
+  return found === undefined || found.includes(page);
 }
 
 /* Choices */

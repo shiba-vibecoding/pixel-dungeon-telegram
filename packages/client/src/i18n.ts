@@ -991,6 +991,12 @@ const en = {
   alchUi: {
     brew: 'Brew',
     toEnergy: 'Turn into energy',
+    /** The trinket window after the catalyst (design v19), the recipe book's page not found yet. */
+    takeTrinket: 'Take',
+    decideLater: 'I’ll decide later',
+    randomTrinketNote: 'Which one it is, you will see once you take it.',
+    pageLost: 'This page has not been found yet',
+    pageLostNote: (found: number, total: number) => `The recipe book’s pages lie in the dungeon — on the floor, in chests and with merchants. Found ${found} of ${total}.`,
     recipes: 'Recipes',
     clear: 'Clear',
     add: 'Add',
@@ -2729,6 +2735,11 @@ const ru: Strings = {
   alchUi: {
     brew: 'Сварить',
     toEnergy: 'Превратить в энергию',
+    takeTrinket: 'Взять',
+    decideLater: 'Решу позже',
+    randomTrinketNote: 'Какая именно — станет ясно, когда возьмёте.',
+    pageLost: 'Страница ещё не найдена',
+    pageLostNote: (found, total) => `Страницы учебника лежат в подземелье — на полу, в сундуках и у торговцев. Найдено ${found} из ${total}.`,
     recipes: 'Рецепты',
     clear: 'Очистить',
     add: 'Добавить',

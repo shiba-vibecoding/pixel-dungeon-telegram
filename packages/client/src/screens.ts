@@ -1614,7 +1614,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
           if (item.kind === 'stone.intuition') {
             // StoneOfIntuition.WndGuess: what kind it might be.
             return choose(t.alch.intuitionTitle, t.alch.guessText, target, intuitionChoices(world, target).map((kind, choice) => ({
-              label: capitalize(t.items[kind]), onPick: () => act({ type: 'use', item: index, on, choice }),
+              label: capitalize(t.items[kind]), sprite: guessSprite(itemDef(kind).category), onPick: () => act({ type: 'use', item: index, on, choice }),
             })));
           }
           act({ type: 'use', item: index, on });
@@ -1791,6 +1791,11 @@ function showAugment(options: ItemOptions, stone: number, on: ItemRef, act: (act
     back,
   );
 }
+
+/** The picture beside a guess in a stone of intuition's window (design v19: ShIcons): the holder of what is guessed at. */
+const guessSprite = (category: string): number | undefined =>
+  category === 'potion' ? S.POTION_HOLDER : category === 'scroll' ? S.SCROLL_HOLDER : category === 'ring' ? S.RING_HOLDER : category === 'wand' ? S.WAND_HOLDER
+  : category === 'stone' ? S.STONE_HOLDER : category === 'spell' ? S.SPELL_HOLDER : category === 'trinket' ? S.TRINKET_HOLDER : undefined;
 
 /** Seeds in the pack that darts can be tipped with (TippedDart.types). */
 const tippingSeeds = (hero: Hero): number[] =>
