@@ -19,11 +19,17 @@ interface Passed {
 const INTRO = [0, 1, 2] as const;
 const PULSE = [0, 1, 2, 1] as const;
 const DOT_OUT_MS = 180;
+/** The danger ring stays this long (ms). */
+const DANGER_RING_MS = 4000;
+/** --danger of the design system. */
+const DANGER_RED = '#ff8a73';
 
 export class Feedback {
   /** The cell aimed at (or the monster chased, followed as it moves), and when. */
   private target: { cell: number; mob?: string; attack: boolean; start: number } | null = null;
   private nope: { cell: number; start: number } | null = null;
+  /** The danger badge's pick (design v19, .pd-danger-ring): the enemy last stepped to is ringed in red, followed as it moves. */
+  private ring: { mob: string; cell: number; start: number } | null = null;
   private passed: Passed[] = [];
   /** The dots last drawn: only a dot of the way goes out when stepped on. */
   private dotted = new Set<number>();
@@ -33,6 +39,11 @@ export class Feedback {
     this.nope = null;
   }
 
+  /** The enemy the danger badge stepped to. */
+  danger(mob: string, cell: number, now: number): void {
+    this.ring = { mob, cell, start: now };
+  }
+
   refuse(cell: number, now: number): void {
     this.nope = { cell, start: now };
     this.target = null;
@@ -40,6 +51,11 @@ export class Feedback {
 
   clear(): void {
     this.target = null;
+  }
+
+  /** The ring goes (the enemy is out of sight). */
+  clearDanger(): void {
+    this.ring = null;
   }
 
   /** The hero has stepped on a dot of the way. */
@@ -89,6 +105,24 @@ export class Feedback {
           const [x, y] = xy(cell);
           drawFrame(ctx, s, frame, x, y);
         }
+      }
+    }
+
+    if (this.ring) {
+      const t = now - this.ring.start;
+      if (t > DANGER_RING_MS) {
+        this.ring = null;
+      } else {
+        const cell = mobAt(this.ring.mob) ?? this.ring.cell;
+        const [x, y] = xy(cell);
+        // A red frame with its corners cut off (the design's notch), fading in the last half second, pulsing a little.
+        ctx.globalAlpha = Math.min(1, (DANGER_RING_MS - t) / 500) * (quality.reducedMotion ? 1 : 0.8 + 0.2 * Math.sin(t / 120));
+        ctx.fillStyle = DANGER_RED;
+        ctx.fillRect(x + 1, y, TILE - 2, 1);
+        ctx.fillRect(x + 1, y + TILE - 1, TILE - 2, 1);
+        ctx.fillRect(x, y + 1, 1, TILE - 2);
+        ctx.fillRect(x + TILE - 1, y + 1, 1, TILE - 2);
+        ctx.globalAlpha = 1;
       }
     }
 

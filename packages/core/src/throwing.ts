@@ -6,7 +6,7 @@ import { ADRENALINE_TURNS, bleedImmune, isAlly, isDemonic, isUndead, procMultipl
 import { type Char, charAt, type Ctx, enterCell, heroView, isHero, isPassable, isWater, landItem, leaveCell } from './floor';
 import { familiarise } from './ident';
 import { createItem, type Item, itemDef } from './items';
-import { adjacent, cellX, cellY, distance, LENGTH, NEIGHBOURS8 } from './level/geometry';
+import { adjacent, cellX, cellY, distance, LENGTH, NEIGHBOURS8, squaredDistance } from './level/geometry';
 import { F, hasFlag } from './level/terrain';
 import {
   durabilityLeft, durabilityPerUse, isDart, isSticky, isTippedDart, MAX_DURABILITY,
@@ -202,8 +202,7 @@ function forceCube(ctx: Ctx, hero: Hero, cube: Item, cell: number): void {
     const char = charAt(ctx.world, ctx.depth, cell + n);
     if (char) targets.push(char);
   }
-  const trueDistance = (a: number, b: number): number => Math.hypot(cellX(a) - cellX(b), cellY(a) - cellY(b));
-  targets.sort((a, b) => trueDistance(b.pos, hero.pos) - trueDistance(a.pos, hero.pos));
+  targets.sort((a, b) => squaredDistance(b.pos, hero.pos) - squaredDistance(a.pos, hero.pos));
   ctx.effects.push({ type: 'exploded', depth: ctx.depth, pos: cell });
   for (const target of targets) {
     if (isHero(target)) continue;
@@ -362,11 +361,10 @@ function displaceFar(ctx: Ctx, hero: Hero, mob: Mob): void {
   const seen = heroView(world, hero);
   let best = -1;
   let bestSeen = false;
-  const trueDistance = (a: number, b: number): number => Math.hypot(cellX(a) - cellX(b), cellY(a) - cellY(b));
   for (let cell = 0; cell < LENGTH; cell++) {
     if (!isPassable(level, cell) || dist[cell]! < 8 || dist[cell]! > 10 || charAt(world, depth, cell)) continue;
     const visible = seen[cell] === true;
-    if (best === -1 || (visible && !bestSeen) || (visible === bestSeen && trueDistance(mob.pos, cell) < trueDistance(mob.pos, best))) {
+    if (best === -1 || (visible && !bestSeen) || (visible === bestSeen && squaredDistance(mob.pos, cell) < squaredDistance(mob.pos, best))) {
       best = cell;
       bestSeen = visible;
     }

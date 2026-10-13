@@ -44,14 +44,14 @@ const acLabel = (kind: ItemKind, ac: string): string => {
 const AIMED: ReadonlySet<ArtifactUse> = new Set(['scry', 'cast', 'direct', 'steal', 'root', 'zap']);
 
 /** Artifact.actions: what an artifact offers now, its default action first (Artifact.defaultAction). */
-export function artifactActions(host: ArtifactHost, item: Item, ref: ItemRef): Array<{ label: string; run: () => void }> {
+export function artifactActions(host: ArtifactHost, item: Item, ref: ItemRef): Array<{ label: string; run: () => void; icon?: 'steal' }> {
   const { world, hero } = host;
   const worn = isWorn(hero, item);
   const usable = worn && !item.cursed;
   const charge = item.charge ?? 0;
-  const list: Array<{ label: string; run: () => void }> = [];
-  const add = (ac: string, run: () => void): void => {
-    list.push({ label: acLabel(item.kind, ac), run });
+  const list: Array<{ label: string; run: () => void; icon?: 'steal' }> = [];
+  const add = (ac: string, run: () => void, icon?: 'steal'): void => {
+    list.push({ label: acLabel(item.kind, ac), run, ...(icon ? { icon } : {}) });
   };
   const use = (u: ArtifactUse, extra: Partial<ArtifactAction> = {}): void => {
     const action: ArtifactAction = { type: 'artifact', item: ref, use: u, ...extra };
@@ -106,7 +106,7 @@ export function artifactActions(host: ArtifactHost, item: Item, ref: ItemRef): A
       break;
     }
     case 'artifact.armband':
-      if (usable && charge > 0) add('steal', () => use('steal'));
+      if (usable && charge > 0) add('steal', () => use('steal'), 'steal');
       break;
     case 'artifact.sandals':
       if (usable) {

@@ -2,7 +2,7 @@ import { createMob, type Hero, heroAttackSkill, heroDamageRoll, isAlive, type Mo
 import { ballistica, MAGIC_BOLT } from './ballistica';
 import { hurt, lootAndExp } from './combat';
 import { canEnter, charAt, type Char, type Ctx, enterCell, heroesOn, heroView, isHero, isPassable, leaveCell } from './floor';
-import { cellX, cellY, distance, NEIGHBOURS8 } from './level/geometry';
+import { cellX, cellY, distance, NEIGHBOURS8, squaredDistance } from './level/geometry';
 import { hasProp } from './props';
 import { addRockArmor, heldWands, wandProc } from './wands';
 import type { World } from './world';
@@ -83,7 +83,7 @@ export function prismaticGuard(ctx: Ctx, hero: Hero): void {
     for (const n of NEIGHBOURS8) {
       const p = hero.pos + n;
       if (charAt(ctx.world, ctx.depth, p) || !isPassable(ctx.level, p)) continue;
-      if (best === -1 || trueDistance(p, closest.pos) < trueDistance(best, closest.pos)) best = p;
+      if (best === -1 || squaredDistance(p, closest.pos) < squaredDistance(best, closest.pos)) best = p;
     }
     if (best !== -1) {
       const image = createMob(`#${++ctx.world.nextId}`, 'prismatic', best, 'hunting', ctx.floor.now + 1);
@@ -103,9 +103,6 @@ export function prismaticGuard(ctx: Ctx, hero: Hero): void {
   }
   if (b.prismaticGuard! < prismaticMaxHp(hero)) b.prismaticGuard = Math.min(prismaticMaxHp(hero), b.prismaticGuard! + 0.1);
 }
-
-/** Level.trueDistance: as the crow flies. */
-const trueDistance = (a: number, b: number): number => Math.hypot(cellX(a) - cellX(b), cellY(a) - cellY(b));
 
 /** Whether a creature is on the heroes' side: a hero, or an ally. */
 export const friendly = (char: Char): boolean => isHero(char) || char.ally === true;

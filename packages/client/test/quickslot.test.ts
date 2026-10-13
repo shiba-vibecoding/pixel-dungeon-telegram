@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addHero, createWorld } from '@pd/core';
 import {
-  chooseQuickslot, isPlaceholder, QUICKSLOTS, quickIndex, quickItem, quickKind, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
+  chooseQuickslot, isPlaceholder, QUICKSLOTS, quickIndex, quickItem, quickKind, setQuickCount, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
 } from '../src/quickslot';
 
 describe("quick slots (Shattered's QuickSlot)", () => {
@@ -41,10 +41,13 @@ describe("quick slots (Shattered's QuickSlot)", () => {
     expect(isPlaceholder(hero, 1)).toBe(false);
   });
 
-  it('four shown on a phone, five or six on wider ones, all six on a wide screen', () => {
-    expect(visibleQuickslots(false, 360)).toBe(4);
-    expect(visibleQuickslots(false, 400)).toBe(5);
-    expect(visibleQuickslots(false, 480)).toBe(6);
-    expect(visibleQuickslots(true, 1200)).toBe(6);
+  it('the player picks 2, 4 or 6 quick slots on a phone (4 by default); a wide screen shows all six', () => {
+    expect(visibleQuickslots(false)).toBe(4);
+    setQuickCount(6);
+    expect(visibleQuickslots(false)).toBe(6);
+    setQuickCount(2);
+    expect(visibleQuickslots(false)).toBe(2);
+    expect(visibleQuickslots(true)).toBe(6);
+    setQuickCount(4);
   });
 });

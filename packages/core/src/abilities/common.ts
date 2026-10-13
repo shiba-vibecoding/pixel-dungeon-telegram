@@ -12,8 +12,8 @@ import type { AbilityState } from './state';
 /** The hero's ability trackers, started on first use. */
 export const stateOf = (hero: Hero): AbilityState => (hero.abil ??= {});
 
-/** Level.trueDistance: as the crow flies. */
-export const trueDistance = (a: number, b: number): number => Math.sqrt((cellX(a) - cellX(b)) ** 2 + (cellY(a) - cellY(b)) ** 2);
+/** Level.trueDistance: as the crow flies (level/geometry.ts: Math.sqrt of the squared distance, not Math.hypot). */
+export { trueDistance } from '../level/geometry';
 
 /** Not the hero's side: a monster that is no ally (Char.alignment != ALLY). */
 export const notAlly = (ch: Char | undefined, hero: Hero): ch is Mob => ch !== undefined && ch !== hero && !isHero(ch) && !ch.ally && isAlive(ch);

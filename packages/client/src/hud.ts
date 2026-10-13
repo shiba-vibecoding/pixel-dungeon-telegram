@@ -1,8 +1,9 @@
-import { FURY_LEVEL, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING, stealthCloak, talentPointsAvailable } from '@pd/core';
+import { FURY_LEVEL, prismaticMaxHp, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING, stealthCloak, talentPointsAvailable } from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
 import { AVATAR, durabilityBar, markWear, sprites } from './screens';
 import { QUICKSLOTS } from './quickslot';
+import { BUFF_TINTS } from './shfx';
 import type { LogLine } from './view';
 
 /*
@@ -43,10 +44,21 @@ export const BUFF_ICONS = {
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 
+/** A buff in the list: its name, the turns it has left where that is known, and its place in buffs-tints.png where it has one. */
+export interface BuffEntry {
+  name: BuffName;
+  turns?: number;
+  /** An index of buffs-tints.png (design v19): the buffs that share one Shattered icon each have a sheet colour of their own. */
+  tint?: number;
+}
+
+/** Puts a buff's sheet colour on it, if it has one. */
+const tinted = (buff: BuffEntry): BuffEntry => (buff.tint === undefined && BUFF_TINTS[buff.name] !== undefined ? { ...buff, tint: BUFF_TINTS[buff.name]! } : buff);
+
 /** What ails or helps a hero, with the turns it has left where that is known (BuffIndicator). */
-export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
+export function heroBuffs(me: Hero): BuffEntry[] {
   const turns = (left: number): number => Math.ceil(left);
-  return [
+  const list: BuffEntry[] = [
     ...(me.mindVision > 0 ? [{ name: 'mindVision' as const, turns: turns(me.mindVision) }] : []),
     ...(me.invisible > 0 ? [{ name: 'invisible' as const, turns: turns(me.invisible) }] : []),
     ...(me.ooze >= 0 ? [{ name: 'ooze' as const }] : []),
@@ -97,13 +109,14 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
     ...((me.degraded ?? 0) > 0 ? [{ name: 'degrade' as const, turns: turns(me.degraded!) }] : []),
     ...abilityBuffs(me),
   ];
+  return list.map(tinted);
 }
 
 /**
  * The armour abilities' buffs: Endure's blows to pay back (shown once the stance is over: the damage stored), Nature's Power
  * (turns left).
  */
-function abilityBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
+function abilityBuffs(me: Hero): BuffEntry[] {
   const endure = me.abil?.endure;
   const nature = me.abil?.nature;
   return [
@@ -117,24 +130,24 @@ function abilityBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
  * hourglass's time freeze (turns of the charge being spent; its stasis is TimeStasis, above), the cape radiating thorns, the
  * talisman's unease near a hidden trap.
  */
-function artifactBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
-  const buffs: Array<{ name: BuffName; turns?: number }> = [];
+function artifactBuffs(me: Hero): BuffEntry[] {
+  const buffs: BuffEntry[] = [];
   const cloak = stealthCloak(me);
   if (cloak?.stealth) buffs.push({ name: 'stealth', turns: Math.max(0, cloak.stealth.turnsToCost) });
   const frozen = frozenBy(me);
   if (frozen?.freeze) buffs.push({ name: 'timeFreeze', turns: Math.trunc(frozen.freeze.turnsToCost + 0.001) });
   for (const item of heroArtifacts(me)) {
     if (item.kind === 'artifact.cape' && (item.cooldown ?? 0) > 0) buffs.push({ name: 'thorns', turns: item.cooldown! });
-    if (item.kind === 'artifact.talisman' && item.warn) buffs.push({ name: 'foresight' });
+    if (item.kind === 'artifact.talisman' && item.warn) buffs.push({ name: 'foresight', tint: 17 });
   }
   return buffs;
 }
 
 /** Alchemy's buffs on a hero (core buffs.ts), with their turns or amounts as BuffIndicator shows them. */
-function alchemyBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
+function alchemyBuffs(me: Hero): BuffEntry[] {
   const b = me.buffs;
   if (!b) return [];
-  const list: Array<{ name: BuffName; turns?: number }> = [];
+  const list: BuffEntry[] = [];
   const timed = (name: BuffName, left: number | undefined): void => {
     if ((left ?? 0) > 0) list.push({ name, turns: Math.ceil(left!) });
   };
@@ -157,6 +170,9 @@ function alchemyBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
   timed('htBoost', b.htBoost);
   timed('wellFed', b.wellFed);
   timed('prismaticGuard', b.prismaticGuard);
+  // At full strength the prismatic guard has a colour of its own (Shattered: ShieldBuff at its limit).
+  const guard = list.find((buff) => buff.name === 'prismaticGuard');
+  if (guard && (b.prismaticGuard ?? 0) >= prismaticMaxHp(me)) guard.tint = 8;
   if (b.challenge && b.challenge.left > 0) list.push({ name: 'challengeArena', turns: Math.ceil(b.challenge.left) });
   return list;
 }
@@ -224,7 +240,7 @@ export interface HudState {
   online: readonly string[];
   status: HudStatus | null;
   log: readonly LogLine[];
-  buffs: ReadonlyArray<{ name: BuffName; turns?: number }>;
+  buffs: readonly BuffEntry[];
   /** The quick slots shown (QuickSlot), each with what it holds, or null when empty. */
   quick: ReadonlyArray<QuickState | null>;
   /** DangerIndicator: how many enemies the hero sees. */
@@ -349,8 +365,16 @@ export class Hud {
   private readonly tools: Record<'wait' | 'search' | 'examine' | 'bag', HTMLButtonElement>;
   /** The six quick slots (QuickSlot.SIZE); as many shown as there is room for. */
   private readonly quicks: HTMLButtonElement[];
+  /** The six quick slots in a row of their own above the toolbar (the 6-slot layout, design v19 .pd-quickbar). */
+  private readonly quickbar: HTMLElement;
+  /** How many quick slots the narrow toolbar is arranged for (2, 4 or 6), and whether examining is a long press of search. */
+  private arranged = 0;
+  private examineByHold = false;
   /** DangerIndicator: the count of enemies in sight, by the buffs. */
   private readonly dangerBox: HTMLButtonElement;
+  /** How many enemies the badge counted last, and the timer that ends its flash. */
+  private dangerSeen = 0;
+  private dangerFlash = 0;
   private readonly main: HTMLElement;
   private readonly menu: HTMLButtonElement;
   private readonly toolbar: HTMLElement;
@@ -456,10 +480,11 @@ export class Hud {
       this.holdToAssign(node, slot);
       return node;
     });
+    this.quickbar = el('div', 'pd-quickbar');
     this.dangerBox = el('button', 'pd-danger');
     this.dangerBox.hidden = true;
     this.dangerBox.onclick = tap(() => handlers.danger());
-    this.tools.search.onclick = tap(() => handlers.search());
+    this.holdToSearch(this.tools.search);
     this.tools.examine.onclick = tap(() => handlers.examine());
     this.tools.bag.onclick = tap(() => handlers.backpack());
     this.holdToRest(this.tools.wait);
@@ -531,7 +556,8 @@ export class Hud {
       this.main.append(this.menu);
       this.waveboard.classList.remove('top');
       this.band.append(this.main, this.waveboard, this.buffBox, this.mates, this.notice);
-      this.toolbar.append(this.tools.wait, this.tools.search, this.tools.examine, ...this.quicks, this.tools.bag);
+      this.arranged = 0;
+      this.arrangeToolbar(this.quicksShown);
       this.band.append(this.dangerBox);
       this.column.remove();
       this.corner.remove();
@@ -539,6 +565,61 @@ export class Hud {
       this.islandRight.remove();
       this.root.prepend(this.band, this.log, this.toolbar);
     }
+  }
+
+  /** How many quick slots are shown now (the last state's). */
+  private quicksShown = 4;
+
+  /**
+   * The narrow toolbar for 2, 4 or 6 quick slots (design v19, ShQuickslots): 2 beside wait, search, examine and the pack;
+   * 4 in one row of seven (examining is a long press of search); 6 in a row of their own above the four buttons.
+   */
+  private arrangeToolbar(count: number): void {
+    this.quicksShown = count;
+    if (this.wide || this.arranged === count) return;
+    this.arranged = count;
+    const { wait, search, examine, bag } = this.tools;
+    this.examineByHold = count === 4;
+    this.toolbar.className = `pd-toolbar${count >= 6 ? ' q6' : count === 4 ? ' q4' : ''}`;
+    if (count >= 6) {
+      this.quickbar.replaceChildren(...this.quicks.slice(0, 6));
+      this.toolbar.replaceChildren(this.quickbar, wait, search, examine, bag);
+    } else if (count === 4) {
+      this.quickbar.replaceChildren();
+      this.toolbar.replaceChildren(wait, search, ...this.quicks.slice(0, 4), bag);
+    } else {
+      this.quickbar.replaceChildren();
+      this.toolbar.replaceChildren(wait, search, examine, ...this.quicks.slice(0, count), bag);
+    }
+    this.toolbar.style.setProperty('--tools', String(4 + count));
+  }
+
+  /** Search: a tap searches; where there is no examine button (4 quick slots), holding it examines. */
+  private holdToSearch(button: HTMLButtonElement): void {
+    let timer = 0;
+    let fired = false;
+    button.addEventListener('pointerdown', () => {
+      fired = false;
+      clearTimeout(timer);
+      if (!this.examineByHold) return;
+      timer = window.setTimeout(() => {
+        fired = true;
+        audio.play('click');
+        this.handlers.examine();
+      }, HOLD_MS);
+    });
+    const stop = (): void => clearTimeout(timer);
+    button.addEventListener('pointerleave', stop);
+    button.addEventListener('pointercancel', stop);
+    button.addEventListener('pointerup', stop);
+    button.onclick = () => {
+      if (fired) {
+        fired = false;
+        return;
+      }
+      audio.play('click');
+      this.handlers.search();
+    };
   }
 
   /** A quick slot: a tap uses it; holding it chooses what it holds (QuickSlotButton's long click). */
@@ -654,12 +735,13 @@ export class Hud {
     this.talentBadge.hidden = !points;
     this.avatar.parentElement!.classList.toggle('talent', points);
 
-    const buffKey = state.buffs.map((b) => `${b.name}:${b.turns !== undefined && b.turns <= 3 ? 'f' : ''}`).join(',');
+    const buffKey = state.buffs.map((b) => `${b.name}${b.tint ?? ''}:${b.turns !== undefined && b.turns <= 3 ? 'f' : ''}`).join(',');
     if (this.changed('buffs', buffKey)) {
       this.buffBox.replaceChildren(
         ...state.buffs.map((buff) => {
-          const glyphNode = el('i');
-          glyphNode.dataset.b = String(BUFF_ICONS[buff.name]);
+          const glyphNode = el('i', buff.tint !== undefined ? 'pd-tbuff' : '');
+          if (buff.tint !== undefined) glyphNode.dataset.tb = String(buff.tint);
+          else glyphNode.dataset.b = String(BUFF_ICONS[buff.name]);
           glyphNode.dataset.buff = buff.name;
           const node = el('button', `pd-buff${buff.turns !== undefined && buff.turns <= 3 ? ' fading' : ''}`, glyphNode);
           node.ariaLabel = t.buffs[buff.name];
@@ -736,8 +818,15 @@ export class Hud {
       button.hidden = slot >= state.quick.length;
       this.drawQuick(`quick${slot}`, button, state.quick[slot] ?? null);
     });
-    if (this.changed('quickCount', String(state.quick.length))) this.toolbar.style.setProperty('--tools', String(4 + state.quick.length));
+    if (this.changed('quickCount', String(state.quick.length))) this.arrangeToolbar(state.quick.length);
     if (this.changed('danger', String(state.danger))) {
+      // A new enemy in sight: the badge flashes three times (design v19, .new for 1.5 s).
+      if (state.danger > this.dangerSeen) {
+        this.dangerBox.classList.add('new');
+        clearTimeout(this.dangerFlash);
+        this.dangerFlash = window.setTimeout(() => this.dangerBox.classList.remove('new'), 1500);
+      }
+      this.dangerSeen = state.danger;
       this.dangerBox.hidden = state.danger === 0;
       this.dangerBox.textContent = String(state.danger);
       this.dangerBox.ariaLabel = t.hero.danger(state.danger);

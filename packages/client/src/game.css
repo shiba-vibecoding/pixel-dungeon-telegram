@@ -205,13 +205,8 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 .pd-toolbar { grid-template-columns: repeat(var(--tools, 5), 1fr); gap: 4px; }
 .pd-tool[hidden] { display: none; }
 .pd-tool.quick.placeholder .pd-item { opacity: .35; filter: grayscale(1); }
-/* DangerIndicator: how many enemies are in sight; a tap steps to the next. Under the HUD's right edge (wide: in the corner). */
-.pd-danger {
-  position: absolute; right: calc(var(--safe-r, 0px) + 8px); bottom: -40px; pointer-events: auto;
-  min-width: 36px; height: 32px; padding: 0 8px; display: grid; place-items: center;
-  font: var(--text-digits, 400 15px/15px var(--font-small)); color: var(--ink); text-shadow: var(--text-outline);
-  background: var(--bad, #a33); clip-path: var(--notch); box-shadow: inset 0 0 0 var(--u, 2px) var(--void);
-}
+/* DangerIndicator: how many enemies are in sight (a skull and the number, design v19: ui.css .pd-danger); a tap steps to the next. Under the HUD's right edge (wide: in the corner). */
+.pd-danger { top: auto; bottom: -44px; pointer-events: auto; }
 .pd-danger[hidden] { display: none; }
 .pd-dcorner .pd-danger { position: static; height: auto; }
 /* The journal's notes (the hero stream): a landmark journal.png has no icon for takes an item's picture; a floor's feeling, none. */
@@ -220,29 +215,21 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* The bestiary (mobs stream): a monster not seen yet is its dark shape. */
 .pd-portrait.silhouette canvas { filter: brightness(0) opacity(0.45); }
 .pd-catalog .pd-portrait canvas { max-width: 32px; max-height: 32px; image-rendering: pixelated; }
-/* The alchemy pot (alchemyui.ts): AlchemyScene's emitters over the window, a puff of smoke and bubbles over the
-   result (Speck.WOOL, Speck.BUBBLE), the catalyst's glow, sparks over the energy counter (SparkParticle). */
-.pd-alch-fx { position: absolute; inset: 0; pointer-events: none; z-index: 1000; }
+/* The alchemy pot (alchemyui.ts) is a canvas now (ShAlchFx, ui.css .pd-alch-pot); while it brews or energy flies, the window stands still. */
 .pd-energy { position: relative; }
 .pd-slot.disabled .pd-sitem { opacity: .3; }
-.pd-alch-fx i { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; background: #e8e8e8; opacity: 0;
-  animation: pd-alch-puff 700ms ease-out forwards; }
-.pd-alch-fx.brew i:nth-child(odd) { width: 3px; height: 3px; margin: -1.5px; background: transparent; box-shadow: inset 0 0 0 1px #9ad4ff; }
-.pd-alch-fx.catalyst i { background: #ffe070; }
-.pd-alch-fx.energy i { width: 2px; height: 2px; margin: -1px; background: #fff; box-shadow: 0 0 3px var(--energy, #44ccff); animation-duration: 450ms; }
-@keyframes pd-alch-puff {
-  0% { opacity: .95; transform: translate(0, 0) scale(.6); }
-  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.4); }
-}
-@media (prefers-reduced-motion: reduce) { .pd-alch-fx { display: none; } }
+.pd-window.brewing { pointer-events: none; }
 /* A choice an item asks for (alchemyui.ts showChoice): the option's picture before its words, long words wrapping. */
 .pd-button.pd-choice { display: flex; align-items: center; justify-content: center; gap: 6px; white-space: normal; text-align: left; }
 .pd-button.pd-choice .pd-sitem { --u: 2px; }
 
-/* The artifacts' buff icons tinted as Shattered tints them: the cloak's stealth dimmed (cloakStealth.tintIcon), the time freeze orange (timeFreeze.tintIcon). */
-.pd-buff i[data-buff="stealth"] { filter: brightness(0.6); }
-.pd-buff i[data-buff="timeFreeze"] { filter: sepia(1) saturate(4) hue-rotate(-15deg); }
+/* Buffs that share one Shattered icon come pre-tinted from buffs-tints.png (design v19; hud.ts BUFF_TINTS): 7 px frames at 3×, as the other buff icons. */
+.pd-buff i.pd-tbuff { width: 21px; height: 21px; background-image: var(--atlas-buff-tints); background-size: calc(18 * 21px) 21px; background-position: calc(var(--ix, 0) * -21px) 0; }
 
+/* Out of sight (lifecycle.ts): the tab hidden or Telegram's window minimised. CSS animations stand still and start again on return. */
+html.pd-paused *, html.pd-paused *::before, html.pd-paused *::after { animation-play-state: paused !important; }
+/* The journal's new marks (journal2.png): as wide as the others in the row. */
+.pd-jrow .pd-jicon2 { flex: none; }
 /* «Привал»: the home screen is one column as tall as the screen; on a monitor it stays a phone-wide column in the middle (the scene is 376 px wide). */
 #overlay.bare > .pd-camp { flex: 1 1 auto; align-self: stretch; width: 100%; max-width: 440px; min-width: 0; }
 @media (min-width: 441px) { #overlay.bare > .pd-camp { box-shadow: 0 0 0 1px var(--stone-700), 0 0 40px rgba(0, 0, 0, .6); } }
@@ -271,3 +258,20 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 .pd-offer.camp .pd-offer-name { white-space: normal; line-height: 18px; min-height: 36px; }
 /* With no streak, the card's line is a sentence: it may take two lines. */
 .pd-profile-streak.off { white-space: normal; font: var(--text-caption, 400 15px/20px var(--font-small)); }
+/* A narrow phone (360): the pot's row of five (ui.css) is two pixels too wide, so the slots give up a few. */
+@media (max-width: 380px) {
+  .pd-alch { grid-template-columns: repeat(3, 46px) 64px 54px; gap: 4px; padding: 10px 4px; }
+  .pd-alch .pd-slot { --slot: 46px; width: 46px; height: 46px; }
+  .pd-alch .pd-slot.out { --slot: 54px; width: 54px; height: 54px; }
+  .pd-alch .pd-slot .pd-sitem { --u: 2px; }
+  .pd-alch .pd-slot.out .pd-sitem { --u: 2px; }
+  .pd-catalyst, .pd-energy-pile { width: 32px; height: 32px; }
+}
+/* The trinket window (alchemyui.ts): an effect takes at most three lines; on a narrow phone «Take» goes under the text. */
+.pd-trinket-desc { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+@media (max-width: 420px) {
+  .pd-trinket { grid-template-columns: 52px minmax(0, 1fr); grid-template-areas: "art name" "art desc" "btn btn"; row-gap: 4px; }
+  .pd-trinket > .pd-button { justify-self: stretch; min-height: 32px; }
+}
+/* The stone of augmentation's rows on a narrow phone: the label gives up some width so the note beside the number fits. */
+@media (max-width: 380px) { .pd-aug-row { grid-template-columns: 52px auto minmax(0, 1fr); gap: 6px; } }

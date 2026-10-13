@@ -105,6 +105,13 @@ export function onLayoutChange(callback: () => void): void {
   }
 }
 
+/** Calls back when Telegram minimises or restores the app (Bot API 8.0 «deactivated» / «activated»); nothing elsewhere. */
+export function onActiveChange(callback: (active: boolean) => void): void {
+  if (!webApp?.onEvent || !inTelegram) return;
+  webApp.onEvent('activated', () => callback(true));
+  webApp.onEvent('deactivated', () => callback(false));
+}
+
 /** Whether the game can go over the whole screen here: Telegram 8.0+, or a browser that allows it. */
 export function canFullscreen(): boolean {
   if (inTelegram) return Boolean(webApp!.requestFullscreen && webApp!.isVersionAtLeast?.('8.0'));
