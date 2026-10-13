@@ -1064,9 +1064,7 @@ export class View {
         case 'levelCap':
           if (effect.hero === myId) this.say(t.hero.levelCap, COLORS.positive, now);
           break;
-        case 'noticedSecret':
-          if (effect.hero === myId) this.say(t.hero.noticed, COLORS.warning, now);
-          break;
+        // Hero.noticed_smth is said once for what was found ('discovered', above).
         case 'shielded':
           // WarriorShield.activate: the shield's worth floats up over the warrior (FloatingText.SHIELDING).
           this.float(effect.hero, `+${effect.amount}`, COLORS.shield, now);

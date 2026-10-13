@@ -1,7 +1,7 @@
 import {
   armorStats, chargesKnown, durabilityOf, isBroken, kindKnown, levelKnown, maxDurability, CLASS_ARMOR, CLASS_ARMOR_OF, type Hero, type HeroClass,
   type Item, itemDef, type ItemKind, itemSprite, magicMissileDamage, missileStats, SCROLL_RUNES, visiblyCursed, wandMaxCharges, weaponStats,
-  WATERSKIN_VOLUME, type World,
+  sealShield, WATERSKIN_VOLUME, type World,
 } from '@pd/core';
 import { t } from './i18n';
 
@@ -96,7 +96,14 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
       ...(item.glyph ? [t.glyphInfo[item.glyph]] : []), ...(visiblyCursed(item) ? [t.cursedInfo] : []),
       ...(CLASS_ARMOR.includes(item.kind) ? [t.classArmorInfo[CLASS_OF[item.kind]!], t.specialCost] : []),
       ...(stats.str > hero.str ? [known ? t.tooHeavy : t.probablyTooHeavy] : []),
+      // Armor.info: the warrior's seal on it, and the shield it gives.
+      ...(item.seal ? [t.hero.sealAttached(sealShield(hero, item))] : []),
     ];
+  }
+  if (category === 'vial') {
+    // Waterskin.info: plain water, or healing dew; full, it seems to radiate energy.
+    const volume = item.volume ?? 0;
+    return [t.itemInfo[item.kind] ?? '', volume === 0 ? t.hero.waterskinWater : t.hero.waterskinHeal, ...(volume >= WATERSKIN_VOLUME ? [t.hero.waterskinFullDesc] : [])];
   }
   if (category === 'missile') {
     const stats = missileStats(item);
