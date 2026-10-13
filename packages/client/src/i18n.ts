@@ -4,6 +4,12 @@ import { ART_EN, ART_RU } from './i18n-artifacts';
 
 /* Interface text in Russian and English; the language follows Telegram or the browser. */
 
+function ordinal(n: number): string {
+  const rest = n % 100;
+  const suffix = rest >= 11 && rest <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th';
+  return `${n}${suffix}`;
+}
+
 const RU_GENDERS: Partial<Record<ItemKind, 1 | 2>> = { 'weapon.mace': 1, 'weapon.glaive': 1, 'weapon.spear': 2, 'weapon.sai': 2, 'weapon.whip': 2 };
 
 /** The Russian gender of a wearable's name, plural included: «палочка», «кольцо», «доспехи воина». */
@@ -459,7 +465,15 @@ const en = {
   cancel: 'Cancel',
   mart: 'Pixel-Mart',
   martMotto: 'A safer life in dungeon.',
-  martTabs: { skin: 'Looks', effect: 'Effects', frame: 'Frames', patron: 'Patron' },
+  martTabs: { skin: 'Looks', effect: 'Effects', frame: 'Frames', camp: 'Camps', patron: 'Patron' },
+  campNames: { cave: 'Crystal cave', prison: 'Prison yard', hall: 'Dwarven hall' },
+  campInfo: {
+    cave: 'Your camp in a cave of glowing crystals, with dust rising in the light.',
+    prison: 'Your camp in a prison yard: a barred window, two torches, a raised gate.',
+    hall: 'Your camp in a hall of the dwarven city: pillars, banners and golden lamps.',
+  },
+  campPlain: 'The dungeon’s gate',
+  campPlainInfo: 'The camp every hero starts with: the gate under the stars, in the season’s colours.',
   buy: 'Buy',
   ownedLabel: 'Bought',
   wear: 'Wear',
@@ -1563,6 +1577,81 @@ const en = {
     practice2: 'Practice',
     dailyOpenNote: 'The same dungeon for everyone; one attempt goes to the board.',
   },
+  /* The camp (the home screen), its mail, the step tutorial, and what the boards give. */
+  camp: {
+    cls: ['Warrior', 'Mage', 'Rogue', 'Huntress', 'Duelist', 'Cleric'] as readonly string[],
+    say: [
+      ['One more night by the fire, then down.', 'My sword is sharp.', 'Hear that? Rats.'],
+      ['Magic hates a hurry.', 'The staff is warm. A good sign.', 'How many floors down?'],
+      ['Quiet. Nobody sees us.', 'Gold won’t find itself.', 'Been down there before.'],
+      ['Wind from below. Smells of rat.', 'Bowstring’s tight.', 'Clear stars tonight.'],
+      ['My rapier wants work.', 'En garde!', 'Step, lunge, step.'],
+      ['The light is with us.', 'A prayer, then the road.', 'The tome feels warm.'],
+    ] as ReadonlyArray<readonly string[]>,
+    sulk: [
+      ['Enough!', 'Now I’m sulking.'], ['Don’t poke a mage!', 'Now I’m sulking.'], ['Hands off!', 'Now I’m sulking.'],
+      ['Enough!', 'Now I’m sulking.'], ['Hands off!', 'Now I’m sulking.'], ['Patience is a virtue…', 'Now I’m sulking.'],
+    ] as ReadonlyArray<readonly string[]>,
+    swipe: 'Swipe to change hero',
+    prev: 'Previous hero',
+    next: 'Next hero',
+    quests: 'Quests',
+    questsNew: 'Quests, something new',
+    mail: 'Mail',
+    ranks: 'Rankings',
+    mart: 'Pixel-Mart',
+    prefs: 'Settings',
+    board: 'Day’s board',
+    profileHint: 'Open the rankings',
+    boons: {
+      alchemist: 'Alchemist', scholar: 'Scholar', purse: 'Purse', supplies: 'Supplies', whetstone: 'Whetstone', cartographer: 'Cartographer',
+    } as Record<string, string>,
+    today: 'Today:',
+  },
+  mail: {
+    title: 'Mail',
+    claim: 'Claim',
+    claimAll: 'Claim all',
+    got: 'Claimed',
+    keep: 'Letters are kept for 30 days',
+    empty: 'No letters. Take a place in the daily dungeon or the week’s rankings: the results come here.',
+    offline: 'The mail could not be reached. Try again in a moment.',
+    cup: 'Cup of the day',
+    medal: 'Week results',
+    cupText: (date: string, place: number, total: number | undefined) => ({
+      before: `Daily dungeon ${date}: `, em: total ? `${ordinal(place)} of ${total}` : `${ordinal(place)} place`, after: '. The cup goes to your «Mine» shelf.',
+    }),
+    medalText: (week: string, place: number, total: number | undefined) => ({
+      before: `Week ${week}: `, em: total ? `${ordinal(place)} of ${total}` : `${ordinal(place)} place`, after: '. The medal goes to your «Mine» shelf.',
+    }),
+    gifts: { gold: 'Gold cup', silver: 'Silver cup', bronze: 'Bronze cup', week: 'Medal' } as Record<string, string>,
+    today: 'today',
+    yesterday: 'yesterday',
+    claimedToast: 'Added to «Mine»',
+    countLabel: (n: number) => `${n} unclaimed`,
+  },
+  coach: {
+    step: (i: number, n: number) => `Step ${i} of ${n}`,
+    next: 'Next',
+    done: 'Got it',
+    skip: 'Skip the tutorial',
+    steps: [
+      ['An enemy', 'This is a *%s*. Tap it to strike. The fight goes in turns: you hit, it hits back.'],
+      ['Stairs down', 'Walk to the *stairs* and tap them to go deeper. There’s no way back up.'],
+      ['Backpack', 'All your things are here. Tap one to *wear, drink or read* it.'],
+      ['Quickslot', 'Keep what you need at once here: *one tap* and it’s used. Hold an item in the backpack to put it here.'],
+    ] as ReadonlyArray<readonly [string, string]>,
+  },
+  prizes: {
+    daily: ['Gold cup', 'Silver cup', 'Bronze cup'] as readonly string[],
+    week: 'Medal',
+    dailyLine: 'The top 3 win a cup',
+    weekLine: 'The top 10 win a medal',
+    closesIn: (time: string) => `Closes in ${time}`,
+    closesSoon: 'Closes any moment',
+    units: { d: 'd', h: 'h', m: 'min' },
+    place: (prize: string) => `Prize: ${prize}`,
+  },
   arena: {
     title: 'Wave arena',
     sub: 'The Pit of Yendor',
@@ -1818,7 +1907,15 @@ const ru: Strings = {
   cancel: 'Отмена',
   mart: 'Пиксель-Март',
   martMotto: 'Безопасная жизнь в подземелье.',
-  martTabs: { skin: 'Облики', effect: 'Эффекты', frame: 'Рамки', patron: 'Покровитель' },
+  martTabs: { skin: 'Облики', effect: 'Эффекты', frame: 'Рамки', camp: 'Привалы', patron: 'Покровитель' },
+  campNames: { cave: 'Пещера с кристаллами', prison: 'Тюремный двор', hall: 'Зал гномов' },
+  campInfo: {
+    cave: 'Ваш привал в пещере светящихся кристаллов, в их свете поднимается пыль.',
+    prison: 'Ваш привал во дворе тюрьмы: окно с решёткой, два факела, поднятые ворота.',
+    hall: 'Ваш привал в зале гномьего города: колонны, знамёна и золотые светильники.',
+  },
+  campPlain: 'Вход в подземелье',
+  campPlainInfo: 'Привал, с которого начинает каждый герой: вход под звёздами, в красках сезона.',
   buy: 'Купить',
   ownedLabel: 'Куплено',
   wear: 'Надеть',
@@ -2899,6 +2996,80 @@ const ru: Strings = {
     ofTotal: (n) => `из ${n}`,
     practice2: 'Тренировка',
     dailyOpenNote: 'У всех одно подземелье; в таблицу идёт одна попытка.',
+  },
+  camp: {
+    cls: ['Воин', 'Маг', 'Разбойник', 'Охотница', 'Дуэлянтка', 'Клирик'],
+    say: [
+      ['Ещё ночь у костра — и вниз.', 'Меч наточен.', 'Слышишь? Крысы.'],
+      ['Магия не любит спешки.', 'Посох тёплый. Это к добру.', 'Сколько там этажей?'],
+      ['Тише. Нас не видят.', 'Золото само себя не найдёт.', 'Я там уже бывал.'],
+      ['Ветер из-под земли. Пахнет крысой.', 'Тетива натянута.', 'Звёзды ясные.'],
+      ['Рапира просит работы.', 'Защищайся!', 'Шаг, выпад, шаг.'],
+      ['Свет с нами.', 'Помолюсь — и в путь.', 'Том тёплый в руках.'],
+    ],
+    sulk: [
+      ['Ну хватит!', 'Я обиделся.'], ['Не мешай колдовать!', 'Я обиделся.'], ['Эй, без рук!', 'Я обиделся.'],
+      ['Ну хватит!', 'Я обиделась.'], ['Без рук!', 'Я обиделась.'], ['Терпение — добродетель…', 'Я обиделся.'],
+    ],
+    swipe: 'Листайте, чтобы сменить героя',
+    prev: 'Предыдущий герой',
+    next: 'Следующий герой',
+    quests: 'Задания',
+    questsNew: 'Задания, есть новые',
+    mail: 'Почта',
+    ranks: 'Рейтинг',
+    mart: 'Пиксель-Март',
+    prefs: 'Настройки',
+    board: 'Таблица дня',
+    profileHint: 'Открыть рейтинг',
+    boons: {
+      alchemist: 'Алхимик', scholar: 'Книжник', purse: 'Кошель', supplies: 'Припасы', whetstone: 'Точило', cartographer: 'Картограф',
+    },
+    today: 'Сегодня:',
+  },
+  mail: {
+    title: 'Почта',
+    claim: 'Забрать',
+    claimAll: 'Забрать всё',
+    got: 'Получено',
+    keep: 'Письма хранятся 30 дней',
+    empty: 'Писем нет. Займите место в подземелье дня или в рейтинге недели — итоги придут сюда.',
+    offline: 'Почта сейчас недоступна. Попробуйте ещё раз чуть позже.',
+    cup: 'Кубок дня',
+    medal: 'Итоги недели',
+    cupText: (date, place, total) => ({
+      before: `Подземелье дня ${date}: `, em: total ? `${place} место из ${total}` : `${place} место`, after: '. Кубок встанет на полку «Мои».',
+    }),
+    medalText: (week, place, total) => ({
+      before: `Неделя ${week}: `, em: total ? `${place} место из ${total}` : `${place} место`, after: '. Медаль встанет на полку «Мои».',
+    }),
+    gifts: { gold: 'Золотой кубок', silver: 'Серебряный кубок', bronze: 'Бронзовый кубок', week: 'Медаль' },
+    today: 'сегодня',
+    yesterday: 'вчера',
+    claimedToast: 'Лежит на полке «Мои»',
+    countLabel: (n) => `не забрано: ${n}`,
+  },
+  coach: {
+    step: (i, n) => `Шаг ${i} из ${n}`,
+    next: 'Дальше',
+    done: 'Понятно',
+    skip: 'Пропустить обучение',
+    steps: [
+      ['Враг', 'Это *%s*. Коснитесь, чтобы ударить. Бой идёт по ходам: вы бьёте — враг отвечает.'],
+      ['Лестница вниз', 'Дойдите до *лестницы* и коснитесь её — спуститесь глубже. Назад дороги нет.'],
+      ['Рюкзак', 'Здесь все ваши вещи. Коснитесь вещи — *надеть, выпить, прочесть*.'],
+      ['Быстрый слот', 'Держите здесь то, что нужно сразу: *одно касание* — и вещь в деле. Удерживайте вещь в рюкзаке, чтобы положить её сюда.'],
+    ],
+  },
+  prizes: {
+    daily: ['Золотой кубок', 'Серебряный кубок', 'Бронзовый кубок'],
+    week: 'Медаль',
+    dailyLine: 'Тройка лучших получает кубок',
+    weekLine: 'Десятка лучших получает медаль',
+    closesIn: (time) => `Закроется через ${time}`,
+    closesSoon: 'Вот-вот закроется',
+    units: { d: 'д', h: 'ч', m: 'мин' },
+    place: (prize) => `Награда: ${prize}`,
   },
   arena: {
     title: 'Арена волн',

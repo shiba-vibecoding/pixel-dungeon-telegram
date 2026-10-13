@@ -4,7 +4,7 @@ import { BOARD_KINDS, type BoardKind, boardName, boardOfRun, boardsFor } from '.
 import { CORS, json, jsonBody } from './http';
 import type { Env } from './index';
 import { type DailyEntry, publicId } from './leaderboard';
-import { claimAll, claimLetter, collectMail, type Lookup, noteEntered, readLetter } from './mail';
+import { claimAll, claimLetter, collectMail, type Lookup, noteEntered, readAll } from './mail';
 import { sanitizeAction } from './messages';
 import { EntryWriter, fromEntries, toEntries } from './run-store';
 import { describe, ended, MAX_SYNC_ACTIONS, parseSlot, PlayerLogic, type RunSlot, type RunSummary, streakNow } from './runs';
@@ -19,7 +19,7 @@ import { verifyInitData, WEEK_SECONDS } from './telegram-auth';
  *               { initData, rules, op: 'get', slot }                         the run as the server has it
  *   POST /me    { initData }                     the profile: records, streak, trophies, mail, places now
  *               { initData, coachDone: true }    the step tutorial is done (kept with the profile, for every device)
- *   POST /mail  { initData, op: 'read' | 'claim' | 'claimAll', id }   the mailbox (mail.ts): its letters and trophies after
+ *   POST /mail  { initData, op: 'readAll' | 'claim' | 'claimAll', id }   the mailbox (mail.ts): its letters and trophies after
  *   POST /board { initData?, kind }              a board's best, and my place on it
  *
  * Each player's runs and profile live in their own Durable Object (Player), so a player's
@@ -89,7 +89,7 @@ export async function mailRoute(request: Request, env: Env): Promise<Response> {
   if (!body) return json({ error: 'bad json' }, 400);
   const player = await who(body, env);
   if (!player) return json({ error: 'unauthorized' }, 401);
-  const op = body.op === 'read' || body.op === 'claim' || body.op === 'claimAll' ? body.op : null;
+  const op = body.op === 'readAll' || body.op === 'claim' || body.op === 'claimAll' ? body.op : null;
   if (!op) return json({ error: 'bad op' }, 400);
   const id = typeof body.id === 'string' ? body.id.slice(0, 64) : '';
   const response = await playerStub(env, player.key).fetch('https://player/mail', { method: 'POST', body: JSON.stringify({ player, op, id }) });
@@ -266,7 +266,7 @@ export class Player extends DurableObject<Env> {
     const p = logic.profile;
     const op = body.op;
     const id = typeof body.id === 'string' ? body.id : '';
-    const changed = op === 'claimAll' ? claimAll(p, now) > 0 : op === 'claim' ? claimLetter(p, id, now) === 'claimed' : op === 'read' ? readLetter(p, id) : false;
+    const changed = op === 'claimAll' ? claimAll(p, now) > 0 : op === 'claim' ? claimLetter(p, id, now) === 'claimed' : op === 'readAll' ? readAll(p) : false;
     if (changed) await this.persist(new Set(), new Map());
     return { mail: p.mail, trophies: p.trophies };
   }

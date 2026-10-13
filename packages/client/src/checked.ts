@@ -41,6 +41,23 @@ export interface SyncAnswer {
   reason?: string;
 }
 
+/** What a letter gives; kinds are added as rewards come (the server's mail.ts). */
+export type Gift = { type: 'trophy'; board: string; place: number };
+
+/** A letter of the mailbox: one a finished board the player placed on (the server's mail.ts). */
+export interface Letter {
+  id: string;
+  kind: 'cup' | 'medal';
+  board: string;
+  place: number;
+  total?: number;
+  /** When the board closed. */
+  at: number;
+  gifts: Gift[];
+  read?: boolean;
+  claimed?: number;
+}
+
 export type Trouble = 'offline' | 'unauthorized' | 'rules';
 
 export interface Profile {
@@ -58,6 +75,10 @@ export interface Profile {
   badges: BadgeProgress;
   history: RunSummary[];
   trophies: Array<{ board: string; place: number; at: number }>;
+  /** The mailbox: letters not yet expired. */
+  mail: Letter[];
+  /** The step tutorial was finished or skipped, on any device. */
+  coachDone: boolean;
   places: Partial<Record<BoardKind, number | null>>;
   /** How many players each board holds now. */
   totals?: Partial<Record<BoardKind, number>>;
@@ -105,6 +126,10 @@ export interface RunApi {
   sync(meta: RunMeta, actions: readonly Action[], hash: string | null, keepalive?: boolean): Promise<SyncAnswer | Trouble>;
   get(slot: RunSlot): Promise<{ run: RunMeta | null; world?: World } | Trouble>;
   me(): Promise<Profile | null>;
+  /** The mailbox: read all, claim one (by its id) or claim all; the letters and trophies after it, or null. */
+  mail(op: 'readAll' | 'claim' | 'claimAll', id?: string): Promise<{ mail: Letter[]; trophies: Profile['trophies'] } | null>;
+  /** Tells the server the step tutorial is done, to keep it so on every device. */
+  coachDone(): Promise<boolean>;
   board(kind: BoardKind): Promise<BoardView | null>;
 }
 
@@ -142,6 +167,8 @@ export function runApi(server: string, identity: () => Identity, development: bo
       post('/run', { op: 'sync', slot: meta.slot, run: meta.id, from: meta.seq, actions, hash }, keepalive),
     get: (slot) => post('/run', { op: 'get', slot }),
     me: () => quiet('/me', {}),
+    mail: (op, id) => quiet('/mail', { op, ...(id ? { id } : {}) }),
+    coachDone: async () => (await quiet<{ coachDone: boolean }>('/me', { coachDone: true }))?.coachDone === true,
     card: async (png) => {
       try {
         const response = await fetch(`${base}/card`, { method: 'POST', headers: { 'Content-Type': 'image/png', 'X-Init-Data': identity().initData ?? '' }, body: png });

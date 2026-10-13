@@ -182,6 +182,18 @@ export function claimAll(profile: MailProfile, now: number): number {
   return count;
 }
 
+/** Marks every letter opened (the mail window was looked at). */
+export function readAll(profile: MailProfile): boolean {
+  let changed = false;
+  for (const letter of profile.mail) {
+    if (!letter.read) {
+      letter.read = true;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 /** Marks a letter opened. */
 export function readLetter(profile: MailProfile, id: string): boolean {
   const letter = profile.mail.find((candidate) => candidate.id === id);

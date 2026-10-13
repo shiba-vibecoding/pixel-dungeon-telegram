@@ -39,9 +39,13 @@ import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
 import { bakeLevel, type Camera, patchLevel, render } from './render';
 import {
   armorTier, closeOverlay, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showReforge, showHelp, showHero,
-  refreshBackpack, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTitle, showTrade, showWaiting, slot, toast, type ShareChoice,
+  refreshBackpack, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice,
 } from './screens';
-import { profileCard, rankingBlock, showBoards, trophyText } from './rankui';
+import { rankingBlock, showBoards } from './rankui';
+import { type Camp, campClasses } from './camp';
+import { type DailyRulesView, showCamp } from './campui';
+import { showMail, unclaimed } from './mailui';
+import { coachDone, markCoachDone, type Rect, type StepId, Tutorial, veteranSkips } from './coach';
 import { mart } from './mart';
 import { eraseDevice, showChallenges, showJournal, showSettings } from './meta';
 import { netlog, sendNetlog } from './netlog';
@@ -72,7 +76,6 @@ import { STEP_MS, TILE, View } from './view';
  * the daily dungeon or the arena of waves; the server (VITE_SERVER_URL) keeps the boards.
  */
 
-const HERO_CLASSES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
 const SOLO_SLOT = 'pd-solo';
 /** The arena of waves' solo run has a slot of its own: it never takes the dungeon run's place. */
 const ARENA_SLOT = 'pd-arena';
@@ -267,14 +270,15 @@ const mapControls = new MapControls(document.getElementById('ui')!, mapControlsA
 let coach: HTMLElement | null = null;
 let coached = stored('pd-moved') === '1';
 function coachMove(me: Hero): void {
-  if (coached) {
+  // The step tutorial's bubble is up: the first hint gives way.
+  if (coached || tutorial.visible) {
     coach?.remove();
     coach = null;
     return;
   }
   if (!coach) {
     coach = document.createElement('div');
-    coach.className = 'pd-coach';
+    coach.className = 'pd-movehint';
     coach.textContent = t.moveHint;
     document.getElementById('ui')!.append(coach);
   }
@@ -295,6 +299,95 @@ function attackTarget(world: World, me: Hero): Mob | null {
   const rank = (m: Mob): number => (m.id === dangerTarget ? -1 : m.enemy === me.id && m.state === 'hunting' ? 0 : m.state === 'sleeping' ? 2 : 1) * 1000 + distance(m.pos, me.pos);
   return foes.sort((a, b) => rank(a) - rank(b) || (a.id < b.id ? -1 : 1))[0] ?? null;
 }
+/*
+ * The step tutorial (coach.ts) of the first run: an enemy, the stairs, the backpack, the quick slot, each when it
+ * comes up. It replaces the old «tap where to go» card and the hints for the enemy and the stairs while it is on.
+ */
+const uiLayer = document.getElementById('ui')!;
+
+/** A box in the page's pixels as a place on the interface layer, `pad` wider all round. */
+function layerRect(box: DOMRect, pad: number): Rect | null {
+  if (box.width <= 0 || box.height <= 0) return null;
+  const layer = uiLayer.getBoundingClientRect();
+  const scale = hud.scale || 1;
+  return { x: (box.left - layer.left) / scale - pad, y: (box.top - layer.top) / scale - pad, w: box.width / scale + 2 * pad, h: box.height / scale + 2 * pad };
+}
+
+/** The renderer's cell on the interface layer (the camera's zoom and the canvas's own scale undone), `up` taller to take in a head. */
+function cellRect(pos: number, pad: number, up = 0): Rect | null {
+  const ratio = canvas.width / (canvas.clientWidth || 1);
+  const unit = camera.zoom / ratio / (hud.scale || 1);
+  const x = (cellX(pos) * TILE - camera.x) * unit;
+  const y = (cellY(pos) * TILE - camera.y) * unit;
+  const size = TILE * unit;
+  const layer = uiLayer.getBoundingClientRect();
+  const scale = hud.scale || 1;
+  // Off the screen: no ring.
+  if (x + size < 0 || y + size < 0 || x > layer.width / scale || y > layer.height / scale) return null;
+  return { x: x - pad, y: y - pad - up, w: size + 2 * pad, h: size + 2 * pad + up };
+}
+
+/** The first of a button's kind that is on screen (the toolbar's, or the monitor's islands'). */
+function buttonRect(selector: string): Rect | null {
+  for (const node of uiLayer.querySelectorAll<HTMLElement>(selector)) {
+    const rect = layerRect(node.getBoundingClientRect(), 2);
+    if (rect && !node.hidden) return rect;
+  }
+  return null;
+}
+
+const tutorialHost = {
+  root: uiLayer,
+  scale: () => hud.scale,
+  rectOf: (step: StepId): Rect | null => {
+    const world = session?.world;
+    const me = world && heroById(world, session!.myId);
+    if (!world || !me) return null;
+    switch (step) {
+      case 'enemy': {
+        const foe = attackTarget(world, me);
+        return foe ? cellRect(foe.pos, 4, 6) : null;
+      }
+      case 'stairs': {
+        const exit = levelAt(world, me.depth).exit;
+        return visibleCells(world, me.depth)[exit] ? cellRect(exit, 4) : null;
+      }
+      case 'backpack':
+        return buttonRect('.pd-tool.bag');
+      case 'quick':
+        return buttonRect('.pd-tool.quick');
+    }
+  },
+  ready: (step: StepId): boolean => {
+    const world = session?.world;
+    const me = world && heroById(world, session!.myId);
+    if (!world || !me || !isAlive(me) || world.arena || session!.mode === 'online') return false;
+    switch (step) {
+      case 'enemy':
+        return attackTarget(world, me) !== null;
+      case 'stairs':
+        return me.depth < 26 && Boolean(visibleCells(world, me.depth)[levelAt(world, me.depth).exit]);
+      case 'backpack':
+        return newLoot || world.turn > 200;
+      case 'quick':
+        return quickKind(0) !== null && !isPlaceholder(me, 0) && attackTarget(world, me) === null;
+    }
+  },
+  noun: (step: StepId): string => {
+    const world = session?.world;
+    const me = world && heroById(world, session!.myId);
+    const foe = step === 'enemy' && world && me ? attackTarget(world, me) : null;
+    return foe ? mobName(foe).toLowerCase() : '';
+  },
+  blocked: (): boolean => overlayOpen() || !session,
+  finished: (): void => void api?.coachDone(),
+};
+const tutorial = new Tutorial(tutorialHost);
+// Players from before the tutorial know the game; the hints it covers wait while it is on.
+veteranSkips();
+hints.suppress = (id) => tutorial.active && (id === 'monster' || id === 'stairs');
+hints.hold = () => tutorial.visible;
+
 const finds = new Finds(document.getElementById('ui')!);
 /** Something was picked up since the backpack was last opened. */
 let newLoot = false;
@@ -337,7 +430,7 @@ function forget(key: string): void {
 // ?hero= and ?name= override the saved choices (handy for testing several players).
 const query = new URLSearchParams(location.search);
 const savedClass = query.get('hero') ?? stored('pd-class') ?? '';
-let heroClass: HeroClass = (HERO_CLASSES as readonly string[]).includes(savedClass) ? (savedClass as HeroClass) : 'warrior';
+let heroClass: HeroClass = (campClasses() as readonly string[]).includes(savedClass) ? (savedClass as HeroClass) : 'warrior';
 let playerName = query.get('name') ?? stored('pd-name') ?? '';
 
 function playerId(): string {
@@ -526,6 +619,8 @@ function settings(onClose: () => void): void {
   showSettings({
     onClose, onEffects: () => resize(), onReset: resetDevice,
     ...(api && inTelegram ? { reminders: { on: stored('pd-notify') === 'on', set: (on: boolean) => void setReminders(on) } } : {}),
+    // Outside Telegram the name is not known, and the camp has no field for it.
+    ...(!inTelegram ? { name: { value: playerName, set: (value: string) => { playerName = value; store('pd-name', value); } } } : {}),
   });
 }
 
@@ -598,27 +693,60 @@ function dailyState(): { state: 'open' | 'going' | 'done'; place: number | null;
   return { state, place: profile.places.daily ?? null, total: profile.totals?.daily ?? 0 };
 }
 
-/** Trophies won since the device last looked: announced once each. */
-function announceTrophies(trophies: Profile['trophies']): void {
-  const seen = Number(stored('pd-trophies-seen') ?? 0);
-  const fresh = trophies.filter((trophy) => trophy.at > seen);
-  for (const trophy of fresh.slice(0, 3)) toast(t.ranked.newTrophy(trophyText(trophy)), { tone: 'badge' });
-  if (fresh.length > 0) store('pd-trophies-seen', String(Math.max(...fresh.map((trophy) => trophy.at))));
-}
+/** The camp now on screen (camp.ts), drawn by the game's frame loop. */
+let activeCamp: Camp | null = null;
+/** How many letters waited when the mail was last counted: a new one is told by a soft sound and the icon's count. */
+let lettersCounted = -1;
 
-/** Asks the server who the player is; the title shows their card once it answers. */
+/** Asks the server who the player is; the camp shows their card, mail and tutorial once it answers. */
 function refreshProfile(): void {
   void api?.me().then((answer) => {
     if (!answer) return;
     profile = answer;
     adoptBadges(answer.badges);
-    announceTrophies(answer.trophies);
-    if (!session && document.querySelector('.pd-title-screen')) {
+    // The tutorial's end is kept with the profile, for every device (and told to it from here, if only this device knew).
+    if (answer.coachDone) markCoachDone();
+    else if (coachDone()) void api?.coachDone();
+    const waiting = unclaimed(answer.mail);
+    if (lettersCounted >= 0 && waiting > lettersCounted) audio.play('item', 1.1, 0.5);
+    lettersCounted = waiting;
+    if (!session && document.querySelector('.pd-camp')) {
       toTitle(false);
       askOnTitle();
     }
   });
 }
+
+/** The mail window; back to the camp when closed. */
+function openMail(): void {
+  if (!api) return;
+  showMail({
+    letters: profile?.mail ?? [],
+    api,
+    onChange: (mail, trophies) => {
+      if (!profile) return;
+      profile.mail = mail;
+      profile.trophies = trophies;
+      lettersCounted = unclaimed(mail);
+    },
+    onClose: () => toTitle(false),
+  });
+}
+
+/** Today's rules of the daily dungeon for the camp: the hardship's place in the challenges' sheet and name, the boon's item and words. */
+function dailyRulesView(): DailyRulesView {
+  const rules = core.dailyRules(core.dayOf(Date.now()));
+  const index = core.CHALLENGES.findIndex((challenge) => challenge.mask === rules.challenge);
+  const [boon, info] = t.ranked.boons[rules.boon] ?? [rules.boon, ''];
+  const item = BOON_ITEMS[rules.boon] ?? 'gold';
+  return {
+    hardship: { index: Math.max(0, index), name: t.meta.challengeList[index]?.[0] ?? '' },
+    boon: { sprite: itemSprite(core.createItem(item), {}), name: t.camp.boons[rules.boon] ?? boon, info },
+  };
+}
+const BOON_ITEMS: Record<string, core.ItemKind> = {
+  alchemist: 'potion.healing', scholar: 'scroll.identify', purse: 'gold', supplies: 'food.ration', whetstone: 'weightstone', cartographer: 'scroll.mapping',
+};
 
 function toTitle(ask = true): void {
   session?.close();
@@ -639,17 +767,22 @@ function toTitle(ask = true): void {
   const saved = loadSolo(SOLO_SLOT)?.heroes[0] ?? (away?.heroClass ? { heroClass: away.heroClass, lvl: away.lvl, depth: away.depth } : undefined);
   // A run an update can no longer carry on is not dropped unannounced.
   const stale = saved ? null : staleSolo(SOLO_SLOT);
-  showTitle({
+  // With a run to continue, the scene opens on its hero; a swipe then picks the class of a new game (and is kept as before).
+  if (saved && (campClasses() as readonly string[]).includes(saved.heroClass)) heroClass = saved.heroClass;
+  const records = rankings();
+  const camp = showCamp({
     heroClass,
     save: saved ? { heroClass: saved.heroClass, lvl: saved.lvl, depth: saved.depth } : null,
-    askName: inTelegram ? null : playerName,
+    name: profile?.name || (inTelegram ? telegramName() : playerName.trim()) || t.heroDefault,
+    profile,
+    fallback: { best: records.reduce((best, record) => Math.max(best, record.score), 0), games: records.length },
+    scene: mart.campWorn() ?? 'outdoor',
+    skinOf: (name) => mart.skinOf(name),
+    effect: mart.effectWorn(),
+    frame: mart.frameWorn(),
     onClass: (value) => {
-      heroClass = value;
+      heroClass = value as HeroClass;
       store('pd-class', value);
-    },
-    onName: (value) => {
-      playerName = value;
-      store('pd-name', value);
     },
     onContinue: () => startSolo('continue'),
     // A new game over a saved one asks first: the saved run is lost.
@@ -660,12 +793,12 @@ function toTitle(ask = true): void {
     onDaily: () => startSolo('daily'),
     onDailyBoard: api ? () => openBoards('daily') : undefined,
     dailyState: dailyState(),
-    dailyRules: todayRules((hardship, boon, info) => t.ranked.rulesLine(hardship, boon, info)),
+    rules: dailyRulesView(),
     onPractice: () => startSolo('daily'),
-    profile: profile ? profileCard(profile, () => openBoards()) : undefined,
     onRankings: () => openBoards(),
     onMart: () => showMart({ heroClass, onClose: toTitle }),
     onSettings: () => settings(toTitle),
+    mail: api ? { count: unclaimed(profile?.mail ?? []), onOpen: openMail } : undefined,
     challenges: challengesOpen() ? challenges : 0,
     onChallenges: () =>
       showChallenges({
@@ -678,6 +811,7 @@ function toTitle(ask = true): void {
         onClose: toTitle,
       }),
   });
+  activeCamp = camp.camp;
 }
 
 /** The journal and catalog; from the menu it goes back to the menu, from the corner button to the game. */
@@ -767,6 +901,7 @@ function artifactHost(world: World, me: Hero): ArtifactHost {
 function quickTap(slot: number): void {
   const me = session?.world && heroById(session.world, session.myId);
   if (!me) return;
+  tutorial.did('quick');
   if (!aim && (quickKind(slot) === null || isPlaceholder(me, slot))) assignQuickslot(slot);
   else toggleQuickslot(slot);
 }
@@ -883,6 +1018,8 @@ function send(action: Parameters<Session['send']>[0], now: number): void {
   }
   walk.lastSent = now;
   session!.send(action);
+  if (action.type === 'attack') tutorial.did('enemy');
+  else if (action.type === 'descend') tutorial.did('stairs');
   // The first thing done: the first game's hint has done its job.
   if (!coached) {
     coached = true;
@@ -1537,6 +1674,7 @@ function openBackpack(): void {
   walk.reset();
   aim = null;
   newLoot = false;
+  tutorial.did('backpack');
   showBackpack({
     world,
     hero: me,
@@ -2284,7 +2422,10 @@ function frame(now: number): void {
 
 function tick(now: number): void {
   if (!session) {
-    drawBackdrop(now);
+    // The camp covers a phone's whole screen; behind a wide screen's column the dungeon is still shown.
+    if (activeCamp?.canvas.isConnected) activeCamp.frame(now);
+    else activeCamp = null;
+    if (!activeCamp || innerWidth > 480) drawBackdrop(now);
     return;
   }
   const world = session.world;
@@ -2620,6 +2761,7 @@ function tick(now: number): void {
       : walk.queue.length === 0 && !walk.chase && !session.busy),
   );
   coachMove(me);
+  tutorial.frame(now);
 
   // Who the dungeon is waiting for, once my action has been queued for a moment. Under live turns, the
   // companions a fight waits for once I have made my move (and none while it waits for mine).
@@ -3000,7 +3142,7 @@ if (launchedForDaily()) {
 // Badges and the rankings from the player's other devices: on the title at once, once they come.
 void pullCloud().then(() => {
   reloadBadges();
-  if (!session && document.querySelector('.pd-title-screen')) toTitle(false);
+  if (!session && document.querySelector('.pd-camp')) toTitle(false);
   pushCloud();
 });
 
