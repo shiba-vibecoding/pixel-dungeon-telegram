@@ -1,4 +1,4 @@
-import { FURY_LEVEL, type Hero, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING } from '@pd/core';
+import { FURY_LEVEL, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING, stealthCloak } from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
 import { AVATAR, durabilityBar, markWear, sprites } from './screens';
@@ -65,7 +65,27 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
       ? [{ name: 'sealShield' as const, turns: me.sealShield.shield > 0 ? me.sealShield.shield : me.sealShield.cooldown }] : []),
     ...(me.lockedFloor !== undefined ? [{ name: 'lockedFloor' as const }] : []),
     ...((me.blessed ?? 0) > 0 ? [{ name: 'bless' as const, turns: Math.ceil(me.blessed!) }] : []),
+    ...artifactBuffs(me),
   ];
+}
+
+/**
+ * The artifacts' buffs (their BuffIndicator icons): the cloak's stealth (turns until it costs a charge), the
+ * hourglass's time freeze (turns of the charge being spent) and stasis, the cape radiating thorns, the
+ * talisman's unease near a hidden trap.
+ */
+function artifactBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
+  const buffs: Array<{ name: BuffName; turns?: number }> = [];
+  const cloak = stealthCloak(me);
+  if (cloak?.stealth) buffs.push({ name: 'stealth', turns: Math.max(0, cloak.stealth.turnsToCost) });
+  const frozen = frozenBy(me);
+  if (frozen?.freeze) buffs.push({ name: 'timeFreeze', turns: Math.trunc(frozen.freeze.turnsToCost + 0.001) });
+  if ((me.stasis ?? 0) > 0) buffs.push({ name: 'stasis', turns: me.stasis! });
+  for (const item of heroArtifacts(me)) {
+    if (item.kind === 'artifact.cape' && (item.cooldown ?? 0) > 0) buffs.push({ name: 'thorns', turns: item.cooldown! });
+    if (item.kind === 'artifact.talisman' && item.warn) buffs.push({ name: 'foresight' });
+  }
+  return buffs;
 }
 
 export interface HudHandlers {
@@ -165,6 +185,8 @@ export interface QuickState {
   aiming: boolean;
   /** QuickSlot.isPlaceholder: none of it left; drawn greyed until more is picked up. */
   placeholder?: boolean;
+  /** An artifact's charge: the strip at the bottom of its icon (ShArtifact's .pd-charge). */
+  charge?: { share: number; full: boolean } | null;
   wear?: { left: number; max: number } | null;
 }
 
@@ -557,6 +579,7 @@ export class Hud {
         ...state.buffs.map((buff) => {
           const glyphNode = el('i');
           glyphNode.dataset.b = String(BUFF_ICONS[buff.name]);
+          glyphNode.dataset.buff = buff.name;
           const node = el('button', `pd-buff${buff.turns !== undefined && buff.turns <= 3 ? ' fading' : ''}`, glyphNode);
           node.ariaLabel = t.buffs[buff.name];
           node.onclick = () => this.handlers.buff(buff.name, buff.turns);
@@ -696,7 +719,8 @@ export class Hud {
   /** A quick slot's button: the item, its count or charges, its wear; the key on a wide screen. */
 
   private drawQuick(key: string, button: HTMLButtonElement, quick: QuickState | null): void {
-    if (!this.changed(key, quick ? `${quick.sprite}:${quick.label}:${quick.aiming}:${quick.wear?.left ?? ''}:${quick.placeholder ?? ''}` : '')) return;
+    const charge = quick?.charge ? `${Math.round(quick.charge.share * 100)}${quick.charge.full ? 'f' : ''}` : '';
+    if (!this.changed(key, quick ? `${quick.sprite}:${quick.label}:${quick.aiming}:${quick.wear?.left ?? ''}:${quick.placeholder ?? ''}:${charge}` : '')) return;
     button.classList.toggle('empty', !quick);
     button.classList.toggle('placeholder', Boolean(quick?.placeholder));
     button.classList.toggle('targeting', Boolean(quick?.aiming));
@@ -711,6 +735,11 @@ export class Hud {
         markWear(button);
       } else {
         button.classList.remove('has-dur', 'broken');
+      }
+      if (quick.charge) {
+        const strip = el('span', `pd-charge${quick.charge.full ? ' full' : ''}`);
+        strip.style.setProperty('--v', String(quick.charge.share));
+        button.append(strip);
       }
       sprites(button);
     } else {

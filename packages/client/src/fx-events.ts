@@ -376,6 +376,20 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
       fx.hitStop(90);
       return;
     }
+    case 'stasis':
+    case 'timeFreeze':
+      // TimekeepersHourglass: GameScene.flash(0x80FFFFFF) as the sand runs.
+      if (effect.hero === myId && effect.on) fx.flash('255, 255, 255', 0.5, 320, now);
+      return;
+    case 'ghostSummoned':
+      // ShaftParticle and Speck.LIGHT: the ghost comes down in a shaft of pale light.
+      if (!here(effect.depth)) return;
+      burst(cellCentre(effect.pos), now, { count: 18, colors: ['#ffffff', '#fffde0', '#e8f0ff'], glow: true, speed: [6, 30], life: [400, 900], drag: 0.3, size: [1, 2], angle: -Math.PI / 2, cone: Math.PI / 3 });
+      return;
+    case 'stealth':
+      // CloakOfShadows: a puff of shadow as the hero vanishes or shows again.
+      burst(centreOf(view, effect.hero, now), now, { count: 10, colors: ['#202030', '#404050'], speed: [8, 30], life: [250, 500], drag: 0.2, size: [1, 2] });
+      return;
     case 'zapped': {
       if (!here(effect.depth)) return;
       const at = cellCentre(effect.to);

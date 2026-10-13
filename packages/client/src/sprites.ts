@@ -32,6 +32,8 @@ export interface Assets {
   items: HTMLImageElement;
   /** 16x16 plants, in the order of PLANT_KINDS. */
   plants: HTMLImageElement;
+  /** Shattered's effects.png (Effects.get): the chains among them. */
+  effects: HTMLImageElement;
 }
 
 const anim = (fps: number, frames: number[], loop = false): Animation => ({ fps, frames, loop });
@@ -378,7 +380,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     'tiles0', 'water0', 'tiles1', 'water1', 'tiles2', 'water2', 'spinner', 'dm300', 'tiles3', 'water3',
     'elemental', 'monk', 'warlock', 'golem', 'king', 'undead', 'tiles4', 'water4',
     'succubus', 'eye', 'scorpio', 'yog', 'rottingFist', 'burningFist', 'larva', 'mimic', 'statue', 'piranha', 'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'bee', 'warrior', 'mage', 'rogue', 'ranger', 'rat', 'gnoll', 'crab', 'goo', 'ghost',
-    'skeleton', 'thief', 'swarm', 'shaman', 'bat', 'brute', 'tengu', 'shopkeeper', 'wandmaker', 'spd/ghost',
+    'skeleton', 'thief', 'swarm', 'shaman', 'bat', 'brute', 'tengu', 'shopkeeper', 'wandmaker', 'spd/ghost', 'spd/effects',
     'icons', 'items', 'plants',
   ] as const;
   let loaded = 0;
@@ -412,6 +414,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     icons: images.icons,
     items: images.items,
     plants: images.plants,
+    effects: images['spd/effects'],
   };
 }
 

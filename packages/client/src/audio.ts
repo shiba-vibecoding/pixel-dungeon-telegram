@@ -27,7 +27,9 @@ export type Sample =
   | 'hit' | 'miss' | 'step' | 'water' | 'death' | 'levelup' | 'descend' | 'door_open' | 'secret' | 'alert'
   | 'click' | 'boss' | 'gold' | 'item' | 'drink' | 'bones' | 'read' | 'teleport' | 'trap' | 'lightning' | 'burning'
   | 'zap' | 'unlock' | 'ghost' | 'eat' | 'shatter' | 'dewdrop' | 'puff' | 'rocks' | 'falling' | 'blast' | 'evoke'
-  | 'beacon' | 'bee' | 'cursed' | 'badge' | 'degrade';
+  | 'beacon' | 'bee' | 'cursed' | 'badge' | 'degrade'
+  // Shattered's, for the artifacts (assets/sounds/*.mp3 of Shattered; until the audio stream brings the files, FALLBACK).
+  | 'meld' | 'chains' | 'scan' | 'plant' | 'trample' | 'hit_strong';
 
 /** Sounds made here rather than loaded. */
 export type Synth =
@@ -54,7 +56,13 @@ const SAMPLES: readonly Sample[] = [
   'hit', 'miss', 'step', 'water', 'death', 'levelup', 'descend', 'door_open', 'secret', 'alert',
   'click', 'boss', 'gold', 'item', 'drink', 'bones', 'read', 'teleport', 'trap', 'lightning', 'burning', 'zap', 'unlock', 'ghost',
   'eat', 'shatter', 'dewdrop', 'puff', 'rocks', 'falling', 'blast', 'evoke', 'beacon', 'bee', 'cursed', 'badge', 'degrade',
+  'meld', 'chains', 'scan', 'plant', 'trample', 'hit_strong',
 ];
+
+/** The nearest sound there is, for a Shattered sound whose file has not come yet. */
+const FALLBACK: Partial<Record<Sample, Sample>> = {
+  meld: 'evoke', chains: 'zap', scan: 'secret', plant: 'item', trample: 'step', hit_strong: 'hit',
+};
 
 /** How much a sound's pitch wanders from play to play (a fraction), if not the default. */
 const VARY: Partial<Record<Sound, number>> = {
@@ -453,13 +461,16 @@ class Audio {
     this.startAir();
   }
 
-  private async load(name: Sample): Promise<void> {
+  private async load(name: Sample, file: Sample = name): Promise<void> {
     try {
-      const response = await fetch(`${this.base}${name}.mp3`);
+      const response = await fetch(`${this.base}${file}.mp3`);
+      if (!response.ok) throw new Error(`${file}: ${response.status}`);
       const data = await response.arrayBuffer();
       this.buffers.set(name, await this.context!.decodeAudioData(data));
     } catch {
-      // Without that sound.
+      // Without that file: the nearest sound there is, or none.
+      const fallback = FALLBACK[name];
+      if (fallback && file !== fallback) await this.load(name, fallback);
     }
   }
 

@@ -4,8 +4,9 @@ import {
   type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
 } from '@pd/core';
 import { artifactActions, artifactCard, type ArtifactHost, chargeStrip, showMiscChooser } from './artifactui';
+import { artText } from './artifacttext';
 import { audio } from './audio';
-import { chooseQuickslot, isQuickslotted, QUICKSLOTS, quickKind, quickUse } from './quickslot';
+import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse } from './quickslot';
 import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
 import { BUFF_ICONS, type BuffName } from './hud';
 import { capitalize, locale, t } from './i18n';
@@ -354,7 +355,11 @@ function titleFor(world: World, item: Item, box: HTMLElement): void {
 }
 
 /** The item is the one the quickslot shows. */
-const inQuickslot = (hero: Hero, item: Item): boolean => isQuickslotted(item.kind) && hero.items.find((other) => other.kind === item.kind) === item;
+const inQuickslot = (hero: Hero, item: Item): boolean =>
+  isQuickslotted(item.kind) &&
+  (itemDef(item.kind).category === 'artifact' && (hero.artifact?.kind === item.kind || hero.misc?.kind === item.kind)
+    ? item === hero.artifact || item === hero.misc
+    : hero.items.find((other) => other.kind === item.kind) === item);
 
 /* Title */
 
@@ -690,6 +695,8 @@ export interface TradeOptions {
   item: Item;
   price: number;
   onBuy(): void;
+  /** WndTradeItem's steal, with the master thieves' armband worn: the offer, and what taking it does. */
+  steal?: { label: string; sure: boolean; onSteal(): void };
   onClose(): void;
 }
 
@@ -702,10 +709,24 @@ export function showTrade(options: TradeOptions): void {
     options.onClose();
   }, 'primary');
   buy.disabled = short;
+  const steal = options.steal;
+  // Not sure to work: the armband's warning first, as WndTradeItem asks.
+  const stealButton = steal && button(steal.label, () => {
+    if (steal.sure) {
+      steal.onSteal();
+      options.onClose();
+    } else {
+      showConfirm(capitalize(itemName(world, item)), artText('windows.wndtradeitem.steal_warn'), artText('windows.wndtradeitem.steal_warn_yes'),
+        artText('windows.wndtradeitem.steal_warn_no'), () => {
+          steal.onSteal();
+          options.onClose();
+        }, options.onClose);
+    }
+  }, 'small');
   const head = windowOf(
     { title: capitalize(itemName(world, item)), icon: slot(world, item, { hero }), onClose: options.onClose },
     ...describedItem(world, hero, item),
-    actions([buy], []),
+    actions(stealButton ? [buy, stealButton] : [buy], []),
     info(t.yourGold(hero.gold), 'pd-note center'),
   );
   titleFor(world, item, head);
@@ -1702,21 +1723,16 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     if (!['bag', 'missile', 'bomb', 'honeypot', 'potion', 'seed'].includes(category)) use(t.throwItem, () => aimWith('throw', index));
     // QuickSlot: any item with a use can be kept one tap away: into the first free slot (or one whose item
     // ran out), else the first. Holding a slot on the toolbar chooses for that slot (Toolbar's quickslot_assign).
-    if (quickUse(item.kind) && !isQuickslotted(item.kind)) {
-      more.push(button(t.quickslotShort, () => {
-        const free = Array.from({ length: QUICKSLOTS }, (_, i) => i).find((i) => {
-          const kind = quickKind(i);
-          return kind === null || !hero.items.some((other) => other.kind === kind);
-        });
-        chooseQuickslot(item.kind, free ?? 0);
-        refreshBackpack(world, hero);
-      }));
-    }
+    if (quickUse(item.kind) && !isQuickslotted(item.kind)) more.push(quickslotButton(world, hero, item));
     danger.push(button(t.dropItem, () => stay({ type: 'drop', item: index }), 'danger'));
   } else if (options.slot !== undefined) {
     const slot = options.slot;
     // Artifact.actions on a worn artifact, then taking it off.
-    if (itemDef(item.kind).category === 'artifact') for (const action of artifactActions(artifactHost(options, slot), item, slot)) use(action.label, action.run);
+    if (itemDef(item.kind).category === 'artifact') {
+      for (const action of artifactActions(artifactHost(options, slot), item, slot)) use(action.label, action.run);
+      // Shattered's quick slots hold a worn artifact too (the rogue's cloak starts in one).
+      if (!isQuickslotted(item.kind)) more.push(quickslotButton(world, hero, item));
+    }
     use(t.takeOff, () => stay({ type: 'remove', slot }));
   } else if (item === hero.weapon) {
     use(t.takeOff, () => stay({ type: 'unequip' }));
@@ -1728,6 +1744,15 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
   // Armor.AC_DETACH, on the armour worn.
   if (item === hero.armor && item.seal) more.push(button(t.hero.detach, () => stay({ type: 'detach', armor: 'armor' }, null)));
   return { main, more, danger };
+}
+
+/** Into the first free quick slot (or one whose item ran out), else the first. */
+function quickslotButton(world: World, hero: Hero, item: Item): HTMLButtonElement {
+  return button(t.quickslotShort, () => {
+    const free = Array.from({ length: QUICKSLOTS }, (_, i) => i).find((i) => quickKind(i) === null || isPlaceholder(hero, i));
+    chooseQuickslot(item.kind, free ?? 0);
+    refreshBackpack(world, hero);
+  });
 }
 
 /** BrokenSeal.armorSelector: the backpack opened on the armours the seal can go onto (the one worn too). */
@@ -1785,7 +1810,7 @@ function artifactHost(options: ItemOptions, ref: ItemRef): ArtifactHost {
       options.onClose();
       options.onAimArtifact?.(action);
     },
-    pick: (title, targets, onPick) => showBackpack({ ...options, pick: { title, targets, onPick, onCancel: back } }),
+    pick: (title, targets, onPick, onCancel) => showBackpack({ ...options, pick: { title, targets, onPick, onCancel: onCancel ?? back } }),
     back,
   };
 }

@@ -28,7 +28,8 @@ export interface ArtifactHost {
   /** The next tap on the map picks the cell. */
   aim(action: ArtifactAction): void;
   /** The backpack opened on what can be chosen, the chosen one handed back (WndBag.ItemSelector). */
-  pick(title: string, targets: readonly ItemRef[], onPick: (ref: ItemRef) => void): void;
+  /** The backpack as a selector; cancelled, `onCancel` (else back to where it was). */
+  pick(title: string, targets: readonly ItemRef[], onPick: (ref: ItemRef) => void, onCancel?: () => void): void;
   /** Back to the backpack, with the artifact chosen. */
   back(): void;
 }
@@ -221,7 +222,9 @@ export function showSpellbookChoice(host: ArtifactHost, kind: ItemKind, exotic: 
       return;
     }
     const targets = scrollTargets(world, hero, scroll);
-    host.pick(t.art.readOn, targets, (on) => host.act({ type: 'artifact', item: ref, use: 'resolve', choice, on }));
+    // The selector cancelled, the scroll is read on nothing and used up (InventoryScroll.confirmCancelation's yes).
+    host.pick(t.art.readOn, targets, (on) => host.act({ type: 'artifact', item: ref, use: 'resolve', choice, on }),
+      () => host.act({ type: 'artifact', item: ref, use: 'resolve', choice }));
   };
   if (!exotic) {
     resolve(0, kind);
@@ -245,12 +248,8 @@ export function showMiscChooser(world: World, hero: Hero, item: Item, choices: r
     windowOf(
       { title: artText('items.kindofmisc.unequip_title'), narrow: true, onClose },
       info(artText('items.kindofmisc.unequip_message')),
-      el('div', { className: 'pd-actions' }, ...(['artifact', 'misc', 'ring'] as const).map((slot) => {
-        const worn = hero[slot];
-        const node = button(worn ? capital(itemName(world, worn)) : t.art.empty, () => onChoose(slot));
-        node.disabled = !choices.includes(slot);
-        return node;
-      })),
+      // KindofMisc.doEquip's WndOptions: the worn things that could make way, by name.
+      el('div', { className: 'pd-actions' }, ...choices.map((slot) => button(capital(itemName(world, hero[slot]!)), () => onChoose(slot)))),
     ),
     onClose,
   );
