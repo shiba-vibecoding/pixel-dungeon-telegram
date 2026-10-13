@@ -108,7 +108,7 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
   it('armour is known after ten blows taken, five ready at first (Armor.proc, Armor.onHeroGainExp)', () => {
     const { world, rat } = sparring();
     const hero = heroById(world, 'p')!;
-    hero.armor = unknown(createItem('armor.leather', 1, -1));
+    hero.armor = unknown(createItem('armor.leather', 1, 1));
     const effects: Effect[] = [];
     const endure = (blows: number): void => {
       const target = landed(effects, rat) + blows;
@@ -204,11 +204,12 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
 
   it('the price takes in only what is known (Item.considerState)', () => {
     const sword = createItem('weapon.sword', 1, 2);
-    expect(itemPrice(sword, true)).toBe(80 * 3);
-    expect(itemPrice(unknown(sword), true)).toBe(80);
-    const cursed = { ...createItem('weapon.sword', 1, -1), cursed: true };
-    expect(itemPrice(cursed, true)).toBe(20);
-    expect(itemPrice(unknown(cursed), true)).toBe(80);
+    // MeleeWeapon.value: 20 a tier, times the level and one once known, halved cursed once known.
+    expect(itemPrice(sword, true)).toBe(60 * 3);
+    expect(itemPrice(unknown(sword), true)).toBe(60);
+    const cursed = { ...createItem('weapon.sword', 1, 0), cursed: true, enchant: 'wayward' as const };
+    expect(itemPrice(cursed, true)).toBe(30);
+    expect(itemPrice(unknown(cursed), true)).toBe(60);
   });
 
   it('a well of awareness drunk from: what is worn is known through and through, and the curses of the rest', () => {

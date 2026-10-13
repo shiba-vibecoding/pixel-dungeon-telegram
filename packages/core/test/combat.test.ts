@@ -63,18 +63,24 @@ describe('monsters', () => {
     }
   });
 
-  it('use the original weapons, armour and stats', () => {
+  it("use Shattered's weapons and armour, and the original monsters", () => {
     const stats = (kind: ItemKind, level = 0) => weaponStats(createItem(kind, 1, level));
-    // The warrior's, as Shattered's worn shortsword: ten strength.
-    expect(stats('weapon.shortSword')).toMatchObject({ min: 1, max: 10, str: 10 });
+    // MeleeWeapon: tier + lvl to 5(tier+1) + lvl(tier+1), each kind its own; strength 8 + 2×tier, less at +1, +3, +6...
+    expect(stats('weapon.wornShortsword')).toMatchObject({ min: 1, max: 10, str: 10 });
     expect(stats('weapon.dagger')).toMatchObject({ min: 1, max: 8, str: 10 });
-    expect(stats('weapon.knuckles')).toMatchObject({ min: 1, max: 5, delay: 0.5 });
-    expect(stats('weapon.mace')).toMatchObject({ min: 3, max: 12, str: 14 });
-    // 30 / 1.2f is 24.99999 in Java's float arithmetic: the war hammer tops out at 24.
+    expect(stats('weapon.gloves')).toMatchObject({ min: 1, max: 5, delay: 0.5 });
+    expect(stats('weapon.mace')).toMatchObject({ min: 3, max: 16, str: 14 });
+    expect(stats('weapon.spear')).toMatchObject({ min: 2, max: 20, str: 12, reach: 2, delay: 1.5 });
+    expect(stats('weapon.glaive', 1)).toMatchObject({ min: 6, max: 48, str: 17 });
+    expect(stats('weapon.greataxe')).toMatchObject({ min: 5, max: 45, str: 20 });
     expect(stats('weapon.warHammer')).toMatchObject({ min: 5, max: 24, str: 18 });
-    // Upgrades raise damage and lower the strength needed.
-    expect(stats('weapon.sword', 2)).toMatchObject({ min: 5, max: 22, str: 12 });
-    expect(armorStats(createItem('armor.mail', 1, 1))).toEqual({ dr: 9, str: 12 });
+    expect(stats('weapon.sword', 3)).toMatchObject({ min: 6, max: 32, str: 12 });
+    // Armor: tier×(2+lvl) at most, lvl at least.
+    expect(armorStats(createItem('armor.mail', 1, 1))).toEqual({ min: 1, max: 9, str: 13, tier: 3 });
+    expect(armorStats(createItem('armor.plate'))).toEqual({ min: 0, max: 10, str: 18, tier: 5 });
+    // Augmented: for speed 0.7× the damage in 2/3 the time; armour for defence, more of it.
+    expect(weaponStats({ ...createItem('weapon.sword'), augment: 'speed' })).toMatchObject({ min: 2, max: 14 });
+    expect(armorStats({ ...createItem('armor.leather'), augment: 'defense' }).max).toBe(6);
     expect(MOBS.crab).toMatchObject({ ht: 15, speed: 2, dr: 4 });
   });
 });

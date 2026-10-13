@@ -1,3 +1,6 @@
+import { COMMON_ENCHANTMENTS, COMMON_GLYPHS, isCurseEnchant, isCurseGlyph, RARE_ENCHANTMENTS, RARE_GLYPHS, UNCOMMON_ENCHANTMENTS, UNCOMMON_GLYPHS } from './items';
+import { isEnchantable } from './scrolls';
+import { isDart } from './missiles';
 import { heldWands } from './wands';
 import { beckon, type Hero, isAlive, type Mob } from './actors';
 import { randomRespawnCell } from './ai';
@@ -76,12 +79,22 @@ export function readScroll(ctx: Ctx, hero: Hero, kind: ItemKind, target: Item | 
       }
       return;
     case 'scroll.removeCurse':
-      // ScrollOfRemoveCurse.uncurse: the curse is known, and lifted.
+      // ScrollOfRemoveCurse.uncurse: the curse is known, and lifted, a curse enchantment or glyph (and a curse
+      // infusion's strength) with it.
       if (target) {
-        const was = !!target.cursed;
+        let lifted = !!target.cursed;
         delete target.curseUnknown;
         delete target.cursed;
-        ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'removeCurse', count: was ? 1 : 0 });
+        if (isCurseEnchant(target.enchant)) {
+          delete target.enchant;
+          lifted = true;
+        }
+        if (isCurseGlyph(target.glyph)) {
+          delete target.glyph;
+          lifted = true;
+        }
+        if (lifted) delete target.infused;
+        ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'removeCurse', count: lifted ? 1 : 0 });
       }
       return;
     case 'scroll.transmutation':
@@ -264,7 +277,8 @@ export function transmutable(world: World, item: Item, reading?: ItemKind): bool
     case 'weapon':
       return true;
     case 'missile':
-      return item.kind !== 'missile.dart' && item.kind !== 'missile.boomerang';
+      // ScrollOfTransmutation: a thrown weapon of another kind of its tier (no dart; transmute.ts, the gear stream's).
+      return !isDart(item.kind);
     case 'potion':
       return true;
     case 'scroll':
@@ -494,22 +508,12 @@ function divination(ctx: Ctx, hero: Hero): void {
 
 /* Enchantment (ScrollOfEnchantment) */
 
-/** ScrollOfEnchantment.enchantable: weapons and armour that can be upgraded (and the boomerang). */
-export function enchantable(item: Item): boolean {
-  const category = itemDef(item.kind).category;
-  return (category === 'weapon' && item.kind !== 'weapon.pickaxe') || category === 'armor' || item.kind === 'missile.boomerang';
-}
+/** ScrollOfEnchantment.enchantable: what can be enchanted or inscribed (the gear stream's isEnchantable). */
+export const enchantable = (item: Item): boolean => isEnchantable(item);
 
-/**
- * The enchantments' rarity (Weapon.Enchantment common, uncommon, rare; the gear stream's seam: Shattered's own
- * enchantments come with it). Glyphs likewise.
- */
-const ENCHANT_TIERS: readonly (readonly Enchantment[])[] = [
-  ['fire', 'slow', 'shock', 'poison'], ['paralysis', 'instability', 'luck', 'tempering', 'horror'], ['death', 'leech'],
-];
-const GLYPH_TIERS: readonly (readonly Glyph[])[] = [
-  ['bounce', 'affection', 'potential', 'metabolism'], ['stench', 'viscosity', 'displacement', 'entanglement', 'multiplicity'], ['antiEntropy', 'autoRepair'],
-];
+/** The enchantments' and glyphs' rarity (Weapon.Enchantment and Armor.Glyph common, uncommon, rare; items.ts). */
+const enchantTiers = (): readonly (readonly Enchantment[])[] => [COMMON_ENCHANTMENTS, UNCOMMON_ENCHANTMENTS, RARE_ENCHANTMENTS];
+const glyphTiers = (): readonly (readonly Glyph[])[] => [COMMON_GLYPHS, UNCOMMON_GLYPHS, RARE_GLYPHS];
 
 /**
  * The three enchantments (or glyphs) a scroll of enchantment offers for an item: a common one, an uncommon one, and
@@ -520,7 +524,7 @@ export function enchantOptions(world: World, hero: Hero, item: Item): Array<Ench
   const rng = Rng.seeded(deriveSeed(world.run.seed, ENCHANT_STREAM, world.turn, hero.depth));
   const armor = itemDef(item.kind).category === 'armor';
   const existing = armor ? item.glyph : item.enchant;
-  const tiers: readonly (readonly string[])[] = armor ? GLYPH_TIERS : ENCHANT_TIERS;
+  const tiers: readonly (readonly string[])[] = armor ? glyphTiers() : enchantTiers();
   const from = (pool: readonly string[], except: readonly (string | undefined)[]): string => {
     const choices = pool.filter((e) => !except.includes(e));
     return choices[rng.int(choices.length)]!;

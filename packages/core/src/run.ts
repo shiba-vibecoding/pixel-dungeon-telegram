@@ -17,9 +17,15 @@ export interface RunState {
   /** The troll blacksmith has set up his forge in the caves (absent in older runs). */
   blacksmithSpawned?: boolean;
   /** Shattered's decks of potions, scrolls, runestones and trinkets, as dealt so far (items.ts drawFromDeck). */
-  decks?: Partial<Record<DeckCategory, Deck>>;
+  kindDecks?: Partial<Record<DeckCategory, Deck>>;
   /** Dungeon.LimitedDrops: the stone of intuition, the trinket catalyst and the stone of enchantment have been laid out. */
   drops?: { intStone?: boolean; catalyst?: boolean; enchStone?: boolean; cookingHp?: number };
+  /**
+   * Generator's decks for weapons and thrown weapons by tier (Generator.Category.probs, as gear.ts deals them),
+   * and how many each has dealt (Category.dropped); absent until the first is dealt.
+   */
+  decks?: Record<string, number[]>;
+  deckDrops?: Record<string, number>;
   /** Generator's artifact deck: the kinds not dealt yet (absent until the first is; see artifacts/artifact.ts). */
   artifactsLeft?: ItemKind[];
   /** Generator.Category.WAND's deck: how many of each wand kind (in WAND_KINDS order) are left, and how many were dealt. */

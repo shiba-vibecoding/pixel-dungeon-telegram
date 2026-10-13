@@ -458,3 +458,34 @@ describe('the blobs', () => {
     }
   });
 });
+
+describe('alchemy against the gear', () => {
+  it('liquid metal mends a worn thrown weapon, a tier and a level worth of metal at most (LiquidMetal)', () => {
+    const { world, hero } = atPot();
+    const knives: Item = { ...createItem('missile.throwingKnife', 3), durability: 40 };
+    hero.items = [createItem('liquidMetal', 50), knives];
+    const result = act(world, 'p', { type: 'use', item: 0, on: 1 });
+    expect(result.ok && result.effects.some((e) => e.type === 'mended')).toBe(true);
+    // Tier 1: ten metal mend it all; a whole one wants no more (already_fixed).
+    expect(knives.durability).toBeUndefined();
+    expect(hero.items[0]).toMatchObject({ kind: 'liquidMetal', qty: 44 });
+    expect(act(world, 'p', { type: 'use', item: 0, on: 1 })).toEqual({ ok: false, reason: 'it needs no repair' });
+    // A set short of a weapon gets one more.
+    knives.qty = 2;
+    expect(act(world, 'p', { type: 'use', item: 0, on: 1 }).ok).toBe(true);
+    expect(knives.qty).toBe(3);
+    // Darts are not for it.
+    hero.items.push(createItem('missile.dart', 5));
+    expect(act(world, 'p', { type: 'use', item: 0, on: 2 }).ok).toBe(false);
+  });
+
+  it('curse infusion lays a curse enchantment on a weapon and a curse glyph on armour (CurseInfusion)', () => {
+    const { world, hero } = atPot();
+    hero.items = [createItem('spell.curseInfusion', 2)];
+    expect(act(world, 'p', { type: 'use', item: 0, on: 'weapon' }).ok).toBe(true);
+    expect(hero.weapon).toMatchObject({ cursed: true, infused: true });
+    expect(['annoying', 'displacing', 'dazzling', 'explosive', 'friendly', 'polarized', 'pressurized', 'sacrificial', 'wayward', 'wondrous']).toContain(hero.weapon!.enchant);
+    expect(act(world, 'p', { type: 'use', item: 0, on: 'armor' }).ok).toBe(true);
+    expect(['antiEntropy', 'corrosion', 'displacement', 'metabolism', 'multiplicity', 'stench', 'overgrowth', 'bulk']).toContain(hero.armor.glyph);
+  });
+});

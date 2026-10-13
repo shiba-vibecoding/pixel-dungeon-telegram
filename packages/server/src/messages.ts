@@ -165,7 +165,8 @@ export function sanitizeAction(raw: unknown): Action | null {
       const item = slot(a.item);
       return item === null ? null : { type: a.type, item };
     }
-    case 'throw': {
+    case 'throw':
+    case 'shoot': {
       const item = slot(a.item);
       const target = cell(a.target);
       return item === null || target === null ? null : { type: a.type, item, target };
@@ -201,6 +202,25 @@ export function sanitizeAction(raw: unknown): Action | null {
       if (a.target === undefined) return { type: 'special' };
       const target = cell(a.target);
       return target === null ? null : { type: 'special', target };
+    }
+    case 'augment': {
+      // StoneOfAugmentation: the stone, what it is used on, and how.
+      const item = slot(a.item);
+      const on = itemRef(a.on);
+      const augment = oneOf(a.augment, ['speed', 'damage', 'evasion', 'defense', 'none'] as const);
+      return item === null || on === null || !augment ? null : { type: 'augment', item, on, augment };
+    }
+    case 'tip': {
+      // Dart.AC_TIP: the darts, the seed, and whether as many as it will.
+      const item = slot(a.item);
+      const seed = slot(a.seed);
+      if (item === null || seed === null) return null;
+      return a.all === true ? { type: 'tip', item, seed, all: true } : { type: 'tip', item, seed };
+    }
+    case 'clean': {
+      const item = slot(a.item);
+      if (item === null) return null;
+      return a.all === true ? { type: 'clean', item, all: true } : { type: 'clean', item };
     }
     case 'affix': {
       const from = sealSource(a.from);

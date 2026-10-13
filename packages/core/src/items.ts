@@ -9,6 +9,8 @@ import { deriveSeed, Rng } from './rng';
 import type { RunState } from './run';
 import { lootCount } from './party';
 import { S } from './spd-sprites';
+import { armorValue, randomArmor, randomMissile, randomOfTier, randomWeapon, weaponValue } from './gear';
+import { defaultQuantity, missileValue, TIPPED_DARTS } from './missiles';
 import { artifactSprite, artifactValue, initArtifact, randomArtifact } from './artifacts/artifact';
 
 /*
@@ -21,7 +23,7 @@ import { artifactSprite, artifactValue, initArtifact, randomArtifact } from './a
 
 export type ItemCategory =
   | 'gold' | 'potion' | 'scroll' | 'weapon' | 'armor' | 'missile' | 'wand' | 'ring' | 'seed' | 'food' | 'dew' | 'torch' | 'key'
-  | 'tome' | 'quest' | 'ankh' | 'kit' | 'bomb' | 'honeypot' | 'vial' | 'bag' | 'wipeout' | 'seal'
+  | 'tome' | 'quest' | 'ankh' | 'kit' | 'bomb' | 'honeypot' | 'vial' | 'bag' | 'wipeout' | 'bow' | 'seal'
   | 'artifact' | 'sandbag' | 'petal'
   // Shattered's alchemy (alchemy.ts): runestones, spells, brews, elixirs, trinkets and the trinket catalyst,
   // energy crystals, and what alchemy makes or wants that is none of those (arcane resin, liquid metal, goo, shards).
@@ -31,20 +33,16 @@ export interface ItemDef {
   category: ItemCategory;
   /** Fixed sprite in items.png (Shattered's atlas, `S` in spd-sprites.ts); potions and scrolls take theirs from the run's labels. */
   sprite?: number;
-  /** Melee weapons (MeleeWeapon): tier, accuracy and delay factors, strength if not the usual. */
+  /** Melee weapons, armour and thrown weapons: their tier (the rest of their numbers are in weapons.ts, armor.ts, missiles.ts). */
   tier?: number;
-  accuracy?: number;
-  delay?: number;
-  str?: number;
   /** Food: how much hunger it takes away. */
   energy?: number;
 }
 
-const weapon = (tier: number, sprite: number, accuracy = 1, delay = 1, str?: number): ItemDef => ({
-  category: 'weapon', sprite, tier, accuracy, delay, ...(str ? { str } : {}),
-});
+const weapon = (tier: number, sprite: number): ItemDef => ({ category: 'weapon', sprite, tier });
 const armor = (tier: number, sprite: number): ItemDef => ({ category: 'armor', sprite, tier });
 const of = (category: ItemCategory, sprite: number): ItemDef => ({ category, sprite });
+const missile = (tier: number, sprite: number): ItemDef => ({ category: 'missile', sprite, tier });
 
 export const ITEMS = {
   gold: { category: 'gold', sprite: S.GOLD },
@@ -180,22 +178,44 @@ export const ITEMS = {
   /** Honeypot.ShatteredPot: what is left of a broken honeypot. */
   'honeypot.shattered': of('material', S.SHATTPOT),
 
-  'weapon.knuckles': weapon(1, S.GLOVES, 1, 0.5),
-  'weapon.dagger': weapon(1, S.DAGGER, 1.2),
-  /** The warrior's (WornShortsword's numbers: tier 1, 1-10, ten strength, where Pixel Dungeon's wanted eleven). */
-  'weapon.shortSword': weapon(1, S.SHORTSWORD),
+  // Melee weapons (MeleeWeapon), by tier; their numbers are in weapons.ts.
+  'weapon.wornShortsword': weapon(1, S.WORN_SHORTSWORD),
+  'weapon.gloves': weapon(1, S.GLOVES),
+  'weapon.dagger': weapon(1, S.DAGGER),
+  'weapon.rapier': weapon(1, S.RAPIER),
+  'weapon.cudgel': weapon(1, S.CUDGEL),
+  'weapon.shortsword': weapon(2, S.SHORTSWORD),
+  'weapon.handAxe': weapon(2, S.HAND_AXE),
+  'weapon.spear': weapon(2, S.SPEAR),
   'weapon.quarterstaff': weapon(2, S.QUARTERSTAFF),
-  'weapon.spear': weapon(2, S.SPEAR, 1, 1.5),
-  'weapon.mace': weapon(3, S.MACE, 1, 0.8),
+  'weapon.dirk': weapon(2, S.DIRK),
+  'weapon.sickle': weapon(2, S.SICKLE),
   'weapon.sword': weapon(3, S.SWORD),
+  'weapon.mace': weapon(3, S.MACE),
+  'weapon.scimitar': weapon(3, S.SCIMITAR),
+  'weapon.roundShield': weapon(3, S.ROUND_SHIELD),
+  'weapon.sai': weapon(3, S.SAI),
+  'weapon.whip': weapon(3, S.WHIP),
   'weapon.longsword': weapon(4, S.LONGSWORD),
-  'weapon.battleAxe': weapon(4, S.BATTLE_AXE, 1.2),
-  'weapon.warHammer': weapon(5, S.WAR_HAMMER, 1.2),
+  'weapon.battleAxe': weapon(4, S.BATTLE_AXE),
+  'weapon.flail': weapon(4, S.FLAIL),
+  'weapon.runicBlade': weapon(4, S.RUNIC_BLADE),
+  'weapon.assassinsBlade': weapon(4, S.ASSASSINS_BLADE),
+  'weapon.crossbow': weapon(4, S.CROSSBOW),
+  'weapon.katana': weapon(4, S.KATANA),
+  'weapon.greatsword': weapon(5, S.GREATSWORD),
+  'weapon.warHammer': weapon(5, S.WAR_HAMMER),
   'weapon.glaive': weapon(5, S.GLAIVE),
+  'weapon.greataxe': weapon(5, S.GREATAXE),
+  'weapon.greatshield': weapon(5, S.GREATSHIELD),
+  'weapon.gauntlet': weapon(5, S.GAUNTLETS),
+  'weapon.warScythe': weapon(5, S.WAR_SCYTHE),
   /** MagesStaff: the mage's own, a weapon and a wand at once (the wand imbued in it: Item.wand). */
   'weapon.magesStaff': weapon(1, S.MAGES_STAFF),
   /** The troll blacksmith's, lent for his errand (Pickaxe): a tool first, a weapon at a pinch. */
-  'weapon.pickaxe': weapon(2, S.PICKAXE, 1, 1, 14),
+  'weapon.pickaxe': weapon(2, S.PICKAXE),
+  /** The huntress's own (SpiritBow): never equipped, it shoots arrows of spirit that grow with her. */
+  spiritBow: { category: 'bow', sprite: S.SPIRIT_BOW, tier: 1 },
 
   'armor.cloth': armor(1, S.ARMOR_CLOTH),
   'armor.leather': armor(2, S.ARMOR_LEATHER),
@@ -209,16 +229,36 @@ export const ITEMS = {
   'armor.rogue': armor(6, S.ARMOR_ROGUE),
   'armor.huntress': armor(6, S.ARMOR_HUNTRESS),
 
-  // Thrown: darts are lost when they hit and fall to the floor when they
-  // miss; the boomerang always comes back.
-  'missile.dart': { category: 'missile', sprite: S.DART },
-  // The other thrown weapons (MissileWeapon): each does something more when it hits.
-  'missile.curare': { category: 'missile', sprite: S.PARALYTIC_DART },
-  'missile.incendiary': { category: 'missile', sprite: S.INCENDIARY_DART },
-  'missile.javelin': { category: 'missile', sprite: S.JAVELIN },
-  'missile.shuriken': { category: 'missile', sprite: S.SHURIKEN },
-  'missile.tomahawk': { category: 'missile', sprite: S.TOMAHAWK },
-  'missile.boomerang': { category: 'missile', sprite: S.BOOMERANG },
+  // Thrown weapons (MissileWeapon), by tier; their numbers are in missiles.ts.
+  'missile.throwingStone': missile(1, S.THROWING_STONE),
+  'missile.throwingKnife': missile(1, S.THROWING_KNIFE),
+  'missile.throwingSpike': missile(1, S.THROWING_SPIKE),
+  'missile.dart': missile(1, S.DART),
+  'missile.fishingSpear': missile(2, S.FISHING_SPEAR),
+  'missile.throwingClub': missile(2, S.THROWING_CLUB),
+  'missile.shuriken': missile(2, S.SHURIKEN),
+  'missile.throwingSpear': missile(3, S.THROWING_SPEAR),
+  'missile.kunai': missile(3, S.KUNAI),
+  'missile.bolas': missile(3, S.BOLAS),
+  'missile.javelin': missile(4, S.JAVELIN),
+  'missile.tomahawk': missile(4, S.TOMAHAWK),
+  'missile.heavyBoomerang': missile(4, S.BOOMERANG),
+  'missile.trident': missile(5, S.TRIDENT),
+  'missile.throwingHammer': missile(5, S.THROWING_HAMMER),
+  'missile.forceCube': missile(5, S.FORCE_CUBE),
+  // Darts tipped with a seed (TippedDart): tier 2, but a dart's damage, and something more on a hit.
+  'missile.rotDart': missile(2, S.ROT_DART),
+  'missile.healingDart': missile(2, S.HEALING_DART),
+  'missile.displacingDart': missile(2, S.DISPLACING_DART),
+  'missile.chillingDart': missile(2, S.CHILLING_DART),
+  'missile.incendiaryDart': missile(2, S.INCENDIARY_DART),
+  'missile.poisonDart': missile(2, S.POISON_DART),
+  'missile.adrenalineDart': missile(2, S.ADRENALINE_DART),
+  'missile.blindingDart': missile(2, S.BLINDING_DART),
+  'missile.shockingDart': missile(2, S.SHOCKING_DART),
+  'missile.paralyticDart': missile(2, S.PARALYTIC_DART),
+  'missile.cleansingDart': missile(2, S.CLEANSING_DART),
+  'missile.holyDart': missile(2, S.HOLY_DART),
   // Shattered's wands (items/wands), each known by its look: no wood to guess from.
   'wand.magicMissile': { category: 'wand', sprite: S.WAND_MAGIC_MISSILE },
   'wand.lightning': { category: 'wand', sprite: S.WAND_LIGHTNING },
@@ -392,14 +432,10 @@ export interface Item {
   /** Lloyd's beacon: where it was set, if it was. */
   returnTo?: { depth: number; pos: number };
   /**
-   * A melee weapon or armour reshaped with a stone of augmentation (Weapon.augment, Armor.augment): a weapon for
-   * speed or for damage, armour for evasion or for defense.
+   * Weapon.augment and Armor.augment (a stone of augmentation): a weapon for speed or for damage, armour for evasion
+   * or for defence; absent, none.
    */
   augment?: Augment;
-  /** Weapons and armour: easier to wield, from a potion of mastery (masteryPotionBonus: two strength less). */
-  mastery?: boolean;
-  /** Cursed by a curse infusion, and the stronger for it while cursed (curseInfusionBonus). */
-  infused?: boolean;
   /** Wands: levels given by arcane resin (Wand.resinBonus), part of `level`. */
   resin?: number;
   /** Blandfruit cooked with a seed: the potion it now carries (Blandfruit.potionAttrib). */
@@ -443,7 +479,10 @@ export interface Item {
   warn?: boolean;
   /** AlchemistsToolkit.warmUpDelay. */
   warmUp?: number;
-  /** Uses left before an upgraded item breaks (Item.durability); absent while whole. See wear.ts. */
+  /**
+   * Uses left before an upgraded wand or ring breaks (Item.durability), absent while whole (see wear.ts); for a
+   * thrown weapon, MissileWeapon.durability: what is left of the stack's first one, of 100 (absent while 100).
+   */
   durability?: number;
   /**
    * What is not known yet of a weapon, armour, ring or wand as found (Item.levelKnown and cursedKnown,
@@ -456,7 +495,7 @@ export interface Item {
   /** Wands: zaps so far towards knowing them (Wand.usagesToKnow). */
   familiarity?: number;
   /**
-   * Weapons and armour: uses left before they are known, and how many of those are ready now
+   * Weapons, thrown weapons and armour: uses left before they are known, and how many of those are ready now
    * (Weapon and Armor.usesLeftToID, availableUsesToID; a wand's zaps, Wand.usesLeftToID: 10 at first, 5 of
    * them ready, more with every level the hero gains); rings: the share of a level still to gain
    * while worn (Ring.levelsToID). Absent: as found. See ident.ts.
@@ -464,49 +503,91 @@ export interface Item {
   usesLeftToID?: number;
   availableUsesToID?: number;
   levelsToID?: number;
+  /** Thrown weapons: the set this stack belongs to (MissileWeapon.setID); absent, the kind's own set (as darts share one). */
+  set?: number;
+  /** The explosive curse's fuse (Explosive.durability, of 100); absent while 100. */
+  explosive?: number;
+  /** The crystal enchantment's wear (Crystal.durability, of 100); absent while 100. */
+  crystal?: number;
+  /**
+   * Seams for the alchemy stream: an enchantment or glyph hardened against upgrades (Weapon.enchantHardened,
+   * Armor.glyphHardened), a curse infused (curseInfusionBonus: a level and more), a potion of mastery drunk on it
+   * (masteryPotionBonus: two strength less). Weapons and armour honour them (weapons.ts, armor.ts).
+   */
+  hardened?: boolean;
+  infused?: boolean;
+  mastery?: boolean;
 }
 
-/* Enchantments and glyphs (Weapon.Enchantment, Armor.Glyph) */
+/** Weapon.Augment (speed, damage) and Armor.Augment (evasion, defense). */
+export type Augment = 'speed' | 'damage' | 'evasion' | 'defense';
+
+/* Enchantments and glyphs (Weapon.Enchantment, Armor.Glyph), and the curses among them */
+
+export const COMMON_ENCHANTMENTS = ['blazing', 'chilling', 'kinetic', 'shocking', 'venomous'] as const;
+export const UNCOMMON_ENCHANTMENTS = ['blocking', 'blooming', 'eldritch', 'elastic', 'lucky', 'projecting', 'unstable', 'vorpal'] as const;
+export const RARE_ENCHANTMENTS = ['corrupting', 'crystal', 'grim', 'vampiric'] as const;
+export const WEAPON_CURSES = [
+  'annoying', 'displacing', 'dazzling', 'explosive', 'friendly', 'polarized', 'pressurized', 'sacrificial', 'wayward', 'wondrous',
+] as const;
 
 export type Enchantment =
-  | 'fire' | 'poison' | 'death' | 'paralysis' | 'leech' | 'slow' | 'shock' | 'instability' | 'horror' | 'luck' | 'tempering';
+  | (typeof COMMON_ENCHANTMENTS)[number] | (typeof UNCOMMON_ENCHANTMENTS)[number] | (typeof RARE_ENCHANTMENTS)[number]
+  | (typeof WEAPON_CURSES)[number];
 
-/** How often each enchantment comes up. */
-const ENCHANTMENT_CHANCES: ReadonlyArray<readonly [Enchantment, number]> = [
-  ['fire', 10], ['poison', 10], ['death', 1], ['paralysis', 2], ['leech', 1], ['slow', 2], ['shock', 6], ['instability', 3],
-  ['horror', 2], ['luck', 2], ['tempering', 3],
-];
+export const COMMON_GLYPHS = ['obfuscation', 'swiftness', 'viscosity', 'potential'] as const;
+export const UNCOMMON_GLYPHS = ['brimstone', 'stone', 'entanglement', 'repulsion', 'camouflage', 'flow'] as const;
+export const RARE_GLYPHS = ['affection', 'antiMagic', 'thorns'] as const;
+export const ARMOR_CURSES = ['antiEntropy', 'corrosion', 'displacement', 'metabolism', 'multiplicity', 'stench', 'overgrowth', 'bulk'] as const;
 
 export type Glyph =
-  | 'bounce' | 'affection' | 'antiEntropy' | 'potential' | 'metabolism' | 'stench' | 'viscosity' | 'displacement' | 'entanglement'
-  | 'multiplicity' | 'autoRepair';
+  | (typeof COMMON_GLYPHS)[number] | (typeof UNCOMMON_GLYPHS)[number] | (typeof RARE_GLYPHS)[number] | (typeof ARMOR_CURSES)[number];
 
-const GLYPHS: readonly Glyph[] = [
-  'bounce', 'affection', 'antiEntropy', 'multiplicity', 'potential', 'metabolism', 'stench', 'viscosity', 'displacement',
-  'entanglement', 'autoRepair',
-];
+const isOneOf = <T extends string>(list: readonly T[], value: string | undefined): value is T => (list as readonly string[]).includes(value ?? '');
+/** Enchantment.curse() and Glyph.curse(). */
+export const isCurseEnchant = (enchant: Enchantment | undefined): boolean => isOneOf(WEAPON_CURSES, enchant);
+export const isCurseGlyph = (glyph: Glyph | undefined): boolean => isOneOf(ARMOR_CURSES, glyph);
 
-/** Enchantment.random, never the one the weapon already has. */
-export function randomEnchantment(rng: Rng, except?: Enchantment): Enchantment {
-  const chances = ENCHANTMENT_CHANCES.map(([, chance]) => chance);
-  for (;;) {
-    const enchant = ENCHANTMENT_CHANCES[rng.chances(chances)]![0];
-    if (enchant !== except) return enchant;
-  }
+/** Enchantment.typeChances and Glyph.typeChances: common, uncommon, rare. */
+const TYPE_CHANCES = [50, 40, 10];
+
+/** Enchantment.random(toIgnore) and Glyph.random: a kind by rarity, then one of it not ignored (or any, if none is left). */
+function randomOf<T extends string>(rng: Rng, tiers: ReadonlyArray<readonly T[]>, ignore: ReadonlyArray<T | undefined>): T {
+  const tier = tiers[rng.chances(TYPE_CHANCES)]!;
+  const left = tier.filter((kind) => !ignore.includes(kind));
+  return left.length === 0 ? randomOf(rng, tiers, []) : rng.element(left)!;
 }
 
-/** Glyph.random, never the one the armour already has. */
-export function randomGlyph(rng: Rng, except?: Glyph): Glyph {
-  for (;;) {
-    const glyph = GLYPHS[rng.int(GLYPHS.length)]!;
-    if (glyph !== except) return glyph;
-  }
+/** Enchantment.random: never one of those to ignore (the weapon's own, for Weapon.enchant()). */
+export const randomEnchantment = (rng: Rng, ...ignore: Array<Enchantment | undefined>): Enchantment =>
+  randomOf<Enchantment>(rng, [COMMON_ENCHANTMENTS, UNCOMMON_ENCHANTMENTS, RARE_ENCHANTMENTS], ignore);
+/** Enchantment.randomCommon / randomUncommon. */
+export const randomCommonEnchantment = (rng: Rng, ...ignore: Array<Enchantment | undefined>): Enchantment =>
+  randomTier(rng, COMMON_ENCHANTMENTS, ignore, () => randomEnchantment(rng));
+export const randomUncommonEnchantment = (rng: Rng, ...ignore: Array<Enchantment | undefined>): Enchantment =>
+  randomTier(rng, UNCOMMON_ENCHANTMENTS, ignore, () => randomEnchantment(rng));
+/** Enchantment.randomCurse. */
+export const randomWeaponCurse = (rng: Rng, ...ignore: Array<Enchantment | undefined>): Enchantment =>
+  randomTier(rng, WEAPON_CURSES, ignore, () => randomEnchantment(rng));
+
+/** Glyph.random: never one of those to ignore (the armour's own, for Armor.inscribe()). */
+export const randomGlyph = (rng: Rng, ...ignore: Array<Glyph | undefined>): Glyph =>
+  randomOf<Glyph>(rng, [COMMON_GLYPHS, UNCOMMON_GLYPHS, RARE_GLYPHS], ignore);
+export const randomCommonGlyph = (rng: Rng, ...ignore: Array<Glyph | undefined>): Glyph =>
+  randomTier(rng, COMMON_GLYPHS, ignore, () => randomGlyph(rng));
+export const randomUncommonGlyph = (rng: Rng, ...ignore: Array<Glyph | undefined>): Glyph =>
+  randomTier(rng, UNCOMMON_GLYPHS, ignore, () => randomGlyph(rng));
+/** Glyph.randomCurse. */
+export const randomArmorCurse = (rng: Rng, ...ignore: Array<Glyph | undefined>): Glyph =>
+  randomTier(rng, ARMOR_CURSES, ignore, () => randomGlyph(rng));
+
+function randomTier<T extends string>(rng: Rng, tier: readonly T[], ignore: ReadonlyArray<T | undefined>, otherwise: () => T): T {
+  const left = tier.filter((kind) => !ignore.includes(kind));
+  return left.length === 0 ? otherwise() : rng.element(left)!;
 }
 
 export const itemDef = (kind: ItemKind): ItemDef => ITEMS[kind];
 
-/** Stone of augmentation (Weapon.Augment, Armor.Augment): a weapon for speed or damage, armour for evasion or defense. */
-export type Augment = 'speed' | 'damage' | 'evasion' | 'defense';
 
 /* Exotic potions and scrolls (ExoticPotion.regToExo, ExoticScroll.regToExo) */
 
@@ -561,12 +642,16 @@ export const isStackable = (kind: ItemKind): boolean => {
     category === 'seed' || category === 'bomb' || category === 'honeypot' || category === 'wipeout' || category === 'stone' ||
     category === 'spell' || category === 'brew' || category === 'elixir' || category === 'energy' || category === 'material' ||
     category === 'petal' ||
-    (category === 'missile' && kind !== 'missile.boomerang') || kind === 'quest.token' || kind === 'quest.ore';
+    category === 'missile' || kind === 'quest.token' || kind === 'quest.ore';
 };
 
-/** Item.isSimilar for stacking: a cooked blandfruit only with one cooked alike, a summoning spell with one of its element. */
+/**
+ * Item.isSimilar for stacking: thrown weapons only those of one set and level (MissileWeapon.isSimilar); a cooked
+ * blandfruit only with one cooked alike, a summoning spell with one of its element, a bomb not with one lit.
+ */
 export const stacksWith = (a: Item, b: Item): boolean =>
-  a.kind === b.kind && isStackable(a.kind) && a.potion === b.potion && a.element === b.element && a.fuse === undefined && b.fuse === undefined;
+  a.kind === b.kind && isStackable(a.kind) && (itemDef(a.kind).category !== 'missile' || (a.level === b.level && a.set === b.set)) &&
+  a.potion === b.potion && a.element === b.element && a.fuse === undefined && b.fuse === undefined;
 
 export function createItem(kind: ItemKind, qty = 1, level = 0): Item {
   const item: Item = { kind, qty, level };
@@ -591,9 +676,6 @@ const SCROLL_PRICES: Partial<Record<ItemKind, number>> = {
   'scroll.upgrade': 50, 'scroll.identify': 30, 'scroll.removeCurse': 30, 'scroll.mirrorImage': 30, 'scroll.recharging': 30,
   'scroll.teleportation': 30, 'scroll.lullaby': 40, 'scroll.mapping': 40, 'scroll.rage': 40, 'scroll.retribution': 40,
   'scroll.terror': 40, 'scroll.transmutation': 50,
-};
-const MISSILE_PRICES: Partial<Record<ItemKind, number>> = {
-  'missile.dart': 2, 'missile.curare': 12, 'missile.incendiary': 10, 'missile.javelin': 15, 'missile.shuriken': 15, 'missile.tomahawk': 20,
 };
 const FOOD_PRICES: Partial<Record<ItemKind, number>> = {
   'food.ration': 10, 'food.pasty': 20, 'food.meat': 5, 'food.steak': 5, 'food.carpaccio': 10, 'food.overpriced': 20,
@@ -636,22 +718,22 @@ export function itemPrice(item: Item, known: boolean): number {
     return Math.max(1, price);
   };
   switch (def.category) {
-    // Enchanted, half as much again.
+    // MeleeWeapon.value and Armor.value (gear.ts); the pickaxe is not for sale, nor the spirit bow.
     case 'weapon':
       // MagesStaff.value: not for sale.
       if (item.kind === 'weapon.pickaxe' || item.kind === 'weapon.magesStaff') return 0;
-      return levelled(Math.trunc(20 * 2 ** (def.tier! - 1) * (item.enchant ? 1.5 : 1)));
+      return weaponValue(item);
     case 'armor':
       // Armor.value: the warrior's sealed armour is not for sale.
       if (item.seal) return 0;
-      return levelled(Math.trunc(10 * 2 ** (itemDef(item.base ?? item.kind).tier! - 1) * (item.glyph ? 1.5 : 1)));
+      return armorValue(item);
     case 'potion':
     case 'scroll':
       return unitValue(item.kind, known) * item.qty;
     case 'food':
       return (FOOD_PRICES[item.kind] ?? 10) * item.qty;
     case 'missile':
-      return item.kind === 'missile.boomerang' ? 30 : (MISSILE_PRICES[item.kind] ?? 2) * item.qty;
+      return missileValue(item);
     case 'wand':
       // Wand.value.
       return levelled(75);
@@ -762,31 +844,7 @@ export const buyPrice = (item: Item, depth: number, known: boolean, haggling = f
   return haggling && price >= 2 ? Math.trunc(price / 2) : price;
 };
 
-/* Thrown weapons (MissileWeapon) and the wand of magic missile */
-
-/** How many come in one find (Random.Int(from, to)). */
-const MISSILE_HANDFULS: Partial<Record<ItemKind, readonly [number, number]>> = {
-  'missile.dart': [5, 15], 'missile.curare': [2, 5], 'missile.incendiary': [3, 6], 'missile.javelin': [5, 15],
-  'missile.shuriken': [5, 15], 'missile.tomahawk': [5, 12],
-};
-
-const MISSILES: Partial<Record<ItemKind, { min: number; max: number; str: number; delay?: number }>> = {
-  'missile.dart': { min: 1, max: 4, str: 10 },
-  'missile.curare': { min: 1, max: 3, str: 14 },
-  'missile.incendiary': { min: 1, max: 2, str: 12 },
-  'missile.javelin': { min: 2, max: 15, str: 15 },
-  'missile.shuriken': { min: 2, max: 6, str: 13, delay: 0.5 },
-  'missile.tomahawk': { min: 4, max: 20, str: 17 },
-};
-
-export function missileStats(item: Item): { min: number; max: number; str: number; delay: number } {
-  if (item.kind === 'missile.boomerang') {
-    const level = effectiveLevel(item);
-    return { min: 1 + level, max: 4 + 2 * level, str: 10, delay: 1 };
-  }
-  const stats = MISSILES[item.kind] ?? MISSILES['missile.dart']!;
-  return { min: stats.min, max: stats.max, str: stats.str, delay: stats.delay ?? 1 };
-}
+/* The wand of magic missile */
 
 /** Wand.initialCharges: two charges (three for magic missile). */
 export const initialCharges = (kind: ItemKind): number => (kind === 'wand.magicMissile' ? 3 : 2);
@@ -808,70 +866,6 @@ export function randomWand(rng: Rng, kind: ItemKind): Item {
   const wand = createItem(kind, 1, level);
   if (rng.float() < 0.3) wand.cursed = true;
   return wand;
-}
-
-/* Weapon and armour numbers (MeleeWeapon, Armor) */
-
-const f32 = Math.fround;
-
-export interface WeaponStats {
-  min: number;
-  max: number;
-  str: number;
-  accuracy: number;
-  delay: number;
-}
-
-export function weaponStats(item: Item): WeaponStats {
-  // Pickaxe: fixed numbers, never upgraded.
-  if (item.kind === 'weapon.pickaxe') return { min: 3, max: 12, str: 14, accuracy: 1, delay: 1 };
-  if (item.kind === 'weapon.magesStaff') {
-    // MagesStaff (MeleeWeapon, tier 1): 1-6 and two more at most a level; Shattered's strength
-    // (MeleeWeapon.STRReq: 10, a point less for each of the 1st, 3rd, 6th, 10th... upgrades).
-    const level = effectiveLevel(item);
-    return {
-      min: 1 + level, max: 6 + 2 * level, str: 10 - Math.trunc((Math.sqrt(8 * item.level + 1) - 1) / 2), accuracy: 1,
-      delay: 1,
-    };
-  }
-  const def = itemDef(item.kind);
-  const tier = def.tier!;
-  const accuracy = def.accuracy!;
-  const delay = def.delay!;
-  // MeleeWeapon.min/max: a broken weapon strikes as an unupgraded one; its strength stays as it was.
-  const level = effectiveLevel(item);
-  const min = tier + level;
-  const max = Math.trunc(f32(f32((tier * tier - tier + 10) / f32(accuracy)) * f32(delay))) + level * tier;
-  // Weapon.Augment: for speed, seven tenths of the damage in two thirds of the time; for damage, half again in five thirds.
-  const [damage, slower] = item.augment === 'speed' ? [0.7, 2 / 3] : item.augment === 'damage' ? [1.5, 5 / 3] : [1, 1];
-  return {
-    min: Math.round(f32(min * f32(damage))),
-    max: Math.round(f32(max * f32(damage))),
-    // Weapon.STRReq: a potion of mastery makes it two easier.
-    str: (def.str ?? 8 + tier * 2) - item.level - (item.mastery ? 2 : 0),
-    accuracy,
-    delay: f32(delay * f32(slower)),
-  };
-}
-
-export function armorStats(item: Item): { dr: number; str: number } {
-  // Class armour protects as the armour it was made from.
-  const tier = itemDef(item.base ?? item.kind).tier!;
-  const level = effectiveLevel(item);
-  // Armor.DR: a glyph adds a level's worth of protection; Armor.Augment: augmented for defense, more, for evasion, less.
-  const augment = item.augment === 'defense' ? Math.round((2 + level) * 1) : item.augment === 'evasion' ? Math.round((2 + level) * -1) : 0;
-  return {
-    dr: Math.max(tier * (2 + level + (item.glyph ? 1 : 0)) + augment, 0),
-    // Armor.STRReq: a potion of mastery makes it two easier.
-    str: 7 + tier * 2 - item.level - (item.mastery ? 2 : 0),
-  };
-}
-
-/** Armor.Augment.evasionFactor: augmented for evasion, (2 + level) * 2 more evasion; for defense, that much less. */
-export function armorEvasion(item: Item): number {
-  if (!item.augment) return 0;
-  const level = effectiveLevel(item);
-  return item.augment === 'evasion' ? Math.round((2 + level) * 2) : item.augment === 'defense' ? Math.round((2 + level) * -2) : 0;
 }
 
 /* Labels: the run's potion colours and scroll runes */
@@ -930,28 +924,26 @@ export const labelOf = (kind: ItemKind, labels: Labels): number => labels[labelK
 
 /* Generator */
 
-/** Categories the generator picks from; thrown weapons come with the weapons. */
-export type GeneratedCategory = 'gold' | 'potion' | 'scroll' | 'weapon' | 'armor' | 'food' | 'wand' | 'ring' | 'artifact' | 'seed' | 'misc' | 'stone';
+/** Categories the generator picks from: melee weapons, armour and thrown weapons each their own (gear.ts). */
+export type GeneratedCategory =
+  'gold' | 'potion' | 'scroll' | 'weapon' | 'armor' | 'missile' | 'food' | 'wand' | 'ring' | 'artifact' | 'seed' | 'misc' | 'stone';
 
 /**
- * Generator.Category: artifacts come as often as rings (Shattered's two decks hold a ring and an
- * artifact, one each), and only while the run has some left (see randomArtifact). Shattered's runestones
- * (Generator.Category.STONE) come one to eight potions there; here they get that share of the potions' weight.
- * (A seam for the levels stream, which ports Shattered's category decks with RegularLevel.createItems.)
+ * How often each category comes up. Gear keeps its share of the finds, split as Shattered's category decks split it
+ * (Generator.Category: weapons 4, armour 3, thrown weapons 3 in seventy finds); the deck of categories itself is
+ * not ported here. Artifacts come as often as rings (Shattered's two decks hold a ring and an artifact, one each),
+ * and only while the run has some left (see randomArtifact). Shattered's runestones (Generator.Category.STONE) come
+ * one to eight potions there; here they get that share of the potions' weight.
  */
 const CATEGORY_CHANCES: ReadonlyArray<readonly [GeneratedCategory, number]> = [
-  ['weapon', 15], ['armor', 10], ['potion', 50], ['scroll', 40], ['wand', 4], ['ring', 2], ['artifact', 2], ['seed', 5], ['gold', 50],
-  ['misc', 5], ['stone', 6],
+  ['weapon', 10], ['armor', 7.5], ['missile', 7.5], ['potion', 50], ['scroll', 40], ['wand', 4], ['ring', 2], ['artifact', 2], ['seed', 5],
+  ['gold', 50], ['misc', 5], ['stone', 6],
 ];
 
-const KIND_CHANCES: Readonly<Record<Exclude<GeneratedCategory, 'gold' | 'food' | 'misc' | 'potion' | 'scroll' | 'stone' | 'wand' | 'artifact'>, ReadonlyArray<readonly [ItemKind, number]>>> = {
-  weapon: [
-    ['weapon.dagger', 1], ['weapon.knuckles', 1], ['weapon.quarterstaff', 1], ['weapon.spear', 1], ['weapon.mace', 1],
-    ['weapon.sword', 1], ['weapon.longsword', 1], ['weapon.battleAxe', 1], ['weapon.warHammer', 1], ['weapon.glaive', 1],
-    ['missile.dart', 0], ['missile.javelin', 1], ['missile.incendiary', 1], ['missile.curare', 1], ['missile.shuriken', 1],
-    ['missile.tomahawk', 1],
-  ],
-  armor: [['armor.cloth', 1], ['armor.leather', 1], ['armor.mail', 1], ['armor.scale', 1], ['armor.plate', 1]],
+const KIND_CHANCES: Readonly<Record<
+  Exclude<GeneratedCategory, 'gold' | 'food' | 'misc' | 'weapon' | 'armor' | 'missile' | 'wand' | 'artifact' | 'potion' | 'scroll' | 'stone'>,
+  ReadonlyArray<readonly [ItemKind, number]>
+>> = {
   seed: [
     ['seed.firebloom', 1], ['seed.icecap', 1], ['seed.sorrowmoss', 1], ['seed.dreamweed', 1], ['seed.sungrass', 1],
     ['seed.earthroot', 1], ['seed.fadeleaf', 1],
@@ -1005,9 +997,9 @@ function newDeck(run: { seed: number }, category: DeckCategory): Deck {
  * Generator.random(cat) for a deck: the card comes from the deck's own seeded stream (Random.pushGenerator(cat.seed),
  * skipping what was dealt), so finds do not depend on when they happen; a spent deck is dealt again.
  */
-export function drawFromDeck(run: { seed: number; decks?: Partial<Record<DeckCategory, Deck>> }, category: DeckCategory): ItemKind {
+export function drawFromDeck(run: { seed: number; kindDecks?: Partial<Record<DeckCategory, Deck>> }, category: DeckCategory): ItemKind {
   const def = DECKS[category];
-  const deck = ((run.decks ??= {})[category] ??= newDeck(run, category));
+  const deck = ((run.kindDecks ??= {})[category] ??= newDeck(run, category));
   const rng = Rng.seeded(deriveSeed(run.seed, DECK_STREAM[category], deck.dropped));
   // Random.chances gives -1 for a spent deck.
   let i = deck.probs.some((p) => p > 0) ? rng.chances(deck.probs) : -1;
@@ -1102,25 +1094,20 @@ export function rollFood(rng: Rng): Item {
   return createItem(rng.chances([4, 1]) === 0 ? 'food.ration' : 'food.pasty');
 }
 
-/** Weapon.random / Armor.random: sometimes better, sometimes worse than usual. */
-function rollLevel(rng: Rng, curse = 1): number {
-  if (rng.float() >= 0.4) return 0;
-  let n = 1;
-  if (rng.int(3) === 0) {
-    n++;
-    if (rng.int(3) === 0) n++;
-  }
-  // ParchmentScrap.curseChanceMultiplier: worse ones come more or less often (a seam for the gear stream's Weapon.random).
-  if (curse === 1) return rng.int(2) === 0 ? n : -n;
-  return rng.float() < Math.min(1, 0.5 * curse) ? -n : n;
-}
-
-/** Generator: each category gets rarer on a level every time it is picked. */
+/**
+ * Generator: each category gets rarer on a level every time it is picked. With the run's state, weapons and thrown
+ * weapons are dealt from its decks (gear.ts); without it, by their default chances.
+ */
 export class ItemGenerator {
   private readonly chances = new Map(CATEGORY_CHANCES);
 
   /** With the run, potions, scrolls, runestones and wands come from its decks (Generator.random); without, by the default odds. */
   constructor(private readonly rng: Rng, private readonly depth: number, private readonly options: GenOptions = {}) {}
+
+  /** The run's state the decks are kept in, if this generator has it. */
+  get runState(): RunState | undefined {
+    return this.options.run;
+  }
 
   random(): Item {
     const category = this.rng.chancesOf(this.chances)!;
@@ -1145,6 +1132,10 @@ export class ItemGenerator {
     // Generator.Category.MISC: two bombs to every honeypot; bombs come one to three at a time.
     if (category === 'misc') return this.rng.chances([2, 1]) === 0 ? createItem('bomb', this.rng.intRange(1, 3)) : createItem('honeypot');
     if (category === 'potion' || category === 'scroll' || category === 'stone') return createItem(this.draw(category));
+    // Generator.randomWeapon, randomArmor and randomMissile, as found (gear.ts).
+    if (category === 'weapon') return randomWeapon(this.rng, this.depth, this.options.run);
+    if (category === 'armor') return randomArmor(this.rng, this.depth);
+    if (category === 'missile') return randomMissile(this.rng, this.depth, this.options.run);
     if (category === 'wand') {
       // Wand.random: as found, it tells neither its level nor its curse, nor its charges (ident.ts).
       const kind = this.options.run ? wandFromDeck(this.options.run) : WAND_KINDS[this.rng.chances(WAND_KINDS.map(() => 3))]!;
@@ -1152,23 +1143,9 @@ export class ItemGenerator {
     }
     const table = KIND_CHANCES[category];
     const kind = table[this.rng.chances(table.map(([, chance]) => chance))]![0];
-    // Dart.random: a handful of them.
-    // MissileWeapon.random: a handful of them.
-    const handful = MISSILE_HANDFULS[kind];
-    if (handful) return createItem(kind, this.rng.intBetween(handful[0], handful[1]));
     // As found, a ring, a wand, a melee weapon or armour tells neither its level nor its curse (ident.ts).
     if (category === 'ring') return unidentified(randomRing(this.rng, kind));
-    const level = category === 'weapon' || category === 'armor' ? rollLevel(this.rng, this.options.curse ?? 1) : 0;
-    const item = createItem(kind, 1, level);
-    // Weapon.random and Armor.random: what came out worse is cursed.
-    if (level < 0) item.cursed = true;
-    // MeleeWeapon.random and Armor.random: now and then enchanted, the better the rarer; a parchment scrap makes it
-    // more likely (ParchmentScrap.enchantChanceMultiplier: a seam for the gear stream's enchantment rolls).
-    const enchant = this.options.enchant ?? 1;
-    const lucky = (odds: number): boolean => (enchant === 1 ? this.rng.int(odds) === 0 : this.rng.float() < enchant / odds);
-    if (itemDef(kind).category === 'weapon' && lucky(10 + level)) item.enchant = randomEnchantment(this.rng);
-    if (category === 'armor' && lucky(10)) item.glyph = randomGlyph(this.rng);
-    return unidentified(item);
+    return createItem(kind);
   }
 }
 /* What lies around on a new level */
@@ -1189,6 +1166,8 @@ export const HEAP_SPRITES: Readonly<Record<Exclude<HeapKind, 'heap' | 'forSale'>
   chest: S.CHEST, skeleton: S.BONES, tomb: S.TOMB, mimic: S.CHEST, lockedChest: S.LOCKED_CHEST, crystalChest: S.CRYSTAL_CHEST,
   hidden: S.SOMETHING, // never drawn
 };
+
+const f32 = Math.fround;
 
 /** Dungeon.posNeeded / souNeeded: guaranteed strength and upgrades, spread over the floors. */
 function quotaReached(rng: Rng, depth: number, quota: readonly number[], found: number): boolean {
@@ -1295,6 +1274,19 @@ function rollSpec(spec: ItemSpec, generator: ItemGenerator, rng: Rng, depth: num
       return createItem('bomb', rng.intRange(1, 3));
     case 'kind':
       return createItem(spec.kind, spec.qty ?? 1);
+    // ShopRoom.generateItems: of the tier, unenchanted, uncursed, +0, known; the thrown ones a set of their own.
+    case 'shopWeapon':
+      return createItem(randomOfTier(rng, spec.tier, false, generator.runState));
+    case 'shopMissile': {
+      const kind = randomOfTier(rng, spec.tier, true, generator.runState);
+      return { ...createItem(kind, defaultQuantity(kind)), set: 1 + rng.int(0x3fffffff) };
+    }
+    case 'tippedDarts': {
+      // TippedDart.randomTipped: a seed by the seed deck's defaults, until it is one darts are tipped with.
+      let kind: ItemKind | undefined;
+      while (!kind) kind = TIPPED_DARTS[generator.of('seed').kind];
+      return createItem(kind, 2);
+    }
     case 'artifact':
       return generator.of('artifact');
     case 'rare':

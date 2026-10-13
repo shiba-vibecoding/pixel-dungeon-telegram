@@ -1,6 +1,8 @@
 import {
   createItem, drawUsingDefaults, EXOTIC_OF, type Item, itemDef, ItemGenerator, type ItemKind, REGULAR_OF, wandMaxCharges,
 } from './items';
+import { randomOfTier } from './gear';
+import { isDart } from './missiles';
 import type { Rng } from './rng';
 import { TRINKETS } from './trinkets';
 
@@ -11,15 +13,6 @@ import { TRINKETS } from './trinkets';
  * and as much as was known of them; an enchantment comes out as it was.
  */
 
-/** Melee weapons by tier (Generator.wepTiers), the pickaxe aside. */
-const MELEE_TIERS: readonly (readonly ItemKind[])[] = [
-  ['weapon.knuckles', 'weapon.dagger', 'weapon.shortSword'], ['weapon.quarterstaff', 'weapon.spear'], ['weapon.mace', 'weapon.sword'],
-  ['weapon.longsword', 'weapon.battleAxe'], ['weapon.warHammer', 'weapon.glaive'],
-];
-/** Thrown weapons by tier (Generator.misTiers; a seam for the gear stream's Shattered ones); tipped darts among themselves. */
-const MISSILE_TIERS: readonly (readonly ItemKind[])[] = [
-  ['missile.shuriken'], ['missile.javelin', 'missile.tomahawk'], ['missile.curare', 'missile.incendiary'],
-];
 
 /** What the transmutation makes of an item, or null if it leaves it be. */
 export function transmuteItem(item: Item, rng: Rng, depth: number): Item | null {
@@ -44,14 +37,17 @@ export function transmuteItem(item: Item, rng: Rng, depth: number): Item | null 
   switch (category) {
     case 'weapon':
     case 'missile': {
-      const tiers = category === 'weapon' ? MELEE_TIERS : MISSILE_TIERS;
-      const tier = tiers.find((kinds) => kinds.includes(item.kind));
-      if (!tier || tier.length < 2) return null;
-      const changed = keep(other(() => rng.oneOf(tier)));
-      // Weapon: its enchantment, augmentation and the potion of mastery's help go with it.
-      if (item.enchant) changed.enchant = item.enchant;
-      if (item.augment) changed.augment = item.augment;
-      if (item.mastery) changed.mastery = true;
+      // ScrollOfTransmutation.changeWeapon: another of the same tier, keeping its level, magic, augment and set's wear.
+      // (The mage's staff changes its wand instead, ScrollOfTransmutation.changeStaff: a seam for the wands stream.)
+      if (item.kind === 'weapon.pickaxe' || item.kind === 'weapon.magesStaff' || isDart(item.kind)) return null;
+      const tier = itemDef(item.kind).tier!;
+      const kind = other(() => randomOfTier(rng, tier, category === 'missile'));
+      if (kind === item.kind) return null;
+      const changed = keep(kind);
+      for (const key of ['enchant', 'infused', 'mastery', 'augment', 'hardened', 'durability'] as const) {
+        if (item[key] !== undefined) (changed as unknown as Record<string, unknown>)[key] = item[key];
+      }
+      if (category === 'missile') changed.set = 1 + rng.int(0x3fffffff);
       return changed;
     }
     case 'ring':

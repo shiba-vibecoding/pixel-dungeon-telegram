@@ -24,7 +24,7 @@ describe("quick slots (Shattered's QuickSlot)", () => {
     const next = createWorld(4);
     const warrior = addHero(next, { id: 'p', name: 'P', heroClass: 'warrior' });
     syncQuickslots(next, warrior);
-    expect(quickKind(0)).toBe('missile.dart');
+    expect(quickKind(0)).toBe('missile.throwingStone');
     expect(quickKind(5)).toBeNull();
   });
 

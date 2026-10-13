@@ -5,7 +5,7 @@ import {
   BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
   visibleCells, chargesKnown, staffReach, WIDTH,
-  type World, charAt, swapsWithHero, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
+  type World, charAt, swapsWithHero, canReach, heroReach, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
@@ -16,6 +16,7 @@ import {
 } from './quickslot';
 import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookChoice } from './artifactui';
 import { artText, chargeOf } from './artifacttext';
+import { glowOf } from './gearfx';
 import { fx } from './fx';
 import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
 
@@ -260,7 +261,7 @@ const mapControlsActions = {
     const target = world && me ? attackTarget(world, me) : null;
     if (!world || !me || !target || session!.busy) return;
     walk.reset();
-    if (adjacent(me.pos, target.pos)) send({ type: 'attack', target: target.id }, performance.now());
+    if (inReach(world, me, target.pos)) send({ type: 'attack', target: target.id }, performance.now());
     else walk.chase = target.id;
   },
   resume: () => {
@@ -745,7 +746,7 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
   (world.floors[depth]?.heaps ?? []).some((heap) => heap.pos === pos && heap.kind !== 'hidden');
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
-let aim: { index: number; kind: 'throw' | 'zap' | 'special' | 'cast' } | { index: -1; kind: 'artifact'; action: ArtifactAction } | null = null;
+let aim: { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' } | { index: -1; kind: 'artifact'; action: ArtifactAction } | null = null;
 
 /** What artifacts ask of the game outside the backpack (a quick slot's default action, the spellbook's window). */
 function artifactHost(world: World, me: Hero): ArtifactHost {
@@ -809,6 +810,17 @@ function toggleQuickslot(slot = 0): void {
   // Shattered's potions, scrolls, stones, spells...: whatever the item's first action is (it may want a target or a choice).
   else if (use === 'item') quickAction(backpackOptions(world!, me), index);
   else if (use && use !== 'artifact') aim = { index, kind: use };
+}
+
+/**
+ * Hero.canAttack: next to it, or within the weapon's reach (a spear, a glaive, a whip; MagesStaff.reachFactor: a
+ * battlemage's staff of disintegration), but an ally only face to face.
+ */
+function inReach(world: World, me: Hero, pos: number): boolean {
+  if (adjacent(me.pos, pos)) return true;
+  const there = charAt(world, me.depth, pos);
+  if (there && 'kind' in there && there.ally) return false;
+  return canReach(world, levelAt(world, me.depth), me, pos, Math.max(heroReach(me), staffReach(me)));
 }
 
 /** Awake monsters the party could see last frame (a walk goes no further while there are any). */
@@ -990,8 +1002,7 @@ function step(world: World, now: number, visible: readonly boolean[]): void {
     const mob = mobById(world, me.depth, walk.chase);
     if (!mob || !visible[mob.pos]) {
       walk.chase = null;
-    } else if (adjacent(me.pos, mob.pos) || (staffReach(me) > 1 && distance(me.pos, mob.pos) <= staffReach(me) && !mob.ally && mob.state !== 'passive')) {
-      // MagesStaff.reachFactor: a battlemage's staff of disintegration strikes from a cell further.
+    } else if (inReach(world, me, mob.pos) && (adjacent(me.pos, mob.pos) || mob.state !== 'passive')) {
       walk.chase = null;
       send({ type: 'attack', target: mob.id }, now);
       return;
@@ -2591,6 +2602,8 @@ function tick(now: number): void {
     // Rings and wands lying about glow, gold and blue.
     ...(heap.kind === 'heap' && heap.items[0]!.kind.startsWith('ring.') ? { aura: '#ffd27a' }
       : heap.kind === 'heap' && heap.items[0]!.kind.startsWith('wand.') ? { aura: '#8fc4ff' } : {}),
+    // ItemSprite.Glowing: an enchanted weapon or inscribed armour lying about glows in its magic's colour.
+    ...((heap.kind === 'heap' || heap.kind === 'forSale') && glowOf(heap.items[0]!) ? { glow: glowOf(heap.items[0]!)! } : {}),
   }));
   motion.update(level, heaps, visible, view, session.myId, `${session.generation}:${me.depth}`, vnow);
   for (const launch of motion.takeLaunches()) if (!launch.gold) launches.push(launch);

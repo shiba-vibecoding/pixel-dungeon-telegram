@@ -1,4 +1,5 @@
 import { beckon, createMob, type Hero, heroArmor, isAlive, type Mob, type MobKind, MOBS, mobStats, rollMob } from './actors';
+import { mobGearTick } from './throwing';
 import { CRIPPLE_TURNS, earnExp, hurt } from './combat';
 import { charAt, type Char, type Ctx, enterCell, exploredCells, heroesOn, isHero, isPassable, isWater, leaveCell } from './floor';
 import { distance, NEIGHBOURS8 } from './level/geometry';
@@ -47,9 +48,10 @@ export type Burst = 'toxic' | 'paralytic' | 'fire' | 'frost' | 'purity';
 export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost' | 'toxic' | 'shock'): boolean {
   if (isHero(char)) {
     const b = char.buffs;
-    // BlobImmunity (purity), and the imbues: fire (FireImbue), frost and chill (FrostImbue), toxic gas (ToxicImbue).
+    // BlobImmunity (purity), and the imbues: fire (FireImbue), frost and chill (FrostImbue), toxic gas (ToxicImbue);
+    // armour of brimstone keeps fire off its wearer (Char.isImmune: Burning).
     if (harm === 'gas') return (char.gasImmune ?? 0) > 0;
-    if (harm === 'burning') return (b?.fireImbue ?? 0) > 0;
+    if (harm === 'burning') return (b?.fireImbue ?? 0) > 0 || char.armor.glyph === 'brimstone';
     if (harm === 'frost') return (b?.frostImbue ?? 0) > 0;
     if (harm === 'toxic') return (b?.toxicImbue ?? 0) > 0;
     return false;
@@ -230,6 +232,8 @@ export function mobFall(ctx: Ctx, mob: Mob): void {
 
 /** Hurt a monster's turn by the conditions traps leave behind; true if it loses the turn. */
 export function mobConditions(ctx: Ctx, mob: Mob): boolean {
+  // What gear left on it: adrenaline, a lucky blow's tracker (throwing.ts).
+  if (mobGearTick(ctx, mob)) return true;
   // Shattered's conditions first: corrosion, ooze, corruption, frost and the rest (status.ts); then alchemy's
   // buffs (buffs.ts): dread, aggression, a magical sleep...
   if (mobStatusTurn(ctx, mob)) return true;

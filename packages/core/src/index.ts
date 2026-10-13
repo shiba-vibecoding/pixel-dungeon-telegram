@@ -66,6 +66,15 @@ export * from './trinkets';
 export { type GasKind, GAS_KINDS, gasAt, smokeCells } from './gas';
 export { TARGETED, TARGET_PROBLEMS, defaultTarget, uncursable } from './scrolls';
 export { circleCells } from './fov';
+export * from './weapons';
+export * from './armor';
+export {
+  defaultQuantity, durabilityLeft, durabilityPerUse, isDart, isMissile, isTippedDart, MAX_DURABILITY, missileStats, type MissileStats,
+  missileUpgradable, TIPPED_DARTS, usesLeft,
+} from './missiles';
+export { gearUpgradable, MISSILE_TIERS, WEAPON_TIERS } from './gear';
+export { canReach } from './throwing';
+export { isAlly } from './enchant';
 export * from './artifacts';
 export { BONES_ROLLS } from './bones';
 export { miscChoices, haggles } from './inventory';

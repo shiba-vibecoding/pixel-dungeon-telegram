@@ -4,7 +4,6 @@ import {
 import { attack, defenseOf, hurt } from './combat';
 import { dissolveGuardian, lotusAct, wardCanAttack, wardZap } from './allies';
 import { hasProp } from './props';
-import { timeScale } from './status';
 import { castShadow, LIGHT_DISTANCE, terrainBlocksSight, viewDistance } from './fov';
 import { canEnter, type Char, charAt, type Ctx, enterCell, type Floor, heroesOn, heroSight, heroView, isHero, isPassable, isWater, leaveCell } from './floor';
 import { isChallenged, SWARM_INTELLIGENCE } from './challenges';
@@ -27,6 +26,7 @@ import type { Rng } from './rng';
 import type { World } from './world';
 import { S } from './spd-sprites';
 import { mobCount, partySize, respawnTime, scaleMob } from './party';
+import { mobTimeScale } from './throwing';
 import { ghostAct, ghostSeesBoss, isInvisible } from './artifacts';
 
 /*
@@ -51,8 +51,8 @@ export function mobSight(mob: Mob, depth: number): number {
 }
 
 export function spend(mob: Mob, time: number): void {
-  // Char.spend: slowed, everything takes twice as long; chilled, a little longer the colder.
-  mob.time += time / timeScale(mob);
+  // Char.spend: slowed, everything takes twice as long; chilled, a little longer the colder; with adrenaline, half as long.
+  mob.time += time / mobTimeScale(mob);
 }
 
 /** Char.speed: a monster's own, hastened or slowed by its buffs (dread makes it run twice as fast). */
@@ -197,6 +197,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     spend(mob, TICK);
     return;
   }
+
   // Dizzy, it staggers about instead of doing anything useful.
   if ((mob.dizzy ?? 0) > 0) {
     mob.dizzy!--;

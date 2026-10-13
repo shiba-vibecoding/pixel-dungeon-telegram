@@ -1,3 +1,5 @@
+import { isCurseEnchant, isCurseGlyph, randomArmorCurse, randomWeaponCurse } from './items';
+import { TIPPED_DARTS } from './missiles';
 import { heroEquipped } from './actors';
 import { heldWands, gainCharge } from './wands';
 import { createMob, type Hero } from './actors';
@@ -132,9 +134,17 @@ export function castSpell(ctx: Ctx, hero: Hero, kind: ItemKind, use: SpellUse): 
       return { time: 1, used: true };
     }
     case 'spell.curseInfusion': {
-      // CurseInfusion: cursed, and stronger for it (curseInfusionBonus: a level more while cursed; the gear stream
-      // brings the curse enchantments and glyphs it also lays).
+      // CurseInfusion: cursed, and stronger for it (curseInfusionBonus); a weapon takes a curse enchantment and armour a
+      // curse glyph (Enchantment.randomCurse, Glyph.randomCurse), a curse already there kept unless infused before.
       const item = use.on!;
+      const kind = itemDef(item.kind).category;
+      if (kind === 'weapon' || kind === 'bow' || kind === 'missile') {
+        if (!item.enchant) item.enchant = randomWeaponCurse(ctx.rng);
+        else if (!isCurseEnchant(item.enchant) || item.infused) item.enchant = randomWeaponCurse(ctx.rng, item.enchant);
+      } else if (kind === 'armor') {
+        if (!item.glyph) item.glyph = randomArmorCurse(ctx.rng);
+        else if (!isCurseGlyph(item.glyph) || item.infused) item.glyph = randomArmorCurse(ctx.rng, item.glyph);
+      }
       item.cursed = true;
       delete item.curseUnknown;
       item.infused = true;
@@ -253,7 +263,8 @@ function recycle(ctx: Ctx, hero: Hero, item: Item): void {
     }
     if (category === 'seed') return new ItemGenerator(rng, ctx.depth).of('seed').kind;
     if (category === 'stone') return drawUsingDefaults(rng, 'stone');
-    return rng.oneOf(['missile.curare', 'missile.incendiary'] as const);
+    // TippedDart.randomTipped: a dart tipped with another seed.
+    return rng.element(Object.values(TIPPED_DARTS) as ItemKind[])!;
   };
   let kind = draw();
   while (kind === item.kind) kind = draw();

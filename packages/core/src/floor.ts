@@ -88,7 +88,9 @@ export const isWater = (terrain: number): boolean => terrain >= T.WATER_TILES &&
 
 /** What players should see happen; returned by every accepted action. */
 export type Effect =
-  | { type: 'attack'; depth: number; attacker: string; target: string; hit: boolean; damage: number }
+  /** A blow or shot; `weapon`: what a hero struck with (the weapon in hand, a thrown one, the spirit bow), for its sound. */
+  /** `weapon`: what a hero struck with (the thrown weapon, the spirit bow); `surprise`: a surprise attack (Mob.surprisedBy). */
+  | { type: 'attack'; depth: number; attacker: string; target: string; hit: boolean; damage: number; weapon?: ItemKind; surprise?: boolean }
   /** Someone died; for a monster, what it was and which hero (if any) slew it. */
   | { type: 'died'; depth: number; who: string; pos: number; kind?: MobKind; by?: string }
   | { type: 'noticed'; depth: number; mob: string }
@@ -108,8 +110,36 @@ export type Effect =
   /** An enchanted weapon showed its power on a blow; an inscribed armour on one taken. */
   | { type: 'enchanted'; depth: number; pos: number; enchant: Enchantment }
   | { type: 'glyph'; depth: number; hero: string; glyph: Glyph }
-  /** A monster thrown back a step (armour of bounce). */
+  /** Someone knocked back (a knockback, a geyser, an elastic blow): `mob` is whoever it was, hero or monster. */
   | { type: 'pushed'; depth: number; mob: string; from: number; to: number }
+  /** A monster teleported elsewhere on the level (a displacing curse or dart). */
+  | { type: 'blinked'; depth: number; who: string; from: number; to: number }
+  /** A geyser of water burst out at a cell (the pressurized curse; GeyserTrap). */
+  | { type: 'geyser'; depth: number; pos: number }
+  /** An explosive curse grows warm, then hot (Explosive: it blows up when it is spent). */
+  | { type: 'explosive'; hero: string; item: Item; state: 'warm' | 'hot' }
+  /** A crystal weapon flawed, cracked, shattered (and gone), or whole again (Crystal). */
+  | { type: 'crystal'; hero: string; item: Item; state: 'flawed' | 'cracked' | 'shattered' | 'fixed' }
+  /** A slain foe rose again on the heroes' side (a corrupting weapon). */
+  | { type: 'corrupted'; depth: number; mob: string; pos: number }
+  /** A blocking weapon shielded its wielder (Blocking). */
+  | { type: 'shielded'; hero: string; amount: number }
+  /** Tall grass sprang up on these cells (a blooming weapon). */
+  | { type: 'bloomed'; depth: number; cells: number[] }
+  /** An annoying weapon screamed one of its lines (Annoying.msg_1 to msg_13). */
+  | { type: 'annoying'; hero: string; line: number }
+  /** A dazzling weapon flashed, blinding whoever saw it; a wondrous one let out its colours. */
+  | { type: 'dazzled'; depth: number; pos: number }
+  | { type: 'wondrous'; depth: number; pos: number }
+  /** A lucky blow's prize dropped where the foe fell (Lucky). */
+  | { type: 'lucky'; depth: number; pos: number }
+  /** A weapon or armour augmented with a stone of augmentation (or its augment taken away). */
+  | { type: 'augmented'; hero: string; item: Item }
+  /** Darts tipped with a seed, or tipped darts wiped clean (Dart.AC_TIP, TippedDart.AC_CLEAN). */
+  | { type: 'tipped'; hero: string; kind: ItemKind; qty: number }
+  | { type: 'cleaned'; hero: string; qty: number }
+  /** A thrown weapon of a set upgraded since crumbled to dust as it was picked up. */
+  | { type: 'dust'; hero: string; item: Item }
   /** A scroll of enchantment gave an item its power; a scroll of upgrade drove one out. */
   | { type: 'imbued'; hero: string; item: Item }
   | { type: 'disenchanted'; hero: string; item: Item }

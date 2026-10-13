@@ -47,6 +47,11 @@ export type ItemSpec =
   | { roll: 'kingsPrize' }
   /** One particular item, such as the wares of a shop. */
   | { roll: 'kind'; kind: ItemKind; qty?: number }
+  /** A shop's melee weapon and set of thrown weapons of a tier, plain and known (ShopRoom.generateItems). */
+  | { roll: 'shopWeapon'; tier: number }
+  | { roll: 'shopMissile'; tier: number }
+  /** Two darts tipped with a random seed (TippedDart.randomTipped(2)). */
+  | { roll: 'tippedDarts' }
   /** An artifact the run has not dealt yet (or a ring, if it has none left). */
   | { roll: 'artifact' }
   /** ShopRoom's rare ware: now and then a wand, a ring or an artifact. */

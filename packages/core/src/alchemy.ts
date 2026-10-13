@@ -1,3 +1,4 @@
+import { defaultQuantity, durabilityLeft, durabilityPerUse, MAX_DURABILITY } from './missiles';
 import { availableEnergy as kitEnergy, consumeEnergy, readyToolkit, toolkitForbidsAlchemy } from './artifacts/toolkit';
 import { type Hero, statsOf } from './actors';
 import { hasRoom } from './bags';
@@ -133,7 +134,7 @@ const category = (item: Item): string => itemDef(item.kind).category;
 export function usableInRecipe(item: Item): boolean {
   const c = category(item);
   if (c === 'weapon' || c === 'armor' || c === 'ring') return false;
-  if (c === 'missile' || c === 'wand') return !item.curseUnknown && !item.cursed && item.kind !== 'missile.boomerang';
+  if (c === 'missile' || c === 'wand') return !item.curseUnknown && !item.cursed;
   return !item.cursed;
 }
 
@@ -210,15 +211,12 @@ function simpleTest(world: World, recipe: Simple, ings: readonly Ingredient[]): 
 
 const resinQuantity = (wand: Item): number => 2 * (wand.level - (wand.resin ?? 0) + 1);
 
-/** LiquidMetal.Recipe.metalQuantity, by the thrown weapon's tier (a seam for the gear stream's tiers and durability). */
-const MISSILE_TIER: Partial<Record<ItemKind, number>> = {
-  'missile.dart': 1, 'missile.curare': 1, 'missile.incendiary': 1, 'missile.shuriken': 2, 'missile.javelin': 4, 'missile.tomahawk': 4,
-};
+/** LiquidMetal.Recipe.metalQuantity: by the thrown weapon's tier and level, and what is left of its first one. */
 function metalQuantity(missile: Item): number {
-  const tier = MISSILE_TIER[missile.kind] ?? 2;
-  const perWeapon = Math.fround(5 * (tier + 1) * Math.fround(1.35 ** Math.min(5, Math.max(0, missile.level))));
-  // A thrown weapon at full durability (the gear stream's MissileWeapon.durabilityLeft: 100 until it wears).
-  const quantity = missile.qty - 1 + 0.25 + 0.0075 * 100;
+  const tier = itemDef(missile.kind).tier ?? 1;
+  let perWeapon = defaultQuantity(missile.kind) !== 3 ? Math.fround(3 / defaultQuantity(missile.kind)) : 5 * (tier + 1);
+  perWeapon = Math.fround(perWeapon * Math.fround(1.35 ** Math.min(5, missile.level)));
+  const quantity = Math.fround(missile.qty - 1 + Math.fround(0.25 + Math.fround(0.0075 * durabilityLeft(missile))));
   return Math.round(quantity * perWeapon);
 }
 
@@ -531,4 +529,54 @@ export function chooseTrinket(ctx: Ctx, hero: Hero, index: number, choice: numbe
   statsOf(hero).brewed++;
   give(ctx, hero, trinket);
   ctx.effects.push({ type: 'crafted', hero: hero.id, item: trinket, cost: 0 });
+}
+
+/* Liquid metal (LiquidMetal.itemSelector) */
+
+/** MissileWeapon.repair and damage: a thrown weapon's durability (of 100) changed. */
+function setDurability(missile: Item, left: number): void {
+  if (left >= MAX_DURABILITY) delete missile.durability;
+  else missile.durability = Math.max(0, left);
+}
+
+/** What liquid metal would do: repair so much durability, or add a whole weapon to a set short of one; and the metal it takes. */
+function metalPlan(missile: Item, metal: Item): { use: number; repair?: number; refill?: number } | null {
+  const tier = itemDef(missile.kind).tier ?? 1;
+  const maxToUse = Math.fround(5 * (tier + 1) * Math.fround(1.35 ** missile.level));
+  const perMetal = Math.fround(100 / maxToUse);
+  // (A tiny amount less, for rounding errors.)
+  const lost = Math.fround(0.999 - Math.fround(durabilityLeft(missile) / 100));
+  const toUse = Math.ceil(maxToUse * lost);
+  const perUse = durabilityPerUse(missile);
+  const full = perUse > 0 && Math.ceil(durabilityLeft(missile) / perUse) >= Math.ceil(MAX_DURABILITY / perUse);
+  if (toUse === 0 || full) {
+    if (missile.qty < defaultQuantity(missile.kind) && metal.qty * perMetal >= perUse) {
+      if (Math.ceil(maxToUse) < metal.qty) return { use: Math.ceil(maxToUse), refill: MAX_DURABILITY };
+      return { use: metal.qty, refill: metal.qty * perMetal - 1 };
+    }
+    return null;
+  }
+  if (toUse < metal.qty) return { use: toUse, repair: maxToUse * perMetal };
+  return { use: metal.qty, repair: metal.qty * perMetal };
+}
+
+/** Why liquid metal would do nothing for this thrown weapon (LiquidMetal's already_fixed). */
+export function liquidMetalProblem(missile: Item, metal: Item): string | null {
+  return metalPlan(missile, metal) ? null : 'it needs no repair';
+}
+
+/** LiquidMetal.itemSelector.onSelect: the thrown weapon mended (or its set one weapon fuller), the metal spent. */
+export function applyLiquidMetal(ctx: Ctx, hero: Hero, metal: Item, missile: Item): void {
+  const plan = metalPlan(missile, metal)!;
+  if (plan.refill !== undefined) {
+    // A weapon more; spent from the last of the metal, the new first one is as worn as the metal allows
+    // (MissileWeapon.damage(100), then repair).
+    missile.qty++;
+    if (plan.refill < MAX_DURABILITY) setDurability(missile, plan.refill);
+  } else {
+    setDurability(missile, durabilityLeft(missile) + plan.repair!);
+  }
+  metal.qty -= plan.use;
+  if (metal.qty <= 0) hero.items.splice(hero.items.indexOf(metal), 1);
+  ctx.effects.push({ type: 'mended', hero: hero.id, item: missile });
 }

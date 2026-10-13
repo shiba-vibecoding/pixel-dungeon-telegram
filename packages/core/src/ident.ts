@@ -13,8 +13,10 @@ import type { World } from './world';
  * enough tells the rest; a scroll of identify, a well of awareness and the end of the
  * run tell everything. Potions, scrolls and rings also hide their kind, which
  * the party learns together (World.known); Shattered's wands are known by
- * their look, and only hide their level, curse and charges (Wand.isKnown). Thrown weapons, class armour
- * and everything else hide nothing (MissileWeapon, ClassArmor: levelKnown).
+ * their look, and only hide their level, curse and charges (Wand.isKnown).
+ * Thrown weapons hide their level and curse as melee weapons do (known after
+ * ten hits); darts, class armour and everything else hide nothing (Dart,
+ * ClassArmor: levelKnown).
  *
  * Kept on the item as what is not known yet, absent once known; so an item
  * from before this was kept is known, and an item handed over keeps what its
@@ -28,6 +30,8 @@ import type { World } from './world';
  */
 export const WEAPON_USES_TO_ID = 20;
 export const ARMOR_USES_TO_ID = 10;
+/** MissileWeapon.usesToID: half of a melee weapon's. */
+export const MISSILE_USES_TO_ID = 10;
 /** Ring.levelsToID: a ring worn is known after a level's worth of experience. */
 export const RING_LEVELS_TO_ID = 1;
 /** Wand.USES_TO_ID: zaps before a wand is known through and through, of which half may be counted at first (availableUsesToID). */
@@ -81,7 +85,7 @@ export function identify(world: World, item: Item): boolean {
 /** As the Generator makes them (a new Item: levelKnown and cursedKnown false): a melee weapon, armour, ring or wand tells nothing yet. */
 export function unidentified(item: Item): Item {
   const category = itemDef(item.kind).category;
-  if (category !== 'weapon' && category !== 'armor' && category !== 'ring' && category !== 'wand' && category !== 'artifact') return item;
+  if (category !== 'weapon' && category !== 'armor' && category !== 'missile' && category !== 'ring' && category !== 'wand' && category !== 'artifact') return item;
   item.levelUnknown = true;
   item.curseUnknown = true;
   if (category === 'wand') item.chargesUnknown = true;
@@ -92,7 +96,10 @@ export function unidentified(item: Item): Item {
 export const idSpeedFactor = (_hero: Hero, _item: Item): number => 1;
 
 const f32 = Math.fround;
-const usesToID = (item: Item): number => (itemDef(item.kind).category === 'armor' ? ARMOR_USES_TO_ID : WEAPON_USES_TO_ID);
+const usesToID = (item: Item): number => {
+  const category = itemDef(item.kind).category;
+  return category === 'armor' ? ARMOR_USES_TO_ID : category === 'missile' ? MISSILE_USES_TO_ID : WEAPON_USES_TO_ID;
+};
 const usesLeft = (item: Item): number => item.usesLeftToID ?? usesToID(item);
 const usesAvailable = (item: Item): number => item.availableUsesToID ?? usesToID(item) / 2;
 
@@ -114,10 +121,12 @@ export function familiarise(ctx: Ctx, hero: Hero, item: Item): void {
 /**
  * Item.onHeroGainExp, for everything the hero has: experience (as a share of the level) readies
  * more uses towards knowing the weapon in hand and the armour worn, enough over half a level
- * (Weapon and Armor.onHeroGainExp); a ring worn a level's worth is known (Ring.onHeroGainExp).
+ * (Weapon and Armor.onHeroGainExp; thrown weapons in the pack too); a ring worn a level's worth is known
+ * (Ring.onHeroGainExp).
  */
 export function heroGainsExp(ctx: Ctx, hero: Hero, percent: number): void {
-  for (const item of [hero.weapon, hero.armor]) {
+  const missiles = hero.items.filter((item) => itemDef(item.kind).category === 'missile');
+  for (const item of [hero.weapon, hero.armor, ...missiles]) {
     if (!item || levelKnown(item)) continue;
     const half = usesToID(item) / 2;
     const factor = f32(percent * idSpeedFactor(hero, item));

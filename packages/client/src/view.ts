@@ -1,13 +1,14 @@
 import {
-  adjacent, cellX, cellY, type Effect, F, terrainFlags, type Enchantment, heroById, isAlive, itemDef, type ItemKind, itemSprite, LENGTH, type MobKind,
+  adjacent, cellX, cellY, type Effect, F, terrainFlags, type Enchantment, heroById, isAlive, isTippedDart, itemDef, type ItemKind, itemSprite, LENGTH, type MobKind,
   visibleCells, WIDTH, type World,
-  type Look, isInvisible, frozenBy,
+  type Look, S, isInvisible, frozenBy,
 } from '@pd/core';
 import { artText, capital } from './artifacttext';
 import { audio, type Sound } from './audio';
 import { between, hitSound, openSound, readSounds, TRAP_SOUNDS, weaponHit, woundSound } from './sfx';
 import { capitalize, fill, t } from './i18n';
-import { itemName, plainName } from './itemtext';
+import { itemName, magicColor, plainName } from './itemtext';
+import { type Flight, flightOf } from './gearfx';
 import { type AnimName, type Assets, type CharSprite, duration, heroSprite } from './sprites';
 import { haptic } from './telegram';
 import { DEPTH_CARD_MS } from './cards';
@@ -89,10 +90,10 @@ const BURST_COLORS = {
   toxic: '90, 200, 60', paralytic: '230, 220, 70', fire: '255, 120, 30', frost: '170, 220, 255', purity: '240, 250, 255',
 } as const;
 
-/** ItemSprite.Glowing: the colour each enchantment shines with. */
-const ENCHANT_COLORS: Record<Enchantment, string> = {
-  fire: '255, 68, 0', poison: '68, 0, 170', death: '40, 40, 40', paralysis: '255, 255, 68', leech: '170, 0, 40', slow: '0, 68, 255',
-  shock: '255, 255, 255', instability: '255, 255, 255', horror: '90, 90, 90', luck: '0, 255, 0', tempering: '204, 136, 136',
+/** ItemSprite.Glowing: the colour each enchantment shines with (as the item's mark shows it), as «r, g, b». */
+const enchantColor = (enchant: Enchantment): string => {
+  const hex = magicColor(enchant).replace('#', '');
+  return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ');
 };
 export const TILE = 16;
 
@@ -318,6 +319,8 @@ export class View {
     from: number; to: number; start: number; duration: number; sprite: number | null; color?: string;
     /** A wand's bolt (MagicMissile): its particles' kind (wandfx.ts), and whether it is one of a cone's (a wider emitter). */
     trail?: string; wide?: boolean;
+    /** A thrown weapon flies as MissileSprite has it (gearfx.ts). */
+    flight?: Flight;
   }> = [];
   /** Shattered's Chains effects: the ethereal chains thrown out from a cell to a cell (effects/Chains.java). */
   chains: Array<{ from: number; to: number; start: number; duration: number }> = [];
@@ -528,11 +531,17 @@ export class View {
     this.projectiles = this.projectiles.filter((p) => now - p.start < p.duration);
   }
 
-  private shoot(from: number, to: number, sprite: number | null, now: number, color?: string, trail?: string, wide?: boolean): void {
+  private shoot(
+    from: number, to: number, sprite: number | null, now: number, color?: string, trail?: string, wide?: boolean, crossbow = false,
+  ): void {
     const cells = Math.max(Math.abs(cellX(to) - cellX(from)), Math.abs(cellY(to) - cellY(from)));
-    // MagicMissile flies at its own pace (200 pixels a second), a thrown thing faster.
-    const duration = trail ? Math.min(600, Math.max(90, Math.hypot(cellX(to) - cellX(from), cellY(to) - cellY(from)) * BOLT_MS_PER_CELL)) : Math.max(90, cells * 45);
-    this.projectiles.push({ from, to, start: now, duration, sprite, color, trail, wide });
+    // MagicMissile flies at its own pace (200 pixels a second); a thrown thing faster, as MissileSprite has it (arrows
+    // half as fast again, crossbow darts three times).
+    const flight = sprite === null || trail ? undefined : flightOf(sprite, crossbow);
+    const duration = trail
+      ? Math.min(600, Math.max(90, Math.hypot(cellX(to) - cellX(from), cellY(to) - cellY(from)) * BOLT_MS_PER_CELL))
+      : Math.max(90, (cells * 45) / (flight?.speed ?? 1));
+    this.projectiles.push({ from, to, start: now, duration, sprite, color, trail, wide, ...(flight ? { flight } : {}) });
   }
 
   /** CharSprite.add/remove(State): the conditions a creature is shown under, with their comings and goings. */
@@ -674,7 +683,7 @@ export class View {
           // Char.attack: the attacker's weapon sounds the blow (a thrown one's, a bolt's own), a shield parries
           // what does no harm; a surprise blow strikes hard (Mob.damage: HIT_STRONG); a miss whooshes.
           const striker = heroById(world, effect.attacker);
-          const weapon = striker ? (thrownKind ?? striker.weapon?.kind ?? null) : null;
+          const weapon = striker ? (effect.weapon ?? thrownKind ?? striker.weapon?.kind ?? null) : null;
           if (effect.hit) {
             if (target) target.flashUntil = now + 160;
             const toHero = !effect.target.startsWith('#');
@@ -686,8 +695,8 @@ export class View {
               const blow = hitSound(weapon, !!striker, effect.damage, heroById(world, effect.target)?.weapon?.kind);
               audio.play(blow.sound, blow.rate, 1, place);
             }
-            // Seam for the gear stream: a surprise attack's blow (Mob.damage), late for an arrow or a dart.
-            if (striker && (effect as { surprise?: boolean }).surprise) {
+            // Mob.damage: a surprise attack's blow strikes hard, late for an arrow or a dart.
+            if (striker && effect.surprise) {
               audio.later(weaponHit(weapon)[0] === 'hit_arrow' ? 125 : 0, 'hit_strong', 1, 1, place);
             }
             if (effect.target === myId) {
@@ -898,6 +907,15 @@ export class View {
         case 'worn':
           // Item.use: the bearer hears of it, if they know the item's level; breaking is loud.
           if (effect.hero !== myId) break;
+          if (itemDef(effect.item.kind).category === 'missile') {
+            // MissileWeapon.decrementDurability (TippedDart's own words).
+            const tipped = isTippedDart(effect.item.kind);
+            const warning = effect.state === 'warning';
+            this.say(warning ? (tipped ? t.gear.tipAboutToBreak : t.gear.aboutToBreak) : tipped ? t.gear.tipHasBroken : t.gear.hasBroken,
+              warning ? COLORS.warning : COLORS.negative, now);
+            if (!warning) audio.play('degrade');
+            break;
+          }
           if (effect.state === 'warning') {
             this.say(t.goingToBreak(itemName(world, { ...effect.item, durability: undefined })), COLORS.warning, now);
           } else {
@@ -940,7 +958,7 @@ export class View {
         case 'enchanted':
           // The weapon's glow flares up on whoever it struck.
           if (effect.depth === this.depth) {
-            this.flashes.push({ cell: effect.pos, start: now, color: ENCHANT_COLORS[effect.enchant], duration: 500 });
+            this.flashes.push({ cell: effect.pos, start: now, color: enchantColor(effect.enchant), duration: 500 });
           }
           break;
         case 'glyph':
@@ -1015,7 +1033,11 @@ export class View {
           // Item.throwSound.
           if (effect.depth === this.depth) audio.play('miss', 1.5, 0.6, cellMiddle(effect.from));
           if (effect.depth === this.depth) {
-            this.shoot(effect.from, effect.to, itemSprite({ kind: effect.item, qty: 1, level: 0 }, world.run.labels), now);
+            // Item.throwSound (a crossbow's shot for a dart, with a crossbow in hand).
+            const thrower = world.heroes.find((h) => h.depth === effect.depth && h.pos === effect.from);
+            const crossbow = thrower?.weapon?.kind === 'weapon.crossbow' && (effect.item === 'missile.dart' || effect.item.endsWith('Dart'));
+            this.shoot(effect.from, effect.to, itemSprite({ kind: effect.item, qty: 1, level: 0 }, world.run.labels), now, undefined, undefined, undefined, crossbow);
+            audio.play(crossbow ? 'atk_crossbow' : 'miss', crossbow ? 1 : 1.5, 0.6, cellMiddle(effect.from));
           }
           break;
         case 'zapped': {
@@ -1107,7 +1129,9 @@ export class View {
           break;
         case 'missile':
           if (effect.depth === this.depth) this.shoot(effect.from, effect.to, effect.sprite, now);
-          audio.play('miss', 1.5, 0.6);
+          // SpiritArrow.throwSound: the spirit bow's own.
+          if (effect.sprite === S.SPIRIT_ARROW) audio.play('atk_spiritbow', 0.87 + Math.random() * 0.28);
+          else audio.play('miss', 1.4, 0.6);
           break;
         case 'jumped':
           // Gone in a puff of smoke, and there at once in the new place.
@@ -1445,6 +1469,43 @@ export class View {
             if (itemDef(effect.item.kind).category === 'trinket' && effect.cost === 0) audio.play('puff');
             this.say(capitalize(fill(t.alch.youNowHave, itemName(world, effect.item))), COLORS.positive, now);
           }
+          break;
+        case 'dust':
+          if (effect.hero === myId) this.say(t.gear.dust, COLORS.warning, now);
+          break;
+        case 'crystal':
+          if (effect.hero !== myId) break;
+          this.say(
+            { flawed: t.gear.crystalFlawed, cracked: t.gear.crystalCracked, shattered: t.gear.crystalShattered, fixed: t.gear.crystalFixed }[effect.state],
+            effect.state === 'fixed' ? COLORS.positive : effect.state === 'flawed' ? COLORS.warning : COLORS.negative, now);
+          if (effect.state === 'shattered') audio.play('shatter');
+          break;
+        case 'explosive':
+          if (effect.hero !== myId) break;
+          this.float(effect.hero, effect.state === 'warm' ? t.gear.explosiveWarm : t.gear.explosiveHot, COLORS.warning, now);
+          this.say(effect.state === 'warm' ? t.gear.explosiveDescWarm : t.gear.explosiveDescHot, effect.state === 'warm' ? COLORS.warning : COLORS.negative, now);
+          break;
+        case 'annoying':
+          // Annoying.proc: one of its lines, and the level comes running.
+          if (effect.hero === myId) this.say(t.gear.annoying[effect.line - 1] ?? '', COLORS.negative, now);
+          audio.play('cursed');
+          break;
+        case 'shielded':
+          this.float(effect.hero, `+${effect.amount}`, COLORS.highlight, now);
+          break;
+        case 'corrupted':
+          if (effect.depth === this.depth) this.say(t.corrupted(t.mobs[mobKind(effect.depth, effect.mob, 'rat')]), COLORS.highlight, now);
+          break;
+        case 'tipped':
+          if (effect.hero === myId) this.say(t.tipped(effect.qty, itemName(world, { kind: effect.kind, qty: effect.qty, level: 0 })), COLORS.default, now);
+          break;
+        case 'blinked':
+          // ScrollOfTeleportation.appear: there at once, in a flash of light.
+          if (effect.depth !== this.depth) break;
+          this.puppets.delete(effect.who);
+          this.flashes.push({ cell: effect.from, start: now, color: '255, 255, 255', duration: 400 });
+          this.flashes.push({ cell: effect.to, start: now, color: '255, 255, 255', duration: 400 });
+          audio.play('teleport');
           break;
         case 'energized':
           if (effect.hero === myId) {

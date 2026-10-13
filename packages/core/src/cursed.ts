@@ -1,9 +1,9 @@
 import { createMob, type Hero, type HeroClass, isAlive, type Mob, mobStats } from './actors';
 import { type Ballistica, ballistica, cone, MAGIC_BOLT, PROJECTILE, STOP_SOLID, STOP_TARGET } from './ballistica';
-import { armorRoll, hurt } from './combat';
+import { drRoll, hurt } from './combat';
 import { castShadow } from './fov';
 import { charAt, type Char, type Ctx, enterCell, heroView, isHero, landItem, leaveCell } from './floor';
-import { createItem, type Item, itemDef, ItemGenerator, WAND_KINDS } from './items';
+import { createItem, type Item, itemDef, ItemGenerator, randomArmorCurse, randomWeaponCurse, WAND_KINDS } from './items';
 import { distance, LENGTH, NEIGHBOURS8, NEIGHBOURS9 } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import { isBossDepth } from './level/builder';
@@ -304,7 +304,9 @@ function apply(ctx: Ctx, effect: CursedEffect, user: Hero, origin: Item | null, 
       const pool = priority.length > 0 ? priority : can;
       if (pool.length > 0) {
         const item = pool[rng.int(pool.length)]!;
-        // Seam for the gear stream: a curse enchantment or glyph on what had none (Enchantment.randomCurse).
+        // CursingTrap.curse(item): a curse enchantment or glyph on what had none (Enchantment.randomCurse, Glyph's).
+        if (itemDef(item.kind).category === 'armor') item.glyph ??= randomArmorCurse(rng);
+        else item.enchant ??= randomWeaponCurse(rng);
         item.cursed = true;
         delete item.curseUnknown;
         ctx.effects.push({ type: 'cursedEquip', hero: user.id, item });
@@ -488,7 +490,7 @@ export function teleportChar(ctx: Ctx, ch: Char): boolean {
  * Freezing.freeze (a ChillingTrap's cloud, for a moment): chill, three turns (five in water), up to
  * Chill.DURATION; at that, frozen; the frozen stay frozen. What lies there freezes; fire goes out.
  */
-function freezing(ctx: Ctx, cell: number): void {
+export function freezing(ctx: Ctx, cell: number): void {
   const ch = charAt(ctx.world, ctx.depth, cell);
   if (ch && isAlive(ch)) {
     if ((ch.frozen ?? 0) > 0) ch.frozen = (ch.frozen ?? 0) + 2;
@@ -531,7 +533,7 @@ export function conjuredBomb(ctx: Ctx, cell: number, user: Hero, harmsAllies: bo
   }
   for (const ch of affected) {
     if (!isAlive(ch) || (!harmsAllies && (isHero(ch) || ch.ally))) continue;
-    const damage = ctx.rng.normalIntRange(4 + ctx.depth, 12 + 3 * ctx.depth) - armorRoll(ctx, ch);
+    const damage = ctx.rng.normalIntRange(4 + ctx.depth, 12 + 3 * ctx.depth) - drRoll(ctx, ch);
     if (damage <= 0) continue;
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: ch.id, damage });
     hurt(ctx, ch, damage, isHero(ch) ? 'bomb' : user);

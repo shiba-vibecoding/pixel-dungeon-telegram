@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, canEnter, charAt, createItem, createMob, createWorld, F, floorAt, hasFlag, heroAttackDelay, heroById,
+  act, addHero, canEnter, charAt, createItem, createMob, createWorld, F, floorAt, hasFlag, heroAttackDelay, heroById, heroDefenseSkill,
   levelAt, type Mob, T, WIDTH, type World,
 } from '../src/index';
 import { pacify } from './helpers';
@@ -105,6 +105,25 @@ describe('the stone of augmentation', () => {
     expect(act(world, 'p', { type: 'use', item: 0, on: 'weapon', choice: 1 })).toEqual({ ok: false, reason: 'it is augmented that way already' });
     expect(act(world, 'p', { type: 'use', item: 0, on: 'weapon', choice: 2 }).ok).toBe(true);
     expect(heroAttackDelay(hero)).toBeCloseTo(delay * (5 / 3));
+  });
+
+  it('augments by its own action too: a weapon for speed or damage, armour for evasion or defence', () => {
+    const { world } = line();
+    const hero = heroById(world, 'p')!;
+    hero.items = [createItem('stone.augmentation', 3)];
+    const delay = heroAttackDelay(hero);
+    expect(act(world, 'p', { type: 'augment', item: 0, on: 'weapon', augment: 'speed' }).ok).toBe(true);
+    expect(hero.weapon!.augment).toBe('speed');
+    // Weapon.Augment.SPEED: two thirds of the delay.
+    expect(heroAttackDelay(hero)).toBeCloseTo(delay * (2 / 3));
+    expect(act(world, 'p', { type: 'augment', item: 0, on: 'weapon', augment: 'speed' })).toEqual({ ok: false, reason: 'it is augmented that way already' });
+    expect(act(world, 'p', { type: 'augment', item: 0, on: 'weapon', augment: 'evasion' })).toEqual({ ok: false, reason: 'bad choice' });
+    const evasion = heroDefenseSkill(hero);
+    expect(act(world, 'p', { type: 'augment', item: 0, on: 'armor', augment: 'evasion' }).ok).toBe(true);
+    // Armor.Augment.EVASION: two more evasion a level step.
+    expect(heroDefenseSkill(hero)).toBe(evasion + 4);
+    expect(act(world, 'p', { type: 'augment', item: 0, on: 'weapon', augment: 'none' }).ok).toBe(true);
+    expect(hero.weapon!.augment).toBeUndefined();
     expect(hero.items).toEqual([]);
   });
 });
