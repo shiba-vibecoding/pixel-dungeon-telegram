@@ -1,4 +1,4 @@
-import { type Hero, type Item, type ItemKind, itemDef, startingKit, type World } from '@pd/core';
+import { type Hero, type Item, type ItemKind, type ItemRef, itemDef, startingKit, type World } from '@pd/core';
 
 /*
  * The quick slots as Shattered Pixel Dungeon has them (QuickSlot, Toolbar):
@@ -75,9 +75,10 @@ export const isQuickslotted = (kind: ItemKind): boolean => state.slots.includes(
 /** The kind a slot holds, if any. */
 export const quickKind = (slot: number): ItemKind | null => state.slots[slot] ?? null;
 
-/** What a quickslot tap does with an item: aim a throw or a zap, or use it at once. */
-export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'use' | null {
+/** What a quickslot tap does with an item: aim a throw or a zap, use it at once, or an artifact's default action. */
+export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'use' | 'artifact' | null {
   const category = itemDef(kind).category;
+  if (category === 'artifact') return 'artifact';
   if (category === 'wand' || kind === 'weapon.magesStaff') return 'zap';
   if (category === 'missile' || category === 'bomb' || category === 'honeypot' || category === 'seed') return 'throw';
   if (['potion', 'scroll', 'food', 'torch', 'vial', 'wipeout'].includes(category) || kind === 'quest.fish') return 'use';
@@ -91,8 +92,19 @@ export function quickIndex(hero: Hero, slot = 0): number {
   return kind ? hero.items.findIndex((item) => item.kind === kind) : -1;
 }
 
-/** QuickSlot.isPlaceholder: the slot keeps a kind none of which is left in the pack (or in hand, for the staff). */
-export const isPlaceholder = (hero: Hero, slot: number): boolean => state.slots[slot] != null && quickIndex(hero, slot) === -1;
+/** The artifact a quick slot shows, worn (by its slot) or in the pack: Shattered's quick slots hold equipped artifacts too. */
+export function quickArtifact(hero: Hero, slot: number): { item: Item; ref: ItemRef } | null {
+  const kind = state.slots[slot];
+  if (!kind || itemDef(kind).category !== 'artifact') return null;
+  if (hero.artifact?.kind === kind) return { item: hero.artifact, ref: 'artifact' };
+  if (hero.misc?.kind === kind) return { item: hero.misc, ref: 'misc' };
+  const index = quickIndex(hero, slot);
+  return index >= 0 ? { item: hero.items[index]!, ref: index } : null;
+}
+
+/** QuickSlot.isPlaceholder: the slot keeps a kind none of which is left in the pack (or in hand, for the staff; nor worn, for an artifact). */
+export const isPlaceholder = (hero: Hero, slot: number): boolean =>
+  state.slots[slot] != null && quickIndex(hero, slot) === -1 && quickArtifact(hero, slot) === null;
 
 /**
  * Toolbar.layout: how many slots the screen shows — four on a narrow phone, five from a wider one,

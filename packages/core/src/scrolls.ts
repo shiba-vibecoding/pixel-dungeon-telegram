@@ -1,4 +1,4 @@
-import type { Hero } from './actors';
+import { type Hero, MISC_SLOTS, type MiscSlot } from './actors';
 import { CLASS_ARMOR } from './classArmor';
 import type { Ctx } from './floor';
 import { type Item, itemDef, type ItemKind, randomEnchantment, randomGlyph, wandMaxCharges } from './items';
@@ -14,10 +14,10 @@ import { updateWand } from './staff';
  * the item before reading and sends it along with the action.
  */
 
-/** An item the hero has: one in the pack, the weapon or armour worn, or one of the two rings worn. */
-export type ItemRef = number | 'weapon' | 'armor' | 'ring0' | 'ring1';
+/** An item the hero has: one in the pack, the weapon or armour worn, or what is worn in the artifact, misc or ring slot. */
+export type ItemRef = number | 'weapon' | 'armor' | MiscSlot;
 
-const WORN_REFS: ReadonlySet<unknown> = new Set(['weapon', 'armor', 'ring0', 'ring1']);
+const WORN_REFS: ReadonlySet<unknown> = new Set(['weapon', 'armor', 'artifact', 'misc', 'ring']);
 
 /** An ItemRef as it may come from a client: checked, not trusted. */
 export const isItemRef = (value: unknown): value is ItemRef => Number.isInteger(value) || WORN_REFS.has(value);
@@ -28,10 +28,10 @@ export function itemAt(hero: Hero, ref: ItemRef): Item | undefined {
       return hero.weapon ?? undefined;
     case 'armor':
       return hero.armor;
-    case 'ring0':
-      return hero.rings[0];
-    case 'ring1':
-      return hero.rings[1];
+    case 'artifact':
+    case 'misc':
+    case 'ring':
+      return hero[ref] ?? undefined;
     default:
       return Number.isInteger(ref) ? hero.items[ref] : undefined;
   }
@@ -39,9 +39,7 @@ export function itemAt(hero: Hero, ref: ItemRef): Item | undefined {
 
 /** Everything the hero has, worn first (as WndBag lists the equipped items above the pack). */
 export function heldRefs(hero: Hero): ItemRef[] {
-  const worn: ItemRef[] = [
-    ...(hero.weapon ? ['weapon' as const] : []), 'armor', ...hero.rings.map((_, i) => (i === 0 ? 'ring0' as const : 'ring1' as const)),
-  ];
+  const worn: ItemRef[] = [...(hero.weapon ? ['weapon' as const] : []), 'armor', ...MISC_SLOTS.filter((slot) => hero[slot])];
   return [...worn, ...hero.items.map((_, i) => i)];
 }
 
@@ -59,7 +57,7 @@ export function isUpgradable(item: Item): boolean {
     case 'wand':
       return true;
     case 'ring':
-      return item.kind !== 'ring.haggler' && item.kind !== 'ring.thorns';
+      return true;
     case 'missile':
       return item.kind === 'missile.boomerang';
     // BrokenSeal.isUpgradable: a scroll of upgrade can be read on the seal itself, once.

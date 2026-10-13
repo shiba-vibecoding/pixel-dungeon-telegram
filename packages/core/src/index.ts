@@ -24,7 +24,7 @@ export { charAt, type Effect, type Floor, heroesOn, heroSight, isWater, swapsWit
 
 export { ORE_WANTED, type SmithLine, type SmithQuest } from './smith';
 export {
-  canTarget, isEnchantable, isItemRef, isUnidentified, isUpgradable, itemAt, type ItemRef, scrollTargets, type TargetedScroll,
+  canTarget, isEnchantable, isItemRef, isTargetedScroll, isUnidentified, isUpgradable, itemAt, type ItemRef, scrollTargets, type TargetedScroll,
 } from './scrolls';
 export { type ImpQuest, TOKENS_WANTED } from './imp';
 export { CLASS_ARMOR, CLASS_ARMOR_OF } from './classArmor';
@@ -51,6 +51,10 @@ export * from './verify';
 export * from './badges';
 export * from './daily';
 export * from './spd-sprites';
+export * from './artifacts';
+export { BONES_ROLLS } from './bones';
+export { miscChoices, haggles } from './inventory';
+export * from './rings';
 export {
   type Bolt, buffedLevel, chargesPerCast, heldWands, maxCharges, staffReach, wandAt, wandDamage, type WandNote, zapProblem,
 } from './wands';

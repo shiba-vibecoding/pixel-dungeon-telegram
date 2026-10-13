@@ -1,9 +1,10 @@
-import { createMob, type Hero, isAlive, isHungry, type Mob, type MobKind, rollMob } from './actors';
+import { createMob, type Hero, heroBelongings, isAlive, isHungry, type Mob, type MobKind, rollMob } from './actors';
 import { canEnter, charAt, type Ctx, dropItem, enterCell, type Floor, freeCellNear, leaveCell, observe } from './floor';
 import { collect } from './inventory';
 import { createItem, type Item, itemDef, type ItemKind, ITEMS, missileStats, rollFood } from './items';
 import { ARENA_CENTRE, ARENA_DEPTHS, ARENA_RADIUS, ARENA_STANDS, buildArenaLevel, insideArena, ringDistance } from './level/arena';
 import { identify } from './ident';
+import { isInvisible } from './artifacts';
 import { isBossDepth, LAST_SHOP_DEPTH } from './level/builder';
 import { discoverable } from './level/flags';
 import type { Level } from './level/generate';
@@ -151,15 +152,15 @@ export function arenaLevelAt(world: World, depth: number): Level {
 }
 
 /** Why an action is not for the arena now; null if it is fine; undefined if the arena has no say in it. */
-export function arenaProblem(world: World, hero: Hero, action: { type: string; mode?: unknown; choice?: unknown }): string | null | undefined {
+export function arenaProblem(world: World, hero: Hero, action: { type: string; use?: unknown; choice?: unknown }): string | null | undefined {
   const arena = world.arena;
   switch (action.type) {
     case 'descend':
     case 'ascend':
     case 'jump':
       return arena ? 'there is no way out of the arena' : undefined;
-    case 'beacon':
-      return arena && action.mode === 'return' ? 'a strong force prevents the beacon from working here' : undefined;
+    case 'artifact':
+      return arena && action.use === 'return' ? 'art:lloydsbeacon.preventing' : undefined;
     case 'arenaReady':
       if (!arena) return 'not in the arena';
       return arena.phase === 'rest' ? null : 'the wave is on';
@@ -354,7 +355,7 @@ const nearest = (heroes: readonly Hero[], pos: number): Hero =>
  * too long are driven out too.
  */
 function hunt(ctx: Ctx, stalled: boolean): void {
-  const heroes = ctx.world.heroes.filter((hero) => isAlive(hero) && hero.depth === ctx.depth && hero.invisible <= 0);
+  const heroes = ctx.world.heroes.filter((hero) => isAlive(hero) && hero.depth === ctx.depth && !isInvisible(hero));
   if (heroes.length === 0) return;
   for (const mob of ctx.floor.mobs) {
     if (!hostile(mob)) continue;
@@ -482,7 +483,7 @@ type Pool = ReadonlyArray<readonly [number, Make]>;
 
 const kindOf = (kind: ItemKind, qty = 1): Make => () => createItem(kind, qty);
 const has = (hero: Hero, kind: ItemKind): boolean =>
-  hero.items.some((item) => item.kind === kind) || hero.weapon?.kind === kind || hero.armor.kind === kind || hero.rings.some((ring) => ring.kind === kind);
+  heroBelongings(hero).some((item) => item.kind === kind);
 const wands = (hero: Hero): number => hero.items.filter((item) => itemDef(item.kind).category === 'wand').length;
 
 /** To stay alive through the next wave. */
@@ -528,7 +529,7 @@ const BATTLE_WANDS: readonly ItemKind[] = [
 ];
 const LATE_WANDS: readonly ItemKind[] = ['wand.disintegration', 'wand.livingEarth', 'wand.prismaticLight', 'wand.warding'];
 const FIGHTING_RINGS: readonly ItemKind[] = [
-  'ring.haste', 'ring.evasion', 'ring.accuracy', 'ring.mending', 'ring.elements', 'ring.thorns', 'ring.satiety',
+  'ring.haste', 'ring.evasion', 'ring.accuracy', 'ring.elements', 'ring.furor', 'ring.might', 'ring.tenacity', 'ring.force',
 ];
 
 /**
@@ -563,7 +564,7 @@ const GROW: Pool = [
     return kinds.length > 0 ? createItem(rng.oneOf(kinds), 1, 1 + rng.int(2) + Math.trunc(wave / 8)) : null;
   }],
   [2, (rng, wave, hero) => {
-    const kinds = [...FIGHTING_RINGS, ...(wands(hero) > 0 ? ['ring.power' as const] : [])].filter((kind) => !has(hero, kind));
+    const kinds = [...FIGHTING_RINGS, ...(wands(hero) > 0 ? ['ring.energy' as const] : [])].filter((kind) => !has(hero, kind));
     return kinds.length > 0 ? createItem(rng.oneOf(kinds), 1, 1 + rng.int(2) + Math.trunc(wave / 8)) : null;
   }],
   [1, (_rng, _wave, hero) => (hero.weapon ? createItem('scroll.enchantment') : null)],

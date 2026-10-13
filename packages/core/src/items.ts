@@ -9,6 +9,7 @@ import { deriveSeed, Rng } from './rng';
 import type { RunState } from './run';
 import { lootCount } from './party';
 import { S } from './spd-sprites';
+import { artifactSprite, artifactValue, initArtifact, randomArtifact } from './artifacts/artifact';
 
 /*
  * Items, as data: every item family of the original — gold, potions,
@@ -20,7 +21,8 @@ import { S } from './spd-sprites';
 
 export type ItemCategory =
   | 'gold' | 'potion' | 'scroll' | 'weapon' | 'armor' | 'missile' | 'wand' | 'ring' | 'seed' | 'food' | 'dew' | 'torch' | 'key'
-  | 'tome' | 'quest' | 'ankh' | 'kit' | 'bomb' | 'weightstone' | 'beacon' | 'honeypot' | 'vial' | 'bag' | 'wipeout' | 'seal';
+  | 'tome' | 'quest' | 'ankh' | 'kit' | 'bomb' | 'weightstone' | 'honeypot' | 'vial' | 'bag' | 'wipeout' | 'seal'
+  | 'artifact' | 'sandbag' | 'petal';
 
 export interface ItemDef {
   category: ItemCategory;
@@ -126,18 +128,20 @@ export const ITEMS = {
   'wand.corruption': { category: 'wand', sprite: S.WAND_CORRUPTION },
   'wand.regrowth': { category: 'wand', sprite: S.WAND_REGROWTH },
   // Rings, two of which can be worn at once; they go by their gem until worn a while.
-  'ring.mending': { category: 'ring' },
-  'ring.detection': { category: 'ring' },
-  'ring.shadows': { category: 'ring' },
-  'ring.power': { category: 'ring' },
+  // Shattered's twelve (items/rings/, see rings.ts): Pixel Dungeon's mending, detection, shadows, power, satiety,
+  // thorns, haggler and herbalism are gone (the ring of thorns became the cape of thorns, an artifact).
   'ring.accuracy': { category: 'ring' },
-  'ring.evasion': { category: 'ring' },
-  'ring.satiety': { category: 'ring' },
-  'ring.haste': { category: 'ring' },
+  'ring.arcana': { category: 'ring' },
   'ring.elements': { category: 'ring' },
-  'ring.thorns': { category: 'ring' },
-  'ring.haggler': { category: 'ring' },
-  'ring.herbalism': { category: 'ring' },
+  'ring.energy': { category: 'ring' },
+  'ring.evasion': { category: 'ring' },
+  'ring.force': { category: 'ring' },
+  'ring.furor': { category: 'ring' },
+  'ring.haste': { category: 'ring' },
+  'ring.might': { category: 'ring' },
+  'ring.sharpshooting': { category: 'ring' },
+  'ring.tenacity': { category: 'ring' },
+  'ring.wealth': { category: 'ring' },
   // Seeds, thrown where a plant should grow.
   'seed.firebloom': { category: 'seed', sprite: S.SEED_FIREBLOOM },
   'seed.icecap': { category: 'seed', sprite: S.SEED_ICECAP },
@@ -165,8 +169,28 @@ export const ITEMS = {
   wipeOut: { category: 'wipeout', sprite: S.HALLS_PAGE },
   /** Thrown, it blows up where it lands (Bomb). */
   bomb: { category: 'bomb', sprite: S.BOMB },
-  /** Goo's legacy now and then: takes its bearer back to a place set beforehand (LloydsBeacon). */
-  beacon: { category: 'beacon', sprite: S.BEACON },
+  /*
+   * Artifacts (Artifact): each unique in a run, worn in the artifact or the misc slot; they charge
+   * as time goes by and grow stronger with use (see artifacts/).
+   */
+  'artifact.cloak': { category: 'artifact', sprite: S.ARTIFACT_CLOAK },
+  'artifact.horn': { category: 'artifact', sprite: S.ARTIFACT_HORN1 },
+  'artifact.chalice': { category: 'artifact', sprite: S.ARTIFACT_CHALICE1 },
+  'artifact.hourglass': { category: 'artifact', sprite: S.ARTIFACT_HOURGLASS },
+  'artifact.talisman': { category: 'artifact', sprite: S.ARTIFACT_TALISMAN },
+  'artifact.spellbook': { category: 'artifact', sprite: S.ARTIFACT_SPELLBOOK },
+  'artifact.chains': { category: 'artifact', sprite: S.ARTIFACT_CHAINS },
+  'artifact.rose': { category: 'artifact', sprite: S.ARTIFACT_ROSE1 },
+  'artifact.armband': { category: 'artifact', sprite: S.ARTIFACT_ARMBAND },
+  'artifact.sandals': { category: 'artifact', sprite: S.ARTIFACT_SANDALS },
+  'artifact.cape': { category: 'artifact', sprite: S.ARTIFACT_CAPE },
+  'artifact.toolkit': { category: 'artifact', sprite: S.ARTIFACT_TOOLKIT },
+  /** Goo's legacy now and then: takes its bearer back to a place set beforehand (LloydsBeacon, an artifact in Shattered). */
+  'artifact.beacon': { category: 'artifact', sprite: S.ARTIFACT_BEACON },
+  /** TimekeepersHourglass.sandBag: sold in the shops to whoever has the hourglass, it makes it stronger. */
+  sandbag: { category: 'sandbag', sprite: S.SANDBAG },
+  /** DriedRose.Petal: found on the way down by whoever carries the rose, it makes the rose stronger. */
+  petal: { category: 'petal', sprite: S.PETAL },
   /** Balances a melee weapon for speed or for accuracy (Weightstone). */
   weightstone: { category: 'weightstone', sprite: S.STONE_AUGMENTATION },
   /** Bags (SeedPouch, ScrollHolder, WandHolster), sold in the shops: what they hold takes no room in the backpack. */
@@ -246,6 +270,37 @@ export interface Item {
   seal?: { level: number };
   /** Lloyd's beacon: where it was set, if it was. */
   returnTo?: { depth: number; pos: number };
+  /*
+   * Artifacts (Artifact): the level is Item.level (0 to the artifact's cap); `charge` and the build towards the
+   * next (`partial`, as a wand's partialCharge), experience towards the next level (`exp`) and a `cooldown`
+   * where the artifact has them. What else each one keeps is described in artifacts/.
+   */
+  charge?: number;
+  exp?: number;
+  cooldown?: number;
+  /** CloakOfShadows.cloakStealth: under way, and the turns until it costs a charge again. */
+  stealth?: { turnsToCost: number };
+  /** TimekeepersHourglass: sandbags the shops have offered so far; its timeFreeze under way (charge build, cells pressed meanwhile). */
+  sandBags?: number;
+  freeze?: { turnsToCost: number; presses: number[] };
+  /** HornOfPlenty.storedFoodEnergy. */
+  stored?: number;
+  /** UnstableSpellbook.scrolls: the scrolls it still wants, in the order it wants them. */
+  scrolls?: ItemKind[];
+  /** SandalsOfNature: the seeds fed to it towards the next level, and the plant it can grow (curSeedEffect). */
+  seeds?: ItemKind[];
+  seedEffect?: ItemKind;
+  /** DriedRose: the ghost spoken to; summoned once already; the ghost hero's id while it is out; petals dropped so far; its gear. */
+  talkedTo?: boolean;
+  firstSummon?: boolean;
+  ghost?: string;
+  petals?: number;
+  ghostWeapon?: Item;
+  ghostArmor?: Item;
+  /** TalismanOfForesight.warn: the hero has been warned of a trap nearby. */
+  warn?: boolean;
+  /** AlchemistsToolkit.warmUpDelay. */
+  warmUp?: number;
   /** Melee weapons: balanced with a weightstone, for speed or for accuracy (Weapon.imbue). */
   imbue?: 'speed' | 'accuracy';
   /** Uses left before an upgraded item breaks (Item.durability); absent while whole. See wear.ts. */
@@ -312,6 +367,7 @@ export const itemDef = (kind: ItemKind): ItemDef => ITEMS[kind];
 export const isStackable = (kind: ItemKind): boolean => {
   const category = itemDef(kind).category;
   return category === 'potion' || category === 'scroll' || category === 'gold' || category === 'food' || category === 'torch' ||
+    category === 'petal' ||
     category === 'seed' || category === 'bomb' || category === 'honeypot' || category === 'wipeout' || category === 'weightstone' || (category === 'missile' && kind !== 'missile.boomerang') || kind === 'quest.token' || kind === 'quest.ore';
 };
 
@@ -321,6 +377,8 @@ export function createItem(kind: ItemKind, qty = 1, level = 0): Item {
     item.charges = wandMaxCharges(item);
     item.partial = 0;
   }
+  // A new artifact starts with the charge its kind sets out with.
+  if (itemDef(kind).category === 'artifact') initArtifact(item);
   return item;
 }
 
@@ -379,8 +437,9 @@ export function itemPrice(item: Item, known: boolean): number {
       return levelled(75);
     case 'torch':
       return 10 * item.qty;
+    // Ring.value.
     case 'ring':
-      return levelled(80);
+      return levelled(75);
     case 'seed':
       return 10 * item.qty;
     case 'ankh':
@@ -395,6 +454,11 @@ export function itemPrice(item: Item, known: boolean): number {
       return 100 * item.qty;
     case 'weightstone':
       return 40 * item.qty;
+    case 'artifact':
+      return artifactValue(item);
+    // TimekeepersHourglass.sandBag.value.
+    case 'sandbag':
+      return 30 * item.qty;
     default:
       return 0;
   }
@@ -547,6 +611,7 @@ const LABEL_STREAM = 6;
 
 export function itemSprite(item: Item, labels: Labels): number {
   const def = itemDef(item.kind);
+  if (def.category === 'artifact') return artifactSprite(item);
   if (def.sprite !== undefined) return def.sprite;
   const label = labels[item.kind] ?? 0;
   if (def.category === 'ring') return RING_SPRITES[label]!;
@@ -556,13 +621,18 @@ export function itemSprite(item: Item, labels: Labels): number {
 /* Generator */
 
 /** Categories the generator picks from; thrown weapons come with the weapons. */
-export type GeneratedCategory = 'gold' | 'potion' | 'scroll' | 'weapon' | 'armor' | 'food' | 'wand' | 'ring' | 'seed' | 'misc';
+export type GeneratedCategory = 'gold' | 'potion' | 'scroll' | 'weapon' | 'armor' | 'food' | 'wand' | 'ring' | 'artifact' | 'seed' | 'misc';
 
+/**
+ * Generator.Category: artifacts come as often as rings (Shattered's two decks hold a ring and an
+ * artifact, one each), and only while the run has some left (see randomArtifact).
+ */
 const CATEGORY_CHANCES: ReadonlyArray<readonly [GeneratedCategory, number]> = [
-  ['weapon', 15], ['armor', 10], ['potion', 50], ['scroll', 40], ['wand', 4], ['ring', 2], ['seed', 5], ['gold', 50], ['misc', 5],
+  ['weapon', 15], ['armor', 10], ['potion', 50], ['scroll', 40], ['wand', 4], ['ring', 2], ['artifact', 2], ['seed', 5], ['gold', 50],
+  ['misc', 5],
 ];
 
-const KIND_CHANCES: Readonly<Record<Exclude<GeneratedCategory, 'gold' | 'food' | 'misc' | 'wand'>, ReadonlyArray<readonly [ItemKind, number]>>> = {
+const KIND_CHANCES: Readonly<Record<Exclude<GeneratedCategory, 'gold' | 'food' | 'misc' | 'artifact' | 'wand'>, ReadonlyArray<readonly [ItemKind, number]>>> = {
   // Strength only comes as guaranteed finds, and might out of a well of transmutation.
   potion: [
     ['potion.healing', 45], ['potion.experience', 4], ['potion.toxicGas', 15], ['potion.paralyticGas', 10],
@@ -587,12 +657,15 @@ const KIND_CHANCES: Readonly<Record<Exclude<GeneratedCategory, 'gold' | 'food' |
     ['seed.earthroot', 1], ['seed.fadeleaf', 1],
   ],
   // Thorns and haggler are only dropped by DM-300 and thieves.
+  // Generator.Category.RING: the twelve alike.
   ring: [
-    ['ring.mending', 1], ['ring.detection', 1], ['ring.shadows', 1], ['ring.power', 1], ['ring.accuracy', 1],
-    ['ring.evasion', 1], ['ring.satiety', 1], ['ring.haste', 1], ['ring.elements', 1], ['ring.herbalism', 1],
+    ['ring.accuracy', 3], ['ring.arcana', 3], ['ring.elements', 3], ['ring.energy', 3], ['ring.evasion', 3], ['ring.force', 3],
+    ['ring.furor', 3], ['ring.haste', 3], ['ring.might', 3], ['ring.sharpshooting', 3], ['ring.tenacity', 3], ['ring.wealth', 3],
   ],
 };
 
+/** Generator.Category.SCROLL's default chances (the unstable spellbook reads by them). */
+export const scrollChances = (): ReadonlyArray<readonly [ItemKind, number]> => KIND_CHANCES.scroll;
 /** Generator.Category.WAND.classes, in their order. */
 export const WAND_KINDS: readonly ItemKind[] = [
   'wand.magicMissile', 'wand.lightning', 'wand.disintegration', 'wand.fireblast', 'wand.corrosion', 'wand.blastWave',
@@ -635,11 +708,15 @@ export function rollGold(rng: Rng, depth: number): Item {
   return createItem('gold', rng.intBetween(20 + depth * 10, 40 + depth * 20));
 }
 
-/** Ring.random: one or two levels, and three rings in ten the wrong way. */
+/** Ring.random: +0 two times in three, +1 four in fifteen, +2 one in fifteen; three in ten cursed (which works against its wearer). */
 export function randomRing(rng: Rng, kind: ItemKind): Item {
-  const level = rng.intBetween(1, 3);
-  const ring = createItem(kind, 1, rng.float() < 0.3 ? -level : level);
-  if (ring.level < 0) ring.cursed = true;
+  let level = 0;
+  if (rng.int(3) === 0) {
+    level++;
+    if (rng.int(5) === 0) level++;
+  }
+  const ring = createItem(kind, 1, level);
+  if (rng.float() < 0.3) ring.cursed = true;
   return ring;
 }
 
@@ -663,7 +740,10 @@ function rollLevel(rng: Rng): number {
 export class ItemGenerator {
   private readonly chances = new Map(CATEGORY_CHANCES);
 
-  /** With the run, wands come from its deck (Generator.random); without, any kind as likely (Generator.randomUsingDefaults). */
+  /**
+   * `run`: the run whose artifacts are still to be found (without it, an artifact comes out as a ring); with
+   * it, wands come from its deck too (Generator.random); without, any kind as likely (Generator.randomUsingDefaults).
+   */
   constructor(private readonly rng: Rng, private readonly depth: number, private readonly run?: RunState) {}
 
   random(): Item {
@@ -674,6 +754,8 @@ export class ItemGenerator {
 
   of(category: GeneratedCategory): Item {
     if (category === 'gold') return rollGold(this.rng, this.depth);
+    // Generator.random(ARTIFACT): out of artifacts, a ring instead.
+    if (category === 'artifact') return (this.run ? randomArtifact(this.run, this.rng) : null) ?? this.of('ring');
     if (category === 'food') return rollFood(this.rng);
     // Generator.Category.MISC: two bombs to every honeypot; bombs come one to three at a time.
     if (category === 'misc') return this.rng.chances([2, 1]) === 0 ? createItem('bomb', this.rng.intRange(1, 3)) : createItem('honeypot');
@@ -775,8 +857,36 @@ function kingsPrize(generator: ItemGenerator, rng: Rng): Item {
   }
 }
 
+/**
+ * ShopRoom.generateItems' rare ware: in one shop in ten a wand, in one a ring (both +0), in one an
+ * artifact, never cursed and known not to be; in the rest Shattered's stylus (gold for now).
+ */
+function shopRare(generator: ItemGenerator, rng: Rng): Item | null {
+  let rare: Item;
+  switch (rng.int(10)) {
+    case 0:
+      rare = generator.of('wand');
+      rare.level = 0;
+      rare.charges = wandMaxCharges(rare);
+      break;
+    case 1:
+      rare = generator.of('ring');
+      rare.level = 0;
+      break;
+    case 2:
+      rare = generator.of('artifact');
+      break;
+    default:
+      // Seam (gear stream): Shattered's arcane stylus goes here; until it exists, nothing.
+      return null;
+  }
+  delete rare.cursed;
+  delete rare.curseUnknown;
+  return rare;
+}
+
 /** Rolls what a painter asked for. */
-function rollSpec(spec: ItemSpec, generator: ItemGenerator, rng: Rng, depth: number): Item {
+function rollSpec(spec: ItemSpec, generator: ItemGenerator, rng: Rng, depth: number): Item | null {
   switch (spec.roll) {
     case 'random':
       return generator.random();
@@ -797,6 +907,10 @@ function rollSpec(spec: ItemSpec, generator: ItemGenerator, rng: Rng, depth: num
       return createItem('bomb', rng.intRange(1, 3));
     case 'kind':
       return createItem(spec.kind);
+    case 'artifact':
+      return generator.of('artifact');
+    case 'rare':
+      return shopRare(generator, rng);
     case 'category': {
       let best: Item | null = null;
       for (let i = 0; i < spec.tries; i++) {
@@ -818,8 +932,8 @@ export function createItems(
   run: RunState, level: Level, rng: Rng, boss: boolean, party = 1, land: (item: Item) => Item = (item) => item,
 ): Heap[] {
   const heaps: Heap[] = [];
-  const drop = (pos: number, kind: HeapKind, item: Item): void => {
-    if (pos < 0) return;
+  const drop = (pos: number, kind: HeapKind, item: Item | null): void => {
+    if (pos < 0 || !item) return;
     const heap = heaps.find((h) => h.pos === pos);
     if (heap) heap.items.push(land(item));
     else heaps.push({ pos, kind, items: [land(item)] });
@@ -841,7 +955,17 @@ export function createItems(
     const roll = rng.int(20);
     // RegularLevel.createItems: one chest in five below the first depth is a mimic.
     const kind: HeapKind = roll === 0 ? 'skeleton' : roll === 5 && level.depth > 1 ? 'mimic' : roll <= 5 ? 'chest' : 'heap';
-    drop(randomDropCell(rng, level), kind, generator.random());
+    const item = generator.random();
+    // RegularLevel.createItems: half the artifacts lie in a locked chest, its golden key somewhere on the level.
+    if (itemDef(item.kind).category === 'artifact' && rng.int(2) === 0) {
+      const pos = randomDropCell(rng, level);
+      if (pos >= 0 && !heaps.some((h) => h.pos === pos)) {
+        drop(pos, 'lockedChest', item);
+        drop(randomDropCell(rng, level), 'heap', { ...createItem('key.golden'), depth: level.depth });
+        continue;
+      }
+    }
+    drop(randomDropCell(rng, level), kind, item);
   }
 
   for (let i = 0; i < Math.max(1, party); i++) drop(randomDropCell(rng, level), 'heap', rollFood(rng));
@@ -872,6 +996,7 @@ export function createItems(
  */
 export function shareOfDepth(
   level: Level, rng: Rng, perHero: readonly ItemKind[], party: number, heaps: Heap[], land: (item: Item) => Item = (item) => item,
+  run?: RunState,
 ): void {
   const drop = (pos: number, kind: HeapKind, item: Item): void => {
     if (pos < 0) return;
@@ -880,7 +1005,7 @@ export function shareOfDepth(
     else heaps.push({ pos, kind, items: [land(item)] });
   };
 
-  const generator = new ItemGenerator(rng, level.depth);
+  const generator = new ItemGenerator(rng, level.depth, run);
   const extra = lootCount(3, party) - lootCount(3, party - 1);
   for (let i = 0; i < extra; i++) {
     const roll = rng.int(20);

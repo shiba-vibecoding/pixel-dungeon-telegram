@@ -1,4 +1,4 @@
-import { type Labels, rollLabels } from './items';
+import { type ItemKind, type Labels, rollLabels } from './items';
 import { RoomType, SPECIALS } from './level/room';
 import { deriveSeed, Rng, Stream } from './rng';
 
@@ -16,6 +16,8 @@ export interface RunState {
   labels: Labels;
   /** The troll blacksmith has set up his forge in the caves (absent in older runs). */
   blacksmithSpawned?: boolean;
+  /** Generator's artifact deck: the kinds not dealt yet (absent until the first is; see artifacts/artifact.ts). */
+  artifactsLeft?: ItemKind[];
   /** Generator.Category.WAND's deck: how many of each wand kind (in WAND_KINDS order) are left, and how many were dealt. */
   wandDeck?: number[];
   wandsDealt?: number;

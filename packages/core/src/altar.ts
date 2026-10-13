@@ -86,7 +86,7 @@ export function wipeOut(ctx: Ctx, hero: Hero): void {
       ctx.effects.push({ type: 'died', depth: ctx.depth, who: mob.id, pos: mob.pos });
       continue;
     }
-    if (mob.state === 'passive') continue;
+    if (mob.state === 'passive' || mob.kind === 'ghostHero') continue;
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage: mob.hp });
     hurt(ctx, mob, mob.hp, hero);
   }

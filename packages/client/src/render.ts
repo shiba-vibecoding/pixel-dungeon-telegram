@@ -156,10 +156,10 @@ function puffImage(color: string): HTMLCanvasElement {
   return image;
 }
 
-function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y: number, now: number): void {
+function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y: number, now: number, frozen = false): void {
   const { sheet, anims } = puppet.sprite;
   const anim = puppet.anim === 'idle' && puppet.pumped ? 'pump' : puppet.anim;
-  const frame = frameAt(anims[anim], now - puppet.animStart);
+  const frame = frameAt(anims[anim], frozen && !puppet.isHero ? 0 : now - puppet.animStart);
   const sx = (frame % sheet.cols) * sheet.w;
   const sy = (Math.floor(frame / sheet.cols) + puppet.row) * sheet.h;
   // A melee lunge: forward and back again in a blink.
@@ -179,6 +179,10 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
 
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
+  // GhostSprite.draw: the rose's ghost glows (Blending.setLightMode).
+  if (puppet.kind === 'ghostHero') ctx.globalCompositeOperation = 'lighter';
+  // timeFreeze.fx: while the hero freezes time, everything else stands still and grey (State.PARALYSED).
+  if (frozen && !puppet.isHero) ctx.filter = 'grayscale(1) brightness(0.8)';
   if (puppet.fallStart !== undefined) {
     // MobSprite.fall: into a chasm, spinning (720 degrees a second, one way or the other) and
     // shrinking away to nothing about the middle of its feet' cell, fading as it goes.
@@ -495,7 +499,7 @@ export function render(
       return { puppet, x: Math.round(at.x * camera.zoom) / camera.zoom, y: Math.round(at.y * camera.zoom) / camera.zoom };
     })
     .sort((a, b) => Number(a.puppet.alive) - Number(b.puppet.alive) || a.y - b.y);
-  for (const { puppet, x, y } of shown) drawPuppet(ctx, puppet, x, y, now);
+  for (const { puppet, x, y } of shown) drawPuppet(ctx, puppet, x, y, now, view.timeFrozen);
 
   for (const { puppet, x, y } of shown) {
     if (!puppet.alive) continue;
@@ -536,6 +540,26 @@ export function render(
       ctx.translate(snap(x), snap(y - height));
       ctx.rotate(k * Math.PI * 4);
       ctx.drawImage(assets.items, (p.sprite % 16) * 16, Math.floor(p.sprite / 16) * 16, 16, 16, -8, -8, 16, 16);
+      ctx.restore();
+    }
+  }
+
+  // Chains.update: the ethereal chain's links spread out from the hero to where it was thrown, then vanish.
+  view.chains = view.chains.filter((c) => now - c.start < c.duration);
+  for (const c of view.chains) {
+    const k = Math.min(1, (now - c.start) / c.duration);
+    const fx0 = (c.from % WIDTH) * TILE + TILE / 2;
+    const fy0 = Math.trunc(c.from / WIDTH) * TILE + TILE / 2;
+    const dx = ((c.to % WIDTH) * TILE + TILE / 2) - fx0;
+    const dy = (Math.trunc(c.to / WIDTH) * TILE + TILE / 2) - fy0;
+    const links = Math.round(Math.hypot(dx, dy) / 6) + 1;
+    const angle = Math.atan2(dy, dx) + Math.PI / 2;
+    for (let i = 0; i < links; i++) {
+      ctx.save();
+      ctx.translate(snap(fx0 + dx * (i / links) * k), snap(fy0 + dy * (i / links) * k));
+      ctx.rotate(angle);
+      // Effects.Type.ETHEREAL_CHAIN: (11, 16) to (16, 22) in effects.png.
+      ctx.drawImage(assets.effects, 11, 16, 5, 6, -2.5, -3, 5, 6);
       ctx.restore();
     }
   }

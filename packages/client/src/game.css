@@ -217,3 +217,7 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* The journal's notes (the hero stream): a landmark journal.png has no icon for takes an item's picture; a floor's feeling, none. */
 .pd-jicon.item { background: none; display: grid; place-items: center; }
 .pd-jicon.blank { background: none; }
+
+/* The artifacts' buff icons tinted as Shattered tints them: the cloak's stealth dimmed (cloakStealth.tintIcon), the time freeze orange (timeFreeze.tintIcon). */
+.pd-buff i[data-buff="stealth"] { filter: brightness(0.6); }
+.pd-buff i[data-buff="timeFreeze"] { filter: sepia(1) saturate(4) hue-rotate(-15deg); }

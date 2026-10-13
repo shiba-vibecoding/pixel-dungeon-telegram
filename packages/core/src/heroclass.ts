@@ -11,9 +11,9 @@ import { staffWith } from './staff';
  * Seams (docs/SHATTERED.md): what other streams port is stood in for by
  * Pixel Dungeon's items until their stream lands, each marked in KIT_SEAMS —
  * gear: the worn shortsword, the throwing stones and knives, the studded
- * gloves and the spirit bow; artifacts: the rogue's cloak of shadows. The
- * stream that ports one replaces its line there (the wands stream has: the
- * mage's staff is MagesStaff, staff.ts).
+ * gloves and the spirit bow. The stream that ports one replaces its line
+ * there (the wands stream has: the mage's staff is MagesStaff, staff.ts; the
+ * artifacts stream has: the rogue's cloak of shadows is the artifact).
  */
 
 export type HeroClass = 'warrior' | 'mage' | 'rogue' | 'huntress';
@@ -36,8 +36,6 @@ export const KIT_SEAMS = {
   wornShortsword: { kind: 'weapon.shortSword', for: 'WornShortsword (gear)' },
   /** ThrowingStone, three of them (gear); Pixel Dungeon's warrior had eight darts. */
   throwingStones: { kind: 'missile.dart', qty: 8, for: 'ThrowingStone ×3 (gear)' },
-  /** CloakOfShadows (artifacts): worn as Pixel Dungeon's rogue wore his ring of shadows. */
-  cloakOfShadows: { kind: 'ring.shadows', level: 1, for: 'CloakOfShadows (artifacts)' },
   /** ThrowingKnife, three of them (gear). */
   throwingKnives: { kind: 'missile.dart', qty: 8, for: 'ThrowingKnife ×3 (gear)' },
   /** Gloves, the huntress's studded gloves (gear): Pixel Dungeon's knuckleduster is the same weapon. */
@@ -53,8 +51,8 @@ export interface StartingKit {
   weapon: Item;
   /** Cloth armour; the warrior's with the broken seal affixed. */
   armor: Item;
-  /** Rings worn from the start (the rogue's cloak's stand-in). */
-  rings: Item[];
+  /** The artifact worn from the start: the rogue's cloak of shadows. */
+  artifact: Item | null;
   /** The backpack. */
   items: Item[];
   /** Kinds the party knows from the start (HeroClass.initHero and init…: `new X().identify()`). */
@@ -75,7 +73,7 @@ export function startingKit(heroClass: HeroClass): StartingKit {
       armor.seal = { level: 0 };
       const stones = seamed(KIT_SEAMS.throwingStones);
       return {
-        weapon: seamed(KIT_SEAMS.wornShortsword), armor, rings: [], items: [stones, ...common],
+        weapon: seamed(KIT_SEAMS.wornShortsword), armor, artifact: null, items: [stones, ...common],
         known: [...known, 'potion.healing', 'scroll.challenge'], quickslots: [stones.kind],
       };
     }
@@ -83,7 +81,7 @@ export function startingKit(heroClass: HeroClass): StartingKit {
       // initMage: the staff, with a wand of magic missile imbued, in the first quick slot.
       const staff = staffWith(createItem('wand.magicMissile'));
       return {
-        weapon: staff, armor, rings: [], items: common,
+        weapon: staff, armor, artifact: null, items: common,
         known: [...known, 'scroll.upgrade', 'potion.liquidFlame'], quickslots: [staff.kind],
       };
     }
@@ -91,15 +89,15 @@ export function startingKit(heroClass: HeroClass): StartingKit {
       // initRogue: the dagger, the cloak of shadows worn (first quick slot), the throwing knives (second).
       const knives = seamed(KIT_SEAMS.throwingKnives);
       return {
-        weapon: createItem('weapon.dagger'), armor, rings: [seamed(KIT_SEAMS.cloakOfShadows)], items: [knives, ...common],
-        known: [...known, 'scroll.mapping', 'potion.invisibility'], quickslots: [knives.kind],
+        weapon: createItem('weapon.dagger'), armor, artifact: createItem('artifact.cloak'), items: [knives, ...common],
+        known: [...known, 'scroll.mapping', 'potion.invisibility'], quickslots: ['artifact.cloak', knives.kind],
       };
     }
     case 'huntress': {
       // initHuntress: the studded gloves, the spirit bow in the first quick slot.
       const bow = seamed(KIT_SEAMS.spiritBow);
       return {
-        weapon: seamed(KIT_SEAMS.gloves), armor, rings: [], items: [bow, ...common],
+        weapon: seamed(KIT_SEAMS.gloves), armor, artifact: null, items: [bow, ...common],
         known: [...known, 'potion.mindVision', 'scroll.lullaby'], quickslots: [bow.kind],
       };
     }
