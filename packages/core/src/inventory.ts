@@ -2,7 +2,7 @@ import { applyLiquidMetal, liquidMetalProblem } from './alchemy';
 import { mend, wear } from './wear';
 import { chargesKnown, identify, isIdentified, learn } from './ident';
 import {
-  BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, heroEquipped, heroRings, isAlive, maxExp, MISC_SLOTS,
+  BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, heroArtifacts, heroEquipped, heroRings, isAlive, maxExp, MISC_SLOTS,
   type MiscSlot, type Mob, mobStats, type SubClass, SUBCLASSES,
 } from './actors';
 import { affectHunger, growHT, STARVING } from './hero';
@@ -39,7 +39,7 @@ import { drinkFromWaterskin, pickUpDew, TIME_TO_DRINK, WATERSKIN_VOLUME } from '
 import { hasRoom } from './bags';
 import { wipeOut } from './altar';
 import { applyArmorKit, CLASS_ARMOR, CLASS_ARMOR_OF, classSpecial, specialProblem, TIME_TO_APPLY_KIT } from './classArmor';
-import type { World } from './world';
+import { furrowGrass, type World } from './world';
 import { scaleMob } from './party';
 import { underChallenges } from './challenges';
 import {
@@ -48,7 +48,13 @@ import {
 } from './scrolls';
 import { brew, brewProblem, chooseTrinket, energizeAt, energizeProblem } from './alchemy';
 import { buffsOf, isMagicImmune } from './buffs';
-import { drinkPotion, drinkProblem, shatterPotion } from './potions';
+import { eatingTime, onFoodEaten, onItemCollected, onItemEquipped, onPotionUsed, onRunestoneUsed, onScrollUsed, talentUse } from './talents';
+import { tbOf } from './talents/state';
+import { consumeLethalMomentum } from './talents/turns';
+import { improvisedProjectile } from './talents/combat';
+import { directChargeCloak } from './artifacts/cloak';
+import { initSubclassTalents, talentBook } from './talents/data';
+import { CAN_THROW, drinkPotion, drinkProblem, MUST_THROW, shatterPotion } from './potions';
 import { readProblem, readScroll, scrollUseProblem } from './reading';
 import { activateStone, INVENTORY_STONES, stoneProblem, useStone } from './stones';
 import { castSpell, spellProblem } from './spells';
@@ -261,7 +267,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     case 'clean':
       return isTippedDart(item.kind) ? null : 'that is no tipped dart';
     case 'master':
-      if (item.kind !== 'tome.mastery') return 'that is no tome';
+      if (item.kind !== 'tome.mastery' && item.kind !== 'mask.tengu') return 'that is no mask';
       if (hero.subclass) return 'you have already mastered a way';
       return SUBCLASSES[hero.heroClass].includes(action.subclass) ? null : 'not a way for you';
     case 'sell':
@@ -292,7 +298,7 @@ function useProblem(world: World, hero: Hero, item: Item, action: Extract<Invent
   if (action.target !== undefined && action.target !== 'weapon' && action.target !== 'armor') return 'bad target';
   if (action.on !== undefined && !isItemRef(action.on)) return 'bad target';
   if (action.cell !== undefined && (!Number.isInteger(action.cell) || action.cell < 0 || action.cell >= LENGTH)) return 'bad target';
-  if (action.choice !== undefined && (!Number.isInteger(action.choice) || action.choice < 0 || action.choice > 63)) return 'bad choice';
+  if (action.choice !== undefined && (!Number.isInteger(action.choice) || action.choice < 0 || action.choice > 255)) return 'bad choice';
   // Blandfruit: raw, it is not to be eaten.
   if (item.kind === 'food.blandfruit' && !item.potion) return 'it is too raw to eat';
   const known = knownIn(world.known, item.kind);
@@ -372,7 +378,10 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       return TIME_TO_AUGMENT;
     }
     case 'shoot':
-      return shootBow(ctx, hero, action.item, action.target);
+    {
+      const time = shootBow(ctx, hero, action.item, action.target);
+      return consumeLethalMomentum(hero) ? 0 : time;
+    }
     case 'tip':
       tipDarts(ctx, hero, action.item, action.seed, action.all === true);
       return TIME_TO_TIP;
@@ -392,8 +401,9 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
     }
     case 'use':
       if (itemDef(hero.items[action.item]!.kind).category === 'food') {
-        eat(ctx, hero, action.item);
-        return TIME_TO_EAT;
+        const time = eatingTime(hero, hero.items[action.item]!.kind);
+        eat(ctx, hero, action.item, time);
+        return time;
       }
       if (itemDef(hero.items[action.item]!.kind).category === 'wipeout') {
         const scroll = hero.items[action.item]!;
@@ -437,6 +447,9 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       // TomeOfMastery.choose: the tome is used up, and the hero takes a new way.
       hero.items.splice(action.item, 1);
       hero.subclass = action.subclass;
+      // TengusMask.choose: the subclass's talents of the third tier open (Talent.initSubclassTalents).
+      talentBook(hero);
+      initSubclassTalents(hero);
       ctx.effects.push({ type: 'mastered', hero: hero.id, subclass: action.subclass });
       return TIME_TO_READ_TOME;
     case 'unequip': {
@@ -471,6 +484,7 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       // KindOfWeapon.doEquip and Armor.doEquip: in hand or worn, its curse is known.
       delete item.curseUnknown;
       if (item.cursed) ctx.effects.push({ type: 'cursedEquip', hero: hero.id, item });
+      onItemEquipped(ctx, hero, item);
       return TIME_TO_EQUIP;
     }
     case 'drop': {
@@ -511,11 +525,19 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       ctx.effects.push({ type: 'dropped', hero: hero.id, item });
       return TIME_TO_DROP;
     }
-    case 'throw':
-      // MissileWeapon.castDelay: a thrown weapon at someone takes its delay (throwing.ts).
-      if (itemDef(hero.items[action.item]!.kind).category === 'missile') return throwMissile(ctx, hero, action.item, action.target);
-      throwItem(ctx, hero, action.item, action.target);
-      return TIME_TO_THROW;
+    case 'throw': {
+      // MissileWeapon.castDelay: a thrown weapon at someone takes its delay (throwing.ts); a kill with lethal momentum costs nothing.
+      const missile = itemDef(hero.items[action.item]!.kind).category === 'missile';
+      let time = TIME_TO_THROW;
+      if (missile) time = throwMissile(ctx, hero, action.item, action.target);
+      else {
+        const whole = hero.items[action.item]!;
+        throwItem(ctx, hero, action.item, action.target);
+        // Item.cast: improvised projectiles, anything thrown at an enemy blinds it for a moment.
+        improvisedProjectile(ctx, hero, whole, action.target);
+      }
+      return consumeLethalMomentum(hero) ? 0 : time;
+    }
     case 'zap':
       return zap(ctx, hero, action.item, action.target);
     case 'imbue':
@@ -662,6 +684,7 @@ function equipMisc(ctx: Ctx, hero: Hero, index: number, replace: MiscSlot | unde
     identify(ctx.world, item);
     artifactPutOn(ctx, hero, item);
   }
+  onItemEquipped(ctx, hero, item);
 }
 
 /** A shopkeeper standing next to the hero, ready to trade. */
@@ -711,6 +734,18 @@ function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
       landItem(ctx, end, createItem(kind));
     } else {
       plant(ctx, end, SEED_PLANTS[kind]!);
+      // Plant.Seed.onThrow: the warden makes grass spring up around any seed she throws or plants.
+      if (hero.subclass === 'warden') {
+        const grown: number[] = [];
+        for (const n of NEIGHBOURS8) {
+          const t = ctx.level.map[end + n];
+          if (t === T.EMPTY || t === T.EMPTY_DECO || t === T.EMBERS || t === T.GRASS) {
+            furrowGrass(ctx.level, end + n);
+            grown.push(end + n);
+          }
+        }
+        if (grown.length > 0) ctx.effects.push({ type: 'bloomed', depth: ctx.depth, cells: grown });
+      }
     }
     return;
   }
@@ -812,6 +847,11 @@ function throwPotion(ctx: Ctx, hero: Hero, index: number, target: number): void 
   // Level.pressCell: the potion sets off what it lands on (not an aqua brew or storm clouds, which disarm traps).
   if (kind !== 'brew.aqua' && kind !== 'potion.stormClouds') pressUnderItem(ctx, end);
   const shows = shatterPotion(ctx, hero, kind, end);
+  // Potion.onThrow: Talent.onPotionUsed, for a harmful potion, one that may be thrown, or a brew.
+  if (MUST_THROW.has(kind) || CAN_THROW.has(kind) || itemDef(kind).category === 'brew') {
+    const thrownTalent = talentUse(kind);
+    if (ctx.rng.float() < thrownTalent.chance) onPotionUsed(ctx, hero, end, thrownTalent.factor);
+  }
   ctx.effects.push({
     type: 'shattered', hero: hero.id, depth: ctx.depth, pos: end, kind, identified: shows && itemDef(kind).category === 'potion' ? learn(ctx.world, kind) : false,
   });
@@ -904,6 +944,7 @@ function pickUp(ctx: Ctx, hero: Hero): void {
       else left.push(item);
     } else if (collect(hero, item)) {
       ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
+      onItemCollected(ctx, hero, item);
       if (item.kind === 'seed.rotberry') rotberryRoar(ctx, hero);
       if (item.kind === 'quest.amulet') {
         // Amulet.doPickUp: the journey's goal. Its bearer may end the run here («Let's call it a day»)
@@ -981,7 +1022,7 @@ export type MeatOutcome = 'hot' | 'legs' | 'unwell' | 'stuffed' | 'invisible' | 
  * mage recharged as they ate, which Shattered leaves to the talents). Mystery meat (MysteryMeat) has a
  * four in five chance of disagreeing with the eater.
  */
-function eat(ctx: Ctx, hero: Hero, index: number): void {
+function eat(ctx: Ctx, hero: Hero, index: number, time: number): void {
   const item = hero.items[index]!;
   const kind = item.kind;
   const fruit = item.potion;
@@ -1011,7 +1052,26 @@ function eat(ctx: Ctx, hero: Hero, index: number): void {
       ctx.effects.push({ type: 'healed', hero: hero.id, amount });
     }
   }
+  // SupplyRation.satisfy: five health, and a charge for the cloak; Berry.satisfy: every second berry grows a seed.
+  if (kind === 'food.supply') {
+    const amount = Math.min(5, hero.ht - hero.hp);
+    hero.hp += amount;
+    ctx.effects.push({ type: 'healed', hero: hero.id, amount: 5 });
+    const cloak = [...heroArtifacts(hero), ...hero.items].find((it) => it.kind === 'artifact.cloak');
+    if (cloak) directChargeCloak(cloak, 1);
+  }
+  if (kind === 'food.berry') {
+    const b = tbOf(hero);
+    b.berrySeeds = (b.berrySeeds ?? 0) + 1;
+    if (b.berrySeeds >= 2) {
+      delete b.berrySeeds;
+      dropItem(ctx.floor, hero.pos, new ItemGenerator(ctx.rng, ctx.depth).of('seed'));
+    }
+  }
   ctx.effects.push({ type: 'ate', hero: hero.id, kind, outcome });
+  ctx.effects.push({ type: 'spell', hero: hero.id, sprite: 'food' });
+  // Food.execute: Talent.onFoodEaten (the hero is busy for `time` yet: iron stomach lasts as long).
+  onFoodEaten(ctx, hero, itemDef(kind).energy!, item, time);
   // Blandfruit.execute: a cooked blandfruit works as the potion it was cooked into, unknown.
   if (fruit) drinkPotion(ctx, hero, fruit);
 }
@@ -1129,13 +1189,21 @@ function use(ctx: Ctx, hero: Hero, action: Extract<InventoryAction, { type: 'use
   }
   if (category === 'spell') {
     const { time, used } = castSpell(ctx, hero, kind, { on, cell: action.cell, choice: action.choice });
-    if (used) takeOne();
+    if (used) {
+      takeOne();
+      // Spell.onCast: Talent.onScrollUsed, in proportion to how many one brew makes.
+      const spellTalent = talentUse(kind);
+      if (ctx.rng.float() < spellTalent.chance) onScrollUsed(ctx, hero, spellTalent.factor);
+    }
     return time;
   }
   if (category === 'scroll') {
     const target = scrollTarget(world, hero, kind, action);
     takeOne();
     ctx.effects.push({ type: 'used', hero: hero.id, kind, identified: learn(world, kind) });
+    // Scroll.readAnimation: Talent.onScrollUsed.
+    const scrollTalent = talentUse(kind);
+    if (ctx.rng.float() < scrollTalent.chance) onScrollUsed(ctx, hero, scrollTalent.factor);
     readScroll(ctx, hero, kind, target, { cell: action.cell, choice: action.choice });
     return TIME_TO_USE;
   }
@@ -1144,6 +1212,9 @@ function use(ctx: Ctx, hero: Hero, action: Extract<InventoryAction, { type: 'use
   const identified = category === 'potion' ? learn(world, kind) : false;
   ctx.effects.push({ type: 'used', hero: hero.id, kind, identified });
   drinkPotion(ctx, hero, kind, { on, cell: action.cell, choice: action.choice });
+  // Potion.drink: Talent.onPotionUsed.
+  const potionTalent = talentUse(kind);
+  if (ctx.rng.float() < potionTalent.chance) onPotionUsed(ctx, hero, hero.pos, potionTalent.factor);
   return TIME_TO_USE;
 }
 

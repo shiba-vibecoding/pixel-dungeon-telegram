@@ -1,3 +1,4 @@
+import { pointsInTalent } from './talents/data';
 import { isMagicImmune } from './buffs';
 import { type Hero, heroRings } from './actors';
 import { underChallenges } from './challenges';
@@ -22,8 +23,8 @@ import type { Rng } from './rng';
 export const soloBonus = (ring: Item): number => (ring.cursed ? Math.min(0, ring.level - 2) : ring.level + 1);
 
 /** Seam (talents stream): EnhancedRings, a level more on every ring's buffed bonus for a while. */
-export function enhancedRings(_hero: Hero): boolean {
-  return false;
+export function enhancedRings(hero: Hero): boolean {
+  return (hero.tal?.enhancedRings ?? -1) >= 0;
 }
 
 /** MagicImmune (alchemy's potion of magic immunity; the talents and abilities streams' too): no ring works under it. */
@@ -80,7 +81,11 @@ export const enchantPowerMultiplier = (hero: Hero): number => f32(f32(1.175) ** 
 export const sharpshootingBonus = (hero: Hero): number => ringBuffedBonus(hero, 'ring.sharpshooting');
 
 /** RingOfSharpshooting.durabilityMultiplier: how much longer thrown weapons last (the gear stream's to apply). */
-export const sharpshootingDurability = (hero: Hero): number => f32(1.2 ** ringBonus(hero, 'ring.sharpshooting'));
+export const sharpshootingDurability = (hero: Hero): number => {
+  // MissileWeapon.durabilityPerUse: durable projectiles (+50%/75%) and the ring of sharpshooting's multiplier.
+  const durable = pointsInTalent(hero, 'durable_projectiles');
+  return f32(f32(durable > 0 ? f32(1.25 + 0.25 * durable) : 1) * f32(1.2 ** ringBonus(hero, 'ring.sharpshooting')));
+};
 
 /** RingOfTenacity.damageMultiplier: less harm the more of the wearer's health is gone. */
 export const tenacityMultiplier = (hero: Hero): number =>

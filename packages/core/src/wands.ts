@@ -6,7 +6,12 @@ import {
 } from './ballistica';
 import { hurt, lootAndExp } from './combat';
 import { charAt, type Char, type Ctx, enterCell, exploredCells, heroView, isHero, isWater, leaveCell } from './floor';
-import { identify, isIdentified, WAND_USES_TO_ID } from './ident';
+import { identify, idSpeedFactor, isIdentified, WAND_USES_TO_ID } from './ident';
+import { isMagicImmune } from './buffs';
+import { pointsInTalent } from './talents/data';
+import {
+  afterWandSpent, backupBarrier, beforeWandSpent, empowerBoost, onWandProc, scrollEmpowerUsed, shieldBattery, wandLevelBonus, wandProcMultiplier,
+} from './talents/magic';
 import { type Item, type ItemKind, itemDef, wandMaxCharges } from './items';
 import { discoverable } from './level/flags';
 import { adjacent, cellX, cellY, distance, LENGTH, NEIGHBOURS8, NEIGHBOURS9 } from './level/geometry';
@@ -84,7 +89,8 @@ const baseLevel = (wand: Item, staff: Item | null): number => (staff ? effective
  * and no less than a magic missile's charge while it lasts.
  */
 export function buffedLevel(hero: Hero, wand: Item, staff: Item | null = null): number {
-  const level = Math.max(0, baseLevel(wand, staff));
+  // A scroll's empowerment, and desperate power on the last charge (Wand.buffedLvl).
+  const level = Math.max(0, baseLevel(wand, staff)) + wandLevelBonus(hero, wand);
   const charge = hero.magicCharge;
   return charge && charge.level > level ? charge.level : level;
 }
@@ -156,7 +162,8 @@ export function wandDamage(kind: ItemKind, level: number, charges = 1): readonly
 /** DamageWand.damageRoll. */
 function damageRoll(z: Zap, level = z.level): number {
   const [min, max] = wandDamage(z.wand.kind, level, chargesPerCast(z.wand, z.cursed))!;
-  return heroDamageIntRange(z.ctx, min, max);
+  // DamageWand.damageRoll: empowering meal's bonus damage for a few zaps.
+  return heroDamageIntRange(z.ctx, min, max) + empowerBoost(z.ctx, z.hero);
 }
 
 /** Damage from a wand, as the target resists it (Char.resist: the fiery the fireblast, the icy the frost, ...). */
@@ -173,6 +180,8 @@ function strike(z: Zap, victim: Char, damage: number): void {
  */
 export function wandProc(ctx: Ctx, hero: Hero, target: Char, level: number, chargesUsed: number): void {
   if (target === hero || isHero(target)) return;
+  // Wand.wandProc: arcane vision.
+  onWandProc(hero, target);
   if (hero.subclass === 'warlock' && ctx.rng.float() > f32(f32(powi(0.92, level * chargesUsed + 1)) - 0.07)) {
     target.soulMarked = Math.max(target.soulMarked ?? 0, SOUL_MARK_TURNS + level);
   }
@@ -219,6 +228,8 @@ export function zap(ctx: Ctx, hero: Hero, ref: ItemRef, target: number): number 
     ctx.effects.push({ type: 'wand', hero: hero.id, note: what, item: wand.kind });
   };
   if (target === hero.pos || bolt.collisionPos === hero.pos) {
+    // Shield battery: zapped at oneself, a wand's charges become a shield.
+    if (target === hero.pos && !isMagicImmune(hero) && shieldBattery(ctx, hero, wand)) return 1;
     note('selfTarget');
     return 0;
   }
@@ -231,6 +242,10 @@ export function zap(ctx: Ctx, hero: Hero, ref: ItemRef, target: number): number 
   if (wand.kind === 'wand.warding' && !cursed && !wardsAllow(ctx, hero, target)) {
     note('noMoreWards');
     return 0;
+  }
+  // Backup barrier: a shield as the last charge goes (before the zap, so it helps against skeletons).
+  if (!cursed) {
+    backupBarrier(ctx, hero, wand, staff !== null, charges, heldWands(hero).map((held) => held.wand));
   }
   const z: Zap = { ctx, hero, wand, staff, cursed, level: buffedLevel(hero, wand, staff) };
   const curseUnknown = staff ? staff.curseUnknown : wand.curseUnknown;
@@ -255,21 +270,29 @@ export function zap(ctx: Ctx, hero: Hero, ref: ItemRef, target: number): number 
 function wandUsed(z: Zap, charges: number): void {
   const { ctx, hero, wand, staff } = z;
   if (!isIdentified(ctx.world, wand)) {
-    const uses = Math.min(wand.availableUsesToID ?? WAND_USES_TO_ID / 2, 1);
+    const uses = Math.min(wand.availableUsesToID ?? WAND_USES_TO_ID / 2, idSpeedFactor(hero, wand));
     wand.availableUsesToID = f32((wand.availableUsesToID ?? WAND_USES_TO_ID / 2) - uses);
     wand.usesLeftToID = f32((wand.usesLeftToID ?? WAND_USES_TO_ID) - uses);
-    if (wand.usesLeftToID <= 0) {
+    // Scholar's intuition at +2 knows a wand at its first zap.
+    if (wand.usesLeftToID <= 0 || pointsInTalent(hero, 'scholars_intuition') === 2) {
       identify(ctx.world, wand);
       ctx.effects.push({ type: 'familiar', hero: hero.id, item: wand, learned: false });
     }
   }
+  beforeWandSpent(ctx, hero, wand, staff !== null, z.level, maxCharges(wand, staff));
   wand.charges = (wand.charges ?? 0) - (z.cursed ? 1 : charges);
   const charge = hero.magicCharge;
   if (charge) {
     const own = Math.max(0, baseLevel(wand, staff));
     if (!charge.fresh && charge.level === z.level && z.level > own) delete hero.magicCharge;
-    else delete charge.fresh;
+    else {
+      delete charge.fresh;
+      scrollEmpowerUsed(hero);
+    }
+  } else {
+    scrollEmpowerUsed(hero);
   }
+  afterWandSpent(hero, staff !== null);
   // Invisibility.dispel: the cloak's stealth and the hourglass's frozen time end too.
   dispelInvisibility(ctx, hero);
   wear(ctx, hero, staff ?? wand);
@@ -959,11 +982,12 @@ export function staffBlow(ctx: Ctx, hero: Hero, staff: Item, defender: Char, dam
   const wand = staff.wand;
   if (!wand || hero.subclass !== 'battlemage') return undefined;
   if ((wand.charges ?? 0) < maxCharges(wand, staff)) wand.partial = (wand.partial ?? 0) + 0.5;
-  return onHit(ctx, hero, staff, wand, defender, damage);
+  const after = onHit(ctx, hero, staff, wand, defender, damage);
+  return after;
 }
 
 /** Wand.procChanceMultiplier (seam for the talents stream: empowered strike raises it). */
-const procChanceMultiplier = (_hero: Hero): number => 1;
+const procChanceMultiplier = (hero: Hero): number => wandProcMultiplier(hero);
 
 /** Wand.onHit of each kind; what must wait until the blow has landed comes back, to be done then. */
 function onHit(ctx: Ctx, hero: Hero, staff: Item, wand: Item, defender: Char, damage: number): (() => void) | undefined {
@@ -1171,7 +1195,8 @@ export function wandsGainExp(hero: Hero, share: number): void {
   for (const { wand } of heldWands(hero)) {
     if (!wand.levelUnknown && !wand.curseUnknown && !wand.chargesUnknown) continue;
     const available = wand.availableUsesToID ?? WAND_USES_TO_ID / 2;
-    if (available <= WAND_USES_TO_ID / 2) wand.availableUsesToID = Math.min(WAND_USES_TO_ID / 2, f32(available + f32(f32(share * WAND_USES_TO_ID) / 2)));
+    const gain = f32(share * idSpeedFactor(hero, wand));
+    if (available <= WAND_USES_TO_ID / 2) wand.availableUsesToID = Math.min(WAND_USES_TO_ID / 2, f32(available + f32(f32(gain * WAND_USES_TO_ID) / 2)));
   }
 }
 

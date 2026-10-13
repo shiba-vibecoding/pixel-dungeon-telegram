@@ -5,6 +5,7 @@ import { type Char, type Ctx, isHero, isWater } from './floor';
 import { F, hasFlag } from './level/terrain';
 import { isImmune, resistance } from './props';
 import { mobPress } from './traps';
+import { onShieldBroken } from './talents/combat';
 
 /*
  * The conditions Shattered's wands put creatures under (actors/buffs): Chill
@@ -110,7 +111,10 @@ export function damageTaken(ctx: Ctx, victim: Char, damage: number, by: Char | n
     const absorbed = Math.min(victim.shield!, damage);
     victim.shield! -= absorbed;
     damage -= absorbed;
-    if (victim.shield! <= 0) delete victim.shield;
+    if (victim.shield! <= 0) {
+      delete victim.shield;
+      if (isHero(victim)) onShieldBroken(victim);
+    }
   }
   return damage;
 }

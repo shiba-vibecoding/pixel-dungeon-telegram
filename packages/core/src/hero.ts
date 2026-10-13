@@ -2,12 +2,16 @@ import { type Hero, heroRings, isAlive, type Mob, type MobKind } from './actors'
 import { mightHTMultiplier } from './rings';
 import { hungerPaused, mightOnLevelUp } from './buffs';
 import { SALT_CUBE, trinketLevel } from './trinkets';
-import { hurt } from './combat';
+import { hurt, killHero } from './combat';
+import { talentTurn } from './talents/turns';
+import { berserkRecover } from './talents/berserk';
+import { pointsInTalent } from './talents/data';
 import { type Ctx, exploredCells, heroView } from './floor';
 import { heroGainsExp } from './ident';
 import { wandsGainExp } from './wands';
 import { isBossDepth } from './level/builder';
 import { cellX, cellY, HEIGHT, WIDTH } from './level/geometry';
+import { circleCells } from './fov';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { sealShieldTick } from './seal';
 import type { World } from './world';
@@ -71,6 +75,12 @@ export function earnExp(ctx: Ctx, hero: Hero, exp: number, source?: 'potion'): v
   ctx.effects.push({ type: 'exp', hero: hero.id, amount: exp });
   // Hero.earnExp: the artifacts that charge with experience get their share of a level (a potion's too).
   artifactsGainExp(ctx, hero, percent);
+  berserkRecover(hero, percent);
+  // Hero.earnExp: rejuvenating steps' furrow count runs down with experience (not a potion's).
+  if (source !== 'potion' && hero.tal?.furrow !== undefined) {
+    hero.tal.furrow -= percent * 200;
+    if (hero.tal.furrow <= 0) delete hero.tal.furrow;
+  }
   // Hero.earnExp: a potion of experience teaches the items nothing.
   if (source !== 'potion') {
     heroGainsExp(ctx, hero, percent);
@@ -80,6 +90,8 @@ export function earnExp(ctx: Ctx, hero: Hero, exp: number, source?: 'potion'): v
   let levelUp = false;
   while (hero.exp >= maxExpFor(hero.lvl)) {
     hero.exp -= maxExpFor(hero.lvl);
+    // Wand preservation at +2: a level gained renews it.
+    if (pointsInTalent(hero, 'wand_preservation') === 2) delete hero.tal?.preserved;
     if (hero.lvl < MAX_LEVEL) {
       hero.lvl++;
       levelUp = true;
@@ -253,6 +265,8 @@ export function heroTurns(ctx: Ctx, hero: Hero, from: number, to: number): numbe
     lockedFloorTurn(ctx, hero);
     hungerTurn(ctx, hero);
     sealShieldTick(ctx, hero);
+    // The talents' and subclasses' buffs (Berserk, Combo, Momentum, Preparation, protective shadows).
+    if (talentTurn(ctx, hero) && isAlive(hero) === false) killHero(ctx, hero, 'berserk');
     // The artifacts' buffs (Artifact.ArtifactBuff), on the hero's own depth; the time a cursed hourglass steals.
     if (hero.depth === ctx.depth) lost += artifactsAct(ctx, hero);
     // timeStasis.detach: back in time.
@@ -279,7 +293,11 @@ const HUNGER_FOR_SEARCH = 6;
 export function search(ctx: Ctx, hero: Hero, intentional: boolean): boolean {
   if (!isAlive(hero)) return false;
   // Pixel Dungeon's ring of detection, while it is still found, widens it.
-  const distance = hero.heroClass === 'rogue' ? 2 : 1;
+  // Wide search: a cell further, and at +1 in a circle.
+  const wide = pointsInTalent(hero, 'wide_search');
+  const distance = (hero.heroClass === 'rogue' ? 2 : 1) + (wide > 0 ? 1 : 0);
+  const circular = wide === 1;
+  const round = circular ? new Set(circleCells(hero.pos, distance)) : null;
   const fov = heroView(ctx.world, hero);
   const cx = cellX(hero.pos);
   const cy = cellY(hero.pos);
@@ -287,7 +305,7 @@ export function search(ctx: Ctx, hero: Hero, intentional: boolean): boolean {
   for (let y = Math.max(cy - distance, 0); y <= Math.min(cy + distance, HEIGHT - 1); y++) {
     for (let x = Math.max(cx - distance, 0); x <= Math.min(cx + distance, WIDTH - 1); x++) {
       const p = x + y * WIDTH;
-      if (!fov[p] || p === hero.pos) continue;
+      if (!fov[p] || p === hero.pos || (round && !round.has(p))) continue;
       if (hasFlag(ctx.level.map[p]!, F.SECRET)) {
         // A cursed talisman worn lets nothing be noticed in passing.
         const chance = intentional ? 1 : talismanBlinds(hero) ? 0 : ctx.level.map[p] === T.SECRET_DOOR ? 0.2 - hero.depth / 100 : 0.4 - hero.depth / 250;

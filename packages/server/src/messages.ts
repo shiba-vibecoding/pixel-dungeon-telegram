@@ -1,6 +1,6 @@
 import {
   type Action, ARTIFACT_USES, type EffectId, MISC_SLOTS, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
-  type SubClass,
+  type SubClass, COMBO_MOVES, TALENTS, type TalentId,
 } from '@pd/core';
 
 /*
@@ -15,7 +15,7 @@ import {
 /** A backpack slot or a worn ring's index: small and whole. */
 const MAX_SLOT = 255;
 /** An item's choice (an enchantment, a guess, a recipe...): small and whole. */
-const MAX_CHOICE = 63;
+const MAX_CHOICE = 255;
 /** The largest choice an artifact's window offers (the toolkit's levels at most). */
 const MAX_ARTIFACT_CHOICE = 10;
 /** Monster ids are short ('#12'); anything longer is not one. */
@@ -130,7 +130,7 @@ export function sanitizeAction(raw: unknown): Action | null {
         use.cell = at;
       }
       if (a.choice !== undefined) {
-        if (!isInt(a.choice, 0, MAX_CHOICE)) return null;
+        if (!isInt(a.choice, 0, MAX_USE_CHOICE)) return null;
         use.choice = a.choice;
       }
       return use;
@@ -186,6 +186,29 @@ export function sanitizeAction(raw: unknown): Action | null {
     case 'dismiss':
       // Ward.interact: the ward beside the hero dismissed.
       return typeof a.target === 'string' && a.target.length > 0 && a.target.length <= MAX_ID ? { type: 'dismiss', target: a.target } : null;
+    case 'talent': {
+      // Hero.upgradeTalent: a point in one of the talents (the rules say whether the hero has it and a point to spend).
+      const talent = typeof a.talent === 'string' && a.talent in TALENTS ? (a.talent as TalentId) : null;
+      return talent ? { type: 'talent', talent } : null;
+    }
+    case 'ability': {
+      // The subclasses' action indicator: the berserker's rage, the freerunner's run, the sniper's mark, a combo move, a prepared strike.
+      const target = typeof a.target === 'string' && a.target.length > 0 && a.target.length <= MAX_ID ? a.target : null;
+      switch (a.ability) {
+        case 'berserk':
+        case 'freerun':
+        case 'snipe':
+          return { type: 'ability', ability: a.ability };
+        case 'combo': {
+          const move = oneOf(a.move, COMBO_MOVES);
+          return move ? (target ? { type: 'ability', ability: 'combo', move, target } : { type: 'ability', ability: 'combo', move }) : null;
+        }
+        case 'ambush':
+          return target ? { type: 'ability', ability: 'ambush', target } : null;
+        default:
+          return null;
+      }
+    }
     case 'unequip':
       return { type: 'unequip' };
     case 'remove': {

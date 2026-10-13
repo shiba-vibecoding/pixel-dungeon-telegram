@@ -86,3 +86,17 @@ export { chargeLimit } from './regrowth';
 export type { CursedEffect } from './cursed';
 export { friendly } from './allies';
 export { type Property, propertiesOf } from './props';
+// Shattered's talents and subclasses (talents/).
+export {
+  bonusTalentPoints, CLASS_OF_TALENT, CLASS_TALENTS, hasTalent, pointsInTalent, SUBCLASS_TALENTS, TALENT_TIERS, TALENTS, talentBook,
+  type TalentBook, type TalentDef, type TalentId, talentPointsAvailable, talentPointsFree, talentPointsSpent, talentsOfTier, tierOfTalent,
+  tierPoints, TIER_LEVELS, upgradeProblem,
+} from './talents/data';
+export { type TalentBuffs, type BerserkBuff, type ComboBuff, type MomentumBuff, tbOf } from './talents/state';
+export { COMBO_MOVES, COMBO_REQ, type ComboMove, canUseMove, comboOf, highestMove, canStrike } from './talents/combo';
+export { berserkOf, canBerserk, currentShieldBoost, maxPower, maxShieldBoost } from './talents/berserk';
+export { ambushRange, blinkDistance, freerunning, koThreshold, momentumOf, prepBonus, prepLevel, prepTurns } from './talents/rogue';
+export { bowOf, markedMob, MARK_TURNS } from './talents/huntress';
+export { holdFastDecay } from './talents/hold-fast';
+export { METAMORPH_OPTIONS, type MetamorphTarget, metamorphOptions, metamorphTargets } from './talents/metamorph';
+export { eatingTime, idSpeedFactor, talentUse } from './talents';

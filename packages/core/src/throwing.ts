@@ -14,6 +14,8 @@ import {
 import { burst, immuneTo } from './traps';
 import { CHILL_TURNS, ignite, timeScale } from './status';
 import { sharpshootingDurability } from './rings';
+import { pointsInTalent } from './talents/data';
+import { seerShot } from './talents/nature';
 import { gearLevel } from './weapons';
 import { isImmune } from './props';
 import { collect, pressUnderItem } from './inventory';
@@ -56,7 +58,10 @@ function drop(ctx: Ctx, pos: number, item: Item): void {
  * reaches its mark up to four cells away, over anything between.
  */
 export function throwPos(ctx: Ctx, hero: Hero, weapon: Item, target: number): number {
-  const projecting = weapon.enchant === 'projecting' ||
+  // Shared enchantment: a thrown weapon may borrow the spirit bow's projecting enchantment (one time in three a point).
+  const bow = hero.items.find((item) => itemDef(item.kind).category === 'bow');
+  const shared = itemDef(weapon.kind).category !== 'bow' && ctx.rng.int(3) < pointsInTalent(hero, 'shared_enchantment') && bow?.enchant === 'projecting';
+  const projecting = weapon.enchant === 'projecting' || shared ||
     (isDart(weapon.kind) && hero.weapon?.kind === 'weapon.crossbow' && hero.weapon.enchant === 'projecting');
   const terrain = ctx.level.map[target];
   if (projecting && terrain !== undefined && (hasFlag(terrain, F.PASSABLE) || hasFlag(terrain, F.AVOID) || charAt(ctx.world, ctx.depth, target)) &&
@@ -169,6 +174,8 @@ export function throwMissile(ctx: Ctx, hero: Hero, index: number, target: number
   }
   if (!victim) {
     parent = null;
+    // Metamorphosed seer shot: a thrown weapon landing on empty ground.
+    if (hero.heroClass !== 'huntress') seerShot(ctx, hero, end);
     // IncendiaryDart.onThrow: at nobody, it sets what can burn alight where it lands, and is spent.
     if (thrown.kind === 'missile.incendiaryDart' && hasFlag(ctx.level.map[end]!, F.FLAMABLE)) {
       burst(ctx, end, 'fire', 0);
@@ -221,10 +228,12 @@ export function shootBow(ctx: Ctx, hero: Hero, index: number, target: number): n
   const end = throwPos(ctx, hero, bow, target);
   ctx.effects.push({ type: 'missile', depth: ctx.depth, from: hero.pos, to: end, sprite: S.SPIRIT_ARROW });
   const there = charAt(ctx.world, ctx.depth, end);
+  // SpiritArrow.cast: seer shot, an arrow that flies on empty ground shows the area it landed in for a while.
+  if (!there) seerShot(ctx, hero, end);
   if (!there || there === hero || isHero(there)) return 1;
   parent = null;
   attack(ctx, hero, there, { weapon: bow });
-  // Seam: the sniper's special shots, nature's power and seer shot (classes, talents) change how arrows fly.
+  // (The sniper's special shot is the mark's own action: talents/huntress.ts; nature's power is the abilities stream's.)
   return heroAttackDelay(hero, bow);
 }
 
@@ -240,6 +249,11 @@ export function missileProc(ctx: Ctx, hero: Hero, mob: Mob, damage: number, thro
   const stack = parent ?? thrown;
   delete thrown.curseUnknown;
   delete stack.curseUnknown;
+  // Survivalist's intuition at +2: the first hit knows a thrown weapon.
+  if (pointsInTalent(hero, 'survivalists_intuition') === 2) {
+    stack.usesLeftToID = Math.min(stack.usesLeftToID ?? 10, 0);
+    stack.availableUsesToID = 0;
+  }
   const last = !parent && durabilityLeft(thrown) <= durabilityPerUse(thrown, gearLevel(thrown), sharpshootingDurability(hero));
   if (!last) {
     familiarise(ctx, hero, stack);

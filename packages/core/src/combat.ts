@@ -16,7 +16,7 @@ import { guardianArmor, wardArmor } from './allies';
 import { isChallenged, NO_ARMOR } from './challenges';
 import { adjacent, NEIGHBOURS4, NEIGHBOURS8 } from './level/geometry';
 import {
-  armorProc, type Blow, corruptSlain, deferDamage, gearSoaks, luckyDrop, procMultiplier, TERROR_TURNS, weaponProc,
+  armorProc, type Blow, corruptSlain, deferDamage, gearSoaks, isEnemy, luckyDrop, procMultiplier, TERROR_TURNS, weaponProc,
 } from './enchant';
 import { missileProc } from './throwing';
 import { earthrootAbsorbs } from './plants';
@@ -31,7 +31,16 @@ import { isBossDepth } from './level/builder';
 import { arenaKill } from './arena';
 import { challengeFactor, chillChar, igniteChar, isMagicImmune, onHurt } from './buffs';
 import { elementsResist, tenacityMultiplier, wealthBonusDrops, wealthDropMultiplier } from './rings';
-import { bossSlainBeacon, capeTakes, dispelInvisibility, ghostDied, ghostSeesHero } from './artifacts';
+import { bossSlainBeacon, capeTakes, chargeArtifacts, dispelInvisibility, ghostDied, ghostSeesHero } from './artifacts';
+import { onAttackProc, onDefenseProc, ironStomachFactor, onMobKilled, bountyBonus } from './talents/combat';
+import { berserkAbsorbs, berserkDamageFactor, deathlessEnded, deathlessFury } from './talents/berserk';
+import { comboHit, parries, riposte } from './talents/combo';
+import { canKO, prepLevel, prepTurns, preparedDamage, prepBonus } from './talents/rogue';
+import { markTarget, specialDamage } from './talents/huntress';
+import { onSoulMarkedDied, soulMarkRestoration } from './talents/warlock';
+import { pointsInTalent } from './talents/data';
+import { staffProc, staffProcDone } from './talents/magic';
+import { tbOf } from './talents/state';
 
 /*
  * Melee combat as in Char.attack: an accuracy roll against an evasion roll,
@@ -82,13 +91,20 @@ export interface AttackOverride {
    * bow for its arrow. Its numbers, its enchantment and its own effect make the shot.
    */
   weapon?: Item;
+  /** Char.attack's accuracy of INFINITE_ACCURACY (a combo move, a sniper shot): the blow cannot miss (but may be dodged for sure). */
+  sure?: boolean;
+  /** Char.attack's dmgMulti and dmgBonus (a combo move's). */
+  damageMultiplier?: number;
+  damageBonus?: number;
+  /** A combo move's own blow: it does not build the combo (Combo.doAttack calls Char.attack, not Hero.onAttackComplete). */
+  move?: boolean;
 }
 
 /**
  * Hero.canSurpriseAttack: not with a weapon too heavy for them, nor with a flail. A surprised monster (Mob.surprisedBy:
  * the hero unseen by it, or invisible) cannot dodge, and some weapons hit it harder.
  */
-function surprises(hero: Hero, mob: Mob, weapon: Item | null): boolean {
+export function surprises(hero: Hero, mob: Mob, weapon: Item | null): boolean {
   if (weapon && (weapon.kind === 'weapon.flail' || heroStr(hero) < strikeStr(hero, weapon))) return false;
   return hero.invisible > 0 || !mob.enemySeen;
 }
@@ -109,30 +125,47 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   const struck = { ...(strike ? { weapon: strike.kind } : {}), ...(surprised ? { surprise: true } : {}) };
   // Char.hit: an invisible hero who can surprise never misses.
   const sure = isHero(attacker) && attacker.invisible > 0 && (isHero(defender) || surprised);
+  // Preparation: the assassin's strike is as strong as the turns spent unseen (read before striking gives them away).
+  const turnsUnseen = isHero(attacker) ? prepTurns(attacker) : undefined;
+  const prep = turnsUnseen !== undefined ? prepLevel(turnsUnseen) : undefined;
   // Striking gives an invisible hero away (Invisibility.dispel: the cloak's stealth and a time freeze too), but not
   // before it has its surprise.
   if (isHero(attacker)) dispelInvisibility(ctx, attacker);
   const skill = override.attack ?? attackSkill(attacker, defender, strike);
   // Char.hit: a hex makes the roll a fifth worse, a blessing a quarter better.
-  const hit = sure || ctx.rng.floatMax(skill) * rollFactor(attacker) >= ctx.rng.floatMax(defenseSkill(defender)) * rollFactor(defender);
+  // Hero.defenseSkill with a parry: infinite evasion, and the blow is answered.
+  const parried = isHero(defender) && !isHero(attacker) && parries(ctx, defender);
+  const hit = parried ? false
+    : sure || override.sure || ctx.rng.floatMax(skill) * rollFactor(attacker) >= ctx.rng.floatMax(defenseSkill(defender)) * rollFactor(defender);
   if (!hit) {
     ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0, ...struck });
+    if (parried) riposte(ctx, defender as Hero, attacker as Mob);
     return false;
   }
   // A sniper's thrown weapons find the weak points in any armour, from afar.
   const sniping = isHero(attacker) && attacker.subclass === 'sniper' && thrown && !adjacent(attacker.pos, defender.pos);
   const reduction = sniping ? 0 : drRoll(ctx, defender);
   let damage = isHero(attacker) && override.damage === undefined
-    ? heroDamageRoll(attacker, ctx.rng, surprised, strike)
+    ? prep !== undefined ? preparedDamage(attacker, ctx.rng, prep, strike, surprised) : heroDamageRoll(attacker, ctx.rng, surprised, strike)
     : damageRoll(ctx, attacker, override.damage);
+  if (override.damageMultiplier !== undefined || override.damageBonus !== undefined) {
+    damage = Math.round(damage * (override.damageMultiplier ?? 1) + (override.damageBonus ?? 0));
+  }
+  if (isHero(attacker)) {
+    // Berserk.damageFactor (rage), and the bow's special shot (SpiritBow.damageRoll with sniperSpecial).
+    damage = Math.round(berserkDamageFactor(attacker, damage));
+    if (strike && itemDef(strike.kind).category === 'bow') damage = specialDamage(attacker, damage);
+    if (prep !== undefined && pointsInTalent(attacker, 'bounty_hunter') > 0) Object.assign(tbOf(attacker), { bounty: true, prepLevel: prep });
+  }
   // Weakness (the wand of corruption's): a weakened monster strikes two thirds as hard.
   if (!isHero(attacker) && (attacker.weakened ?? 0) > 0) damage = Math.round(damage * 0.67);
   // Hero.defenseProc: earthen armour takes half the blow, before the armour worn.
   if (isHero(defender)) damage = rockArmorAbsorbs(defender, damage);
   // Mob.defenseProc: a soul-marked monster struck by a hero gives some of it back as health.
-  if (isHero(attacker) && !isHero(defender) && (defender.soulMarked ?? 0) > 0) soulSiphon(ctx, attacker, defender, damage);
-  if (isHero(attacker) && !isHero(defender)) damage = masteredBlow(ctx, attacker, defender, damage, thrown);
+  if (!isHero(defender) && (defender.soulMarked ?? 0) > 0) soulSiphon(ctx, attacker, defender, damage);
   const blow: Blow = {};
+  // Hero.defenseProc: the berserker's rage builds on the blow, armour or no armour.
+  if (isHero(defender) && !isHero(attacker)) onDefenseProc(defender, damage);
   // Hero.defenseProc: an inscribed armour's answer, before the armour soaks the blow.
   if (isHero(defender) && !isHero(attacker)) {
     const mark = ctx.effects.length;
@@ -210,8 +243,15 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   // Hero.attackProc: a thrown weapon's own effect, then the weapon's enchantment (Weapon.proc).
   let staffAfter: (() => void) | undefined;
   if (isHero(attacker) && !isHero(defender)) {
+    // Hero.attackProc: Talent.onAttackProc first (provoked anger, lingering magic, sucker punch, follow-up strike).
+    damage = onAttackProc(ctx, attacker, defender, damage, strike, thrown);
     // MagesStaff.proc: a battlemage's staff does what its wand does on a hit, before its enchantment.
-    if (!thrown && attacker.weapon?.kind === 'weapon.magesStaff') staffAfter = staffBlow(ctx, attacker, attacker.weapon, defender, damage);
+    if (!thrown && attacker.weapon?.kind === 'weapon.magesStaff') {
+      // MagesStaff.proc: mystical charge feeds the artifacts, empowered strike hits harder (and makes the wand's effect likelier).
+      damage = staffProc(attacker, damage, (amount) => chargeArtifacts(ctx, attacker, amount));
+      staffAfter = staffBlow(ctx, attacker, attacker.weapon, defender, damage);
+      staffProcDone(attacker);
+    }
     if (thrown) damage = missileProc(ctx, attacker, defender, damage, override.weapon!);
     // (No enchantment works while magic will not: MagicImmune.)
     if (damage >= 0 && isAlive(defender) && !isMagicImmune(attacker)) damage = weaponProc(ctx, attacker, defender, damage, strike, blow);
@@ -252,15 +292,35 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     return true;
   }
   const before = defender.hp;
+  const wasEnemy = isHero(attacker) && !isHero(defender) && isEnemy(defender);
   ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage, ...struck });
   hurt(ctx, defender, damage, attacker);
   staffAfter?.();
-  if (isHero(attacker) && !isHero(defender)) afterBlow(ctx, attacker, defender, damage, before, blow);
+  if (isHero(attacker) && !isHero(defender)) {
+    afterBlow(ctx, attacker, defender, damage, before, blow);
+    afterHeroBlow(ctx, attacker, defender, wasEnemy, thrown, strike, prep, override.move === true);
+  }
   // Pickaxe.proc: a vampire bat slain with the pickaxe leaves its blood on it, as the blacksmith wants.
   if (isHero(attacker) && attacker.weapon?.kind === 'weapon.pickaxe' && !thrown && !isHero(defender) && defender.kind === 'bat' && !isAlive(defender)) {
     attacker.weapon.bloody = true;
   }
   return true;
+}
+
+/**
+ * What follows a hero's blow: the gladiator's combo builds (Hero.onAttackComplete and shoot), the sniper's thrown weapon
+ * marks its target (Hero.attackProc), a prepared strike executes what it left weak (Char.attack, Preparation.canKO).
+ */
+function afterHeroBlow(ctx: Ctx, hero: Hero, mob: Mob, wasEnemy: boolean, thrown: boolean, strike: Item | null, prep: number | undefined, isMove: boolean): void {
+  if (!isMove && wasEnemy && hero.subclass === 'gladiator') comboHit(ctx, hero, mob);
+  if (thrown && strike && itemDef(strike.kind).category === 'missile') markTarget(hero, mob, strike);
+  if (prep !== undefined && isAlive(mob) && !mob.ally && canKO(hero, prep, mob)) {
+    // enemy.HP = 0: whatever shield there was does not help.
+    delete mob.shield;
+    ctx.effects.push({ type: 'assassinated', depth: ctx.depth, mob: mob.id });
+    ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage: mob.hp });
+    hurt(ctx, mob, mob.hp, hero);
+  }
 }
 
 /**
@@ -297,39 +357,16 @@ export function shopkeeperFlees(ctx: Ctx, keeper: Mob): void {
 }
 
 /**
- * Mob.defenseProc under a soul mark (a warlock's): the hero's blow gives back four tenths of what it
- * takes (as much as the monster has to lose) as health.
+ * Mob.defenseProc under a soul mark (a warlock's): the hero's blow gives back four tenths of what it takes (as much as the
+ * monster has to lose) as health, and feeds the hero (soul eater); an ally's blow only with soul siphon, less of it.
  */
-function soulSiphon(ctx: Ctx, hero: Hero, mob: Mob, damage: number): void {
-  const restoration = Math.min(damage, mob.hp + (mob.shield ?? 0));
-  if (restoration <= 0 || hero.hp >= hero.ht) return;
-  const heal = Math.min(hero.ht - hero.hp, Math.ceil(restoration * 0.4));
-  hero.hp += heal;
-  ctx.effects.push({ type: 'healed', hero: hero.id, amount: heal });
-}
-
-/**
- * Hero.attackProc and Mob.defenseProc for a mastered hero: the gladiator's
- * combo, the assassin's surprise attacks (the battlemage's staff: wands.ts staffBlow).
- */
-function masteredBlow(ctx: Ctx, hero: Hero, mob: Mob, damage: number, thrown: boolean): number {
-  switch (hero.subclass) {
-    case 'gladiator': {
-      if (thrown) return damage;
-      // Combo: hit after hit without a break, the third and every later one harder.
-      hero.combo = hero.time <= hero.comboUntil ? hero.combo + 1 : 1;
-      // Combo.hit: the next blow must come within this long (a normal blow takes a turn).
-      hero.comboUntil = hero.time + (hero.combo >= 3 ? 1.41 - hero.combo / 10 : 1.1);
-      if (hero.combo < 3) return damage;
-      ctx.effects.push({ type: 'combo', hero: hero.id, count: hero.combo });
-      return damage + Math.trunc((damage * (hero.combo - 2)) / 5);
-    }
-    case 'assassin':
-      // A blow out of nowhere hurts all the more.
-      return mob.enemySeen ? damage : damage + ctx.rng.intBetween(1, Math.max(2, damage));
-    default:
-      return damage;
-  }
+function soulSiphon(ctx: Ctx, attacker: Char, mob: Mob, damage: number): void {
+  const hero = ctx.world.heroes.find((h) => h.depth === ctx.depth && isAlive(h));
+  if (!hero) return;
+  let restoration = Math.min(damage, mob.hp + (mob.shield ?? 0));
+  // Physical damage that does not come from the hero is less effective.
+  if (!isHero(attacker)) restoration = Math.round(restoration * 0.4 * pointsInTalent(hero, 'soul_siphon') / 3);
+  soulMarkRestoration(ctx, hero, restoration);
 }
 
 /**
@@ -399,7 +436,7 @@ function split(ctx: Ctx, swarm: Mob, damage: number): void {
 /** What hurts without being a character. */
 export type Hazard =
   | 'poison' | 'burning' | 'ooze' | 'lightning' | 'gripping' | 'hunger' | 'bones' | 'gas' | 'fall' | 'deferred' | 'bleeding' | 'dry'
-  | 'multiplicity' | 'bomb' | 'chill' | 'magic' | 'holy' | 'chalice' | 'noRose'
+  | 'berserk' | 'multiplicity' | 'bomb' | 'chill' | 'magic' | 'holy' | 'chalice' | 'noRose'
   /** Shattered's wands: a wand's own harm to the hero, corrosion, corruption wasting an ally away, a knock against a wall. */
   | 'wand' | 'corrosion' | 'corruption' | 'knockback'
   /** Alchemy's: electricity, an aqua brew's geyser, the psionic blast, the special bombs. */
@@ -438,11 +475,14 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   // Hero.damage: the cape of thorns takes its share of whatever hurts the hero; rings of tenacity ease the rest,
   // the more the hero is hurt (RingOfTenacity.damageMultiplier, rounded up).
   if (isHero(victim) && damage > 0) damage = capeTakes(ctx, victim, damage, typeof source === 'string' ? null : source);
+  if (isHero(victim) && damage > 0) damage = Math.round(ironStomachFactor(ctx, victim, damage));
   if (isHero(victim) && damage > 0) damage = Math.ceil(damage * tenacityMultiplier(victim));
   // Char.damage: invulnerability, frost, charm, doom and shields (status.ts).
   damage = damageTaken(ctx, victim, damage, by);
   // Char.damage: the warrior's seal may raise its shield, and shields take what they can (not hunger's).
   if (isHero(victim)) damage = shieldDamage(ctx, victim, damage, source === 'hunger');
+  // Berserk's shield is the last to give way (shieldUsePriority -1).
+  if (isHero(victim)) damage = berserkAbsorbs(victim, damage);
   onHurt(victim);
   if (!isHero(victim) && victim.kind === 'yog') {
     // Yog.damage: each living fist halves the harm, and they all come to defend it.
@@ -454,6 +494,11 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
     }
   }
   victim.hp -= damage;
+  if (isHero(victim)) {
+    // Berserk.berserking at zero health: deathless fury keeps the hero up on a single point; the shield spent, they fall.
+    if (victim.hp <= 0 && deathlessFury(ctx, victim)) victim.hp = 1;
+    else if (isAlive(victim) && deathlessEnded(victim)) victim.hp = 0;
+  }
   // Goo.damage, Tengu.damage…: hurting a boss keeps a sealed floor's healing going (LockedFloor.addTime).
   if (!isHero(victim)) bossHurt(ctx, victim, damage);
   // Brute.damage: below a quarter of its health, the brute flies into a rage.
@@ -483,6 +528,9 @@ const ELEMENTAL_BURNING = 8;
 const CRAB_MEAT_CHANCE = 0.167;
 
 function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
+  const killer = by ? ctx.world.heroes.find((h) => h.id === by) : undefined;
+  // Mob.die: a kill by the hero may free the next act (lethal momentum).
+  if (killer) onMobKilled(ctx, killer, mob);
   mob.hp = 0;
   ctx.floor.mobs.splice(ctx.floor.mobs.indexOf(mob), 1);
   leaveCell(ctx.world, ctx.level, ctx.depth, mob.pos);
@@ -499,6 +547,8 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   }
   sacrifice(ctx, mob);
   arenaKill(ctx, mob);
+  // Mob.die: a soul-marked foe's death feeds the warlock (soul eater), and may raise a minion (necromancer's minions).
+  if ((mob.soulMarked ?? 0) > 0) onSoulMarkedDied(ctx, mob);
 
   // Mob.die: an ally (a ward, the guardian, a corrupted monster) leaves nothing and teaches nothing:
   // what a corrupted monster had to give, it gave when it was corrupted.
@@ -557,7 +607,7 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
     if (mob.kind === 'tengu' || mob.kind === 'dm300' || mob.kind === 'king') bossSlainBeacon(ctx);
     // Tengu.die: a Tome of Mastery, here one for every hero who has not mastered yet.
     if (mob.kind === 'tengu') {
-      for (const hero of ctx.world.heroes) if (!hero.subclass) dropItem(ctx.floor, mob.pos, createItem('tome.mastery'));
+      for (const hero of ctx.world.heroes) if (!hero.subclass) dropItem(ctx.floor, mob.pos, createItem('mask.tengu'));
     }
   }
 }
@@ -580,7 +630,9 @@ function dropRemains(ctx: Ctx, mob: Mob): void {
     const loot = lootOf(ctx, mob);
     // Mob.lootChance: rings of wealth make it likelier (RingOfWealth.dropChanceMultiplier).
     const wearer = heroes[0];
-    const item = ctx.rng.float() < loot.chance * (wearer ? wealthDropMultiplier(wearer) : 1) ? loot.make() : null;
+    // Mob.lootChance: bounty hunter adds to it after a prepared strike (RingOfWealth.dropChanceMultiplier + the bonus).
+    const chance = loot.chance * ((wearer ? wealthDropMultiplier(wearer) : 1) + (wearer ? bountyBonus(wearer) : 0));
+    const item = ctx.rng.float() < chance ? loot.make() : null;
     if (item) landItem(ctx, mob.pos, item);
     // RingOfWealth.tryForBonusDrop: a try for every monster, fifteen for a boss.
     if (wearer) {
@@ -670,6 +722,13 @@ function explode(ctx: Ctx, skeleton: Mob): void {
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: victim.id, damage });
     hurt(ctx, victim, damage, isHero(victim) ? 'bones' : skeleton);
   }
+}
+
+/** Hero.die from something that is not a blow (a deathless berserk running out of shield): the hero falls. */
+export function killHero(ctx: Ctx, hero: Hero, cause: Hazard): void {
+  hero.hp = 0;
+  hero.killedBy = cause;
+  heroDied(ctx, hero);
 }
 
 function heroDied(ctx: Ctx, hero: Hero): void {

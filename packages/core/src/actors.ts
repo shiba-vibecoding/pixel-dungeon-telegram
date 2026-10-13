@@ -19,6 +19,11 @@ import { T } from './level/terrain';
 import type { Action, PlanStep } from './world';
 import type { Awareness, PendingScroll } from './artifacts';
 import type { WealthCounters } from './rings';
+import { pointsInTalent, type TalentBook } from './talents/data';
+import { holdFastArmor } from './talents/hold-fast';
+import { freerunning, momentumEvasion, momentumSpeed } from './talents/rogue';
+import { consumeLethalMomentum } from './talents/turns';
+import type { TalentBuffs } from './talents/state';
 
 /*
  * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
@@ -102,12 +107,13 @@ export interface Hero {
   charmedBy: string | null;
   /** Turns left of staggering about (dreamweed's confusion gas). */
   dizzy: number;
-  /** The way the hero has mastered, once they have read the Tome of Mastery. */
+  /** The way the hero has mastered, once they have put on Tengu's mask (HeroSubClass). */
   subclass: SubClass | null;
-  /** Gladiator: hits in a row, and until when the next one keeps the combo going. */
-  combo: number;
-  comboUntil: number;
-  /** Warden: bark from trampled grass and plants, adding to armour and wearing off a point a turn. */
+  /** Shattered's talents (talents/): the points in each, tier by tier; absent in older saves (started by talentBook). */
+  talents?: TalentBook;
+  /** The talents' trackers and the subclasses' buffs: berserk rage, combo, momentum, preparation, the sniper's mark... */
+  tal?: TalentBuffs;
+  /** Pixel Dungeon's barkskin from mystery meat (a frozen carpaccio), adding to armour and wearing off a point a turn. */
   barkskin: number;
   /** Sungrass: the spot it heals the hero on, while they stay there (-1 when not), and time towards the next healing. */
   sungrass?: number;
@@ -263,8 +269,6 @@ export function createHero(player: PlayerInfo, depth: number, pos: number, time:
     charmedBy: null,
     dizzy: 0,
     subclass: null,
-    combo: 0,
-    comboUntil: 0,
     barkskin: 0,
     hunger: 0,
     hungerTime: 0,
@@ -303,10 +307,14 @@ export const heroBelongings = (hero: Hero): Item[] => [...heroEquipped(hero), ..
 export { ringBonus } from './rings';
 
 /** Hero.STR: rings of might add to it (RingOfMight.strengthBonus); weakness takes two points away while it lasts. */
-export const heroStr = (hero: Hero): number => hero.str + mightStrength(hero) - (hero.weakened > 0 ? 2 : 0);
+export const heroStr = (hero: Hero): number =>
+  hero.str + mightStrength(hero) + strongmanBonus(hero) + ((hero.tal?.surge ?? -1) >= 0 ? 1 : 0) - (hero.weakened > 0 ? 2 : 0);
 
-/** Fury.LEVEL: below this share of health, a berserker flies into a fury. */
-export const FURY_LEVEL = 0.4;
+/** Hero.STR with the strongman talent: a share of the base strength more (3% + 5% a point), rounded down. */
+const strongmanBonus = (hero: Hero): number => {
+  const points = pointsInTalent(hero, 'strongman');
+  return points > 0 ? Math.floor(f32(hero.str * f32(0.03 + 0.05 * points))) : 0;
+};
 
 /** The numbers of the weapon in hand, or of bare fists (RingOfForce.damageRoll: as a weapon of the strength's tier with a ring of force, else 1 to STR-8). */
 export function heroWeapon(hero: Hero): WeaponStats {
@@ -337,8 +345,8 @@ function accuracyFactor(hero: Hero, weapon: Item, targetPos?: number): number {
   const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
   let factor = encumbrance > 0 ? f32(acc / 1.5 ** encumbrance) : acc;
   if ((category === 'missile' || category === 'bow') && targetPos !== undefined) {
-    // Seam: the point blank talent (talents stream) adds a quarter a point.
-    factor = f32(factor * (adjacent(hero.pos, targetPos) ? 0.5 : 1.5));
+    // MissileWeapon.adjacentAccFactor: half as accurate point-blank (a quarter better a point of point blank), and half again from afar.
+    factor = f32(factor * (adjacent(hero.pos, targetPos) ? f32(0.5 + 0.25 * pointsInTalent(hero, 'point_blank')) : 1.5));
   }
   return factor;
 }
@@ -350,7 +358,10 @@ const blessing = (hero: Hero): number => ((hero.blessed ?? 0) > 0 ? 1.25 : 1);
 export function heroAttackSkill(hero: Hero, targetPos?: number, weapon: Strike = hero.weapon): number {
   const accuracy = f32(accuracyMultiplier(hero) * blessing(hero));
   if (!weapon) return Math.max(1, jround(f32(hero.attackSkill * accuracy)));
-  return Math.max(1, jround(f32(f32(hero.attackSkill * accuracy) * accuracyFactor(hero, weapon, targetPos))));
+  // Hero.attackSkill: freerunning with projectile momentum, a thrown weapon is more accurate (half again a point).
+  const thrownBy = itemDef(weapon.kind).category;
+  const momentum = (thrownBy === 'missile' || thrownBy === 'bow') && freerunning(hero) ? f32(1 + pointsInTalent(hero, 'projectile_momentum') / 2) : 1;
+  return Math.max(1, jround(f32(f32(f32(hero.attackSkill * accuracy) * momentum) * accuracyFactor(hero, weapon, targetPos))));
 }
 
 /**
@@ -364,8 +375,8 @@ export function heroDefenseSkill(hero: Hero): number {
   if (hero.armor.glyph === 'stone') return 0;
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
   if (encumbrance > 0) evasion = f32(evasion / 1.5 ** encumbrance);
-  // Seam (talents stream): Momentum's evasion. Here the 1.9 freerunner still doubles it, unburdened and fed.
-  if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) evasion = f32(evasion * 2);
+  // Momentum.evasionBonus: freerunning, half the hero's level more, and evasive armor's share of strength to spare.
+  evasion = f32(evasion + momentumEvasion(hero, Math.max(0, -encumbrance)));
   // FerretTuft.evasionMultiplier.
   const tuft = trinketLevel(hero, 'trinket.ferretTuft');
   if (tuft >= 0) evasion = f32(evasion * FERRET_TUFT.evasionMultiplier(tuft));
@@ -388,6 +399,8 @@ export function heroDrRoll(hero: Hero, rng: Rng): number {
     if (str < meleeStr(hero.weapon)) parry -= 2 * (meleeStr(hero.weapon) - str);
     if (parry > 0) dr += parry;
   }
+  // HoldFast.armorBonus: resting on a spot.
+  dr += holdFastArmor(hero, rng);
   const bark = Math.ceil(hero.barkskin ?? 0);
   if (bark > 0) dr += rng.normalIntRange(0, bark);
   // Barkskin (a potion of earthen armour): up to its level more.
@@ -439,8 +452,10 @@ export function heroDamageRoll(hero: Hero, rng: Rng, surprised = false, weapon: 
     // RingOfForce.armedDamageBonus: rings of force add to a weapon's blow as well.
     damage += forceArmedBonus(hero);
   }
-  // Fury: a berserker badly hurt hits half as hard again (seam: Shattered's Berserk is the talents stream's).
-  if (hero.subclass === 'berserker' && hero.hp > 0 && hero.hp <= hero.ht * FURY_LEVEL) damage = Math.trunc(damage * 1.5);
+  // MissileWeapon.damageRoll: freerunning with projectile momentum, a thrown weapon hits harder (15% a point).
+  if (weapon && itemDef(weapon.kind).category === 'missile' && freerunning(hero)) {
+    damage = Math.round(f32(damage * f32(1 + f32(0.15 * pointsInTalent(hero, 'projectile_momentum')))));
+  }
   return Math.max(0, damage);
 }
 
@@ -454,7 +469,7 @@ export function heroAttackDelay(hero: Hero, weapon: Strike = hero.weapon): numbe
   let delay = augmentDelay(weapon, category === 'weapon' ? weaponDly(weapon.kind) : 1);
   const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
   if (encumbrance > 0) delay = f32(delay * 1.2 ** encumbrance);
-  // Seam: the scimitar's sword dance (classes) would speed it up.
+  // Hero.attackDelay: a lethal momentum makes the blow cost nothing (consumed by the caller, once it knows it struck).
   return f32(delay / attackSpeedMultiplier(hero));
 }
 
@@ -483,7 +498,6 @@ export interface Footing {
 export function heroSpeed(hero: Hero, footing?: Footing): number {
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
   let speed = hero.crippled > 0 ? 0.5 : 1;
-  if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) speed *= 1.6;
   if (encumbrance > 0) speed = f32(speed / 1.2 ** encumbrance);
   const glyph = hero.armor.glyph;
   const level = gearLevel(hero.armor);
@@ -491,7 +505,7 @@ export function heroSpeed(hero: Hero, footing?: Footing): number {
   if (footing && glyph === 'flow' && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
   if (footing && glyph === 'bulk' && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
   // RingOfHaste.speedMultiplier; stamina, haste (buffs.ts).
-  return f32(speed * speedMultiplier(hero) * buffSpeed(hero));
+  return f32(speed * speedMultiplier(hero) * buffSpeed(hero) * momentumSpeed(hero));
 }
 
 /** A hero's armour at its most (Armor.DRMax, with the weapon's parrying and the bark at theirs), for what wants one figure. */
@@ -746,6 +760,8 @@ export interface Mob {
   pinned?: Item[];
   /** Turns left of acting twice as fast (Adrenaline). */
   adrenaline?: number;
+  /** SuckerPunchTracker: a sucker punch has struck it already. */
+  suckered?: boolean;
   /** A lucky blow landed (Lucky.LuckProc): should it die before it acts again, it drops something (at this ring level). */
   luck?: number;
 

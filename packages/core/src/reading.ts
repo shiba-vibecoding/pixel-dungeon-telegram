@@ -28,6 +28,7 @@ import { transmuteItem } from './transmute';
 import type { World } from './world';
 import { moveToDepth } from './world';
 import { isBossDepth } from './level/builder';
+import { metamorph, metamorphProblem } from './talents/metamorph';
 
 /*
  * Scrolls as Shattered has them (items/scrolls, exotic): what each does when read (Scroll.doRead). Those read on
@@ -55,6 +56,7 @@ export function scrollUseProblem(world: World, hero: Hero, kind: ItemKind, known
   if (kind === 'scroll.enchantment' && target) {
     return use.choice !== undefined && Number.isInteger(use.choice) && use.choice >= 0 && use.choice <= 2 ? null : 'choose an enchantment';
   }
+  if (kind === 'scroll.metamorphosis') return metamorphProblem(world, hero, use.choice);
   if (kind === 'scroll.sirensSong') {
     if (use.cell === undefined || !Number.isInteger(use.cell) || use.cell < 0 || use.cell >= LENGTH) return 'choose whom to enthrall';
   }
@@ -247,8 +249,9 @@ export function readScroll(ctx: Ctx, hero: Hero, kind: ItemKind, target: Item | 
       return;
     }
     case 'scroll.metamorphosis':
-      // ScrollOfMetamorphosis: a talent swapped for another class's (talents.ts's to fill in; until then it is read in vain).
-      ctx.effects.push({ type: 'metamorphosis', hero: hero.id });
+      // ScrollOfMetamorphosis: a talent swapped for another class's; read without a choice (cancelled), it is spent in vain.
+      if (use.choice !== undefined && metamorphProblem(ctx.world, hero, use.choice) === null) metamorph(ctx, hero, use.choice);
+      else ctx.effects.push({ type: 'metamorphosis', hero: hero.id });
       return;
     default:
       return;

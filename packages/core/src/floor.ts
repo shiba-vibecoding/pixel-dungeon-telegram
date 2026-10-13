@@ -24,6 +24,7 @@ import { F, hasFlag, T } from './level/terrain';
 import type { Rng, RngState } from './rng';
 import type { World } from './world';
 import { awareCells } from './artifacts/talisman';
+import { pointsInTalent } from './talents/data';
 
 /*
  * The live part of a depth: its monsters, its clock and its random stream.
@@ -383,7 +384,27 @@ export type Effect =
   /** A ward the hero bumped into: dismiss it? (WndOptions) */
   | { type: 'ward'; hero: string; mob: string }
   /** A queued action that became impossible before the hero's turn came. */
-  | { type: 'interrupted'; hero: string; reason: string };
+  | { type: 'interrupted'; hero: string; reason: string }
+  /*
+   * Talents and subclasses (talents/): a point put in a talent; a SpellSprite over the hero; recharging's sparks
+   * (ScrollOfRecharging.charge); the berserker going berserk (with the shield it gave); a combo move made and the combo
+   * spent; a leap (enhanced combo); freerunning begun; the sniper's special shot; an empowered zap or blow (a strong
+   * hit); a line for the log by its key in the talents' texts; a talent swapped by metamorphosis.
+   */
+  | { type: 'talent'; hero: string; talent: string; points: number }
+  | { type: 'spell'; hero: string; sprite: 'food' | 'map' | 'charge' | 'berserk' | 'ankh' | 'haste' | 'vision' | 'purity'; tint?: [number, number, number] }
+  | { type: 'charged'; hero: string }
+  | { type: 'berserk'; hero: string; amount: number }
+  | { type: 'comboMove'; hero: string; move: 'clobber' | 'slam' | 'parry' | 'crush' | 'fury' }
+  | { type: 'comboEnd'; hero: string }
+  | { type: 'leapt'; depth: number; who: string; from: number; to: number }
+  | { type: 'freerun'; hero: string; stacks: number }
+  | { type: 'snipe'; hero: string; kind: 'none' | 'speed' | 'damage' }
+  | { type: 'hit'; hero: string }
+  | { type: 'tmsg'; hero: string; key: string; tone: 'i' | 'p' | 'w' | 'n'; args?: Array<string | number> }
+  | { type: 'metamorphed'; hero: string; from: string; to: string }
+  /** A prepared strike executed a weakened foe (Preparation: assassinated). */
+  | { type: 'assassinated'; depth: number; mob: string };
 
 /** Everything the rules need while simulating one depth. */
 export interface Ctx {
@@ -437,8 +458,14 @@ export function heroView(world: World, hero: Hero): boolean[] {
     : hero.light > 0 ? Math.max(heroSight(world, hero.depth), LIGHT_DISTANCE) : heroSight(world, hero.depth);
   const newt = trinketLevel(hero, 'trinket.eyeOfNewt');
   if (newt >= 0 && distance > 1) distance = Math.max(1, Math.round(distance * EYE_OF_NEWT.visionRangeMultiplier(newt)));
+  // Level.updateFieldOfView: farsight, a quarter further a point.
+  const far = pointsInTalent(hero, 'farsight');
+  if (far > 0) distance = Math.round(Math.fround(distance * Math.fround(1 + 0.25 * far)));
   // A smoke screen blocks sight (SmokeScreen.onBuildFlagMaps).
-  const terrain = terrainBlocksSight(world.levels[hero.depth]!.map);
+  const blocks = terrainBlocksSight(world.levels[hero.depth]!.map);
+  // The warden sees through tall and furrowed grass as if it were empty space.
+  const map = world.levels[hero.depth]!.map;
+  const terrain = hero.subclass === 'warden' ? (cell: number): boolean => blocks(cell) && map[cell] !== T.HIGH_GRASS : blocks;
   const smoke = smokeCells(world.floors[hero.depth]);
   const fov = castShadow(hero.pos, smoke.size === 0 ? terrain : (cell) => terrain(cell) || smoke.has(cell), distance);
   // MagicalSight: everything there is to see within twelve cells, through walls (Level.updateFieldOfView's sense).
@@ -454,6 +481,9 @@ export function heroView(world: World, hero: Hero): boolean[] {
   }
   // Dungeon.observe: what the talisman of foresight shows is seen, and the cells around it.
   awareCells(world, hero, fov);
+  // Heightened senses: creatures within a few cells are sensed through walls (Level.updateFieldOfView's mind vision),
+  // and seer shot's revealed area is seen.
+  senseCells(world, hero, fov);
   return fov;
 }
 
@@ -515,4 +545,26 @@ export function freeCellNear(world: World, level: Level, depth: number, pos: num
     }
   }
   return pos;
+}
+
+/**
+ * Level.updateFieldOfView: heightened senses lets the hero sense creatures within 1 + a point cells through walls (the
+ * cells around each are seen), and seer shot's revealed area (RevealedArea) shows the cells around where the shot flew.
+ */
+function senseCells(world: World, hero: Hero, fov: boolean[]): void {
+  const mark = (at: number): void => {
+    for (const n of NEIGHBOURS8.concat(0)) {
+      const c = at + n;
+      if (c >= 0 && c < LENGTH && Math.abs((c % WIDTH) - (at % WIDTH)) <= 1) fov[c] = true;
+    }
+  };
+  const senses = pointsInTalent(hero, 'heightened_senses');
+  if (senses > 0) {
+    const range = 1 + senses;
+    for (const mob of world.floors[hero.depth]?.mobs ?? []) {
+      if (isAlive(mob) && mob.kind !== 'mimic' && Math.max(Math.abs((mob.pos % WIDTH) - (hero.pos % WIDTH)), Math.abs(Math.trunc(mob.pos / WIDTH) - Math.trunc(hero.pos / WIDTH))) <= range) mark(mob.pos);
+    }
+  }
+  const area = hero.tal?.revealed;
+  if (area && area.depth === hero.depth) mark(area.pos);
 }

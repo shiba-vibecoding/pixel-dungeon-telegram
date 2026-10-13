@@ -1,3 +1,4 @@
+import { pointsInTalent } from './talents/data';
 import {
   baseKind, beckon, createMob, GOO_PUMPED, type Hero, heroStealth, isAlive, isShopkeeper, type Mob, type MobState, MOBS, mobStats, rollMob,
 } from './actors';
@@ -66,6 +67,7 @@ export function sightBlockers(ctx: Ctx): (cell: number) => boolean {
 }
 
 /** Char.stealth: a hero's; a monster has none. */
+const silentSteps = (hero: Hero, dist: number): boolean => dist >= 4 - pointsInTalent(hero, 'silent_steps') && pointsInTalent(hero, 'silent_steps') > 0;
 const stealthOf = (char: Char): number => (isHero(char) ? heroStealth(char) : 0);
 
 /**
@@ -256,6 +258,8 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
   mob.alerted = false;
   const enemy = chooseEnemy(ctx, mob, fov);
   const enemyInFov = enemy !== undefined && fov[enemy.pos]!;
+  // Silent steps: a hero is not noticed from 4 cells away, less a point of the talent (Mob.act's detectionChance).
+  const unheard = enemy !== undefined && isHero(enemy) && silentSteps(enemy, distance(mob.pos, enemy.pos));
 
   switch (mob.state) {
     case 'sleeping':
@@ -264,7 +268,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
         spend(mob, TICK);
         return;
       }
-      if (enemyInFov && ctx.rng.int(distance(mob.pos, enemy.pos) + stealthOf(enemy)) === 0) {
+      if (enemyInFov && !unheard && ctx.rng.int(distance(mob.pos, enemy.pos) + stealthOf(enemy)) === 0) {
         notice(ctx, mob, enemy, 'hunting');
         // Swarm intelligence: waking, it calls every other monster on the level to where it saw the hero.
         if (isChallenged(ctx.world, SWARM_INTELLIGENCE)) {
@@ -278,7 +282,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
       return;
 
     case 'wandering':
-      if (enemyInFov && (justAlerted || ctx.rng.int(Math.trunc(distance(mob.pos, enemy.pos) / 2) + stealthOf(enemy)) === 0)) {
+      if (enemyInFov && !unheard && (justAlerted || ctx.rng.int(Math.trunc(distance(mob.pos, enemy.pos) / 2) + stealthOf(enemy)) === 0)) {
         // Spotting someone costs no time: it starts hunting on this very turn.
         notice(ctx, mob, enemy, 'hunting');
         return;

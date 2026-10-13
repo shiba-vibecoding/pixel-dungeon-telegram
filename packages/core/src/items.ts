@@ -304,6 +304,10 @@ export const ITEMS = {
   'food.ration': { category: 'food', sprite: S.RATION, energy: 300 },
   'food.pasty': { category: 'food', sprite: S.PASTY, energy: 450 },
   'food.meat': { category: 'food', sprite: S.MEAT, energy: 150 },
+  // The talents' food: the rogue's cached rations (SupplyRation: 200 energy and 5 health, a charge for the cloak) and the
+  // huntress's berries (Berry: 100 energy; two of them grow a seed).
+  'food.supply': { category: 'food', sprite: S.SUPPLY_RATION, energy: 200 },
+  'food.berry': { category: 'food', sprite: S.BERRY, energy: 100 },
   // Mystery meat cooked by fire or frozen by frost (ChargrilledMeat, FrozenCarpaccio), and the
   // shops' smaller ration (SmallRation, Pixel Dungeon's overpriced one): half a ration each.
   'food.steak': { category: 'food', sprite: S.STEAK, energy: 150 },
@@ -383,6 +387,8 @@ export const ITEMS = {
   'quest.fish': { category: 'quest', sprite: S.PHANTOM_MEAT },
   /** Tengu's legacy: reading it, a hero masters one of two ways. */
   'tome.mastery': { category: 'tome', sprite: S.MASTERY },
+  /** TengusMask: Tengu's, worn to choose a way to master (the Tome of Mastery of Pixel Dungeon, kept for older saves). */
+  'mask.tengu': { category: 'tome', sprite: S.MASK },
   /** Lit, it lets one see further in the dark halls for a while. */
   torch: { category: 'torch', sprite: S.TORCH },
   /** The King of Dwarves' legacy: it turns the armour worn into the hero's class armour. */
@@ -678,7 +684,7 @@ const SCROLL_PRICES: Partial<Record<ItemKind, number>> = {
   'scroll.terror': 40, 'scroll.transmutation': 50,
 };
 const FOOD_PRICES: Partial<Record<ItemKind, number>> = {
-  'food.ration': 10, 'food.pasty': 20, 'food.meat': 5, 'food.steak': 5, 'food.carpaccio': 10, 'food.overpriced': 20,
+  'food.ration': 10, 'food.supply': 10, 'food.berry': 5, 'food.pasty': 20, 'food.meat': 5, 'food.steak': 5, 'food.carpaccio': 10, 'food.overpriced': 20,
   'food.stewed': 8, 'food.meatPie': 40, 'food.blandfruit': 20, 'food.chunks': 10,
 };
 /** Spells made several at a time are worth that share of their whole batch (e.g. 60 * quantity/OUT_QUANTITY). */

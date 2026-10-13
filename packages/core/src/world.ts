@@ -1,4 +1,14 @@
 import { wear } from './wear';
+import { talentTime, beforeHeroAct, consumeLethalMomentum } from './talents/turns';
+import { hasTalent, pointsInTalent, type TalentId, upgradeProblem } from './talents/data';
+import { upgradeTalent } from './talents';
+import { berserkProblem, doBerserk } from './talents/berserk';
+import { type ComboMove, comboProblem, useComboMove } from './talents/combo';
+import { ambush, ambushProblem, doFreerun, freerunProblem, gainMomentum } from './talents/rogue';
+import { snipe, snipeProblem } from './talents/huntress';
+import { holdFastRest } from './talents/hold-fast';
+import { foresightHint, layCachedRations } from './talents/rogue';
+import { onGrassTrampled, onHeroMovedOnGrass } from './talents/nature';
 import { identifyBelongings, observeBelongings } from './ident';
 import { mobAct, populate, randomRespawnCell, reinforce, respawn, TIME_TO_RESPAWN } from './ai';
 import {
@@ -94,6 +104,16 @@ export type Action =
   | { type: 'plan'; steps: PlanStep[] }
   /** An artifact's action (artifacts/): Lloyd's beacon's setting and returning among them. */
   | ArtifactAction
+  /** Hero.upgradeTalent: a free point put in a talent (no time passes). */
+  | { type: 'talent'; talent: TalentId }
+  /**
+   * The subclasses' action indicator (ActionIndicator.Action.doAction): the berserker goes berserk; the freerunner
+   * freeruns; the gladiator makes a combo move at a target; the assassin strikes from the shadows at a target (blinking
+   * to it); the sniper fires the mark's special shot.
+   */
+  | { type: 'ability'; ability: 'berserk' | 'freerun' | 'snipe' }
+  | { type: 'ability'; ability: 'combo'; move: ComboMove; target?: string }
+  | { type: 'ability'; ability: 'ambush'; target: string }
   /**
    * The arena of waves: «To battle!» once the party has rested (or, `cancel`, not ready after all), and
    * one of the three rewards after a wave.
@@ -179,6 +199,8 @@ const BLACKSMITH_STREAM = 4;
 const BONES_STREAM = 5;
 /** Sub-stream of a depth's item stream for the artifacts' pieces: the rose's petals, the hourglass's sandbags. */
 const ARTIFACT_STREAM = 6;
+/** Sub-stream of a depth's item stream for the talents' finds (cached rations). */
+const TALENT_STREAM = 7;
 /** Sub-streams of a depth's streams for a hero joining the party, by party size. */
 const JOIN_STREAM = 100;
 
@@ -245,6 +267,7 @@ export function levelAt(world: World, depth: number): Level {
         layBones(world.bones, level, world.floors[d]!, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d, BONES_STREAM)), world.run);
       }
       layArtifactPieces(world, level, world.floors[d]!, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d, ARTIFACT_STREAM)));
+      if (!quietDepth(d)) layCachedRations(world, level, world.floors[d]!, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d, TALENT_STREAM)));
       const perHero: ItemKind[] = [
         ...(world.run.strengthFound > found.strength ? ['potion.strength' as const] : []),
         ...(world.run.upgradesFound > found.upgrades ? ['scroll.upgrade' as const] : []),
@@ -415,6 +438,20 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
     case 'wait':
     case 'search':
       return null;
+    case 'talent':
+      return typeof action.talent === 'string' ? upgradeProblem(hero, action.talent) : 'no such talent';
+    case 'ability': {
+      const floor = floorAt(world, hero.depth);
+      const ctx: Ctx = { world, depth: hero.depth, level, floor, rng: new Rng({ ...floor.rng }), effects: [] };
+      switch (action.ability) {
+        case 'berserk': return berserkProblem(hero);
+        case 'freerun': return freerunProblem(hero);
+        case 'snipe': return snipeProblem(ctx, hero);
+        case 'combo': return comboProblem(ctx, hero, action.move, action.target ?? '');
+        case 'ambush': return ambushProblem(ctx, hero, action.target);
+        default: return 'unknown ability';
+      }
+    }
     case 'move':
       if (hero.rooted > 0) return 'you are rooted';
       if (Number.isInteger(action.to) && adjacent(hero.pos, action.to) && level.map[action.to] === T.LOCKED_DOOR) {
@@ -439,6 +476,8 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       // Hero.canAttack: next to it, or within the weapon's reach (KindOfWeapon.canReach; MagesStaff.reachFactor: a
       // battlemage's staff of disintegration reaches over a cell); a word, or an ally, only face to face.
       if (adjacent(hero.pos, mob.pos)) return null;
+      // Char.canInteract with ally warp: allies up to two cells a point away can be swapped with.
+      if (mob.ally && mob.kind !== 'ward' && mob.kind !== 'lotus' && distance(hero.pos, mob.pos) <= 2 * pointsInTalent(hero, 'ally_warp')) return null;
       const reach = Math.max(heroReach(hero), staffReach(hero));
       return mob.state !== 'passive' && !mob.ally && canReach(world, level, hero, mob.pos, reach) ? null : 'too far away';
     }
@@ -935,6 +974,8 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   if (hero.depth === ctx.depth) altarMarksHero(ctx, hero, time);
   // The hero's buffs, the artifacts' among them, once a turn; a cursed hourglass may steal a turn.
   const lost = heroTurns(ctx, hero, from, hero.time);
+  // The talents' cooldowns and trackers count down.
+  talentTime(hero, time);
   for (const ring of heroRings(hero)) wear(ctx, hero, ring, time);
   // The hero's gear as time passes: shields fade, boomerangs come back, crystal mends (throwing.ts).
   if (hero.depth === ctx.depth) gearTick(ctx, hero, time);
@@ -1022,6 +1063,7 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
 
 function perform(ctx: Ctx, hero: Hero, action: Action): void {
   const { world, level } = ctx;
+  beforeHeroAct(ctx, hero);
   if (isInventoryAction(action)) {
     spend(ctx, hero, performInventory(ctx, hero, action));
     if (isAlive(hero)) {
@@ -1032,9 +1074,38 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
   }
   switch (action.type) {
     case 'wait':
-      // Hero.rest: resting takes a turn, whatever slows or hastens the hero (spendConstant).
+      // Hero.rest: resting takes a turn, whatever slows or hastens the hero (spendConstant); and digs in (hold fast).
       spend(ctx, hero, TIME_TO_REST, true);
+      holdFastRest(hero, hero.sealShield !== undefined);
       break;
+
+    case 'talent':
+      // Hero.upgradeTalent: no time passes.
+      upgradeTalent(ctx, hero, action.talent);
+      break;
+
+    case 'ability': {
+      let time = 0;
+      switch (action.ability) {
+        case 'berserk': doBerserk(ctx, hero); break;
+        case 'freerun': doFreerun(ctx, hero); break;
+        case 'snipe': time = snipe(ctx, hero); break;
+        case 'combo': time = useComboMove(ctx, hero, action.move, action.target ?? ''); break;
+        case 'ambush': {
+          // Preparation: blink beside the target, then strike as any blow is struck.
+          const mob = mobById(world, hero.depth, action.target)!;
+          ambush(ctx, hero, mob);
+          attack(ctx, hero, mob);
+          time = consumeLethalMomentum(hero) ? 0 : heroAttackDelay(hero);
+          break;
+        }
+      }
+      if (action.ability === 'combo' || action.ability === 'snipe' || action.ability === 'ambush') {
+        if (consumeLethalMomentum(hero)) time = 0;
+      }
+      if (time > 0 || action.ability === 'combo' || action.ability === 'ambush') spend(ctx, hero, time);
+      break;
+    }
 
     case 'search':
       // Hero.search(true): a deliberate search, which takes two turns.
@@ -1078,6 +1149,8 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
         wanderer.pos = from;
         enterCell(level, from);
       }
+      // Hero.actMove: a freerunner builds momentum with each step.
+      if (hero.pos !== from) gainMomentum(hero);
       spend(ctx, hero, 1 / heroSpeed(hero, footing(ctx, hero)));
       if (hero.pos === from) break;
       // The step is done, then the trap goes off; floating, the hero touches nothing (Char.move). While the
@@ -1086,6 +1159,8 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
       if (!floating && level.map[hero.pos] === T.WELL) drinkFromWell(ctx, hero);
       heroPress(ctx, hero);
       if (!floating && level.map[hero.pos] === T.HIGH_GRASS) trample(ctx, hero.pos, hero);
+      // Level.occupyCell: rejuvenating steps turn the grass underfoot to tall grass now and then.
+      if (!floating) onHeroMovedOnGrass(ctx, hero);
       if (level.arenaDoor !== undefined) {
         if (hero.depth === 15) enterLair(ctx, hero);
         else if (hero.depth === 20) enterThroneHall(ctx, hero);
@@ -1104,12 +1179,19 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
           ctx.effects.push({ type: 'ward', hero: hero.id, mob: mob.id });
         } else if (mob.kind === 'ghostHero' && ghostIntroduces(ctx, hero, mob)) {
           // DriedRose.GhostHero.interact: its first word, before it ever trades places.
-        } else if (allySwaps(mob) && adjacent(hero.pos, mob.pos)) {
+        } else if (allySwaps(mob) && (adjacent(hero.pos, mob.pos) || hasTalent(hero, 'ally_warp'))) {
           const from = hero.pos;
           hero.pos = mob.pos;
           mob.pos = from;
           enterCell(level, hero.pos);
-          spend(ctx, hero, 1 / heroSpeed(hero));
+          if (hasTalent(hero, 'ally_warp')) {
+            // Ally warp: the swap is instant, with a flash at both ends.
+            ctx.effects.push({ type: 'blinked', depth: ctx.depth, who: hero.id, from, to: hero.pos });
+            ctx.effects.push({ type: 'blinked', depth: ctx.depth, who: mob.id, from: hero.pos, to: from });
+          } else {
+            gainMomentum(hero);
+            spend(ctx, hero, 1 / heroSpeed(hero));
+          }
         }
         break;
       }
@@ -1138,13 +1220,8 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
         break;
       }
       attack(ctx, hero, mob);
-      // A berserker strikes faster the more foes surround him.
-      let delay = heroAttackDelay(hero);
-      if (hero.subclass === 'berserker') {
-        const around = NEIGHBOURS8.filter((n) => charAt(world, hero.depth, hero.pos + n)).length;
-        if (around > 1) delay *= 1 - around / 16;
-      }
-      spend(ctx, hero, delay);
+      // Hero.attackDelay: a kill with lethal momentum costs no time.
+      spend(ctx, hero, consumeLethalMomentum(hero) ? 0 : heroAttackDelay(hero));
       break;
     }
 
@@ -1439,8 +1516,8 @@ export function trample(ctx: Ctx, pos: number, hero?: Hero): void {
       return;
     }
   }
-  // A warden draws bark from the grass.
-  if (hero?.subclass === 'warden') hero.barkskin = Math.max(hero.barkskin, Math.trunc(hero.ht / 3));
+  // HighGrass.trample: barkskin for the huntress, berries from nature's bounty.
+  if (hero) onGrassTrampled(ctx, hero, pos);
   // HighGrass.trample: a seed one time in 25 and a dewdrop in 6; the sandals of nature worn draw strength from it,
   // and the grass gives more (seeds up to one in 9, dew up to one in 4); cursed, nothing at all; barren land, nothing.
   const nature = naturalism(hero) ?? 0;
@@ -1459,6 +1536,11 @@ export function trample(ctx: Ctx, pos: number, hero?: Hero): void {
 const isFurrowed = (level: Level, pos: number): boolean => level.map[pos] === T.HIGH_GRASS && (level.furrowed ?? []).includes(pos);
 function furrow(level: Level, pos: number): void {
   (level.furrowed ??= []).push(pos);
+}
+/** Level.set(pos, FURROWED_GRASS) for the talents and the warden: tall grass that still stands, and sheds nothing. */
+export function furrowGrass(level: Level, pos: number): void {
+  level.map[pos] = T.HIGH_GRASS;
+  if (!(level.furrowed ?? []).includes(pos)) furrow(level, pos);
 }
 function unfurrow(level: Level, pos: number): void {
   level.furrowed = (level.furrowed ?? []).filter((cell) => cell !== pos);
@@ -1588,6 +1670,8 @@ function changeDepth(ctx: Ctx, hero: Hero, depth: number, arrival: 'entrance' | 
   place(world, hero, level, arrival === 'entrance' ? level.entrance : level.exit);
   // Mob.holdAllies and restoreAllies: the rose's ghost comes along.
   ghostFollows(world, hero, fromDepth);
+  // GameScene.create: rogue's foresight hints at a secret room; iron stomach does not persist between floors.
+  foresightHint({ ...ctx, depth, level, floor: floorAt(world, depth) }, hero);
 }
 
 /**

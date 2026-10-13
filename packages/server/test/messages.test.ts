@@ -70,7 +70,7 @@ describe('client messages', () => {
       { type: 'attack', target: 5 }, { type: 'attack', target: '' }, { type: 'attack', target: 'x'.repeat(65) },
       { type: 'use', item: 1, target: 'ring' }, { type: 'drop', item: 1000 }, { type: 'reward', choice: 'gold' },
       { type: 'reforge', first: 'helmet', second: 1 }, { type: 'master', item: 1, subclass: 'pirate' },
-      { type: 'use', item: 1, choice: 64 }, { type: 'use', item: 1, cell: -1 }, { type: 'use', item: 1, choice: 0.5 },
+      { type: 'use', item: 1, choice: 256 }, { type: 'use', item: 1, cell: -1 }, { type: 'use', item: 1, choice: 0.5 },
       { type: 'alchemy', inputs: [] }, { type: 'alchemy', inputs: [1, 2, 3, 4] }, { type: 'alchemy', inputs: [1, 'a'] },
       { type: 'alchemy', inputs: 1 }, { type: 'alchemy', inputs: [1], recipe: -1 }, { type: 'energize', item: -1 },
       { type: 'augment', item: 1, on: 'weapon', augment: 'luck' }, { type: 'augment', item: 1, on: 'ring9', augment: 'speed' },

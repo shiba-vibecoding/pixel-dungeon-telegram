@@ -6,6 +6,8 @@ import { readScroll } from '../reading';
 import type { World } from '../world';
 import { regenOn as heroRegenOn } from '../hero';
 import { energyArtifactMultiplier } from '../rings';
+import { pointsInTalent } from '../talents/data';
+import { eatingTime as talentEatingTime, onArtifactUsed as talentArtifactUsed, onFoodEaten as talentFoodEaten } from '../talents';
 
 /*
  * Seams: where artifacts meet systems other streams of the Shattered port are
@@ -15,8 +17,8 @@ import { energyArtifactMultiplier } from '../rings';
  */
 
 /** Seam (talents stream): Talent.onArtifactUsed — the talents that answer an artifact's use (e.g. enhanced rings). */
-export function onArtifactUsed(_ctx: Ctx, _hero: Hero): void {
-  // Nothing until talents exist.
+export function onArtifactUsed(ctx: Ctx, hero: Hero): void {
+  talentArtifactUsed(ctx, hero);
 }
 
 /**
@@ -34,8 +36,8 @@ export function artifactChargeMultiplier(hero: Hero): number {
 }
 
 /** Seam (talents stream): the rogue's light cloak talent, points in it (the cloak works from the pack, slower). */
-export function lightCloakPoints(_hero: Hero): number {
-  return 0;
+export function lightCloakPoints(hero: Hero): number {
+  return pointsInTalent(hero, 'light_cloak');
 }
 
 /** Regeneration.regenOn: false once a boss fight's LockedFloor stops regeneration and recharging (hero.ts). */
@@ -49,13 +51,13 @@ export function magicImmune(hero: Hero): boolean {
 }
 
 /** Seam (talents stream): Food.eatingTime — the meal talents eat two turns faster than Food.TIME_TO_EAT. */
-export function eatingTime(_hero: Hero): number {
-  return 3;
+export function eatingTime(hero: Hero): number {
+  return talentEatingTime(hero);
 }
 
 /** Seam (talents stream): Talent.onFoodEaten, after the horn of plenty fed the hero `energy`. */
-export function onFoodEaten(_ctx: Ctx, _hero: Hero, _energy: number, _item: Item): void {
-  // Nothing until talents exist.
+export function onFoodEaten(ctx: Ctx, hero: Hero, energy: number, _item: Item): void {
+  talentFoodEaten(ctx, hero, energy, 'horn', eatingTime(hero));
 }
 
 /** Seam (talents stream): CloakOfShadows.cloakStealth.attachTo — the assassin's Preparation and protective shadows. */
