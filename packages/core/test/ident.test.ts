@@ -25,6 +25,26 @@ function sparring(): { world: World; rat: string } {
   return { world, rat: rat.id };
 }
 
+/** Slays a frail rat beside the hero, for the experience (a rat is a tenth of the first level). */
+function slayRat(world: World): Effect[] {
+  const hero = heroById(world, 'p')!;
+  const level = levelAt(world, hero.depth);
+  const floor = floorAt(world, hero.depth);
+  const pos = NEIGHBOURS8.map((n) => hero.pos + n).find((c) => canEnter(level, c) && !charAt(world, hero.depth, c))!;
+  const rat = createMob(`#frail${world.turn}`, 'rat', pos, 'hunting', floor.now);
+  Object.assign(rat, { hp: 1, ht: 1, enemySeen: false });
+  floor.mobs.push(rat);
+  const skill = hero.attackSkill;
+  hero.attackSkill = 1e6;
+  const effects: Effect[] = [];
+  while (floor.mobs.includes(rat)) {
+    const result = act(world, 'p', { type: 'attack', target: rat.id });
+    if (result.ok) effects.push(...result.effects);
+  }
+  hero.attackSkill = skill;
+  return effects;
+}
+
 const landed = (effects: Effect[], attacker: string): number =>
   effects.filter((e) => e.type === 'attack' && e.attacker === attacker && e.hit).length;
 
@@ -53,38 +73,60 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
     }
   });
 
-  it('a weapon tells its level after twenty blows that land (Weapon.proc)', () => {
+  it('a weapon is known after twenty blows that land, ten of them ready at first and the rest as experience comes (Weapon.proc)', () => {
     const { world, rat } = sparring();
     const hero = heroById(world, 'p')!;
     hero.weapon = unknown(createItem('weapon.sword', 1, 2));
     const effects: Effect[] = [];
-    while (landed(effects, 'p') < 19) {
-      const result = act(world, 'p', { type: 'attack', target: rat });
-      if (result.ok) effects.push(...result.effects);
-    }
-    expect(hero.weapon.levelUnknown).toBe(true);
+    const strike = (until: number): void => {
+      while (landed(effects, 'p') < until) {
+        const result = act(world, 'p', { type: 'attack', target: rat });
+        if (result.ok) effects.push(...result.effects);
+      }
+    };
+    strike(25);
+    // Ten blows' worth spent, the rest wait for experience.
+    expect(hero.weapon).toMatchObject({ levelUnknown: true, usesLeftToID: 10, availableUsesToID: 0 });
+    // More sparring teaches nothing more.
+    strike(40);
+    expect(hero.weapon).toMatchObject({ levelUnknown: true, usesLeftToID: 10, availableUsesToID: 0 });
+    // Experience readies two uses a rat (a tenth of a level); the blow that slays it spends one.
+    effects.push(...slayRat(world));
+    expect(hero.weapon).toMatchObject({ usesLeftToID: 10, availableUsesToID: 2 });
+    effects.push(...slayRat(world));
+    expect(hero.weapon).toMatchObject({ usesLeftToID: 9, availableUsesToID: 3 });
+    for (let i = 0; i < 3; i++) effects.push(...slayRat(world));
+    expect(hero.weapon).toMatchObject({ usesLeftToID: 6, availableUsesToID: 6 });
     expect(effects.some((e) => e.type === 'familiar')).toBe(false);
-    while (landed(effects, 'p') < 20) {
-      const result = act(world, 'p', { type: 'attack', target: rat });
-      if (result.ok) effects.push(...result.effects);
-    }
+    strike(landed(effects, 'p') + 6);
+    // Weapon.identify: known through and through, the curse too.
     expect(hero.weapon.levelUnknown).toBeUndefined();
-    // Only the level: whether it is cursed is not learned by fighting.
-    expect(hero.weapon.curseUnknown).toBe(true);
+    expect(hero.weapon.curseUnknown).toBeUndefined();
     expect(effects.filter((e) => e.type === 'familiar')).toEqual([{ type: 'familiar', hero: 'p', item: hero.weapon, learned: false }]);
   });
 
-  it('armour tells its level after ten blows taken (Armor.proc)', () => {
+  it('armour is known after ten blows taken, five ready at first (Armor.proc, Armor.onHeroGainExp)', () => {
     const { world, rat } = sparring();
     const hero = heroById(world, 'p')!;
     hero.armor = unknown(createItem('armor.leather', 1, -1));
     const effects: Effect[] = [];
+    const endure = (blows: number): void => {
+      const target = landed(effects, rat) + blows;
+      for (let turn = 0; turn < 2000 && landed(effects, rat) < target; turn++) {
+        hero.hp = hero.ht;
+        const result = act(world, 'p', { type: 'wait' });
+        if (result.ok) effects.push(...result.effects);
+      }
+    };
+    endure(8);
+    expect(hero.armor).toMatchObject({ levelUnknown: true, usesLeftToID: 5, availableUsesToID: 0 });
+    // Half a level's experience readies the other five (a rat is a tenth: one use each).
+    for (let i = 0; i < 5; i++) effects.push(...slayRat(world));
     for (let turn = 0; turn < 2000 && !effects.some((e) => e.type === 'familiar'); turn++) {
       hero.hp = hero.ht;
       const result = act(world, 'p', { type: 'wait' });
       if (result.ok) effects.push(...result.effects);
     }
-    expect(landed(effects, rat)).toBe(10);
     expect(hero.armor.levelUnknown).toBeUndefined();
   });
 
@@ -102,16 +144,19 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
     expect(hero.rings[0]!.levelUnknown).toBe(true);
   });
 
-  it('a ring worn long enough is known through and through, its kind for the whole party', () => {
+  it('a ring worn for a level of experience is known through and through, its kind for the whole party (Ring.onHeroGainExp)', () => {
     const world = pacify(createWorld(5));
     const hero = addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
     hero.rings = [{ ...unknown(createItem('ring.mending', 1, 1)), curseUnknown: undefined }];
     const effects: Effect[] = [];
+    // Time alone teaches nothing now.
     for (let i = 0; i < 250; i++) {
       hero.hunger = 0;
       const result = act(world, 'p', { type: 'wait' });
       if (result.ok) effects.push(...result.effects);
     }
+    expect(isIdentified(world, hero.rings[0]!)).toBe(false);
+    for (let i = 0; i < 11 && !isIdentified(world, hero.rings[0]!); i++) effects.push(...slayRat(world));
     expect(isIdentified(world, hero.rings[0]!)).toBe(true);
     expect(world.known).toContain('ring.mending');
     expect(effects.filter((e) => e.type === 'familiar')).toEqual([{ type: 'familiar', hero: 'p', item: hero.rings[0], learned: true }]);

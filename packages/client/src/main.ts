@@ -5,13 +5,13 @@ import {
   type Bones, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
   visibleCells, chargesKnown, staffReach, WIDTH,
-  type World, charAt, swapsWithHero,
+  type World, charAt, swapsWithHero, visibleEnemies,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
 import './game.css';
 import { mobDescription, mobName, plantText, tileText, wellText } from './examine';
-import { quickIndex, quickItem, quickUse, WEAPON_SLOT } from './quickslot';
+import { chooseQuickslot, isPlaceholder, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT } from './quickslot';
 import { fx } from './fx';
 import { ambientFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
 /** The visual clock's last reading, for frame-to-frame particle steps. */
@@ -21,7 +21,7 @@ let fallenAt = 0;
 import { adoptBadges, BADGES, type BadgeId, badgeText, checkBadges, countGame, earnedBadges, reloadBadges } from './badges';
 import { pullCloud, pushCloud } from './cloud';
 import { audio } from './audio';
-import { type ArenaHud, heroBuffs, Hud, type HudStatus, type QuickState } from './hud';
+import { type ArenaHud, type BuffName, heroBuffs, Hud, type HudStatus, type QuickState } from './hud';
 import { arenaBest, recordArena, showArenaEnd, showArenaReward } from './arenaui';
 import { ArenaView } from './arenaview';
 import { levelRegion } from './sprites';
@@ -158,14 +158,16 @@ const hud = new Hud({
     aim = null;
     examining = !examining;
   },
-  quick: () => {
+  quick: (slot) => {
     examining = false;
-    toggleQuickslot(0);
+    // QuickSlotButton: an empty slot (or one whose item is all used up) asks what to put in it.
+    quickTap(slot);
   },
-  quick2: () => {
+  assignQuick: (slot) => {
     examining = false;
-    toggleQuickslot(1);
+    assignQuickslot(slot);
   },
+  danger: () => nextDanger(),
   journal: () => openJournal(),
   settings: () => settings(hideOverlay),
   backpack: () => {
@@ -173,7 +175,7 @@ const hud = new Hud({
     openBackpack();
   },
   history: () => showHistory(view.log, hideOverlay),
-  buff: (name, turns) => toast(turns ? `${t.buffs[name]} (${t.turnsLeft(turns)})` : t.buffs[name]),
+  buff: (name, turns) => showBuff(name, turns),
   mate: (id) => {
     const hero = session?.world && heroById(session.world, id);
     // (The arena has no depths to tell.)
@@ -280,7 +282,8 @@ function coachMove(me: Hero): void {
 function attackTarget(world: World, me: Hero): Mob | null {
   const visible = visibleCells(world, me.depth);
   const foes = (world.floors[me.depth]?.mobs ?? []).filter((m) => m.state !== 'passive' && !m.ally && visible[m.pos] && m.hp > 0 && !m.image);
-  const rank = (m: Mob): number => (m.enemy === me.id && m.state === 'hunting' ? 0 : m.state === 'sleeping' ? 2 : 1) * 1000 + distance(m.pos, me.pos);
+  // The enemy picked with the danger indicator comes first (AttackIndicator.target).
+  const rank = (m: Mob): number => (m.id === dangerTarget ? -1 : m.enemy === me.id && m.state === 'hunting' ? 0 : m.state === 'sleeping' ? 2 : 1) * 1000 + distance(m.pos, me.pos);
   return foes.sort((a, b) => rank(a) - rank(b) || (a.id < b.id ? -1 : 1))[0] ?? null;
 }
 const finds = new Finds(document.getElementById('ui')!);
@@ -729,6 +732,14 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
 let aim: { index: number; kind: 'throw' | 'zap' | 'special' } | null = null;
 
+/** QuickSlotButton.onClick: use what the slot holds; an empty slot, or one whose item ran out, asks what to put in it. */
+function quickTap(slot: number): void {
+  const me = session?.world && heroById(session.world, session.myId);
+  if (!me) return;
+  if (!aim && (quickKind(slot) === null || isPlaceholder(me, slot))) assignQuickslot(slot);
+  else toggleQuickslot(slot);
+}
+
 function toggleQuickslot(slot = 0): void {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
@@ -752,8 +763,60 @@ function toggleQuickslot(slot = 0): void {
   else if (use) aim = { index, kind: use };
 }
 
-/** Awake monsters the party could see last frame; a new one interrupts walking. */
+/** Awake monsters the party could see last frame (a walk goes no further while there are any). */
 let threats = new Set<string>();
+/** Hero.visibleEnemies: the enemies in my hero's sight, in the level's order (the danger indicator's list); a new one interrupts walking. */
+let enemiesInSight: string[] = [];
+/** DangerIndicator: the enemy last stepped to, and where in the list. */
+let dangerTarget: string | null = null;
+let dangerIndex = -1;
+
+/**
+ * DangerIndicator.onClick: the next enemy in sight is the one to fight (AttackIndicator.target) and the
+ * view goes to it (Camera.panTo), with a mark on it.
+ */
+function nextDanger(): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me || enemiesInSight.length === 0) return;
+  dangerIndex = (dangerIndex + 1) % enemiesInSight.length;
+  dangerTarget = enemiesInSight[dangerIndex]!;
+  const mob = mobById(world, me.depth, dangerTarget);
+  if (!mob) return;
+  pan.x = (cellX(mob.pos) - cellX(me.pos)) * TILE;
+  pan.y = (cellY(mob.pos) - cellY(me.pos)) * TILE;
+  pan.home = false;
+  feedback.aim(mob.pos, true, fx.now, mob.id);
+}
+
+/**
+ * Toolbar's quickslot_assign: the backpack opened on what can go in a quick slot (an item with a quick
+ * use); the one tapped goes in (QuickSlotButton.set).
+ */
+function assignQuickslot(slot: number): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me) return;
+  walk.reset();
+  aim = null;
+  const targets = me.items.flatMap((item, i) => (quickUse(item.kind) ? [i] : []));
+  const options = {
+    world, hero: me, onAction: (action: Action) => send(action, performance.now()), onAim: () => undefined, onClose: hideOverlay,
+  };
+  showBackpack({
+    ...options,
+    pick: {
+      title: t.hero.quickslotPrompt,
+      targets,
+      onPick: (ref) => {
+        const item = typeof ref === 'number' ? me.items[ref] : undefined;
+        if (item) chooseQuickslot(item.kind, slot);
+        hideOverlay();
+      },
+      onCancel: hideOverlay,
+    },
+  });
+}
 
 function send(action: Parameters<Session['send']>[0], now: number): void {
   const me = session?.world && heroById(session.world, session.myId);
@@ -1242,6 +1305,8 @@ function tapCell(cell: number, quiet = false): void {
 
   if (cell === me.pos) {
     if (heapAt(world, me.depth, me.pos)) takeHere(world, me, performance.now());
+    // Hero.handle on the hero's own cell: standing in tall grass or on a plant, it is trampled where the hero stands.
+    else if (core.canSelfTrample(world, me)) send({ type: 'move', to: me.pos }, performance.now());
     else if (!world.arena && me.pos === level.exit) useStairs(world, 'descend', performance.now());
     else if (!world.arena && me.pos === level.entrance && (me.depth > 1 || hasAmulet(me))) useStairs(world, 'ascend', performance.now());
     else if (me.pos === level.entrance && heapAt(world, me.depth, me.pos) === undefined && me.depth === 1 && level.map[me.pos] === T.ENTRANCE) {
@@ -1323,10 +1388,29 @@ function tapCell(cell: number, quiet = false): void {
   }
   if (!quiet && walk.queue.length > 1) feedback.aim(cell, false, vnow);
   if (!quiet) walk.goal = cell;
-  walk.pickup = heapAt(world, me.depth, cell);
-  if (world.arena) return;
+  // Hero.handle: moving to an item doesn't pick it up when enemies are in sight (chests open as usual, above).
+  walk.pickup = heapAt(world, me.depth, cell) && enemiesInSight.length === 0;
+  // Hero.handle: walking to the stairs doesn't take them while enemies are in sight (a tap on them, standing there, does).
+  if (world.arena || enemiesInSight.length > 0) return;
   if (cell === level.exit) walk.stairs = 'descend';
   else if (cell === level.entrance && (me.depth > 1 || hasAmulet(me))) walk.stairs = 'ascend';
+}
+
+/** A tap on a buff icon (BuffIndicator): its name and turns; Shattered's longer ones (the seal's shield, a sealed floor, hunger) in a window. */
+function showBuff(name: BuffName, turns?: number): void {
+  const me = session?.world && heroById(session.world, session.myId);
+  const shield = me?.sealShield;
+  const long = name === 'sealShield' && shield
+    ? shield.shield > 0 ? t.hero.shieldActive(shield.shield, shield.cooldown) : t.hero.shieldCooldown(shield.cooldown)
+    : name === 'lockedFloor' ? t.hero.lockedFloorDesc
+      : name === 'hunger' ? t.hero.hungryIntro + t.hero.hungerDesc
+        : name === 'starvation' ? t.hero.starvingIntro + t.hero.hungerDesc : null;
+  if (long) {
+    walk.reset();
+    showInfo(t.buffs[name], long.split('\n\n'), hideOverlay);
+    return;
+  }
+  toast(turns ? `${t.buffs[name]} (${t.turnsLeft(turns)})` : t.buffs[name]);
 }
 
 function openHero(): void {
@@ -1830,10 +1914,9 @@ addEventListener('keydown', (event) => {
   } else if (event.code === 'Escape') {
     if (aim) aim = null;
     else openMenu();
-  } else if (event.code === 'KeyT' || event.code === 'Digit1') {
-    toggleQuickslot(0);
-  } else if (event.code === 'Digit2') {
-    toggleQuickslot(1);
+  } else if (event.code === 'KeyT' || /^Digit[1-6]$/.test(event.code)) {
+    // Keys 1 to 6: the quick slots (T: the first, as before).
+    quickTap(event.code === 'KeyT' ? 0 : Number(event.code.slice(5)) - 1);
   } else if (event.code === 'KeyX') {
     aim = null;
     examining = !examining;
@@ -2102,7 +2185,7 @@ function tick(now: number): void {
     drawBackdrop(now);
     hud.update(
       {
-        me: placeholderHero, party: [], online: [], log: [], buffs: [], quick: null,
+        me: placeholderHero, party: [], online: [], log: [], buffs: [], quick: [], danger: 0,
         status: session.status ? { kind: session.status === t.reconnecting ? 'reconnecting' : 'connecting', text: session.status } : null,
         keys: 0, examining: false, newLoot: false, looks: {},
       },
@@ -2226,18 +2309,20 @@ function tick(now: number): void {
     bakedKey = key;
 
     learnFromSight(world, me, level, visible);
-    // A newly spotted awake monster stops a walk, as in the original.
-    const inSight = new Set(
-      (world.floors[me.depth]?.mobs ?? [])
-        .filter((m) => m.state !== 'sleeping' && m.state !== 'passive' && !m.ally && visible[m.pos])
-        .map((m) => m.id),
-    );
-    // (Under live turns the player steers as things happen, and a fight slows the clock: a walk goes on.)
-    if ([...inSight].some((id) => !threats.has(id))) {
+    // Hero.checkVisibleMobs: a newly seen enemy (asleep or not), or one that wakes, stops a walk.
+    const enemies = isAlive(me) ? visibleEnemies(world, me) : [];
+    const awake = new Set(enemies.filter((m) => m.state !== 'sleeping').map((m) => m.id));
+    if (enemies.some((m) => !enemiesInSight.includes(m.id)) || [...awake].some((id) => !threats.has(id))) {
       walk.queue = [];
       walk.stairs = null;
+      walk.pickup = false;
     }
-    threats = inSight;
+    threats = awake;
+    enemiesInSight = enemies.map((m) => m.id);
+    if (dangerTarget && !enemiesInSight.includes(dangerTarget)) {
+      dangerTarget = null;
+      dangerIndex = -1;
+    }
   }
 
   const effects = session.drain();
@@ -2445,17 +2530,25 @@ function tick(now: number): void {
     holdingSince = 0;
     holdingFelt = false;
   }
-  const quick1 = quickItem(me, 0);
-  const quick2 = hud.wide ? quickItem(me, 1) : undefined;
-  const quickState = (item: Item | undefined, aiming: boolean): QuickState | null =>
-    item
-      ? {
-          sprite: itemSprite(item, world.run.labels),
-          label: chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
-          aiming,
-          wear: wearOf(world, item),
-        }
-      : null;
+  // QuickSlot: this run's slots (a new run starts with its class's), as many as the screen shows; a slot whose
+  // item is used up shows it greyed (a placeholder).
+  syncQuickslots(world, me);
+  const quickState = (slot: number): QuickState | null => {
+    const kind = quickKind(slot);
+    if (!kind) return null;
+    // (The mage's staff is zapped from the hand: quickItem.)
+    const item = quickItem(me, slot);
+    if (!item || isPlaceholder(me, slot)) {
+      return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };
+    }
+    return {
+      sprite: itemSprite(item, world.run.labels),
+      label: chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
+      aiming: aim !== null && aim.index === quickIndex(me, slot),
+      wear: wearOf(world, item),
+    };
+  };
+  const quick = Array.from({ length: visibleQuickslots(hud.wide, innerWidth) }, (_, slot) => quickState(slot));
   const cancelChoice = (): void => {
     aim = null;
     examining = false;
@@ -2482,8 +2575,8 @@ function tick(now: number): void {
       newLoot,
       looks: session.looks,
       keys: me.items.filter((i) => (i.kind === 'key.iron' || i.kind === 'key.skeleton') && i.depth === me.depth).length,
-      quick: quickState(quick1, aim !== null && aim.index === quickIndex(me, 0)),
-      quick2: quickState(quick2, aim !== null && aim.index === quickIndex(me, 1)),
+      quick,
+      danger: isAlive(me) ? enemiesInSight.length : 0,
       waitingFor: session.mode === 'online' ? holders.filter((id) => id !== me.id) : [],
       arena: arenaHud(world, me, session.mode === 'online'),
     },

@@ -1,0 +1,52 @@
+<!-- @dsCard group="Shattered" height=830 width=900 page subtitle="Значки на предмете: маленькая полоска заряда артефакта (в рюкзаке и быстром слоте, полный заряд лиловый); значок зачарования (искра у оружия) и глифа (щит-руна у брони) в левом нижнем углу, цвет — какое именно, золотая точка — новое; проклятие — красным. Внизу все 30 зачарований и глифов Shattered и 18 проклятий" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Значки на предмете</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .wrap { width: 900px; box-sizing: border-box; padding: 16px 20px; color: var(--ink); display: flex; flex-direction: column; gap: 10px; }
+  h2 { margin: 4px 0 0; font: var(--text-label, 400 18px/20px var(--font-ui)); color: var(--gold); }
+  h2 span { margin-left: 8px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .line { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 84px; text-align: center; font: var(--text-caption, 400 15px/18px var(--font-small)); color: var(--ink-muted); }
+  .cell .pd-slot { width: 52px; height: 52px; }
+  .cell .pd-tool { width: 60px; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .tbl { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .tbl > span { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 3px 6px; background: var(--stone-800); clip-path: var(--notch); font: var(--text-caption, 400 15px/18px var(--font-small)); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tbl .pd-mark { position: relative; left: auto; bottom: auto; flex: none; }
+  .tbl.curse > span { color: var(--danger); }
+  .bar { display: flex; gap: 6px; padding: 6px; background: var(--stone-900); }
+</style></head>
+<body>
+<div class="pd-root wrap" id="w"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get("lang") || "ru", en = L === "en", E = PD.demo.ench;
+  var T = en ? { charge: 'Artifact charge on the icon', chargeN: 'in the pack and the quickslot; full — lilac, its edge blinks', marks: 'Enchantments and glyphs on an item', marksN: 'lower-left corner: a spark for weapons, a rune shield for armour; the colour tells which one', all: 'All of them', allN: 'colour = Shattered’s glow, lifted to read on stone', curses: 'Curses', cursesN: 'always red; the skull stays in the upper-right corner',
+      c: ['charging 30%', 'charging 70%', 'full', 'with durability', 'quickslot', 'quickslot · full', 'wand: charges stay text'],
+      m: ['blazing', 'chilling · new', 'unknown', 'of stone', 'of thorns · new', 'cursed'], weapon: 'weapon', armor: 'armour',
+      cards: [['blazing', '#ff6a33', 'ench', 'Blazing', 'Hits may set the enemy on fire.'], ['stone', '#a8a090', 'glyph', 'Glyph of stone', 'Turns evasion into armour.'], ['', 'var(--danger)', 'ench curse', 'Annoying (curse)', 'The weapon shouts and wakes the level.']] }
+    : { charge: 'Заряд артефакта на значке', chargeN: 'в рюкзаке и в быстром слоте; полный — лиловый, кант мигает', marks: 'Зачарования и глифы на предмете', marksN: 'левый нижний угол: искра — у оружия, щит-руна — у брони; цвет — какое именно', all: 'Все зачарования и глифы', allN: 'цвет — свечение предмета в Shattered, поднятое до читаемого на камне', curses: 'Проклятия', cursesN: 'всегда красным; череп остаётся в правом верхнем углу',
+      c: ['заряд 30%', 'заряд 70%', 'полный', 'с прочностью', 'быстрый слот', 'слот · полный', 'жезл: заряды текстом'],
+      m: ['пламени', 'холода · новое', 'неизвестно', 'гранита', 'шипов · новое', 'проклято'], weapon: 'оружие', armor: 'броня',
+      cards: [['blazing', '#ff6a33', 'ench', 'Зачарование пламени', 'Удары могут поджечь врага.'], ['stone', '#a8a090', 'glyph', 'Глиф гранита', 'Уклонение превращается в броню.'], ['', 'var(--danger)', 'ench curse', 'Болтливость (проклятие)', 'Оружие кричит и будит уровень.']] };
+  var S = function (s, extra, cls) { return '<div class="pd-slot' + (cls || '') + '"><i class="pd-sitem" data-s="' + s + '"></i>' + (extra || '') + '</div>'; };
+  var cell = function (html, cap) { return '<div class="cell">' + html + '<span>' + cap + '</span></div>'; };
+  var ch = function (v, full) { return '<span class="pd-charge' + (full ? ' full' : '') + '" style="--v:' + v + '"></span>'; };
+  var mk = function (kind, col, nw) { return '<i class="pd-mark ' + kind + (nw ? ' new' : '') + '" style="--ench:' + col + '"></i>'; };
+  var h = '<h2>' + T.charge + '<span>' + T.chargeN + '</span></h2><div class="line">' +
+    cell(S(251, ch(.3)), T.c[0]) + cell(S(251, ch(.7) + '<span class="pd-lvl up">+2</span>'), T.c[1]) + cell(S(240, ch(1, true) + '<span class="pd-lvl up">+3</span>'), T.c[2]) +
+    cell(S(244, ch(.5) + '<span class="pd-dur" style="--v:.8"></span>'), T.c[3]) +
+    cell('<button class="pd-tool quick"><i class="pd-sitem" data-s="251"></i>' + ch(.7) + '</button>', T.c[4]) + cell('<button class="pd-tool quick"><i class="pd-sitem" data-s="240"></i>' + ch(1, true) + '</button>', T.c[5]) +
+    cell('<button class="pd-tool quick"><i class="pd-sitem" data-s="209"></i><span class="pd-qty">2/3</span></button>', T.c[6]) + '</div>' +
+    '<h2>' + T.marks + '<span>' + T.marksN + '</span></h2><div class="line">' +
+    cell(S(112, mk('ench', '#ff6a33') + '<span class="pd-lvl up">+2</span>'), T.weapon + ' · ' + T.m[0]) + cell(S(120, mk('ench', '#66f0ff', 1)), T.m[1]) + cell(S(104, mk('ench', 'var(--ink-muted)') + '<span class="pd-tag">?</span>'), T.m[2]) +
+    cell(S(178, mk('glyph', '#a8a090') + '<span class="pd-lvl up">+1</span>'), T.armor + ' · ' + T.m[3]) + cell(S(179, mk('glyph', '#e8506e', 1)), T.m[4]) +
+    cell(S(131, mk('ench', 'var(--danger)') + '<i class="pd-mark curse"></i>', ' cursed'), T.m[5]) + '</div>' +
+    '<div class="cards">' + T.cards.map(function (c) { return '<div class="pd-ench-line' + (c[2].indexOf('curse') > -1 ? ' curse' : '') + '" style="--ench:' + c[1] + '">' + mk(c[2].split(' ')[0], c[1]) + '<span><b>' + c[3] + '</b>' + c[4] + '</span></div>'; }).join('') + '</div>' +
+    '<h2>' + T.all + '<span>' + T.allN + '</span></h2><div class="tbl">' + E.weapon.map(function (e) { return '<span>' + mk('ench', e[3]) + (en ? e[2] : e[1]) + '</span>'; }).join('') + E.armor.map(function (e) { return '<span>' + mk('glyph', e[3]) + (en ? e[2] : e[1]) + '</span>'; }).join('') + '</div>' +
+    '<h2>' + T.curses + '<span>' + T.cursesN + '</span></h2><div class="tbl curse">' + E.wcurse.map(function (e) { return '<span>' + mk('ench', 'var(--danger)') + (en ? e[2] : e[1]) + '</span>'; }).join('') + E.acurse.map(function (e) { return '<span>' + mk('glyph', 'var(--danger)') + (en ? e[2] : e[1]) + '</span>'; }).join('') + '</div>';
+  document.getElementById('w').innerHTML = h; PD.sprite(document.body);
+</script>
+</body>
+</html>

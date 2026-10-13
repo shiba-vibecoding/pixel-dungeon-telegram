@@ -230,7 +230,8 @@ export function heroStatusTime(ctx: Ctx, hero: Hero, time: number, ticks: number
     fadeShield(hero);
     herbalTick(hero);
   }
-  for (const key of ['chill', 'hexed', 'vulnerable', 'blessed', 'invulnerable'] as const) countDown(hero, key, time);
+  // (A hero's Bless runs out in world.ts spend, with the hero's other buffs.)
+  for (const key of ['chill', 'hexed', 'vulnerable', 'invulnerable'] as const) countDown(hero, key, time);
   if ((hero.frozen ?? 0) > 0) {
     hero.frozen = Math.max(0, hero.frozen! - time);
     if (hero.frozen <= 0) thaw(ctx, hero);
@@ -253,7 +254,8 @@ export function timeScale(char: Char): number {
 
 /** Char.attack's accuracy and evasion rolls: a hex makes both a fifth worse, a blessing a quarter better. */
 export function rollFactor(char: Char): number {
-  return ((char.hexed ?? 0) > 0 ? 0.8 : 1) * ((char.blessed ?? 0) > 0 ? 1.25 : 1);
+  // A hero's Bless is already in the hero's accuracy and evasion (actors.ts heroAttackSkill, heroDefenseSkill).
+  return ((char.hexed ?? 0) > 0 ? 0.8 : 1) * (!isHero(char) && (char.blessed ?? 0) > 0 ? 1.25 : 1);
 }
 
 /** Whether a cell is a pit a creature would fall into: Levitation keeps one up. */

@@ -1,8 +1,10 @@
 import { wear } from './wear';
-import { ARMOR_HITS_TO_KNOW, familiarise, identifyBelongings, WEAPON_HITS_TO_KNOW } from './ident';
+import { familiarise, identifyBelongings } from './ident';
+import { bossHurt, earnExp } from './hero';
+import { shieldDamage } from './seal';
 import {
   baseKind, BRUTE_ENRAGED_DAMAGE, isShopkeeper, statsOf, createMob, type Hero, heroArmor, heroAttackSkill, heroDamageRoll, heroDefenseSkill, isAlive,
-  maxExp, type Mob, MOBS, mobStats, ringBonus,
+  type Mob, MOBS, mobStats, ringBonus,
 } from './actors';
 import {
   charAt, type Char, type Ctx, dropItem, enterCell, freeCellNear, heroesOn, isHero, isPassable, isWater, landItem, leaveCell,
@@ -10,7 +12,7 @@ import {
 } from './floor';
 import { createItem, type Item, itemDef, ItemGenerator, randomRing, rollGold } from './items';
 import { damageTaken, rollFactor } from './status';
-import { rockArmorAbsorbs, staffBlow, wandsGainExp } from './wands';
+import { rockArmorAbsorbs, staffBlow } from './wands';
 import { guardianArmor, wardArmor } from './allies';
 import { isChallenged, NO_ARMOR } from './challenges';
 import { NEIGHBOURS4, NEIGHBOURS8 } from './level/geometry';
@@ -19,7 +21,6 @@ import { earthrootAbsorbs } from './plants';
 import { impQuestKill } from './imp';
 import { curseBroken, questKill } from './quest';
 import { seedGas } from './gas';
-import { DEW_VIAL_VOLUME, drinkFromVial } from './vial';
 import { looseItems } from './bags';
 import { sacrifice } from './altar';
 import { F, hasFlag, T } from './level/terrain';
@@ -169,7 +170,7 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     weaponProc(ctx, attacker, defender, damage, thrown ? override.weapon ?? null : attacker.weapon);
     // Weapon.proc: every blow that lands makes the weapon better known, and wears it a little (a thrown boomerang wears as it comes back).
     if (!thrown && attacker.weapon) {
-      familiarise(ctx, attacker, attacker.weapon, WEAPON_HITS_TO_KNOW);
+      familiarise(ctx, attacker, attacker.weapon);
       wear(ctx, attacker, attacker.weapon);
     }
   }
@@ -178,7 +179,7 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     const mark = ctx.effects.length;
     damage = armorProc(ctx, attacker, defender, damage);
     // Armor.proc: and every blow taken makes the armour better known, and wears it.
-    familiarise(ctx, defender, defender.armor, ARMOR_HITS_TO_KNOW);
+    familiarise(ctx, defender, defender.armor);
     wear(ctx, defender, defender.armor);
     // The glyph's backlash may have felled its wearer, or an ankh raised them anew: the blow is spent.
     if (!isAlive(defender) || ctx.effects.slice(mark).some((e) => e.type === 'resurrected')) return true;
@@ -301,7 +302,8 @@ const isFist = (mob: Mob): boolean => mob.kind === 'rottingFist' || mob.kind ===
 
 /** Thief.steal: a whole stack from the pack (never a key or a quest item), then off it runs. */
 function steal(ctx: Ctx, thief: Mob, hero: Hero): void {
-  const loot = looseItems(hero).filter((item) => itemDef(item.kind).category !== 'key' && itemDef(item.kind).category !== 'quest');
+  // (Thief.steal: nor anything unique, as the warrior's seal and the waterskin are.)
+  const loot = looseItems(hero).filter((item) => !['key', 'quest', 'seal', 'vial'].includes(itemDef(item.kind).category));
   if (loot.length === 0) return;
   const item = ctx.rng.element(loot)!;
   hero.items.splice(hero.items.indexOf(item), 1);
@@ -364,6 +366,8 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   damage = damageTaken(ctx, victim, damage, by);
   // Earthroot's bark takes the blows first.
   if (isHero(victim)) damage = earthrootAbsorbs(victim, damage);
+  // Char.damage: the warrior's seal may raise its shield, and shields take what they can (not hunger's).
+  if (isHero(victim)) damage = shieldDamage(ctx, victim, damage, source === 'hunger');
   if (!isHero(victim) && victim.kind === 'yog') {
     // Yog.damage: each living fist halves the harm, and they all come to defend it.
     const fists = ctx.floor.mobs.filter(isFist);
@@ -374,6 +378,8 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
     }
   }
   victim.hp -= damage;
+  // Goo.damage, Tengu.damage…: hurting a boss keeps a sealed floor's healing going (LockedFloor.addTime).
+  if (!isHero(victim)) bossHurt(ctx, victim, damage);
   // Brute.damage: below a quarter of its health, the brute flies into a rage.
   if (!isHero(victim) && baseKind(victim.kind) === 'brute' && isAlive(victim) && !victim.enraged && victim.hp < victim.ht / 4) {
     victim.enraged = true;
@@ -564,13 +570,6 @@ function explode(ctx: Ctx, skeleton: Mob): void {
 }
 
 function heroDied(ctx: Ctx, hero: Hero): void {
-  // DewVial.autoDrink: a full dew vial is emptied to heal the hero's wounds at the last moment.
-  const vial = hero.items.find((item) => item.kind === 'vial' && (item.volume ?? 0) >= DEW_VIAL_VOLUME);
-  if (vial) {
-    drinkFromVial(ctx, hero, vial);
-    ctx.effects.push({ type: 'vialSaved', hero: hero.id });
-    if (isAlive(hero)) return;
-  }
   if (hero.items.some((item) => item.kind === 'ankh')) {
     resurrect(ctx, hero);
     return;
@@ -611,22 +610,5 @@ function resurrect(ctx: Ctx, hero: Hero): void {
   ctx.effects.push({ type: 'resurrected', hero: hero.id });
 }
 
-export function earnExp(ctx: Ctx, hero: Hero, exp: number): void {
-  // Hero.earnExp: the wands not yet known may count more zaps towards knowing them (Wand.onHeroGainExp).
-  wandsGainExp(hero, exp);
-  hero.exp += exp;
-  ctx.effects.push({ type: 'exp', hero: hero.id, amount: exp });
-  let levelUp = false;
-  while (hero.exp >= maxExp(hero)) {
-    hero.exp -= maxExp(hero);
-    hero.lvl++;
-    hero.ht += 5;
-    hero.hp += 5;
-    hero.attackSkill++;
-    hero.defenseSkill++;
-    levelUp = true;
-  }
-  if (levelUp) {
-    ctx.effects.push({ type: 'levelUp', hero: hero.id, lvl: hero.lvl });
-  }
-}
+/** Hero.earnExp, now in hero.ts. */
+export { earnExp };

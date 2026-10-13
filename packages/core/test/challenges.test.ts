@@ -175,13 +175,22 @@ describe('challenges', () => {
 
 
 describe('what each class knows from the start (HeroClass.initHero)', () => {
-  it('warrior strength, mage identify, rogue magic mapping, huntress nothing more', () => {
+  it('everyone identify; the warrior healing and rage, the mage upgrade and liquid flame, the rogue mapping and invisibility, the huntress mind vision and lullaby', () => {
     const knows = (heroClass: 'warrior' | 'mage' | 'rogue' | 'huntress'): string[] => solo(0, heroClass).known;
-    expect(knows('warrior')).toContain('potion.strength');
-    expect(knows('mage')).toContain('scroll.identify');
-    expect(knows('rogue')).toContain('scroll.mapping');
-    const huntress = knows('huntress');
-    for (const kind of ['potion.strength', 'scroll.identify', 'scroll.mapping']) expect(huntress).not.toContain(kind);
+    const sets = {
+      warrior: ['potion.healing', 'scroll.challenge'],
+      mage: ['scroll.upgrade', 'potion.liquidFlame'],
+      rogue: ['scroll.mapping', 'potion.invisibility'],
+      huntress: ['potion.mindVision', 'scroll.lullaby'],
+    } as const;
+    for (const [heroClass, own] of Object.entries(sets) as Array<[keyof typeof sets, readonly string[]]>) {
+      const known = knows(heroClass);
+      expect(known).toContain('scroll.identify');
+      for (const kind of own) expect(known, heroClass).toContain(kind);
+      // Nothing of the others' (and Pixel Dungeon's warrior's strength no more).
+      const potionsAndScrolls = known.filter((kind) => kind.startsWith('potion.') || kind.startsWith('scroll.'));
+      expect(potionsAndScrolls.sort(), heroClass).toEqual(['scroll.identify', ...own].sort());
+    }
   });
 });
 

@@ -1,43 +1,79 @@
-import { type Hero, type Item, type ItemKind, itemDef } from '@pd/core';
+import { type Hero, type Item, type ItemKind, itemDef, startingKit, type World } from '@pd/core';
 
 /*
- * The quick slots (QuickSlot): the items the player keeps one tap away. The
- * first is on every screen; a wide screen shows a second beside it (keys 1
- * and 2). The player may put any usable item in either; until then the first
- * holds the first thrown weapon or wand in the pack, and the second nothing.
- * The choices are kept on this device. The mage's staff in hand counts too
+ * The quick slots as Shattered Pixel Dungeon has them (QuickSlot, Toolbar):
+ * six of them, as many shown as the screen has room for (four at least on a
+ * phone, all six on a wide screen, keys 1 to 6). Each holds a kind of item
+ * from the pack; once the last of it is used up the slot keeps it as a
+ * placeholder, greyed, and the next one picked up fills it again
+ * (QuickSlot.replacePlaceholder). A new run starts with its class's slots
+ * (HeroClass.init…: the warrior's stones, the mage's staff, the rogue's cloak
+ * and knives, the huntress's bow). The slots are kept on this device, with the
+ * run they belong to. The mage's staff in hand counts as the pack's
  * (WEAPON_SLOT): Shattered puts it in the first slot from the start.
  */
 
 /** The «slot» of the weapon in hand, where the mage's staff is zapped from. */
 export const WEAPON_SLOT = -2;
 
-const KEYS = ['pd-quickslot', 'pd-quickslot2'] as const;
+/** QuickSlot.SIZE. */
+export const QUICKSLOTS = 6;
 
-const chosen: Array<ItemKind | null> = KEYS.map((key) => {
-  try {
-    return localStorage.getItem(key) as ItemKind | null;
-  } catch {
-    // No storage: the default it is.
-    return null;
-  }
-});
+const KEY = 'pd-quickslots';
 
-/** Puts an item in a quick slot (0 or 1); out of the other one, if it was there. */
-export function chooseQuickslot(kind: ItemKind, slot = 0): void {
-  chosen[slot] = kind;
-  if (chosen[1 - slot] === kind) chosen[1 - slot] = null;
-  KEYS.forEach((key, i) => {
-    try {
-      if (chosen[i]) localStorage.setItem(key, chosen[i]!);
-      else localStorage.removeItem(key);
-    } catch {
-      // Kept for this session only.
-    }
-  });
+interface Stored {
+  /** The run (its seed) and the class the slots were set for. */
+  run: string;
+  slots: Array<ItemKind | null>;
 }
 
-export const isQuickslotted = (kind: ItemKind): boolean => chosen.includes(kind);
+let state: Stored = load();
+
+function load(): Stored {
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Stored | null;
+    if (raw && typeof raw.run === 'string' && Array.isArray(raw.slots)) {
+      return { run: raw.run, slots: Array.from({ length: QUICKSLOTS }, (_, i) => raw.slots[i] ?? null) };
+    }
+  } catch {
+    // No storage, or something else in it: start afresh.
+  }
+  return { run: '', slots: new Array<ItemKind | null>(QUICKSLOTS).fill(null) };
+}
+
+function save(): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch {
+    // Kept for this session only.
+  }
+}
+
+/** The slots belong to this run: a new run (or another hero) starts with its class's (HeroClass.init…). */
+export function syncQuickslots(world: World, hero: Hero): void {
+  const run = `${world.run.seed}:${hero.id}:${hero.heroClass}`;
+  if (state.run === run) return;
+  const kit = startingKit(hero.heroClass).quickslots;
+  state = { run, slots: Array.from({ length: QUICKSLOTS }, (_, i) => kit[i] ?? null) };
+  save();
+}
+
+/** QuickSlot.setSlot: an item's kind in a slot, and out of any other (the same item is never in two). */
+export function chooseQuickslot(kind: ItemKind, slot = 0): void {
+  state.slots = state.slots.map((other, i) => (i === slot ? kind : other === kind ? null : other));
+  save();
+}
+
+/** QuickSlot.clearSlot. */
+export function clearQuickslot(slot: number): void {
+  state.slots[slot] = null;
+  save();
+}
+
+export const isQuickslotted = (kind: ItemKind): boolean => state.slots.includes(kind);
+
+/** The kind a slot holds, if any. */
+export const quickKind = (slot: number): ItemKind | null => state.slots[slot] ?? null;
 
 /** What a quickslot tap does with an item: aim a throw or a zap, or use it at once. */
 export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'use' | null {
@@ -48,24 +84,24 @@ export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'use' | null {
   return null;
 }
 
-/** The backpack slot shown in a quick slot (0 or 1), WEAPON_SLOT for the staff in hand, or -1. */
+/** The backpack slot of the item a quick slot shows, WEAPON_SLOT for the staff in hand, or -1 (empty, or a placeholder: none left). */
 export function quickIndex(hero: Hero, slot = 0): number {
-  const kind = chosen[slot];
-  const staff = hero.weapon?.kind === 'weapon.magesStaff' && hero.weapon.wand !== undefined;
-  if (kind) {
-    if (kind === 'weapon.magesStaff' && staff) return WEAPON_SLOT;
-    const index = hero.items.findIndex((item) => item.kind === kind);
-    if (index >= 0) return index;
-  }
-  if (slot === 1) return -1;
-  // The mage's staff in hand, unless it is in the second slot.
-  if (staff && chosen[1] !== 'weapon.magesStaff') return WEAPON_SLOT;
-  // The first slot, empty: the first thrown weapon or wand, unless that is in the second already.
-  const other = chosen[1] ? hero.items.findIndex((item) => item.kind === chosen[1]) : -1;
-  return hero.items.findIndex((item, i) => {
-    const category = itemDef(item.kind).category;
-    return i !== other && (category === 'missile' || category === 'wand');
-  });
+  const kind = state.slots[slot];
+  if (kind === 'weapon.magesStaff' && hero.weapon?.kind === kind && hero.weapon.wand !== undefined) return WEAPON_SLOT;
+  return kind ? hero.items.findIndex((item) => item.kind === kind) : -1;
+}
+
+/** QuickSlot.isPlaceholder: the slot keeps a kind none of which is left in the pack (or in hand, for the staff). */
+export const isPlaceholder = (hero: Hero, slot: number): boolean => state.slots[slot] != null && quickIndex(hero, slot) === -1;
+
+/**
+ * Toolbar.layout: how many slots the screen shows — four on a narrow phone, five from a wider one,
+ * six on a wide screen (QuickSlotButton.lastVisible).
+ */
+export function visibleQuickslots(wide: boolean, width: number): number {
+  if (wide) return QUICKSLOTS;
+  // Toolbar: 4, one more above 152 points of width, another above 170 (a point is about 2.5 px here).
+  return 4 + (width > 380 ? 1 : 0) + (width > 425 ? 1 : 0);
 }
 
 /** The item a quick slot shows, if any: in the pack, or the staff in hand. */

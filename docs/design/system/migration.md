@@ -1241,3 +1241,212 @@ export function trophyClass(board: string, place: number): string {
 | `.pd-daily(.done)`, `.pd-daily-place`, `.pd-chip.done` | подземелье дня |
 | `.pd-boards-window`, `.pd-board-note`, `.pd-boards`, `.pd-ranks(.mine)`, `.pd-rank(.me)`, `.pd-medal-1/2/3`, `.pd-rank-detail`, `.pd-rank-depth`, `.pd-ranks-me`, `.pd-ranks-gap`, `.pd-board-place`, `.pd-trophy-shelf` | окно «Рейтинг» |
 | `.pd-ranking`, `.pd-checked(.pending/.off)`, `.pd-new-record`, `.pd-places`, `.pd-place(.top)` | блок под итогами |
+
+
+## Обновление «Shattered»
+
+Спрайты — группа `assets/Shattered` (скопируйте в `packages/client/public/assets/`). В `bundle.css` они встроены как `--atlas-talents`, `--atlas-heroicons`, `--atlas-sitems` и `--spr-*`. Новые цвета в `tokens.json`: `energy`, `charge`, `charge-full`.
+
+| Класс | Атлас | Кадр | В ряду |
+| --- | --- | --- | --- |
+| `<i class="pd-ticon" data-t="14">` | `talent_icons.png` | `Talent.icon` | 32 |
+| `<i class="pd-hicon" data-h="1">` | `hero_icons.png` | `HeroIcon.*` | 8 |
+| `<i class="pd-sitem" data-s="240">` | `items-shpd.png` | `ItemSpriteSheet.*` | 16 |
+
+Размер задаёт `--u` (по умолчанию из окна; 1px — 16 px, 2px — 32 px). Без `PD.sprite()` ставьте `--ix: n % cols; --iy: floor(n / cols)` сами.
+
+### Шесть классов
+
+- `avatars.png` теперь 144×32 (6 ячеек по 24). Во всех правилах с `--atlas-avatars` замените `background-size`: `128 → 144` (в `--u`), `256px 64px → 288px 64px`, мобильное `192px 48px → 216px 48px`.
+- `heroes6.png` 72×15 вместо 48×15: `background-size: 96px 30px → 144px 30px` у `.pd-mate-face`, `.pd-rank-face`, `.pd-pcard .pd-mate-face`.
+- `AVATAR`: `duelist: 4, cleric: 5`. На титуле `<div class="pd-classes six">`; новые классы — `.pd-class.new`, в `.pd-class-info` у имени `<span class="pd-chip done">новый</span>`.
+- `ui.css`: `.pd-classes { grid-template-columns: repeat(4, 1fr) }` оставьте для 4, шесть берут `.six` из бандла.
+
+### Окно героя и таланты
+
+```html
+<section class="pd-window pd-hero-window" role="dialog" aria-label="Герой">
+  <header class="pd-window-head">…<div class="pd-titles"><h2 class="pd-heading">Гладиатор</h2><span class="pd-sub">Воин · ур. 14</span></div><button class="pd-close"></button></header>
+  <div class="pd-tabs compact" role="tablist">
+    <button class="pd-tab" role="tab" aria-selected="false">Герой</button>
+    <button class="pd-tab" role="tab" aria-selected="true">Таланты<i class="pd-tab-plus" aria-label="есть очки"></i></button>
+  </div>
+  <div class="pd-scroll"><div class="pd-talents">
+    <section class="pd-tier">
+      <header class="pd-tier-head"><h3>Ярус 2</h3><span class="pd-tier-sub">ур. 7–12</span><span class="pd-tier-points free">свободно <b>2</b></span></header>
+      <div class="pd-talent-row">
+        <button class="pd-talent" aria-label="Железный желудок, 1 из 2"><i class="pd-ticon" data-t="4"></i><span class="pd-pips"><i class="on"></i><i></i></span></button>
+        <button class="pd-talent zero" aria-label="Жидкая воля, 0 из 2">…</button>
+        <button class="pd-talent max" aria-label="Перенос рун, 2 из 2">…</button>
+      </div>
+    </section>
+    <section class="pd-tier locked">
+      <header class="pd-tier-head"><h3>Ярус 4</h3><span class="pd-tier-sub">ур. 21–30</span></header>
+      <div class="pd-talent-ghosts" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <p class="pd-tier-lock">С 20 уровня: наденьте корону короля гномов и выберите способность брони.</p>
+    </section>
+  </div></div>
+  <div class="pd-talents-foot"><span>Касание по таланту — описание</span><button class="pd-button quiet small">Наугад</button></div>
+</section>
+```
+
+- Счётчик: если свободных нет — `<span class="pd-tier-points"><b>5</b>/5</span>`.
+- Ярус 3 до выбора пути и ярус 4 до способности — `.locked` с текстом из `ui.talentspane.unlock_tier3/4`.
+- Очки по ярусам — как в `Hero.talentPointsAvailable`: пороги 2, 7, 13, 21, 31; ярус 1 — 5 очков, 2 — 6, 3 — 8, 4 — 10.
+
+Карточка таланта поверх окна героя:
+
+```html
+<section class="pd-window pd-talent-card narrow" role="dialog" aria-label="Рассечение">
+  <header class="pd-window-head"><div class="pd-slot"><i class="pd-ticon" data-t="14"></i></div>
+    <div class="pd-titles"><h2 class="pd-heading">Рассечение</h2><span class="pd-sub">Ярус 3 · Гладиатор</span></div><button class="pd-close"></button></header>
+  <div class="pd-talent-progress"><span class="pd-pips"><i class="on"></i><i></i><i></i></span><span>1 из 3</span></div>
+  <ol class="pd-talent-levels">
+    <li class="done"><b>+1</b><span>После убийства комбо держится <em>30 ходов</em> вместо 15.</span></li>
+    <li class="next"><b>+2</b><span>…<em>45 ходов</em>…</span></li>
+    <li><b>+3</b><span>…<em>60 ходов</em>…</span></li>
+  </ol>
+  <div class="pd-actions"><button class="pd-button primary">Улучшить</button><p class="pd-talent-cost">Свободно очков яруса 3: <b>1</b></p></div>
+</section>
+```
+
+Текст уровней — из `actors.hero.talent.*.desc`, разрезанного по `_+N:_`; выделение `_…_` → `<em>`. Без свободных очков кнопки нет, вместо неё `<p class="pd-note center">`. Талант изучен — все `li.done`.
+
+«+» на кнопке героя: `<div class="pd-avatar-wrap talent">…<i class="pd-talent-badge"></i></div>`, пока сумма `talentPointsAvailable` по ярусам больше нуля.
+
+### Путь мастерства и способность брони
+
+```html
+<section class="pd-window" role="dialog" aria-label="Путь мастерства">
+  <header class="pd-window-head"><div class="pd-slot"><i class="pd-sitem" data-s="59"></i></div><div class="pd-titles"><h2 class="pd-heading">Путь мастерства</h2></div></header>
+  <p class="pd-pick-intro">Маска Тенгу ложится на лицо…</p>
+  <div class="pd-picks two">
+    <div class="pd-pick" style="--glow:#ffcc66">
+      <div class="pd-pick-art"><i class="pd-pick-avatar" style="--av:0"></i><i class="pd-hicon" data-h="1"></i></div>
+      <span class="pd-pick-name">Гладиатор</span>
+      <p class="pd-pick-desc">Точные удары копят <em>комбо</em>…</p>
+      <div class="pd-pick-tal"><span class="pd-pick-talents"><i class="pd-ticon" data-t="14"></i>…</span>откроет ярус 3</div>
+      <div class="pd-pick-act"><button class="pd-button">Выбрать</button><button class="pd-button quiet">Подробнее</button></div>
+    </div>
+  </div>
+  <button class="pd-button quiet">Решу позже</button>
+</section>
+```
+
+Способность брони — то же без `.two`: `.pd-pick-art` 72×72 со значком `data-h` (16 «Героический прыжок», 17 «Ударная волна», 18 «Выдержка»; остальные классы — `HeroIcon`), в `.pd-pick-act` «Выбрать» и три таланта яруса 4. В шапке — корона `data-s="60"`. После «Выбрать» спросите подтверждение (`windows.wndchooseability.are_you_sure`) окном `showConfirm`.
+
+### Алхимия
+
+```html
+<section class="pd-window pd-alch-window" role="dialog" aria-label="Алхимия">
+  <header class="pd-window-head"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-alchemy)"></i>
+    <div class="pd-titles"><h2 class="pd-heading">Алхимия</h2></div>
+    <span class="pd-energy" aria-label="энергия 12"><i class="pd-sitem" data-s="19"></i>12</span><button class="pd-close"></button></header>
+  <div class="pd-alch">
+    <button class="pd-slot"><i class="pd-sitem" data-s="387"></i></button>
+    <button class="pd-slot"><i class="pd-sitem" data-s="387"></i></button>
+    <button class="pd-slot add" aria-label="Добавить"></button>
+    <i class="pd-alch-arrow ready"></i>
+    <div class="pd-slot out unknown"><i class="pd-sitem" data-s="352"></i></div>
+  </div>
+  <div class="pd-alch-out"><span class="pd-alch-name">Случайное зелье</span><span class="pd-alch-cost">Без энергии</span></div>
+  <div class="pd-actions">
+    <button class="pd-button primary">Сварить</button>
+    <div class="pd-row"><button class="pd-button"><i class="pd-energy-ico"></i>Превратить в энергию</button></div>
+    <div class="pd-row"><button class="pd-button quiet">Рецепты</button><button class="pd-button quiet">Очистить</button></div>
+  </div>
+</section>
+```
+
+- Нет рецепта — стрелка без `.ready`, результат `.pd-slot.out.empty`, «Сварить» `disabled`.
+- Не хватает энергии — `<span class="pd-alch-cost short"><i class="pd-energy-ico x1"></i>Нужно 4, есть 2</span>` и `disabled`.
+- «Превратить в энергию»: `<div class="pd-alch-pick">` из ячеек с `<span class="pd-qty energy">+6</span>`, выбранные `.picked`, у вещи без энергии `.disabled`; итог `<div class="pd-energize-sum"><span>Получите</span><b><i class="pd-energy-ico"></i> +9</b></div>`. Цена — `Item.energyVal()`.
+- Учебник: `<div class="pd-guide-pages" role="tablist">` — кнопки страниц `aria-pressed`, ненайденные `.lost`; рецепт:
+
+```html
+<div class="pd-recipe">
+  <span class="pd-recipe-line" aria-label="Зелье + 4 энергии → особое зелье"><i class="pd-sitem" data-s="352"></i><span class="op">+</span><span class="en"><i class="pd-energy-ico"></i>4</span><i class="pd-alch-arrow"></i><i class="pd-sitem" data-s="368"></i></span>
+  <button class="pd-button">В котёл</button>   <!-- только если всё есть в рюкзаке -->
+  <span class="pd-recipe-name"><b>Особое зелье</b> того же цвета</span>
+</div>
+```
+
+Страницы — `Document.ALCHEMY_GUIDE`: Potions, Stones, Energy_Food, Exotic_Potions, Exotic_Scrolls, Bombs, Weapons, Brews_Elixirs, Spells.
+
+### Артефакт
+
+```html
+<div class="pd-art-level"><span>Уровень</span><span class="pd-steps" style="--max:10"><i class="on"></i><i class="on"></i><i class="part" style="--p:.6"></i><i></i>…</span><span><b>2</b>/10</span></div>
+<div class="pd-art-charge"><span>Заряд</span><div class="pd-charge-bar seg" style="--v:.7;--n:10"></div><span><b>7</b>/10</span></div>
+<p class="pd-art-state">Наполняется едой, пока вы получаете опыт.</p>
+```
+
+- `--max` — `levelCap`, `--p` — доля опыта до следующего уровня, `--n` — `chargeCap` (для заряда в процентах, как у плаща, `--n:10`). Полный — `.pd-charge-bar.full` и `.pd-art-state.on`.
+- Кнопки — `actions(hero)` артефакта: первая основная (`defaultAction`), остальные рядом, «Снять» — обычная.
+- На значке: `<span class="pd-charge" style="--v:.7"></span>` последним ребёнком `.pd-slot` или `.pd-tool.quick`; `.full` при полном заряде. Заряды жезлов остаются `.pd-qty` «2/3».
+
+### Зачарования и глифы
+
+```html
+<button class="pd-slot"><i class="pd-sitem" data-s="112"></i><span class="pd-lvl up">+2</span><i class="pd-mark ench" style="--ench:#ff6a33"></i></button>
+<button class="pd-slot"><i class="pd-sitem" data-s="178"></i><i class="pd-mark glyph new" style="--ench:#a8a090"></i></button>
+<button class="pd-slot cursed"><i class="pd-sitem" data-s="131"></i><i class="pd-mark ench" style="--ench:var(--danger)"></i><i class="pd-mark curse"></i></button>
+<!-- в карточке предмета -->
+<div class="pd-ench-line" style="--ench:#ff6a33"><i class="pd-mark ench"></i><span><b>Зачарование пламени</b>Удары могут поджечь врага.</span></div>
+```
+
+- `.new` — зачарование ещё не осмотрено. Неопознанное — `--ench: var(--ink-muted)`. Проклятое — `--ench: var(--danger)` и `.pd-mark.curse`; строка `.pd-ench-line.curse`.
+- Метка быстрого слота с таким значком сдвигается вправо сама.
+
+Цвета (`--ench`) — свечение `glowing()` из Shattered, поднятое до читаемого на `stone-800` (чёрное и тёмное заменено светлым тоном того же оттенка):
+
+| Зачарование | ru | en | `--ench` | в Shattered |
+| --- | --- | --- | --- | --- |
+| `blazing` | пламени | blazing | `#ff6a33` | `#FF4400` |
+| `blocking` | обороны | blocking | `#7c96ff` | `#0000FF` |
+| `blooming` | цветения | blooming | `#4cc24c` | `#008800` |
+| `chilling` | холода | chilling | `#66f0ff` | `#00FFFF` |
+| `corrupting` | подчинения | corrupting | `#b878e8` | `#440066` |
+| `crystal` | кристаллизации | crystal | `#4aa8ff` | `#0088FF` |
+| `elastic` | упругости | elastic | `#ff66ff` | `#FF00FF` |
+| `eldritch` | ужаса | eldritch | `#a9a3bf` | `#222222` |
+| `grim` | погибели | grim | `#d8cfb8` | `#000000` |
+| `kinetic` | инерции | kinetic | `#ffee55` | `#FFFF00` |
+| `lucky` | удачи | lucky | `#66ff66` | `#00FF00` |
+| `projecting` | проекции | projecting | `#a77ae0` | `#8844CC` |
+| `shocking` | молний | shocking | `#ffffff` | `#FFFFFF` |
+| `unstable` | хаоса | unstable | `#bbbbbb` | `#999999` |
+| `vampiric` | вампиризма | vampiric | `#e8506e` | `#660022` |
+| `venomous` | отравы | venomous | `#9a7cff` | `#4400AA` |
+| `vorpal` | рассечения | vorpal | `#d89090` | `#AA6666` |
+
+| Глиф | ru | en | `--ench` | в Shattered |
+| --- | --- | --- | --- | --- |
+| `affection` | очарования | affection | `#ff6fa8` | `#FF4488` |
+| `antimagic` | антимагии | anti-magic | `#88eeff` | `#88EEFF` |
+| `brimstone` | жара | brimstone | `#ff6a33` | `#FF4400` |
+| `camouflage` | маскировки | camouflage | `#7cc24a` | `#448822` |
+| `entanglement` | опутывания | entanglement | `#c08a4a` | `#663300` |
+| `flow` | амфибии | flow | `#7c96ff` | `#0000FF` |
+| `obfuscation` | темноты | obfuscation | `#a8a8a8` | `#888888` |
+| `potential` | напряжения | potential | `#ffffff` | `#FFFFFF` |
+| `repulsion` | отталкивания | repulsion | `#e8e2c8` | `#FFFFFF` |
+| `stone` | гранита | stone | `#a8a090` | `#222222` |
+| `swiftness` | скорости | swiftness | `#ffee55` | `#FFFF00` |
+| `thorns` | шипов | thorns | `#e8506e` | `#660022` |
+| `viscosity` | вязкости | viscosity | `#a77ae0` | `#8844CC` |
+
+Проклятия оружия (annoying, dazzling, displacing, explosive, friendly, polarized, pressurized, sacrificial, wayward, wondrous) и брони (antientropy, bulk, corrosion, displacement, metabolism, multiplicity, overgrowth, stench) — все `--ench: var(--danger)`.
+
+| Класс | Что это |
+| --- | --- |
+| `.pd-ticon`, `.pd-hicon`, `.pd-sitem` | спрайты Shattered по `data-t`, `data-h`, `data-s` |
+| `.pd-hero-window`, `.pd-tab-plus`, `.pd-talent-badge`, `.pd-avatar-wrap.talent` | окно героя с вкладками и «+» |
+| `.pd-talents`, `.pd-tier(.locked)`, `.pd-tier-head`, `.pd-tier-sub`, `.pd-tier-points(.free)`, `.pd-talent-row`, `.pd-talent(.zero/.max/.selected)`, `.pd-pips`, `.pd-talent-ghosts`, `.pd-tier-lock`, `.pd-talents-foot` | таланты |
+| `.pd-talent-card`, `.pd-talent-progress`, `.pd-talent-levels li(.done/.next)`, `.pd-talent-cost` | карточка таланта |
+| `.pd-picks(.two)`, `.pd-pick(.chosen)`, `.pd-pick-art`, `.pd-pick-avatar`, `.pd-pick-name`, `.pd-pick-desc`, `.pd-pick-tal`, `.pd-pick-talents`, `.pd-pick-act`, `.pd-pick-intro` | выбор пути и способности |
+| `.pd-alch-window`, `.pd-energy`, `.pd-energy-ico`, `.pd-alch`, `.pd-slot.out(.unknown/.empty)`, `.pd-slot.add`, `.pd-alch-arrow(.ready)`, `.pd-alch-out`, `.pd-alch-name`, `.pd-alch-cost(.short)`, `.pd-alch-pick`, `.pd-energize-sum` | котёл |
+| `.pd-guide-pages`, `.pd-recipes`, `.pd-recipe`, `.pd-recipe-line`, `.pd-recipe-name` | учебник алхимии |
+| `.pd-art-level`, `.pd-steps`, `.pd-art-charge`, `.pd-charge-bar(.seg/.full)`, `.pd-art-state(.on)`, `.pd-charge(.full)` | артефакт |
+| `.pd-mark.ench/.glyph(.new)`, `.pd-ench-line(.curse)` | зачарования и глифы |
+| `.pd-classes.six`, `.pd-class.new` | 6 классов |

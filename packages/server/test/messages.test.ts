@@ -30,6 +30,11 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'special', target: 7 })).toEqual({ type: 'special', target: 7 });
     expect(sanitizeAction({ type: 'beacon', item: 5, mode: 'return' })).toEqual({ type: 'beacon', item: 5, mode: 'return' });
     expect(sanitizeAction({ type: 'reward', choice: 'weapon' })).toEqual({ type: 'reward', choice: 'weapon' });
+    // The warrior's broken seal: onto an armour, off one.
+    expect(sanitizeAction({ type: 'affix', from: 'armor', to: 3, x: 1 })).toEqual({ type: 'affix', from: 'armor', to: 3 });
+    expect(sanitizeAction({ type: 'affix', from: 2, to: 'armor' })).toEqual({ type: 'affix', from: 2, to: 'armor' });
+    expect(sanitizeAction({ type: 'detach', armor: 'armor' })).toEqual({ type: 'detach', armor: 'armor' });
+    expect(sanitizeAction({ type: 'detach', armor: 4 })).toEqual({ type: 'detach', armor: 4 });
     expect(sanitizeAction({ type: 'wandReward', choice: 'utility' })).toEqual({ type: 'wandReward', choice: 'utility' });
     // The arena of waves: ready for the next wave, and one of three rewards.
     expect(sanitizeAction({ type: 'arenaReady', wave: 99 })).toEqual({ type: 'arenaReady' });
@@ -46,6 +51,8 @@ describe('client messages', () => {
       { type: 'use', item: 1, target: 'ring' }, { type: 'drop', item: 1000 }, { type: 'reward', choice: 'gold' },
       { type: 'reforge', first: 'helmet', second: 1 }, { type: 'master', item: 1, subclass: 'pirate' },
       { type: 'balance', item: 1, imbue: 'luck' }, { type: 'special', target: null }, { type: 'beacon', item: 1, mode: 'go' },
+      { type: 'affix', from: 'weapon', to: 1 }, { type: 'affix', from: 1 }, { type: 'affix', from: 1, to: 1000 }, { type: 'detach' },
+      { type: 'detach', armor: 'ring0' }, { type: 'detach', armor: -1 },
       { type: 'arenaPick' }, { type: 'arenaPick', choice: 3 }, { type: 'arenaPick', choice: -1 }, { type: 'arenaPick', choice: '1' },
       { type: 'zap', item: 'armor', target: 5 }, { type: 'zap', item: 1, target: LENGTH }, { type: 'imbue', staff: 'ring0', wand: 1 },
       { type: 'imbue', staff: 'weapon' }, { type: 'dismiss', target: 4 }, { type: 'dismiss' },

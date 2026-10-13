@@ -16,8 +16,6 @@ export interface RunState {
   labels: Labels;
   /** The troll blacksmith has set up his forge in the caves (absent in older runs). */
   blacksmithSpawned?: boolean;
-  /** The dew vial has been laid out in the sewers (absent in older runs). */
-  dewVialSpawned?: boolean;
   /** Generator.Category.WAND's deck: how many of each wand kind (in WAND_KINDS order) are left, and how many were dealt. */
   wandDeck?: number[];
   wandsDealt?: number;

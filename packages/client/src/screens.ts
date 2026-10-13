@@ -1,9 +1,9 @@
 import {
   type Action, BACKPACK_SIZE, scrollTargets, isBroken, isIdentified, type Hero, inBag, type HeroClass, type Item, itemDef, itemPrice, type ItemRef,
-  itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, visiblyCursed, type World, CLASS_ARMOR_OF,
+  itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, visiblyCursed, type World, CLASS_ARMOR_OF, heroById, offersSealTransfer, shielding,
 } from '@pd/core';
 import { audio } from './audio';
-import { chooseQuickslot, quickIndex, quickItem, quickUse, WEAPON_SLOT } from './quickslot';
+import { chooseQuickslot, isQuickslotted, QUICKSLOTS, quickKind, quickUse, WEAPON_SLOT } from './quickslot';
 import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
 import { BUFF_ICONS, type BuffName } from './hud';
 import { capitalize, locale, t } from './i18n';
@@ -130,10 +130,10 @@ export function sprites(scope: ParentNode): void {
     node.style.setProperty('--iy', String(Math.floor(i / perRow)));
   });
   scope.querySelectorAll<HTMLElement>('[data-b]').forEach((node) => {
-    let b = Number(node.dataset.b);
-    // Shattered's buff icons: a sheet of their own (assets/spd/buffs.png), numbered from 1000.
-    node.classList.toggle('spd', b >= 1000);
-    if (b >= 1000) b -= 1000;
+    // From 1000: Shattered's buffs.png, the same 18 a row but more rows (see BUFF_ICONS).
+    const spd = Number(node.dataset.b) >= 1000;
+    const b = Number(node.dataset.b) % 1000;
+    node.classList.toggle('spd', spd);
     node.style.setProperty('--bx', String(b % 18));
     node.style.setProperty('--by', String(Math.floor(b / 18)));
   });
@@ -347,7 +347,9 @@ function titleFor(world: World, item: Item, box: HTMLElement): void {
 }
 
 /** The item is the one the quickslot shows. */
-const inQuickslot = (hero: Hero, item: Item): boolean => quickItem(hero) === item;
+// (The mage's staff counts in hand too: Shattered keeps it in a quick slot from the start.)
+const inQuickslot = (hero: Hero, item: Item): boolean => isQuickslotted(item.kind) &&
+  (hero.items.find((other) => other.kind === item.kind) === item || (item === hero.weapon && item.kind === 'weapon.magesStaff'));
 
 /* Title */
 
@@ -660,7 +662,8 @@ export function showHero(options: HeroOptions): void {
       },
       stats([
         [t.strength, String(hero.str)],
-        [t.health, `${Math.max(0, hero.hp)}/${hero.ht}`],
+        // WndHero: health, and the shield over it (the warrior's seal).
+        [t.health, shielding(hero) > 0 ? `${Math.max(0, hero.hp)}+${shielding(hero)}/${hero.ht}` : `${Math.max(0, hero.hp)}/${hero.ht}`],
         [t.experience, `${hero.exp}/${maxExp(hero)}`],
         [t.goldLabel, String(hero.gold), 'gold'],
         [t.slain, String(hero.kills)],
@@ -1646,8 +1649,13 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     }
     if (category === 'weapon' || category === 'armor' || category === 'ring') {
       const worn: BagChoice = category === 'ring' ? { ring: hero.rings.length < 2 ? hero.rings.length : 0 } : { worn: category === 'armor' ? 'armor' : 'weapon' };
-      use(category === 'ring' ? t.putOn : t.equip, () => stay({ type: 'equip', item: index }, worn));
+      use(category === 'ring' ? t.putOn : t.equip, () => {
+        stay({ type: 'equip', item: index }, worn);
+        if (category === 'armor') offerSealTransfer(options, index);
+      });
     }
+    // Armor.AC_DETACH: the warrior's seal off an armour in the pack.
+    if (item.seal) more.push(button(t.hero.detach, () => stay({ type: 'detach', armor: index }, null)));
     if (category === 'beacon') {
       // LloydsBeacon: set it here, or go back to where it was set.
       if (item.returnTo) use(t.beaconReturn, () => act({ type: 'beacon', item: index, mode: 'return' }));
@@ -1661,6 +1669,8 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     }
     if (category === 'wipeout') use(t.read, () => act({ type: 'use', item: index }));
     if (category === 'vial' && item.volume) use(t.drink, () => act({ type: 'use', item: index }));
+    // BrokenSeal.AC_AFFIX: onto an armour, worn or in the pack (WndBag's armour selector).
+    if (category === 'seal') use(t.hero.affix, () => pickArmorForSeal(options, index, stay));
     if (category === 'missile' || category === 'wand' || category === 'bomb' || category === 'honeypot') {
       const kind = category === 'wand' ? 'zap' : 'throw';
       use(kind === 'throw' ? t.throwItem : t.zap, () => aimWith(kind, index));
@@ -1669,18 +1679,17 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     if (category === 'honeypot') use(t.shatterPot, () => act({ type: 'use', item: index }));
     // Item.AC_THROW: anything in the pack can be thrown where the player taps (a bag would scatter what it holds).
     if (!['bag', 'missile', 'bomb', 'honeypot', 'potion', 'seed'].includes(category)) use(t.throwItem, () => aimWith('throw', index));
-    // QuickSlot: any item with a use can be kept one tap away.
-    // QuickSlot: one on a phone; a wide screen has two (keys 1 and 2).
-    if (quickUse(item.kind)) {
-      const wide = Boolean(document.querySelector('#ui.pd-wide'));
-      const slots = wide ? [0, 1] : [0];
-      for (const slotNo of slots) {
-        if (quickItem(hero, slotNo) === item) continue;
-        more.push(button(wide ? t.quickslotN(slotNo + 1) : t.quickslotShort, () => {
-          chooseQuickslot(item.kind, slotNo);
-          refreshBackpack(world, hero);
-        }));
-      }
+    // QuickSlot: any item with a use can be kept one tap away: into the first free slot (or one whose item
+    // ran out), else the first. Holding a slot on the toolbar chooses for that slot (Toolbar's quickslot_assign).
+    if (quickUse(item.kind) && !isQuickslotted(item.kind)) {
+      more.push(button(t.quickslotShort, () => {
+        const free = Array.from({ length: QUICKSLOTS }, (_, i) => i).find((i) => {
+          const kind = quickKind(i);
+          return kind === null || (!hero.items.some((other) => other.kind === kind) && hero.weapon?.kind !== kind);
+        });
+        chooseQuickslot(item.kind, free ?? 0);
+        refreshBackpack(world, hero);
+      }));
     }
     danger.push(button(t.dropItem, () => stay({ type: 'drop', item: index }), 'danger'));
   } else if (options.ring !== undefined) {
@@ -1691,8 +1700,12 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       if (item.wand) use(t.zap, () => aimWith('zap', WEAPON_SLOT));
       use(t.staffImbue, () => pickWandToImbue(options, 'weapon', act));
       // QuickSlot: the staff in hand can be kept one tap away too.
-      if (quickItem(hero, 0) !== item) more.push(button(t.quickslotShort, () => {
-        chooseQuickslot(item.kind, 0);
+      if (!isQuickslotted(item.kind)) more.push(button(t.quickslotShort, () => {
+        const free = Array.from({ length: QUICKSLOTS }, (_, i) => i).find((i) => {
+          const kind = quickKind(i);
+          return kind === null || (!hero.items.some((other) => other.kind === kind) && hero.weapon?.kind !== kind);
+        });
+        chooseQuickslot(item.kind, free ?? 0);
         refreshBackpack(world, hero);
       }));
     }
@@ -1702,6 +1715,8 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     const aimed = hero.heroClass === 'warrior' || hero.heroClass === 'rogue';
     use(t.specials[hero.heroClass], () => (aimed ? aimWith('special', -1) : act({ type: 'special' })));
   }
+  // Armor.AC_DETACH, on the armour worn.
+  if (item === hero.armor && item.seal) more.push(button(t.hero.detach, () => stay({ type: 'detach', armor: 'armor' }, null)));
   return { main, more, danger };
 }
 
@@ -1736,6 +1751,41 @@ function pickWandToImbue(options: ItemOptions, staffRef: ItemRef, act: (action: 
       onCancel: back,
     },
   });
+}
+
+/** BrokenSeal.armorSelector: the backpack opened on the armours the seal can go onto (the one worn too). */
+function pickArmorForSeal(options: ItemOptions, from: number | 'armor', stay: (action: Action, next?: BagChoice | null) => void): void {
+  const { hero } = options;
+  const targets: ItemRef[] = [
+    ...(hero.armor && !hero.armor.seal ? ['armor' as const] : []),
+    ...hero.items.flatMap((item, i) => (itemDef(item.kind).category === 'armor' && !item.seal ? [i] : [])),
+  ];
+  showBackpack({
+    ...options,
+    pick: {
+      title: t.hero.affixPrompt,
+      targets,
+      onPick: (to) => {
+        showBackpack(options, null);
+        stay({ type: 'affix', from, to: to as number | 'armor' }, to === 'armor' ? { worn: 'armor' } : null);
+      },
+      onCancel: () => showBackpack(options, typeof from === 'number' ? { index: from } : { worn: 'armor' }),
+    },
+  });
+}
+
+/**
+ * Armor.doEquip for the warrior: the armour taken off carried his seal and the new one has none (and
+ * is not cursed) — he is asked whether the seal should move over (Armor.seal_transfer). The armour
+ * taken off is where the new one was in the pack.
+ */
+function offerSealTransfer(options: ItemOptions, index: number): void {
+  const hero = heroById(options.world, options.hero.id) ?? options.hero;
+  if (!offersSealTransfer(hero, hero.items[index])) return;
+  showConfirm(capitalize(t.items.seal), t.hero.sealTransfer, t.hero.yes, t.hero.no, () => {
+    options.onAction({ type: 'affix', from: index, to: 'armor' });
+    refreshBackpack(options.world, options.hero);
+  }, () => showBackpack(options, { worn: 'armor' }));
 }
 
 /** TomeOfMastery: the two ways of the hero's class, as equal cards; the choice can wait. */

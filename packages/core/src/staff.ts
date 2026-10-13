@@ -17,7 +17,7 @@ import type { ItemRef } from './scrolls';
 export function staffWith(wand: Item): Item {
   const staff = createItem('weapon.magesStaff');
   // Wand.identify: its level, curse and charges known.
-  for (const key of ['levelUnknown', 'curseUnknown', 'chargesUnknown', 'usesToId', 'usesAvailable', 'cursed'] as const) delete wand[key];
+  for (const key of ['levelUnknown', 'curseUnknown', 'chargesUnknown', 'usesLeftToID', 'availableUsesToID', 'cursed'] as const) delete wand[key];
   staff.wand = wand;
   updateWand(staff, false);
   wand.charges = wandMaxCharges(wand, true);

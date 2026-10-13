@@ -1,4 +1,4 @@
-import { createMob, type Hero, HERO_CLASSES, type HeroClass, isAlive, type Mob, mobStats } from './actors';
+import { createMob, type Hero, type HeroClass, isAlive, type Mob, mobStats } from './actors';
 import { type Ballistica, ballistica, cone, MAGIC_BOLT, PROJECTILE, STOP_SOLID, STOP_TARGET } from './ballistica';
 import { armorRoll, hurt } from './combat';
 import { castShadow } from './fov';
@@ -418,7 +418,7 @@ function apply(ctx: Ctx, effect: CursedEffect, user: Hero, origin: Item | null, 
       return;
     }
     case 'heroShapeShift': {
-      const classes = (Object.keys(HERO_CLASSES) as HeroClass[]).filter((c) => c !== user.heroClass);
+      const classes = (['warrior', 'mage', 'rogue', 'huntress'] as const satisfies readonly HeroClass[]).filter((c) => c !== user.heroClass);
       user.disguise = { heroClass: rng.oneOf(classes), turns: DISGUISE_TURNS };
       return;
     }

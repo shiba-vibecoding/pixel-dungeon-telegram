@@ -29,6 +29,9 @@ const itemRef = (value: unknown): ItemRef | null => (isItemRef(value) && (typeof
 
 const ALL_SUBCLASSES: readonly SubClass[] = Object.values(SUBCLASSES).flat();
 
+/** Where the warrior's seal is taken from or put: a backpack slot, or the armour worn (the core's SealSource). */
+const sealSource = (value: unknown): number | 'armor' | null => (value === 'armor' ? 'armor' : slot(value));
+
 /** The action as the rules know it, or null if it is not one. */
 export function sanitizeAction(raw: unknown): Action | null {
   if (typeof raw !== 'object' || raw === null) return null;
@@ -141,6 +144,15 @@ export function sanitizeAction(raw: unknown): Action | null {
       if (a.weapon === undefined) return { type: 'balance', item, imbue };
       const weapon = slot(a.weapon);
       return weapon === null ? null : { type: 'balance', item, weapon, imbue };
+    }
+    case 'affix': {
+      const from = sealSource(a.from);
+      const to = sealSource(a.to);
+      return from === null || to === null ? null : { type: 'affix', from, to };
+    }
+    case 'detach': {
+      const armor = sealSource(a.armor);
+      return armor === null ? null : { type: 'detach', armor };
     }
     case 'plan': {
       // Live turns: a standing order of a few steps, each a plain action or one that lasts.

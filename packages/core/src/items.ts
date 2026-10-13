@@ -20,7 +20,7 @@ import { S } from './spd-sprites';
 
 export type ItemCategory =
   | 'gold' | 'potion' | 'scroll' | 'weapon' | 'armor' | 'missile' | 'wand' | 'ring' | 'seed' | 'food' | 'dew' | 'torch' | 'key'
-  | 'tome' | 'quest' | 'ankh' | 'kit' | 'bomb' | 'weightstone' | 'beacon' | 'honeypot' | 'vial' | 'bag' | 'wipeout';
+  | 'tome' | 'quest' | 'ankh' | 'kit' | 'bomb' | 'weightstone' | 'beacon' | 'honeypot' | 'vial' | 'bag' | 'wipeout' | 'seal';
 
 export interface ItemDef {
   category: ItemCategory;
@@ -74,7 +74,8 @@ export const ITEMS = {
 
   'weapon.knuckles': weapon(1, S.GLOVES, 1, 0.5),
   'weapon.dagger': weapon(1, S.DAGGER, 1.2),
-  'weapon.shortSword': weapon(1, S.SHORTSWORD, 1, 1, 11),
+  /** The warrior's (WornShortsword's numbers: tier 1, 1-10, ten strength, where Pixel Dungeon's wanted eleven). */
+  'weapon.shortSword': weapon(1, S.SHORTSWORD),
   'weapon.quarterstaff': weapon(2, S.QUARTERSTAFF),
   'weapon.spear': weapon(2, S.SPEAR, 1, 1.5),
   'weapon.mace': weapon(3, S.MACE, 1, 0.8),
@@ -147,16 +148,17 @@ export const ITEMS = {
   'seed.fadeleaf': { category: 'seed', sprite: S.SEED_FADELEAF },
   /** Only from the shrub the old wandmaker is after; it brews strength. */
   'seed.rotberry': { category: 'seed', sprite: S.SEED_ROTBERRY },
-  // Food (Food, Pasty, MysteryMeat): a ration staves off hunger for a while,
-  // a pasty completely; mystery meat from crabs is a gamble.
-  'food.ration': { category: 'food', sprite: S.RATION, energy: 260 },
-  'food.pasty': { category: 'food', sprite: S.PASTY, energy: 360 },
-  'food.meat': { category: 'food', sprite: S.MEAT, energy: 100 },
+  // Food (Food, Pasty, MysteryMeat), as filling as Shattered makes it (Hunger.HUNGRY is 300): a ration
+  // staves off hunger for a while (Food.energy = HUNGRY), a pasty completely (STARVING); mystery meat
+  // from crabs is a gamble, worth half a ration.
+  'food.ration': { category: 'food', sprite: S.RATION, energy: 300 },
+  'food.pasty': { category: 'food', sprite: S.PASTY, energy: 450 },
+  'food.meat': { category: 'food', sprite: S.MEAT, energy: 150 },
   // Mystery meat cooked by fire or frozen by frost (ChargrilledMeat, FrozenCarpaccio), and the
-  // shops' smaller, dearer ration (OverpricedRation).
-  'food.steak': { category: 'food', sprite: S.STEAK, energy: 100 },
-  'food.carpaccio': { category: 'food', sprite: S.CARPACCIO, energy: 100 },
-  'food.overpriced': { category: 'food', sprite: S.OVERPRICED, energy: 100 },
+  // shops' smaller ration (SmallRation, Pixel Dungeon's overpriced one): half a ration each.
+  'food.steak': { category: 'food', sprite: S.STEAK, energy: 150 },
+  'food.carpaccio': { category: 'food', sprite: S.CARPACCIO, energy: 150 },
+  'food.overpriced': { category: 'food', sprite: S.OVERPRICED, energy: 150 },
   /** Shattered, it lets out a golden bee that fights for whoever broke it, for a while (Honeypot). */
   honeypot: { category: 'honeypot', sprite: S.HONEYPOT },
   /** The sacrificial fire's reward: read, it kills every monster on the level but its boss (ScrollOfWipeOut). */
@@ -171,8 +173,10 @@ export const ITEMS = {
   'bag.seeds': { category: 'bag', sprite: S.POUCH },
   'bag.scrolls': { category: 'bag', sprite: S.HOLDER },
   'bag.wands': { category: 'bag', sprite: S.HOLSTER },
-  /** Keeps spare dew for later; full, it saves its bearer from death once (DewVial). */
-  vial: { category: 'vial', sprite: S.VIAL },
+  /** Every hero's, from the start: it keeps the dew picked up, to be drunk when hurt (Waterskin; Pixel Dungeon's dew vial). */
+  waterskin: { category: 'vial', sprite: S.WATERSKIN },
+  /** The Warrior's broken seal, when it is not affixed to armour (BrokenSeal; on armour it is Item.seal). */
+  seal: { category: 'seal', sprite: S.SEAL },
   /** Shaken from tall grass; heals whoever picks it up. */
   dew: { category: 'dew', sprite: S.DEWDROP },
   /** Opens the locked room of the level it was found on. */
@@ -215,12 +219,6 @@ export interface Item {
   /** Wands (Wand.curCharges and partialCharge): charges left, and the share of the next one gathered so far. */
   charges?: number;
   partial?: number;
-  /**
-   * Wand.usesLeftToID and availableUsesToID: zaps still needed to know a wand through and through (10 at
-   * first), and how many of them it may count now (5 at first, more with every level the hero gains).
-   */
-  usesToId?: number;
-  usesAvailable?: number;
   /** The mage's staff: the wand imbued in it (MagesStaff.wand), charged and zapped through the staff. */
   wand?: Item;
   /** WandOfRegrowth.totChrgUsed and chargesOverLimit: charges spent so far, and those beyond what the wand can bear. */
@@ -242,8 +240,10 @@ export interface Item {
   cursed?: boolean;
   /** Class armour: the armour it was made from, whose protection it keeps. */
   base?: ItemKind;
-  /** The dew vial: how many drops it holds, ten at most. */
+  /** The waterskin: how many drops of dew it holds, twenty at most. */
   volume?: number;
+  /** Armour: the Warrior's broken seal affixed to it, and the upgrade it carries (0 or 1); see seal.ts. */
+  seal?: { level: number };
   /** Lloyd's beacon: where it was set, if it was. */
   returnTo?: { depth: number; pos: number };
   /** Melee weapons: balanced with a weightstone, for speed or for accuracy (Weapon.imbue). */
@@ -258,8 +258,17 @@ export interface Item {
   levelUnknown?: boolean;
   curseUnknown?: boolean;
   chargesUnknown?: boolean;
-  /** Weapons, armour and wands: blows struck, blows taken or zaps so far towards knowing them (Weapon.hitsToKnow, Armor.hitsToKnow, Wand.usagesToKnow). */
+  /** Wands: zaps so far towards knowing them (Wand.usagesToKnow). */
   familiarity?: number;
+  /**
+   * Weapons and armour: uses left before they are known, and how many of those are ready now
+   * (Weapon and Armor.usesLeftToID, availableUsesToID; a wand's zaps, Wand.usesLeftToID: 10 at first, 5 of
+   * them ready, more with every level the hero gains); rings: the share of a level still to gain
+   * while worn (Ring.levelsToID). Absent: as found. See ident.ts.
+   */
+  usesLeftToID?: number;
+  availableUsesToID?: number;
+  levelsToID?: number;
 }
 
 /* Enchantments and glyphs (Weapon.Enchantment, Armor.Glyph) */
@@ -354,6 +363,8 @@ export function itemPrice(item: Item, known: boolean): number {
       if (item.kind === 'weapon.pickaxe' || item.kind === 'weapon.magesStaff') return 0;
       return levelled(Math.trunc(20 * 2 ** (def.tier! - 1) * (item.enchant ? 1.5 : 1)));
     case 'armor':
+      // Armor.value: the warrior's sealed armour is not for sale.
+      if (item.seal) return 0;
       return levelled(Math.trunc(10 * 2 ** (itemDef(item.base ?? item.kind).tier! - 1) * (item.glyph ? 1.5 : 1)));
     case 'potion':
       return (known ? POTION_PRICES[item.kind] ?? 20 : 20) * item.qty;

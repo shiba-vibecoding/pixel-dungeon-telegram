@@ -129,10 +129,10 @@ describe('Shattered\'s wands (Wand)', () => {
       zap(world, hero.pos + 3);
     }
     // Only five zaps counted: the rest wait for the hero to gain experience.
-    expect(wand!).toMatchObject({ usesToId: 5, usesAvailable: 0, levelUnknown: true });
+    expect(wand!).toMatchObject({ usesLeftToID: 5, availableUsesToID: 0, levelUnknown: true });
     // A whole level's worth of experience: five more may count.
     wandsGainExp(hero, 10);
-    expect(wand!.usesAvailable).toBe(5);
+    expect(wand!.availableUsesToID).toBe(5);
     for (let i = 0; i < 5; i++) {
       wand!.charges = 3;
       zap(world, hero.pos + 3);

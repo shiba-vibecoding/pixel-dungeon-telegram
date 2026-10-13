@@ -1,7 +1,7 @@
 import {
   armorStats, buffedLevel, chargeLimit, chargesKnown, chargesPerCast, durabilityOf, isBroken, isIdentified, kindKnown, levelKnown, maxCharges,
   maxDurability, CLASS_ARMOR, CLASS_ARMOR_OF, type Hero, type HeroClass, type Item, itemDef, type ItemKind, itemSprite, missileStats, SCROLL_RUNES,
-  visiblyCursed, wandDamage, weaponStats, type World,
+  visiblyCursed, wandDamage, weaponStats, sealShield, WATERSKIN_VOLUME, type World,
 } from '@pd/core';
 import { t } from './i18n';
 
@@ -19,7 +19,7 @@ export const isKnown = (world: World, item: Item): boolean => kindKnown(world, i
 export function itemName(world: World, item: Item): string {
   const category = itemDef(item.kind).category;
   if (category === 'gold') return `${item.qty} ${t.goldShort}`;
-  if (category === 'vial') return `${t.items[item.kind]} (${item.volume ?? 0}/10)`;
+  if (category === 'vial') return `${t.items[item.kind]} (${item.volume ?? 0}/${WATERSKIN_VOLUME})`;
   if (!isKnown(world, item)) {
     const label = world.run.labels[item.kind] ?? 0;
     // Ring.name goes by the gem; Item.toString adds a known level all the same.
@@ -143,7 +143,14 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
       ...(item.glyph ? [t.glyphInfo[item.glyph]] : []), ...(visiblyCursed(item) ? [t.cursedInfo] : []),
       ...(CLASS_ARMOR.includes(item.kind) ? [t.classArmorInfo[CLASS_OF[item.kind]!], t.specialCost] : []),
       ...(stats.str > hero.str ? [known ? t.tooHeavy : t.probablyTooHeavy] : []),
+      // Armor.info: the warrior's seal on it, and the shield it gives.
+      ...(item.seal ? [t.hero.sealAttached(sealShield(hero, item))] : []),
     ];
+  }
+  if (category === 'vial') {
+    // Waterskin.info: plain water, or healing dew; full, it seems to radiate energy.
+    const volume = item.volume ?? 0;
+    return [t.itemInfo[item.kind] ?? '', volume === 0 ? t.hero.waterskinWater : t.hero.waterskinHeal, ...(volume >= WATERSKIN_VOLUME ? [t.hero.waterskinFullDesc] : [])];
   }
   if (category === 'missile') {
     const stats = missileStats(item);

@@ -249,10 +249,10 @@ export function zap(ctx: Ctx, hero: Hero, ref: ItemRef, target: number): number 
 function wandUsed(z: Zap, charges: number): void {
   const { ctx, hero, wand, staff } = z;
   if (!isIdentified(ctx.world, wand)) {
-    const uses = Math.min(wand.usesAvailable ?? WAND_USES_TO_ID / 2, 1);
-    wand.usesAvailable = (wand.usesAvailable ?? WAND_USES_TO_ID / 2) - uses;
-    wand.usesToId = (wand.usesToId ?? WAND_USES_TO_ID) - uses;
-    if (wand.usesToId <= 0) {
+    const uses = Math.min(wand.availableUsesToID ?? WAND_USES_TO_ID / 2, 1);
+    wand.availableUsesToID = f32((wand.availableUsesToID ?? WAND_USES_TO_ID / 2) - uses);
+    wand.usesLeftToID = f32((wand.usesLeftToID ?? WAND_USES_TO_ID) - uses);
+    if (wand.usesLeftToID <= 0) {
       identify(ctx.world, wand);
       ctx.effects.push({ type: 'familiar', hero: hero.id, item: wand, learned: false });
     }
@@ -805,7 +805,7 @@ function transfusion(z: Zap, beam: Ballistica): void {
     healing -= shielding;
     if (shielding > 0) {
       shieldUp(ch, shielding);
-      ctx.effects.push({ type: 'shielded', depth: ctx.depth, who: ch.id, amount: shielding });
+      ctx.effects.push({ type: 'barrier', depth: ctx.depth, who: ch.id, amount: shielding });
     }
     ch.hp += healing;
     if (healing > 0) ctx.effects.push({ type: 'mobHealed', depth: ctx.depth, mob: ch.id, amount: healing });
@@ -817,7 +817,7 @@ function transfusion(z: Zap, beam: Ballistica): void {
     }
   } else if (ch.state !== 'passive' || ch.kind === 'mimic') {
     shieldUp(hero, 5 + z.level);
-    ctx.effects.push({ type: 'shielded', depth: ctx.depth, who: hero.id, amount: 5 + z.level });
+    ctx.effects.push({ type: 'barrier', depth: ctx.depth, who: hero.id, amount: 5 + z.level });
     if (!hasProp(ch, 'undead')) {
       if (!isImmune(ch, 'charm')) {
         ch.charmed = Math.max(ch.charmed ?? 0, CHARM_TURNS / 2);
@@ -1059,7 +1059,7 @@ function onHit(ctx: Ctx, hero: Hero, staff: Item, wand: Item, defender: Char, da
         wand.freeCharge = true;
         const shield = Math.round(2 * (5 + level) * multi);
         shieldUp(hero, shield);
-        ctx.effects.push({ type: 'shielded', depth: ctx.depth, who: hero.id, amount: shield });
+        ctx.effects.push({ type: 'barrier', depth: ctx.depth, who: hero.id, amount: shield });
         ctx.effects.push({ type: 'wand', hero: hero.id, note: 'charged', item: wand.kind });
       }
       return undefined;
@@ -1160,12 +1160,11 @@ export const RECHARGING_TURNS = 30;
  * Wand.onHeroGainExp: with every level's worth of experience the hero gains, a wand not yet known
  * may count five more zaps towards knowing it (no more than five waiting).
  */
-export function wandsGainExp(hero: Hero, exp: number): void {
-  const share = exp / maxExp(hero);
+export function wandsGainExp(hero: Hero, share: number): void {
   for (const { wand } of heldWands(hero)) {
     if (!wand.levelUnknown && !wand.curseUnknown && !wand.chargesUnknown) continue;
-    const available = wand.usesAvailable ?? WAND_USES_TO_ID / 2;
-    if (available <= WAND_USES_TO_ID / 2) wand.usesAvailable = Math.min(WAND_USES_TO_ID / 2, available + (share * WAND_USES_TO_ID) / 2);
+    const available = wand.availableUsesToID ?? WAND_USES_TO_ID / 2;
+    if (available <= WAND_USES_TO_ID / 2) wand.availableUsesToID = Math.min(WAND_USES_TO_ID / 2, f32(available + f32(f32(share * WAND_USES_TO_ID) / 2)));
   }
 }
 
