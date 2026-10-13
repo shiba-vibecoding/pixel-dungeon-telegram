@@ -41,6 +41,14 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'clean', item: 2, all: true })).toEqual({ type: 'clean', item: 2, all: true });
     expect(sanitizeAction({ type: 'special' })).toEqual({ type: 'special' });
     expect(sanitizeAction({ type: 'special', target: 7 })).toEqual({ type: 'special', target: 7 });
+    // The armour ability's warp beacon choice, the class armour's transfer, a point of talent.
+    expect(sanitizeAction({ type: 'special', choice: 1, x: 2 })).toEqual({ type: 'special', choice: 1 });
+    expect(sanitizeAction({ type: 'special', choice: 2 })).toBeNull();
+    expect(sanitizeAction({ type: 'transfer', to: 'armor', from: 4, junk: 1 })).toEqual({ type: 'transfer', to: 'armor', from: 4 });
+    expect(sanitizeAction({ type: 'transfer', to: 'weapon', from: 4 })).toBeNull();
+    expect(sanitizeAction({ type: 'talent', talent: 'bodySlam' })).toEqual({ type: 'talent', talent: 'bodySlam' });
+    expect(sanitizeAction({ type: 'talent', talent: 'nonsense' })).toBeNull();
+    expect(sanitizeAction({ type: 'use', item: 3, choice: 2 })).toEqual({ type: 'use', item: 3, choice: 2 });
     // Artifacts (the core's ArtifactAction): worn by slot or carried by index, a use, and what it aims at or takes.
     expect(sanitizeAction({ type: 'artifact', item: 5, use: 'return', mode: 'x' })).toEqual({ type: 'artifact', item: 5, use: 'return' });
     expect(sanitizeAction({ type: 'artifact', item: 'artifact', use: 'cast', cell: 300 })).toEqual({ type: 'artifact', item: 'artifact', use: 'cast', cell: 300 });

@@ -107,6 +107,8 @@ export function damageTaken(ctx: Ctx, victim: Char, damage: number, by: Char | n
     if (victim.charmed <= 0) delete victim.charmedBy;
   }
   if (!isHero(victim) && victim.doomed) damage = Math.round(damage * 1.67);
+  // Char.damage: a monster marked for death (Death Mark) takes a quarter more, unless it is an ally.
+  if (!isHero(victim) && victim.deathMark && !victim.ally) damage = Math.trunc(damage * 1.25);
   if ((victim.shield ?? 0) > 0 && damage > 0) {
     const absorbed = Math.min(victim.shield!, damage);
     victim.shield! -= absorbed;

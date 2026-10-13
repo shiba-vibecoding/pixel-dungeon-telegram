@@ -15,6 +15,7 @@ import { cellX, cellY, HEIGHT, WIDTH } from './level/geometry';
 import { circleCells } from './fov';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { sealShieldTick } from './seal';
+import { chargeClassArmor } from './classArmor';
 import type { World } from './world';
 import { artifactsAct, artifactsGainExp, chaliceRegenDelay, talismanBlinds, talismanFound } from './artifacts';
 
@@ -266,6 +267,8 @@ export function heroTurns(ctx: Ctx, hero: Hero, from: number, to: number): numbe
     lockedFloorTurn(ctx, hero);
     hungerTurn(ctx, hero);
     sealShieldTick(ctx, hero);
+    // ClassArmor.Charger: worn class armour gathers charge.
+    chargeClassArmor(ctx, hero);
     // The talents' and subclasses' buffs (Berserk, Combo, Momentum, Preparation, protective shadows).
     if (talentTurn(ctx, hero) && isAlive(hero) === false) killHero(ctx, hero, 'berserk');
     // The artifacts' buffs (Artifact.ArtifactBuff), on the hero's own depth; the time a cursed hourglass steals.

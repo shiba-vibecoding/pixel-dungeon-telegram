@@ -25,6 +25,8 @@ import { holdFastArmor } from './talents/hold-fast';
 import { freerunning, momentumEvasion, momentumSpeed } from './talents/rogue';
 import { consumeLethalMomentum } from './talents/turns';
 import type { TalentBuffs } from './talents/state';
+import type { AbilityState } from './abilities/state';
+import { natureBowSpeed, natureSpeed } from './abilities/huntress';
 
 /*
  * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
@@ -205,6 +207,12 @@ export interface Hero {
   kinetic?: number;
   /** Turns left of a wayward weapon's poor aim (Wayward.WaywardBuff). */
   wayward?: number;
+  /** Talents: points by talent (talents.ts; absent: none). */
+  talents?: Partial<Record<Talent, number>>;
+  /** Hero.armorAbility: the ability the Dwarf King's crown gave the class armour (abilities/). */
+  ability?: AbilityKind;
+  /** The ability's trackers: Endure, the leap's double jump, Nature's Power, the warp beacon... (abilities/state.ts). */
+  abil?: AbilityState;
 }
 
 /** HeavyBoomerang.CircleBack: a boomerang flying back to where it was thrown from, in `left` turns. */
@@ -285,7 +293,8 @@ export function createHero(player: PlayerInfo, depth: number, pos: number, time:
 /** Hero.STARTING_STR. */
 export const STARTING_STR = 10;
 
-export const isAlive = (char: { hp: number }): boolean => char.hp > 0;
+/** Char.isAlive: health left, or marked for death (DeathMark: a monster at no health lives until the mark ends). */
+export const isAlive = (char: { hp: number; deathMark?: unknown }): boolean => char.hp > 0 || char.deathMark !== undefined;
 
 /* Belongings: the equipment slots of a hero */
 
@@ -474,6 +483,8 @@ export function heroAttackDelay(hero: Hero, weapon: Strike = hero.weapon): numbe
   const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
   if (encumbrance > 0) delay = f32(delay * dpow(1.2, encumbrance));
   // Hero.attackDelay: a lethal momentum makes the blow cost nothing (consumed by the caller, once it knows it struck).
+  // SpiritBow.speedMultiplier under Nature's Power: a third to a half more.
+  if (category === 'bow') return f32(delay / (attackSpeedMultiplier(hero) + natureBowSpeed(hero)));
   return f32(delay / attackSpeedMultiplier(hero));
 }
 
@@ -509,7 +520,8 @@ export function heroSpeed(hero: Hero, footing?: Footing): number {
   if (footing && glyph === 'flow' && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
   if (footing && glyph === 'bulk' && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
   // RingOfHaste.speedMultiplier; stamina, haste (buffs.ts).
-  return f32(speed * speedMultiplier(hero) * buffSpeed(hero) * momentumSpeed(hero));
+  // Nature's Power: twice as fast, and more with Growing Power; momentum (freerunner) quickens the step.
+  return f32(speed * speedMultiplier(hero) * buffSpeed(hero) * natureSpeed(hero) * momentumSpeed(hero));
 }
 
 /** A hero's armour at its most (Armor.DRMax, with the weapon's parrying and the bark at theirs), for what wants one figure. */
@@ -536,6 +548,8 @@ export type MobKind =
   | 'prismatic'
   /** WandOfWarding.Ward, WandOfLivingEarth.EarthGuardian, WandOfRegrowth.Lotus. */
   | 'ward' | 'guardian' | 'lotus'
+  /** The armour abilities' allies: ShadowClone.ShadowAlly, SpiritHawk.HawkAlly, SmokeBomb.NinjaLog. */
+  | 'shadow' | 'hawk' | 'ninjaLog'
   /* Shattered's roster (MobSpawner): the sewers' snakes and slimes, */
   | 'snake' | 'slime' | 'causticSlime' | 'gnollExile' | 'hermitCrab'
   /* the prison's DM-100s, guards and necromancers (and their skeletons), */
@@ -692,6 +706,12 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   lotus: { name: 'golden lotus', ht: 25, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** DriedRose.GhostHero: the sad ghost come back as a companion (its numbers come from its rose and its hero, see mobStats). */
   ghostHero: { name: 'sad ghost', ht: 40, attack: 10, defense: 5, damage: [1, 5], dr: 0, exp: 0, maxLvl: 0, speed: 1, flying: true },
+  /** ShadowClone.ShadowAlly: 80 health, the hero's own accuracy and evasion (see mobStats and abilities/allies.ts). */
+  shadow: { name: 'shadow clone', ht: 80, attack: 15, defense: 5, damage: [10, 20], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** SpiritHawk.HawkAlly: ten health, quick and flying, living a hundred turns. */
+  hawk: { name: 'spirit hawk', ht: 10, attack: 60, defense: 60, damage: [5, 10], dr: 0, exp: 0, maxLvl: 0, speed: 2, flying: true },
+  /** SmokeBomb.NinjaLog: a decoy left behind (20 health a point of Body Replacement), which never acts. */
+  ninjaLog: { name: 'ninja log', ht: 20, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
 };
 
 /** Weapon.defenseFactor (a shield's, a greatsword's...): the armour a statue's weapon adds to its own. */
@@ -732,6 +752,12 @@ export function mobStats(mob: Mob): MobStats {
     // PrismaticImage: the hero's accuracy and evasion (9 + lvl, 4 + lvl) and its own damage, by the hero's level.
     return { ...MOBS.prismatic, ht: mob.ht, attack: 9 + depth, defense: 4 + depth, damage: [2 + Math.trunc(depth / 4), 4 + Math.trunc(depth / 2)] };
   }
+  if (mob.kind === 'shadow') {
+    // ShadowAlly: the hero's own accuracy and evasion at its level (set when it was made).
+    const defense = mob.shadow?.defense ?? 5;
+    return { ...MOBS.shadow, ht: mob.ht, attack: defense + 5, defense };
+  }
+  if (mob.kind === 'ninjaLog') return { ...MOBS.ninjaLog, ht: mob.ht };
   if (mob.kind === 'guardian') {
     // EarthGuardian: half the hero's evasion, and as accurate as the hero; damageRoll grows with the depth.
     const defense = mob.guardian?.defense ?? 0;
@@ -907,6 +933,15 @@ export interface Mob {
   ghostGear?: { lvl: number; str: number; weapon?: Item; armor?: Item };
   /** MasterThievesArmband.StolenTracker: robbed by the armband (nothing more to drop), or tried. */
   robbed?: 'stolen' | 'tried';
+  /**
+   * DeathMark.DeathMarkTracker (abilities/rogue.ts): the time the mark ends, and the health it had when marked.
+   * Marked, it takes a quarter more harm and is not dead at no health (Char.isAlive: deathMarked) until the mark ends.
+   */
+  deathMark?: { until: number; hp: number };
+  /** ShadowClone.ShadowAlly, SpiritHawk.HawkAlly, SmokeBomb.NinjaLog: the abilities' allies' own state (abilities/allies.ts). */
+  shadow?: { defense: number };
+  hawk?: { remaining: number; dodges: number };
+  ninja?: { points: number };
 
   /* Shattered's monsters (mobs.ts, mobskills.ts, champions.ts). */
   /** Necromancer's skeleton: its master (Adrenaline, from a zap of its master: adrenaline below). */

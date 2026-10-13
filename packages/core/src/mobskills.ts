@@ -26,7 +26,7 @@ import { shieldUp } from './status';
 import { burst } from './traps';
 import { looseItems } from './bags';
 import { isBossDepth } from './level/builder';
-import { adjacent, cellX, cellY, distance, LENGTH, NEIGHBOURS4, NEIGHBOURS8, WIDTH } from './level/geometry';
+import { adjacent, cellX, cellY, distance, LENGTH, trueDistance, NEIGHBOURS4, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 
 /*
@@ -49,9 +49,6 @@ export const INFINITE_ACCURACY = 1_000_000;
 
 /** PathFinder.CIRCLE8. */
 const CIRCLE8 = [-WIDTH - 1, -WIDTH, -WIDTH + 1, +1, +WIDTH + 1, +WIDTH, +WIDTH - 1, -1] as const;
-
-/** Level.trueDistance: as the crow flies. */
-const trueDistance = (a: number, b: number): number => Math.hypot(cellX(a) - cellX(b), cellY(a) - cellY(b));
 
 const solid = (ctx: Ctx, cell: number): boolean => cell < 0 || cell >= LENGTH || hasFlag(ctx.level.map[cell]!, F.SOLID);
 

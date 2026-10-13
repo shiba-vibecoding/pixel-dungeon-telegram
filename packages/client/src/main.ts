@@ -5,7 +5,7 @@ import {
   BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
   visibleCells, chargesKnown, staffReach, WIDTH,
-  type World, charAt, swapsWithHero, canReach, heroReach, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
+  type World, charAt, swapsWithHero, canReach, copyReach, heroReach, isClassArmor, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
@@ -15,10 +15,12 @@ import { preloadMapFx } from './shfx';
 import './game.css';
 import { mobDescription, mobName, plantText, tileText, wellText } from './examine';
 import {
-  chooseQuickslot, isPlaceholder, quickArtifact, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
+  chooseQuickslot, isPlaceholder, quickArtifact, quickClassArmor, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
 } from './quickslot';
 import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookChoice } from './artifactui';
 import { artText, chargeOf } from './artifacttext';
+import { armorStatus } from './abilitytext';
+import { showTalents, startAbility } from './abilityui';
 import { glowOf } from './gearfx';
 import { fx } from './fx';
 import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
@@ -945,6 +947,14 @@ function toggleQuickslot(slot = 0): void {
     if (run) run();
     return;
   }
+  // ClassArmor.defaultAction: the armour's ability (worn; from the pack, it says it is not on).
+  const armor = quickClassArmor(me, slot);
+  if (armor) {
+    walk.reset();
+    if (armor !== me.armor) view.say(artText('items.armor.classarmor.not_equipped'), '#cccccc');
+    else useAbilityNow();
+    return;
+  }
   const index = quickIndex(me, slot);
   const item = quickItem(me, slot);
   if (!item) return;
@@ -959,7 +969,7 @@ function toggleQuickslot(slot = 0): void {
   if (use === 'use') send({ type: 'use', item: index }, performance.now());
   // Shattered's potions, scrolls, stones, spells...: whatever the item's first action is (it may want a target or a choice).
   else if (use === 'item') quickAction(backpackOptions(world!, me), index);
-  else if (use && use !== 'artifact') aim = { index, kind: use };
+  else if (use && use !== 'artifact' && use !== 'ability') aim = { index, kind: use };
 }
 
 /**
@@ -969,7 +979,8 @@ function toggleQuickslot(slot = 0): void {
 function inReach(world: World, me: Hero, pos: number): boolean {
   if (adjacent(me.pos, pos)) return true;
   const there = charAt(world, me.depth, pos);
-  if (there && 'kind' in there && there.ally) return false;
+  // ShadowAlly.canInteract: with Perfect Copy the clone trades places from a few cells away.
+  if (there && 'kind' in there && there.ally) return copyReach(world, me, there);
   return canReach(world, levelAt(world, me.depth), me, pos, Math.max(heroReach(me), staffReach(me)));
 }
 
@@ -1698,8 +1709,14 @@ function showBuff(name: BuffName, turns?: number): void {
           : name === 'timeFreeze' ? artText('timekeepershourglass$timefreeze.desc', [turns ?? 0])
           : name === 'thorns' ? artText('capeofthorns$thorns.desc', [turns ?? 0])
           : name === 'foresight' ? artText('talismanofforesight$foresight.desc') || null
+<<<<<<< HEAD
           // The talents' and subclasses': Shattered's descriptions.
           : (me && talentBuffInfo(me, name, turns)) || null;
+=======
+          // The armour abilities': Endure's stored blows, Nature's Power.
+          : name === 'endure' && me?.abil?.endure ? artText('actors.hero.abilities.warrior.endure$enduretracker.desc', [me.abil.endure.damageBonus, me.abil.endure.hitsLeft])
+          : name === 'naturesPower' ? artText('actors.hero.abilities.huntress.naturespower$naturespowertracker.desc', [turns ?? 0]) : null;
+>>>>>>> shattered
   if (long) {
     walk.reset();
     showInfo(t.buffs[name], long.split('\n\n'), hideOverlay);
@@ -1708,6 +1725,7 @@ function showBuff(name: BuffName, turns?: number): void {
   toast(turns ? `${t.buffs[name]} (${t.turnsLeft(turns)})` : t.buffs[name]);
 }
 
+<<<<<<< HEAD
 /** A level gained with a point to spend: the hero window opens on the talents (WndHero.lastIdx). */
 let newTalents = false;
 
@@ -1717,10 +1735,15 @@ const actionInd = new ActionIndicator({
 });
 
 function useAction(kind: ActionKind): void {
+=======
+/** ClassArmor.execute(AC_ABILITY) from a quick slot: the ability of the armour worn, aimed at a cell where it wants one. */
+function useAbilityNow(): void {
+>>>>>>> shattered
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
   if (!world || !me || !isAlive(me)) return;
   walk.reset();
+<<<<<<< HEAD
   const host = { world, hero: me, act: (action: Action) => send(action, performance.now()), onClose: hideOverlay };
   switch (kind) {
     case 'berserk': send({ type: 'ability', ability: 'berserk' }, performance.now()); break;
@@ -1735,6 +1758,17 @@ function useAction(kind: ActionKind): void {
       break;
     case 'ambush': aim = { index: -1, kind: 'ability', ability: 'ambush' }; break;
   }
+=======
+  startAbility({
+    world, hero: me,
+    send: (action) => send(action, performance.now()),
+    aim: (prompt) => {
+      aim = { index: -1, kind: 'special' };
+      toast(prompt);
+    },
+    back: hideOverlay,
+  });
+>>>>>>> shattered
 }
 
 function openHero(): void {
@@ -1744,8 +1778,21 @@ function openHero(): void {
   walk.reset();
   aim = null;
   showHero({
+<<<<<<< HEAD
     hero: me, world, act: (action) => send(action, performance.now()), tab: newTalents ? 'talents' : 'stats',
     buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
+=======
+    hero: me, buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
+    onTalents: () => showTalents({
+      world, hero: me,
+      act: (action) => {
+        hideOverlay();
+        send(action, performance.now());
+      },
+      stay: (action) => send(action, performance.now()),
+      back: openHero,
+    }),
+>>>>>>> shattered
     looks: looksRows(me.heroClass, (shelf) => showMart({ heroClass: me.heroClass, shelf, onClose: openHero })),
   });
   newTalents = false;
@@ -2162,7 +2209,7 @@ function examineCell(pos: number): void {
   if (char && 'kind' in char) {
     const state = char.state === 'passive' ? '' : t.mobStates[char.state] ?? '';
     const health = char.state === 'passive' ? '' : t.examineHealth(Math.max(0, char.hp), char.ht);
-    showInfo(mobName(char, t.mobs[char.kind]), [...mobDescription(char, (item) => itemName(world, item)), state], hideOverlay, {
+    showInfo(mobName(char, t.mobs[char.kind]), [...mobDescription(char, (item) => itemName(world, item), world.floors[me.depth]?.now ?? 0), state], hideOverlay, {
       icon: portrait(char.kind),
       ...(health ? { health: [Math.max(0, char.hp), char.ht] as const } : {}),
     });
@@ -2944,15 +2991,15 @@ function tick(now: number): void {
     const kind = quickKind(slot);
     if (!kind) return null;
     // An artifact may be worn: Shattered's quick slots hold it all the same; the mage's staff is zapped from the hand (quickItem).
-    const item = quickArtifact(me, slot)?.item ?? quickItem(me, slot);
+    const item = quickArtifact(me, slot)?.item ?? quickClassArmor(me, slot) ?? quickItem(me, slot);
     if (!item || isPlaceholder(me, slot)) {
       return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };
     }
     return {
       sprite: itemSprite(item, world.run.labels),
-      label: chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
+      label: isClassArmor(item) ? armorStatus(item) : chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
       aiming: aim !== null && (aim.kind === 'artifact' ? itemAt(me, aim.action.item) === item : aim.index === quickIndex(me, slot)),
-      charge: itemDef(item.kind).category === 'artifact' ? chargeOf(world, me, item) : null,
+      charge: itemDef(item.kind).category === 'artifact' ? chargeOf(world, me, item) : isClassArmor(item) ? { share: Math.min(1, (item.charge ?? 0) / 100), full: (item.charge ?? 0) >= 100 } : null,
       wear: wearOf(world, item),
     };
   };

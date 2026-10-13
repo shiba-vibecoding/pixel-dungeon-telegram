@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { berserkOf, comboOf, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, prismaticMaxHp, shielding, STARVING, stealthCloak, momentumOf, prepTurns } from '@pd/core';
+=======
+import { FURY_LEVEL, prismaticMaxHp, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING, stealthCloak, talentPointsAvailable } from '@pd/core';
+>>>>>>> shattered
 import { audio } from './audio';
 import { t } from './i18n';
 import { AVATAR, durabilityBar, markWear, sprites } from './screens';
@@ -38,11 +42,16 @@ export const BUFF_ICONS = {
   prismaticGuard: 1020, challengeArena: 1054,
   // The artifacts': the cloak's stealth (INVISIBLE, dimmed), the hourglass's time freeze and stasis (TIME), the cape's THORNS, the talisman's FORESIGHT.
   stealth: 1012, timeFreeze: 1007, thorns: 1031,
+<<<<<<< HEAD
   // The talents' and subclasses' (their BuffIndicator icons): rage, the combo, momentum, preparation, the sniper's mark, hold fast,
   // trackers that add to the next blow (WEAPON), cooldowns (TIME), empowered wands (WAND), enhanced rings and a surge (UPGRADE).
   berserk: 1040, berserking: 1040, exhausted: 1040, comboChain: 1017, momentum: 1051, freerunning: 1051, preparation: 1042, sniperMark: 1027,
   holdFast: 1020, trackerBlow: 1045, cooldown: 1007, wandEmpower: 1072, enhancedRings: 1050, surge: 1050, revealedArea: 1000,
   parry: 1061, followup: 1057,
+=======
+  // The armour abilities': Endure's stored blows (BuffIndicator.ARMOR) and Nature's Power (NATURE_POWER).
+  endure: 1020, naturesPower: 1058,
+>>>>>>> shattered
   // The monsters' curses (mobs stream): BuffIndicator.VULNERABLE, HEX, DEGRADE.
   degrade: 1048,
 } as const;
@@ -110,6 +119,7 @@ export function heroBuffs(me: Hero): BuffEntry[] {
     ...alchemyBuffs(me),
     ...artifactBuffs(me),
     ...((me.degraded ?? 0) > 0 ? [{ name: 'degrade' as const, turns: turns(me.degraded!) }] : []),
+    ...abilityBuffs(me),
   ];
   return list.map(tinted);
 }
@@ -146,6 +156,19 @@ function talentBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
   if (b.surge !== undefined) list.push({ name: 'surge', turns: Math.ceil(b.surge) });
   if (b.revealed) list.push({ name: 'revealedArea', turns: Math.ceil(b.revealed.left) });
   return list;
+}
+
+/**
+ * The armour abilities' buffs: Endure's blows to pay back (shown once the stance is over: the damage stored), Nature's Power
+ * (turns left).
+ */
+function abilityBuffs(me: Hero): BuffEntry[] {
+  const endure = me.abil?.endure;
+  const nature = me.abil?.nature;
+  return [
+    ...(endure && !endure.enduring && me.time < endure.until ? [{ name: 'endure' as const, turns: endure.damageBonus }] : []),
+    ...(nature && me.time < nature.until ? [{ name: 'naturesPower' as const, turns: Math.ceil(nature.until - me.time) }] : []),
+  ];
 }
 
 /**
@@ -364,6 +387,8 @@ export class Hud {
   readonly root: HTMLElement;
   private readonly band: HTMLElement;
   private readonly avatar: HTMLElement;
+  /** ShTalents' gold plus on the hero button while there are talent points to spend. */
+  private readonly talentBadge: HTMLElement;
   private readonly level: HTMLElement;
   private readonly talentBadge: HTMLElement;
   private readonly hp: HTMLElement;
@@ -423,6 +448,8 @@ export class Hud {
 
     const avatarButton = el('button', 'pd-avatar');
     avatarButton.ariaLabel = t.heroLabel;
+    this.talentBadge = el('i', 'pd-talent-badge');
+    this.talentBadge.hidden = true;
     this.avatar = el('i');
     avatarButton.append(this.avatar);
     avatarButton.onclick = tap(() => handlers.hero());
@@ -758,6 +785,10 @@ export class Hud {
     this.updateArena(state.arena ?? null, dead);
     if (this.changed('keys', String(state.keys))) this.keys.data = String(state.keys);
     this.avatar.parentElement!.classList.toggle('dead', dead);
+    // The armour ability's tier 4 points (the talents stream's tiers 1 to 3 add to it): a blinking plus on the hero.
+    const points = isAlive(me) && talentPointsAvailable(me, 4) > 0;
+    this.talentBadge.hidden = !points;
+    this.avatar.parentElement!.classList.toggle('talent', points);
 
     const buffKey = state.buffs.map((b) => `${b.name}${b.tint ?? ''}:${b.turns !== undefined && b.turns <= 3 ? 'f' : ''}`).join(',');
     if (this.changed('buffs', buffKey)) {

@@ -3,10 +3,12 @@ import {
   knownIn, MUST_THROW, TARGETED_SPELLS,
   type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass,
   type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
-  visiblyCursed, type World, CLASS_ARMOR_OF, heroById, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
+  visiblyCursed, type World, CLASS_ARMOR_OF, heroById, isClassArmor, type SealSource, talentPointsAvailable, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
 } from '@pd/core';
 import { artifactActions, artifactCard, type ArtifactHost, chargeStrip, showMiscChooser } from './artifactui';
 import { artText } from './artifacttext';
+import { abilityName as abilityLabel, AT } from './abilitytext';
+import { type AbilityHost, classArmorCard, showAbilityPick, showTalents, startAbility } from './abilityui';
 import { audio } from './audio';
 import { type ChoiceOption, showChoice } from './alchemyui';
 import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse, WEAPON_SLOT } from './quickslot';
@@ -141,6 +143,17 @@ export function sprites(scope: ParentNode): void {
     node.style.setProperty('--ix', String(s % 16));
     node.style.setProperty('--iy', String(Math.floor(s / 16)));
   });
+  // Shattered's talent_icons.png (32 a row, data-t) and hero_icons.png (8 a row, data-h): the talents' and armour abilities' icons.
+  scope.querySelectorAll<HTMLElement>('[data-t]').forEach((node) => {
+    const i = Number(node.dataset.t);
+    node.style.setProperty('--ix', String(i % 32));
+    node.style.setProperty('--iy', String(Math.floor(i / 32)));
+  });
+  scope.querySelectorAll<HTMLElement>('[data-h]').forEach((node) => {
+    const i = Number(node.dataset.h);
+    node.style.setProperty('--ix', String(i % 8));
+    node.style.setProperty('--iy', String(Math.floor(i / 8)));
+  });
   // The sheets of v19 in one row each: tinted buffs (buffs-tints.png, 18), the journal's new marks (journal2.png, 14).
   scope.querySelectorAll<HTMLElement>('[data-tb]').forEach((node) => node.style.setProperty('--ix', node.dataset.tb!));
   scope.querySelectorAll<HTMLElement>('[data-j2]').forEach((node) => node.style.setProperty('--ix', node.dataset.j2!));
@@ -237,7 +250,7 @@ export function healthBar(hp: number, ht: number, text = true): HTMLElement {
 
 /* Item slots */
 
-function itemIcon(world: World, item: Item): HTMLElement {
+export function itemIcon(world: World, item: Item): HTMLElement {
   const icon = el('i', { className: 'pd-item' });
   icon.dataset.i = String(itemSprite(item, world.run.labels));
   return icon;
@@ -289,7 +302,8 @@ export function slot(world: World, item: Item | undefined, options: SlotOptions 
     ariaLabel: capitalize(itemName(world, item)),
   });
   node.append(itemIcon(world, item));
-  const charges = chargesOf(item);
+  // ClassArmor.status: the charge as a percentage.
+  const charges = isClassArmor(item) && options.hero && item.kind === `armor.${options.hero.heroClass}` ? `${Math.floor(item.charge ?? 0)}%` : chargesOf(item);
   if (charges !== null) {
     node.append(el('span', { className: 'pd-qty', textContent: charges }));
   } else if (item.qty > 1) {
@@ -499,6 +513,8 @@ export interface HeroOptions {
   /** The look the hero wears, for their portrait. */
   skin?: string;
   buffs: readonly BuffEntry[];
+  /** The armour ability's tier 4 talents (abilityui.ts), if the hero has an ability. */
+  onTalents?(): void;
   onClose(): void;
 }
 
@@ -531,6 +547,8 @@ export function showHero(options: HeroOptions): void {
         [t.goldLabel, String(hero.gold), 'gold'],
         [t.slain, String(hero.kills)],
       ]),
+      // The armour ability's tier 4 talents, with a gold plus while there are points to put in them.
+      hero.ability && options.onTalents && button(`${abilityLabel(hero.ability)} · ${AT.talentsShort}`, options.onTalents, talentPointsAvailable(hero, 4) > 0 ? 'primary' : ''),
       el('h3', { className: 'pd-heading', textContent: t.conditions }),
       ...(buffs.length > 0 ? buffs : [info(t.noConditions, 'pd-note')]),
       options.looks && el('h3', { className: 'pd-subhead', textContent: t.looksTitle }),
@@ -1464,6 +1482,7 @@ function itemDetail(options: ItemOptions): HTMLElement {
     { className: 'pd-pick' },
     el('div', { className: 'pd-pick-head' }, slot(world, item, { hero, equipped: index === null }), title, drop),
     ...(itemDef(item.kind).category === 'artifact' ? artifactCard(world, hero, item) : []),
+    ...(isClassArmor(item) ? classArmorCard(world, hero, item) : []),
     ...describedItem(world, hero, item),
     all.length > 0 && el('div', { className: 'pd-pick-actions' }, ...all),
   );
@@ -1590,7 +1609,11 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         showAmulet(world, hero, false, () => options.onAction({ type: 'endGame' }), options.onClose);
       });
     }
-    if (category === 'kit') use(t.applyKit, () => act({ type: 'use', item: index, target: 'armor' }));
+    // KingsCrown.AC_WEAR: the pick of an armour ability for the armour worn.
+    if (category === 'kit') use(actionLabel(t.wearCrown), () => {
+      openBag = null;
+      showAbilityPick(abilityHost(options, () => showBackpack(options, { index })), index);
+    });
     if (category === 'seed') use(t.plantSeed, () => aimWith('throw', index));
     if (category === 'scroll') {
       // A known scroll that acts on one thing asks which, from the whole pack and what is worn (WndBag's selector).
@@ -1718,6 +1741,14 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         if (category === 'armor') offerSealTransfer(options, index);
       });
     }
+    // ClassArmor.actions from the pack: the crown's magic can be moved to another armour (the ability wants it worn).
+    if (isClassArmor(item) && item.kind === CLASS_ARMOR_OF[hero.heroClass]) {
+      if (hero.ability) more.push(button(AT.talentsShort, () => {
+        openBag = null;
+        showTalents(abilityHost(options, () => showBackpack(options, { index })));
+      }));
+      more.push(button(actionLabel(artText('items.armor.classarmor.ac_transfer')), () => transferWindow(options, index, () => showBackpack(options, { index }))));
+    }
     // Artifact.actions, from the pack (the beacon's set and return, the rose's outfit; the rest want it worn).
     if (category === 'artifact') for (const action of artifactActions(artifactHost(options, index), item, index)) use(action.label, action.run, action.icon);
     // Armor.AC_DETACH: the warrior's seal off an armour in the pack.
@@ -1766,13 +1797,78 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     }
     use(t.takeOff, () => stay({ type: 'unequip' }));
   } else if (item === hero.armor && item.kind === CLASS_ARMOR_OF[hero.heroClass]) {
-    // ClassArmor.doSpecial: the leap and the smoke bomb want a cell; the others act at once.
-    const aimed = hero.heroClass === 'warrior' || hero.heroClass === 'rogue';
-    use(t.specials[hero.heroClass], () => (aimed ? aimWith('special', -1) : act({ type: 'special' })));
+    // ClassArmor.execute(AC_ABILITY): the ability of the armour (it wants a cell to aim at, or none, or the beacon's choice).
+    if (hero.ability) {
+      use(actionLabel(abilityLabel(hero.ability)), () => {
+        openBag = null;
+        startAbility({
+          world, hero,
+          send: (action) => {
+            options.onAction(action);
+            options.onClose();
+          },
+          aim: (prompt) => {
+            options.onClose();
+            options.onAim(-1, 'special');
+            toast(prompt);
+          },
+          back: () => showBackpack(options, { worn: 'armor' }),
+        });
+      });
+      more.push(button(AT.talentsShort, () => {
+        openBag = null;
+        showTalents(abilityHost(options, () => showBackpack(options, { worn: 'armor' })));
+      }));
+    }
+    more.push(button(actionLabel(artText('items.armor.classarmor.ac_transfer')), () => transferWindow(options, 'armor', () => showBackpack(options, { worn: 'armor' }))));
+    if (!isQuickslotted(item.kind)) more.push(quickslotButton(world, hero, item));
   }
   // Armor.AC_DETACH, on the armour worn.
   if (item === hero.armor && item.seal) more.push(button(t.hero.detach, () => stay({ type: 'detach', armor: 'armor' }, null)));
   return { main, more, danger };
+}
+
+/** What the armour ability windows are given (abilityui.ts): the world, the hero, how to act from them, where they come back to. */
+function abilityHost(options: BackpackOptions, back: () => void): AbilityHost {
+  return {
+    world: options.world,
+    hero: options.hero,
+    act: (action) => {
+      options.onAction(action);
+      options.onClose();
+    },
+    stay: (action) => options.onAction(action),
+    back,
+  };
+}
+
+/** ClassArmor.AC_TRANSFER's WndOptions: the crown's magic moves to another armour, which is destroyed; which one is asked next. */
+function transferWindow(options: BackpackOptions, to: SealSource, back: () => void): void {
+  const { hero } = options;
+  const targets = hero.items.flatMap((other, i) => (itemDef(other.kind).category === 'armor' && !isClassArmor(other) ? [i] : []));
+  show(
+    windowOf(
+      { title: capitalize(artText('items.armor.classarmor.transfer_title')), icon: el('div', { className: 'pd-slot' }, itemIconAt(S.CROWN)), onClose: back, narrow: true },
+      info(artText('items.armor.classarmor.transfer_desc')),
+      targets.length > 0
+        ? button(artText('items.armor.classarmor.transfer_prompt'), () => showBackpack({
+          ...options,
+          pick: {
+            title: artText('items.armor.classarmor.transfer_prompt'),
+            targets,
+            onPick: (on) => {
+              if (typeof on !== 'number') return;
+              options.onAction({ type: 'transfer', to, from: on });
+              options.onClose();
+            },
+            onCancel: back,
+          },
+        }), 'primary')
+        : info(AT.noArmor, 'pd-note'),
+      button(artText('items.armor.classarmor.transfer_cancel'), back, 'quiet'),
+    ),
+    back,
+  );
 }
 
 /** Shattered's action names are in capitals (AC_SHOOT: «SHOOT»): as a button says them. */

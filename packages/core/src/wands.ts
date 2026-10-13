@@ -31,6 +31,7 @@ import { trample } from './world';
 import { wandChargeMultiplier } from './rings';
 import { dispelInvisibility } from './artifacts';
 import type { ItemRef } from './scrolls';
+import { wildMagicLevel } from './abilities/mage';
 
 /*
  * Shattered's wands (items/wands): Wand and DamageWand, and every kind of
@@ -89,8 +90,8 @@ const baseLevel = (wand: Item, staff: Item | null): number => (staff ? effective
  * and no less than a magic missile's charge while it lasts.
  */
 export function buffedLevel(hero: Hero, wand: Item, staff: Item | null = null): number {
-  // A scroll's empowerment, and desperate power on the last charge (Wand.buffedLvl).
-  const level = Math.max(0, baseLevel(wand, staff)) + wandLevelBonus(hero, wand);
+  // Wild Magic's tracker: the wands it fires zap a level or two stronger (abilities/mage.ts); a scroll's empowerment, and desperate power on the last charge (Wand.buffedLvl).
+  const level = wildMagicLevel(hero, Math.max(0, baseLevel(wand, staff))) + wandLevelBonus(hero, wand);
   const charge = hero.magicCharge;
   return charge && charge.level > level ? charge.level : level;
 }
@@ -161,7 +162,7 @@ export function wandDamage(kind: ItemKind, level: number, charges = 1): readonly
 
 /** DamageWand.damageRoll. */
 function damageRoll(z: Zap, level = z.level): number {
-  const [min, max] = wandDamage(z.wand.kind, level, chargesPerCast(z.wand, z.cursed))!;
+  const [min, max] = wandDamage(z.wand.kind, level, chargesPerCast(z.wand, z.cursed || z.hero.abil?.wild !== undefined))!;
   // DamageWand.damageRoll: empowering meal's bonus damage for a few zaps.
   return heroDamageIntRange(z.ctx, min, max) + empowerBoost(z.ctx, z.hero);
 }
@@ -263,6 +264,27 @@ export function zap(ctx: Ctx, hero: Hero, ref: ItemRef, target: number): number 
 }
 
 /**
+ * WildMagic.zapWand's zap (a wand fired by the Mage's armour ability): no charge is needed here (the ability takes
+ * half a charge itself, afterwards), and the wand is as strong as the ability makes it; a cursed wand works its curse.
+ * Returns false if the wand could not be fired (too many wards).
+ */
+export function wildZap(ctx: Ctx, hero: Hero, wand: Item, target: number): boolean {
+  const cursed = !!wand.cursed;
+  const bolt = ballistica(ctx, hero.pos, target, collisionOf(ctx, hero, wand, target, cursed));
+  if (bolt.collisionPos === hero.pos) return false;
+  if (wand.kind === 'wand.warding' && !cursed && !wardsAllow(ctx, hero, target)) {
+    ctx.effects.push({ type: 'wand', hero: hero.id, note: 'noMoreWards', item: wand.kind });
+    return false;
+  }
+  if (cursed) {
+    cursedZap(ctx, hero, wand, ballistica(ctx, hero.pos, target, MAGIC_BOLT), true);
+  } else {
+    onZap({ ctx, hero, wand, staff: null, cursed: false, level: buffedLevel(hero, wand, null) }, bolt, target);
+  }
+  return true;
+}
+
+/**
  * Wand.wandUsed: a zap counts towards knowing the wand (as many as it may count now); the charges
  * are spent (one, if cursed); a magic missile's charge that made this wand stronger is used up; the
  * hero is seen again; and (as wands wear here) it wears.
@@ -316,7 +338,7 @@ function onZap(z: Zap, bolt: Ballistica, target: number): void {
     const char = charAt(ctx.world, ctx.depth, cell);
     return char && isAlive(char) ? char : undefined;
   };
-  const cpc = chargesPerCast(z.wand, false);
+  const cpc = chargesPerCast(z.wand, z.hero.abil?.wild !== undefined);
   switch (z.wand.kind) {
     case 'wand.magicMissile': {
       fx('magic');

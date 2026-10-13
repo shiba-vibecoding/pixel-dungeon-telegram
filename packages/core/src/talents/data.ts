@@ -3,8 +3,8 @@ import type { HeroClass } from '../heroclass';
 
 /*
  * Shattered Pixel Dungeon's talents (actors/hero/Talent.java) for the four classes: tiers 1 to 3 of each class and
- * the subclasses' third tier. The fourth tier belongs to the armour abilities (the abilities stream) and stays empty
- * here. A talent is named as in the original's message keys (hearty_meal), its icon is its frame in talent_icons.png.
+ * the subclasses' third tier, and the fourth tier's, which the armour abilities bring (the abilities stream's entries
+ * are folded in here: ARMOR_TALENTS, ABILITY_TALENTS). A talent is named as in the original's message keys (hearty_meal), its icon is its frame in talent_icons.png.
  *
  * A hero keeps its talents as four tiers of {talent: points}, in the order Shattered lists them, plus the talents
  * metamorphosis swapped (Hero.talents, Hero.metamorphedTalents).
@@ -34,15 +34,58 @@ export type TalentId =
   | 'invigorating_meal' | 'liquid_nature' | 'rejuvenating_steps' | 'heightened_senses' | 'durable_projectiles'
   | 'point_blank' | 'seer_shot'
   | 'farsight' | 'shared_enchantment' | 'shared_upgrades'
-  | 'durable_tips' | 'barkskin' | 'shielding_dew';
+  | 'durable_tips' | 'barkskin' | 'shielding_dew'
+  | ArmorTalent;
+
+/** The tier 4 talents of the twelve armour abilities (the duelist's, the cleric's and the rat king's are the classes stream's). */
+export const ARMOR_TALENTS = [
+  // Heroic Leap
+  'bodySlam', 'impactWave', 'doubleJump',
+  // Shockwave
+  'expandingWave', 'strikingWave', 'shockForce',
+  // Endure
+  'sustainedRetribution', 'shrugItOff', 'evenTheOdds',
+  // Elemental Blast
+  'blastRadius', 'elementalPower', 'reactiveBarrier',
+  // Wild Magic
+  'wildPower', 'fireEverything', 'conservedMagic',
+  // Warp Beacon
+  'telefrag', 'remoteBeacon', 'longrangeWarp',
+  // Smoke Bomb
+  'hastyRetreat', 'bodyReplacement', 'shadowStep',
+  // Death Mark
+  'fearTheReaper', 'deathlyDurability', 'doubleMark',
+  // Shadow Clone
+  'shadowBlade', 'clonedArmor', 'perfectCopy',
+  // Spectral Blades
+  'fanOfBlades', 'projectingBlades', 'spiritBlades',
+  // Nature's Power
+  'growingPower', 'naturesWrath', 'wildMomentum',
+  // Spirit Hawk
+  'eagleEye', 'goForTheEyes', 'swiftSpirit',
+  // universal
+  'heroicEnergy',
+] as const;
+
+export type ArmorTalent = (typeof ARMOR_TALENTS)[number];
+
+/** Every talent (the abilities stream's name for TalentId). */
+export type Talent = TalentId;
+
+/** The armour abilities of the four classes (the abilities module has their rules). */
+export type AbilityKind =
+  | 'heroicLeap' | 'shockwave' | 'endure'
+  | 'elementalBlast' | 'wildMagic' | 'warpBeacon'
+  | 'smokeBomb' | 'deathMark' | 'shadowClone'
+  | 'spectralBlades' | 'naturesPower' | 'spiritHawk';
 
 export interface TalentDef {
   /** Talent.icon: the frame in talent_icons.png (32 to a row). */
   icon: number;
   /** Talent.maxPoints. */
   max: number;
-  /** The tier it belongs to, 1 to 3. */
-  tier: 1 | 2 | 3;
+  /** The tier it belongs to, 1 to 4. */
+  tier: 1 | 2 | 3 | 4;
 }
 
 /** Talent(int icon): two points at most; the third tier's are Talent(icon, 3). */
@@ -50,6 +93,8 @@ const t1 = (icon: number): TalentDef => ({ icon, max: 2, tier: 1 });
 const t2 = (icon: number): TalentDef => ({ icon, max: 2, tier: 2 });
 const t3 = (icon: number): TalentDef => ({ icon, max: 3, tier: 3 });
 const c3 = t3;
+/** Talent(icon, 4): the fourth tier's. */
+const t4 = (icon: number): TalentDef => ({ icon, max: 4, tier: 4 });
 
 export const TALENTS: Readonly<Record<TalentId, TalentDef>> = {
   hearty_meal: t1(0), veterans_intuition: t1(1), provoked_anger: t1(2), iron_will: t1(3),
@@ -75,7 +120,44 @@ export const TALENTS: Readonly<Record<TalentId, TalentDef>> = {
   point_blank: t3(105), seer_shot: t3(106),
   farsight: c3(107), shared_enchantment: c3(108), shared_upgrades: c3(109),
   durable_tips: c3(110), barkskin: c3(111), shielding_dew: c3(112),
+
+  bodySlam: t4(17), impactWave: t4(18), doubleJump: t4(19),
+  expandingWave: t4(20), strikingWave: t4(21), shockForce: t4(22),
+  sustainedRetribution: t4(23), shrugItOff: t4(24), evenTheOdds: t4(25),
+  blastRadius: t4(49), elementalPower: t4(50), reactiveBarrier: t4(51),
+  wildPower: t4(52), fireEverything: t4(53), conservedMagic: t4(54),
+  telefrag: t4(55), remoteBeacon: t4(56), longrangeWarp: t4(57),
+  hastyRetreat: t4(81), bodyReplacement: t4(82), shadowStep: t4(83),
+  fearTheReaper: t4(84), deathlyDurability: t4(85), doubleMark: t4(86),
+  shadowBlade: t4(87), clonedArmor: t4(88), perfectCopy: t4(89),
+  fanOfBlades: t4(113), projectingBlades: t4(114), spiritBlades: t4(115),
+  growingPower: t4(116), naturesWrath: t4(117), wildMomentum: t4(118),
+  eagleEye: t4(119), goForTheEyes: t4(120), swiftSpirit: t4(121),
+  heroicEnergy: t4(26),
 };
+
+/** Talent.icon: the heroic energy is drawn by the hero's class (its frame, 26 for the warrior, then 58, 90 and 122). */
+export const HEROIC_ENERGY_ICON: Readonly<Partial<Record<HeroClass, number>>> = { warrior: 26, mage: 58, rogue: 90, huntress: 122 };
+export const talentIcon = (talent: TalentId, heroClass: HeroClass): number =>
+  talent === 'heroicEnergy' ? HEROIC_ENERGY_ICON[heroClass] ?? 26 : TALENTS[talent].icon;
+
+/** ArmorAbility.talents(): the three of each ability, then the heroic energy. */
+export const ABILITY_TALENTS: Readonly<Record<AbilityKind, readonly [TalentId, TalentId, TalentId, TalentId]>> = {
+  heroicLeap: ['bodySlam', 'impactWave', 'doubleJump', 'heroicEnergy'],
+  shockwave: ['expandingWave', 'strikingWave', 'shockForce', 'heroicEnergy'],
+  endure: ['sustainedRetribution', 'shrugItOff', 'evenTheOdds', 'heroicEnergy'],
+  elementalBlast: ['blastRadius', 'elementalPower', 'reactiveBarrier', 'heroicEnergy'],
+  wildMagic: ['wildPower', 'fireEverything', 'conservedMagic', 'heroicEnergy'],
+  warpBeacon: ['telefrag', 'remoteBeacon', 'longrangeWarp', 'heroicEnergy'],
+  smokeBomb: ['hastyRetreat', 'bodyReplacement', 'shadowStep', 'heroicEnergy'],
+  deathMark: ['fearTheReaper', 'deathlyDurability', 'doubleMark', 'heroicEnergy'],
+  shadowClone: ['shadowBlade', 'clonedArmor', 'perfectCopy', 'heroicEnergy'],
+  spectralBlades: ['fanOfBlades', 'projectingBlades', 'spiritBlades', 'heroicEnergy'],
+  naturesPower: ['growingPower', 'naturesWrath', 'wildMomentum', 'heroicEnergy'],
+  spiritHawk: ['eagleEye', 'goForTheEyes', 'swiftSpirit', 'heroicEnergy'],
+};
+
+export const armorTalents = (ability: AbilityKind): TalentId[] => [...ABILITY_TALENTS[ability]];
 
 /** Talent.tierLevelThresholds: tiers 1/2/3/4 start at levels 2/7/13/21 (index 5 is the end of the fourth). */
 export const TIER_LEVELS: readonly number[] = [0, 2, 7, 13, 21, 31];
@@ -141,6 +223,8 @@ export function talentBook(hero: Hero): TalentBook {
     initClassTalents(hero);
     if (hero.subclass) initSubclassTalents(hero);
   }
+  // Talent.initArmorTalents: the armour ability's four, in the fourth tier.
+  if (hero.ability) for (const id of ABILITY_TALENTS[hero.ability]) hero.talents.tiers[3]![id] ??= 0;
   return hero.talents;
 }
 
@@ -163,6 +247,11 @@ export function initSubclassTalents(hero: Hero): void {
   }
   const book = hero.talents;
   for (const id of SUBCLASS_TALENTS[hero.subclass]) book.tiers[2]![id] ??= 0;
+}
+
+/** The talents a hero can put points in at tier 4: the four of their armour ability (Talent.initArmorTalents). */
+export function talentsOf(hero: Hero): TalentId[] {
+  return hero.ability ? armorTalents(hero.ability) : [];
 }
 
 /** Hero.pointsInTalent. */
@@ -203,11 +292,8 @@ export function talentPointsAvailable(hero: Hero, tier: number): number {
   return 1 + hero.lvl - first - spent + bonus;
 }
 
-/**
- * Hero.armorAbility != null: a hero with class armour has chosen an ability. SEAM(abilities): the abilities stream, which
- * brings the armour abilities and the fourth tier's talents, answers here.
- */
-export const hasArmorAbility = (_hero: Hero): boolean => false;
+/** Hero.armorAbility != null: a hero with class armour has chosen an ability. */
+export const hasArmorAbility = (hero: Hero): boolean => hero.ability !== undefined;
 
 /** Hero.bonusTalentPoints: a potion of divine inspiration gave two points in a tier. */
 export function bonusTalentPoints(hero: Hero, tier: number): number {
