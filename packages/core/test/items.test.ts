@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, createItem, createWorld, F, floorAt, hasFlag, heroById, isAlive, type ItemKind, ITEMS, itemDef,
+  act, addHero, createItem, createWorld, F, floorAt, hasFlag, heroById, isAlive, type ItemKind, ITEMS, itemDef, REGULAR_OF,
   levelAt, RoomType, weaponStats, type World,
   WIDTH,
 } from '../src/index';
@@ -40,11 +40,12 @@ describe('items on the levels', () => {
     }
   });
 
-  it('gives every potion and scroll kind its own colour or rune, fixed per run', () => {
+  it('gives every potion and scroll kind its own colour or rune, fixed per run (exotics share their counterpart’s)', () => {
     const a = createWorld(42).run.labels;
     expect(createWorld(42).run.labels).toEqual(a);
     for (const category of ['potion', 'scroll'] as const) {
-      const kinds = (Object.keys(ITEMS) as ItemKind[]).filter((k) => itemDef(k).category === category);
+      const kinds = (Object.keys(ITEMS) as ItemKind[]).filter((k) => itemDef(k).category === category && !REGULAR_OF[k]);
+      expect(kinds).toHaveLength(12);
       const labels = kinds.map((k) => a[k]);
       expect(new Set(labels).size).toBe(kinds.length);
     }
@@ -79,7 +80,10 @@ describe('the backpack', () => {
     expect(world.known).not.toContain('potion.healing');
     const result = act(world, 'p', { type: 'use', item: 0 });
     expect(result.ok && result.effects).toContainEqual({ type: 'used', hero: 'p', kind: 'potion.healing', identified: true });
-    expect(hero).toMatchObject({ hp: 20, ooze: -1 });
+    // PotionOfHealing.heal: health back over a few turns (Healing).
+    expect(hero.hp).toBeLessThan(20);
+    for (let i = 0; i < 6; i++) act(world, 'p', { type: 'wait' });
+    expect(hero.hp).toBe(20);
     expect(hero.items[0]!.qty).toBe(1);
     expect(world.known).toContain('potion.healing');
   });
@@ -140,12 +144,16 @@ describe('the backpack', () => {
     const world = createWorld(5);
     addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
     const hero = heroById(world, 'p')!;
-    const mob = floorAt(world, 1).mobs[0]!;
+    hero.hp = hero.ht = 500;
+    const mob = floorAt(world, 1).mobs.find((m) => m.kind === 'rat')!;
     mob.state = 'hunting';
     mob.pos = hero.pos + 2;
     hero.items.push(createItem('scroll.lullaby'));
     const result = act(world, 'p', { type: 'use', item: hero.items.length - 1 });
     expect(result.ok).toBe(true);
+    // ScrollOfLullaby: drowsy first, asleep (magically) once that wears off.
+    expect(mob.buffs?.drowsy).toBeGreaterThan(0);
+    for (let i = 0; i < 6; i++) act(world, 'p', { type: 'wait' });
     expect(isAlive(mob) && mob.state).toBe('sleeping');
   });
 

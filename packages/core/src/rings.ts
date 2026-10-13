@@ -1,3 +1,4 @@
+import { isMagicImmune } from './buffs';
 import { type Hero, heroRings } from './actors';
 import { underChallenges } from './challenges';
 import type { Ctx } from './floor';
@@ -25,9 +26,9 @@ export function enhancedRings(_hero: Hero): boolean {
   return false;
 }
 
-/** Seam (talents and abilities streams): MagicImmune, under which no ring works. */
-export function ringsSuppressed(_hero: Hero): boolean {
-  return false;
+/** MagicImmune (alchemy's potion of magic immunity; the talents and abilities streams' too): no ring works under it. */
+export function ringsSuppressed(hero: Hero): boolean {
+  return isMagicImmune(hero);
 }
 
 /** Ring.getBonus: the worn rings of a kind, their bonuses added up. */
@@ -231,7 +232,7 @@ export function wealthBonusDrops(ctx: Ctx, hero: Hero, tries: number): Item[] {
   if (bonus <= 0) return [];
   const { rng } = ctx;
   const counters = (hero.wealth ??= { tries: normalInt(rng, 0, 20), toEquip: normalInt(rng, 5, 10) });
-  const generator = new ItemGenerator(rng, ctx.depth, ctx.world.run);
+  const generator = new ItemGenerator(rng, ctx.depth, { run: ctx.world.run });
   const drops: Item[] = [];
   counters.tries -= tries;
   while (counters.tries <= 0) {

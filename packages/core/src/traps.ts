@@ -8,6 +8,7 @@ import { clearGas, seedGas } from './gas';
 import { burnHeaps, chillPack, freezeHeaps } from './cooking';
 import { scaleMob } from './party';
 import { stepOnPlant } from './plants';
+import { tickMob } from './buffs';
 import { flies, mobStatusTurn } from './status';
 
 /*
@@ -44,9 +45,18 @@ export type Burst = 'toxic' | 'paralytic' | 'fire' | 'frost' | 'purity';
  * IMMUNITIES: Yog-Dzewa breathes no gas and does not burn, nor does its
  * burning fist; piranhas in their pool fear neither gas, fire nor frost.
  */
-export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost'): boolean {
-  // Armour of brimstone keeps fire off its wearer (Char.isImmune: Burning).
-  if (isHero(char)) return (harm === 'gas' && (char.gasImmune ?? 0) > 0) || (harm === 'burning' && char.armor.glyph === 'brimstone');
+export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost' | 'toxic' | 'shock'): boolean {
+  if (isHero(char)) {
+    const b = char.buffs;
+    // BlobImmunity (purity), and the imbues: fire (FireImbue), frost and chill (FrostImbue), toxic gas (ToxicImbue);
+    // armour of brimstone keeps fire off its wearer (Char.isImmune: Burning).
+    if (harm === 'gas') return (char.gasImmune ?? 0) > 0;
+    if (harm === 'burning') return (b?.fireImbue ?? 0) > 0 || char.armor.glyph === 'brimstone';
+    if (harm === 'frost') return (b?.frostImbue ?? 0) > 0;
+    if (harm === 'toxic') return (b?.toxicImbue ?? 0) > 0;
+    return false;
+  }
+  if (harm === 'toxic' || harm === 'shock') return false;
   if (char.kind === 'piranha') return true;
   // DM-300 breathes its own fumes unharmed.
   if (harm === 'gas' && char.kind === 'dm300') return true;
@@ -113,7 +123,13 @@ export function triggerTrap(ctx: Ctx, victim: Char | null, pos: number): void {
   // A monster only ever sets off a trap the party could see already: no need to map it for them.
   if (!mob) exploredCells(ctx.world, depth)[pos] = true;
   ctx.effects.push({ type: 'trap', depth, pos, kind, hero: victim && isHero(victim) ? victim.id : '', ...(mob ? { mob: mob.id } : {}) });
+  springTrap(ctx, kind, victim, pos);
+}
 
+/** Trap.activate: what a trap of a kind does at a cell, to whoever is there (a reclaimed trap set off by a spell too). */
+export function springTrap(ctx: Ctx, kind: TrapKind, victim: Char | null, pos: number): void {
+  const { level, rng, depth } = ctx;
+  const mob = victim && !isHero(victim) ? victim : null;
   switch (kind) {
     case 'poison':
       if (victim && isHero(victim)) victim.poison = Math.max(victim.poison, 4 + Math.trunc(depth / 2));
@@ -218,8 +234,10 @@ export function mobFall(ctx: Ctx, mob: Mob): void {
 export function mobConditions(ctx: Ctx, mob: Mob): boolean {
   // What gear left on it: adrenaline, a lucky blow's tracker (throwing.ts).
   if (mobGearTick(ctx, mob)) return true;
-  // Shattered's conditions: corrosion, ooze, corruption, frost and the rest (status.ts).
+  // Shattered's conditions first: corrosion, ooze, corruption, frost and the rest (status.ts); then alchemy's
+  // buffs (buffs.ts): dread, aggression, a magical sleep...
   if (mobStatusTurn(ctx, mob)) return true;
+  if (tickMob(ctx, mob)) return true;
   // IMMUNITIES: the fetid rat breathes its own paralytic cloud unharmed, and nothing holds the curse.
   if (mob.kind === 'fetidRat' || mob.kind === 'curse') mob.paralysed = 0;
   if (mob.kind === 'curse') mob.rooted = 0;

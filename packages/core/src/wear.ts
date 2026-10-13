@@ -35,7 +35,8 @@ export const isBroken = (item: Item): boolean => Number.isFinite(maxDurability(i
 
 /** Item.effectiveLevel: a broken item works as a plain one (Ring.effectiveLevel: a broken ring as +1). */
 export function effectiveLevel(item: Item): number {
-  if (!isBroken(item)) return item.level;
+  // CurseInfusion's curseInfusionBonus: a level more while the curse lasts.
+  if (!isBroken(item)) return item.level + (item.infused && item.cursed ? 1 : 0);
   return itemDef(item.kind).category === 'ring' ? 1 : 0;
 }
 

@@ -32,7 +32,7 @@ describe('artifacts among finds', () => {
     const kinds = ARTIFACT_DECK.map(() => randomArtifact(run, rng)!.kind);
     expect(new Set(kinds).size).toBe(ARTIFACT_DECK.length);
     expect(randomArtifact(run, rng)).toBeNull();
-    const generator = new ItemGenerator(rng, 3, run);
+    const generator = new ItemGenerator(rng, 3, { run });
     expect(generator.of('artifact').kind.startsWith('ring.')).toBe(true);
   });
 
@@ -40,7 +40,7 @@ describe('artifacts among finds', () => {
     let artifacts = 0;
     let cursed = 0;
     for (let seed = 1; seed <= 30; seed++) {
-      const generator = new ItemGenerator(Rng.seeded(seed), 3, createRun(seed));
+      const generator = new ItemGenerator(Rng.seeded(seed), 3, { run: createRun(seed) });
       for (let i = 0; i < 40; i++) {
         const item = generator.random();
         if (!item.kind.startsWith('artifact.')) continue;

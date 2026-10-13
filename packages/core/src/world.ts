@@ -45,6 +45,9 @@ import { discover, F, hasFlag, T } from './level/terrain';
 import { deriveSeed, Rng, seedRng, Stream } from './rng';
 import { createRun, type RunState } from './run';
 import { isChallenged, NO_HERBALISM, underChallenges } from './challenges';
+import { chillFactor, hungerPaused, tickHero } from './buffs';
+import { burnFuses, nextFuse } from './bombs';
+import { levelTrinkets, PETRIFIED_SEED, SALT_CUBE, trinketLevel } from './trinkets';
 import { arenaJoined, arenaLevelAt, arenaPick, arenaProblem, arenaReady, type ArenaState, arenaTurn, newArena } from './arena';
 import {
   type ArtifactAction, artifactProblem, artifactsAct, artifactsTime, carriedOf, chaliceRegenDelay, disarmPresses, freezeTime, frozenBy,
@@ -127,6 +130,13 @@ export interface World {
   live?: boolean;
   /** How the run was won: the Amulet's own end, or the way out to the surface (the original's «Happy end»). */
   ending?: 'amulet' | 'surface';
+  /** Alchemical energy (Dungeon.energy): energy crystals picked up and items turned into energy, spent at the pot. */
+  energy?: number;
+  /**
+   * Night when the run began (DimensionalSundial reads the clock; a checked run cannot): set by whoever starts
+   * the run, day when absent. A seam for the server.
+   */
+  night?: boolean;
   /** The daily dungeon's boon the hero set out with (daily.ts), for the screens. */
   boon?: string;
   /** The Amulet of Yendor has been taken up (Statistics.amuletObtained): its question is asked once. */
@@ -228,7 +238,7 @@ export function levelAt(world: World, depth: number): Level {
         respawn: quietDepth(d) ? -1 : TIME_TO_RESPAWN,
         heaps: createItems(
           world.run, level, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d)), quietDepth(d), world.heroes.length,
-          (item) => underChallenges(world, item),
+          (item) => underChallenges(world, item), levelTrinkets(world),
         ),
       };
       if (world.bones && !world.bones.placed && world.bones.depth === d) {
@@ -638,6 +648,7 @@ function turnTime(world: World, floor: Floor, turn: Turn): number {
     case 'respawn': return floor.respawn;
     case 'arena': return world.arena!.tick;
     case 'gas': return floor.gasAt!;
+    case 'fuse': return nextFuse(floor.heaps)!;
   }
 }
 
@@ -760,7 +771,7 @@ function stepTowards(world: World, hero: Hero, to: number): number | null {
   return path && path.length > 0 ? path[0]! : null;
 }
 
-type Turn = { kind: 'hero'; hero: Hero } | { kind: 'mob'; mob: Mob } | { kind: 'respawn' } | { kind: 'gas' } | { kind: 'arena' };
+type Turn = { kind: 'hero'; hero: Hero } | { kind: 'mob'; mob: Mob } | { kind: 'respawn' } | { kind: 'gas' } | { kind: 'arena' } | { kind: 'fuse' };
 
 /** Who is due next on a depth; nothing happens on a depth without living heroes. */
 function nextTurn(world: World, depth: number): Turn | undefined {
@@ -781,7 +792,10 @@ function nextTurn(world: World, depth: number): Turn | undefined {
   const arena = world.arena;
   if (arena?.phase === 'fight' && arena.depth === depth && arena.tick < time) [turn, time] = [{ kind: 'arena' }, arena.tick];
   // Clouds of gas spread a turn at a time (Blob.act).
-  if (floor.gasAt !== undefined && floor.gasAt < time) turn = { kind: 'gas' };
+  if (floor.gasAt !== undefined && floor.gasAt < time) [turn, time] = [{ kind: 'gas' }, floor.gasAt];
+  // Bomb.Fuse: a lit bomb burns down (after the hero, before the others).
+  const fuse = nextFuse(floor.heaps);
+  if (fuse !== undefined && fuse < time) turn = { kind: 'fuse' };
   return turn;
 }
 
@@ -892,6 +906,10 @@ function playTurn(ctx: Ctx, turn: Exclude<Turn, { kind: 'hero' }>): void {
       floor.now = Math.max(floor.now, floor.gasAt!);
       floor.gasAt! += 1;
       evolveGas(ctx);
+      return;
+    case 'fuse':
+      floor.now = Math.max(floor.now, nextFuse(floor.heaps)!);
+      burnFuses(ctx);
   }
 }
 
@@ -980,6 +998,8 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
     hurt(ctx, hero, hero.bleeding, 'bleeding');
   }
   if (hero.levitating) hero.levitating = Math.max(0, hero.levitating - time);
+  // Shattered's buffs from alchemy (buffs.ts).
+  if (isAlive(hero)) tickHero(ctx, hero, time);
   if (hero.gasImmune) hero.gasImmune = Math.max(0, hero.gasImmune - time);
   if (hero.burning > 0) {
     // Armour of brimstone: fire does not take (Char.isImmune: Burning).
@@ -1106,7 +1126,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
           ctx.effects.push({ type: 'ratKing', hero: hero.id, line: mob.awake ? 'busy' : 'notSleeping' });
           mob.awake = true;
         }
-        else if (mob.kind === 'mirror' || mob.kind === 'bee') {
+        else if (mob.kind === 'mirror' || mob.kind === 'bee' || mob.ally) {
           // MirrorImage.interact and Bee.interact: the hero and the ally swap places.
           const from = hero.pos;
           hero.pos = mob.pos;
@@ -1425,7 +1445,13 @@ export function trample(ctx: Ctx, pos: number, hero?: Hero): void {
   // and the grass gives more (seeds up to one in 9, dew up to one in 4); cursed, nothing at all; barren land, nothing.
   const nature = naturalism(hero) ?? 0;
   if (nature < 0 || isChallenged(ctx.world, NO_HERBALISM)) return;
-  if (ctx.rng.float() < 1 / (25 - nature * 4)) dropItem(ctx.floor, pos, new ItemGenerator(ctx.rng, ctx.depth).of('seed'));
+  // PetrifiedSeed: more found in the grass (grassLootMultiplier), and a runestone now and then instead of a seed.
+  const petrified = trinketLevel(hero, 'trinket.petrifiedSeed');
+  const seedChance = (1 / (25 - nature * 4)) * (petrified >= 0 ? PETRIFIED_SEED.grassLootMultiplier(petrified) : 1);
+  if (ctx.rng.float() < seedChance) {
+    const stone = petrified >= 0 && ctx.rng.float() < PETRIFIED_SEED.stoneInsteadOfSeedChance(petrified);
+    dropItem(ctx.floor, pos, new ItemGenerator(ctx.rng, ctx.depth).of(stone ? 'stone' : 'seed'));
+  }
   if (ctx.rng.float() < 1 / (6 - nature / 2)) dropItem(ctx.floor, pos, createItem('dew'));
 }
 
@@ -1500,6 +1526,20 @@ function ghostIntroduces(ctx: Ctx, hero: Hero, ghost: Mob): boolean {
   return true;
 }
 
+/**
+ * InterlevelScene's RETURN: the hero goes straight to another depth (a scroll of passage, a beacon of returning), to
+ * a cell there or, without one, its way in; the rose's ghost follows.
+ */
+export function moveToDepth(world: World, hero: Hero, depth: number, pos?: number): void {
+  const fromDepth = hero.depth;
+  const fromLevel = levelAt(world, hero.depth);
+  leaveCell(world, fromLevel, hero.depth, hero.pos);
+  const level = levelAt(world, depth);
+  hero.depth = depth;
+  place(world, hero, level, pos ?? level.entrance);
+  ghostFollows(world, hero, fromDepth);
+}
+
 /** ScrollOfTeleportation.teleportHero: somewhere out of sight on the level, if there is anywhere. */
 function teleportHero(ctx: Ctx, hero: Hero): void {
   const fov = heroView(ctx.world, hero);
@@ -1569,6 +1609,15 @@ function fall(ctx: Ctx, hero: Hero, into: number): void {
   hero.pos = landingCell(world, depth, rng, weakFloor);
   hero.time = floor.now;
   enterCell(below, hero.pos);
+  // ElixirOfFeatherFall.FeatherBuff: the fall hurts nothing, and uses up ten turns of it (Chasm.heroLand).
+  const feather = hero.buffs?.featherFall ?? 0;
+  if (feather > 0) {
+    hero.buffs!.featherFall = feather - 10;
+    if (hero.buffs!.featherFall! <= 0) delete hero.buffs!.featherFall;
+    observe(world, hero);
+    reviveFallen(world, depth, effects);
+    return;
+  }
   hero.crippled = Math.max(hero.crippled, CRIPPLE_TURNS);
   const damage = rng.intRange(Math.trunc(hero.ht / 3), Math.trunc(hero.ht / 2));
   effects.push({ type: 'hurt', depth, who: hero.id, damage });

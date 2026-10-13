@@ -74,30 +74,6 @@ describe('seeds and plants', () => {
     expect(heroById(world, 'p')!.dizzy).toBeGreaterThan(0);
   });
 
-  it('three seeds in an alchemy pot brew a potion', () => {
-    let labs = 0;
-    for (let seed = 1; seed <= 60 && labs === 0; seed++) {
-      const world = createWorld(seed * 7);
-      for (let d = 1; d <= 2; d++) levelAt(world, d);
-      const level = levelAt(world, 2);
-      const pot = level.map.indexOf(T.ALCHEMY);
-      if (pot < 0) continue;
-      labs++;
-      expect(level.rooms.some((r) => r.type === RoomType.LABORATORY)).toBe(true);
-      pacify(world);
-      addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
-      const hero = heroById(world, 'p')!;
-      Object.assign(hero, { depth: 2, pos: pot, time: floorAt(world, 2).now });
-      hero.items = [createItem('seed.sungrass', 3)];
-      const result = act(world, 'p', { type: 'drop', item: 0 });
-      expect(result.ok && result.effects.some((e) => e.type === 'brewed')).toBe(true);
-      const brewed = floorAt(world, 2).heaps.find((h) => h.pos === pot)!;
-      expect(brewed.items).toHaveLength(1);
-      expect(brewed.items[0]!.kind.startsWith('potion.')).toBe(true);
-    }
-    expect(labs).toBeGreaterThan(0);
-  });
-
   it('gardens grow sungrass', () => {
     let gardens = 0;
     for (let seed = 1; seed <= 60 && gardens < 3; seed++) {

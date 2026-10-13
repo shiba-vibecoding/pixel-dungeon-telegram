@@ -51,6 +51,21 @@ export * from './verify';
 export * from './badges';
 export * from './daily';
 export * from './spd-sprites';
+// Shattered's alchemy: the pot and its recipes, buffs, potions, scrolls, runestones, spells, bombs, trinkets.
+export {
+  atPot, availableEnergy, BOMB_RECIPES, brewProblem, energizeProblem, goesInWhole, type Ingredient, type RecipeId, type RecipeOffer,
+  recipesFor, SCROLL_STONES, SEED_POTIONS, SIMPLE_RECIPES, type Simple, toolkit, usableInRecipe,
+} from './alchemy';
+export { type Buffs, buffsOf, chillFactor, isMagicImmune, mightBoost } from './buffs';
+export { CAN_THROW, drinkProblem, MUST_THROW } from './potions';
+export { enchantable, enchantOptions, readProblem, transmutable } from './reading';
+export { ARMOR_AUGMENTS, augmentsFor, INVENTORY_STONES, intuitionChoices, WEAPON_AUGMENTS } from './stones';
+export { ALCHEMIZE_CHOICES, spellProblem, TARGETED_SPELLS } from './spells';
+export { FUSE_TURNS, isBomb } from './bombs';
+export * from './trinkets';
+export { type GasKind, GAS_KINDS, gasAt, smokeCells } from './gas';
+export { TARGETED, TARGET_PROBLEMS, defaultTarget, uncursable } from './scrolls';
+export { circleCells } from './fov';
 export * from './weapons';
 export * from './armor';
 export {

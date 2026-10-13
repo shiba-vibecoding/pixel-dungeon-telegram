@@ -237,11 +237,11 @@ describe('the shop on depth 6', () => {
       // ShopRoom.generateItems: a weapon, a thrown set, leather armour, tipped darts, a stone of augmentation, a bag and
       // the rest (as many as the room holds).
       expect(wares.length, `seed ${seed}`).toBeGreaterThanOrEqual(15);
-      for (const kind of ['armor.leather', 'weightstone'] as const) expect(wares.some((h) => h.items[0]!.kind === kind), `${kind} ${seed}`).toBe(true);
+      for (const kind of ['armor.leather', 'stone.augmentation'] as const) expect(wares.some((h) => h.items[0]!.kind === kind), `${kind} ${seed}`).toBe(true);
       expect(wares.some((h) => itemDef(h.items[0]!.kind).category === 'weapon' && itemDef(h.items[0]!.kind).tier === 2), `seed ${seed}`).toBe(true);
       expect(wares.some((h) => itemDef(h.items[0]!.kind).category === 'missile' && h.items[0]!.qty === 3), `seed ${seed}`).toBe(true);
       expect(wares.some((h) => h.items[0]!.kind === 'bag.seeds'), `seed ${seed}`).toBe(true);
-      expect(wares.some((h) => h.items[0]!.kind === 'weightstone'), `seed ${seed}`).toBe(true);
+      expect(wares.some((h) => h.items[0]!.kind === 'stone.augmentation'), `seed ${seed}`).toBe(true);
       expect(wares.some((h) => h.items[0]!.kind === 'ankh'), `seed ${seed}`).toBe(true);
       expect(floorAt(world, 6).mobs.filter((m) => m.kind === 'shopkeeper'), `seed ${seed}`).toHaveLength(1);
     }

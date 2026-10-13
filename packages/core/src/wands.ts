@@ -46,7 +46,9 @@ export type Bolt =
   | 'magic' | 'lightning' | 'fire' | 'frost' | 'corrosion' | 'force' | 'earth' | 'ward' | 'corruption' | 'rainbow' | 'foliage'
   | 'death' | 'light' | 'blood' | 'beam' | 'poison' | 'shadow'
   /** LloydsBeacon's zap (MagicMissile.BEACON). */
-  | 'beacon';
+  | 'beacon'
+  // Alchemy's spells: wild energy's chaotic zap, a telekinetic grab.
+  | 'wild' | 'grab';
 
 /** What a wand tells its wielder (Wand's and its kinds' messages). */
 export type WandNote =

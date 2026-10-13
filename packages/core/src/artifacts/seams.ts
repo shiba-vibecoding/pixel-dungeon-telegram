@@ -1,6 +1,8 @@
 import type { Char, Ctx } from '../floor';
 import type { Hero } from '../actors';
-import type { Item, ItemKind } from '../items';
+import { EXOTIC_OF, type Item, itemDef, type ItemKind } from '../items';
+import { isMagicImmune } from '../buffs';
+import { readScroll } from '../reading';
 import type { World } from '../world';
 import { regenOn as heroRegenOn } from '../hero';
 import { energyArtifactMultiplier } from '../rings';
@@ -41,9 +43,9 @@ export function regenOn(ctx: Ctx, hero: Hero): boolean {
   return heroRegenOn(ctx.world, hero);
 }
 
-/** Seam (talents and abilities streams): the MagicImmune buff, under which no artifact works. */
-export function magicImmune(_hero: Hero): boolean {
-  return false;
+/** The MagicImmune buff (alchemy's potion of magic immunity; the talents and abilities streams' too): no artifact works. */
+export function magicImmune(hero: Hero): boolean {
+  return isMagicImmune(hero);
 }
 
 /** Seam (talents stream): Food.eatingTime — the meal talents eat two turns faster than Food.TIME_TO_EAT. */
@@ -61,14 +63,14 @@ export function onCloakStealth(_ctx: Ctx, _hero: Hero): void {
   // Nothing until talents exist.
 }
 
-/** Seam (alchemy stream): Dungeon.energy, the alchemical energy the run has (the toolkit's ENERGIZE spends it). */
-export function alchemyEnergy(_world: World): number {
-  return 0;
+/** Dungeon.energy, the alchemical energy the run has (the toolkit's ENERGIZE spends it; alchemy.ts). */
+export function alchemyEnergy(world: World): number {
+  return world.energy ?? 0;
 }
 
-/** Seam (alchemy stream): spends alchemical energy. */
-export function spendAlchemyEnergy(_world: World, _amount: number): void {
-  // Nothing to spend until alchemy exists.
+/** Spends alchemical energy. */
+export function spendAlchemyEnergy(world: World, amount: number): void {
+  world.energy = Math.max(0, (world.energy ?? 0) - amount);
 }
 
 /**
@@ -76,18 +78,20 @@ export function spendAlchemyEnergy(_world: World, _amount: number): void {
  * availableEnergy/consumeEnergy, exported from toolkit.ts). False until the alchemy window exists.
  */
 export function canBrewAnywhere(): boolean {
-  return false;
+  return true;
 }
 
-/** Seam (alchemy stream): ExoticScroll.regToExo — the exotic scroll a scroll kind is the counterpart of; null without exotics. */
-export function exoticScrollOf(_kind: ItemKind): ItemKind | null {
-  return null;
+/** ExoticScroll.regToExo — the exotic scroll a scroll kind is the counterpart of (items.ts EXOTIC_OF). */
+export function exoticScrollOf(kind: ItemKind): ItemKind | null {
+  return EXOTIC_OF[kind] ?? null;
 }
 
 /**
  * Seam (alchemy stream): reads an exotic scroll for the unstable spellbook (anonymised, its talents off).
  * Returns false if it does not know the kind.
  */
-export function readExoticScroll(_ctx: Ctx, _hero: Hero, _kind: ItemKind, _on: Item | undefined): boolean {
-  return false;
+export function readExoticScroll(ctx: Ctx, hero: Hero, kind: ItemKind, on: Item | undefined): boolean {
+  if (itemDef(kind).category !== 'scroll') return false;
+  readScroll(ctx, hero, kind, on);
+  return true;
 }

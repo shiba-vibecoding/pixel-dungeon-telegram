@@ -1,7 +1,10 @@
+import { isCurseEnchant, isCurseGlyph } from './items';
+import { isDart, isTippedDart } from './missiles';
 import { type Hero, MISC_SLOTS, type MiscSlot } from './actors';
 import { CLASS_ARMOR } from './classArmor';
 import type { Ctx } from './floor';
-import { type Item, itemDef, type ItemKind, randomEnchantment, randomGlyph, wandMaxCharges } from './items';
+import { energyValue, type Item, itemDef, type ItemKind, itemPrice, knownIn, randomEnchantment, randomGlyph, wandMaxCharges } from './items';
+import { transmutable } from './reading';
 import { gearUpgradable, upgradeGear } from './gear';
 import { isBroken, mend } from './wear';
 import { isIdentified } from './ident';
@@ -86,50 +89,113 @@ export function isUnidentified(world: World, item: Item, reading?: ItemKind): bo
   return item.kind !== reading && !isIdentified(world, item);
 }
 
-/** The scrolls that are read on a chosen item. */
-export type TargetedScroll = 'scroll.upgrade' | 'scroll.enchantment' | 'scroll.identify';
+/**
+ * What is used on an item of the user's choosing (InventoryScroll, InventoryStone, InventorySpell and the like):
+ * scrolls of upgrade, identify, remove curse and transmutation, the exotic enchantment, the potion of mastery, the
+ * stones of augmentation, enchantment, detect magic and intuition, the curse infusion, magical infusion, recycling
+ * and alchemizing spells, arcane resin and liquid metal.
+ */
+export const TARGETED = [
+  'scroll.upgrade', 'scroll.enchantment', 'scroll.identify', 'scroll.removeCurse', 'scroll.transmutation', 'potion.mastery',
+  'stone.augmentation', 'stone.enchantment', 'stone.detectMagic', 'stone.intuition', 'spell.curseInfusion', 'spell.magicalInfusion',
+  'spell.recycle', 'spell.alchemize', 'resin', 'liquidMetal',
+] as const satisfies readonly ItemKind[];
+export type TargetedScroll = (typeof TARGETED)[number];
 
-export const isTargetedScroll = (kind: ItemKind): kind is TargetedScroll =>
-  kind === 'scroll.upgrade' || kind === 'scroll.enchantment' || kind === 'scroll.identify';
+export const isTargetedScroll = (kind: ItemKind): kind is TargetedScroll => (TARGETED as readonly ItemKind[]).includes(kind);
 
-/** Whether a scroll of `kind` can be read on `item`. */
+/** ScrollOfRemoveCurse.uncursable: worn things and wands whose curse is not known, or that are cursed. */
+export function uncursable(world: World, item: Item): boolean {
+  const category = itemDef(item.kind).category;
+  const equipable = ['weapon', 'armor', 'ring', 'wand', 'missile', 'bow', 'artifact'].includes(category);
+  if (equipable && ((!isIdentified(world, item) && !!item.curseUnknown) || !!item.cursed)) return true;
+  // A curse enchantment or glyph, cursed or not (Weapon.hasCurseEnchant, Armor.hasCurseGlyph).
+  return isCurseEnchant(item.enchant) || isCurseGlyph(item.glyph);
+}
+
+/** Whether `kind` can be used on `item`. */
 export function canTarget(world: World, kind: TargetedScroll, item: Item): boolean {
+  const category = itemDef(item.kind).category;
   switch (kind) {
     case 'scroll.upgrade':
+    case 'spell.magicalInfusion':
       return isUpgradable(item);
     case 'scroll.enchantment':
+    case 'stone.augmentation':
+    case 'stone.enchantment':
       return isEnchantable(item);
     case 'scroll.identify':
       return isUnidentified(world, item, kind);
+    case 'scroll.removeCurse':
+      return uncursable(world, item);
+    case 'scroll.transmutation':
+      return transmutable(world, item, kind);
+    case 'potion.mastery':
+      // PotionOfMastery: a weapon or armour not made easier already.
+      return (category === 'weapon' || category === 'armor') && !item.mastery;
+    case 'stone.detectMagic':
+      // StoneOfDetectMagic: worn things and wands not known through and through, or whose curse is not known.
+      return ['weapon', 'armor', 'ring', 'wand', 'missile'].includes(category) && (!isIdentified(world, item) || !!item.curseUnknown);
+    case 'stone.intuition':
+      // StoneOfIntuition: a potion, scroll or ring of a kind not known.
+      return (category === 'potion' || category === 'scroll' || category === 'ring') && !knownIn(world.known, item.kind);
+    case 'spell.curseInfusion':
+      return (isUpgradable(item) && ['weapon', 'armor', 'ring', 'missile'].includes(category)) || category === 'wand';
+    case 'spell.recycle':
+      return ['potion', 'scroll', 'seed', 'stone'].includes(category) || isTippedDart(item.kind);
+    case 'spell.alchemize':
+      return item.kind !== 'spell.alchemize' && (itemPrice(item, knownIn(world.known, item.kind)) > 0 || energyValue(item, knownIn(world.known, item.kind)) > 0);
+    case 'resin':
+      // ArcaneResin: a wand known through and through, below +3 from resin.
+      return category === 'wand' && isIdentified(world, item);
+    case 'liquidMetal':
+      // LiquidMetal.itemSelectable: a thrown weapon, but no dart.
+      return category === 'missile' && !isDart(item.kind);
   }
 }
 
-/** What the hero could read a scroll of `kind` on, for the client's picker; empty for other scrolls. */
+/** What the hero could use `kind` on, for the client's picker; empty for what is not used on an item. */
 export function scrollTargets(world: World, hero: Hero, kind: ItemKind): ItemRef[] {
   if (!isTargetedScroll(kind)) return [];
   return heldRefs(hero).filter((ref) => canTarget(world, kind, itemAt(hero, ref)!));
 }
 
-/** Why a scroll of `kind` cannot be read on that item. */
+/** Why `kind` cannot be used on that item. */
 export const TARGET_PROBLEMS: Readonly<Record<TargetedScroll, string>> = {
   'scroll.upgrade': 'that cannot be upgraded',
   'scroll.enchantment': 'that cannot be enchanted',
   'scroll.identify': 'there is nothing to learn about that',
+  'scroll.removeCurse': 'there is no curse to lift from that',
+  'scroll.transmutation': 'that cannot be transmuted',
+  'potion.mastery': 'that cannot be made easier',
+  'stone.augmentation': 'that cannot be augmented',
+  'stone.enchantment': 'that cannot be enchanted',
+  'stone.detectMagic': 'there is no magic to detect on that',
+  'stone.intuition': 'there is nothing to guess about that',
+  'spell.curseInfusion': 'that cannot be infused with a curse',
+  'spell.magicalInfusion': 'that cannot be upgraded',
+  'spell.recycle': 'that cannot be recycled',
+  'spell.alchemize': 'that can be neither sold nor turned into energy',
+  resin: 'resin works only on a wand known through and through',
+  liquidMetal: 'liquid metal works only on thrown weapons',
 };
 
 /**
  * When no item was chosen (an unknown scroll, whose kind the client could not
  * know to ask about, or an old client): the weapon in hand, else the armour,
  * if the scroll can act on them; for identify, the first unknown potion or
- * scroll in the pack, else the first thing held that is not identified.
- * Undefined if there is none: the scroll is wasted.
+ * scroll in the pack, else the first thing held that is not identified; for the
+ * rest, the first thing it can act on. Undefined if there is none: the scroll is wasted.
  */
 export function defaultTarget(world: World, hero: Hero, kind: TargetedScroll): Item | undefined {
   if (kind === 'scroll.identify') {
     const unknown = heldRefs(hero).map((ref) => itemAt(hero, ref)!).filter((item) => isUnidentified(world, item, kind));
     return unknown.find((item) => ['potion', 'scroll'].includes(itemDef(item.kind).category)) ?? unknown[0];
   }
-  return [hero.weapon, hero.armor].find((item): item is Item => !!item && canTarget(world, kind, item));
+  if (kind === 'scroll.upgrade' || kind === 'scroll.enchantment') {
+    return [hero.weapon, hero.armor].find((item): item is Item => !!item && canTarget(world, kind, item));
+  }
+  return heldRefs(hero).map((ref) => itemAt(hero, ref)!).find((item) => canTarget(world, kind, item));
 }
 
 /** ScrollOfRemoveCurse.uncurse on the one item. */
@@ -143,7 +209,9 @@ const uncurse = (item: Item): void => {
  * may lose their enchantment or glyph to the clash of magics, a wand gains a
  * charge as well as a level (Wand.upgrade), and every upgrade mends (Item.upgrade).
  */
-export function upgradeItem(ctx: Ctx, hero: Hero, item: Item): void {
+export function upgradeItem(ctx: Ctx, hero: Hero, item: Item, infusion = false): void {
+  // MagicalInfusion.upgradeItem: an upgrade that keeps the enchantment, and the curse.
+  const cursed = item.cursed;
   uncurse(item);
   if (isBroken(item)) {
     mend(item);
@@ -164,6 +232,7 @@ export function upgradeItem(ctx: Ctx, hero: Hero, item: Item): void {
   mend(item);
   // Wand.upgrade: one more charge, up to the new maximum; MagesStaff.upgrade: its wand as good, and a charge more.
   if (item.charges !== undefined) item.charges = Math.min(item.charges + 1, wandMaxCharges(item));
+  if (infusion && cursed) item.cursed = true;
   if (item.kind === 'weapon.magesStaff') updateWand(item, true);
   ctx.effects.push({ type: 'upgraded', hero: hero.id, item });
 }

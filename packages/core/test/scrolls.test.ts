@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, createItem, createWorld, heroById, type Hero, type ItemKind, scrollTargets, wandMaxCharges, type World,
+  enchantOptions, labelKind, act, addHero, createItem, createWorld, heroById, type Hero, type ItemKind, scrollTargets, wandMaxCharges, type World,
 } from '../src/index';
 import { pacify } from './helpers';
 
@@ -9,7 +9,7 @@ function reader(heroClass: 'warrior' | 'mage' | 'rogue' | 'huntress', scroll: It
   const world = pacify(createWorld(8));
   const hero = addHero(world, { id: 'p', name: 'P', heroClass });
   hero.items.unshift(createItem(scroll, 2));
-  if (known && !world.known.includes(scroll)) world.known.push(scroll);
+  if (known && !world.known.includes(labelKind(scroll))) world.known.push(labelKind(scroll));
   return { world, hero };
 }
 
@@ -105,10 +105,14 @@ describe('a scroll of enchantment, on the item chosen', () => {
   it('inscribes armour in the pack, and refuses a wand', () => {
     const { world, hero } = reader('mage', 'scroll.enchantment');
     hero.items.push(createItem('armor.scale'), createItem('wand.magicMissile'));
-    expect(act(world, 'p', { type: 'use', item: 0, on: slot(hero, 'armor.scale') }).ok).toBe(true);
-    expect(hero.items[slot(hero, 'armor.scale')]!.glyph).toBeDefined();
+    // ScrollOfEnchantment: one of three glyphs, chosen.
+    expect(act(world, 'p', { type: 'use', item: 0, on: slot(hero, 'armor.scale') })).toEqual({ ok: false, reason: 'choose an enchantment' });
+    const options = enchantOptions(world, hero, hero.items[slot(hero, 'armor.scale')]!);
+    expect(new Set(options).size).toBe(3);
+    expect(act(world, 'p', { type: 'use', item: 0, on: slot(hero, 'armor.scale'), choice: 1 }).ok).toBe(true);
+    expect(hero.items[slot(hero, 'armor.scale')]!.glyph).toBe(options[1]);
     expect(hero.armor.glyph).toBeUndefined();
-    expect(act(world, 'p', { type: 'use', item: 0, on: slot(hero, 'wand.magicMissile') })).toEqual({
+    expect(act(world, 'p', { type: 'use', item: 0, on: slot(hero, 'wand.magicMissile'), choice: 0 })).toEqual({
       ok: false, reason: 'that cannot be enchanted',
     });
   });

@@ -6,6 +6,8 @@ import {
   meleeStr, surpriseShare, weaponAcc, weaponDefense, weaponDly, weaponRch, type WeaponStats, weaponStats,
 } from './weapons';
 import { isDart, missileMax, missileMin, missileStr, missileSurprise } from './missiles';
+import { type Buffs, buffSpeed } from './buffs';
+import { CLOVER, FERRET_TUFT, trinketLevel } from './trinkets';
 import { type HeroClass, startingKit } from './heroclass';
 import { isStarving } from './hero';
 import {
@@ -165,6 +167,8 @@ export interface Hero {
   hunger: number;
   /** Unused since Shattered's hunger (kept for the shape of older saves). */
   hungerTime: number;
+  /** Shattered's buffs from alchemy (buffs.ts): haste, shielding, healing over time, imbues and the like. */
+  buffs?: Buffs;
   /** Hunger.partialDamage: starvation's damage building up towards the next point. */
   starve?: number;
   /** Turns left of Bless (from experience at the level cap): a quarter more accurate and evasive. */
@@ -362,6 +366,9 @@ export function heroDefenseSkill(hero: Hero): number {
   if (encumbrance > 0) evasion = f32(evasion / 1.5 ** encumbrance);
   // Seam (talents stream): Momentum's evasion. Here the 1.9 freerunner still doubles it, unburdened and fed.
   if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) evasion = f32(evasion * 2);
+  // FerretTuft.evasionMultiplier.
+  const tuft = trinketLevel(hero, 'trinket.ferretTuft');
+  if (tuft >= 0) evasion = f32(evasion * FERRET_TUFT.evasionMultiplier(tuft));
   evasion = f32(evasion + armorEvasionBonus(hero.armor));
   return Math.max(1, jround(evasion));
 }
@@ -383,6 +390,9 @@ export function heroDrRoll(hero: Hero, rng: Rng): number {
   }
   const bark = Math.ceil(hero.barkskin ?? 0);
   if (bark > 0) dr += rng.normalIntRange(0, bark);
+  // Barkskin (a potion of earthen armour): up to its level more.
+  const earthen = hero.buffs?.barkskin?.level ?? 0;
+  if (earthen > 0) dr += rng.normalIntRange(0, earthen);
   return dr;
 }
 
@@ -421,6 +431,9 @@ export function heroDamageRoll(hero: Hero, rng: Rng, surprised = false, weapon: 
     damage = surprised && share > 0
       ? augmentDamage(weapon, rng.normalIntRange(min + jround((max - min) * share), max))
       : augmentDamage(weapon, rng.normalIntRange(min, max));
+    // ThirteenLeafClover.alterDamageRoll: now and then the most or the least it could be.
+    const leaf = trinketLevel(hero, 'trinket.clover');
+    if (leaf >= 0 && rng.float() < CLOVER.alterHeroDamageChance(leaf)) damage = augmentDamage(weapon, CLOVER.alterDamageRoll(rng, min, max));
     const excess = heroStr(hero) - strikeStr(hero, weapon);
     if (excess > 0) damage += rng.normalIntRange(0, excess);
     // RingOfForce.armedDamageBonus: rings of force add to a weapon's blow as well.
@@ -477,14 +490,14 @@ export function heroSpeed(hero: Hero, footing?: Footing): number {
   if (footing && glyph === 'swiftness' && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));
   if (footing && glyph === 'flow' && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
   if (footing && glyph === 'bulk' && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
-  // RingOfHaste.speedMultiplier.
-  return f32(speed * speedMultiplier(hero));
+  // RingOfHaste.speedMultiplier; stamina, haste (buffs.ts).
+  return f32(speed * speedMultiplier(hero) * buffSpeed(hero));
 }
 
 /** A hero's armour at its most (Armor.DRMax, with the weapon's parrying and the bark at theirs), for what wants one figure. */
 export const heroArmor = (hero: Hero): number =>
   armorDrMax(hero.armor) + (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon' ? weaponDefense(hero.weapon) : 0) +
-  Math.max(0, Math.ceil(hero.barkskin ?? 0));
+  Math.max(0, Math.ceil(hero.barkskin ?? 0)) + (hero.buffs?.barkskin?.level ?? 0);
 /** Hero.stealth: armour of obfuscation adds 1 and a third a level (Obfuscation.stealthBoost); talents add to it in their stream. */
 export const heroStealth = (hero: Hero): number => (hero.armor.glyph === 'obfuscation' ? Math.fround(1 + gearLevel(hero.armor) / 3) : 0);
 /** Hero.maxExp: what the next level costs. */
@@ -501,6 +514,8 @@ export type MobKind =
   | 'statue' | 'piranha' | 'imp' | 'sheep' | 'blacksmith' | 'mirror'
   | 'albino' | 'bandit' | 'shielded' | 'senior' | 'acidic'
   | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper' | 'ghostHero'
+  /** Alchemy's prismatic image (PrismaticGuard). */
+  | 'prismatic'
   /** WandOfWarding.Ward, WandOfLivingEarth.EarthGuardian, WandOfRegrowth.Lotus. */
   | 'ward' | 'guardian' | 'lotus';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
@@ -575,6 +590,8 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   acidic: { name: 'acidic scorpio', ht: 95, attack: 36, defense: 24, damage: [20, 32], dr: 16, exp: 14, maxLvl: 25, speed: 1 },
   sheep: { name: 'sheep', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   mirror: { name: 'mirror image', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** PrismaticImage: the hero's ally out of a scroll of prismatic image, as strong as its hero's level (see mobStats). */
+  prismatic: { name: 'prismatic image', ht: 10, attack: 10, defense: 5, damage: [2, 4], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   blacksmith: { name: 'troll blacksmith', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   imp: { name: 'ambitious imp', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   // The sad ghost's errands: the rat that killed it, and the curse that binds it (its numbers grow with the depth).
@@ -620,6 +637,10 @@ export function mobStats(mob: Mob): MobStats {
   if (mob.kind === 'bee') {
     const ht = (3 + depth) * 5;
     return { ...MOBS.bee, ht, attack: 9 + depth, defense: 9 + depth, damage: [Math.trunc(ht / 10), Math.trunc(ht / 4)] };
+  }
+  if (mob.kind === 'prismatic') {
+    // PrismaticImage: the hero's accuracy and evasion (9 + lvl, 4 + lvl) and its own damage, by the hero's level.
+    return { ...MOBS.prismatic, ht: mob.ht, attack: 9 + depth, defense: 4 + depth, damage: [2 + Math.trunc(depth / 4), 4 + Math.trunc(depth / 2)] };
   }
   if (mob.kind === 'wraith') return { ...MOBS.wraith, attack: 10 + depth, defense: (10 + depth) * 5, damage: [1, 3 + depth] };
   if (mob.kind === 'guardian') {
@@ -717,6 +738,10 @@ export interface Mob {
   bleeding?: number;
   /** A mirror image: whose twin it is, and the skill and strength it took from them. */
   image?: { owner: string; attack: number; damage: number };
+  /** Shattered's buffs from alchemy (buffs.ts): dread, aggression, a magical sleep and the like. */
+  buffs?: Buffs;
+  /** The hero an ally from alchemy follows (a prismatic image, an enthralled monster, a summoned elemental). */
+  owner?: string;
   /** Thrown weapons stuck in it, dropped where it dies (PinCushion). */
   pinned?: Item[];
   /** Turns left of acting twice as fast (Adrenaline). */

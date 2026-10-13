@@ -1,7 +1,8 @@
 import { type Hero, isAlive, type Mob, type MobKind, type SubClass } from './actors';
 import { DARKNESS, isChallenged, underChallenges } from './challenges';
 
-import { castShadow, LIGHT_DISTANCE, terrainBlocksSight, viewDistance } from './fov';
+import { castShadow, circleCells, LIGHT_DISTANCE, terrainBlocksSight, viewDistance } from './fov';
+import { discoverable } from './level/flags';
 
 import type { Enchantment, Glyph, Heap, HeapKind, Item, ItemKind } from './items';
 import type { WellWater } from './level/builder';
@@ -14,7 +15,9 @@ import type { ImpLine } from './imp';
 import type { SmithLine } from './smith';
 import type { Bolt, WandNote } from './wands';
 import type { CursedEffect } from './cursed';
-import type { GasKind } from './gas';
+import { type GasKind, smokeCells } from './gas';
+import { MAGICAL_SIGHT_DISTANCE } from './buffs';
+import { EYE_OF_NEWT, trinketLevel } from './trinkets';
 import type { Level } from './level/generate';
 import { LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
@@ -281,8 +284,8 @@ export type Effect =
   | { type: 'marked'; depth: number; who: string }
   | { type: 'sacrifice'; depth: number; pos: number; outcome: 'worthy' | 'unworthy' | 'reward' }
   | { type: 'wipedOut'; depth: number; hero: string }
-  /** A bomb went off. */
-  | { type: 'exploded'; depth: number; pos: number }
+  /** A bomb went off (which kind, for the special ones). */
+  | { type: 'exploded'; depth: number; pos: number; bomb?: ItemKind }
   /** Terrain burnt down to embers, opening what it blocked. */
   | { type: 'burnt'; depth: number; pos: number }
   /** A thrown potion breaking; `identified` when what came out taught the party what it was. */
@@ -297,6 +300,48 @@ export type Effect =
   | { type: 'arenaReady'; hero: string; ready: boolean }
   | { type: 'arenaSinks'; depth: number; tier: number }
   | { type: 'arenaGates'; depth: number; open: boolean; cells: number[] }
+  /*
+   * Alchemy (alchemy.ts, potions.ts, reading.ts, stones.ts, spells.ts, bombs.ts, buffs.ts, trinkets.ts):
+   * something brewed in the pot (null: a catalyst's trinkets rolled), its cost; an item turned into energy;
+   * a catalyst's four trinkets offered.
+   */
+  | { type: 'crafted'; hero: string; item: Item | null; cost: number }
+  | { type: 'energized'; hero: string; item: Item; energy: number }
+  | { type: 'catalyst'; hero: string; trinkets: ItemKind[] }
+  /** A monster enthralled by a siren's song; an elemental summoned; a lit fuse snuffed; a noisemaker's call. */
+  | { type: 'enthralled'; depth: number; mob: string; hero: string }
+  | { type: 'summoned'; depth: number; mob: string; pos: number }
+  | { type: 'snuffed'; hero: string }
+  | { type: 'noise'; depth: number; pos: number }
+  /** A potion in a frozen hero's pack shattered; a challenge arena faded; a potion of healing began to heal. */
+  | { type: 'frozenPotion'; hero: string; kind: ItemKind }
+  | { type: 'arenaGone'; hero: string }
+  | { type: 'healing'; hero: string }
+  /** Ground changed by a blob (grass grown, water from a storm cloud or a geyser). */
+  | { type: 'grown'; depth: number; pos: number }
+  /** A potion breaking at a cell (its splash); a dragon's breath cone; an aqua brew's geyser. */
+  | { type: 'splash'; depth: number; pos: number; kind: ItemKind }
+  | { type: 'breath'; depth: number; from: number; to: number; cells: number[] }
+  | { type: 'geyser'; depth: number; pos: number }
+  /** What an unstable brew or spell turned out to be. */
+  | { type: 'unstable'; hero: string; kind: ItemKind }
+  /** A potion of mastery made an item easier; a potion of divine inspiration boosted a talent tier; a scroll of metamorphosis read. */
+  | { type: 'masteryPotion'; hero: string; item: Item }
+  | { type: 'inspired'; hero: string; tier: number }
+  | { type: 'metamorphosis'; hero: string }
+  /** Kinds a scroll of divination made known. */
+  | { type: 'divined'; hero: string; kinds: ItemKind[] }
+  /** A curse infused; a trap taken back by the spell; an item augmented; magic detected on an item; a guess of a stone of intuition. */
+  | { type: 'curseInfused'; hero: string; item: Item }
+  | { type: 'reclaimed'; hero: string; trap: TrapKind }
+  | { type: 'augmented'; hero: string; item: Item }
+  | { type: 'detected'; hero: string; item: Item; result: 'none' | 'good' | 'bad' | 'both' }
+  | { type: 'guessed'; hero: string; kind: ItemKind; right: boolean }
+  /** A thrown runestone working where it landed; a stone of shock's discharge. */
+  | { type: 'stone'; depth: number; pos: number; kind: ItemKind }
+  | { type: 'shock'; depth: number; pos: number; count: number }
+  /** The chaotic censer spewing a gas. */
+  | { type: 'censer'; hero: string; depth: number; from: number; to: number; gas: string }
   /*
    * Artifacts (artifacts/): a line for the log by its message key (under items.artifacts, or a full key); the cloak's
    * stealth and the hourglass's stasis and time freeze on or off; the talisman's sweep; the chains pulling someone
@@ -387,10 +432,20 @@ export const heroSight = (world: World, depth: number): number => viewDistance(d
 
 /** Field of view of one hero (Dungeon.switchLevel and Light: a torch lights up to Light.DISTANCE). */
 export function heroView(world: World, hero: Hero): boolean[] {
-  // Blinded, a hero sees no further than arm's reach.
-  const distance = (hero.blind ?? 0) > 0 ? 1
+  // Blinded, a hero sees no further than arm's reach; with an eye of newt, less far (EyeOfNewt.visionRangeMultiplier).
+  let distance = (hero.blind ?? 0) > 0 ? 1
     : hero.light > 0 ? Math.max(heroSight(world, hero.depth), LIGHT_DISTANCE) : heroSight(world, hero.depth);
-  const fov = castShadow(hero.pos, terrainBlocksSight(world.levels[hero.depth]!.map), distance);
+  const newt = trinketLevel(hero, 'trinket.eyeOfNewt');
+  if (newt >= 0 && distance > 1) distance = Math.max(1, Math.round(distance * EYE_OF_NEWT.visionRangeMultiplier(newt)));
+  // A smoke screen blocks sight (SmokeScreen.onBuildFlagMaps).
+  const terrain = terrainBlocksSight(world.levels[hero.depth]!.map);
+  const smoke = smokeCells(world.floors[hero.depth]);
+  const fov = castShadow(hero.pos, smoke.size === 0 ? terrain : (cell) => terrain(cell) || smoke.has(cell), distance);
+  // MagicalSight: everything there is to see within twelve cells, through walls (Level.updateFieldOfView's sense).
+  if ((hero.buffs?.magicalSight ?? 0) > 0) {
+    const open = discoverable(world.levels[hero.depth]!.map);
+    for (const cell of circleCells(hero.pos, MAGICAL_SIGHT_DISTANCE)) if (open[cell]) fov[cell] = true;
+  }
   // Arm's reach is always seen, round a corner or into a doorway too: whatever can strike the hero
   // (anything next to them may) is never an unseen blow.
   for (const n of NEIGHBOURS8) {

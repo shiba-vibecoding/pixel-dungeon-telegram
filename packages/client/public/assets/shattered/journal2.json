@@ -1,0 +1,86 @@
+[
+ {
+  "key": "shop",
+  "ru": "Лавка",
+  "en": "Shop",
+  "x": 0
+ },
+ {
+  "key": "imp-shop",
+  "ru": "Лавка беса",
+  "en": "Imp’s shop",
+  "x": 16
+ },
+ {
+  "key": "rat-king",
+  "ru": "Крысиный король",
+  "en": "Rat king",
+  "x": 32
+ },
+ {
+  "key": "demon-spawner",
+  "ru": "Логово демонов",
+  "en": "Demon spawner",
+  "x": 48
+ },
+ {
+  "key": "lost-pack",
+  "ru": "Потерянный рюкзак",
+  "en": "Lost backpack",
+  "x": 64
+ },
+ {
+  "key": "beacon",
+  "ru": "Маяк возвращения",
+  "en": "Beacon of returning",
+  "x": 80
+ },
+ {
+  "key": "distant-well",
+  "ru": "Дальний колодец",
+  "en": "Distant well",
+  "x": 96
+ },
+ {
+  "key": "floor-chasm",
+  "ru": "Этаж: пропасти",
+  "en": "Floor: chasms",
+  "x": 112
+ },
+ {
+  "key": "floor-water",
+  "ru": "Этаж: вода",
+  "en": "Floor: water",
+  "x": 128
+ },
+ {
+  "key": "floor-grass",
+  "ru": "Этаж: заросли",
+  "en": "Floor: overgrown",
+  "x": 144
+ },
+ {
+  "key": "floor-dark",
+  "ru": "Этаж: тьма",
+  "en": "Floor: dark",
+  "x": 160
+ },
+ {
+  "key": "floor-large",
+  "ru": "Этаж: большой",
+  "en": "Floor: large",
+  "x": 176
+ },
+ {
+  "key": "floor-traps",
+  "ru": "Этаж: ловушки",
+  "en": "Floor: traps",
+  "x": 192
+ },
+ {
+  "key": "floor-secrets",
+  "ru": "Этаж: тайники",
+  "en": "Floor: secrets",
+  "x": 208
+ }
+]

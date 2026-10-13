@@ -17,7 +17,7 @@ function stock(world: World, id: string, rng: Rng): void {
   const kinds = [...KINDS];
   rng.shuffle(kinds);
   // The gear's own kinds always among them, for their actions to be tried.
-  for (const kind of ['weightstone', 'spiritBow', 'missile.dart', 'seed.icecap'] as const) {
+  for (const kind of ['stone.augmentation', 'spiritBow', 'missile.dart', 'seed.icecap'] as const) {
     kinds.splice(kinds.indexOf(kind), 1);
     kinds.unshift(kind);
   }
@@ -54,12 +54,14 @@ function randomAction(world: World, id: string, rng: Rng): Action {
       const ref = rng.int(2) === 0 && carried >= 0 ? carried : rng.oneOf(['artifact', 'misc'] as const);
       return { type: 'artifact', item: ref, use: rng.element(ARTIFACT_USES)!, cell: target, with: item, choice: rng.int(2), on: rng.int(2) === 0 ? item : 'armor' };
     }
+    // Alchemy's items want an item, a cell or a choice to act on.
+    case 15: return { type: 'use', item, on: rng.int(Math.max(1, hero.items.length)), cell: target, choice: rng.int(4) };
     case 10: {
       // The gear's own actions: a stone of augmentation, the spirit bow, tipping darts, cleaning them.
       const of = (kind: ItemKind): number => Math.max(0, hero.items.findIndex((i) => i.kind === kind));
       const augments = ['speed', 'damage', 'evasion', 'defense', 'none'] as const;
       switch (rng.int(4)) {
-        case 0: return { type: 'augment', item: of('weightstone'), on: rng.int(2) === 0 ? 'weapon' : 'armor', augment: rng.oneOf(augments) };
+        case 0: return { type: 'augment', item: of('stone.augmentation'), on: rng.int(2) === 0 ? 'weapon' : 'armor', augment: rng.oneOf(augments) };
         case 1: return { type: 'shoot', item: of('spiritBow'), target };
         case 2: return { type: 'tip', item: of('missile.dart'), seed: hero.items.findIndex((i) => i.kind.startsWith('seed.')), all: rng.int(2) === 0 };
         default: return { type: 'clean', item, all: rng.int(2) === 0 };

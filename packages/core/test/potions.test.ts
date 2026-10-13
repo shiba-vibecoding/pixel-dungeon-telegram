@@ -34,7 +34,7 @@ describe('harmful potions', () => {
     hero.items = [createItem('potion.toxicGas')];
     const result = act(world, 'p', { type: 'use', item: 0 });
     expect(result.ok && result.effects.find((e) => e.type === 'used')).toMatchObject({ identified: true });
-    expect(result.ok && result.effects.some((e) => e.type === 'burst' && e.kind === 'toxic')).toBe(true);
+    expect(result.ok && result.effects.some((e) => e.type === 'splash' && e.kind === 'potion.toxicGas')).toBe(true);
     // The cloud lingers about the drinker, and hurts every turn spent in it.
     expect(floorAt(world, 1).gas?.toxic?.length).toBeGreaterThan(0);
     const before = hero.hp;
@@ -115,8 +115,14 @@ describe('fire', () => {
         hero.depth = depth;
         hero.pos = NEIGHBOURS8.map((n) => barricade + n).find((c) => canEnter(level, c))!;
         hero.items = [createItem('potion.liquidFlame')];
-        const result = act(world, 'p', { type: 'use', item: 0 });
-        expect(result.ok && result.effects.some((e) => e.type === 'burnt' && e.pos === barricade)).toBe(true);
+        Object.assign(hero, { hp: 500, ht: 500 });
+        const effects = [];
+        // Liquid flame (Fire): the fire catches what can burn beside it, and burns it down as it goes out.
+        for (const action of [{ type: 'use', item: 0 }, ...Array(6).fill({ type: 'wait' })] as const) {
+          const result = act(world, 'p', action);
+          if (result.ok) effects.push(...result.effects);
+        }
+        expect(effects.some((e) => e.type === 'burnt' && e.pos === barricade)).toBe(true);
         expect(level.map[barricade]).toBe(T.EMBERS);
         return;
       }

@@ -1,10 +1,11 @@
+import { applyLiquidMetal, liquidMetalProblem } from './alchemy';
 import { mend, wear } from './wear';
 import { chargesKnown, identify, isIdentified, learn } from './ident';
 import {
   BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, heroEquipped, heroRings, isAlive, maxExp, MISC_SLOTS,
   type MiscSlot, type Mob, mobStats, type SubClass, SUBCLASSES,
 } from './actors';
-import { affectHunger, growHT } from './hero';
+import { affectHunger, growHT, STARVING } from './hero';
 import { affixProblem, affixSeal, detachProblem, detachSeal, type SealSource } from './seal';
 import { refreshMightHT } from './hero';
 import { wealthBonusDrops } from './rings';
@@ -20,7 +21,7 @@ import {
 } from './floor';
 import {
   type Augment, buyPrice, createItem, type Heap, isCurseEnchant, isCurseGlyph, isStackable, type Item, itemDef, ItemGenerator, type ItemKind,
-  itemPrice, stacksWith, wandMaxCharges,
+  itemPrice, knownIn, stacksWith, wandMaxCharges,
 } from './items';
 import { isTippedDart, mergeMissiles, TIPPED_DARTS } from './missiles';
 import { outdatedCopy } from './gear';
@@ -45,6 +46,14 @@ import {
   canTarget, defaultTarget, enchantItem, isEnchantable, isItemRef, isTargetedScroll, itemAt, type ItemRef, TARGET_PROBLEMS, type TargetedScroll,
   upgradeItem,
 } from './scrolls';
+import { brew, brewProblem, chooseTrinket, energizeAt, energizeProblem } from './alchemy';
+import { buffsOf, isMagicImmune } from './buffs';
+import { drinkPotion, drinkProblem, shatterPotion } from './potions';
+import { readProblem, readScroll, scrollUseProblem } from './reading';
+import { activateStone, INVENTORY_STONES, stoneProblem, useStone } from './stones';
+import { castSpell, spellProblem } from './spells';
+import { explode, lightFuse, snuff } from './bombs';
+import { isChallenged, NO_FOOD } from './challenges';
 
 /*
  * Picking things up, drinking, reading, equipping and dropping. Dropping is
@@ -63,7 +72,16 @@ export type InventoryAction =
    * identify act on the item chosen `on` (see scrolls.ts); `target` is how older
    * clients chose between the weapon and the armour worn.
    */
-  | { type: 'use'; item: number; on?: ItemRef; target?: 'weapon' | 'armor' }
+  | {
+    type: 'use'; item: number; on?: ItemRef; target?: 'weapon' | 'armor';
+    /** Where a potion of dragon's breath, a siren's song or a targeted spell is aimed. */
+    cell?: number;
+    /**
+     * A choice the item asks for: an enchantment (0-2), an augmentation, a guess, a talent tier, a trinket, a
+     * beacon's set (0) or return (1), what to alchemize into (see each item's module).
+     */
+    choice?: number;
+  }
   /**
    * Put on a weapon, armour, ring or artifact. With the artifact, misc and ring slots taken, a ring or
    * an artifact needs `replace`: which of them to take off for it (KindofMisc's window).
@@ -91,6 +109,13 @@ export type InventoryAction =
   /** The special ability of the class armour worn: a cell for the warrior's leap and the rogue's smoke bomb. */
   | { type: 'special'; target?: number }
   /**
+   * AlchemyScene: brew at an alchemy pot. `inputs` are pack slots, one item from each (a stack of thrown weapons or
+   * of liquid metal whole; a slot twice for two of it); `recipe` which of the recipes they make (alchemy.ts).
+   */
+  | { type: 'alchemy'; inputs: number[]; recipe?: number }
+  /** WndEnergizeItem: turn an item from the pack (or the whole stack) into alchemical energy, at a pot. */
+  | { type: 'energize'; item: number; all?: boolean }
+  /**
    * StoneOfAugmentation.apply: the stone (`item`) augments a weapon (speed, damage) or armour (evasion, defense) held
    * (`on`), or takes its augment away ('none').
    */
@@ -109,8 +134,8 @@ export type InventoryAction =
   | { type: 'detach'; armor: SealSource };
 
 const INVENTORY_ACTIONS: ReadonlySet<string> = new Set([
-  'pickup', 'open', 'use', 'equip', 'drop', 'throw', 'zap', 'buy', 'sell', 'remove', 'unequip', 'master', 'mine', 'special', 'augment', 'shoot',
-  'tip', 'clean', 'imbue', 'affix', 'detach',
+  'pickup', 'open', 'use', 'equip', 'drop', 'throw', 'zap', 'buy', 'sell', 'remove', 'unequip', 'master', 'mine', 'special', 'alchemy',
+  'energize', 'augment', 'shoot', 'tip', 'clean', 'imbue', 'affix', 'detach',
 ]);
 
 export function isInventoryAction(action: { type: string }): action is InventoryAction {
@@ -168,6 +193,8 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     return null;
   }
   if (action.type === 'mine') return mineProblem(world, hero);
+  if (action.type === 'alchemy') return brewProblem(world, hero, action.inputs, action.recipe ?? 0);
+  if (action.type === 'energize') return energizeProblem(world, hero, action.item);
   if (action.type === 'imbue') return isItemRef(action.staff) ? imbueProblem(hero, action.staff, action.wand) : 'that is no staff';
   if (action.type === 'zap') {
     if (!isItemRef(action.item)) return 'no such item';
@@ -192,7 +219,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     const heap = heapAt(world, hero);
     const ware = heap?.kind === 'forSale' ? heap.items[0] : undefined;
     if (!ware) return 'nothing for sale here';
-    if (hero.gold < buyPrice(ware, hero.depth, world.known.includes(ware.kind), haggles(hero))) return 'not enough gold';
+    if (hero.gold < buyPrice(ware, hero.depth, knownIn(world.known, ware.kind), haggles(hero))) return 'not enough gold';
     return hasRoom(hero, ware) ? null : 'your pack is full';
   }
   const item = Number.isInteger(action.item) ? hero.items[action.item] : undefined;
@@ -200,15 +227,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
   const category = itemDef(item.kind).category;
   switch (action.type) {
     case 'use':
-      if (!['potion', 'scroll', 'food', 'torch', 'kit', 'honeypot', 'vial', 'wipeout'].includes(category) && item.kind !== 'quest.fish') {
-        return 'that cannot be used';
-      }
-      if (category === 'kit' && CLASS_ARMOR.includes(hero.armor.kind)) return 'your armour is already a class armour';
-      if (category === 'vial' && !item.volume) return 'your waterskin is empty';
-      if (category === 'wipeout' && (hero.blind ?? 0) > 0) return 'you cannot read while blinded';
-      if (action.target !== undefined && action.target !== 'weapon' && action.target !== 'armor') return 'bad target';
-      if (action.on !== undefined && !isItemRef(action.on)) return 'bad target';
-      return isTargetedScroll(item.kind) ? scrollTargetProblem(world, hero, item.kind, action) : null;
+      return useProblem(world, hero, item, action);
     case 'equip': {
       if (category !== 'weapon' && category !== 'armor' && category !== 'ring' && category !== 'artifact') return 'that cannot be equipped';
       if (category === 'ring' || category === 'artifact') return miscEquipProblem(hero, item, action.replace);
@@ -220,7 +239,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     case 'drop':
       return null;
     case 'augment': {
-      if (category !== 'weightstone') return 'that is no stone of augmentation';
+      if (item.kind !== 'stone.augmentation') return 'that is no stone of augmentation';
       if (!isItemRef(action.on)) return 'bad target';
       const on = itemAt(hero, action.on);
       if (!on || !isEnchantable(on)) return 'that cannot be augmented';
@@ -247,7 +266,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
       return SUBCLASSES[hero.heroClass].includes(action.subclass) ? null : 'not a way for you';
     case 'sell':
       if (!shopkeeperBeside(world, hero)) return 'nobody to sell to';
-      return itemPrice(item, world.known.includes(item.kind)) > 0 ? null : 'nobody would buy that';
+      return itemPrice(item, knownIn(world.known, item.kind)) > 0 ? null : 'nobody would buy that';
     case 'throw': {
       // Item.AC_THROW: anything in the pack may be thrown (a bag would scatter what it holds: not that).
       if (category === 'bag') return 'that cannot be thrown';
@@ -257,6 +276,61 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
       return null;
     }
   }
+}
+
+/** Why an item cannot be used (drunk, read, eaten, cast...) as asked. */
+function useProblem(world: World, hero: Hero, item: Item, action: Extract<InventoryAction, { type: 'use' }>): string | null {
+  const category = itemDef(item.kind).category;
+  const usable = ['potion', 'scroll', 'food', 'torch', 'kit', 'honeypot', 'vial', 'wipeout', 'brew', 'elixir', 'spell', 'catalyst'];
+  const inventoryStone = INVENTORY_STONES.has(item.kind);
+  if (!usable.includes(category) && item.kind !== 'quest.fish' && !inventoryStone && item.kind !== 'resin' && item.kind !== 'liquidMetal') {
+    return 'that cannot be used';
+  }
+  if (category === 'kit' && CLASS_ARMOR.includes(hero.armor.kind)) return 'your armour is already a class armour';
+  if (category === 'vial' && !item.volume) return 'your waterskin is empty';
+  if (category === 'wipeout' && (hero.blind ?? 0) > 0) return 'you cannot read while blinded';
+  if (action.target !== undefined && action.target !== 'weapon' && action.target !== 'armor') return 'bad target';
+  if (action.on !== undefined && !isItemRef(action.on)) return 'bad target';
+  if (action.cell !== undefined && (!Number.isInteger(action.cell) || action.cell < 0 || action.cell >= LENGTH)) return 'bad target';
+  if (action.choice !== undefined && (!Number.isInteger(action.choice) || action.choice < 0 || action.choice > 63)) return 'bad choice';
+  // Blandfruit: raw, it is not to be eaten.
+  if (item.kind === 'food.blandfruit' && !item.potion) return 'it is too raw to eat';
+  const known = knownIn(world.known, item.kind);
+  const on = action.on !== undefined ? itemAt(hero, action.on) : undefined;
+  if (action.on !== undefined && !on) return 'no such item';
+  if (category === 'potion' || category === 'brew' || category === 'elixir') {
+    return drinkProblem(world, hero, item.kind, known, { cell: action.cell, choice: action.choice, on });
+  }
+  if (category === 'scroll') {
+    const reading = readProblem(hero);
+    if (reading) return reading;
+    const targeted = isTargetedScroll(item.kind) ? scrollTargetProblem(world, hero, item.kind, action) : null;
+    if (targeted) return targeted;
+    return scrollUseProblem(world, hero, item.kind, known, { cell: action.cell, choice: action.choice }, scrollTarget(world, hero, item.kind, action));
+  }
+  if (inventoryStone || category === 'spell' || item.kind === 'resin' || item.kind === 'liquidMetal') {
+    if (isMagicImmune(hero) && item.kind !== 'resin' && item.kind !== 'liquidMetal') return 'your magic is suppressed';
+    if (isTargetedScroll(item.kind)) {
+      if (!on) return 'choose an item';
+      if (!canTarget(world, item.kind, on)) return TARGET_PROBLEMS[item.kind];
+    }
+    if (inventoryStone) return stoneProblem(world, item.kind, on!, action.choice);
+    if (item.kind === 'resin') return resinProblem(on!, item);
+    if (item.kind === 'liquidMetal') return liquidMetalProblem(on!, item);
+    return spellProblem(world, hero, item.kind, { on, cell: action.cell, choice: action.choice });
+  }
+  if (category === 'catalyst') {
+    // TrinketCatalyst.WndTrinket: one of the four trinkets brewing it rolled.
+    if (!item.rolled) return 'brew it in an alchemy pot first';
+    return action.choice !== undefined && action.choice < item.rolled.length ? null : 'choose a trinket';
+  }
+  return null;
+}
+
+/** ArcaneResin: a wand below +3, and a resin more than its level. */
+function resinProblem(wand: Item, resin: Item): string | null {
+  if (wand.level >= 3) return 'resin cannot raise a wand further';
+  return resin.qty >= wand.level + 1 ? null : `that needs ${wand.level + 1} resin`;
 }
 
 /** Performs an inventory action and says how long it took. */
@@ -280,6 +354,13 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       return 0;
     case 'special':
       return classSpecial(ctx, hero, action.target);
+    case 'alchemy':
+      // AlchemyScene: brewing takes no time.
+      brew(ctx, hero, action.inputs, action.recipe ?? 0);
+      return 0;
+    case 'energize':
+      energizeAt(ctx, hero, action.item, action.all === true);
+      return 0;
     case 'augment': {
       // StoneOfAugmentation.apply: the stone is used up, and the item augmented the chosen way.
       const on = itemAt(hero, action.on)!;
@@ -332,10 +413,11 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
         return TIME_TO_DRINK;
       }
       if (itemDef(hero.items[action.item]!.kind).category === 'honeypot') {
-        // Honeypot.execute: shattered right where the hero stands.
+        // Honeypot.execute: shattered right where the hero stands; the shattered pot is left in hand.
         const pot = hero.items[action.item]!;
         if (--pot.qty <= 0) hero.items.splice(action.item, 1);
         shatterHoneypot(ctx, hero.pos);
+        if (!collect(hero, createItem('honeypot.shattered'))) landItem(ctx, hero.pos, createItem('honeypot.shattered'));
         return TIME_TO_THROW;
       }
       if (itemDef(hero.items[action.item]!.kind).category === 'kit') {
@@ -350,8 +432,7 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
         ctx.effects.push({ type: 'lit', hero: hero.id });
         return TIME_TO_USE;
       }
-      use(ctx, hero, action.item, scrollTarget(ctx.world, hero, hero.items[action.item]!.kind, action));
-      return TIME_TO_USE;
+      return use(ctx, hero, action);
     case 'master':
       // TomeOfMastery.choose: the tome is used up, and the hero takes a new way.
       hero.items.splice(action.item, 1);
@@ -428,7 +509,6 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       // Floating over a chasm, it falls through.
       landItem(ctx, hero.pos, item);
       ctx.effects.push({ type: 'dropped', hero: hero.id, item });
-      if (ctx.level.map[hero.pos] === T.ALCHEMY) brew(ctx, hero.pos, hero);
       return TIME_TO_DROP;
     }
     case 'throw':
@@ -446,7 +526,7 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       // WndTradeItem.buy: the gold goes, the ware comes into the pack.
       const heap = heapAt(ctx.world, hero)!;
       const item = heap.items.shift()!;
-      const price = buyPrice(item, hero.depth, ctx.world.known.includes(item.kind), haggles(hero));
+      const price = buyPrice(item, hero.depth, knownIn(ctx.world.known, item.kind), haggles(hero));
       hero.gold -= price;
       // A sandbag goes into the hourglass (sandBag.doPickUp); without one it stays on the counter.
       if (item.kind === 'sandbag' && !artifactPiece(ctx, hero, item)) dropItem(ctx.floor, hero.pos, item);
@@ -458,7 +538,7 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
     case 'sell': {
       // WndTradeItem.sellAll: the whole stack, at the item's own price.
       const item = hero.items.splice(action.item, 1)[0]!;
-      const price = itemPrice(item, ctx.world.known.includes(item.kind));
+      const price = itemPrice(item, knownIn(ctx.world.known, item.kind));
       hero.gold += price;
       ctx.effects.push({ type: 'sold', hero: hero.id, item, price });
       return 0;
@@ -592,12 +672,17 @@ export function shopkeeperBeside(world: World, hero: Hero): boolean {
 /** MissileWeapon.onThrow: a hit uses the dart up, a miss leaves it on the floor; the boomerang returns. */
 function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
   const item = hero.items[index]!;
-  if (itemDef(item.kind).category === 'potion') {
+  const category = itemDef(item.kind).category;
+  if (category === 'potion' || category === 'brew' || category === 'elixir' || (item.kind === 'food.blandfruit' && item.potion)) {
     throwPotion(ctx, hero, index, target);
     return;
   }
-  if (itemDef(item.kind).category === 'bomb') {
+  if (category === 'bomb') {
     throwBomb(ctx, hero, index, target);
+    return;
+  }
+  if (category === 'stone' && !INVENTORY_STONES.has(item.kind) && !isMagicImmune(hero)) {
+    throwStone(ctx, hero, index, target);
     return;
   }
   if (itemDef(item.kind).category === 'honeypot') {
@@ -606,7 +691,11 @@ function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
     const end = ballistica(ctx, hero.pos, target).at(-1)!;
     ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: 'honeypot' });
     if (hasFlag(ctx.level.map[end]!, F.PIT)) landItem(ctx, end, createItem('honeypot'));
-    else shatterHoneypot(ctx, end);
+    else {
+      shatterHoneypot(ctx, end);
+      // Honeypot.shatter: what is left of the pot lies there (ShatteredPot).
+      landItem(ctx, end, createItem('honeypot.shattered'));
+    }
     return;
   }
   if (itemDef(item.kind).category === 'seed') {
@@ -615,10 +704,9 @@ function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
     if (--item.qty <= 0) hero.items.splice(index, 1);
     const end = ballistica(ctx, hero.pos, target, false, true).at(-1)!;
     ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: kind });
-    // Into an alchemy pot, it goes into the brew instead; into a chasm, it falls.
+    // Onto an alchemy pot it just lies there (seeds are brewed in the pot's window now); into a chasm, it falls.
     if (ctx.level.map[end] === T.ALCHEMY) {
       dropItem(ctx.floor, end, createItem(kind));
-      brew(ctx, end, hero);
     } else if (hasFlag(ctx.level.map[end]!, F.PIT)) {
       landItem(ctx, end, createItem(kind));
     } else {
@@ -654,72 +742,80 @@ export function pressUnderItem(ctx: Ctx, pos: number): void {
 }
 
 /**
- * Bomb.onThrow: its fuse lit as it is thrown, it blows up where it lands
- * (unless it falls down a chasm), hurting and stunning everyone next to it and
- * burning down whatever can burn there.
+ * Bomb.onThrow (LIGHTTHROW): its fuse lit as it is thrown, the bomb lands and goes off a moment later (bombs.ts),
+ * unless it falls down a chasm or someone picks it up.
  */
 function throwBomb(ctx: Ctx, hero: Hero, index: number, target: number): void {
-  const { depth, level } = ctx;
   const bomb = hero.items[index]!;
+  const kind = bomb.kind;
   if (--bomb.qty <= 0) hero.items.splice(index, 1);
   const end = ballistica(ctx, hero.pos, target).at(-1)!;
-  ctx.effects.push({ type: 'thrown', depth, from: hero.pos, to: end, item: 'bomb' });
-  if (hasFlag(level.map[end]!, F.PIT)) {
-    landItem(ctx, end, createItem('bomb'));
-    return;
-  }
-  explodeBomb(ctx, end, hero);
-}
-
-/** Bomb.explode: everyone next to it hurt and stunned, whatever can burn there burnt down (`by`: who lit it). */
-export function explodeBomb(ctx: Ctx, end: number, by: Hero | null): void {
-  const { world, depth, level, rng } = ctx;
-  ctx.effects.push({ type: 'exploded', depth, pos: end });
-  for (const n of NEIGHBOURS9) {
-    const cell = end + n;
-    if (cell < 0 || cell >= LENGTH) continue;
-    if (hasFlag(level.map[cell]!, F.FLAMABLE)) {
-      level.map[cell] = T.EMBERS;
-      ctx.effects.push({ type: 'burnt', depth, pos: cell });
-    }
-    const char = charAt(world, depth, cell);
-    if (!char || !isAlive(char)) continue;
-    const damage = rng.intRange(1 + depth, 10 + depth * 2) - rng.intRange(0, charArmor(char));
-    if (damage <= 0) continue;
-    ctx.effects.push({ type: 'hurt', depth, who: char.id, damage });
-    hurt(ctx, char, damage, isHero(char) || !by ? 'bomb' : by);
-    if (isAlive(char)) char.paralysed = Math.max(char.paralysed ?? 0, 2);
-  }
-}
-
-/** Potion.shatter: a thrown potion breaks where it lands, letting out whatever is inside. */
-function throwPotion(ctx: Ctx, hero: Hero, index: number, target: number): void {
-  const item = hero.items[index]!;
-  const kind = item.kind;
-  if (--item.qty <= 0) hero.items.splice(index, 1);
-  const end = ballistica(ctx, hero.pos, target).at(-1)!;
   ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: kind });
-  // Over a chasm, it falls whole (Potion.onThrow).
-  if (hasFlag(ctx.level.map[end]!, F.PIT)) {
+  const thrown = createItem(kind);
+  if (!hasFlag(ctx.level.map[end]!, F.PIT)) lightFuse(ctx, thrown);
+  landItem(ctx, end, thrown);
+  pressUnderItem(ctx, end);
+}
+
+/** Bomb.explode where something else sets one off (the explosive curse): a plain bomb's blast at once (bombs.ts). */
+export function explodeBomb(ctx: Ctx, end: number, _by: Hero | null): void {
+  explode(ctx, 'bomb', end);
+}
+
+/**
+ * Runestone.onThrow: a thrown stone works where it lands, and presses the cell if nobody is there; over a chasm
+ * with nobody in the way it just falls. A stone of blink stops before whoever it would hit (StoneOfBlink.onThrow).
+ */
+function throwStone(ctx: Ctx, hero: Hero, index: number, target: number): void {
+  const stone = hero.items[index]!;
+  const kind = stone.kind;
+  if (--stone.qty <= 0) hero.items.splice(index, 1);
+  const trace = ballistica(ctx, hero.pos, target);
+  let end = trace.at(-1)!;
+  ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: kind });
+  if (kind === 'stone.blink' && charAt(ctx.world, ctx.depth, end) && trace.length > 1) end = trace[trace.length - 2]!;
+  if (hasFlag(ctx.level.map[end]!, F.PIT) && !charAt(ctx.world, ctx.depth, end)) {
     landItem(ctx, end, createItem(kind));
     return;
   }
-  const harmful = BURSTS[kind];
-  ctx.effects.push({
-    type: 'shattered', hero: hero.id, depth: ctx.depth, pos: end, kind, identified: harmful ? learn(ctx.world, kind) : false,
-  });
-  if (harmful) burst(ctx, end, harmful.kind, harmful.radius);
+  hero.invisible = 0;
+  activateStone(ctx, hero, kind, end);
+  if (!charAt(ctx.world, ctx.depth, end)) pressUnderItem(ctx, end);
 }
 
-/** What breaks out of a harmful potion, and how far it reaches. */
-const BURSTS: Partial<Record<ItemKind, { kind: Burst; radius: number }>> = {
-  'potion.toxicGas': { kind: 'toxic', radius: 2 },
-  'potion.paralyticGas': { kind: 'paralytic', radius: 2 },
-  'potion.liquidFlame': { kind: 'fire', radius: 1 },
-  'potion.frost': { kind: 'frost', radius: 2 },
-  // Shattered, a potion of purity cleanses the air: no gas harms those around for a moment.
-  'potion.purity': { kind: 'purity', radius: 2 },
-};
+/**
+ * Potion.onThrow: a thrown potion (or brew, or elixir) breaks where it lands, letting out whatever is in it; over a
+ * chasm or into a well it falls whole. A cooked blandfruit with a thrown potion in it bursts the same way and leaves
+ * its chunks (Blandfruit.onThrow); with any other, it just lands.
+ */
+function throwPotion(ctx: Ctx, hero: Hero, index: number, target: number): void {
+  const item = hero.items[index]!;
+  const kind = item.kind;
+  const fruit = kind === 'food.blandfruit' ? item.potion : undefined;
+  const thrownFruit = fruit ? { ...item, qty: 1 } : undefined;
+  if (--item.qty <= 0) hero.items.splice(index, 1);
+  const end = ballistica(ctx, hero.pos, target).at(-1)!;
+  ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: kind });
+  if (hasFlag(ctx.level.map[end]!, F.PIT) || ctx.level.map[end] === T.WELL) {
+    landItem(ctx, end, thrownFruit ?? createItem(kind));
+    return;
+  }
+  if (fruit) {
+    if (!['potion.liquidFlame', 'potion.toxicGas', 'potion.paralyticGas', 'potion.frost', 'potion.levitation', 'potion.purity'].includes(fruit)) {
+      landItem(ctx, end, thrownFruit!);
+      return;
+    }
+    shatterPotion(ctx, hero, fruit, end);
+    landItem(ctx, end, createItem('food.chunks'));
+    return;
+  }
+  // Level.pressCell: the potion sets off what it lands on (not an aqua brew or storm clouds, which disarm traps).
+  if (kind !== 'brew.aqua' && kind !== 'potion.stormClouds') pressUnderItem(ctx, end);
+  const shows = shatterPotion(ctx, hero, kind, end);
+  ctx.effects.push({
+    type: 'shattered', hero: hero.id, depth: ctx.depth, pos: end, kind, identified: shows && itemDef(kind).category === 'potion' ? learn(ctx.world, kind) : false,
+  });
+}
 
 /**
  * Dart.AC_TIP: darts tipped with a seed into tipped darts: two for one seed (one, if only one dart is left), or as
@@ -782,9 +878,23 @@ function pickUp(ctx: Ctx, hero: Hero): void {
   if (!openHeap(ctx, hero, heap)) return;
   const left: Item[] = [];
   for (const item of heap.items) {
+    // Noisemaker.doPickUp: a noisemaker that has gone off cannot be picked up.
+    if (item.triggered !== undefined) {
+      left.push(item);
+      continue;
+    }
+    // Bomb.doPickUp: picking it up snuffs its fuse.
+    if (item.fuse !== undefined) {
+      snuff(item);
+      ctx.effects.push({ type: 'snuffed', hero: hero.id });
+    }
     if (item.kind === 'dew') {
       // Dewdrop.doPickUp: an unhurt hero with a full waterskin leaves it lying.
       if (!pickUpDew(ctx, hero, heap.pos, item.qty)) left.push(item);
+    } else if (item.kind === 'energy') {
+      // EnergyCrystal.doPickUp: it is alchemical energy, not something in the pack.
+      ctx.world.energy = (ctx.world.energy ?? 0) + item.qty;
+      ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
     } else if (outdatedCopy(hero, item)) {
       // MissileWeapon.doPickUp: a copy of a set upgraded since crumbles to dust.
       ctx.effects.push({ type: 'dust', hero: hero.id, item });
@@ -863,45 +973,6 @@ function shatterHoneypot(ctx: Ctx, pos: number): void {
 /** Wraith.SPAWN_DELAY. */
 const WRAITH_SPAWN_DELAY = 2;
 
-/** The potion each seed brews into (Plant.Seed.alchemyClass). */
-const ALCHEMY: Partial<Record<ItemKind, ItemKind>> = {
-  'seed.firebloom': 'potion.liquidFlame',
-  'seed.icecap': 'potion.frost',
-  'seed.sorrowmoss': 'potion.toxicGas',
-  'seed.dreamweed': 'potion.invisibility',
-  'seed.sungrass': 'potion.healing',
-  'seed.earthroot': 'potion.paralyticGas',
-  'seed.fadeleaf': 'potion.mindVision',
-  'seed.rotberry': 'potion.strength',
-};
-const SEEDS_TO_POTION = 3;
-
-/**
- * Heap.transmute: three seeds or more in an alchemy pot brew a potion, most
- * often the one the seeds are good for, now and then a random one. Anything
- * but seeds spoils the brew.
- */
-function brew(ctx: Ctx, pos: number, hero: Hero): void {
-  const heap = ctx.floor.heaps.find((h) => h.pos === pos);
-  if (!heap || !heap.items.every((item) => itemDef(item.kind).category === 'seed')) return;
-  const count = heap.items.reduce((n, item) => n + item.qty, 0);
-  if (count < SEEDS_TO_POTION) return;
-  const { rng } = ctx;
-  let potion: Item;
-  if (rng.int(count) === 0) {
-    potion = new ItemGenerator(rng, ctx.depth).of('potion');
-  } else {
-    const seed = heap.items[rng.chances(heap.items.map((item) => item.qty))]!;
-    const kind = ALCHEMY[seed.kind];
-    potion = kind ? createItem(kind) : new ItemGenerator(rng, ctx.depth).of('potion');
-  }
-  // Alchemy: the brew comes out through Level.drop, so the challenges may make it gold.
-  heap.items = [underChallenges(ctx.world, potion)];
-  statsOf(hero).brewed++;
-
-  ctx.effects.push({ type: 'brewed', depth: ctx.depth, pos, hero: hero.id });
-}
-
 /** What mystery meat can do to whoever eats it, and what frozen carpaccio can. */
 export type MeatOutcome = 'hot' | 'legs' | 'unwell' | 'stuffed' | 'invisible' | 'barkskin' | 'refreshed' | 'better';
 
@@ -913,9 +984,12 @@ export type MeatOutcome = 'hot' | 'legs' | 'unwell' | 'stuffed' | 'invisible' | 
 function eat(ctx: Ctx, hero: Hero, index: number): void {
   const item = hero.items[index]!;
   const kind = item.kind;
+  const fruit = item.potion;
   if (--item.qty <= 0) hero.items.splice(index, 1);
   // Food.satisfy: a cursed horn worn takes its share.
   affectHunger(ctx, hero, foodValue(ctx, hero, itemDef(kind).energy!));
+  // MeatPie.satisfy: well fed for a long while after (WellFed.reset: Hunger.STARVING turns, a third under the challenge).
+  if (kind === 'food.meatPie') buffsOf(hero).wellFed = isChallenged(ctx.world, NO_FOOD) ? Math.trunc(STARVING / 3) : STARVING;
   statsOf(hero).food++;
   let outcome: MeatOutcome | null = null;
   if (kind === 'food.meat') {
@@ -938,6 +1012,8 @@ function eat(ctx: Ctx, hero: Hero, index: number): void {
     }
   }
   ctx.effects.push({ type: 'ate', hero: hero.id, kind, outcome });
+  // Blandfruit.execute: a cooked blandfruit works as the potion it was cooked into, unknown.
+  if (fruit) drinkPotion(ctx, hero, fruit);
 }
 
 /** Burning.DURATION, Paralysis.DURATION (roots last as long) and Slow.DURATION. */
@@ -1001,7 +1077,7 @@ function scrollTarget(world: World, hero: Hero, kind: ItemKind, action: { on?: I
  * whatever was chosen (the reader could not know what it would want).
  */
 function scrollTargetProblem(world: World, hero: Hero, kind: TargetedScroll, action: { on?: ItemRef; target?: 'weapon' | 'armor' }): string | null {
-  if (!world.known.includes(kind)) return null;
+  if (!knownIn(world.known, kind)) return null;
   const ref = action.on ?? action.target;
   if (ref === undefined) {
     // Identify with nothing to learn is simply read in vain, as an unknown one would be.
@@ -1012,191 +1088,70 @@ function scrollTargetProblem(world: World, hero: Hero, kind: TargetedScroll, act
   return canTarget(world, kind, chosen) ? null : TARGET_PROBLEMS[kind];
 }
 
-function use(ctx: Ctx, hero: Hero, index: number, target: Item | undefined): void {
-  const item = hero.items[index]!;
+/**
+ * Using an item from the pack (Potion.drink, Scroll.doRead, InventoryStone, Spell.onCast, the trinket catalyst's
+ * choice, arcane resin): the item chosen to act on, found before the used one leaves the pack (which moves the slots
+ * after it). Returns how long it took.
+ */
+function use(ctx: Ctx, hero: Hero, action: Extract<InventoryAction, { type: 'use' }>): number {
+  const { world } = ctx;
+  const item = hero.items[action.item]!;
   const kind = item.kind;
-  if (--item.qty <= 0) hero.items.splice(index, 1);
-  ctx.effects.push({ type: 'used', hero: hero.id, kind, identified: learn(ctx.world, kind) });
-  applyItem(ctx, hero, kind, target);
+  const category = itemDef(kind).category;
+  const on = action.on !== undefined ? itemAt(hero, action.on) : undefined;
+  const takeOne = (): void => {
+    if (--item.qty <= 0) hero.items.splice(hero.items.indexOf(item), 1);
+  };
+  if (category === 'catalyst') {
+    chooseTrinket(ctx, hero, action.item, action.choice!);
+    return TIME_TO_USE;
+  }
+  if (kind === 'resin') {
+    // ArcaneResin: a level more for the wand (resinBonus), and a charge; as much resin as its level was, and one.
+    const wand = on!;
+    const needed = wand.level + 1;
+    item.qty -= needed;
+    if (item.qty <= 0) hero.items.splice(hero.items.indexOf(item), 1);
+    wand.resin = (wand.resin ?? 0) + 1;
+    wand.level++;
+    wand.charges = Math.min((wand.charges ?? 0) + 1, maxCharges(wand, null));
+    ctx.effects.push({ type: 'upgraded', hero: hero.id, item: wand });
+    return TIME_TO_USE;
+  }
+  if (kind === 'liquidMetal') {
+    applyLiquidMetal(ctx, hero, item, on!);
+    return TIME_TO_USE;
+  }
+  if (INVENTORY_STONES.has(kind)) {
+    if (useStone(ctx, hero, kind, on!, action.choice)) takeOne();
+    hero.invisible = 0;
+    return TIME_TO_USE;
+  }
+  if (category === 'spell') {
+    const { time, used } = castSpell(ctx, hero, kind, { on, cell: action.cell, choice: action.choice });
+    if (used) takeOne();
+    return time;
+  }
+  if (category === 'scroll') {
+    const target = scrollTarget(world, hero, kind, action);
+    takeOne();
+    ctx.effects.push({ type: 'used', hero: hero.id, kind, identified: learn(world, kind) });
+    readScroll(ctx, hero, kind, target, { cell: action.cell, choice: action.choice });
+    return TIME_TO_USE;
+  }
+  // A potion, a brew or an elixir, drunk (Potion.drink).
+  takeOne();
+  const identified = category === 'potion' ? learn(world, kind) : false;
+  ctx.effects.push({ type: 'used', hero: hero.id, kind, identified });
+  drinkPotion(ctx, hero, kind, { on, cell: action.cell, choice: action.choice });
+  return TIME_TO_USE;
 }
 
 /**
- * What a potion drunk or a scroll read does (its apply or doRead), once it has left the pack; the
- * unstable spellbook reads its scrolls through here too.
+ * What a potion drunk or a scroll read does, once it has left the pack (Potion.apply, Scroll.doRead): the unstable
+ * spellbook reads its scrolls through here (the item it acts on, if any, as the scroll would choose it).
  */
 export function applyItem(ctx: Ctx, hero: Hero, kind: ItemKind, target: Item | undefined): void {
-  const { world } = ctx;
-  switch (kind) {
-    case 'potion.healing': {
-      const amount = hero.ht - hero.hp;
-      hero.hp = hero.ht;
-      // PotionOfHealing.cure: poison and weakness go too.
-      hero.ooze = -1;
-      hero.poison = 0;
-      hero.weakened = 0;
-      hero.crippled = 0;
-      ctx.effects.push({ type: 'healed', hero: hero.id, amount });
-      break;
-    }
-    case 'potion.experience':
-      earnExp(ctx, hero, maxExp(hero) - hero.exp, 'potion');
-      break;
-    case 'potion.strength':
-      hero.str++;
-      ctx.effects.push({ type: 'strength', hero: hero.id });
-      break;
-    case 'potion.might':
-      // PotionOfMight: a point of strength, and five of health for good (Hero.HTBoost).
-      hero.str++;
-      hero.htBoost = (hero.htBoost ?? 0) + 5;
-      growHT(hero, 5, true);
-      ctx.effects.push({ type: 'strength', hero: hero.id });
-      break;
-    case 'potion.mindVision':
-      hero.mindVision = MIND_VISION_DURATION;
-      break;
-    case 'potion.invisibility':
-      hero.invisible = INVISIBILITY_DURATION;
-      break;
-    case 'potion.levitation':
-      // PotionOfLevitation: floating, over traps and chasms alike.
-      hero.levitating = Math.max(hero.levitating ?? 0, LEVITATION_DURATION);
-      break;
-    case 'potion.purity':
-      // PotionOfPurity: no gas can harm the drinker for a while.
-      hero.gasImmune = Math.max(hero.gasImmune ?? 0, GAS_IMMUNITY_DURATION);
-      break;
-    case 'potion.toxicGas':
-    case 'potion.paralyticGas':
-    case 'potion.frost':
-    case 'potion.liquidFlame': {
-      // Drunk, it bursts right where the hero stands.
-      const harmful = BURSTS[kind]!;
-      burst(ctx, hero.pos, harmful.kind, harmful.radius);
-      break;
-    }
-
-    case 'scroll.identify': {
-      // ScrollOfIdentify.onItemSelected: all the secrets of the chosen item (or of the first unknown one, see defaultTarget) revealed.
-      if (target) {
-        identify(world, target);
-        ctx.effects.push({ type: 'revealed', hero: hero.id, item: target });
-      }
-      break;
-    }
-    case 'scroll.teleportation': {
-      const fov = heroView(world, hero);
-      const pos = randomRespawnCell(ctx.rng, world, ctx.level, (cell) => !fov[cell]);
-      if (pos !== -1 && !charAt(world, hero.depth, pos)) {
-        const from = hero.pos;
-        hero.pos = pos;
-        leaveCell(world, ctx.level, hero.depth, from);
-        enterCell(ctx.level, pos);
-        ctx.effects.push({ type: 'teleported', hero: hero.id });
-      }
-      break;
-    }
-    case 'scroll.mapping': {
-      const map = ctx.level.map;
-      const explored = exploredCells(world, hero.depth);
-      discoverable(map).forEach((open, i) => {
-        if (!open) return;
-        explored[i] = true;
-        if (hasFlag(map[i]!, F.SECRET)) map[i] = discover(map[i]!);
-      });
-      ctx.effects.push({ type: 'mapped', hero: hero.id });
-      break;
-    }
-    case 'scroll.challenge': {
-      // Every monster on the level comes for the reader; those in sight blinded with rage (Rage), for as many
-      // turns as they stand cells away, heedless of the traps in their way.
-      const fov = heroView(world, hero);
-      for (const mob of ctx.floor.mobs) {
-        beckon(mob, hero.pos);
-        if (fov[mob.pos] && mob.state !== 'passive') mob.rage = Math.max(mob.rage ?? 0, distance(hero.pos, mob.pos));
-      }
-      ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'challenge', count: ctx.floor.mobs.length });
-      break;
-    }
-    case 'scroll.lullaby': {
-      const fov = heroView(world, hero);
-      const sleepers = ctx.floor.mobs.filter((mob) => fov[mob.pos] && mob.state !== 'passive');
-      for (const mob of sleepers) {
-        mob.state = 'sleeping';
-        if (mob.kind === 'goo') mob.pumped = false;
-      }
-      ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'lullaby', count: sleepers.length });
-      break;
-    }
-    case 'scroll.recharging': {
-      // ScrollOfRecharging: for thirty turns, every wand gathers a quarter of a charge more a turn (Recharging).
-      hero.recharging = Math.max(hero.recharging ?? 0, RECHARGING_TURNS);
-      ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'recharging', count: heldWands(hero).length });
-      break;
-    }
-    case 'scroll.upgrade':
-      if (target) upgradeItem(ctx, hero, target);
-      break;
-    case 'scroll.enchantment':
-      if (target) enchantItem(ctx, hero, target);
-      break;
-
-    case 'scroll.removeCurse': {
-      // ScrollOfRemoveCurse.uncurse: every curse on what the reader wears or carries is known and lifted, curse
-      // enchantments and glyphs with them; and weakness.
-      let count = 0;
-      for (const item of [...hero.items, ...heroEquipped(hero)]) {
-        delete item.curseUnknown;
-        let lifted = !!item.cursed;
-        delete item.cursed;
-        if (isCurseEnchant(item.enchant)) {
-          delete item.enchant;
-          delete item.infused;
-          lifted = true;
-        }
-        if (isCurseGlyph(item.glyph)) {
-          delete item.glyph;
-          delete item.infused;
-          lifted = true;
-        }
-        if (lifted) count++;
-      }
-      hero.weakened = 0;
-      ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'removeCurse', count });
-      break;
-    }
-    case 'scroll.mirrorImage':
-      // ScrollOfMirrorImage: up to three twins of the reader.
-      conjureImages(ctx, hero, 3);
-      break;
-    case 'scroll.terror': {
-      // Every monster in sight flees from the reader.
-      const fov = heroView(world, hero);
-      const frightened = ctx.floor.mobs.filter((mob) => fov[mob.pos] && mob.state !== 'passive' && !fearless(mob));
-      for (const mob of frightened) {
-        mob.terror = TERROR_TURNS;
-        mob.terrorOf = hero.id;
-        if (mob.state === 'sleeping') mob.state = 'hunting';
-      }
-      ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'terror', count: frightened.length });
-      break;
-    }
-    case 'scroll.psionicBlast': {
-      // Everyone in sight is struck and blinded for a while, the reader too.
-      const fov = heroView(world, hero);
-      // Yog-Dzewa is beyond its reach (Yog's IMMUNITIES).
-      const struck = ctx.floor.mobs.filter((mob) => fov[mob.pos] && mob.state !== 'passive' && mob.kind !== 'yog' && mob.kind !== 'ghostHero');
-      ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'psionic', count: struck.length });
-      for (const mob of struck) {
-        mob.dizzy = Math.max(mob.dizzy ?? 0, ctx.rng.intBetween(3, 6));
-        const damage = ctx.rng.intRange(1, Math.max(1, Math.trunc((mob.ht * 2) / 3)));
-        ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage });
-        hurt(ctx, mob, damage, hero);
-      }
-      hero.blind = Math.max(hero.blind ?? 0, ctx.rng.intBetween(3, 6));
-      break;
-    }
-    default:
-      break;
-  }
+  if (itemDef(kind).category === 'scroll') readScroll(ctx, hero, kind, target);
+  else drinkPotion(ctx, hero, kind);
 }

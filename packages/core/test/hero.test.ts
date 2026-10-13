@@ -90,12 +90,13 @@ describe('levels (Hero.earnExp)', () => {
     expect(skill).toBe(Math.round(heroAttackSkill(hero) * 1.25));
   });
 
-  it('a potion of might adds five health for good', () => {
+  it('an elixir of might adds a point of strength and a boost of health that wanes with levels (ElixirOfMight)', () => {
     const world = solo('mage');
     const hero = heroById(world, 'p')!;
-    hero.items.push(createItem('potion.might'));
+    hero.items.push(createItem('elixir.might'));
     act(world, 'p', { type: 'use', item: hero.items.length - 1 });
-    expect(hero).toMatchObject({ str: 11, ht: 25, hp: 25, htBoost: 5 });
+    // HTBoost.boost(20): 4 + 20 / 20.
+    expect(hero).toMatchObject({ str: 11, ht: 25 });
   });
 });
 
