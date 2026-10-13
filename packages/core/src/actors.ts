@@ -19,6 +19,7 @@ import { T } from './level/terrain';
 import type { Action, PlanStep } from './world';
 import type { Awareness, PendingScroll } from './artifacts';
 import type { WealthCounters } from './rings';
+import type { ClassState, MobMarks } from './classes/state';
 
 /*
  * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
@@ -197,6 +198,17 @@ export interface Hero {
   kinetic?: number;
   /** Turns left of a wayward weapon's poor aim (Wayward.WaywardBuff). */
   wayward?: number;
+  /*
+   * The classes stream: talents, the armour ability, the Champion's second weapon and what the Duelist and the
+   * Cleric keep (classes/state.ts).
+   */
+  /** Hero.talents: points in each talent, by its name (talents.ts). */
+  talents?: Record<string, number>;
+  /** Hero.armorAbility: the ability chosen for the class armour (classes/abilities.ts). */
+  armorAbility?: string;
+  /** Belongings.secondWep: the Champion's second weapon. */
+  secondWep?: Item | null;
+  cls?: ClassState;
 }
 
 /** HeavyBoomerang.CircleBack: a boomerang flying back to where it was thrown from, in `left` turns. */
@@ -799,6 +811,8 @@ export interface Mob {
   ghostGear?: { lvl: number; str: number; weapon?: Item; armor?: Item };
   /** MasterThievesArmband.StolenTracker: robbed by the armband (nothing more to drop), or tried. */
   robbed?: 'stolen' | 'tried';
+  /** What the Duelist's and the Cleric's abilities and spells have left on it (classes/state.ts). */
+  marks?: MobMarks;
 }
 
 /** Mob.beckon: called towards a spot. Statue.beckon: an animated statue does not stir for it. */

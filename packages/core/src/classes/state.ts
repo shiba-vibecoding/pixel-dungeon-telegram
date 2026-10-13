@@ -1,0 +1,148 @@
+import type { Hero, Mob } from '../actors';
+import type { Item } from '../items';
+
+/*
+ * What the Duelist and the Cleric keep on a hero or a monster, as plain data (the classes stream).
+ *
+ * Shattered keeps these as buffs; most of them are FlavourBuffs, which last a number of turns of the clock
+ * they were set on. Here a timer is the moment on the depth's clock at which it ends (`until`), set from the
+ * hero's own time, so that a monster acting between two of the hero's turns sees it exactly as long as the
+ * buff would have lasted (`hero.cooldown()`-long ones end when the hero's next turn begins, see `timerFor`).
+ */
+
+/** Everything a Duelist, a Monk, a Champion or a Cleric keeps on the hero beyond the shared fields. */
+export interface ClassState {
+  /** FlavourBuffs: key → the hero-clock time they end at. */
+  until?: Record<string, number>;
+  /** Buffs set during an action that last "until the hero's next turn" plus so much: key → the extra (settled when the hero spends time). */
+  pending?: Record<string, number>;
+
+  /* The Duelist */
+  /** MeleeWeapon.Charger: charges, and the share gathered towards the next. */
+  charges?: number;
+  partial?: number;
+  /** Sai.ComboStrikeTracker: hits in a row, the time left to land the next, and the time it began with. */
+  combo?: { hits: number; left: number; initial: number };
+  /** Flail.SpinAbilityTracker: spins gathered (a timer 'spin' keeps them). */
+  spins?: number;
+  /** RoundShield.GuardTracker: whether it has blocked a blow (a timer 'guard' keeps it). */
+  blocked?: boolean;
+  /** Crossbow.ChargedShot: the next shot is charged. */
+  charged?: boolean;
+  /** RunicBlade.RunicSlashTracker: the damage factor of the slash under way. */
+  runic?: number;
+  /** Sickle.HarvestBleedTracker: the blow under way turns its damage into bleeding. */
+  harvest?: boolean;
+  /** PatientStrikeTracker: where the hero has been waiting. */
+  patient?: number;
+  /** PhysicalEmpower: damage added to the next hits, and how many. */
+  empower?: { dmg: number; left: number };
+  /** GreaterHaste: moves left that cost no time. */
+  greaterHaste?: number;
+  /** LiquidAgilACCTracker: blows left that cannot miss. */
+  liquidUses?: number;
+  /** DeadlyFollowupTracker: whom the thrown weapon marked. */
+  followup?: string;
+  /** VariedChargeTracker: the kind of the weapon whose ability was used last. */
+  varied?: string;
+  /** CombinedLethalityAbilityTracker: the weapon whose ability was used last. */
+  lethality?: string;
+  /** CombinedEnergyAbilityTracker: which of the two abilities has been used. */
+  energyMonk?: boolean;
+  energyWep?: boolean;
+  /** SwiftEquipCooldown: the second use is still to come. */
+  swiftSecond?: boolean;
+  /** RingOfForce.BrawlersStance: active, and the turns it must last at least. */
+  brawl?: { active: boolean; min: number };
+
+  /* The Monk (MonkEnergy) */
+  energy?: number;
+  /** MonkAbility.Meditate and the other lingering parts of the abilities (their timers are in `until`). */
+  meditate?: boolean;
+
+  /* The armour abilities of the Duelist */
+  duel?: { left: number; taken: number; foe: string };
+  /** Challenge: the moment the elimination match's cheaper duel ends. */
+  /** Feint: where the afterimage stands. */
+  feint?: { pos: number; left: number; id: string };
+
+  /* The Cleric */
+  /** The cleric's quick spell (HolyTome.quickSpell). */
+  quick?: string;
+  /** Spells and the buffs they leave on the hero. */
+  holy?: Record<string, number>;
+}
+
+/** What a spell or an ability leaves on a monster. */
+export interface MobMarks {
+  /** SpectatorFreeze: frozen in place while a duel goes on. */
+  spectator?: boolean;
+  /** Challenge.DuelParticipant: the duel's turns left and the harm taken. */
+  duel?: { left: number; taken: number };
+  /** GuidingLight.Illuminated: struck next, the blow does more. */
+  lit?: boolean;
+  [key: string]: unknown;
+}
+
+/** The hero's class state, started on first use. */
+export const cs = (hero: Hero): ClassState => (hero.cls ??= {});
+
+/** A monster's marks, started on first use. */
+export const marks = (mob: Mob): MobMarks => (mob.marks ??= {});
+
+/* Timers: FlavourBuffs on the hero's clock */
+
+/** Whether a timer is running at a moment (the hero's own time by default; a monster's turn passes its own). */
+export function hasTimer(hero: Hero, key: string, at: number = hero.time): boolean {
+  if (hero.cls?.pending?.[key] !== undefined) return true;
+  return (hero.cls?.until?.[key] ?? -Infinity) > at;
+}
+
+/** Turns left of a timer (0 when it is not running). */
+export function timerLeft(hero: Hero, key: string): number {
+  if (hero.cls?.pending?.[key] !== undefined) return hero.cls.pending[key]! + 1;
+  return Math.max(0, (hero.cls?.until?.[key] ?? 0) - hero.time);
+}
+
+/** Buff.prolong(hero, X, duration): runs for at least that long from now. */
+export function prolong(hero: Hero, key: string, duration: number): void {
+  const state = cs(hero);
+  state.until ??= {};
+  state.until[key] = Math.max(state.until[key] ?? 0, hero.time + duration);
+}
+
+/** Buff.affect(hero, X, duration): runs that long from now, replacing what was left. */
+export function setTimer(hero: Hero, key: string, duration: number): void {
+  const state = cs(hero);
+  (state.until ??= {})[key] = hero.time + duration;
+}
+
+/**
+ * Buff.prolong(hero, X, hero.cooldown() + extra): lasts until the hero's next turn, and `extra` more. The hero
+ * is in the middle of the action that sets it, so the end is settled when the action's time is spent (settle).
+ */
+export function prolongForAction(hero: Hero, key: string, extra = 0): void {
+  const state = cs(hero);
+  const old = state.pending?.[key];
+  (state.pending ??= {})[key] = Math.max(old ?? -Infinity, extra);
+}
+
+/** Called once the hero has spent the time of an action: what lasts "until the next turn" now has its end. */
+export function settleTimers(hero: Hero): void {
+  const state = hero.cls;
+  if (!state?.pending) return;
+  for (const [key, extra] of Object.entries(state.pending)) {
+    (state.until ??= {})[key] = Math.max(state.until[key] ?? 0, hero.time + extra);
+  }
+  delete state.pending;
+}
+
+/** Buff.detach. */
+export function clearTimer(hero: Hero, key: string): void {
+  if (hero.cls?.until) delete hero.cls.until[key];
+  if (hero.cls?.pending) delete hero.cls.pending[key];
+}
+
+/** Whether the hero holds an item (it is the weapon in hand, the second one, or in the pack): by reference. */
+export const holds = (hero: Hero, item: Item): boolean =>
+  hero.weapon === item || hero.secondWep === item || hero.items.includes(item);
