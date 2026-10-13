@@ -6,6 +6,7 @@
  */
 
 import type { HeroClass } from './actors';
+import { HERO_CLASSES } from './heroclass';
 
 export type OfferKind = 'skin' | 'effect' | 'frame' | 'patron' | 'tip';
 export type SkinVariant = 'ash' | 'royal' | 'shadow';
@@ -30,7 +31,8 @@ export interface Offer {
   frame?: FrameId;
 }
 
-const HEROES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
+// Every class has its three looks (the design's v19 added the Duelist's and the Cleric's sheets).
+const HEROES: readonly HeroClass[] = HERO_CLASSES;
 
 /** Thirty days, the length of a Telegram Stars subscription. */
 export const SUBSCRIPTION_SECONDS = 2_592_000;

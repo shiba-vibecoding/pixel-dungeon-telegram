@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addHero, createWorld, HERO_CLASSES, type HeroClass, heroById, startingKit, SUBCLASSES, type World } from '../src/index';
+import { addHero, allowedLook, createWorld, emptyWallet, HERO_CLASSES, offerBySku, OFFERS, type HeroClass, heroById, startingKit, SUBCLASSES, type World } from '../src/index';
 import { pacify } from './helpers';
 
 export function solo(heroClass: HeroClass = 'duelist', seed = 9): World {
@@ -37,5 +37,15 @@ describe('the Duelist and the Cleric (HeroClass.DUELIST and CLERIC)', () => {
     for (const kind of ['scroll.identify', 'potion.strength', 'scroll.mirrorImage'] as const) expect(duelist.known).toContain(kind);
     const cleric = solo('cleric');
     for (const kind of ['scroll.identify', 'potion.purity', 'scroll.removeCurse'] as const) expect(cleric.known).toContain(kind);
+  });
+
+  it("Pixel-Mart sells all three looks for them, as for the older four; the ash one is earned with the second boss", () => {
+    for (const heroClass of ['duelist', 'cleric'] as const) {
+      expect(OFFERS.filter((o) => o.kind === 'skin' && o.heroClass === heroClass).map((o) => o.skin)).toEqual(['ash', 'royal', 'shadow']);
+      expect(offerBySku(`skin.${heroClass}.ash`)).toMatchObject({ badge: 'boss2', stars: 0 });
+      const wallet = { ...emptyWallet(), owned: [`skin.${heroClass}.royal`] };
+      expect(allowedLook({ skin: 'royal' }, wallet, heroClass, 0)).toEqual({ skin: 'royal' });
+      expect(allowedLook({ skin: 'shadow' }, wallet, heroClass, 0)).toEqual({});
+    }
   });
 });

@@ -31,6 +31,17 @@ const root = document.getElementById('overlay')!;
 /** Heroes in avatars.png and in the heroes strip, in this order. */
 export const AVATAR: Readonly<Record<HeroClass, number>> = { warrior: 0, mage: 1, rogue: 2, huntress: 3, duelist: 4, cleric: 5 };
 
+/**
+ * A portrait face: the class's avatar, or the look worn (Pixel-Mart): the Duelist's and the Cleric's looks have their own
+ * avatars (avatars-skins.png, three each: ash, royal, shadow), the older classes' looks are the sheet's alone.
+ */
+export function setAvatar(face: HTMLElement, heroClass: HeroClass, skin?: string): void {
+  const index = skin ? ['ash', 'royal', 'shadow'].indexOf(skin) : -1;
+  const own = index >= 0 && (heroClass === 'duelist' || heroClass === 'cleric');
+  face.classList.toggle('skin', own);
+  face.style.setProperty('--av', String(own ? (heroClass === 'duelist' ? 0 : 3) + index : AVATAR[heroClass]));
+}
+
 let assets: Assets | null = null;
 
 /** The sprite sheets portraits are cut from. */
