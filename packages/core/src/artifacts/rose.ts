@@ -94,7 +94,8 @@ export function summonGhost(ctx: Ctx, hero: Hero, item: Item): number {
   const { world, level, floor, rng } = ctx;
   const pos = rng.element(spawnPoints(ctx, hero.pos))!;
   const ghost = createMob(`#${++world.nextId}`, 'ghostHero', pos, 'hunting', floor.now + 1);
-  ghost.ally = { owner: hero.id, defend: -1, moving: false };
+  ghost.directed = { owner: hero.id, defend: -1, moving: false };
+  ghost.ally = true;
   item.ghost = ghost.id;
   updateGhost(ghost, hero, item);
   ghost.hp = ghost.ht;
@@ -147,14 +148,14 @@ export function ghostSeesBoss(ctx: Ctx): void {
 /** Hero.die and Hero's ankh: the ghost mourns, or marvels. */
 export function ghostSeesHero(ctx: Ctx, hero: Hero, line: 'player_killed' | 'blessed_ankh'): void {
   for (const ghost of ctx.floor.mobs) {
-    if (ghost.kind === 'ghostHero' && ghost.ally?.owner === hero.id) ghostSays(ctx, ghost, `${line}_${ctx.rng.intRange(1, 3)}`);
+    if (ghost.kind === 'ghostHero' && ghost.directed?.owner === hero.id) ghostSays(ctx, ghost, `${line}_${ctx.rng.intRange(1, 3)}`);
   }
 }
 
 /** DirectableAlly.directTocell: hold a place, follow the hero, or go after a foe in sight. */
 export function directGhost(ctx: Ctx, hero: Hero, item: Item, cell: number): number {
   const ghost = ghostOf(ctx.world, item)!;
-  const ally = ghost.ally!;
+  const ally = ghost.directed!;
   const fov = heroView(ctx.world, hero);
   const there = cell >= 0 && cell < LENGTH ? charAt(ctx.world, ctx.depth, cell) : undefined;
   if (there === hero) {
@@ -283,14 +284,15 @@ export function ghostGone(rose: Item): void {
 /** GhostHero.die: it says its farewell, and its rose empties. */
 export function ghostDied(ctx: Ctx, ghost: Mob): void {
   ghostSays(ctx, ghost, `${bossFight(ctx) ? 'defeated_by_boss' : 'defeated_by_enemy'}_${ctx.rng.intRange(1, 3)}`);
-  const owner = ctx.world.heroes.find((hero) => hero.id === ghost.ally?.owner);
+  const owner = ctx.world.heroes.find((hero) => hero.id === ghost.directed?.owner);
   const rose = roseOf(owner);
   if (rose?.ghost === ghost.id) ghostGone(rose);
 }
 
-/** Hostile, for the ghost: a monster that fights (not the neutral folk, nor the hero's allies). */
+/** Hostile, for the ghost: a monster that fights (not the neutral folk, nor the heroes' allies). */
 const hostile = (mob: Mob): boolean =>
-  isAlive(mob) && mob.state !== 'passive' && mob.kind !== 'ghostHero' && mob.kind !== 'mirror' && mob.kind !== 'bee' && mob.kind !== 'sheep';
+  isAlive(mob) && mob.state !== 'passive' && !mob.ally && mob.kind !== 'ghostHero' && mob.kind !== 'mirror' && mob.kind !== 'bee' &&
+  mob.kind !== 'sheep' && mob.kind !== 'lotus';
 
 /**
  * GhostHero.act and DirectableAlly's ways: without its rose worn it fades a point a turn; wandering, it
@@ -299,7 +301,7 @@ const hostile = (mob: Mob): boolean =>
  */
 export function ghostAct(ctx: Ctx, ghost: Mob): void {
   const { world, depth } = ctx;
-  const ally = ghost.ally!;
+  const ally = ghost.directed!;
   const hero = world.heroes.find((h) => h.id === ally.owner);
   const rose = roseOf(hero);
   if (hero && rose) updateGhost(ghost, hero, rose);
@@ -383,9 +385,9 @@ function ghostAttack(ctx: Ctx, ghost: Mob, foe: Mob): void {
     damage = ctx.rng.normalIntRange(1, gear.str - 8);
   }
   attack(ctx, ghost, foe, { damage: [damage, damage] });
-  // Mob.aggro: the foe turns on the ghost.
+  // Mob.aggro: the foe turns on the ghost (an ally it may fight: ai.ts chooseEnemy).
   if (isAlive(foe) && foe.state !== 'passive') {
-    foe.beeFoe = ghost.id;
+    foe.enemy = ghost.id;
     if (foe.state === 'sleeping') foe.state = 'hunting';
   }
   spend(ghost, gear.weapon ? weaponStats(gear.weapon).delay : 1);
@@ -412,8 +414,8 @@ export function ghostFollows(world: World, hero: Hero, fromDepth: number): void 
   // restoreAllies: one of the free cells beside the hero, at random.
   ghost.pos = cells[new Rng(to.rng).index(cells.length)]!;
   ghost.time = to.now + 1;
-  ghost.ally!.defend = -1;
-  ghost.ally!.moving = false;
+  ghost.directed!.defend = -1;
+  ghost.directed!.moving = false;
   ghost.state = 'wandering';
   ghost.enemy = null;
   to.mobs.push(ghost);

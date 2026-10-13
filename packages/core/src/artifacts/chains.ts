@@ -5,7 +5,7 @@ import { adjacent, distance, LENGTH, NEIGHBOURS8 } from '../level/geometry';
 import { F, hasFlag } from '../level/terrain';
 import { mobPress } from '../traps';
 import { levelCap, visiblyUpgraded } from './artifact';
-import { ballistica, STOP_TARGET, subPath } from './bolt';
+import { ballistica, STOP_TARGET, subPath } from '../ballistica';
 import { isWorn, say, upgradeArtifact } from './common';
 import { dispelInvisibility } from './invisibility';
 import { heroPress } from './press';

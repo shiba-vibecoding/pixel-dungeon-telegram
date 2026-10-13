@@ -30,7 +30,7 @@ export interface Assets {
   mobs: Record<MobKind, CharSprite>;
   icons: HTMLImageElement;
   items: HTMLImageElement;
-  /** 16x16 plants, in the order of PLANT_KINDS. */
+  /** 16x16 plants, in the order of PLANT_KINDS (the wand of regrowth's two after Pixel Dungeon's eight). */
   plants: HTMLImageElement;
   /** Shattered's effects.png (Effects.get): the chains among them. */
   effects: HTMLImageElement;
@@ -298,6 +298,14 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimNam
     h: 16,
     anims: basic(anim(8, [0, 1, 2, 1], true), anim(20, [0, 1, 2, 1], true), anim(20, [3, 4, 5, 6, 7, 8, 9, 10, 11]), anim(4, [12, 13, 14])),
   },
+  // Shattered's (assets/spd): WardSprite, one tier a row (see View.sync), EarthGuardianSprite and LotusSprite.
+  ward: { w: 16, h: 16, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(1, [0])) },
+  guardian: {
+    w: 12,
+    h: 15,
+    anims: basic(anim(2, [0, 0, 0, 0, 0, 1, 1], true), anim(15, [2, 3, 4, 5, 6, 7], true), anim(12, [8, 9, 10]), anim(5, [11, 12, 13, 14, 15, 15])),
+  },
+  lotus: { w: 19, h: 16, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(1, [0])) },
   tengu: {
     w: 14,
     h: 16,
@@ -381,7 +389,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     'elemental', 'monk', 'warlock', 'golem', 'king', 'undead', 'tiles4', 'water4',
     'succubus', 'eye', 'scorpio', 'yog', 'rottingFist', 'burningFist', 'larva', 'mimic', 'statue', 'piranha', 'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'bee', 'warrior', 'mage', 'rogue', 'ranger', 'rat', 'gnoll', 'crab', 'goo', 'ghost',
     'skeleton', 'thief', 'swarm', 'shaman', 'bat', 'brute', 'tengu', 'shopkeeper', 'wandmaker', 'spd/ghost', 'spd/effects',
-    'icons', 'items', 'plants',
+    'icons', 'items', 'plants', 'spd/wards', 'spd/guardian', 'spd/lotus',
   ] as const;
   let loaded = 0;
   const images = Object.fromEntries(
@@ -398,7 +406,9 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
   const mob = (kind: MobKind): CharSprite => {
     const spec = MOB_SPRITES[kind];
     // A mirror image is drawn with its hero's own sheet (see View.sync); the warrior's stands in here.
-    const image = kind === 'mirror' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp' : kind === 'ghostHero' ? 'spd/ghost' : baseKind(kind);
+    const image = kind === 'mirror' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp'
+      : kind === 'ward' ? 'spd/wards' : kind === 'guardian' ? 'spd/guardian' : kind === 'lotus' ? 'spd/lotus' : kind === 'ghostHero' ? 'spd/ghost'
+      : baseKind(kind);
     return { sheet: sheet(images[image as (typeof names)[number]], spec.w, spec.h), anims: spec.anims };
   };
   return {

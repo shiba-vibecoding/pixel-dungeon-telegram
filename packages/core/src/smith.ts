@@ -10,6 +10,7 @@ import { T } from './level/terrain';
 import type { Rng } from './rng';
 import type { World } from './world';
 import { isUpgradable, itemAt, type ItemRef } from './scrolls';
+import { updateWand } from './staff';
 
 /*
  * The troll blacksmith of the caves (Blacksmith): once per run, on one of
@@ -142,6 +143,7 @@ export function reforge(ctx: Ctx, hero: Hero, first: ItemRef, second: ItemRef): 
   better.level++;
   mend(better);
   if (better.charges !== undefined) better.charges = Math.min(better.charges + 1, wandMaxCharges(better));
+  if (better.kind === 'weapon.magesStaff') updateWand(better, true);
   // The enchantment of the one melted down is not lost, if the better one had none.
   if (!better.enchant && worse.enchant) better.enchant = worse.enchant;
   if (!better.glyph && worse.glyph) better.glyph = worse.glyph;

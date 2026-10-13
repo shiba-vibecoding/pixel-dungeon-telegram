@@ -197,7 +197,10 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* Six classes (design system v17): the narrow title's faces come from the 144-wide avatars too. */
 @media (max-height: 700px) { .pd-class .pd-class-face { background-size: 216px 48px; } }
 /* Shattered's buff icons (the hero stream: the warrior's shield, a sealed floor), from its own buffs.png, 18 a row. */
-.pd-buff i.spd { background-image: url("/assets/spd/buffs.png"); background-size: 384px 192px; }
+/* (And the wands stream's conditions: chill, corrosion, barrier, magic charge...; `i.spd[data-b]` in the buff list.) */
+.pd-buff i.spd, i.spd[data-b] { background-image: url("/assets/spd/buffs.png"); background-size: 384px 192px; }
+/* A question's text may come in paragraphs (MagesStaff's imbue: what it makes of the staff, what it costs). */
+.pd-window .pd-info.center { white-space: pre-line; }
 /* Shattered's quick slots (QuickSlot.SIZE 6; the hero stream): the toolbar grows a column for each slot shown; a slot whose item is used up keeps it greyed. */
 .pd-toolbar { grid-template-columns: repeat(var(--tools, 5), 1fr); gap: 4px; }
 .pd-tool[hidden] { display: none; }

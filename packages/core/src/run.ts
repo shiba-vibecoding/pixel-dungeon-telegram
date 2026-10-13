@@ -12,12 +12,15 @@ export interface RunState {
   /** Guaranteed potions of strength and scrolls of upgrade placed so far. */
   strengthFound: number;
   upgradesFound: number;
-  /** This run's potion colours and scroll runes. */
+  /** This run's potion colours, scroll runes and ring gems. */
   labels: Labels;
   /** The troll blacksmith has set up his forge in the caves (absent in older runs). */
   blacksmithSpawned?: boolean;
   /** Generator's artifact deck: the kinds not dealt yet (absent until the first is; see artifacts/artifact.ts). */
   artifactsLeft?: ItemKind[];
+  /** Generator.Category.WAND's deck: how many of each wand kind (in WAND_KINDS order) are left, and how many were dealt. */
+  wandDeck?: number[];
+  wandsDealt?: number;
 }
 
 export function createRun(seed: number): RunState {

@@ -10,7 +10,7 @@ describe('water of transmutation', () => {
     expect(transmute({ ...createItem('weapon.sword', 1, -2), cursed: true }, rng, 5)).toMatchObject({ kind: 'weapon.mace', level: -2, cursed: true });
     expect(transmute(createItem('weapon.shortSword'), rng, 5)).toBeNull();
     expect(transmute(createItem('food.ration'), rng, 5)).toBeNull();
-    for (const kind of ['ring.haste', 'wand.firebolt', 'seed.sungrass', 'scroll.identify', 'potion.healing'] as const) {
+    for (const kind of ['ring.haste', 'wand.fireblast', 'seed.sungrass', 'scroll.identify', 'potion.healing'] as const) {
       const changed = transmute(createItem(kind, 1, kind.startsWith('ring.') ? 2 : 0), rng, 5)!;
       expect(changed.kind).not.toBe(kind);
       expect(itemDef(changed.kind).category).toBe(itemDef(kind).category);

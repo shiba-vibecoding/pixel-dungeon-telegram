@@ -6,7 +6,7 @@ import {
 import { artifactActions, artifactCard, type ArtifactHost, chargeStrip, showMiscChooser } from './artifactui';
 import { artText } from './artifacttext';
 import { audio } from './audio';
-import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse } from './quickslot';
+import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse, WEAPON_SLOT } from './quickslot';
 import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
 import { BUFF_ICONS, type BuffName } from './hud';
 import { capitalize, locale, t } from './i18n';
@@ -355,11 +355,12 @@ function titleFor(world: World, item: Item, box: HTMLElement): void {
 }
 
 /** The item is the one the quickslot shows. */
+// (The mage's staff counts in hand too: Shattered keeps it in a quick slot from the start; so do worn artifacts.)
 const inQuickslot = (hero: Hero, item: Item): boolean =>
   isQuickslotted(item.kind) &&
   (itemDef(item.kind).category === 'artifact' && (hero.artifact?.kind === item.kind || hero.misc?.kind === item.kind)
     ? item === hero.artifact || item === hero.misc
-    : hero.items.find((other) => other.kind === item.kind) === item);
+    : hero.items.find((other) => other.kind === item.kind) === item || (item === hero.weapon && item.kind === 'weapon.magesStaff'));
 
 /* Title */
 
@@ -1678,6 +1679,11 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         use(t.read, () => act({ type: 'use', item: index }));
       }
     }
+    // MagesStaff.actions: zap (its default) and imbue, wherever the staff is.
+    if (item.kind === 'weapon.magesStaff') {
+      if (item.wand) use(t.zap, () => aimWith('zap', index));
+      use(t.staffImbue, () => pickWandToImbue(options, index, act));
+    }
     if (category === 'ring' || category === 'artifact') {
       // KindofMisc.doEquip: every slot taken, the player says which to take off for it.
       use(t.putOn, () => {
@@ -1735,6 +1741,19 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     }
     use(t.takeOff, () => stay({ type: 'remove', slot }));
   } else if (item === hero.weapon) {
+    if (item.kind === 'weapon.magesStaff') {
+      if (item.wand) use(t.zap, () => aimWith('zap', WEAPON_SLOT));
+      use(t.staffImbue, () => pickWandToImbue(options, 'weapon', act));
+      // QuickSlot: the staff in hand can be kept one tap away too.
+      if (!isQuickslotted(item.kind)) more.push(button(t.quickslotShort, () => {
+        const free = Array.from({ length: QUICKSLOTS }, (_, i) => i).find((i) => {
+          const kind = quickKind(i);
+          return kind === null || (!hero.items.some((other) => other.kind === kind) && hero.weapon?.kind !== kind);
+        });
+        chooseQuickslot(item.kind, free ?? 0);
+        refreshBackpack(world, hero);
+      }));
+    }
     use(t.takeOff, () => stay({ type: 'unequip' }));
   } else if (item === hero.armor && item.kind === CLASS_ARMOR_OF[hero.heroClass]) {
     // ClassArmor.doSpecial: the leap and the smoke bomb want a cell; the others act at once.
@@ -1752,6 +1771,39 @@ function quickslotButton(world: World, hero: Hero, item: Item): HTMLButtonElemen
     const free = Array.from({ length: QUICKSLOTS }, (_, i) => i).find((i) => quickKind(i) === null || isPlaceholder(hero, i));
     chooseQuickslot(item.kind, free ?? 0);
     refreshBackpack(world, hero);
+  });
+}
+
+/**
+ * MagesStaff.AC_IMBUE: the backpack's selector, with only the wands to tap (WndBag.ItemSelector), then
+ * WndOptions: what the imbue will make of the staff, and what it costs.
+ */
+function pickWandToImbue(options: ItemOptions, staffRef: ItemRef, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const back = (): void => showBackpack(options, staffRef === 'weapon' ? { worn: 'weapon' } : { index: staffRef as number });
+  const wands = hero.items.flatMap((item, i) => (itemDef(item.kind).category === 'wand' ? [i] : []));
+  showBackpack({
+    ...options,
+    pick: {
+      title: t.staffImbuePrompt,
+      targets: wands,
+      onPick: (ref) => {
+        const staff = staffRef === 'weapon' ? hero.weapon : hero.items[staffRef as number];
+        const wand = typeof ref === 'number' ? hero.items[ref] : undefined;
+        if (!staff || !wand) return;
+        // MagesStaff.itemSelector.onSelect: the staff's level after the imbue (one more if the wand is as good).
+        const level = wand.level >= staff.level ? (staff.level > 0 ? wand.level + 1 : wand.level) : staff.level;
+        const text = [
+          t.staffImbueText,
+          isIdentified(world, wand) ? t.staffImbueLevel(level) : t.staffImbueUnknown(staff.level),
+          ...(wand.curseUnknown || wand.cursed ? [t.staffImbueCursed] : []),
+          ...(staff.wand ? [t.staffImbueLost] : []),
+        ].join('\n\n');
+        showConfirm(capitalize(itemName(world, wand)), text, t.staffImbueYes, t.staffImbueNo,
+          () => act({ type: 'imbue', staff: staffRef, wand: ref as number }), back);
+      },
+      onCancel: back,
+    },
   });
 }
 

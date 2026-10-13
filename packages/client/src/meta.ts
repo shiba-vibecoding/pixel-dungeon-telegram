@@ -1,4 +1,4 @@
-import { challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, journalNotes, type Landmark, S, type World } from '@pd/core';
+import { challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, journalNotes, kindKnown, type Landmark, S, type World } from '@pd/core';
 import { audio } from './audio';
 import { sliderSound } from './sfx';
 import { fx } from './fx';
@@ -509,14 +509,14 @@ function catalogView(options: JournalOptions, category: number, choose: (categor
   });
   const { category: kind, silhouette } = CATALOG[category]!;
   const kinds = (Object.keys(ITEMS) as ItemKind[]).filter((k) => itemDef(k).category === kind);
-  const known = kinds.filter((k) => world.known.includes(k));
+  const known = kinds.filter((k) => kindKnown(world, { kind: k, qty: 1, level: 0 }));
   const detail = el('div', { className: 'pd-cat-detail' });
   const grid = el('div', { className: 'pd-grid pd-catalog' });
   grid.setAttribute('role', 'listbox');
   const pick = (k: ItemKind, slot: HTMLElement): void => {
     grid.querySelectorAll('.selected').forEach((node) => node.classList.remove('selected'));
     slot.classList.add('selected');
-    const isKnown = world.known.includes(k);
+    const isKnown = kindKnown(world, { kind: k, qty: 1, level: 0 });
     const item = { kind: k, qty: 1, level: 0 } as Item;
     detail.className = `pd-cat-detail${isKnown ? '' : ' unknown'}`;
     detail.replaceChildren(
@@ -526,7 +526,7 @@ function catalogView(options: JournalOptions, category: number, choose: (categor
     sprites(detail);
   };
   for (const k of kinds) {
-    const isKnown = world.known.includes(k);
+    const isKnown = kindKnown(world, { kind: k, qty: 1, level: 0 });
     const item = { kind: k, qty: 1, level: 0 } as Item;
     const slot = el('button', {
       className: `pd-slot${isKnown ? '' : ' unknown'}`,

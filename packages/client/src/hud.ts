@@ -24,10 +24,13 @@ export const BUFF_ICONS = {
   mindVision: 0, fire: 2, poison: 3, paralysis: 4, hunger: 5, starvation: 6, slow: 7, ooze: 8, roots: 11, invisible: 12,
   weakness: 14, combo: 17, fury: 18, healing: 19, bark: 20, charm: 21, light: 22, cripple: 23, barkskin: 24, dizzy: 29,
   levitation: 1, blindness: 16, immunity: 25, deferred: 28, bleeding: 26, sacrifice: 31,
+  // Shattered's own (BuffIndicator), from its sheet (assets/spd/buffs.png): 1000 and its index.
+  chill: 1015, frozen: 1015, corrosion: 1003, shield: 1020, rockArmor: 1020, magicCharge: 1050, lightningCharge: 1055,
+  recharging: 1034, hexed: 1047, vulnerable: 1046, invulnerable: 1037, disguise: 1071, stasis: 1007, herbal: 1019,
   // From 1000: Shattered's buffs.png (assets/spd/buffs.png), BuffIndicator.SEAL_SHIELD and LOCKED_FLOOR.
   sealShield: 1084, lockedFloor: 1035, bless: 1037,
   // The artifacts': the cloak's stealth (INVISIBLE, dimmed), the hourglass's time freeze and stasis (TIME), the cape's THORNS, the talisman's FORESIGHT.
-  stealth: 1012, timeFreeze: 1007, stasis: 1007, thorns: 1031, foresight: 1032,
+  stealth: 1012, timeFreeze: 1007, thorns: 1031, foresight: 1032,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 
@@ -59,6 +62,21 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
     ...(me.subclass === 'gladiator' && me.combo >= 3 && me.time <= me.comboUntil ? [{ name: 'combo' as const }] : []),
     ...(me.subclass === 'berserker' && me.hp > 0 && me.hp <= me.ht * FURY_LEVEL ? [{ name: 'fury' as const }] : []),
     ...(me.barkskin > 0 ? [{ name: 'barkskin' as const, turns: turns(me.barkskin) }] : []),
+    // Shattered's wands' conditions (core status.ts).
+    ...((me.chill ?? 0) > 0 ? [{ name: 'chill' as const, turns: turns(me.chill!) }] : []),
+    ...((me.frozen ?? 0) > 0 ? [{ name: 'frozen' as const, turns: turns(me.frozen!) }] : []),
+    ...(me.corrosion ? [{ name: 'corrosion' as const, turns: turns(me.corrosion.left) }] : []),
+    ...((me.shield ?? 0) > 0 ? [{ name: 'shield' as const, turns: me.shield! }] : []),
+    ...(me.rockArmor ? [{ name: 'rockArmor' as const, turns: me.rockArmor.armor }] : []),
+    ...(me.magicCharge ? [{ name: 'magicCharge' as const, turns: turns(me.magicCharge.turns) }] : []),
+    ...((me.lightningCharge ?? 0) > 0 ? [{ name: 'lightningCharge' as const, turns: turns(me.lightningCharge!) }] : []),
+    ...((me.recharging ?? 0) > 0 ? [{ name: 'recharging' as const, turns: turns(me.recharging!) }] : []),
+    ...((me.hexed ?? 0) > 0 ? [{ name: 'hexed' as const, turns: turns(me.hexed!) }] : []),
+    ...((me.vulnerable ?? 0) > 0 ? [{ name: 'vulnerable' as const, turns: turns(me.vulnerable!) }] : []),
+    ...((me.invulnerable ?? 0) > 0 ? [{ name: 'invulnerable' as const, turns: turns(me.invulnerable!) }] : []),
+    ...(me.disguise ? [{ name: 'disguise' as const, turns: turns(me.disguise.turns) }] : []),
+    ...((me.stasis ?? 0) > 0 ? [{ name: 'stasis' as const, turns: turns(me.stasis!) }] : []),
+    ...(me.herbal ? [{ name: 'herbal' as const, turns: me.herbal.level }] : []),
     ...(isStarving(me) ? [{ name: 'starvation' as const }] : isHungry(me) ? [{ name: 'hunger' as const }] : []),
     // WarriorShield.icon: while shielded or cooling down; the shield left, else the cooldown.
     ...(me.sealShield && (me.sealShield.shield > 0 || me.sealShield.cooldown !== 0)
@@ -71,7 +89,7 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
 
 /**
  * The artifacts' buffs (their BuffIndicator icons): the cloak's stealth (turns until it costs a charge), the
- * hourglass's time freeze (turns of the charge being spent) and stasis, the cape radiating thorns, the
+ * hourglass's time freeze (turns of the charge being spent; its stasis is TimeStasis, above), the cape radiating thorns, the
  * talisman's unease near a hidden trap.
  */
 function artifactBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
@@ -80,7 +98,6 @@ function artifactBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
   if (cloak?.stealth) buffs.push({ name: 'stealth', turns: Math.max(0, cloak.stealth.turnsToCost) });
   const frozen = frozenBy(me);
   if (frozen?.freeze) buffs.push({ name: 'timeFreeze', turns: Math.trunc(frozen.freeze.turnsToCost + 0.001) });
-  if ((me.stasis ?? 0) > 0) buffs.push({ name: 'stasis', turns: me.stasis! });
   for (const item of heroArtifacts(me)) {
     if (item.kind === 'artifact.cape' && (item.cooldown ?? 0) > 0) buffs.push({ name: 'thorns', turns: item.cooldown! });
     if (item.kind === 'artifact.talisman' && item.warn) buffs.push({ name: 'foresight' });

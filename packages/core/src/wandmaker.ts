@@ -2,7 +2,7 @@ import { createMob, type Hero, type Mob } from './actors';
 import { randomRespawnCell } from './ai';
 import { type Ctx, dropItem } from './floor';
 import { collect } from './inventory';
-import { createItem, type Item, type ItemKind } from './items';
+import { createItem, type Item, type ItemKind, randomWand, undoWand, wandFromDeck, wandMaxCharges } from './items';
 import { identify } from './ident';
 import type { Level } from './level/generate';
 import { adjacent, cellX, cellY, LENGTH, WIDTH } from './level/geometry';
@@ -24,6 +24,7 @@ export interface WandQuest {
   depth: number;
   given: boolean;
   done: boolean;
+  /** Wandmaker.Quest.wand1 and wand2 (once a battle wand and a useful one; the names stayed). */
   battle: Item;
   utility: Item;
   /** What he is after: corpse dust (also when absent, in older saves), a rotberry seed or a phantom fish. */
@@ -32,17 +33,28 @@ export interface WandQuest {
 
 export type WandmakerLine = 'intro' | 'remind' | 'reward' | 'farewell';
 
-const BATTLE_WANDS: readonly ItemKind[] = ['wand.avalanche', 'wand.disintegration', 'wand.firebolt', 'wand.lightning', 'wand.poison'];
-const UTILITY_WANDS: readonly ItemKind[] = ['wand.amok', 'wand.blink', 'wand.regrowth', 'wand.slowness', 'wand.reach'];
-
-/** Wand.random, then upgraded once more: a wand worth the trouble. */
-function rewardWand(rng: Rng, kinds: readonly ItemKind[]): Item {
-  let level = 1;
-  if (rng.float() < 0.5) {
-    level++;
-    if (rng.float() < 0.15) level++;
+/**
+ * Wandmaker.Quest.spawn: two wands of different kinds from the run's deck (Generator.random, the second
+ * drawn again until it differs, what was drawn in vain put back), neither cursed, each upgraded once.
+ */
+function rewardWands(world: World, rng: Rng): [Item, Item] {
+  const reward = (kind: ItemKind): Item => {
+    const wand = randomWand(rng, kind);
+    delete wand.cursed;
+    // Wand.upgrade: a level, and a charge.
+    wand.level++;
+    wand.charges = Math.min((wand.charges ?? 0) + 1, wandMaxCharges(wand));
+    return wand;
+  };
+  const first = wandFromDeck(world.run);
+  let second = wandFromDeck(world.run);
+  const undo: ItemKind[] = [];
+  while (second === first) {
+    undo.push(second);
+    second = wandFromDeck(world.run);
   }
-  return createItem(rng.oneOf(kinds), 1, level);
+  for (const kind of undo) undoWand(world.run, kind);
+  return [reward(first), reward(second)];
 }
 
 /** Wandmaker.Quest.spawn: the deeper the prison level, the likelier, until he has appeared. */
@@ -58,11 +70,8 @@ export function spawnWandmaker(world: World, level: Level, mobs: Mob[], rng: Rng
   }
   if (pos === -1) return;
   mobs.push(createMob(`#${++world.nextId}`, 'wandmaker', pos, 'passive', 0));
-  world.wandQuest = {
-    depth: level.depth, given: false, done: false,
-    battle: rewardWand(rng, BATTLE_WANDS), utility: rewardWand(rng, UTILITY_WANDS),
-    wants: errand(rng, level),
-  };
+  const [battle, utility] = rewardWands(world, rng);
+  world.wandQuest = { depth: level.depth, given: false, done: false, battle, utility, wants: errand(rng, level) };
 }
 
 /** Wandmaker.Quest.spawn: the fish only where there is little water; otherwise the dust or the berry. */

@@ -5,6 +5,7 @@ import { type Item, itemDef, type ItemKind, randomEnchantment, randomGlyph, wand
 import { isBroken, mend } from './wear';
 import { isIdentified } from './ident';
 import type { World } from './world';
+import { updateWand } from './staff';
 
 /*
  * Scrolls read on an item of the reader's choosing (InventoryScroll): upgrade,
@@ -159,8 +160,9 @@ export function upgradeItem(ctx: Ctx, hero: Hero, item: Item): void {
   // Item.upgrade: no curse, and that is known (cursedKnown), though the level stays as known as it was.
   delete item.curseUnknown;
   mend(item);
-  // Wand.upgrade: one more charge, up to the new maximum.
+  // Wand.upgrade: one more charge, up to the new maximum; MagesStaff.upgrade: its wand as good, and a charge more.
   if (item.charges !== undefined) item.charges = Math.min(item.charges + 1, wandMaxCharges(item));
+  if (item.kind === 'weapon.magesStaff') updateWand(item, true);
   ctx.effects.push({ type: 'upgraded', hero: hero.id, item });
 }
 

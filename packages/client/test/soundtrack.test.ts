@@ -88,7 +88,7 @@ describe("Shattered's music: Level.playLevelMusic", () => {
 
   it("the wandmaker's corpse dust carried: the prison's tense track", () => {
     const { world, hero } = standOn(8);
-    world.wandQuest = { depth: 8, given: true, done: false, battle: createItem('wand.firebolt'), utility: createItem('wand.blink'), wants: 'dust' };
+    world.wandQuest = { depth: 8, given: true, done: false, battle: createItem('wand.fireblast'), utility: createItem('wand.warding'), wants: 'dust' };
     expect(tuneAt(world, hero)).toEqual(regionTracks(1));
     hero.items.push(createItem('quest.dust'));
     expect(tuneAt(world, hero)).toEqual(tense(1));

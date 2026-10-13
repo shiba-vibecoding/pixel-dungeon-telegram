@@ -7,10 +7,13 @@ import { discover, F, hasFlag, T } from '../level/terrain';
 import { trapAt } from '../traps';
 import type { World } from '../world';
 import { chargeCap, levelCap, visiblyUpgraded } from './artifact';
-import { ballistica, coneCells, STOP_TARGET, trueDistance } from './bolt';
+import { ballistica, cone, STOP_TARGET } from '../ballistica';
 import { isWorn, say, upgradeArtifact, wornOf } from './common';
 import { dispelInvisibility } from './invisibility';
 import { artifactChargeMultiplier, artifactProc, magicImmune, onArtifactUsed, regenOn } from './seams';
+
+/** PathFinder's true distance: straight across, not in steps. */
+const trueDistance = (a: number, b: number): number => Math.hypot(cellX(a) - cellX(b), cellY(a) - cellY(b));
 
 /*
  * TalismanOfForesight: worn, it warns of traps hidden nearby, and charges
@@ -59,7 +62,8 @@ export function scry(ctx: Ctx, hero: Hero, item: Item, cell: number): number {
   }
   // Two hundred degrees, eight in a hundred less a cell away.
   const angle = Math.round(200 * 0.92 ** dist);
-  const cells = coneCells(ctx, ballistica(ctx, hero.pos, target, STOP_TARGET), angle, STOP_TARGET);
+  // ConeAOE(core, degrees): as long as the core ray, its own params.
+  const { cells } = cone(ctx, ballistica(ctx, hero.pos, target, STOP_TARGET), Infinity, angle, STOP_TARGET);
   const { world, level, floor } = ctx;
   const explored = exploredCells(world, hero.depth);
   const open = discoverable(level.map);

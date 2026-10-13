@@ -55,3 +55,10 @@ export * from './artifacts';
 export { BONES_ROLLS } from './bones';
 export { miscChoices, haggles } from './inventory';
 export * from './rings';
+export {
+  type Bolt, buffedLevel, chargesPerCast, heldWands, maxCharges, staffReach, wandAt, wandDamage, type WandNote, zapProblem,
+} from './wands';
+export { chargeLimit } from './regrowth';
+export type { CursedEffect } from './cursed';
+export { friendly } from './allies';
+export { type Property, propertiesOf } from './props';

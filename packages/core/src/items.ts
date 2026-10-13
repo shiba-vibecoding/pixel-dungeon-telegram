@@ -12,9 +12,9 @@ import { S } from './spd-sprites';
 import { artifactSprite, artifactValue, initArtifact, randomArtifact } from './artifacts/artifact';
 
 /*
- * Items, as data: every item family of the original вЂ” gold, potions,
- * scrolls, wands and rings (unknown until used or identified, with colours,
- * runes, woods and gems shuffled for every run), melee weapons and armour with
+ * Items, as data: every item family of the original — gold, potions,
+ * scrolls and rings (unknown until used or identified, with colours, runes
+ * and gems shuffled for every run), Shattered's wands, melee weapons and armour with
  * upgrade levels, thrown weapons, seeds, food, bags, keys and quest items вЂ”
  * with their prices and how the Generator rolls them.
  */
@@ -86,6 +86,8 @@ export const ITEMS = {
   'weapon.battleAxe': weapon(4, S.BATTLE_AXE, 1.2),
   'weapon.warHammer': weapon(5, S.WAR_HAMMER, 1.2),
   'weapon.glaive': weapon(5, S.GLAIVE),
+  /** MagesStaff: the mage's own, a weapon and a wand at once (the wand imbued in it: Item.wand). */
+  'weapon.magesStaff': weapon(1, S.MAGES_STAFF),
   /** The troll blacksmith's, lent for his errand (Pickaxe): a tool first, a weapon at a pinch. */
   'weapon.pickaxe': weapon(2, S.PICKAXE, 1, 1, 14),
 
@@ -111,20 +113,20 @@ export const ITEMS = {
   'missile.shuriken': { category: 'missile', sprite: S.SHURIKEN },
   'missile.tomahawk': { category: 'missile', sprite: S.TOMAHAWK },
   'missile.boomerang': { category: 'missile', sprite: S.BOOMERANG },
+  // Shattered's wands (items/wands), each known by its look: no wood to guess from.
   'wand.magicMissile': { category: 'wand', sprite: S.WAND_MAGIC_MISSILE },
-  // The other wands go by the wood they are made of until used.
-  'wand.firebolt': { category: 'wand' },
-  'wand.lightning': { category: 'wand' },
-  'wand.poison': { category: 'wand' },
-  'wand.slowness': { category: 'wand' },
-  'wand.teleportation': { category: 'wand' },
-  'wand.blink': { category: 'wand' },
-  'wand.disintegration': { category: 'wand' },
-  'wand.avalanche': { category: 'wand' },
-  'wand.amok': { category: 'wand' },
-  'wand.reach': { category: 'wand' },
-  'wand.flock': { category: 'wand' },
-  'wand.regrowth': { category: 'wand' },
+  'wand.lightning': { category: 'wand', sprite: S.WAND_LIGHTNING },
+  'wand.disintegration': { category: 'wand', sprite: S.WAND_DISINTEGRATION },
+  'wand.fireblast': { category: 'wand', sprite: S.WAND_FIREBOLT },
+  'wand.corrosion': { category: 'wand', sprite: S.WAND_CORROSION },
+  'wand.blastWave': { category: 'wand', sprite: S.WAND_BLAST_WAVE },
+  'wand.livingEarth': { category: 'wand', sprite: S.WAND_LIVING_EARTH },
+  'wand.frost': { category: 'wand', sprite: S.WAND_FROST },
+  'wand.prismaticLight': { category: 'wand', sprite: S.WAND_PRISMATIC_LIGHT },
+  'wand.warding': { category: 'wand', sprite: S.WAND_WARDING },
+  'wand.transfusion': { category: 'wand', sprite: S.WAND_TRANSFUSION },
+  'wand.corruption': { category: 'wand', sprite: S.WAND_CORRUPTION },
+  'wand.regrowth': { category: 'wand', sprite: S.WAND_REGROWTH },
   // Rings, two of which can be worn at once; they go by their gem until worn a while.
   // Shattered's twelve (items/rings/, see rings.ts): Pixel Dungeon's mending, detection, shadows, power, satiety,
   // thorns, haggler and herbalism are gone (the ring of thorns became the cape of thorns, an artifact).
@@ -238,9 +240,16 @@ export interface Item {
   qty: number;
   /** Upgrade level of weapons, armour and wands, possibly negative. */
   level: number;
-  /** Wands: charges left, and time spent towards the next one. */
+  /** Wands (Wand.curCharges and partialCharge): charges left, and the share of the next one gathered so far. */
   charges?: number;
-  recharge?: number;
+  partial?: number;
+  /** The mage's staff: the wand imbued in it (MagesStaff.wand), charged and zapped through the staff. */
+  wand?: Item;
+  /** WandOfRegrowth.totChrgUsed and chargesOverLimit: charges spent so far, and those beyond what the wand can bear. */
+  grown?: number;
+  overgrown?: number;
+  /** WandOfTransfusion.freeCharge: the next transfusion on an ally costs the hero no health. */
+  freeCharge?: boolean;
   /** Keys: the depth whose door they open. */
   depth?: number;
   /** Rings: turns worn so far; after a while one knows what they are. */
@@ -263,11 +272,10 @@ export interface Item {
   returnTo?: { depth: number; pos: number };
   /*
    * Artifacts (Artifact): the level is Item.level (0 to the artifact's cap); `charge` and the build towards the
-   * next (`partial`), experience towards the next level (`exp`) and a `cooldown` where the artifact has them.
-   * What else each one keeps is described in artifacts/.
+   * next (`partial`, as a wand's partialCharge), experience towards the next level (`exp`) and a `cooldown`
+   * where the artifact has them. What else each one keeps is described in artifacts/.
    */
   charge?: number;
-  partial?: number;
   exp?: number;
   cooldown?: number;
   /** CloakOfShadows.cloakStealth: under way, and the turns until it costs a charge again. */
@@ -309,7 +317,8 @@ export interface Item {
   familiarity?: number;
   /**
    * Weapons and armour: uses left before they are known, and how many of those are ready now
-   * (Weapon and Armor.usesLeftToID, availableUsesToID); rings: the share of a level still to gain
+   * (Weapon and Armor.usesLeftToID, availableUsesToID; a wand's zaps, Wand.usesLeftToID: 10 at first, 5 of
+   * them ready, more with every level the hero gains); rings: the share of a level still to gain
    * while worn (Ring.levelsToID). Absent: as found. See ident.ts.
    */
   usesLeftToID?: number;
@@ -366,7 +375,7 @@ export function createItem(kind: ItemKind, qty = 1, level = 0): Item {
   const item: Item = { kind, qty, level };
   if (itemDef(kind).category === 'wand') {
     item.charges = wandMaxCharges(item);
-    item.recharge = 0;
+    item.partial = 0;
   }
   // A new artifact starts with the charge its kind sets out with.
   if (itemDef(kind).category === 'artifact') initArtifact(item);
@@ -408,7 +417,8 @@ export function itemPrice(item: Item, known: boolean): number {
   switch (def.category) {
     // Enchanted, half as much again.
     case 'weapon':
-      if (item.kind === 'weapon.pickaxe') return 0;
+      // MagesStaff.value: not for sale.
+      if (item.kind === 'weapon.pickaxe' || item.kind === 'weapon.magesStaff') return 0;
       return levelled(Math.trunc(20 * 2 ** (def.tier! - 1) * (item.enchant ? 1.5 : 1)));
     case 'armor':
       // Armor.value: the warrior's sealed armour is not for sale.
@@ -423,7 +433,8 @@ export function itemPrice(item: Item, known: boolean): number {
     case 'missile':
       return item.kind === 'missile.boomerang' ? 30 : (MISSILE_PRICES[item.kind] ?? 2) * item.qty;
     case 'wand':
-      return levelled(50);
+      // Wand.value.
+      return levelled(75);
     case 'torch':
       return 10 * item.qty;
     // Ring.value.
@@ -490,14 +501,27 @@ export function missileStats(item: Item): { min: number; max: number; str: numbe
   return { min: stats.min, max: stats.max, str: stats.str, delay: stats.delay ?? 1 };
 }
 
-/** One more charge every this many turns (Wand.Charger). */
-export const WAND_RECHARGE = 40;
+/** Wand.initialCharges: two charges (three for magic missile). */
+export const initialCharges = (kind: ItemKind): number => (kind === 'wand.magicMissile' ? 3 : 2);
 
-/** Wand.initialCharges and updateLevel: two charges (three for magic missile), one more a level, nine at most. */
-export const wandMaxCharges = (item: Item): number => Math.min((item.kind === 'wand.magicMissile' ? 3 : 2) + item.level, 9);
+/**
+ * Wand.updateLevel: the initial charges and one more a level, ten at most; a wand in the mage's staff
+ * holds one more (MagesStaff.updateWand), ten at most still.
+ */
+export const wandMaxCharges = (item: Item, inStaff = false): number =>
+  Math.min(Math.min(initialCharges(item.kind) + item.level, 10) + (inStaff ? 1 : 0), 10);
 
-/** WandOfMagicMissile: Random.Int(1, 6 + level * 2), so 1-5 for a plain wand. */
-export const magicMissileDamage = (item: Item): readonly [number, number] => [1, 5 + effectiveLevel(item) * 2];
+/** Wand.random: a level better one time in three (two, one in fifteen), with charges to match; three in ten cursed. */
+export function randomWand(rng: Rng, kind: ItemKind): Item {
+  let level = 0;
+  if (rng.int(3) === 0) {
+    level++;
+    if (rng.int(5) === 0) level++;
+  }
+  const wand = createItem(kind, 1, level);
+  if (rng.float() < 0.3) wand.cursed = true;
+  return wand;
+}
 
 /* Weapon and armour numbers (MeleeWeapon, Armor) */
 
@@ -514,6 +538,15 @@ export interface WeaponStats {
 export function weaponStats(item: Item): WeaponStats {
   // Pickaxe: fixed numbers, never upgraded.
   if (item.kind === 'weapon.pickaxe') return { min: 3, max: 12, str: 14, accuracy: 1, delay: 1 };
+  if (item.kind === 'weapon.magesStaff') {
+    // MagesStaff (MeleeWeapon, tier 1): 1-6 and two more at most a level; Shattered's strength
+    // (MeleeWeapon.STRReq: 10, a point less for each of the 1st, 3rd, 6th, 10th... upgrades).
+    const level = effectiveLevel(item);
+    return {
+      min: 1 + level, max: 6 + 2 * level, str: 10 - Math.trunc((Math.sqrt(8 * item.level + 1) - 1) / 2), accuracy: 1,
+      delay: 1,
+    };
+  }
   const def = itemDef(item.kind);
   const tier = def.tier!;
   const accuracy = def.accuracy!;
@@ -549,14 +582,6 @@ export const SCROLL_RUNES = [
 const POTION_SPRITES = POTION_COLORS.map((color) => S[`POTION_${color.toUpperCase() as Uppercase<typeof color>}`]);
 /** Shattered's scroll with each rune, in SCROLL_RUNES order. */
 const SCROLL_SPRITES = SCROLL_RUNES.map((rune) => S[`SCROLL_${rune}`]);
-/**
- * Holly, yew, ebony, cherry, teak, rowan, willow, mahogany, bamboo, purpleheart, oak, birch: Shattered draws every
- * wand by its kind, so each wood borrows one of its wand sprites (all but magic missile's, which is known from the start).
- */
-const WAND_SPRITES = [
-  S.WAND_FIREBOLT, S.WAND_FROST, S.WAND_LIGHTNING, S.WAND_DISINTEGRATION, S.WAND_PRISMATIC_LIGHT, S.WAND_CORROSION,
-  S.WAND_LIVING_EARTH, S.WAND_BLAST_WAVE, S.WAND_CORRUPTION, S.WAND_WARDING, S.WAND_REGROWTH, S.WAND_TRANSFUSION,
-];
 /** Diamond, opal, garnet, ruby, amethyst, topaz, onyx, tourmaline, emerald, sapphire, quartz, agate. */
 const RING_SPRITES = [
   S.RING_DIAMOND, S.RING_OPAL, S.RING_GARNET, S.RING_RUBY, S.RING_AMETHYST, S.RING_TOPAZ, S.RING_ONYX, S.RING_TOURMALINE,
@@ -569,7 +594,7 @@ export type Labels = Partial<Record<ItemKind, number>>;
 export function rollLabels(seed: number): Labels {
   const rng = Rng.seeded(deriveSeed(seed, LABEL_STREAM));
   const labels: Labels = {};
-  for (const category of ['potion', 'scroll', 'wand', 'ring'] as const) {
+  for (const category of ['potion', 'scroll', 'ring'] as const) {
     const kinds = (Object.keys(ITEMS) as ItemKind[]).filter(
       (kind) => itemDef(kind).category === category && itemDef(kind).sprite === undefined,
     );
@@ -589,7 +614,6 @@ export function itemSprite(item: Item, labels: Labels): number {
   if (def.category === 'artifact') return artifactSprite(item);
   if (def.sprite !== undefined) return def.sprite;
   const label = labels[item.kind] ?? 0;
-  if (def.category === 'wand') return WAND_SPRITES[label]!;
   if (def.category === 'ring') return RING_SPRITES[label]!;
   return def.category === 'potion' ? POTION_SPRITES[label]! : SCROLL_SPRITES[label]!;
 }
@@ -608,7 +632,7 @@ const CATEGORY_CHANCES: ReadonlyArray<readonly [GeneratedCategory, number]> = [
   ['misc', 5],
 ];
 
-const KIND_CHANCES: Readonly<Record<Exclude<GeneratedCategory, 'gold' | 'food' | 'misc' | 'artifact'>, ReadonlyArray<readonly [ItemKind, number]>>> = {
+const KIND_CHANCES: Readonly<Record<Exclude<GeneratedCategory, 'gold' | 'food' | 'misc' | 'artifact' | 'wand'>, ReadonlyArray<readonly [ItemKind, number]>>> = {
   // Strength only comes as guaranteed finds, and might out of a well of transmutation.
   potion: [
     ['potion.healing', 45], ['potion.experience', 4], ['potion.toxicGas', 15], ['potion.paralyticGas', 10],
@@ -638,15 +662,46 @@ const KIND_CHANCES: Readonly<Record<Exclude<GeneratedCategory, 'gold' | 'food' |
     ['ring.accuracy', 3], ['ring.arcana', 3], ['ring.elements', 3], ['ring.energy', 3], ['ring.evasion', 3], ['ring.force', 3],
     ['ring.furor', 3], ['ring.haste', 3], ['ring.might', 3], ['ring.sharpshooting', 3], ['ring.tenacity', 3], ['ring.wealth', 3],
   ],
-  wand: [
-    ['wand.teleportation', 10], ['wand.slowness', 10], ['wand.firebolt', 15], ['wand.regrowth', 6], ['wand.poison', 10],
-    ['wand.blink', 11], ['wand.lightning', 15], ['wand.amok', 10], ['wand.reach', 6], ['wand.flock', 10], ['wand.disintegration', 5],
-    ['wand.avalanche', 5],
-  ],
 };
 
 /** Generator.Category.SCROLL's default chances (the unstable spellbook reads by them). */
 export const scrollChances = (): ReadonlyArray<readonly [ItemKind, number]> => KIND_CHANCES.scroll;
+/** Generator.Category.WAND.classes, in their order. */
+export const WAND_KINDS: readonly ItemKind[] = [
+  'wand.magicMissile', 'wand.lightning', 'wand.disintegration', 'wand.fireblast', 'wand.corrosion', 'wand.blastWave',
+  'wand.livingEarth', 'wand.frost', 'wand.prismaticLight', 'wand.warding', 'wand.transfusion', 'wand.corruption', 'wand.regrowth',
+];
+
+/**
+ * Generator.random(WAND): wands come from a deck, three of each kind; each one dealt is taken out of
+ * it, and once it is empty a full one comes in. The run keeps the deck (RunState.wandDeck), and each
+ * draw is seeded by the run and how many were dealt before (Category.seed and dropped), so the
+ * wands of a run do not depend on when they turn up.
+ */
+export function wandFromDeck(run: RunState): ItemKind {
+  const deck = run.wandDeck ?? WAND_KINDS.map(() => 3);
+  const dealt = run.wandsDealt ?? 0;
+  const rng = Rng.seeded(deriveSeed(run.seed, WAND_DECK_STREAM, dealt));
+  let i = deck.some((n) => n > 0) ? rng.chances(deck) : -1;
+  if (i < 0) {
+    deck.splice(0, deck.length, ...WAND_KINDS.map(() => 3));
+    i = rng.chances(deck);
+  }
+  deck[i]!--;
+  run.wandDeck = deck;
+  run.wandsDealt = dealt + 1;
+  return WAND_KINDS[i]!;
+}
+
+/** Generator.undoDrop: a wand put back into the deck (the wandmaker's second wand, drawn again). */
+export function undoWand(run: RunState, kind: ItemKind): void {
+  const i = WAND_KINDS.indexOf(kind);
+  if (i < 0 || !run.wandDeck) return;
+  run.wandDeck[i]!++;
+  run.wandsDealt = Math.max(0, (run.wandsDealt ?? 1) - 1);
+}
+
+const WAND_DECK_STREAM = 7;
 
 /** Gold.random: a pile's worth for a depth. */
 export function rollGold(rng: Rng, depth: number): Item {
@@ -685,7 +740,10 @@ function rollLevel(rng: Rng): number {
 export class ItemGenerator {
   private readonly chances = new Map(CATEGORY_CHANCES);
 
-  /** `run`: the run whose artifacts are still to be found; without it, an artifact comes out as a ring. */
+  /**
+   * `run`: the run whose artifacts are still to be found (without it, an artifact comes out as a ring); with
+   * it, wands come from its deck too (Generator.random); without, any kind as likely (Generator.randomUsingDefaults).
+   */
   constructor(private readonly rng: Rng, private readonly depth: number, private readonly run?: RunState) {}
 
   random(): Item {
@@ -701,6 +759,11 @@ export class ItemGenerator {
     if (category === 'food') return rollFood(this.rng);
     // Generator.Category.MISC: two bombs to every honeypot; bombs come one to three at a time.
     if (category === 'misc') return this.rng.chances([2, 1]) === 0 ? createItem('bomb', this.rng.intRange(1, 3)) : createItem('honeypot');
+    if (category === 'wand') {
+      // Wand.random: as found, it tells neither its level nor its curse, nor its charges (ident.ts).
+      const kind = this.run ? wandFromDeck(this.run) : WAND_KINDS[this.rng.chances(WAND_KINDS.map(() => 3))]!;
+      return unidentified(randomWand(this.rng, kind));
+    }
     const table = KIND_CHANCES[category];
     const kind = table[this.rng.chances(table.map(([, chance]) => chance))]![0];
     // Dart.random: a handful of them.
@@ -709,15 +772,6 @@ export class ItemGenerator {
     if (handful) return createItem(kind, this.rng.intBetween(handful[0], handful[1]));
     // As found, a ring, a wand, a melee weapon or armour tells neither its level nor its curse (ident.ts).
     if (category === 'ring') return unidentified(randomRing(this.rng, kind));
-    if (category === 'wand') {
-      // Wand.random: half of them a level better, a few two.
-      let level = 0;
-      if (this.rng.float() < 0.5) {
-        level++;
-        if (this.rng.float() < 0.15) level++;
-      }
-      return unidentified(createItem(kind, 1, level));
-    }
     const level = category === 'weapon' || category === 'armor' ? rollLevel(this.rng) : 0;
     const item = createItem(kind, 1, level);
     // Weapon.random and Armor.random: what came out worse is cursed.

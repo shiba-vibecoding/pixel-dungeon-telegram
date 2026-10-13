@@ -1,8 +1,10 @@
 import { isAlive, MOBS } from './actors';
 import { hurt } from './combat';
-import { type Char, type Ctx, type Floor, heroesOn } from './floor';
+import { burnHeaps } from './cooking';
+import { charAt, type Char, type Ctx, type Floor, heroesOn, isHero } from './floor';
 import { distance, HEIGHT, LENGTH, WIDTH } from './level/geometry';
-import { F, hasFlag } from './level/terrain';
+import { F, hasFlag, T } from './level/terrain';
+import { corrode, ignite } from './status';
 import { immuneTo } from './traps';
 
 /*
@@ -15,12 +17,18 @@ import { immuneTo } from './traps';
  * A spinner's cobweb (Web) is kept the same way, though it is no gas: it
  * never spreads, only wears away a little every turn, and holds fast whoever
  * stands in it.
+ *
+ * Shattered's wands bring more: CorrosiveGas (the wand of corrosion's, eating
+ * away at whoever breathes it), ConfusionGas and Regrowth (a cursed wand's),
+ * and Fire, which is no gas either: it burns where it was set for a few
+ * turns, sets alight whoever stands in it, and creeps on along whatever can
+ * burn, leaving embers.
  */
 
-export type GasKind = 'toxic' | 'paralytic' | 'web';
-export const GAS_KINDS: readonly GasKind[] = ['toxic', 'paralytic', 'web'];
+export type GasKind = 'toxic' | 'paralytic' | 'web' | 'corrosive' | 'confusion' | 'regrowth' | 'fire';
+export const GAS_KINDS: readonly GasKind[] = ['toxic', 'paralytic', 'web', 'corrosive', 'confusion', 'regrowth', 'fire'];
 /** What is breathed, and what a cleansing cloud clears away. */
-const AIRBORNE: readonly GasKind[] = ['toxic', 'paralytic'];
+const AIRBORNE: readonly GasKind[] = ['toxic', 'paralytic', 'corrosive', 'confusion'];
 
 /** How long paralytic gas holds whoever breathes it, after the last breath. */
 const PARALYSIS_TURNS = 5;
@@ -42,6 +50,28 @@ export function seedGas(ctx: Ctx, pos: number, kind: GasKind, amount: number): v
   (floor.gas ??= {})[kind] = [...cloud].sort((a, b) => a[0] - b[0]);
   // The gas acts on the depth's clock from now on, a turn at a time.
   floor.gasAt ??= floor.now;
+}
+
+/**
+ * CorrosiveGas.setStrength: how hard the cloud on the depth eats away, the strongest it was set to
+ * (one strength for the whole cloud, as in Shattered).
+ */
+export function setGasStrength(ctx: Ctx, kind: GasKind, strength: number): void {
+  const strengths = (ctx.floor.gasStrength ??= {});
+  if (strength > (strengths[kind] ?? 0)) strengths[kind] = strength;
+}
+
+/** Blob.volumeAt: how much of a gas (or fire) there is on a cell. */
+export function gasAt(floor: Floor, kind: GasKind, cell: number): number {
+  return floor.gas?.[kind]?.find(([c]) => c === cell)?.[1] ?? 0;
+}
+
+/** Blob.clear: none of it left on a cell. */
+export function clearGasAt(floor: Floor, kind: GasKind, cell: number): void {
+  const cloud = floor.gas?.[kind];
+  if (!cloud) return;
+  floor.gas![kind] = cloud.filter(([c]) => c !== cell);
+  tidy(floor);
 }
 
 /** Web.seed: a web is spun on a cell; it is as thick as the thickest spun there, never thicker. */
@@ -79,6 +109,10 @@ export function evolveGas(ctx: Ctx): void {
       evolveWeb(ctx, cloud);
       continue;
     }
+    if (kind === 'fire') {
+      evolveFire(ctx, cloud);
+      continue;
+    }
     const cur = new Int32Array(LENGTH);
     for (const [cell, volume] of cloud) cur[cell] = volume;
     const next: Array<[number, number]> = [];
@@ -98,6 +132,10 @@ export function evolveGas(ctx: Ctx): void {
       }
     }
     floor.gas![kind] = next;
+    if (kind === 'regrowth') {
+      regrow(ctx, next);
+      continue;
+    }
     const inside = new Set(next.map(([cell]) => cell));
     for (const char of breathers(ctx)) {
       if (!inside.has(char.pos) || !isAlive(char) || immuneTo(char, 'gas')) continue;
@@ -134,6 +172,16 @@ function breathers(ctx: Ctx): Char[] {
 }
 
 function breathe(ctx: Ctx, char: Char, kind: GasKind): void {
+  // CorrosiveGas.evolve: Corrosion for two turns, as strong as the cloud.
+  if (kind === 'corrosive') {
+    corrode(char, 2, ctx.floor.gasStrength?.corrosive ?? 1);
+    return;
+  }
+  // ConfusionGas.evolve: Vertigo, prolonged to two turns.
+  if (kind === 'confusion') {
+    char.dizzy = Math.max(char.dizzy ?? 0, 2);
+    return;
+  }
   if (kind === 'paralytic') {
     char.paralysed = Math.max(char.paralysed ?? 0, PARALYSIS_TURNS);
     return;
@@ -147,12 +195,93 @@ function breathe(ctx: Ctx, char: Char, kind: GasKind): void {
   hurt(ctx, char, damage, 'gas');
 }
 
+/**
+ * Regrowth.evolve: bare ground under the cloud turns to grass, and where it is thick (above 9) and
+ * nobody stands, grass grows tall; whoever stands where it is thicker than a trace is held by roots.
+ */
+function regrow(ctx: Ctx, cloud: Array<[number, number]>): void {
+  const { level, world, depth } = ctx;
+  for (const [cell, volume] of cloud) {
+    const terrain = level.map[cell]!;
+    const char = charAt(world, depth, cell);
+    let grown = terrain;
+    if (terrain === T.EMPTY || terrain === T.EMBERS || terrain === T.EMPTY_DECO) {
+      grown = volume > 9 && !char ? T.HIGH_GRASS : T.GRASS;
+    } else if (terrain === T.GRASS && volume > 9 && !(ctx.floor.plants ?? []).some((p) => p.pos === cell) && !char) {
+      grown = T.HIGH_GRASS;
+    }
+    if (grown !== terrain) level.map[cell] = grown;
+    if (char && volume > 1) char.rooted = Math.max(char.rooted ?? 0, isHero(char) ? 1 : 2);
+  }
+}
+
+/** Fire.seed: so much fire on a cell (fire does not spread like a gas: see evolveFire). */
+export function seedFire(ctx: Ctx, cell: number, amount: number): void {
+  const fire = new Map((ctx.floor.gas?.fire ?? []).map(([c, v]) => [c, v]));
+  fire.set(cell, (fire.get(cell) ?? 0) + amount);
+  (ctx.floor.gas ??= {}).fire = [...fire].sort((a, b) => a[0] - b[0]);
+  ctx.floor.gasAt ??= ctx.floor.now;
+}
+
+/**
+ * Level.destroy: what burnt down is gone: grass and the like to embers, a door, a barricade or
+ * a bookshelf to bare floor.
+ */
+export function destroyCell(ctx: Ctx, cell: number): void {
+  const terrain = ctx.level.map[cell]!;
+  ctx.level.map[cell] = terrain === T.EMPTY || terrain === T.EMPTY_DECO || !hasFlag(terrain, F.SOLID) ? T.EMBERS : T.EMPTY;
+  clearGasAt(ctx.floor, 'web', cell);
+  ctx.effects.push({ type: 'burnt', depth: ctx.depth, pos: cell });
+}
+
+/**
+ * Fire.evolve: a burning cell burns a turn less every turn, and burns down what can burn once it
+ * is out; the fire creeps to whatever can burn next to it (four turns' worth). Wherever it burns
+ * it sets alight whoever stands there, burns what lies there and withers the plant (Fire.burn).
+ */
+function evolveFire(ctx: Ctx, cloud: Array<[number, number]>): void {
+  const map = ctx.level.map;
+  const cur = new Int32Array(LENGTH);
+  for (const [cell, volume] of cloud) cur[cell] = volume;
+  const next: Array<[number, number]> = [];
+  for (let y = 1; y < HEIGHT - 1; y++) {
+    for (let cell = y * WIDTH + 1; cell < y * WIDTH + WIDTH - 1; cell++) {
+      const flamable = hasFlag(map[cell]!, F.FLAMABLE);
+      let fire = 0;
+      if (cur[cell]! > 0) {
+        burnCell(ctx, cell);
+        fire = cur[cell]! - 1;
+        if (fire <= 0 && flamable) destroyCell(ctx, cell);
+      } else if (flamable && (cur[cell - 1]! > 0 || cur[cell + 1]! > 0 || cur[cell - WIDTH]! > 0 || cur[cell + WIDTH]! > 0)) {
+        fire = 4;
+        burnCell(ctx, cell);
+      }
+      if (fire > 0) next.push([cell, fire]);
+    }
+  }
+  ctx.floor.gas!.fire = next;
+}
+
+/** Fire.burn: whoever stands on a burning cell catches fire, what lies there burns, a plant withers. */
+export function burnCell(ctx: Ctx, cell: number): void {
+  const char = charAt(ctx.world, ctx.depth, cell);
+  if (char && isAlive(char) && !immuneTo(char, 'burning')) ignite(char);
+  burnHeaps(ctx, cell, 0);
+  if (ctx.floor.plants?.some((p) => p.pos === cell)) ctx.floor.plants = ctx.floor.plants.filter((p) => p.pos !== cell);
+}
+
 /** Drops empty clouds, and the gas clock with the last of them. */
 function tidy(floor: Floor): void {
   if (!floor.gas) return;
-  for (const kind of GAS_KINDS) if (floor.gas[kind]?.length === 0) delete floor.gas[kind];
+  for (const kind of GAS_KINDS) {
+    if (floor.gas[kind]?.length === 0) {
+      delete floor.gas[kind];
+      if (floor.gasStrength?.[kind]) delete floor.gasStrength[kind];
+    }
+  }
   if (!hasGas(floor)) {
     delete floor.gas;
     delete floor.gasAt;
+    delete floor.gasStrength;
   }
 }

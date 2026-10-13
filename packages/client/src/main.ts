@@ -4,14 +4,16 @@ import {
   type Hero, type Item, type Level,
   BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
-  visibleCells, chargesKnown, WIDTH,
+  visibleCells, chargesKnown, staffReach, WIDTH,
   type World, charAt, swapsWithHero, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
 import './game.css';
-import { mobDescription, plantText, tileText, wellText } from './examine';
-import { chooseQuickslot, isPlaceholder, quickArtifact, quickIndex, quickKind, quickUse, syncQuickslots, visibleQuickslots } from './quickslot';
+import { mobDescription, mobName, plantText, tileText, wellText } from './examine';
+import {
+  chooseQuickslot, isPlaceholder, quickArtifact, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
+} from './quickslot';
 import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookChoice } from './artifactui';
 import { artText, chargeOf } from './artifacttext';
 import { fx } from './fx';
@@ -285,7 +287,7 @@ function coachMove(me: Hero): void {
  */
 function attackTarget(world: World, me: Hero): Mob | null {
   const visible = visibleCells(world, me.depth);
-  const foes = (world.floors[me.depth]?.mobs ?? []).filter((m) => m.state !== 'passive' && visible[m.pos] && m.hp > 0 && !m.image);
+  const foes = (world.floors[me.depth]?.mobs ?? []).filter((m) => m.state !== 'passive' && !m.ally && visible[m.pos] && m.hp > 0 && !m.image);
   // The enemy picked with the danger indicator comes first (AttackIndicator.target).
   const rank = (m: Mob): number => (m.id === dangerTarget ? -1 : m.enemy === me.id && m.state === 'hunting' ? 0 : m.state === 'sleeping' ? 2 : 1) * 1000 + distance(m.pos, me.pos);
   return foes.sort((a, b) => rank(a) - rank(b) || (a.id < b.id ? -1 : 1))[0] ?? null;
@@ -783,10 +785,11 @@ function toggleQuickslot(slot = 0): void {
     return;
   }
   const index = quickIndex(me, slot);
-  if (index < 0) return;
-  const item = me.items[index]!;
-  // Wand.actions: no zapping a wand known to be empty (one of unknown charges may be tried, and fizzle).
-  if (item.charges === 0 && chargesKnown(item)) {
+  const item = quickItem(me, slot);
+  if (!item) return;
+  // Wand.actions: no zapping a wand known to be empty (one of unknown charges may be tried, and fizzle); the staff's, not at all.
+  const wand = item.kind === 'weapon.magesStaff' ? item.wand : item;
+  if (wand?.charges === 0 && (chargesKnown(wand) || wand !== item)) {
     view.say(t.noCharges, '#cccccc');
     return;
   }
@@ -975,7 +978,8 @@ function step(world: World, now: number, visible: readonly boolean[]): void {
     const mob = mobById(world, me.depth, walk.chase);
     if (!mob || !visible[mob.pos]) {
       walk.chase = null;
-    } else if (adjacent(me.pos, mob.pos)) {
+    } else if (adjacent(me.pos, mob.pos) || (staffReach(me) > 1 && distance(me.pos, mob.pos) <= staffReach(me) && !mob.ally && mob.state !== 'passive')) {
+      // MagesStaff.reachFactor: a battlemage's staff of disintegration strikes from a cell further.
       walk.chase = null;
       send({ type: 'attack', target: mob.id }, now);
       return;
@@ -1196,6 +1200,16 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
     }
     // Seam (alchemy stream): the toolkit's BREW opens the alchemy window.
     if (effect.type === 'alchemy' && effect.hero === myId) toast(t.art.noAlchemy);
+    // Ward.interact: dismiss the ward?
+    if (effect.type === 'ward' && effect.hero === myId) {
+      walk.reset();
+      const ward = effect.mob;
+      showConfirm(t.dismissTitle, t.dismissInfo, t.dismissYes, t.dismissNo, () => send({ type: 'dismiss', target: ward }, performance.now()), hideOverlay);
+    }
+    // CursedWand.AbortRetryFail: the game seems to crash (in English only: the joke would not translate).
+    if (effect.type === 'cursedZap' && effect.hero === myId && effect.effect === 'abortRetryFail' && t.crashTitle) {
+      showConfirm(t.crashTitle, t.crashBody, t.crashButtons[0] ?? '', t.crashButtons[2] ?? '', hideOverlay, hideOverlay);
+    }
     // The Amulet of Yendor: its question for whoever takes it (once a run); the party hears of it.
     if (effect.type === 'amulet' && world && me) {
       if (effect.hero === myId) {
@@ -1366,6 +1380,7 @@ function tapCell(cell: number, quiet = false): void {
     aim = null;
     if (shot.kind === 'artifact') send({ ...shot.action, cell }, performance.now());
     else if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
+    else if (cell !== me.pos && shot.index === WEAPON_SLOT && shot.kind === 'zap' && me.weapon) send({ type: 'zap', item: 'weapon', target: cell }, performance.now());
     else if (cell !== me.pos && me.items[shot.index]) send({ type: shot.kind, item: shot.index, target: cell }, performance.now());
     return;
   }
@@ -1878,7 +1893,7 @@ function examineCell(pos: number): void {
   if (char && 'kind' in char) {
     const state = char.state === 'passive' ? '' : t.mobStates[char.state] ?? '';
     const health = char.state === 'passive' ? '' : t.examineHealth(Math.max(0, char.hp), char.ht);
-    showInfo(t.mobs[char.kind], [mobDescription(char), state], hideOverlay, {
+    showInfo(mobName(char), [mobDescription(char), state], hideOverlay, {
       icon: portrait(char.kind),
       ...(health ? { health: [Math.max(0, char.hp), char.ht] as const } : {}),
     });
@@ -2520,6 +2535,11 @@ function tick(now: number): void {
   const gas = [
     ...(clouds.toxic ?? []).map(([pos, volume]) => ({ pos, volume, color: '80, 200, 60' })),
     ...(clouds.paralytic ?? []).map(([pos, volume]) => ({ pos, volume, color: '230, 220, 70' })),
+    // Shattered's: orange corrosive gas, pale confusion gas, green regrowth; fire, thick for the few turns it burns.
+    ...(clouds.corrosive ?? []).map(([pos, volume]) => ({ pos, volume, color: '220, 140, 40' })),
+    ...(clouds.confusion ?? []).map(([pos, volume]) => ({ pos, volume, color: '200, 170, 230' })),
+    ...(clouds.regrowth ?? []).map(([pos, volume]) => ({ pos, volume, color: '90, 200, 90' })),
+    ...(clouds.fire ?? []).map(([pos, volume]) => ({ pos, volume: 30 + volume * 10, color: '255, 110, 20' })),
   ];
   const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
   const explored = exploredCells(world, me.depth);
@@ -2612,8 +2632,8 @@ function tick(now: number): void {
   const quickState = (slot: number): QuickState | null => {
     const kind = quickKind(slot);
     if (!kind) return null;
-    // An artifact may be worn: Shattered's quick slots hold it all the same.
-    const item = quickArtifact(me, slot)?.item ?? me.items[quickIndex(me, slot)];
+    // An artifact may be worn: Shattered's quick slots hold it all the same; the mage's staff is zapped from the hand (quickItem).
+    const item = quickArtifact(me, slot)?.item ?? quickItem(me, slot);
     if (!item || isPlaceholder(me, slot)) {
       return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };
     }
@@ -2631,7 +2651,8 @@ function tick(now: number): void {
     examining = false;
   };
   // One state at a time, the most pressing: the connection, death, a target to choose, examining, companions.
-  const aimed = aim && aim.kind === 'artifact' ? itemAt(me, aim.action.item) : aim && aim.index >= 0 ? me.items[aim.index] : undefined;
+  const aimed = aim && aim.kind === 'artifact' ? itemAt(me, aim.action.item)
+    : aim && aim.index >= 0 ? me.items[aim.index] : aim?.index === WEAPON_SLOT ? me.weapon ?? undefined : undefined;
   const status: HudStatus | null =
     session.status ? { kind: session.status === t.reconnecting ? 'reconnecting' : 'connecting', text: session.status }
     : !isAlive(me) && !world.over ? { kind: 'dead', text: `${t.youDied}. ${world.arena ? t.arena.fallenCoop : t.youDiedCoop}` }

@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   act, addHero, ARTIFACT_DECK, artifactStatus, canEnter, charAt, chargeCap, createItem, createMob, createRun, createWorld, exploredCells,
   floorAt, type Heap, heroById, heroArtifacts, heroRings, isInvisible, ItemGenerator, leaveBones, levelAt, layBones, NEIGHBOURS8, prickDeathChance, randomArtifact,
-  Rng, STARVING, WIDTH, type World,
+  Rng, STARVING, swapsWithHero, WIDTH, type World,
 } from '../src/index';
+import { chargeWands } from '../src/wands';
 import { pacify } from './helpers';
 
 function solo(heroClass: 'warrior' | 'rogue' | 'mage' | 'huntress' = 'warrior', seed = 3): World {
@@ -332,5 +333,43 @@ describe("the alchemist's toolkit", () => {
     expect(hero.artifact!.warmUp).toBeGreaterThan(99);
     waitTurns(world, 5);
     expect(hero.artifact!.warmUp).toBeLessThan(100);
+  });
+});
+
+describe('with the wands', () => {
+  it("the rose's ghost is one of the heroes' allies: the hero trades places with it, monsters may fight it", () => {
+    const world = solo();
+    const hero = heroById(world, 'p')!;
+    hero.artifact = createItem('artifact.rose');
+    hero.artifact.charge = 100;
+    world.quest = { depth: 2, type: 'rat', given: true, dropped: true, killsLeft: 0, done: true, weapon: createItem('weapon.mace'), armor: createItem('armor.mail') };
+    expect(act(world, 'p', { type: 'artifact', item: 'artifact', use: 'summon' }).ok).toBe(true);
+    const ghost = floorAt(world, 1).mobs.find((mob) => mob.kind === 'ghostHero')!;
+    expect(ghost.ally).toBe(true);
+    expect(swapsWithHero(ghost)).toBe(true);
+  });
+
+  it("zapping a wand ends the cloak's stealth (Wand.wandUsed: Invisibility.dispel)", () => {
+    const world = solo('rogue');
+    const hero = heroById(world, 'p')!;
+    hero.items.unshift({ ...createItem('wand.magicMissile'), charges: 2 });
+    expect(act(world, 'p', { type: 'artifact', item: 'artifact', use: 'stealth' }).ok).toBe(true);
+    expect(isInvisible(hero)).toBe(true);
+    const target = NEIGHBOURS8.map((n) => hero.pos + 2 * n).find((c) => canEnter(levelAt(world, 1), c))!;
+    expect(act(world, 'p', { type: 'zap', item: 0, target }).ok).toBe(true);
+    expect(isInvisible(hero)).toBe(false);
+  });
+
+  it('rings of energy recharge wands faster (RingOfEnergy.wandChargeMultiplier)', () => {
+    const world = solo('mage');
+    const hero = heroById(world, 'p')!;
+    const plain = { ...createItem('wand.frost'), charges: 0, partial: 0 };
+    hero.items = [plain];
+    chargeWands(hero, 5, () => false);
+    const without = plain.partial!;
+    plain.partial = 0;
+    hero.ring = createItem('ring.energy', 1, 1);
+    chargeWands(hero, 5, () => false);
+    expect(plain.partial!).toBeCloseTo(without * Math.fround(1.175 ** 2), 4);
   });
 });

@@ -148,7 +148,7 @@ describe('a wave', () => {
   it('puts a reward on the dais when the pack is full', () => {
     const world = arenaWorld(5);
     const hero = heroById(world, 'p')!;
-    world.arena!.offers.p = [createItem('weapon.sword'), createItem('armor.mail'), createItem('wand.firebolt')];
+    world.arena!.offers.p = [createItem('weapon.sword'), createItem('armor.mail'), createItem('wand.fireblast')];
     world.arena!.wave = 1;
     while (hero.items.length < 20) hero.items.push(createItem('weapon.mace'));
     expect(act(world, 'p', { type: 'arenaPick', choice: 0 })).toMatchObject({ ok: true });

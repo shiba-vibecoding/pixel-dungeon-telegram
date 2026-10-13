@@ -6,7 +6,7 @@ import { isBossDepth } from '../level/builder';
 import { LENGTH, NEIGHBOURS8 } from '../level/geometry';
 import type { World } from '../world';
 import { chargeCap, levelCap } from './artifact';
-import { ballistica, MAGIC_BOLT } from './bolt';
+import { ballistica, MAGIC_BOLT } from '../ballistica';
 import { isWorn, say, upgradeArtifact } from './common';
 import { dispelInvisibility } from './invisibility';
 import { regenOn } from './seams';
