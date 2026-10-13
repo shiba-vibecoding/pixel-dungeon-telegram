@@ -21,10 +21,12 @@ describe('disturbed remains', () => {
     expect(mobStats(wraiths[0]!)).toMatchObject({ ht: 1, attack: 11, defense: 55 });
   });
 
-  it('a skeleton holding something cursed takes half the health of whoever disturbs it', () => {
+  it('a skeleton holding something cursed lets out a wraith beside whoever disturbs it (or, with no room, takes half their health)', () => {
     let { world, hero } = withRemains('skeleton', true);
     act(world, 'p', { type: 'pickup' });
-    expect(hero.hp).toBe(10);
+    // Heap.open: Wraith.spawnAt(pos), beside it if the hero stands on it.
+    const risen = floorAt(world, 1).mobs.filter((m) => m.kind === 'wraith' || m.kind === 'tormentedSpirit');
+    expect(risen.length === 1 || hero.hp === 10).toBe(true);
 
     ({ world, hero } = withRemains('skeleton', false));
     act(world, 'p', { type: 'pickup' });

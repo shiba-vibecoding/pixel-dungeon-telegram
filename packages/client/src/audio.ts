@@ -27,7 +27,9 @@ export type Sample =
   | 'hit' | 'miss' | 'step' | 'water' | 'death' | 'levelup' | 'descend' | 'door_open' | 'secret' | 'alert'
   | 'click' | 'boss' | 'gold' | 'item' | 'drink' | 'bones' | 'read' | 'teleport' | 'trap' | 'lightning' | 'burning'
   | 'zap' | 'unlock' | 'ghost' | 'eat' | 'shatter' | 'dewdrop' | 'puff' | 'rocks' | 'falling' | 'blast' | 'evoke'
-  | 'beacon' | 'bee' | 'cursed' | 'badge' | 'degrade';
+  | 'beacon' | 'bee' | 'cursed' | 'badge' | 'degrade'
+  /** Shattered's sounds the monsters make (Assets.Sounds); until their files are in, each plays its nearest (SAMPLE_STAND_INS). */
+  | 'mimic' | 'ray' | 'chains' | 'charms' | 'debuff' | 'hit_parry' | 'hit_strong' | 'chargeup' | 'gas' | 'hit_magic';
 
 /** Sounds made here rather than loaded. */
 export type Synth =
@@ -54,7 +56,17 @@ const SAMPLES: readonly Sample[] = [
   'hit', 'miss', 'step', 'water', 'death', 'levelup', 'descend', 'door_open', 'secret', 'alert',
   'click', 'boss', 'gold', 'item', 'drink', 'bones', 'read', 'teleport', 'trap', 'lightning', 'burning', 'zap', 'unlock', 'ghost',
   'eat', 'shatter', 'dewdrop', 'puff', 'rocks', 'falling', 'blast', 'evoke', 'beacon', 'bee', 'cursed', 'badge', 'degrade',
+  'mimic', 'ray', 'chains', 'charms', 'debuff', 'hit_parry', 'hit_strong', 'chargeup', 'gas', 'hit_magic',
 ];
+
+/**
+ * Shattered's sounds not loaded yet: the nearest one there is plays instead, until the file
+ * (assets/sounds/<name>.mp3 of Shattered) is put in public/audio, when the sound itself plays.
+ */
+const SAMPLE_STAND_INS: Partial<Record<Sample, Sample>> = {
+  mimic: 'hit', ray: 'zap', chains: 'unlock', charms: 'ghost', debuff: 'cursed', hit_parry: 'miss', hit_strong: 'hit',
+  chargeup: 'evoke', gas: 'puff', hit_magic: 'zap',
+};
 
 /** How much a sound's pitch wanders from play to play (a fraction), if not the default. */
 const VARY: Partial<Record<Sound, number>> = {
@@ -488,7 +500,7 @@ class Audio {
   play(name: Sound, rate = 1, volume = 1, at?: Place, pan?: number): void {
     const ctx = this.context;
     if (!this.enabled || !ctx || !this.sfx || document.hidden || ctx.state !== 'running') return;
-    const buffer = this.buffers.get(name);
+    const buffer = this.buffers.get(name) ?? this.buffers.get(SAMPLE_STAND_INS[name as Sample] ?? name);
     if (!buffer) return;
     const now = performance.now();
     // Not the same sound on top of itself, nor too many at once.

@@ -2,11 +2,14 @@ import { wear } from './wear';
 import { identifyBelongings, observeBelongings } from './ident';
 import { mobAct, populate, reinforce, respawn, TIME_TO_RESPAWN } from './ai';
 import {
-  createHero, createMob, type Hero, heroAttackDelay, heroSpeed, isAlive, isShopkeeper, type Mob, type PlayerInfo, ringBonus,
+  createHero, createMob, type Hero, heroAttackDelay, heroSpeed, isAlive, isShopkeeper, type Mob, type MobKind, type PlayerInfo, ringBonus,
 } from './actors';
-import { heroTurns, search, TIME_TO_SEARCH } from './hero';
+import { heroTurns, isEnemy, search, TIME_TO_SEARCH } from './hero';
 import { startingKit } from './heroclass';
 import { type Note, noteLandmarks } from './journal';
+import type { LimitedDrop } from './mobs';
+import { bleedTick } from './afflict';
+import { ambush } from './mobskills';
 import { attack, CRIPPLE_TURNS, hurt } from './combat';
 import {
   canEnter, type Char, charAt, type Ctx, dropItem, type Effect, enterCell, exploredCells, type Floor, freeCellNear, heroesOn,
@@ -136,6 +139,12 @@ export interface World {
   arena?: ArenaState;
   /** The journal's notes of what the party has come across (journal.ts; absent until the first). */
   notes?: Note[];
+  /** Dungeon.LimitedDrops kept by the monsters (mobs.ts): how many of each drop have come so far. */
+  limitedDrops?: Partial<Record<LimitedDrop, number>>;
+  /** Dungeon.mobsToChampion: monsters still to come before the next champion (CHAMPION_ENEMIES; spawner.ts). */
+  mobsToChampion?: number;
+  /** The bestiary (Bestiary.setSeen, countEncounter): monsters the party has seen, and how many of each were slain. */
+  bestiary?: Partial<Record<MobKind, { seen: boolean; slain: number }>>;
 }
 
 /** The kinds of run: down the dungeon, or the arena of waves. */
@@ -846,6 +855,9 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   hero.dizzy = Math.max(0, hero.dizzy - time);
   hero.barkskin = Math.max(0, (hero.barkskin ?? 0) - time);
   if (hero.blessed) hero.blessed = Math.max(0, hero.blessed - time);
+  if (hero.vulnerable) hero.vulnerable = Math.max(0, hero.vulnerable - time);
+  if (hero.hexed) hero.hexed = Math.max(0, hero.hexed - time);
+  if (hero.degraded) hero.degraded = Math.max(0, hero.degraded - time);
   sungrassHeals(hero, time);
   if (hero.charmed <= 0) hero.charmedBy = null;
 
@@ -880,12 +892,12 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
     }
   }
   if (hero.blind) hero.blind = Math.max(0, hero.blind - time);
-  // Bleeding: every turn it hurts, and eases, until it stops (Bleeding.act).
+  // Bleeding: every turn it hurts as much as it bleeds, and eases, until it stops (Bleeding.act).
   for (let i = Math.floor(hero.time) - Math.floor(hero.time - time); i > 0 && (hero.bleeding ?? 0) > 0 && isAlive(hero); i--) {
-    hero.bleeding = ctx.rng.intRange(Math.trunc(hero.bleeding! / 2), hero.bleeding!);
-    if (hero.bleeding <= 0) break;
-    ctx.effects.push({ type: 'hurt', depth: hero.depth, who: hero.id, damage: hero.bleeding });
-    hurt(ctx, hero, hero.bleeding, 'bleeding');
+    const damage = bleedTick(ctx.rng, hero);
+    if (damage <= 0) break;
+    ctx.effects.push({ type: 'hurt', depth: hero.depth, who: hero.id, damage });
+    hurt(ctx, hero, damage, 'bleeding');
   }
   if (hero.levitating) hero.levitating = Math.max(0, hero.levitating - time);
   if (hero.gasImmune) hero.gasImmune = Math.max(0, hero.gasImmune - time);
@@ -983,7 +995,13 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
 
     case 'attack': {
       const mob = mobById(world, hero.depth, action.target)!;
-      if (mob.state === 'passive') {
+      // Mimic.interact: bumping into a hidden mimic, it springs (the hero's turn goes on it).
+      if (mob.hidden) {
+        ambush(ctx, mob, hero);
+        spend(ctx, hero, 1);
+        break;
+      }
+      if (mob.state === 'passive' && !isEnemy(mob)) {
         // Not a fight: a word with the sad ghost, or business with the
         // shopkeeper; it takes no time.
         if (isShopkeeper(mob)) ctx.effects.push({ type: 'shop', hero: hero.id });

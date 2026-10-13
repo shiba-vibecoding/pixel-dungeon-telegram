@@ -1,3 +1,4 @@
+import { drawAura, drawBeams } from './mobfx';
 import { HEIGHT, type Level, LENGTH, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
 import { FALL_MS, type Puppet, TILE, type View } from './view';
@@ -174,8 +175,10 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.fillRect(snap(x + 5), snap(y + TILE - 3), 6, 1);
   }
 
+  drawAura(ctx, puppet, x, y, now);
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
+  if (puppet.alpha !== undefined) ctx.globalAlpha = puppet.alpha;
   if (puppet.fallStart !== undefined) {
     // MobSprite.fall: into a chasm, spinning (720 degrees a second, one way or the other) and
     // shrinking away to nothing about the middle of its feet' cell, fading as it goes.
@@ -203,6 +206,13 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.translate(dx, dy);
   }
   ctx.drawImage(sheet.image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+  if (puppet.sprite.brightness !== undefined) {
+    // CharSprite.brightness: darker, its own pixels only.
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = `rgba(0, 0, 0, ${1 - puppet.sprite.brightness})`;
+    ctx.fillRect(0, 0, sheet.w, sheet.h);
+    ctx.globalCompositeOperation = 'source-over';
+  }
   if (now < puppet.flashUntil) {
     // Hit flash: adding the sprite onto itself brightens only its own pixels.
     ctx.globalCompositeOperation = 'lighter';
@@ -514,6 +524,7 @@ export function render(
     }
   }
 
+  drawBeams(ctx, view, now);
   fx.draw(ctx, now, seen);
 
   // Floating numbers and words, drawn at screen resolution so text stays crisp.

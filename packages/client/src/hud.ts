@@ -26,6 +26,8 @@ export const BUFF_ICONS = {
   levitation: 1, blindness: 16, immunity: 25, deferred: 28, bleeding: 26, sacrifice: 31,
   // From 1000: Shattered's buffs.png (assets/spd/buffs.png), BuffIndicator.SEAL_SHIELD and LOCKED_FLOOR.
   sealShield: 1084, lockedFloor: 1035, bless: 1037,
+  // The monsters' curses (mobs stream): BuffIndicator.VULNERABLE, HEX, DEGRADE.
+  vulnerable: 1046, hex: 1047, degrade: 1048,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 
@@ -63,6 +65,9 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
       ? [{ name: 'sealShield' as const, turns: me.sealShield.shield > 0 ? me.sealShield.shield : me.sealShield.cooldown }] : []),
     ...(me.lockedFloor !== undefined ? [{ name: 'lockedFloor' as const }] : []),
     ...((me.blessed ?? 0) > 0 ? [{ name: 'bless' as const, turns: Math.ceil(me.blessed!) }] : []),
+    ...((me.vulnerable ?? 0) > 0 ? [{ name: 'vulnerable' as const, turns: turns(me.vulnerable!) }] : []),
+    ...((me.hexed ?? 0) > 0 ? [{ name: 'hex' as const, turns: turns(me.hexed!) }] : []),
+    ...((me.degraded ?? 0) > 0 ? [{ name: 'degrade' as const, turns: turns(me.degraded!) }] : []),
   ];
 }
 

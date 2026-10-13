@@ -1,10 +1,14 @@
-import { challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, journalNotes, type Landmark, S, type World } from '@pd/core';
+import {
+  challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, journalNotes, type Landmark, type Mob, type MobKind, S,
+  type World,
+} from '@pd/core';
 import { audio } from './audio';
 import { fx } from './fx';
 import { capitalize, lang, locale, t } from './i18n';
 import { itemInfo, itemName } from './itemtext';
 import { type FxMode, quality } from './quality';
-import { el, info, show, sprites, windowOf } from './screens';
+import { el, info, portrait, show, sprites, windowOf } from './screens';
+import { mobDescription } from './examine';
 import { canFullscreen, haptics, isFullscreen, openExternal, setFullscreen } from './telegram';
 import { hints } from './hints';
 
@@ -476,6 +480,10 @@ function catalogView(options: JournalOptions, category: number, choose: (categor
     node.setAttribute('aria-selected', String(i === category));
     tabs.append(node);
   });
+  if (category === CATALOG.length) {
+    void hero;
+    return el('div', {}, tabs, bestiaryView(options));
+  }
   const { category: kind, silhouette } = CATALOG[category]!;
   const kinds = (Object.keys(ITEMS) as ItemKind[]).filter((k) => itemDef(k).category === kind);
   const known = kinds.filter((k) => world.known.includes(k));
@@ -522,6 +530,62 @@ function catalogView(options: JournalOptions, category: number, choose: (categor
     grid,
     detail,
   );
+}
+
+/** Bestiary.REGIONAL, UNIVERSAL, RARE and QUEST, in Shattered's order (the bosses are the bosses stream's). */
+const BESTIARY: ReadonlyArray<readonly MobKind[]> = [
+  ['rat', 'snake', 'gnoll', 'swarm', 'crab', 'slime', 'skeleton', 'thief', 'dm100', 'guard', 'necromancer', 'bat', 'brute', 'shaman',
+    'blueShaman', 'purpleShaman', 'spinner', 'dm200', 'ghoul', 'elemental', 'frostElemental', 'shockElemental', 'warlock', 'monk', 'golem',
+    'ripper', 'spawner', 'succubus', 'eye', 'scorpio'],
+  ['wraith', 'piranha', 'mimic', 'goldenMimic', 'ebonyMimic', 'statue'],
+  ['albino', 'gnollExile', 'hermitCrab', 'causticSlime', 'bandit', 'spectralNecromancer', 'shielded', 'dm201', 'chaosElemental', 'senior',
+    'acidic', 'tormentedSpirit', 'phantomPiranha', 'crystalMimic', 'armoredStatue'],
+  ['fetidRat', 'gnollTrickster', 'greatCrab'],
+];
+
+/**
+ * WndJournal.CatalogTab's bestiary: every monster of Shattered's roster, by group — those the party has seen this run
+ * shown, the rest as dark shapes; a tap tells what it is and how many have been slain.
+ */
+function bestiaryView(options: JournalOptions): HTMLElement {
+  const { world } = options;
+  const book = world.bestiary ?? {};
+  const all = BESTIARY.flat();
+  const detail = el('div', { className: 'pd-cat-detail' });
+  const body = el('div', {}, el('div', { className: 'pd-cat-count', textContent: t.meta.seenCount(all.filter((k) => book[k]?.seen).length, all.length) }));
+  BESTIARY.forEach((kinds, group) => {
+    body.append(el('div', { className: 'pd-jdepth-mark', textContent: capitalize(t.meta.bestiaryGroups[group]!) }));
+    const grid = el('div', { className: 'pd-grid pd-catalog' });
+    grid.setAttribute('role', 'listbox');
+    for (const kind of kinds) {
+      const seen = book[kind]?.seen === true;
+      const face = portrait(kind);
+      if (!seen) face.classList.add('silhouette');
+      const slot = el('button', {
+        className: `pd-slot${seen ? '' : ' unknown'}`,
+        ariaLabel: seen ? t.mobs[kind] : '?',
+        onclick: () => {
+          click();
+          body.querySelectorAll('.selected').forEach((node) => node.classList.remove('selected'));
+          slot.classList.add('selected');
+          const slain = book[kind]?.slain ?? 0;
+          detail.className = `pd-cat-detail${seen ? '' : ' unknown'}`;
+          detail.replaceChildren(
+            portrait(kind),
+            el('span', {}, el('b', { textContent: seen ? capitalize(t.mobs[kind]) : '???' }),
+              el('small', { textContent: seen ? (slain > 0 ? t.meta.enemyCount(slain) : '') : t.meta.notSeenEnemy })),
+          );
+          if (!seen) detail.firstElementChild!.classList.add('silhouette');
+          if (seen) detail.append(el('p', { className: 'pd-note', textContent: mobDescription({ kind } as Mob)[0] ?? '' }));
+        },
+      }, face);
+      slot.setAttribute('role', 'option');
+      grid.append(slot);
+    }
+    body.append(grid);
+  });
+  body.append(detail);
+  return body;
 }
 
 function itemIcon(sprite: number, silhouette: boolean): HTMLElement {

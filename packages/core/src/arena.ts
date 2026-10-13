@@ -1,4 +1,5 @@
-import { createMob, type Hero, isAlive, isHungry, type Mob, type MobKind, rollMob } from './actors';
+import { createMob, type Hero, isAlive, isHungry, type Mob, type MobKind } from './actors';
+import { rollMob } from './spawner';
 import { canEnter, charAt, type Ctx, dropItem, enterCell, type Floor, freeCellNear, leaveCell, observe } from './floor';
 import { collect } from './inventory';
 import { createItem, type Item, itemDef, type ItemKind, ITEMS, missileStats, rollFood } from './items';

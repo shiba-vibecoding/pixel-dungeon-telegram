@@ -35,7 +35,8 @@ describe('mimics', () => {
     const mimic = floorAt(world, 1).mobs.find((m) => m.kind === 'mimic')!;
     expect(mimic.pos).toBe(pos);
     expect(hero.pos).not.toBe(pos);
-    expect(mimic.ht).toBe(16);
+    // Mimic.adjustStats: (1 + level) * 6.
+    expect(mimic.ht).toBe(12);
     // Slain, it gives the treasure back.
     hero.attackSkill = 1000;
     for (let i = 0; i < 30 && floorAt(world, 1).mobs.includes(mimic); i++) act(world, 'p', { type: 'attack', target: mimic.id });

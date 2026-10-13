@@ -43,7 +43,7 @@ describe('the prison', () => {
       }
       expect(floorAt(world, 10).mobs, 'Tengu waits for the arena').toEqual([]);
     }
-    for (const kind of ['skeleton', 'thief', 'swarm', 'shaman']) expect(kinds).toContain(kind);
+    for (const kind of ['skeleton', 'thief', 'swarm', 'dm100', 'guard', 'necromancer']) expect(kinds).toContain(kind);
     expect(kinds).not.toContain('rat');
   });
 
@@ -98,7 +98,7 @@ describe('the prison', () => {
     expect(result.ok && result.effects.some((e) => e.type === 'hurt' && e.who === 'p')).toBe(true);
   });
 
-  it('a shaman strikes with lightning from afar', () => {
+  it('a DM-100 strikes with lightning from afar', () => {
     for (let seed = 1; seed <= 30; seed++) {
       const world = at(7, seed);
       const hero = heroById(world, 'p')!;
@@ -108,20 +108,21 @@ describe('the prison', () => {
         (c) => canEnter(level, c) && level.map[c] !== T.DOOR && canEnter(level, (c + hero.pos) / 2) && !charAt(world, 7, c),
       );
       if (far === undefined || !Number.isInteger((far + hero.pos) / 2)) continue;
-      const shaman = createMob('#shaman', 'shaman', far, 'hunting', floorAt(world, 7).now);
+      const shaman = createMob('#shaman', 'dm100', far, 'hunting', floorAt(world, 7).now);
       Object.assign(shaman, { enemy: 'p', target: hero.pos, enemySeen: true });
       floorAt(world, 7).mobs.push(shaman);
+      hero.hp = hero.ht = 500;
       const effects: Effect[] = [];
       for (let i = 0; i < 6; i++) {
         const result = act(world, 'p', { type: 'search' });
         if (result.ok) effects.push(...result.effects);
       }
-      const bolt = effects.find((e) => e.type === 'zapped' && e.bolt === 'lightning');
+      const bolt = effects.find((e) => e.type === 'mobZap' && e.bolt === 'lightning');
       if (!bolt) continue;
       expect(effects.some((e) => e.type === 'attack' && e.attacker === '#shaman')).toBe(true);
       return;
     }
-    throw new Error('the shaman never cast');
+    throw new Error('the DM-100 never cast');
   });
 
   it('a brute flies into a rage when badly hurt; a bat heals as it bites', () => {
@@ -405,7 +406,8 @@ describe("Tengu's prison", () => {
     for (const seed of [11, 12]) {
       const world = at(6, seed);
       const hero = heroById(world, 'p')!;
-      Object.assign(hero, { attackSkill: 200, defenseSkill: 30, ht: 3000, hp: 3000 });
+      // (Strong enough to outhit a necromancer healing its skeleton, as this simple bot only fights what blocks it.)
+      Object.assign(hero, { attackSkill: 200, defenseSkill: 30, ht: 3000, hp: 3000, str: 40 });
       for (let i = 0; i < 6000 && isAlive(hero) && hero.depth < 10; i++) {
         const result = act(world, 'p', botAction(world, 'p', 10));
         if (!result.ok) act(world, 'p', { type: 'wait' });

@@ -10,10 +10,11 @@ import {
 import * as core from '@pd/core';
 import './ui.css';
 import './game.css';
-import { mobDescription, plantText, tileText, wellText } from './examine';
+import { mobDescription, mobName, plantText, tileText, wellText } from './examine';
 import { chooseQuickslot, isPlaceholder, quickIndex, quickKind, quickUse, syncQuickslots, visibleQuickslots } from './quickslot';
 import { fx } from './fx';
 import { ambientFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
+import { mobAmbient } from './mobfx';
 /** The visual clock's last reading, for frame-to-frame particle steps. */
 let lastVisual = 0;
 /** When my hero fell, on the visual clock, or 0 while alive. */
@@ -1790,7 +1791,7 @@ function examineCell(pos: number): void {
   if (char && 'kind' in char) {
     const state = char.state === 'passive' ? '' : t.mobStates[char.state] ?? '';
     const health = char.state === 'passive' ? '' : t.examineHealth(Math.max(0, char.hp), char.ht);
-    showInfo(t.mobs[char.kind], [mobDescription(char), state], hideOverlay, {
+    showInfo(mobName(char, t.mobs[char.kind]), [...mobDescription(char, (item) => itemName(world, item)), state], hideOverlay, {
       icon: portrait(char.kind),
       ...(health ? { health: [Math.max(0, char.hp), char.ht] as const } : {}),
     });
@@ -2333,6 +2334,7 @@ function tick(now: number): void {
   step(world, now, visible);
   fx.update(vnow, dt);
   ambientFx(view, vnow, dt);
+  mobAmbient(view, vnow, dt);
   regionFx(level, visible, vnow, dt);
 
   const mine = view.puppets.get(me.id);

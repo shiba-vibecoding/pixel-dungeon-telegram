@@ -1,4 +1,7 @@
-import { beckon, createMob, type Hero, heroArmor, isAlive, type Mob, type MobKind, MOBS, mobStats, rollMob } from './actors';
+import { beckon, createMob, type Hero, heroArmor, isAlive, type Mob, type MobKind, MOBS, mobStats } from './actors';
+import { dealMob } from './spawner';
+import { bleedTick } from './afflict';
+import { hasProp } from './props';
 import { CRIPPLE_TURNS, earnExp, hurt } from './combat';
 import { charAt, type Char, type Ctx, enterCell, exploredCells, heroesOn, isHero, isPassable, isWater, leaveCell } from './floor';
 import { distance, NEIGHBOURS8 } from './level/geometry';
@@ -44,7 +47,11 @@ export type Burst = 'toxic' | 'paralytic' | 'fire' | 'frost' | 'purity';
  */
 export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost'): boolean {
   if (isHero(char)) return harm === 'gas' && (char.gasImmune ?? 0) > 0;
-  if (char.kind === 'piranha') return true;
+  // Piranha: the blobs but electricity and freezing, and burning.
+  if (char.kind === 'piranha' || char.kind === 'phantomPiranha') return harm !== 'frost';
+  // Char.Property: the fiery do not burn, the icy do not freeze (FIERY, ICY immunities); a blazing champion does not burn.
+  if (harm === 'burning' && (hasProp(char, 'fiery') || char.champion === 'blazing')) return true;
+  if (harm === 'frost' && hasProp(char, 'icy')) return true;
   // DM-300 breathes its own fumes unharmed.
   if (harm === 'gas' && char.kind === 'dm300') return true;
   return harm !== 'frost' && (char.kind === 'yog' || (harm === 'burning' && char.kind === 'burningFist'));
@@ -69,6 +76,11 @@ export function burst(ctx: Ctx, pos: number, kind: Burst, radius = GAS_RADIUS, s
     if (kind === 'fire' && !isWater(level.map[char.pos]!) && !immuneTo(char, 'burning')) {
       char.burning = Math.max(char.burning ?? 0, BURNING_TURNS);
     }
+    // Elemental.add: frost does a fire elemental harm instead (half to three fifths of its health).
+    if (kind === 'frost' && !isHero(char) && char.kind === 'elemental') {
+      elementalHarm(ctx, char);
+      continue;
+    }
     // Freezing: frozen stiff, and any fire put out.
     if (kind === 'frost' && !immuneTo(char, 'frost')) {
       char.paralysed = Math.max(char.paralysed ?? 0, Math.round(FROST_TURNS * ctx.rng.floatRange(1, 1.5)));
@@ -87,6 +99,13 @@ export function burst(ctx: Ctx, pos: number, kind: Burst, radius = GAS_RADIUS, s
       ctx.effects.push({ type: 'burnt', depth: ctx.depth, pos: cell });
     }
   }
+}
+
+/** Elemental.add with one of its harmfulBuffs: half to three fifths of its health, instead of the buff. */
+export function elementalHarm(ctx: Ctx, mob: Mob): void {
+  const damage = ctx.rng.normalIntRange(Math.trunc(mob.ht / 2), Math.trunc((mob.ht * 3) / 5));
+  ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage });
+  hurt(ctx, mob, damage, 'burning');
 }
 
 /** Everyone alive within `radius` of a cell. */
@@ -159,7 +178,9 @@ export function triggerTrap(ctx: Ctx, victim: Char | null, pos: number): void {
       const cells = NEIGHBOURS8.map((n) => pos + n).filter((c) => isPassable(level, c) && !charAt(ctx.world, depth, c));
       for (let i = 0; i < count && cells.length > 0; i++) {
         const cell = cells.splice(rng.index(cells.length), 1)[0]!;
-        const summoned: Mob = scaleMob(ctx.world, createMob(`#${++ctx.world.nextId}`, rollMob(rng, depth, false), cell, 'wandering', ctx.floor.now + 1));
+        // SummoningTrap: the level's next monsters (Level.createMob), wandering towards the trap.
+        const summoned: Mob = dealMob(ctx.world, level, rng, `#${++ctx.world.nextId}`, cell, ctx.floor.now + 1);
+        if (summoned.state !== 'passive') summoned.state = 'wandering';
         summoned.target = pos;
         ctx.floor.mobs.push(summoned);
       }
@@ -216,12 +237,17 @@ export function mobConditions(ctx: Ctx, mob: Mob): boolean {
   if ((mob.rooted ?? 0) > 0) mob.rooted!--;
   if ((mob.rage ?? 0) > 0) mob.rage!--;
   if ((mob.blind ?? 0) > 0) mob.blind!--;
-  // Bleeding: it hurts every turn, and eases, until it stops.
+  if ((mob.weakened ?? 0) > 0) mob.weakened!--;
+  if ((mob.vulnerable ?? 0) > 0) mob.vulnerable!--;
+  if ((mob.hexed ?? 0) > 0) mob.hexed!--;
+  // Barrier.act: a succubus's shield fades, a point once a twentieth of it a turn (at most a point) has gathered.
+  if ((mob.barrier ?? 0) > 0 && --mob.barrier! <= 0) delete mob.barrier;
+  // Bleeding: it hurts every turn as much as it bleeds, and eases, until it stops (Bleeding.act).
   if ((mob.bleeding ?? 0) > 0) {
-    mob.bleeding = ctx.rng.intRange(Math.trunc(mob.bleeding! / 2), mob.bleeding!);
-    if (mob.bleeding > 0) {
-      ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage: mob.bleeding });
-      hurt(ctx, mob, mob.bleeding, 'bleeding');
+    const damage = bleedTick(ctx.rng, mob);
+    if (damage > 0) {
+      ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage });
+      hurt(ctx, mob, damage, 'bleeding');
       if (!isAlive(mob)) return true;
     }
   }
@@ -231,13 +257,15 @@ export function mobConditions(ctx: Ctx, mob: Mob): boolean {
     hurt(ctx, mob, 1, 'poison');
     if (!isAlive(mob)) return true;
   }
+  // Elemental.add: burning does a frost elemental harm instead.
+  if ((mob.burning ?? 0) > 0 && mob.kind === 'frostElemental') {
+    mob.burning = 0;
+    elementalHarm(ctx, mob);
+    if (!isAlive(mob)) return true;
+  }
   if ((mob.burning ?? 0) > 0) {
     mob.burning!--;
-    if (mob.kind === 'elemental') {
-      // Fire only feeds a fire elemental (Elemental.add).
-      mob.burning = 0;
-      if (mob.hp < mob.ht) mob.hp++;
-    } else if (isWater(ctx.level.map[mob.pos]!) || immuneTo(mob, 'burning')) {
+    if (isWater(ctx.level.map[mob.pos]!) || immuneTo(mob, 'burning')) {
       mob.burning = 0;
     } else {
       const damage = ctx.rng.intRange(1, 3 + Math.trunc(ctx.depth / 4));

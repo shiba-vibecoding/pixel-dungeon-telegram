@@ -122,7 +122,7 @@ describe('a wave', () => {
     const mobs = floorAt(world, 1).mobs;
     expect(mobs.length).toBeGreaterThan(0);
     expect(mobs.every((m) => m.state === 'hunting' && m.enemy === 'p')).toBe(true);
-    expect(mobs.every((m) => m.kind === 'rat' || m.kind === 'albino')).toBe(true);
+    expect(mobs.every((m) => m.kind === 'rat' || m.kind === 'albino' || m.kind === 'snake')).toBe(true);
     // A strong hero fights the wave off.
     strengthen(world, 'p');
     for (let i = 0; i < 400 && world.arena!.phase === 'fight'; i++) {

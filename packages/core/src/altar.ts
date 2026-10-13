@@ -1,4 +1,4 @@
-import { type Hero, isShopkeeper, maxExp, type Mob, mobStats } from './actors';
+import { beckon, type Hero, isShopkeeper, maxExp, type Mob, mobStats } from './actors';
 import { hurt } from './combat';
 import { type Char, type Ctx, dropItem, isHero, leaveCell } from './floor';
 import { createItem } from './items';
@@ -30,11 +30,8 @@ export function altarCallsMob(ctx: Ctx, mob: Mob): void {
   } else if ((mob.marked ?? 0) > 0) {
     mob.marked!--;
   }
-  // Mob.beckon: whoever is not already after someone heads for the fire.
-  if (mob.state !== 'hunting') {
-    mob.state = 'wandering';
-    mob.target = fire.pos;
-  }
+  // Mob.beckon: whoever is not already after someone (nor running) heads for the fire.
+  if (mob.state !== 'hunting' && mob.state !== 'fleeing') beckon(mob, fire.pos);
 }
 
 /** SacrificialFire.evolve, for a hero's time passing: marked while in the fire, and a while after. */

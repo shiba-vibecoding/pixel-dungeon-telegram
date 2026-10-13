@@ -1,6 +1,7 @@
+import { hasProp } from './props';
 import { isAlive, MOBS } from './actors';
 import { hurt } from './combat';
-import { type Char, type Ctx, type Floor, heroesOn } from './floor';
+import { type Char, type Ctx, type Floor, heroesOn, isHero } from './floor';
 import { distance, HEIGHT, LENGTH, WIDTH } from './level/geometry';
 import { F, hasFlag } from './level/terrain';
 import { immuneTo } from './traps';
@@ -126,14 +127,18 @@ function evolveWeb(ctx: Ctx, web: Array<[number, number]>): void {
   }
 }
 
-const ROOTS_IMMUNE: ReadonlySet<string> = new Set(['spinner', 'piranha', 'ghost', 'curse']);
+const ROOTS_IMMUNE: ReadonlySet<string> = new Set(['spinner', 'piranha', 'phantomPiranha', 'ghost', 'curse', 'spawner', 'dm201']);
 
 /** Everyone on the depth who breathes: heroes, and monsters other than the harmless. */
 function breathers(ctx: Ctx): Char[] {
-  return [...heroesOn(ctx.world, ctx.depth), ...ctx.floor.mobs.filter((mob) => mob.state !== 'passive')];
+  return [...heroesOn(ctx.world, ctx.depth), ...ctx.floor.mobs.filter((mob) => mob.state !== 'passive' || mob.kind === 'spawner')];
 }
 
 function breathe(ctx: Ctx, char: Char, kind: GasKind): void {
+  // Char.Property: the inorganic breathe no toxic gas (INORGANIC immunities); the static know no paralysis, nor does a
+  // fetid rat its own stench (StenchGas).
+  if (kind === 'toxic' && hasProp(char, 'inorganic')) return;
+  if (kind === 'paralytic' && (hasProp(char, 'static') || (!isHero(char) && char.kind === 'fetidRat'))) return;
   if (kind === 'paralytic') {
     char.paralysed = Math.max(char.paralysed ?? 0, PARALYSIS_TURNS);
     return;

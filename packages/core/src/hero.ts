@@ -1,3 +1,4 @@
+import { isEnemy } from './mobs';
 import { type Hero, isAlive, type Mob, type MobKind, ringBonus } from './actors';
 import { hurt } from './combat';
 import { type Ctx, exploredCells, heroView } from './floor';
@@ -294,5 +295,5 @@ export function visibleEnemies(world: World, hero: Hero): Mob[] {
   return (world.floors[hero.depth]?.mobs ?? []).filter((mob) => fov[mob.pos] && isAlive(mob) && isEnemy(mob));
 }
 
-/** Mob.alignment == ENEMY: not passive (the ghost, keepers, quest givers, the bee and the images) and not charmed into an ally. */
-export const isEnemy = (mob: Mob): boolean => mob.state !== 'passive' && mob.kind !== 'mirror';
+/** Mob.alignment == ENEMY: not the folk (the ghost, keepers, quest givers), the bee, the images, nor the heroes' allies (mobs.ts). */
+export { isEnemy };

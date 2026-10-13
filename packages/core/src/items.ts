@@ -651,7 +651,9 @@ export class ItemGenerator {
 
 /** `forSale`: a shop's wares, bought rather than picked up. */
 /** hidden: unseen until a hero searches right next to it. */
-export type HeapKind = 'heap' | 'chest' | 'skeleton' | 'tomb' | 'forSale' | 'mimic' | 'lockedChest' | 'crystalChest' | 'hidden';
+/** `goldenMimic` and `crystalMimic`: mimics looking like a locked and a crystal chest (GoldenMimic, CrystalMimic). */
+export type HeapKind =
+  | 'heap' | 'chest' | 'skeleton' | 'tomb' | 'forSale' | 'mimic' | 'lockedChest' | 'crystalChest' | 'hidden' | 'goldenMimic' | 'crystalMimic';
 
 export interface Heap {
   pos: number;
@@ -663,6 +665,7 @@ export interface Heap {
 /** A mimic looks just like a chest. */
 export const HEAP_SPRITES: Readonly<Record<Exclude<HeapKind, 'heap' | 'forSale'>, number>> = {
   chest: S.CHEST, skeleton: S.BONES, tomb: S.TOMB, mimic: S.CHEST, lockedChest: S.LOCKED_CHEST, crystalChest: S.CRYSTAL_CHEST,
+  goldenMimic: S.LOCKED_CHEST, crystalMimic: S.CRYSTAL_CHEST,
   hidden: S.SOMETHING, // never drawn
 };
 

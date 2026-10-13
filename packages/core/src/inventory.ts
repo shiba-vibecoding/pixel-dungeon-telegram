@@ -1,7 +1,7 @@
 import { mend, wear } from './wear';
 import { chargesKnown, identify, isIdentified, learn, WAND_USAGES_TO_KNOW } from './ident';
 import {
-  BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, heroRangedSkill, isAlive, maxExp, type Mob, mobStats, type SubClass,
+  BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, heroRangedSkill, isAlive, maxExp, type Mob, type MobKind, mobStats, type SubClass,
   SUBCLASSES,
 } from './actors';
 import { affectHunger, growHT } from './hero';
@@ -14,7 +14,7 @@ import {
   canEnter, charAt, type Ctx, dropItem, enterCell, exploredCells, heroView, isHero, isPassable, isWater, landItem, leaveCell,
 } from './floor';
 import {
-  buyPrice, createItem, type Heap, isStackable, type Item, itemDef, ItemGenerator, type ItemKind, itemPrice,
+  buyPrice, createItem, type Heap, type HeapKind, isStackable, type Item, itemDef, ItemGenerator, type ItemKind, itemPrice,
   magicMissileDamage, missileStats, wandMaxCharges,
 } from './items';
 import { discoverable } from './level/flags';
@@ -31,6 +31,8 @@ import { wipeOut } from './altar';
 import { applyArmorKit, CLASS_ARMOR, CLASS_ARMOR_OF, classSpecial, specialProblem, TIME_TO_APPLY_KIT } from './classArmor';
 import type { World } from './world';
 import { scaleMob } from './party';
+import { ambush, cleanseSpirit, spawnWraith as spawnShatteredWraith } from './mobskills';
+import { mimicPrize } from './mobs';
 import { underChallenges } from './challenges';
 import {
   canTarget, defaultTarget, enchantItem, isItemRef, isTargetedScroll, itemAt, type ItemRef, TARGET_PROBLEMS, type TargetedScroll, upgradeItem,
@@ -647,7 +649,7 @@ export function collect(hero: Hero, item: Item): boolean {
 /** Opens a chest or remains if need be, and takes everything there is room for. */
 /** Heap.open: a chest unlocked (with the golden key, if it wants one), a tomb or remains disturbed; false if a mimic sprang instead. */
 function openHeap(ctx: Ctx, hero: Hero, heap: Heap): boolean {
-  if (heap.kind === 'mimic' && springMimic(ctx, hero, heap)) return false;
+  if (MIMIC_OF[heap.kind] && springMimic(ctx, hero, heap)) return false;
   // A locked or crystal chest: the golden key turns in its lock and stays there.
   if (heap.kind === 'lockedChest' || heap.kind === 'crystalChest') hero.items.splice(goldenKeyFor(hero), 1);
   if (heap.kind !== 'heap') {
@@ -694,7 +696,7 @@ function disturb(ctx: Ctx, hero: Hero, heap: Heap): void {
     const risen = NEIGHBOURS4.filter((n) => spawnWraith(ctx, hero.pos + n)).length;
     if (risen > 0) ctx.effects.push({ type: 'wraiths', depth: ctx.depth, pos: heap.pos });
   }
-  if (heap.kind === 'skeleton' && heap.items.some((item) => item.cursed) && !spawnWraith(ctx, heap.pos)) {
+  if (heap.kind === 'skeleton' && heap.items.some((item) => item.cursed) && !spawnWraith(ctx, heap.pos, true)) {
     const damage = Math.trunc(hero.hp / 2);
     ctx.effects.push({ type: 'wraiths', depth: ctx.depth, pos: heap.pos });
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: hero.id, damage });
@@ -702,15 +704,12 @@ function disturb(ctx: Ctx, hero: Hero, heap: Heap): void {
   }
 }
 
-/** Wraith.spawnAt: a wraith rises on a free open cell, already after the hero, and acts a little later. */
-function spawnWraith(ctx: Ctx, pos: number): boolean {
-  if (!isPassable(ctx.level, pos) || charAt(ctx.world, ctx.depth, pos)) return false;
-  const wraith = createMob(`#${++ctx.world.nextId}`, 'wraith', pos, 'hunting', ctx.floor.now + WRAITH_SPAWN_DELAY);
-  wraith.level = ctx.depth;
-  wraith.enemySeen = true;
-  ctx.floor.mobs.push(wraith);
-  enterCell(ctx.level, pos);
-  return true;
+/**
+ * Wraith.spawnAt: a wraith rises on a free cell (one in a hundred a tormented spirit), already after the hero, and
+ * acts a little later; a tomb's rise only where they are let out (Wraith.spawnAround), a skeleton's beside it too.
+ */
+function spawnWraith(ctx: Ctx, pos: number, allowAdjacent = false): boolean {
+  return spawnShatteredWraith(ctx, pos, undefined, undefined, allowAdjacent) !== null;
 }
 
 /**
@@ -818,14 +817,18 @@ const MEAT_BURNING_TURNS = 8;
 const ROOTED_TURNS = 10;
 const SLOWED_TURNS = 10;
 
+/** The mimic a heap is, if it is one (Mimic, GoldenMimic, CrystalMimic). */
+export const MIMIC_OF: Partial<Record<HeapKind, MobKind>> = { mimic: 'mimic', goldenMimic: 'goldenMimic', crystalMimic: 'crystalMimic' };
+
 /**
- * Mimic.spawnAt: the "chest" was a mimic. The hero is pushed aside and the
- * mimic, holding the treasure, attacks. False if there is no room to move.
+ * Mimic.interact: the "chest" was a mimic. The hero is pushed aside (if they stood on it) and the mimic, holding
+ * the treasure and a prize of its own (Mimic.generatePrize), springs at them with its ambush. False if there is
+ * no room to move.
  */
 function springMimic(ctx: Ctx, hero: Hero, heap: Heap): boolean {
   const { world, depth, level, rng, floor } = ctx;
   const cells = NEIGHBOURS8.map((n) => hero.pos + n).filter((c) => canEnter(level, c) && !charAt(world, depth, c));
-  if (cells.length === 0) {
+  if (cells.length === 0 && hero.pos === heap.pos) {
     heap.kind = 'chest';
     return false;
   }
@@ -838,13 +841,15 @@ function springMimic(ctx: Ctx, hero: Hero, heap: Heap): boolean {
     enterCell(level, to);
   }
   floor.heaps.splice(floor.heaps.indexOf(heap), 1);
-  const mimic = scaleMob(world, createMob(`#${++world.nextId}`, 'mimic', pos, 'hunting', floor.now + 1));
+  const kind = MIMIC_OF[heap.kind] ?? 'mimic';
+  const mimic = scaleMob(world, createMob(`#${++world.nextId}`, kind, pos, 'hunting', floor.now + 1));
   mimic.level = depth;
   mimic.ht = mimic.hp = mobStats(mimic).ht;
-  Object.assign(mimic, { enemy: hero.id, target: hero.pos, enemySeen: true, loot: heap.items });
+  mimic.loot = mimicPrize(rng, depth, kind, heap.items);
   floor.mobs.push(mimic);
   enterCell(level, pos);
   ctx.effects.push({ type: 'mimic', depth, mob: mimic.id, hero: hero.id });
+  ambush(ctx, mimic, hero);
   return true;
 }
 
@@ -1013,6 +1018,12 @@ function use(ctx: Ctx, hero: Hero, index: number, target: Item | undefined): voi
       break;
 
     case 'scroll.removeCurse': {
+      // ScrollOfRemoveCurse.doRead: beside a tormented spirit, the scroll lifts its curse instead.
+      const spirit = ctx.floor.mobs.find((mob) => mob.kind === 'tormentedSpirit' && adjacent(mob.pos, hero.pos) && isAlive(mob));
+      if (spirit) {
+        cleanseSpirit(ctx, spirit);
+        break;
+      }
       // ScrollOfRemoveCurse: every curse on what the reader wears or carries is lifted, and weakness with them.
       let count = 0;
       for (const item of [...hero.items, hero.weapon, hero.armor, ...hero.rings]) {
