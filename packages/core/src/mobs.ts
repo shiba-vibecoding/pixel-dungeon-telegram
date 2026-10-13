@@ -48,7 +48,7 @@ export const fits = (level: Level, mob: Mob, cell: number): boolean => !hasProp(
 
 /** The folk, the harmless and the heroes' own: not Char.Alignment.ENEMY. */
 const NOT_ENEMIES: ReadonlySet<MobKind> = new Set<MobKind>([
-  'ghost', 'shopkeeper', 'impShopkeeper', 'wandmaker', 'imp', 'blacksmith', 'ratKing', 'sheep', 'mirror', 'bee',
+  'ghost', 'shopkeeper', 'impShopkeeper', 'wandmaker', 'imp', 'blacksmith', 'ratKing', 'sheep', 'mirror',
 ]);
 
 /** Char.Alignment.ENEMY: a monster against the heroes (not the folk, not their allies). */

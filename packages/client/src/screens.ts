@@ -1669,7 +1669,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       use(kind === 'throw' ? t.throwItem : t.zap, () => aimWith(kind, index));
     }
     if (category === 'potion') use(t.throwItem, () => aimWith('throw', index));
-    if (category === 'honeypot') use(t.shatterPot, () => act({ type: 'use', item: index }));
+    if (item.kind === 'honeypot') use(t.shatterPot, () => act({ type: 'use', item: index }));
     // Item.AC_THROW: anything in the pack can be thrown where the player taps (a bag would scatter what it holds).
     if (!['bag', 'missile', 'bomb', 'honeypot', 'potion', 'seed'].includes(category)) use(t.throwItem, () => aimWith('throw', index));
     // QuickSlot: any item with a use can be kept one tap away: into the first free slot (or one whose item

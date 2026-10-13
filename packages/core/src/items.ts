@@ -159,6 +159,8 @@ export const ITEMS = {
   'food.overpriced': { category: 'food', sprite: S.OVERPRICED, energy: 150 },
   /** Shattered, it lets out a golden bee that fights for whoever broke it, for a while (Honeypot). */
   honeypot: { category: 'honeypot', sprite: S.HONEYPOT },
+  /** Honeypot.ShatteredPot: what is left of a broken honeypot, which its bee still guards. */
+  'honeypot.shattered': { category: 'honeypot', sprite: S.SHATTPOT },
   /** The sacrificial fire's reward: read, it kills every monster on the level but its boss (ScrollOfWipeOut). */
   wipeOut: { category: 'wipeout', sprite: S.HALLS_PAGE },
   /** Thrown, it blows up where it lands (Bomb). */
@@ -376,7 +378,8 @@ export function itemPrice(item: Item, known: boolean): number {
     case 'bomb':
       return 10 * item.qty;
     case 'honeypot':
-      return 50 * item.qty;
+      // ShatteredPot.value: five a pot.
+      return (item.kind === 'honeypot.shattered' ? 5 : 50) * item.qty;
     case 'bag':
       return 50;
     case 'wipeout':

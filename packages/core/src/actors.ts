@@ -463,8 +463,8 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   blacksmith: { name: 'troll blacksmith', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   imp: { name: 'ambitious imp', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   curse: { name: 'curse personification', ht: 16, attack: 12, defense: 12, damage: [3, 5], dr: 1, exp: 0, maxLvl: 5, speed: 0.5, flying: true },
-  /** Out of a honeypot: it fights for whoever broke it, and lives a turn less every turn (its numbers grow with the depth). */
-  bee: { name: 'golden bee', ht: 20, attack: 10, defense: 10, damage: [2, 5], dr: 0, exp: 0, maxLvl: 0, speed: 1, flying: true },
+  /** Out of a honeypot: it guards the pot's pieces against anyone near them (its numbers grow with the depth). */
+  bee: { name: 'golden bee', ht: 12, attack: 10, defense: 10, damage: [1, 3], dr: 0, exp: 0, maxLvl: ANY_LVL, speed: 1, flying: true },
   /** Asleep (or so he says) in his hidden treasury beside Goo's lair. */
   ratKing: { name: 'rat king', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 2 },
 };
@@ -490,7 +490,8 @@ export function mobStats(mob: Mob): MobStats {
     };
   }
   if (mob.kind === 'bee') {
-    const ht = (3 + depth) * 5;
+    // Bee.spawn: (2 + level) * 4 health, as accurate as it is evasive (9 + level), a tenth to a quarter of its health a sting.
+    const ht = (2 + depth) * 4;
     return { ...MOBS.bee, ht, attack: 9 + depth, defense: 9 + depth, damage: [Math.trunc(ht / 10), Math.trunc(ht / 4)] };
   }
   if (mob.kind === 'wraith') {
@@ -664,6 +665,8 @@ export interface Mob {
   /** GnollTrickster.combo; GreatCrab.moving. */
   combo?: number;
   moving?: number;
+  /** A golden bee's pot (Bee.potPos and potHolder): where its pieces lie (-1: carried, or gone), and who carries them. */
+  pot?: { pos: number; holder: string | null };
   /** An ebony mimic still hidden (Char.Alignment.NEUTRAL, Mimic.stealthy): a faint outline, waiting to be bumped into. */
   hidden?: boolean;
   /** Crystal mimic: Haste, turns left (it moves three times as fast). */

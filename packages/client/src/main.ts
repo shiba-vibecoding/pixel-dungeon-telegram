@@ -2519,7 +2519,8 @@ function tick(now: number): void {
   syncQuickslots(world, me);
   const quickState = (slot: number): QuickState | null => {
     const kind = quickKind(slot);
-    if (!kind) return null;
+    // (A kit's stand-in kind no stream has brought yet: KIT_SEAMS.)
+    if (!kind || !(kind in core.ITEMS)) return null;
     const item = me.items[quickIndex(me, slot)];
     if (!item || isPlaceholder(me, slot)) {
       return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };

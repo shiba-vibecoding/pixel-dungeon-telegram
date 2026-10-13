@@ -31,7 +31,7 @@ import { wipeOut } from './altar';
 import { applyArmorKit, CLASS_ARMOR, CLASS_ARMOR_OF, classSpecial, specialProblem, TIME_TO_APPLY_KIT } from './classArmor';
 import type { World } from './world';
 import { scaleMob } from './party';
-import { ambush, cleanseSpirit, spawnWraith as spawnShatteredWraith } from './mobskills';
+import { ambush, cleanseSpirit, potDropped, potPickedUp, spawnBee, spawnWraith as spawnShatteredWraith } from './mobskills';
 import { mimicPrize } from './mobs';
 import { underChallenges } from './challenges';
 import {
@@ -170,7 +170,8 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
   const category = itemDef(item.kind).category;
   switch (action.type) {
     case 'use':
-      if (!['potion', 'scroll', 'food', 'torch', 'kit', 'honeypot', 'vial', 'wipeout'].includes(category) && item.kind !== 'quest.fish') {
+      if ((!['potion', 'scroll', 'food', 'torch', 'kit', 'honeypot', 'vial', 'wipeout'].includes(category) && item.kind !== 'quest.fish') ||
+        item.kind === 'honeypot.shattered') {
         return 'that cannot be used';
       }
       if (category === 'kit' && CLASS_ARMOR.includes(hero.armor.kind)) return 'your armour is already a class armour';
@@ -271,11 +272,15 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
         drinkFromWaterskin(ctx, hero, hero.items[action.item]!);
         return TIME_TO_DRINK;
       }
-      if (itemDef(hero.items[action.item]!.kind).category === 'honeypot') {
-        // Honeypot.execute: shattered right where the hero stands.
+      if (hero.items[action.item]!.kind === 'honeypot') {
+        // Honeypot.execute: shattered right where the hero stands, its pieces kept (the bee is after whoever holds them).
         const pot = hero.items[action.item]!;
         if (--pot.qty <= 0) hero.items.splice(action.item, 1);
-        shatterHoneypot(ctx, hero.pos);
+        if (shatterHoneypot(ctx, hero.pos, hero.id)) {
+          if (!collect(hero, createItem('honeypot.shattered'))) dropItem(ctx.floor, hero.pos, createItem('honeypot.shattered'));
+        } else {
+          landItem(ctx, hero.pos, createItem('honeypot'));
+        }
         return TIME_TO_THROW;
       }
       if (itemDef(hero.items[action.item]!.kind).category === 'kit') {
@@ -373,6 +378,8 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       // Floating over a chasm, it falls through.
       landItem(ctx, hero.pos, item);
       ctx.effects.push({ type: 'dropped', hero: hero.id, item });
+      // ShatteredPot.doDrop: its bee guards it where it lies.
+      if (item.kind === 'honeypot.shattered') potDropped(ctx, hero.id, hero.pos);
       if (ctx.level.map[hero.pos] === T.ALCHEMY) brew(ctx, hero.pos, hero);
       return TIME_TO_DROP;
     }
@@ -427,13 +434,13 @@ function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
     throwBomb(ctx, hero, index, target);
     return;
   }
-  if (itemDef(item.kind).category === 'honeypot') {
-    // Honeypot.onThrow: it breaks where it lands, unless it falls down a chasm.
+  if (item.kind === 'honeypot') {
+    // Honeypot.onThrow: it breaks where it lands (its pieces lie there, guarded), unless it falls down a chasm.
     if (--item.qty <= 0) hero.items.splice(index, 1);
     const end = ballistica(ctx, hero.pos, target).at(-1)!;
     ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: 'honeypot' });
     if (hasFlag(ctx.level.map[end]!, F.PIT)) landItem(ctx, end, createItem('honeypot'));
-    else shatterHoneypot(ctx, end);
+    else landItem(ctx, end, createItem(shatterHoneypot(ctx, end, null) ? 'honeypot.shattered' : 'honeypot'));
     return;
   }
   if (itemDef(item.kind).category === 'seed') {
@@ -466,6 +473,8 @@ function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
     const end = ballistica(ctx, hero.pos, target).at(-1)!;
     ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: item.kind });
     landItem(ctx, end, flying);
+    // ShatteredPot.onThrow: its bee goes where it lands.
+    if (flying.kind === 'honeypot.shattered') potDropped(ctx, hero.id, end);
     return;
   }
   const boomerang = item.kind === 'missile.boomerang';
@@ -670,6 +679,8 @@ function pickUp(ctx: Ctx, hero: Hero): void {
       if (!pickUpDew(ctx, hero, heap.pos, item.qty)) left.push(item);
     } else if (collect(hero, item)) {
       ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
+      // ShatteredPot.doPickUp: its bee is after whoever holds it now.
+      if (item.kind === 'honeypot.shattered') potPickedUp(ctx, hero.id, heap.pos);
       if (item.kind === 'seed.rotberry') rotberryRoar(ctx, hero);
       if (item.kind === 'quest.amulet') {
         // Amulet.doPickUp: the journey's goal. Its bearer may end the run here («Let's call it a day»)
@@ -713,24 +724,11 @@ function spawnWraith(ctx: Ctx, pos: number, allowAdjacent = false): boolean {
 }
 
 /**
- * Honeypot.shatter: out flies a golden bee, where the pot broke or, if
- * someone stands there, on a free cell beside.
+ * Honeypot.shatter: out flies a golden bee, where the pot broke or, if someone stands there, on a free cell beside;
+ * it guards the pot's pieces (or goes after whoever holds them). False if there was no room for it.
  */
-function shatterHoneypot(ctx: Ctx, pos: number): void {
-  const { world, depth, level, rng, floor } = ctx;
-  let at = pos;
-  if (charAt(world, depth, pos)) {
-    at = rng.element(NEIGHBOURS4.map((n) => pos + n).filter((c) => isPassable(level, c) && !charAt(world, depth, c))) ?? -1;
-  }
-  if (at === -1) return;
-  const bee = createMob(`#${++world.nextId}`, 'bee', at, 'passive', floor.now + 1);
-  bee.level = depth;
-  bee.ht = bee.hp = mobStats(bee).ht;
-  // Alert from the start: no monster catches it off guard.
-  bee.enemySeen = true;
-  floor.mobs.push(bee);
-  enterCell(level, at);
-  ctx.effects.push({ type: 'bee', depth, pos: at, from: pos });
+function shatterHoneypot(ctx: Ctx, pos: number, holder: string | null): boolean {
+  return spawnBee(ctx, pos, holder) !== null;
 }
 
 /** Wraith.SPAWN_DELAY. */

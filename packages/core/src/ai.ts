@@ -25,7 +25,7 @@ import { canAttackWithExtraReach, growChampion } from './champions';
 import { fits, isEnemy, isOpenSpace } from './mobs';
 import { hasProp } from './props';
 import {
-  attackSpecial, canAttackSpecial, escaped, exileWander, fleeSpecial, focusTime, golemWander, huntSpecial, mobPostAct, mobPreAct,
+  attackSpecial, beeAct, canAttackSpecial, escaped, exileWander, fleeSpecial, focusTime, golemWander, huntSpecial, mobPostAct, mobPreAct,
   piranhaSees, piranhaStep, rollRangedCooldown, teleportAway,
 } from './mobskills';
 import { distanceMap, getStep as pathStep, getStepBack, pathLength, route } from './pathfinder';
@@ -539,47 +539,6 @@ function beeFight(ctx: Ctx, mob: Mob, fov: boolean[]): boolean {
   if (!getCloser(ctx, mob, bee.pos, fov)) return false;
   spend(mob, 1 / mobSpeed(mob));
   return true;
-}
-
-/** Bee.viewDistance. */
-const BEE_SIGHT = 4;
-
-/**
- * Bee.act: a golden bee lives a turn less with every turn. It sticks to the
- * monster it went for, or picks one in sight; with none, it keeps by the
- * nearest hero. A monster it bites turns on it (Mob.aggro).
- */
-function beeAct(ctx: Ctx, mob: Mob): void {
-  if (--mob.hp <= 0) {
-    ctx.floor.mobs.splice(ctx.floor.mobs.indexOf(mob), 1);
-    leaveCell(ctx.world, ctx.level, ctx.depth, mob.pos);
-    ctx.effects.push({ type: 'faded', depth: ctx.depth, mob: mob.id, pos: mob.pos });
-    return;
-  }
-  const fov = castShadow(mob.pos, terrainBlocksSight(ctx.level.map), BEE_SIGHT);
-  const hostile = (other: Mob): boolean => other !== mob && other.state !== 'passive' && !other.ally && isAlive(other);
-  let foe = ctx.floor.mobs.find((other) => other.id === mob.enemy && hostile(other));
-  if (!foe) {
-    foe = ctx.rng.element(ctx.floor.mobs.filter((other) => hostile(other) && fov[other.pos]));
-    mob.enemy = foe?.id ?? null;
-  }
-  if (foe && adjacent(mob.pos, foe.pos)) {
-    attack(ctx, mob, foe);
-    // Bee.attackProc: the monster turns on the bee.
-    if (isAlive(foe)) foe.beeFoe = mob.id;
-    spend(mob, TICK);
-    return;
-  }
-  let goal = foe?.pos ?? -1;
-  if (goal === -1) {
-    let nearest: Hero | undefined;
-    for (const hero of heroesOn(ctx.world, ctx.depth)) {
-      if (!nearest || distance(mob.pos, hero.pos) < distance(mob.pos, nearest.pos)) nearest = hero;
-    }
-    if (nearest && !adjacent(nearest.pos, mob.pos)) goal = nearest.pos;
-  }
-  if (goal !== -1 && getCloser(ctx, mob, goal, fov)) spend(mob, 1 / mobSpeed(mob));
-  else spend(mob, TICK);
 }
 
 /** Amok: it falls upon whoever is nearest in sight, monster or hero. */

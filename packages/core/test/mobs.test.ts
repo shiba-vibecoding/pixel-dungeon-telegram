@@ -286,6 +286,41 @@ describe("Shattered's monsters, kind by kind", () => {
   });
 });
 
+describe('golden bees (Bee, Honeypot.ShatteredPot)', () => {
+  it("a honeypot shattered in hand lets out a bee that goes for whoever holds the pieces", () => {
+    const world = openGround(4);
+    const hero = heroById(world, 'p')!;
+    hero.items = [createItem('honeypot')];
+    expect(act(world, 'p', { type: 'use', item: 0 }).ok).toBe(true);
+    expect(hero.items.some((i) => i.kind === 'honeypot.shattered')).toBe(true);
+    const bee = floorAt(world, 4).mobs.find((m) => m.kind === 'bee')!;
+    expect(bee.pot).toEqual({ pos: -1, holder: 'p' });
+    expect(mobStats(bee).ht).toBe((2 + 4) * 4);
+    const effects = run(world, 5);
+    expect(effects.some((e) => e.type === 'attack' && e.attacker === bee.id && e.target === 'p')).toBe(true);
+    // Dropped, the pieces are what it guards.
+    const index = hero.items.findIndex((i) => i.kind === 'honeypot.shattered');
+    act(world, 'p', { type: 'drop', item: index });
+    expect(bee.pot).toEqual({ pos: hero.pos, holder: null });
+  });
+
+  it('a thrown honeypot breaks where it lands, and its bee stings whatever comes near the pieces', () => {
+    const world = openGround(4);
+    const hero = heroById(world, 'p')!;
+    hero.items = [createItem('honeypot')];
+    act(world, 'p', { type: 'throw', item: 0, target: CENTRE + 4 });
+    const bee = floorAt(world, 4).mobs.find((m) => m.kind === 'bee')!;
+    expect(bee.pot?.pos).toBe(CENTRE + 4);
+    expect(floorAt(world, 4).heaps.some((h) => h.items.some((i) => i.kind === 'honeypot.shattered'))).toBe(true);
+    const rat = addMob(world, 'rat', CENTRE + 5, 'wandering');
+    rat.hp = rat.ht = 1000;
+    const effects = run(world, 6);
+    expect(effects.some((e) => e.type === 'attack' && e.attacker === bee.id && e.target === rat.id)).toBe(true);
+    // Far from the pieces, the hero is left alone.
+    expect(effects.some((e) => e.type === 'attack' && e.attacker === bee.id && e.target === 'p')).toBe(false);
+  });
+});
+
 describe('loot (Mob.lootChance, Dungeon.LimitedDrops)', () => {
   it('each drop of a limited kind makes the next rarer', () => {
     const world = openGround(6);

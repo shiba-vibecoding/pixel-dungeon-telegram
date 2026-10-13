@@ -105,23 +105,3 @@ describe('the weightstone', () => {
     expect(hero.items).toEqual([]);
   });
 });
-
-describe('the honeypot', () => {
-  it('lets out a golden bee that goes for monsters in sight, and lives a turn less every turn', () => {
-    const { world, far } = line();
-    const hero = heroById(world, 'p')!;
-    const rat: Mob = createMob('#rat', 'rat', far, 'sleeping', floorAt(world, 1).now);
-    Object.assign(rat, { hp: 1000, ht: 1000 });
-    floorAt(world, 1).mobs.push(rat);
-    hero.items = [createItem('honeypot', 2)];
-    expect(act(world, 'p', { type: 'use', item: 0 }).ok).toBe(true);
-    const bee = floorAt(world, 1).mobs.find((m) => m.kind === 'bee')!;
-    expect(bee).toMatchObject({ ht: 20, state: 'passive' });
-    // The bee flies at the rat; bitten, the rat (sooner or later, by the dice) turns on the bee, which can be hurt.
-    for (let i = 0; i < 25 && rat.beeFoe === undefined; i++) act(world, 'p', { type: 'wait' });
-    expect(rat.hp).toBeLessThan(1000);
-    expect(rat.beeFoe).toBe(bee.id);
-    for (let i = 0; i < 30; i++) act(world, 'p', { type: 'wait' });
-    expect(floorAt(world, 1).mobs.some((m) => m.kind === 'bee')).toBe(false);
-  });
-});

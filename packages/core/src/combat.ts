@@ -26,7 +26,7 @@ import { championAttackProc, championDamage, evasionAndAccuracyFactor, meleeDama
 import { isEnemy, rollToDropLoot } from './mobs';
 import {
   afterDamage, cheatDeath, crystalBite, hostGone, INFINITE_ACCURACY, INFINITE_EVASION, minionsDie, mobAttackProc, mobDamage,
-  mobDamageRange, mobDefenseProc, mobDefenseSkill, parried, reveal, steal,
+  mobDamageRange, mobDefenseProc, mobDefenseSkill, parried, potDropped, reveal, steal,
 } from './mobskills';
 import type { World } from './world';
 
@@ -434,6 +434,8 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
     // Thief.rollToDropLoot and Mimic.rollToDropLoot: a thief's stolen goods, a mimic's treasure (Level.drop: as the
     // challenges allow; a flier slain over a chasm drops them through it).
     if (mob.item && mob.kind !== 'statue' && mob.kind !== 'armoredStatue') landItem(ctx, mob.pos, mob.item);
+    // Thief.rollToDropLoot: a shattered pot it carried lies there now, its bee guarding it.
+    if (mob.item?.kind === 'honeypot.shattered' || mob.loot?.some((i) => i.kind === 'honeypot.shattered')) potDropped(ctx, mob.id, mob.pos);
     // Statue.die: its weapon (and an armoured one's armour), known for what they are.
     if ((mob.kind === 'statue' || mob.kind === 'armoredStatue') && mob.item) landItem(ctx, mob.pos, mob.item);
     if (mob.armor) landItem(ctx, mob.pos, mob.armor);

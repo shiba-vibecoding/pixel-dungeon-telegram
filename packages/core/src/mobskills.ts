@@ -1356,8 +1356,18 @@ export function steal(ctx: Ctx, thief: Mob, hero: Hero): boolean {
   const pack = looseItems(hero);
   const item = ctx.rng.element(pack);
   if (!item || UNIQUE.has(itemDef(item.kind).category) || item.level >= 1) return false;
-  hero.items.splice(hero.items.indexOf(item), 1);
-  thief.item = item;
+  // A whole stack goes (Item.detach for a stackable: one of it).
+  const index = hero.items.indexOf(item);
+  let taken = item;
+  if (item.kind === 'honeypot' && item.qty > 1) {
+    item.qty--;
+    taken = createItem('honeypot');
+  } else {
+    hero.items.splice(index, 1);
+  }
+  thief.item = taken;
+  // Thief.steal: a honeypot breaks in its hands, and the bee is after the thief.
+  if (taken.kind === 'honeypot' && spawnBee(ctx, thief.pos, thief.id)) thief.item = createItem('honeypot.shattered');
   if (thief.kind === 'bandit') {
     blind(hero, 5);
     poison(hero, ctx.rng.intRange(5, 6));
@@ -1525,3 +1535,89 @@ export function piranhaStep(ctx: Ctx, mob: Mob, target: number, fov: boolean[]):
   return getStep(mob.pos, target, (cell) => isWater(ctx.level.map[cell]!) && isPassable(ctx.level, cell) && !(fov[cell] && charAt(ctx.world, ctx.depth, cell)));
 }
 
+
+/* Golden bees */
+
+/**
+ * Honeypot.shatter: a golden bee flies out where the pot broke (beside it, if someone stands there), as strong as the
+ * depth (Bee.spawn), guarding the pot's pieces where they lie, or after whoever holds them. Null with no room.
+ */
+export function spawnBee(ctx: Ctx, pos: number, holder: string | null): Mob | null {
+  let at = pos;
+  if (charAt(ctx.world, ctx.depth, pos)) {
+    at = ctx.rng.element(NEIGHBOURS4.map((n) => pos + n).filter((c) => !solid(ctx, c) && !charAt(ctx.world, ctx.depth, c))) ?? -1;
+  }
+  if (at === -1) return null;
+  const bee = createMob(`#${++ctx.world.nextId}`, 'bee', at, 'wandering', 0);
+  bee.level = ctx.depth;
+  bee.ht = bee.hp = mobStats(bee).ht;
+  bee.pot = { pos: holder ? -1 : pos, holder };
+  addMob(ctx, bee, 0);
+  ctx.effects.push({ type: 'bee', depth: ctx.depth, pos: at, from: pos });
+  return bee;
+}
+
+const bees = (ctx: Ctx): Mob[] => ctx.floor.mobs.filter((mob) => mob.kind === 'bee' && !mob.ally && mob.pot);
+
+/** ShatteredPot.pickupPot: the bees guarding the pieces at `pos` go after whoever picked them up. */
+export function potPickedUp(ctx: Ctx, holder: string, pos: number): void {
+  for (const bee of bees(ctx)) if (bee.pot!.pos === pos) bee.pot = { pos: -1, holder };
+}
+
+/** ShatteredPot.dropPot: the bees after whoever held the pieces guard them where they now lie. */
+export function potDropped(ctx: Ctx, holder: string, pos: number): void {
+  for (const bee of bees(ctx)) if (bee.pot!.holder === holder) bee.pot = { pos, holder: null };
+}
+
+/**
+ * Bee.chooseEnemy: whoever holds the pot's pieces; with the pieces lying about, whoever comes within three cells of
+ * them (monsters first, the nearest to the bee, then the hero); with the pot gone, as any monster would.
+ */
+function beeEnemy(ctx: Ctx, bee: Mob, fov: boolean[]): Char | undefined {
+  const pot = bee.pot ?? { pos: -1, holder: null };
+  const heroes = heroesOn(ctx.world, ctx.depth);
+  if (pot.holder !== null) {
+    const holder = findChar(ctx, pot.holder);
+    if (holder && isAlive(holder)) return holder;
+  }
+  if (pot.pos === -1) {
+    const seen = heroes.filter((hero) => fov[hero.pos] && hero.invisible <= 0);
+    return seen.sort((a, b) => distance(bee.pos, a.pos) - distance(bee.pos, b.pos))[0];
+  }
+  const current = bee.enemy ? findChar(ctx, bee.enemy) : undefined;
+  if (current && isAlive(current) && bee.state === 'hunting' && distance(current.pos, pot.pos) <= 3) return current;
+  let closest: Char | undefined;
+  for (const mob of ctx.floor.mobs) {
+    if (mob === bee || distance(mob.pos, pot.pos) > 3 || mob.state === 'passive' || mob.hidden || mob.kind === 'bee') continue;
+    if (!closest || distance(closest.pos, bee.pos) > distance(mob.pos, bee.pos)) closest = mob;
+  }
+  if (closest) return closest;
+  return heroes.find((hero) => distance(hero.pos, pot.pos) <= 3);
+}
+
+/**
+ * Bee.act and its getCloser: a bee stings its enemy at arm's length (a monster stung turns on it); otherwise it
+ * heads for the one holding its pot, for its enemy while near the pot, else back to the pot.
+ */
+export function beeAct(ctx: Ctx, bee: Mob): void {
+  const fov = castShadow(bee.pos, terrainBlocksSight(ctx.level.map), 4);
+  const enemy = beeEnemy(ctx, bee, fov);
+  bee.enemy = enemy?.id ?? null;
+  bee.state = enemy ? 'hunting' : 'wandering';
+  bee.enemySeen = enemy !== undefined && fov[enemy.pos] === true;
+  if (enemy && adjacent(bee.pos, enemy.pos)) {
+    attack(ctx, bee, enemy);
+    // Bee.attackProc: a monster stung turns on the bee (Mob.aggro).
+    if (!isHero(enemy) && isAlive(enemy)) enemy.beeFoe = bee.id;
+    spend(bee, TICK);
+    return;
+  }
+  const pot = bee.pot ?? { pos: -1, holder: null };
+  let target = enemy && bee.enemySeen ? enemy.pos : bee.target;
+  if (enemy && pot.holder === enemy.id) target = enemy.pos;
+  else if (pot.pos !== -1 && (!enemy || distance(target, pot.pos) > 3)) target = pot.pos;
+  else if (!enemy && (target === -1 || target === bee.pos)) target = randomDestination(ctx, bee);
+  bee.target = target;
+  if (target !== -1 && target !== bee.pos && getCloser(ctx, bee, target, fov)) spend(bee, 1 / mobSpeed(bee));
+  else spend(bee, TICK);
+}
