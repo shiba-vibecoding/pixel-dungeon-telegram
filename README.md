@@ -99,8 +99,9 @@ Yendor on depth 26:
   best runs on the device) and badges (59 of them, earned by the server too).
 - The original art; Shattered Pixel Dungeon's sounds (each weapon's own hit, the
   hero's wounds ringing a warning) and soundtrack: the title's themes, each
-  region's three tracks in turn, its tense track during its quest and on the way
-  up with the Amulet, the bosses' tracks and their finales, the dungeon's finale;
+  region's three tracks in turn, its tense track during its quest, on the way
+  up with the Amulet and (beyond Shattered) while enemies hunt the hero, the
+  region's list going on where it left off, the bosses' tracks and their finales, the dungeon's finale;
   fetched only when wanted and crossfaded (where Ogg cannot be decoded, the
   original's two tunes and region tunes played in the browser take their place);
   each region's ambience; Russian (names from the original's Russian

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { addHero, createItem, createMob, createWorld, type Floor, type Mob, type World } from '@pd/core';
 import {
-  aheadOf, bossTune, fadeFor, fallbackFor, type FightSeen, FINALE, placeTune, regionTracks, sameTune, tense, TITLE, TrackQueue,
-  tracksOf, type Tune, VICTORY,
+  aheadOf, bossTune, DangerMeter, fadeFor, fallbackFor, type FightSeen, FINALE, placeTune, regionTracks, sameTune, tense, TITLE, TrackQueue,
+  tracksOf, type Tune, VICTORY, withDanger,
 } from '../src/soundtrack';
 
 const NO_FIGHT: FightSeen = { fighting: false, finale: false, slain: null };
@@ -174,5 +174,40 @@ describe("Shattered's music: Level.playLevelMusic", () => {
     expect(aheadOf(9, 1, false)).toEqual(['prison_1', 'prison_2', 'prison_3', 'prison_boss']);
     expect(aheadOf(10, 1, false)).toEqual(['prison_1', 'prison_2', 'prison_3', 'prison_boss', 'caves_1', 'caves_2']);
     expect(aheadOf(25, 4, false)).toContain('theme_finale');
+  });
+});
+
+describe('the tense track in real danger (beyond Shattered)', () => {
+  it('comes after two seconds of being hunted, or at once with a blow; goes only after twelve seconds of quiet', () => {
+    const meter = new DangerMeter();
+    expect(meter.update(0, true, false)).toBe(false);
+    expect(meter.update(1999, true, false)).toBe(false);
+    expect(meter.update(2000, true, false)).toBe(true);
+    // The hunt flickers (out of sight a moment, back again): the music stays tense.
+    expect(meter.update(3000, false, false)).toBe(true);
+    expect(meter.update(9000, true, false)).toBe(true);
+    expect(meter.update(9500, false, false)).toBe(true);
+    expect(meter.update(20999, false, false)).toBe(true);
+    expect(meter.update(21000, false, false)).toBe(false);
+    // A short hunt that ends before two seconds turns nothing tense, nor does its count go on.
+    expect(meter.update(30000, true, false)).toBe(false);
+    expect(meter.update(31000, false, false)).toBe(false);
+    expect(meter.update(31500, true, false)).toBe(false);
+    expect(meter.update(33000, true, false)).toBe(false);
+    expect(meter.update(33500, true, false)).toBe(true);
+    // A monster's blow out of the blue: at once, and the quiet counted from it.
+    meter.reset();
+    expect(meter.update(50000, false, true)).toBe(true);
+    expect(meter.update(61999, false, false)).toBe(true);
+    expect(meter.update(62000, false, false)).toBe(false);
+  });
+
+  it("only the region's own tracks turn tense: never a boss's, a silent level, the finale or the title", () => {
+    expect(withDanger(regionTracks(2), 2, true)).toEqual(tense(2));
+    expect(withDanger(regionTracks(2), 2, false)).toEqual(regionTracks(2));
+    expect(withDanger(bossTune(2, false), 2, true)).toEqual(bossTune(2, false));
+    expect(withDanger(null, 0, true)).toBeNull();
+    expect(withDanger(FINALE, 4, true)).toEqual(FINALE);
+    expect(withDanger(TITLE, 0, true)).toEqual(TITLE);
   });
 });

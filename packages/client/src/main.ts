@@ -22,7 +22,9 @@ import { adoptBadges, BADGES, type BadgeId, badgeText, checkBadges, countGame, e
 import { pullCloud, pushCloud } from './cloud';
 import { audio, CROSSFADE } from './audio';
 import { stepSound } from './sfx';
-import { aheadOf, fadeFor, type FightSeen, MUSIC_BOSSES, placeTune, sameTune, TITLE, VICTORY } from './soundtrack';
+import {
+  aheadOf, DangerMeter, fadeFor, type FightSeen, MUSIC_BOSSES, placeTune, sameTune, TITLE, VICTORY, withDanger,
+} from './soundtrack';
 import { type ArenaHud, type BuffName, heroBuffs, Hud, type HudStatus, type QuickState } from './hud';
 import { arenaBest, recordArena, showArenaEnd, showArenaReward } from './arenaui';
 import { ArenaView } from './arenaview';
@@ -1105,6 +1107,10 @@ let bossFight: { session: Session; generation: number; depth: number; seen: Figh
 const NO_FIGHT: FightSeen = { fighting: false, finale: false, slain: null };
 /** The depth the music last fetched ahead for. */
 let musicAhead = -1;
+/** Real danger turns the region's music tense (soundtrack.ts DangerMeter); a monster's blow on me this frame. */
+const danger = new DangerMeter();
+let dangerOf: { session: Session; generation: number } | null = null;
+let struckByMonster = false;
 
 /** The fight on my depth, made on first word of it. */
 function fightHere(depth: number): FightSeen | null {
@@ -1120,6 +1126,7 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
   const me = world && heroById(world, myId);
   if (world && me) announceBadges([...countGame(world.run.seed), ...checkBadges(world, me, effects)]);
   for (const effect of effects) {
+    if (effect.type === 'attack' && effect.hit && effect.target === myId && effect.attacker.startsWith('#')) struckByMonster = true;
     // The boss's cry starts the fight's music; its fall ends it (Level.unseal: the music fades out).
     if (effect.type === 'yell' && effect.line === 'notice' && MUSIC_BOSSES.has(effect.kind) && me && effect.depth === me.depth) {
       const seen = fightHere(effect.depth);
@@ -2372,9 +2379,21 @@ function tick(now: number): void {
   preloadSheets(levelRegion(level));
   // Shattered's music, as its levels play it (soundtrack.ts); the run won, the victory's.
   if (bossFight && (bossFight.session !== session || bossFight.generation !== session.generation || bossFight.depth !== me.depth)) bossFight = null;
-  const tune = world.over && world.victory ? VICTORY : placeTune(world, me, region, bossFight?.seen ?? NO_FIGHT);
+  // Beyond Shattered: an enemy hunting me for a while, or a monster's blow, turns the region's tracks tense until
+  // the danger has been gone a good while; the list comes back where it left off.
+  if (dangerOf?.session !== session || dangerOf.generation !== session.generation) {
+    dangerOf = { session, generation: session.generation };
+    danger.reset();
+  }
+  const hunted = isAlive(me) && visibleEnemies(world, me).some((mob) => mob.state === 'hunting');
+  const wasTense = danger.on;
+  const inDanger = danger.update(now, hunted, struckByMonster && isAlive(me));
+  struckByMonster = false;
+  const placed = world.over && world.victory ? VICTORY : placeTune(world, me, region, bossFight?.seen ?? NO_FIGHT);
+  const tune = world.over ? placed : withDanger(placed, region, inDanger);
   if (!sameTune(audio.tune, tune)) {
-    const fade = fadeFor(audio.tune, tune);
+    // In and out of danger, a crossfade both ways; otherwise as Shattered fades.
+    const fade = wasTense !== inDanger ? CROSSFADE : fadeFor(audio.tune, tune);
     audio.playMusic(tune, fade, fade !== CROSSFADE);
   }
   // What will be wanted soon is fetched ahead, a little at a time.

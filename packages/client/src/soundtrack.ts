@@ -246,3 +246,43 @@ export function aheadOf(depth: number, region: number, arena: boolean): Ost[] {
   if (depth === 25 || depth === 26) ahead.push('theme_finale');
   return ahead.filter((track, i) => ahead.indexOf(track) === i);
 }
+
+/*
+ * Beyond Shattered: the region's tense track in real danger too. An enemy hunting the hero for two seconds, or a
+ * monster's blow landing, brings it in; it goes only after twelve seconds with nothing hunting, so a fight that
+ * comes and goes does not toss the music back and forth.
+ */
+
+/** How long a hunt goes on before the music turns tense, and how long it stays after the last of it (ms). */
+export const DANGER_ENTER_MS = 2000;
+export const DANGER_LEAVE_MS = 12000;
+
+export class DangerMeter {
+  private huntedSince = -1;
+  private lastThreat = Number.NEGATIVE_INFINITY;
+  on = false;
+
+  /** The danger now: `hunted`, an enemy in sight hunting the hero; `hurt`, a monster's blow landed this moment. */
+  update(now: number, hunted: boolean, hurt: boolean): boolean {
+    if (!hunted) this.huntedSince = -1;
+    else if (this.huntedSince < 0) this.huntedSince = now;
+    if (hunted || hurt) this.lastThreat = now;
+    if (hurt || (hunted && now - this.huntedSince >= DANGER_ENTER_MS)) this.on = true;
+    else if (this.on && now - this.lastThreat >= DANGER_LEAVE_MS) this.on = false;
+    return this.on;
+  }
+
+  reset(): void {
+    this.huntedSince = -1;
+    this.lastThreat = Number.NEGATIVE_INFINITY;
+    this.on = false;
+  }
+}
+
+/**
+ * In danger, the region's own tracks give way to its tense track; nothing else does (a boss's track, the finale,
+ * a silent level, a quest's tense track are left as they are).
+ */
+export function withDanger(tune: Tune | null, region: number, danger: boolean): Tune | null {
+  return danger && sameTune(tune, regionTracks(region)) ? tense(region) : tune;
+}
