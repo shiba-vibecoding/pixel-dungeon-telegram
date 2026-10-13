@@ -1,3 +1,4 @@
+import { spiritRing } from './classes/state';
 import { isMagicImmune } from './buffs';
 import { type Hero, heroRings } from './actors';
 import { underChallenges } from './challenges';
@@ -34,14 +35,19 @@ export function ringsSuppressed(hero: Hero): boolean {
 /** Ring.getBonus: the worn rings of a kind, their bonuses added up. */
 export function ringBonus(hero: Hero, kind: ItemKind): number {
   if (ringsSuppressed(hero)) return 0;
-  return heroRings(hero).reduce((sum, ring) => (ring.kind === kind ? sum + soloBonus(ring) : sum), 0);
+  const bonus = heroRings(hero).reduce((sum, ring) => (ring.kind === kind ? sum + soloBonus(ring) : sum), 0);
+  // SpiritForm: a ring lent for twenty turns counts when no worn ring of its kind does.
+  const lent = spiritRing(hero);
+  return bonus === 0 && lent?.kind === kind ? soloBonus(lent) : bonus;
 }
 
 /** Ring.getBuffedBonus: as getBonus, with enhanced rings a level more each. */
 export function ringBuffedBonus(hero: Hero, kind: ItemKind): number {
   if (ringsSuppressed(hero)) return 0;
   const plus = enhancedRings(hero) ? 1 : 0;
-  return heroRings(hero).reduce((sum, ring) => (ring.kind === kind ? sum + soloBonus(ring) + plus : sum), 0);
+  const bonus = heroRings(hero).reduce((sum, ring) => (ring.kind === kind ? sum + soloBonus(ring) + plus : sum), 0);
+  const lent = spiritRing(hero);
+  return bonus === 0 && lent?.kind === kind ? soloBonus(lent) + plus : bonus;
 }
 
 const f32 = Math.fround;
@@ -107,14 +113,15 @@ function forceTier(str: number): number {
  * strength makes; null without one (bare hands then do 1 to STR-8).
  */
 export function forceRange(hero: Hero, str: number): readonly [number, number] | null {
-  if (!heroRings(hero).some((ring) => ring.kind === 'ring.force') || ringsSuppressed(hero)) return null;
+  if (!wearsForce(hero)) return null;
   const level = ringBuffedBonus(hero, 'ring.force');
   const tier = level <= 0 ? 1 : forceTier(str);
   return [Math.max(0, Math.round(tier + level)), Math.max(0, Math.round(5 * (tier + 1) + level * (tier + 1)))];
 }
 
 /** Whether a ring of force is worn (Hero.buff(RingOfForce.Force)). */
-export const wearsForce = (hero: Hero): boolean => heroRings(hero).some((ring) => ring.kind === 'ring.force') && !ringsSuppressed(hero);
+export const wearsForce = (hero: Hero): boolean =>
+  (heroRings(hero).some((ring) => ring.kind === 'ring.force') || spiritRing(hero)?.kind === 'ring.force') && !ringsSuppressed(hero);
 
 /** RingOfForce.damageRoll's brawler's stance bonus: 3 + tier, and 4+2×tier eighths of a level. */
 export function brawlBonus(hero: Hero, str: number): number {

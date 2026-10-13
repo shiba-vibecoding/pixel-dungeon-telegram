@@ -1,5 +1,5 @@
 import type { Hero, Mob } from '../actors';
-import type { Item } from '../items';
+import type { Item, ItemKind } from '../items';
 
 /*
  * What the Duelist and the Cleric keep on a hero or a monster, as plain data (the classes stream).
@@ -73,8 +73,24 @@ export interface ClassState {
   /* The Cleric */
   /** The cleric's quick spell (HolyTome.quickSpell). */
   quick?: string;
-  /** Spells and the buffs they leave on the hero. */
+  /** Spells and the buffs they leave on the hero (the flags: satiated spells). */
   holy?: Record<string, number>;
+  /** ShieldOfLightTracker.object: the foe whose blows the shield eases. */
+  lightFoe?: string;
+  /** RecallInscription.UsedItemTracker.item: the scroll or runestone to cast again. */
+  recall?: ItemKind;
+  /** AscendedForm.AscendBuff. */
+  ascend?: { left: number; shield: number; spellCasts: number; flashCasts: number; divine: boolean };
+  /** Stasis.StasisBuff.stasisAlly: the ally put out of time. */
+  stasis?: { ally: Mob };
+  /** LifeLink.object: the ally the hero is linked to. */
+  linkObject?: string;
+  /** Statistics.itemTypesDiscovered, for Trinity: the kinds of enchantment, glyph, wand, thrown weapon, ring and artifact seen. */
+  seen?: string[];
+  /** Trinity: what each of its forms is set to, and the effects under way (body: an enchantment or glyph; spirit: a ring). */
+  trinity?: { body?: string; mind?: string; spirit?: string };
+  bodyEffect?: string;
+  spiritRing?: Item;
 }
 
 /** What a spell or an ability leaves on a monster. */
@@ -115,6 +131,13 @@ export function prolong(hero: Hero, key: string, duration: number): void {
   const state = cs(hero);
   state.until ??= {};
   state.until[key] = Math.max(state.until[key] ?? 0, hero.time + duration);
+}
+
+/** Buff.affect(hero, X, duration) on a FlavourBuff already there: that much longer. */
+export function addTimer(hero: Hero, key: string, duration: number): void {
+  const state = cs(hero);
+  state.until ??= {};
+  state.until[key] = Math.max(state.until[key] ?? 0, hero.time) + duration;
 }
 
 /** Buff.affect(hero, X, duration): runs that long from now, replacing what was left. */
@@ -174,7 +197,33 @@ export function markTurn(mob: Mob): void {
   const t = mob.marks?.t;
   if (!t) return;
   for (const key of Object.keys(t)) {
+    // PowerBuff.act: it waits while a beaming ray or a life link is on the ally.
+    if (key === 'power' && ((t.beam ?? 0) > 0 || (t.lifeLinkSpell ?? 0) > 0)) continue;
     t[key]! -= 1;
     if (t[key]! <= 0) delete t[key];
   }
+}
+
+/* Trinity's body form: an enchantment or a glyph lent for a while (BodyForm.BodyFormBuff) */
+
+/** The enchantment or glyph of the body form, while it lasts. */
+export function bodyForm(hero: Hero): { enchant?: string; glyph?: string } | undefined {
+  const effect = hero.cls?.bodyEffect;
+  if (!effect || !hasTimer(hero, 'bodyForm')) return undefined;
+  return effect.startsWith('enchant:') ? { enchant: effect.slice(8) } : { glyph: effect.slice(6) };
+}
+
+/** Armor.hasGlyph for a hero: the armour's glyph, or the one the body form lends. */
+export const hasGlyph = (hero: Hero, glyph: string): boolean => hero.armor.glyph === glyph || bodyForm(hero)?.glyph === glyph;
+
+/** SpiritForm.SpiritFormBuff.ring(): the ring whose passive effect the hero has for a while. */
+export function spiritRing(hero: Hero): Item | undefined {
+  const item = hero.cls?.spiritRing;
+  return item && item.kind.startsWith('ring.') && hasTimer(hero, 'spirit') ? item : undefined;
+}
+
+/** SpiritFormBuff.artifact() when it is the chalice: the level its regeneration has. */
+export function spiritChalice(hero: Hero): Item | undefined {
+  const item = hero.cls?.spiritRing;
+  return item && item.kind === 'artifact.chalice' && hasTimer(hero, 'spirit') ? item : undefined;
 }

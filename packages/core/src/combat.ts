@@ -21,7 +21,8 @@ import {
 import { missileProc } from './throwing';
 import { gainEnergy } from './classes/monk';
 import { afterImageStruck, duelFoeDied, noteDuelDamage } from './classes/duelist-armor';
-import { classDamageTaken, heroBlow, heroEvasion, markHarvest, meleeStrike } from './classes/hooks';
+import { clericHurt, clericShields, lightShield } from './classes/cleric-hooks';
+import { classArmorProc, classDamageTaken, classWeaponProc, heroBlow, heroEvasion, markHarvest, meleeStrike } from './classes/hooks';
 import { earthrootAbsorbs } from './plants';
 import { impQuestKill } from './imp';
 import { curseBroken, questKill } from './quest';
@@ -167,10 +168,12 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   // Hero.defenseProc: an inscribed armour's answer, before the armour soaks the blow.
   if (isHero(defender) && !isHero(attacker)) {
     const mark = ctx.effects.length;
-    damage = armorProc(ctx, attacker, defender, damage, blow);
+    damage = classArmorProc(ctx, attacker, defender, damage, blow, () => armorProc(ctx, attacker, defender, damage, blow));
     // The glyph's backlash may have felled its wearer, or an ankh raised them anew: the blow is spent.
     if (!isAlive(defender) || ctx.effects.slice(mark).some((e) => e.type === 'resurrected')) return true;
   }
+  // Char.defenseProc: the shield of light eases the blows of the foe it was cast on.
+  if (!isHero(attacker)) damage = lightShield(ctx, attacker, defender, damage);
   damage = Math.max(damage - reduction, 0);
   // Vulnerable: a third more, after the armour.
   if ((defender.vulnerable ?? 0) > 0) damage = Math.round(damage * 1.33);
@@ -247,7 +250,7 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     if (!thrown && attacker.weapon?.kind === 'weapon.magesStaff') staffAfter = staffBlow(ctx, attacker, attacker.weapon, defender, damage);
     if (thrown) damage = missileProc(ctx, attacker, defender, damage, override.weapon!);
     // (No enchantment works while magic will not: MagicImmune.)
-    if (damage >= 0 && isAlive(defender) && !isMagicImmune(attacker)) damage = weaponProc(ctx, attacker, defender, damage, strike ?? override.enchantFrom ?? null, blow);
+    if (damage >= 0 && isAlive(defender) && !isMagicImmune(attacker)) damage = classWeaponProc(ctx, attacker, defender, damage, strike ?? override.enchantFrom ?? null, blow, () => weaponProc(ctx, attacker, defender, damage, strike ?? override.enchantFrom ?? null, blow));
     // FireImbue.proc and FrostImbue.proc: half the blows set the foe alight; every one chills it.
     if (isAlive(defender) && (attacker.buffs?.fireImbue ?? 0) > 0 && ctx.rng.int(2) === 0) igniteChar(ctx, defender);
     if (isAlive(defender) && (attacker.buffs?.frostImbue ?? 0) > 0) chillChar(defender, 3);
@@ -449,6 +452,7 @@ export type Hazard =
   /** Shattered's wands: a wand's own harm to the hero, corrosion, corruption wasting an ally away, a knock against a wall. */
   | 'wand' | 'corrosion' | 'corruption' | 'knockback'
   /** Alchemy's: electricity, an aqua brew's geyser, the psionic blast, the special bombs. */
+  | 'lifeLink'
   | 'electricity' | 'geyser' | 'psionic' | 'arcaneBomb' | 'flashbang' | 'holy' | 'shrapnel';
 
 export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Hazard): void {
@@ -463,6 +467,8 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   const by = typeof source === 'string' ? null : source;
   // WandOfRegrowth.Lotus.damage: nothing harms it.
   if (!isHero(victim) && victim.kind === 'lotus') return;
+  // Char.damage: the Cleric's link of life, aura of protection and power of many.
+  damage = Math.round(clericHurt(ctx, victim, damage, source));
   if (!isHero(victim)) {
     if (victim.state === 'sleeping') victim.state = 'wandering';
     victim.alerted = true;
@@ -485,6 +491,8 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   // the more the hero is hurt (RingOfTenacity.damageMultiplier, rounded up).
   if (isHero(victim) && damage > 0) damage = capeTakes(ctx, victim, damage, typeof source === 'string' ? null : source);
   if (isHero(victim) && damage > 0) damage = Math.ceil(damage * tenacityMultiplier(victim));
+  // Ascended form's shield and divine intervention's come before the others (shieldUsePriority 1).
+  damage = clericShields(ctx, victim, damage);
   // Char.damage: invulnerability, frost, charm, doom and shields (status.ts).
   damage = damageTaken(ctx, victim, damage, by);
   // Char.damage: the warrior's seal may raise its shield, and shields take what they can (not hunger's).

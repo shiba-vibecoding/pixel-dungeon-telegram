@@ -6,7 +6,7 @@ import type { World } from '../world';
 import { CLASS_ARMOR_OF } from '../classArmor';
 import { type AbilityId, ARMOR_ABILITIES, hasTalent, pointsIn } from '../talents';
 import { challengeProblem, doChallenge, doElementalStrike, doFeint, duelTurn, elementalProblem, eliminationActive, feintProblem } from './duelist-armor';
-import { ascendedProblem, doAscend, doPowerOfMany, doTrinity, powerProblem, trinityCost, trinityProblem } from './cleric-armor';
+import { ascendedProblem, doAscend, doPowerOfMany, doTrinity, powerCost, powerProblem, trinityCost, trinityProblem } from './cleric-armor';
 
 /*
  * The class armour's charge (ClassArmor.Charger: 0 to 100, 50 to begin with, a fifth of a point a turn) and the armour
@@ -21,17 +21,25 @@ export interface AbilityDef {
   cost: number;
   /** Whether the ability asks for a cell (targetingPrompt). */
   aims: boolean;
-  problem(world: World, hero: Hero, cell: number | undefined): string | null;
-  perform(ctx: Ctx, hero: Hero, cell: number | undefined): number;
+  /** What it costs when the ability's cost varies (Trinity's, by the effect used). */
+  costOf?(hero: Hero, choice: number | undefined, world?: World): number;
+  problem(world: World, hero: Hero, cell: number | undefined, choice: number | undefined): string | null;
+  perform(ctx: Ctx, hero: Hero, cell: number | undefined, choice: number | undefined): number;
 }
 
 export const ABILITY_DEFS: Readonly<Record<AbilityId, AbilityDef>> = {
   challenge: { id: 'challenge', cost: 50, aims: true, problem: challengeProblem, perform: doChallenge },
   elementalStrike: { id: 'elementalStrike', cost: 25, aims: true, problem: elementalProblem, perform: doElementalStrike },
   feint: { id: 'feint', cost: 35, aims: true, problem: feintProblem, perform: doFeint },
-  ascendedForm: { id: 'ascendedForm', cost: 35, aims: false, problem: ascendedProblem, perform: doAscend },
-  trinity: { id: 'trinity', cost: 0, aims: false, problem: trinityProblem, perform: doTrinity },
-  powerOfMany: { id: 'powerOfMany', cost: 35, aims: false, problem: powerProblem, perform: doPowerOfMany },
+  ascendedForm: { id: 'ascendedForm', cost: 50, aims: false, problem: (w, h, c) => ascendedProblem(w, h, c), perform: (ctx, h, c) => doAscend(ctx, h, c) },
+  trinity: {
+    id: 'trinity', cost: 25, aims: false, costOf: (hero, choice) => trinityCost(hero, choice),
+    problem: (w, h, c, choice) => trinityProblem(w, h, c, choice), perform: (ctx, h, c, choice) => doTrinity(ctx, h, c, choice),
+  },
+  powerOfMany: {
+    id: 'powerOfMany', cost: 35, aims: true, costOf: (hero, _choice, world) => powerCost(world, hero),
+    problem: (w, h, c) => powerProblem(w, h, c), perform: (ctx, h, c) => doPowerOfMany(ctx, h, c),
+  },
 };
 
 export const abilityDef = (hero: Hero): AbilityDef | undefined => (hero.armorAbility ? ABILITY_DEFS[hero.armorAbility as AbilityId] : undefined);
@@ -43,9 +51,8 @@ export const abilitiesOf = (hero: Hero): readonly AbilityId[] => ARMOR_ABILITIES
 export const armorCharge = (hero: Hero): number => (hero.armor.charge ??= 50);
 
 /** ArmorAbility.chargeUse: less with heroic energy (12%/23%/32%/40%), and the elimination match's cheaper challenge (16%...50%). */
-export function chargeUse(hero: Hero, def: AbilityDef): number {
-  let use = def.cost;
-  if (def.id === 'trinity') use = trinityCost(hero);
+export function chargeUse(hero: Hero, def: AbilityDef, choice?: number, world?: World): number {
+  let use = def.costOf ? def.costOf(hero, choice, world) : def.cost;
   switch (pointsIn(hero, 'HEROIC_ENERGY')) {
     case 1: use *= Math.fround(0.88); break;
     case 2: use *= Math.fround(0.77); break;
@@ -69,18 +76,20 @@ export function classArmorTurn(ctx: Ctx, hero: Hero): void {
 }
 
 /** Why the class armour's ability cannot be used now (ClassArmor.execute, then the ability's own refusals), or null. */
-export function abilityProblem(world: World, hero: Hero, cell: number | undefined): string | null {
+export function abilityProblem(world: World, hero: Hero, cell: number | undefined, choice?: number): string | null {
   const def = abilityDef(hero);
   if (!def) return 'art:items.armor.classarmor.no_ability';
-  if (armorCharge(hero) < chargeUse(hero, def)) return 'art:items.armor.classarmor.low_charge';
   if (def.aims && (cell === undefined || !Number.isInteger(cell) || cell < 0)) return 'choose a target';
-  return def.problem(world, hero, cell);
+  const own = def.problem(world, hero, cell, choice);
+  if (own) return own;
+  if (armorCharge(hero) < chargeUse(hero, def, choice, world)) return 'art:items.armor.classarmor.low_charge';
+  return null;
 }
 
 /** Uses the ability; returns the time it took. */
-export function performAbility(ctx: Ctx, hero: Hero, cell: number | undefined): number {
+export function performAbility(ctx: Ctx, hero: Hero, cell: number | undefined, choice?: number): number {
   const def = abilityDef(hero)!;
-  return def.perform(ctx, hero, cell);
+  return def.perform(ctx, hero, cell, choice);
 }
 
 /** Whether a creature in sight is somebody the hero fights (Char.Alignment.ENEMY). */

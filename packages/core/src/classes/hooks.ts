@@ -5,11 +5,17 @@ import { isHero, type Char } from '../floor';
 import type { Item } from '../items';
 import { wearsForce, brawlBonus } from '../rings';
 import { augmentDamage } from '../weapons';
-import { cs, hasTimer, marks } from './state';
+import { bodyForm, cs, hasTimer, marks, setTimer } from './state';
+import { directCharge, tomeOf } from './cleric-core';
+import type { ItemKind } from '../items';
 import { pointsIn } from '../talents';
 import { onFoodEaten as duelistFoodEaten, onPotionUsed as duelistPotionUsed, takeEmpower, accuracyFactor, afterAttack, combinedLethality, evasionFactor, onAttackProc, onAbilityKill, aggressiveBarrierOnAttack } from './duelist-talents';
 import { addComboHit, chargedShot, crossbowCharged, takeSpin } from './duelist';
 import { hurt } from '../combat';
+import { isCurseEnchant, isCurseGlyph } from '../items';
+import { armorProc, enchantProc, isDemonic, isUndead, procMultiplier, type Blow } from '../enchant';
+import { createItem, type Enchantment, type Glyph, itemDef } from '../items';
+import { isMagicImmune } from '../buffs';
 import { focusBlocks, meditating } from './monk';
 import { clericBlowDamage, clericDefenseDamage } from './cleric-hooks';
 
@@ -149,6 +155,31 @@ export function classEatingTime(hero: Hero): number {
 /** Talent.onFoodEaten, for the meals of the Duelist and the Cleric. */
 export function classFoodEaten(ctx: Ctx, hero: Hero): void {
   duelistFoodEaten(ctx, hero);
+  if (hero.heroClass !== 'cleric') return;
+  // SATIATED_SPELLS: the next spell cast shields the Cleric; ENLIGHTENING_MEAL: the tome charges by 2/3 or all of one.
+  if (pointsIn(hero, 'SATIATED_SPELLS') > 0) (cs(hero).holy ??= {}).satiated = 1;
+  const enlightening = pointsIn(hero, 'ENLIGHTENING_MEAL');
+  const tome = tomeOf(hero);
+  if (enlightening > 0 && tome) {
+    directCharge(tome, (1 + enlightening) / 3);
+    ctx.effects.push({ type: 'classFx', depth: ctx.depth, hero: hero.id, fx: { k: 'spell', at: hero.pos, name: 'charge' } });
+  }
+}
+
+/** Talent.onScrollUsed: recall inscription remembers the scroll read (not an upgrade) for a while. */
+export function classScrollUsed(_ctx: Ctx, hero: Hero, kind: ItemKind): void {
+  const points = pointsIn(hero, 'RECALL_INSCRIPTION');
+  if (hero.heroClass !== 'cleric' || points === 0 || kind === 'scroll.upgrade') return;
+  cs(hero).recall = kind;
+  setTimer(hero, 'recall', points === 2 ? 300 : 10);
+}
+
+/** Talent.onRunestoneUsed. */
+export function classStoneUsed(_ctx: Ctx, hero: Hero, kind: ItemKind): void {
+  const points = pointsIn(hero, 'RECALL_INSCRIPTION');
+  if (hero.heroClass !== 'cleric' || points === 0) return;
+  cs(hero).recall = kind;
+  setTimer(hero, 'recall', points === 2 ? 300 : 10);
 }
 
 /** Talent.onPotionUsed: `factor` is 1 for a potion drunk, 2 for an exotic one, half that for one thrown. */
@@ -174,4 +205,60 @@ export function classProcBonus(hero: Hero): number {
   }
   if (hasTimer(hero, 'smite')) bonus += 3;
   return bonus;
+}
+
+/**
+ * Weapon.proc with the holy weapon's: its enchantment works only for a Paladin (or a curse), and the blow burns for two (six for
+ * a Paladin); a smite adds its own. Without a weapon (fists) the same two come in Hero.attackProc.
+ */
+export function classWeaponProc(ctx: Ctx, hero: Hero, mob: Mob, damage: number, weapon: Item | null, blow: Blow, normal: () => number): number {
+  const holy = hasTimer(hero, 'holyWep', hero.time);
+  const smite = hasTimer(hero, 'smite', hero.time);
+  const equipped = weapon !== null && (weapon === hero.weapon || weapon === hero.secondWep);
+  // Trinity's body form: its enchantment strikes too, on a melee weapon or bare hands (one the weapon has itself is not doubled).
+  const lent = (): void => {
+    const form = bodyForm(hero)?.enchant;
+    if (!form || !isAlive(mob) || (weapon && (itemDef(weapon.kind).category !== 'weapon' || weapon.enchant === form))) return;
+    damage = enchantProc(ctx, hero, mob, damage, weapon ?? createItem('weapon.wornShortsword'), form as Enchantment, blow);
+  };
+  if (!weapon || equipped) {
+    if (holy) {
+      if (weapon && (hero.subclass === 'paladin' || (weapon.enchant && isCurseEnchant(weapon.enchant)))) damage = normal();
+      lent();
+      if (isAlive(mob)) {
+        const amount = Math.round((hero.subclass === 'paladin' ? 6 : 2) * procMultiplier(hero));
+        ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage: amount });
+        hurt(ctx, mob, amount, hero);
+      }
+    } else {
+      if (weapon) damage = normal();
+      lent();
+    }
+    if (smite && isAlive(mob)) {
+      const min = 5 + Math.trunc(hero.lvl / 2);
+      const max = 10 + hero.lvl;
+      const amount = isUndead(mob) || isDemonic(mob) ? max : ctx.rng.normalIntRange(min, max);
+      ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage: amount });
+      hurt(ctx, mob, amount, hero);
+    }
+    return damage;
+  }
+  return normal();
+}
+
+/** Armor.proc with the holy ward's: the glyph works only for a Paladin (or a curse), and the blow is eased by one (three for a Paladin). */
+export function classArmorProc(ctx: Ctx, attacker: Mob, hero: Hero, damage: number, blow: Blow, normal: () => number): number {
+  // Trinity's body form: its glyph acts too, after the armour's own (one the armour has itself is not doubled).
+  const lent = (dmg: number): number => {
+    const form = bodyForm(hero)?.glyph;
+    return form && form !== hero.armor.glyph && !isMagicImmune(hero) ? armorProc(ctx, attacker, hero, dmg, blow, form as Glyph) : dmg;
+  };
+  if (!hasTimer(hero, 'holyArm', ctx.floor.now)) return lent(normal());
+  if (hero.armor.glyph && (hero.subclass === 'paladin' || isCurseGlyph(hero.armor.glyph))) damage = normal();
+  damage = lent(damage);
+  const blocking = hero.subclass === 'paladin' ? 3 : 1;
+  damage -= Math.round(blocking * procMultiplier(hero));
+  void attacker;
+  void blow;
+  return Math.max(damage, 0);
 }

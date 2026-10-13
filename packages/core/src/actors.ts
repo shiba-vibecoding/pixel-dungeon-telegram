@@ -1,3 +1,4 @@
+import { hasGlyph } from './classes/state';
 import { effectiveLevel } from './wear';
 import { createItem, type Item, itemDef, type ItemKind } from './items';
 import { armorDrMax, armorDrMin, armorEvasionBonus, armorStr } from './armor';
@@ -376,7 +377,7 @@ export function heroDefenseSkill(hero: Hero): number {
   // RingOfEvasion.evasionMultiplier.
   let evasion = f32(f32(hero.defenseSkill * evasionMultiplier(hero)) * blessing(hero));
   if (hero.paralysed > 0) evasion = f32(evasion / 2);
-  if (hero.armor.glyph === 'stone') return 0;
+  if (hasGlyph(hero, 'stone')) return 0;
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
   if (encumbrance > 0) evasion = f32(evasion / 1.5 ** encumbrance);
   // Seam (talents stream): Momentum's evasion. Here the 1.9 freerunner still doubles it, unburdened and fed.
@@ -478,8 +479,10 @@ export function heroAttackDelay(hero: Hero, weapon: Strike = hero.weapon): numbe
 
 /** Weapon.reachFactor: how far the weapon in hand strikes (a projecting one a cell further). */
 export function heroReach(hero: Hero): number {
-  if (!hero.weapon || itemDef(hero.weapon.kind).category !== 'weapon') return 1;
-  const reach = weaponRch(hero.weapon.kind);
+  // AscendedForm: the weapon reaches two cells further, and bare hands three (Hero.canAttack, Weapon.reachFactor).
+  const ascended = hero.cls?.ascend !== undefined;
+  if (!hero.weapon || itemDef(hero.weapon.kind).category !== 'weapon') return ascended ? 3 : 1;
+  const reach = weaponRch(hero.weapon.kind) + (ascended ? 2 : 0);
   return hero.weapon.enchant === 'projecting' ? reach + 1 : reach;
 }
 
@@ -503,11 +506,10 @@ export function heroSpeed(hero: Hero, footing?: Footing): number {
   let speed = hero.crippled > 0 ? 0.5 : 1;
   if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) speed *= 1.6;
   if (encumbrance > 0) speed = f32(speed / 1.2 ** encumbrance);
-  const glyph = hero.armor.glyph;
   const level = gearLevel(hero.armor);
-  if (footing && glyph === 'swiftness' && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));
-  if (footing && glyph === 'flow' && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
-  if (footing && glyph === 'bulk' && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
+  if (footing && hasGlyph(hero, 'swiftness') && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));
+  if (footing && hasGlyph(hero, 'flow') && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
+  if (footing && hasGlyph(hero, 'bulk') && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
   // RingOfHaste.speedMultiplier; stamina, haste (buffs.ts).
   return f32(speed * speedMultiplier(hero) * buffSpeed(hero));
 }
@@ -517,7 +519,7 @@ export const heroArmor = (hero: Hero): number =>
   armorDrMax(hero.armor) + (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon' ? weaponDefense(hero.weapon) : 0) +
   Math.max(0, Math.ceil(hero.barkskin ?? 0)) + (hero.buffs?.barkskin?.level ?? 0);
 /** Hero.stealth: armour of obfuscation adds 1 and a third a level (Obfuscation.stealthBoost); talents add to it in their stream. */
-export const heroStealth = (hero: Hero): number => (hero.armor.glyph === 'obfuscation' ? Math.fround(1 + gearLevel(hero.armor) / 3) : 0);
+export const heroStealth = (hero: Hero): number => (hasGlyph(hero, 'obfuscation') ? Math.fround(1 + gearLevel(hero.armor) / 3) : 0);
 /** Hero.maxExp: what the next level costs. */
 export const maxExp = (hero: Hero): number => 5 + hero.lvl * 5;
 
@@ -537,7 +539,9 @@ export type MobKind =
   /** WandOfWarding.Ward, WandOfLivingEarth.EarthGuardian, WandOfRegrowth.Lotus. */
   | 'ward' | 'guardian' | 'lotus'
   /** Feint.AfterImage: the Duelist's decoy, which enemies strike at and lose track of the hero. */
-  | 'afterImage';
+  | 'afterImage'
+  /** PowerOfMany.LightAlly: the Cleric's ally of solid light, a copy of one of the heroes (it takes after its hero's level). */
+  | 'lightAlly';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
 export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
 
@@ -628,6 +632,8 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   ward: { name: 'ward', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** The wand of living earth's guardian, as strong as the wand and the hero (see mobStats). */
   guardian: { name: 'earthen guardian', ht: 1, attack: 0, defense: 0, damage: [2, 4], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** The Cleric's light ally: 80 health; its accuracy, evasion and strength grow with the hero's level (see mobStats). */
+  lightAlly: { name: 'light ally', ht: 80, attack: 10, defense: 5, damage: [5, 30], dr: 5, exp: 0, maxLvl: 0, speed: 1 },
   /** Feint's afterimage: the hero's shadow, struck at in vain (it fades before the hero's next turn). */
   afterImage: { name: 'afterimage', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** The wand of regrowth's lotus, which withers a little every turn. */
@@ -664,6 +670,8 @@ export function mobStats(mob: Mob): MobStats {
     // PrismaticImage: the hero's accuracy and evasion (9 + lvl, 4 + lvl) and its own damage, by the hero's level.
     return { ...MOBS.prismatic, ht: mob.ht, attack: 9 + depth, defense: 4 + depth, damage: [2 + Math.trunc(depth / 4), 4 + Math.trunc(depth / 2)] };
   }
+  // LightAlly: equal to the hero's own accuracy and evasion at its level.
+  if (mob.kind === 'lightAlly') return { ...MOBS.lightAlly, attack: depth + 9, defense: depth + 4 };
   if (mob.kind === 'wraith') return { ...MOBS.wraith, attack: 10 + depth, defense: (10 + depth) * 5, damage: [1, 3 + depth] };
   if (mob.kind === 'guardian') {
     // EarthGuardian: half the hero's evasion, and as accurate as the hero; damageRoll grows with the depth.

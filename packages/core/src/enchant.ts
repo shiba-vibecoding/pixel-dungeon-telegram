@@ -1,3 +1,4 @@
+import { hasGlyph } from './classes/state';
 import {
   baseKind, beckon, createMob, enchantLevel, type Hero, heroAttackDelay, heroDefenseSkill, isAlive, isShopkeeper, isStarving, type Mob, type MobKind,
   MOBS, mobStats, rollMob, STARVING,
@@ -9,7 +10,7 @@ import { isEnemy as enemyMob } from './hero';
 import { beyond, geyser, MAGIC_BOLT, STOP_TARGET, teleportChar, throwChar, trajectory } from './displace';
 import { castShadow, terrainBlocksSight, viewDistance } from './fov';
 import { type Char, charAt, type Ctx, enterCell, heroesOn, heroView, isHero, isPassable, isWater } from './floor';
-import { type Enchantment, type Item, itemDef, ItemGenerator } from './items';
+import { type Enchantment, type Glyph, type Item, itemDef, ItemGenerator } from './items';
 import { durabilityPerUse, isDart, isMissile } from './missiles';
 import { plant, SEED_PLANTS, stepOnPlant } from './plants';
 import { seedGas } from './gas';
@@ -488,8 +489,7 @@ function crystalState(ctx: Ctx, hero: Hero, weapon: Item, before: number): void 
  * Armor.proc: what the hero's glyph (or its curse) does when a blow lands, before the armour soaks it
  * (Char.defenseProc); returns the damage that gets through to the armour.
  */
-export function armorProc(ctx: Ctx, attacker: Mob, hero: Hero, damage: number, blow: Blow): number {
-  const glyph = hero.armor.glyph;
+export function armorProc(ctx: Ctx, attacker: Mob, hero: Hero, damage: number, blow: Blow, glyph: Glyph | undefined = hero.armor.glyph): number {
   if (!glyph) return damage;
   const { rng, depth, world } = ctx;
   const level = Math.max(0, gearLevel(hero.armor));
@@ -581,7 +581,7 @@ export function armorProc(ctx: Ctx, attacker: Mob, hero: Hero, damage: number, b
       for (const n of NEIGHBOURS8) freezing(ctx, hero.pos + n);
       // The frost's show around the wearer (not on its own cell).
       ctx.effects.push({ type: 'burst', depth, pos: hero.pos, kind: 'frost', radius: 1, silent: true });
-      if (!isWater(ctx.level.map[hero.pos]!) && hero.armor.glyph !== 'brimstone') hero.burning = Math.max(hero.burning, 4);
+      if (!isWater(ctx.level.map[hero.pos]!) && !hasGlyph(hero, 'brimstone')) hero.burning = Math.max(hero.burning, 4);
       shown();
       return damage;
     }
@@ -692,7 +692,7 @@ export function deferDamage(ctx: Ctx, hero: Hero, damage: number, level: number)
 
 /** AntiMagic.drRoll: magic hurts a hero in armour of anti-magic less. */
 export function antiMagicSoak(hero: Hero, rng: { normalIntRange(min: number, max: number): number }): number {
-  if (hero.armor.glyph !== 'antiMagic') return 0;
+  if (!hasGlyph(hero, 'antiMagic')) return 0;
   const level = gearLevel(hero.armor);
   const multi = procMultiplier(hero);
   return rng.normalIntRange(Math.round(level * multi), Math.round((3 + level * 1.5) * multi));
@@ -700,7 +700,7 @@ export function antiMagicSoak(hero: Hero, rng: { normalIntRange(min: number, max
 
 /** Camouflage.activate: trampling tall grass, the wearer melts into it for a few turns. */
 export function camouflage(hero: Hero): void {
-  if (hero.armor.glyph !== 'camouflage') return;
+  if (!hasGlyph(hero, 'camouflage')) return;
   hero.invisible = Math.max(hero.invisible, Math.round((3 + gearLevel(hero.armor) / 2) * procMultiplier(hero)));
 }
 
@@ -712,7 +712,7 @@ const MAGIC_SOURCES: ReadonlySet<string> = new Set(['magic', 'wand', 'eye']);
  * anti-magic soaks magic (AntiMagic.drRoll); a blocking weapon's shield takes what it can (ShieldBuff.processDamage).
  */
 export function gearSoaks(ctx: Ctx, hero: Hero, damage: number, source: Char | string): number {
-  if (source === 'burning' && hero.armor.glyph === 'brimstone') return 0;
+  if (source === 'burning' && hasGlyph(hero, 'brimstone')) return 0;
   const what = typeof source === 'string' ? source : isHero(source) ? '' : source.kind;
   if (MAGIC_SOURCES.has(what)) damage = Math.max(0, damage - antiMagicSoak(hero, ctx.rng));
   if (hero.blocking && source !== 'hunger' && damage > 0) {

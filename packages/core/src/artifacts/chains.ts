@@ -78,6 +78,12 @@ function plan(ctx: Ctx, hero: Hero, item: Item, target: number): Pull {
   return { who: 'hero', to, cost };
 }
 
+/** The plan's refusal alone, whatever the item (for Trinity's chain-casting): null if the pull can be made. */
+export function chainsPlanProblem(ctx: Ctx, hero: Hero, item: Item, cell: number): string | null {
+  const pull = plan(ctx, hero, item, cell);
+  return 'problem' in pull ? pull.problem : null;
+}
+
 export function chainsProblem(ctx: Ctx, hero: Hero, item: Item, cell: number | undefined): string | null {
   if (magicImmune(hero)) return 'art:magic_immune';
   if (!isWorn(hero, item)) return 'art:artifact.need_to_equip';

@@ -1,6 +1,6 @@
 import { type Hero, heroAttackDelay, isAlive, type Mob } from '../actors';
 import { ballistica, PROJECTILE } from '../ballistica';
-import { cleanse } from '../buffs';
+import { shedNegatives } from './common';
 import { attack } from '../combat';
 import { beyond, press, throwChar } from '../displace';
 import { enterCell, leaveCell, charAt, type Ctx, heroView, isHero } from '../floor';
@@ -126,7 +126,7 @@ const OUT_OF_RANGE = 'art:items.weapon.melee.meleeweapon.ability_target_range';
 const OCCUPIED = 'art:items.weapon.melee.meleeweapon.ability_occupied';
 
 const fistsReach = (world: World, hero: Hero, target: Mob): boolean =>
-  distance(hero.pos, target.pos) <= 1 || ((hero.cls?.holy?.ascended ?? 0) > 0 && canReach(world, world.levels[hero.depth]!, hero, target.pos, 3));
+  distance(hero.pos, target.pos) <= 1 || (hero.cls?.ascend !== undefined && canReach(world, world.levels[hero.depth]!, hero, target.pos, 3));
 
 function foeAt(world: World, hero: Hero, cell: number): Mob | null {
   const there = Number.isInteger(cell) && cell >= 0 && cell < LENGTH ? charAt(world, hero.depth, cell) : undefined;
@@ -228,8 +228,7 @@ export function useMonk(ctx: Ctx, hero: Hero, ability: MonkAbility, cell: number
       fx(ctx, hero, { k: 'operate' });
       fx(ctx, hero, { k: 'flash', color: 0x88000000 });
       // Every harmful condition is shaken off.
-      cleanse(hero, 0);
-      if (hero.buffs) delete hero.buffs.cleanse;
+      shedNegatives(hero);
       if (power) {
         const heal = Math.round((hero.ht - hero.hp) / 5);
         if (heal > 0) {

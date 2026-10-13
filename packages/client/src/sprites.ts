@@ -280,6 +280,9 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimNam
   mirror: { w: 12, h: 15, anims: HERO_ANIMS },
   // A prismatic image (PrismaticImage) is drawn with its hero's sheet too, until it has a sprite of its own.
   prismatic: { w: 12, h: 15, anims: HERO_ANIMS },
+  // Feint's afterimage and Power of Many's light ally: a hero's sheet too (View.sync), faint.
+  afterImage: { w: 12, h: 15, anims: HERO_ANIMS },
+  lightAlly: { w: 12, h: 15, anims: HERO_ANIMS },
   blacksmith: {
     w: 13,
     h: 16,
@@ -408,7 +411,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
   const mob = (kind: MobKind): CharSprite => {
     const spec = MOB_SPRITES[kind];
     // A mirror image is drawn with its hero's own sheet (see View.sync); the warrior's stands in here.
-    const image = kind === 'mirror' || kind === 'prismatic' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp'
+    const image = kind === 'mirror' || kind === 'prismatic' || kind === 'afterImage' || kind === 'lightAlly' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp'
       : kind === 'ward' ? 'spd/wards' : kind === 'guardian' ? 'spd/guardian' : kind === 'lotus' ? 'spd/lotus' : kind === 'ghostHero' ? 'spd/ghost'
       : baseKind(kind);
     return { sheet: sheet(images[image as (typeof names)[number]], spec.w, spec.h), anims: spec.anims };

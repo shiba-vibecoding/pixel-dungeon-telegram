@@ -1,4 +1,6 @@
 import { type Hero, heroArtifacts } from '../actors';
+import { chargeTome } from '../classes/cleric-core';
+import { hasTalent } from '../talents';
 import type { Ctx } from '../floor';
 import type { Item } from '../items';
 import { itemAt, type ItemRef } from '../scrolls';
@@ -256,6 +258,9 @@ export function chargeArtifacts(ctx: Ctx, hero: Hero, amount: number, ignoreHorn
     if (ignoreHorn && item.kind === 'artifact.horn') continue;
     chargeArtifact(ctx, hero, item, amount);
   }
+  // The holy tome carried (light reading) charges a little too.
+  const carried = hero.items.find((item) => item.kind === 'artifact.tome');
+  if (carried && hasTalent(hero, 'LIGHT_READING')) chargeTome(hero, carried, amount);
 }
 
 /** Artifact.charge, by kind. */
@@ -274,6 +279,7 @@ export function chargeArtifact(ctx: Ctx, hero: Hero, item: Item, amount: number)
     case 'artifact.cape': return chargeCape(ctx, hero, item, amount);
     case 'artifact.toolkit': return chargeToolkit(hero, item, amount);
     case 'artifact.beacon': return chargeBeacon(item, amount);
+    case 'artifact.tome': return chargeTome(hero, item, amount);
   }
 }
 

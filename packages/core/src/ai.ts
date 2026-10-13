@@ -1,6 +1,7 @@
 import {
   baseKind, beckon, createMob, GOO_PUMPED, type Hero, heroStealth, isAlive, isShopkeeper, type Mob, type MobState, MOBS, mobStats, rollMob,
 } from './actors';
+import { lightAllyAct } from './classes/cleric-allies';
 import { afterImageAct } from './classes/duelist-armor';
 import { attack, defenseOf, hurt } from './combat';
 import { dissolveGuardian, lotusAct, wardCanAttack, wardZap } from './allies';
@@ -133,6 +134,11 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
   // Feint.AfterImage.act: it fades.
   if (mob.kind === 'afterImage') {
     afterImageAct(ctx, mob);
+    return;
+  }
+  // PowerOfMany.LightAlly.
+  if (mob.kind === 'lightAlly') {
+    lightAllyAct(ctx, mob);
     return;
   }
   // Alchemy's allies (those that follow a hero: an enthralled monster, a prismatic image, a summoned elemental); the

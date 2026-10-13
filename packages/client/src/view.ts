@@ -1,6 +1,6 @@
 import {
   adjacent, cellX, cellY, type Effect, F, terrainFlags, type Enchantment, heroById, isAlive, isTippedDart, itemDef, type ItemKind, itemSprite, LENGTH, type MobKind,
-  visibleCells, WIDTH, type World,
+  visibleCells, WIDTH, type World, type HeroClass,
   type Look, S, isInvisible, frozenBy,
 } from '@pd/core';
 import { artText, capital } from './artifacttext';
@@ -485,12 +485,20 @@ export class View {
     for (const mob of world.floors[this.depth]?.mobs ?? []) {
       // A mirror image looks like its hero, only fainter.
       // A prismatic image too, its hero's ally.
-      const owner = mob.image?.owner ?? (mob.kind === 'prismatic' ? mob.owner : undefined);
+      const owner = mob.image?.owner ?? (mob.kind === 'prismatic' || mob.kind === 'afterImage' ? mob.owner : undefined);
       const twin = owner !== undefined ? world.heroes.find((hero) => hero.id === owner) : undefined;
       if (twin) {
         place(mob.id, 'mirror', this.assets.heroes[twin.heroClass], false, mob.pos, mob.hp, mob.ht, false, false, true);
         this.puppets.get(mob.id)!.sprite = heroSprite(this.assets, twin.heroClass, this.looks[twin.id]?.skin);
         this.puppets.get(mob.id)!.row = itemDef(twin.armor.kind).tier ?? 0;
+        continue;
+      }
+      if (mob.kind === 'lightAlly') {
+        // A copy of one of the heroes, made of light: the class is drawn by lot when it is made (PowerOfMany.LightAlly).
+        const looks = Object.keys(this.assets.heroes) as HeroClass[];
+        const shape = looks[Number(mob.marks?.cls ?? 0) % looks.length]!;
+        place(mob.id, 'mirror', this.assets.heroes[shape], false, mob.pos, mob.hp, mob.ht, false, false, true);
+        this.puppets.get(mob.id)!.sprite = heroSprite(this.assets, shape);
         continue;
       }
       place(mob.id, mob.kind, this.assets.mobs[mob.kind], false, mob.pos, mob.hp, mob.ht,

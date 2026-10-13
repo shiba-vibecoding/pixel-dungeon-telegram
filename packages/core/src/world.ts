@@ -1,3 +1,4 @@
+import { hasGlyph } from './classes/state';
 import { wear } from './wear';
 import { identifyBelongings, observeBelongings } from './ident';
 import { mobAct, populate, randomRespawnCell, reinforce, respawn, TIME_TO_RESPAWN } from './ai';
@@ -1011,7 +1012,7 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   if (hero.gasImmune) hero.gasImmune = Math.max(0, hero.gasImmune - time);
   if (hero.burning > 0) {
     // Armour of brimstone: fire does not take (Char.isImmune: Burning).
-    if (isWater(ctx.level.map[hero.pos]!) || hero.armor.glyph === 'brimstone') {
+    if (isWater(ctx.level.map[hero.pos]!) || hasGlyph(hero, 'brimstone')) {
       hero.burning = 0;
     } else {
       for (let i = ticks(hero.burning); i > 0 && isAlive(hero); i--) {
@@ -1247,7 +1248,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
 function footing(ctx: Ctx, hero: Hero): Footing {
   const { level } = ctx;
   let enemyNear = false;
-  if (hero.armor.glyph === 'swiftness') {
+  if (hasGlyph(hero, 'swiftness')) {
     const reach = new Map<number, number>([[hero.pos, 0]]);
     const queue = [hero.pos];
     for (let head = 0; head < queue.length && !enemyNear; head++) {

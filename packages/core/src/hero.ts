@@ -1,3 +1,4 @@
+import { spiritRing } from './classes/state';
 import { type Hero, heroRings, isAlive, type Mob, type MobKind } from './actors';
 import { mightHTMultiplier } from './rings';
 import { hungerPaused, mightOnLevelUp } from './buffs';
@@ -39,7 +40,7 @@ export const heroHT = (hero: Hero): number => 20 + 5 * (hero.lvl - 1) + (hero.ht
  */
 export function growHT(hero: Hero, amount: number, boostHP: boolean): void {
   // With rings of might worn, Hero.updateHT itself: the base health times their multiplier.
-  if (heroRings(hero).some((ring) => ring.kind === 'ring.might')) {
+  if (heroRings(hero).some((ring) => ring.kind === 'ring.might') || spiritRing(hero)?.kind === 'ring.might') {
     refreshMightHT(hero, boostHP);
     return;
   }

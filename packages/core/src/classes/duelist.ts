@@ -150,7 +150,7 @@ export function chargeUse(hero: Hero, wep: Item): number {
 export function weaponReach(hero: Hero, wep: Item): number {
   let reach = weaponRch(wep.kind);
   if (wep.enchant === 'projecting') reach += 1;
-  if (hero.cls?.holy?.ascended) reach += 2;
+  if (hero.cls?.ascend) reach += 2;
   return reach;
 }
 const canHit = (world: World, hero: Hero, wep: Item, target: Mob): boolean =>

@@ -1,3 +1,4 @@
+import { hasGlyph } from './classes/state';
 import { beckon, createMob, type Hero, heroArmor, isAlive, type Mob, type MobKind, MOBS, mobStats, rollMob } from './actors';
 import { harvestKill } from './classes/hooks';
 import { mobGearTick } from './throwing';
@@ -52,7 +53,7 @@ export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost' | 'toxic'
     // BlobImmunity (purity), and the imbues: fire (FireImbue), frost and chill (FrostImbue), toxic gas (ToxicImbue);
     // armour of brimstone keeps fire off its wearer (Char.isImmune: Burning).
     if (harm === 'gas') return (char.gasImmune ?? 0) > 0;
-    if (harm === 'burning') return (b?.fireImbue ?? 0) > 0 || char.armor.glyph === 'brimstone';
+    if (harm === 'burning') return (b?.fireImbue ?? 0) > 0 || hasGlyph(char, 'brimstone');
     if (harm === 'frost') return (b?.frostImbue ?? 0) > 0;
     if (harm === 'toxic') return (b?.toxicImbue ?? 0) > 0;
     return false;

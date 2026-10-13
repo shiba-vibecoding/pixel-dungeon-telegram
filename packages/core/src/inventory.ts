@@ -54,7 +54,7 @@ import { activateStone, INVENTORY_STONES, stoneProblem, useStone } from './stone
 import { castSpell, spellProblem } from './spells';
 import { explode, lightFuse, snuff } from './bombs';
 import { isChallenged, NO_FOOD } from './challenges';
-import { classFoodEaten, classPotionUsed } from './classes/hooks';
+import { classFoodEaten, classPotionUsed, classScrollUsed, classStoneUsed } from './classes/hooks';
 import { eatingTime } from './artifacts/seams';
 import { ARMOR_ABILITIES } from './talents';
 import { identifiesOnEquip } from './classes/duelist-talents';
@@ -112,7 +112,7 @@ export type InventoryAction =
   /** Mine the vein of dark gold next to the hero with the blacksmith's pickaxe. */
   | { type: 'mine' }
   /** The special ability of the class armour worn: a cell for the warrior's leap and the rogue's smoke bomb. */
-  | { type: 'special'; target?: number }
+  | { type: 'special'; target?: number; choice?: number }
   /**
    * AlchemyScene: brew at an alchemy pot. `inputs` are pack slots, one item from each (a stack of thrown weapons or
    * of liquid metal whole; a slot twice for two of it); `recipe` which of the recipes they make (alchemy.ts).
@@ -209,7 +209,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
   }
   if (action.type === 'affix') return affixProblem(hero, action.from, action.to);
   if (action.type === 'detach') return detachProblem(hero, action.armor);
-  if (action.type === 'special') return specialProblem(world, hero, action.target);
+  if (action.type === 'special') return specialProblem(world, hero, action.target, action.choice);
   if (action.type === 'unequip') {
     if (!hero.weapon) return 'nothing in hand';
     // EquipableItem.doUnequip: a cursed weapon will not leave the hand.
@@ -364,7 +364,7 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       detachSeal(ctx, hero, action.armor);
       return 0;
     case 'special':
-      return classSpecial(ctx, hero, action.target);
+      return classSpecial(ctx, hero, action.target, action.choice);
     case 'alchemy':
       // AlchemyScene: brewing takes no time.
       brew(ctx, hero, action.inputs, action.recipe ?? 0);
@@ -799,6 +799,7 @@ function throwStone(ctx: Ctx, hero: Hero, index: number, target: number): void {
   }
   hero.invisible = 0;
   activateStone(ctx, hero, kind, end);
+  classStoneUsed(ctx, hero, kind);
   if (!charAt(ctx.world, ctx.depth, end)) pressUnderItem(ctx, end);
 }
 
@@ -1146,7 +1147,10 @@ function use(ctx: Ctx, hero: Hero, action: Extract<InventoryAction, { type: 'use
     return TIME_TO_USE;
   }
   if (INVENTORY_STONES.has(kind)) {
-    if (useStone(ctx, hero, kind, on!, action.choice)) takeOne();
+    if (useStone(ctx, hero, kind, on!, action.choice)) {
+      takeOne();
+      classStoneUsed(ctx, hero, kind);
+    }
     hero.invisible = 0;
     return TIME_TO_USE;
   }
@@ -1160,6 +1164,8 @@ function use(ctx: Ctx, hero: Hero, action: Extract<InventoryAction, { type: 'use
     takeOne();
     ctx.effects.push({ type: 'used', hero: hero.id, kind, identified: learn(world, kind) });
     readScroll(ctx, hero, kind, target, { cell: action.cell, choice: action.choice });
+    // Talent.onScrollUsed.
+    classScrollUsed(ctx, hero, kind);
     return TIME_TO_USE;
   }
   // A potion, a brew or an elixir, drunk (Potion.drink).

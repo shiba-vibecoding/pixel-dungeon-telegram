@@ -86,3 +86,15 @@ export { chargeLimit } from './regrowth';
 export type { CursedEffect } from './cursed';
 export { friendly } from './allies';
 export { type Property, propertiesOf } from './props';
+
+// The classes stream: the Duelist and the Cleric (talents, weapon abilities, the Monk, the holy tome and its spells, armour abilities).
+export * from './talents';
+export { type ClassAction, classProblem, isClassAction } from './classes/actions';
+export { MONK_ABILITIES, MONK_AIMS, MONK_COST, type MonkAbility, energyCap as monkEnergyCap, energyOf as monkEnergy, empowered as monkEmpowered } from './classes/monk';
+export { abilityAims, abilityBoost, abilityInfoArgs, abilityKind, hasAbility, weaponOf } from './classes/duelist';
+export { chargeCap as duelistChargeCap, charges as duelistCharges } from './classes/charger';
+export { allSpells, type CastAction, type SpellDef, type SpellId, spellDef, spellsOf, tomeOf } from './classes/cleric';
+export { cs as classState, hasTimer, timerLeft, markTurns } from './classes/state';
+export { abilityDef, ABILITY_DEFS, armorCharge, chargeUse as abilityChargeUse } from './classes/abilities';
+export type { ClassFx } from './classes/fx';
+export { HERO_CLASSES as CLASSES } from './heroclass';

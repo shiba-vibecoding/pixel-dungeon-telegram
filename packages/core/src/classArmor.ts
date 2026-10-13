@@ -50,9 +50,9 @@ export function applyArmorKit(ctx: Ctx, hero: Hero, index: number, choice?: numb
 
 const wearsClassArmor = (hero: Hero): boolean => hero.armor.kind === CLASS_ARMOR_OF[hero.heroClass];
 
-export function specialProblem(world: World, hero: Hero, target: number | undefined): string | null {
+export function specialProblem(world: World, hero: Hero, target: number | undefined, choice?: number): string | null {
   if (!wearsClassArmor(hero)) return 'you wear no class armour';
-  if (ARMOR_ABILITIES[hero.heroClass]) return abilityProblem(world, hero, target);
+  if (ARMOR_ABILITIES[hero.heroClass]) return abilityProblem(world, hero, target, choice);
   if (hero.hp < 3) return 'you are too weak for that';
   if (hero.heroClass === 'warrior') {
     return Number.isInteger(target) && target !== hero.pos && target! >= 0 ? null : 'choose where to leap';
@@ -71,9 +71,9 @@ export function specialProblem(world: World, hero: Hero, target: number | undefi
 }
 
 /** ClassArmor.doSpecial: the ability of the hero's class; a third of their health is the price. Returns the time it took. */
-export function classSpecial(ctx: Ctx, hero: Hero, target: number | undefined): number {
+export function classSpecial(ctx: Ctx, hero: Hero, target: number | undefined, choice?: number): number {
   const { world, depth, level } = ctx;
-  if (ARMOR_ABILITIES[hero.heroClass]) return performAbility(ctx, hero, target);
+  if (ARMOR_ABILITIES[hero.heroClass]) return performAbility(ctx, hero, target, choice);
   const seen = heroView(world, hero);
   const foes = (): Mob[] => ctx.floor.mobs.filter((mob) => seen[mob.pos] && mob.state !== 'passive' && isAlive(mob));
   const pay = (): void => {
