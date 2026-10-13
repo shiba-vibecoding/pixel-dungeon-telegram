@@ -1,4 +1,5 @@
 import { type Hero, isAlive, type Mob, MOBS } from './actors';
+import { markTurn, markTurns } from './classes/state';
 import { hurt } from './combat';
 import { chillPack } from './cooking';
 import { type Char, type Ctx, isHero, isWater } from './floor';
@@ -191,6 +192,7 @@ export function mobStatusTurn(ctx: Ctx, mob: Mob): boolean {
   corruptionTick(ctx, mob);
   if (!isAlive(mob)) return true;
   fadeShield(mob);
+  markTurn(mob);
   for (const key of ['chill', 'hexed', 'vulnerable', 'blessed', 'invulnerable', 'soulMarked', 'blasted'] as const) countDown(mob, key);
   // Weakness on a monster (the wand of corruption's) wears off too; a hero's is Hero.weakened, counted in spend.
   countDown(mob, 'weakened');
@@ -258,7 +260,8 @@ export function timeScale(char: Char): number {
 /** Char.attack's accuracy and evasion rolls: a hex makes both a fifth worse, a blessing a quarter better. */
 export function rollFactor(char: Char): number {
   // A hero's Bless is already in the hero's accuracy and evasion (actors.ts heroAttackSkill, heroDefenseSkill).
-  return ((char.hexed ?? 0) > 0 ? 0.8 : 1) * (!isHero(char) && (char.blessed ?? 0) > 0 ? 1.25 : 1);
+  // Daze (a mace's heavy blow): half as accurate and half as evasive.
+  return ((char.hexed ?? 0) > 0 ? 0.8 : 1) * (!isHero(char) && (char.blessed ?? 0) > 0 ? 1.25 : 1) * (!isHero(char) && markTurns(char, 'daze') > 0 ? 0.5 : 1);
 }
 
 /** Whether a cell is a pit a creature would fall into: Levitation keeps one up. */

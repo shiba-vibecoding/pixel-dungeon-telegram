@@ -57,6 +57,8 @@ export interface ClassState {
 
   /* The Monk (MonkEnergy) */
   energy?: number;
+  /** Flurry cannot be used twice at one moment (FlurryCooldownTracker): when it was last used. */
+  flurryAt?: number;
   /** MonkAbility.Meditate and the other lingering parts of the abilities (their timers are in `until`). */
   meditate?: boolean;
 
@@ -75,6 +77,8 @@ export interface ClassState {
 
 /** What a spell or an ability leaves on a monster. */
 export interface MobMarks {
+  /** Turns left of the buffs a monster carries, counted down on its own turns (Daze, ...). */
+  t?: Record<string, number>;
   /** SpectatorFreeze: frozen in place while a duel goes on. */
   spectator?: boolean;
   /** Challenge.DuelParticipant: the duel's turns left and the harm taken. */
@@ -146,3 +150,29 @@ export function clearTimer(hero: Hero, key: string): void {
 /** Whether the hero holds an item (it is the weapon in hand, the second one, or in the pack): by reference. */
 export const holds = (hero: Hero, item: Item): boolean =>
   hero.weapon === item || hero.secondWep === item || hero.items.includes(item);
+
+/* A monster's buffs are counted in its own turns. */
+
+/** Whether a monster carries a buff of the classes' (turns left). */
+export const markTurns = (mob: Mob, key: string): number => mob.marks?.t?.[key] ?? 0;
+
+/** Buff.prolong(mob, X, turns). */
+export function prolongMark(mob: Mob, key: string, turns: number): void {
+  const m = marks(mob);
+  (m.t ??= {})[key] = Math.max(m.t[key] ?? 0, turns);
+}
+
+/** Buff.detach. */
+export function clearMark(mob: Mob, key: string): void {
+  if (mob.marks?.t) delete mob.marks.t[key];
+}
+
+/** A monster's turn: its buffs wear down by one. */
+export function markTurn(mob: Mob): void {
+  const t = mob.marks?.t;
+  if (!t) return;
+  for (const key of Object.keys(t)) {
+    t[key]! -= 1;
+    if (t[key]! <= 0) delete t[key];
+  }
+}

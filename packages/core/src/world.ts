@@ -37,6 +37,9 @@ import { type ImpQuest, impRewardProblem, ringFromImp, spawnImp, talkToImp } fro
 import { type ItemRef, reforge, reforgeProblem, type SmithQuest, spawnBlacksmith, talkToSmith } from './smith';
 import { spawnWandmaker, talkToWandmaker, type WandQuest, wandFromWandmaker, wandRewardProblem } from './wandmaker';
 import { isBossDepth, LAST_SHOP_DEPTH } from './level/builder';
+import { type ClassAction, classProblem, isClassAction, performClass } from './classes/actions';
+import { settleTimers } from './classes/state';
+import { greaterHasteMove, onRest } from './classes/duelist-talents';
 import { generateLevel, type Level } from './level/generate';
 import { adjacent, cellX, cellY, distance, HEIGHT, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { breakStairsRoom } from './level/halls-boss';
@@ -100,7 +103,9 @@ export type Action =
    */
   | { type: 'arenaReady'; cancel?: boolean }
   | { type: 'arenaPick'; choice: number }
-  | InventoryAction;
+  | InventoryAction
+  /** The Duelist's and the Cleric's own: talents, weapon abilities, spells (classes/actions.ts). */
+  | ClassAction;
 
 export type ActionResult = { ok: true; effects: Effect[] } | { ok: false; reason: string };
 
@@ -408,6 +413,7 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
   // The unstable spellbook's scroll waits to be settled first.
   if (hero.pendingScroll && action.type !== 'artifact') return 'art:unstablespellbook.prompt';
   if (isInventoryAction(action)) return inventoryProblem(world, hero, action);
+  if (isClassAction(action)) return classProblem(world, hero, action);
   const inArena = arenaProblem(world, hero, action);
   if (inArena !== undefined) return inArena;
   const level = levelAt(world, hero.depth);
@@ -932,6 +938,8 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   }
   const from = hero.time;
   hero.time += time;
+  // What the classes' abilities set to last until the hero's next turn now has its end.
+  settleTimers(hero);
   if (hero.depth === ctx.depth) altarMarksHero(ctx, hero, time);
   // The hero's buffs, the artifacts' among them, once a turn; a cursed hourglass may steal a turn.
   const lost = heroTurns(ctx, hero, from, hero.time);
@@ -1022,6 +1030,14 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
 
 function perform(ctx: Ctx, hero: Hero, action: Action): void {
   const { world, level } = ctx;
+  if (isClassAction(action)) {
+    spend(ctx, hero, performClass(ctx, hero, action));
+    if (isAlive(hero)) {
+      observe(world, hero);
+      noteLandmarks(world, hero);
+    }
+    return;
+  }
   if (isInventoryAction(action)) {
     spend(ctx, hero, performInventory(ctx, hero, action));
     if (isAlive(hero)) {
@@ -1034,6 +1050,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
     case 'wait':
       // Hero.rest: resting takes a turn, whatever slows or hastens the hero (spendConstant).
       spend(ctx, hero, TIME_TO_REST, true);
+      onRest(hero);
       break;
 
     case 'search':
@@ -1078,7 +1095,8 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
         wanderer.pos = from;
         enterCell(level, from);
       }
-      spend(ctx, hero, 1 / heroSpeed(hero, footing(ctx, hero)));
+      // GreaterHaste: a move costs no time, and uses one of its moves up.
+      spend(ctx, hero, greaterHasteMove(hero) ? 0 : 1 / heroSpeed(hero, footing(ctx, hero)));
       if (hero.pos === from) break;
       // The step is done, then the trap goes off; floating, the hero touches nothing (Char.move). While the
       // hourglass freezes time, traps and plants wait for it to start again (heroPress).

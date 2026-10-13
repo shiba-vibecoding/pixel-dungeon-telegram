@@ -113,6 +113,16 @@ export function forceRange(hero: Hero, str: number): readonly [number, number] |
   return [Math.max(0, Math.round(tier + level)), Math.max(0, Math.round(5 * (tier + 1) + level * (tier + 1)))];
 }
 
+/** Whether a ring of force is worn (Hero.buff(RingOfForce.Force)). */
+export const wearsForce = (hero: Hero): boolean => heroRings(hero).some((ring) => ring.kind === 'ring.force') && !ringsSuppressed(hero);
+
+/** RingOfForce.damageRoll's brawler's stance bonus: 3 + tier, and 4+2×tier eighths of a level. */
+export function brawlBonus(hero: Hero, str: number): number {
+  const level = ringBuffedBonus(hero, 'ring.force');
+  const tier = forceTier(str);
+  return Math.floor(Math.fround(3 + tier + level * Math.fround((4 + 2 * tier) / 8)) + 0.5);
+}
+
 /** RingOfForce.armedDamageBonus: added to every melee blow with a weapon. */
 export const forceArmedBonus = (hero: Hero): number => ringBuffedBonus(hero, 'ring.force');
 

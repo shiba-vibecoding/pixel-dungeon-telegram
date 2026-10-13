@@ -23,6 +23,7 @@ import { LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import type { Rng, RngState } from './rng';
 import type { World } from './world';
+import type { ClassFx } from './classes/fx';
 import { awareCells } from './artifacts/talisman';
 
 /*
@@ -382,6 +383,8 @@ export type Effect =
   | { type: 'sinkhole'; depth: number; cells: number[] }
   /** A ward the hero bumped into: dismiss it? (WndOptions) */
   | { type: 'ward'; hero: string; mob: string }
+  /** The Duelist's and the Cleric's doing: an animation, a burst or a sound for the client (classes/fx.ts). */
+  | { type: 'classFx'; depth: number; hero: string; fx: ClassFx }
   /** A queued action that became impossible before the hero's turn came. */
   | { type: 'interrupted'; hero: string; reason: string };
 

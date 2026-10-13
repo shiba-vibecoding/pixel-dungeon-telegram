@@ -1,4 +1,5 @@
 import { beckon, createMob, type Hero, heroArmor, isAlive, type Mob, type MobKind, MOBS, mobStats, rollMob } from './actors';
+import { harvestKill } from './classes/hooks';
 import { mobGearTick } from './throwing';
 import { CRIPPLE_TURNS, earnExp, hurt } from './combat';
 import { charAt, type Char, type Ctx, enterCell, exploredCells, heroesOn, isHero, isPassable, isWater, leaveCell } from './floor';
@@ -252,7 +253,11 @@ export function mobConditions(ctx: Ctx, mob: Mob): boolean {
     if (mob.bleeding > 0) {
       ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage: mob.bleeding });
       hurt(ctx, mob, mob.bleeding, 'bleeding');
-      if (!isAlive(mob)) return true;
+      if (!isAlive(mob)) {
+        // Bleeding.act: a sickle's harvest that kills counts as the ability's kill.
+        harvestKill(ctx, mob);
+        return true;
+      }
     }
   }
   if ((mob.poison ?? 0) > 0) {

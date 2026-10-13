@@ -19,7 +19,7 @@ import { T } from './level/terrain';
 import type { Action, PlanStep } from './world';
 import type { Awareness, PendingScroll } from './artifacts';
 import type { WealthCounters } from './rings';
-import type { ClassState, MobMarks } from './classes/state';
+import { type ClassState, hasTimer, type MobMarks } from './classes/state';
 
 /*
  * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
@@ -417,9 +417,12 @@ export function heroDrRoll(hero: Hero, rng: Rng): number {
  * most on a surprise attack. Bare-handed: 1 to STR-8. Darts thrown with a crossbow in hand take its numbers; a spirit
  * arrow the bow's. Seam: the thirteen-leaf clover (a trinket) would alter the hero's rolls.
  */
-export function heroDamageRoll(hero: Hero, rng: Rng, surprised = false, weapon: Strike = hero.weapon): number {
+export function heroDamageRoll(hero: Hero, rng: Rng, surprised = false, weapon: Strike = hero.weapon, fists = false): number {
   let damage: number;
-  if (!weapon) {
+  if (fists) {
+    // A Monk's ability: plain fists, whatever ring is worn (RingOfForce.damageRoll with the UnarmedAbilityTracker).
+    damage = rng.normalIntRange(1, Math.max(heroStr(hero) - 8, 1));
+  } else if (!weapon) {
     // RingOfForce.damageRoll: bare-handed, as a weapon of the strength's tier with a ring of force; else 1 to STR-8.
     const force = forceRange(hero, heroStr(hero));
     damage = force ? rng.normalIntRange(force[0], force[1]) : rng.normalIntRange(1, Math.max(heroStr(hero) - 8, 1));
@@ -469,8 +472,8 @@ export function heroAttackDelay(hero: Hero, weapon: Strike = hero.weapon): numbe
   let delay = augmentDelay(weapon, category === 'weapon' ? weaponDly(weapon.kind) : 1);
   const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
   if (encumbrance > 0) delay = f32(delay * 1.2 ** encumbrance);
-  // Seam: the scimitar's sword dance (classes) would speed it up.
-  return f32(delay / attackSpeedMultiplier(hero));
+  // Scimitar.SwordDance: 0.6 faster (Weapon.speedMultiplier adds it to the furor ring's).
+  return f32(delay / (attackSpeedMultiplier(hero) + (hero.cls && hasTimer(hero, 'dance') ? 0.6 : 0)));
 }
 
 /** Weapon.reachFactor: how far the weapon in hand strikes (a projecting one a cell further). */

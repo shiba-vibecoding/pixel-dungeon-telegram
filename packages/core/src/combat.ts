@@ -16,9 +16,11 @@ import { guardianArmor, wardArmor } from './allies';
 import { isChallenged, NO_ARMOR } from './challenges';
 import { adjacent, NEIGHBOURS4, NEIGHBOURS8 } from './level/geometry';
 import {
-  armorProc, type Blow, corruptSlain, deferDamage, gearSoaks, luckyDrop, procMultiplier, TERROR_TURNS, weaponProc,
+  armorProc, bleedImmune, type Blow, corruptSlain, isEnemy, deferDamage, gearSoaks, luckyDrop, procMultiplier, TERROR_TURNS, weaponProc,
 } from './enchant';
 import { missileProc } from './throwing';
+import { gainEnergy } from './classes/monk';
+import { classDamageTaken, heroBlow, heroEvasion, markHarvest, meleeStrike } from './classes/hooks';
 import { earthrootAbsorbs } from './plants';
 import { impQuestKill } from './imp';
 import { curseBroken, questKill } from './quest';
@@ -82,6 +84,16 @@ export interface AttackOverride {
    * bow for its arrow. Its numbers, its enchantment and its own effect make the shot.
    */
   weapon?: Item;
+  /** Char.attack(enemy, dmgMulti, dmgBonus, accMulti): the Duelist's abilities strike with these (an accMulti of Infinity never misses). */
+  dmgMulti?: number;
+  dmgBonus?: number;
+  accMulti?: number;
+  /** The melee weapon a Duelist's ability strikes with (Belongings.abilityWeapon): it may be the second weapon. */
+  ability?: Item;
+  /** A Monk's ability blow: bare fists, whatever the armour (UnarmedAbilityTracker). */
+  unarmed?: boolean;
+  /** FlurryEmpowerTracker: the weapon whose enchantment the fists carry. */
+  enchantFrom?: Item;
 }
 
 /**
@@ -103,8 +115,11 @@ const GRIM_RESISTANT: ReadonlySet<string> = new Set(['goo', 'tengu', 'dm300', 'k
  * or corrupting blow does what it does).
  */
 export function attack(ctx: Ctx, attacker: Char, defender: Char, override: AttackOverride = {}): boolean {
-  const strike = isHero(attacker) ? (override.weapon ?? attacker.weapon) : null;
+  const strike = isHero(attacker) ? (override.weapon ?? override.ability ?? (override.unarmed ? null : meleeStrike(attacker))) : null;
   const thrown = isHero(attacker) && override.weapon !== undefined;
+  const wasEnemy = !isHero(defender) && isEnemy(defender);
+  // The classes (classes/hooks.ts): what the Duelist's talents and weapons and the Cleric's blessings do to a blow.
+  const mods = isHero(attacker) ? heroBlow(ctx, attacker, defender, strike, override, thrown) : null;
   const surprised = isHero(attacker) && !isHero(defender) && surprises(attacker, defender, strike);
   const struck = { ...(strike ? { weapon: strike.kind } : {}), ...(surprised ? { surprise: true } : {}) };
   // Char.hit: an invisible hero who can surprise never misses.
@@ -113,18 +128,28 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   // before it has its surprise.
   if (isHero(attacker)) dispelInvisibility(ctx, attacker);
   const skill = override.attack ?? attackSkill(attacker, defender, strike);
-  // Char.hit: a hex makes the roll a fifth worse, a blessing a quarter better.
-  const hit = sure || ctx.rng.floatMax(skill) * rollFactor(attacker) >= ctx.rng.floatMax(defenseSkill(defender)) * rollFactor(defender);
+  // Char.hit: infinite evasion beats infinite accuracy; a hex makes the roll a fifth worse, a blessing a quarter better.
+  const evasion = isHero(defender) ? heroEvasion(ctx, defender, attacker) : { factor: 1, infinite: false };
+  const accMulti = (override.accMulti ?? 1) * (mods?.accuracy ?? 1);
+  const hit = evasion.infinite ? false
+    : sure || accMulti === Infinity || ctx.rng.floatMax(skill) * rollFactor(attacker) * accMulti >= ctx.rng.floatMax(defenseSkill(defender)) * rollFactor(defender) * evasion.factor;
   if (!hit) {
+    if (isHero(attacker) && !thrown) mods?.after();
     ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0, ...struck });
     return false;
   }
   // A sniper's thrown weapons find the weak points in any armour, from afar.
   const sniping = isHero(attacker) && attacker.subclass === 'sniper' && thrown && !adjacent(attacker.pos, defender.pos);
-  const reduction = sniping ? 0 : drRoll(ctx, defender);
+  const reduction = sniping || override.unarmed ? 0 : drRoll(ctx, defender);
   let damage = isHero(attacker) && override.damage === undefined
-    ? heroDamageRoll(attacker, ctx.rng, surprised, strike)
+    ? heroDamageRoll(attacker, ctx.rng, surprised, strike, override.unarmed === true)
     : damageRoll(ctx, attacker, override.damage);
+  // Char.attack: dmg * dmgMulti + dmgBonus, then the blessings and curses that scale a blow.
+  if (isHero(attacker) && (override.dmgMulti !== undefined || override.dmgBonus !== undefined)) {
+    damage = Math.floor((damage * (override.dmgMulti ?? 1) + (override.dmgBonus ?? 0)) + 0.5);
+  }
+  if (mods) damage = mods.damage(damage);
+  if (!isHero(attacker)) damage = classDamageTaken(ctx, attacker, defender, damage);
   // Weakness (the wand of corruption's): a weakened monster strikes two thirds as hard.
   if (!isHero(attacker) && (attacker.weakened ?? 0) > 0) damage = Math.round(damage * 0.67);
   // Hero.defenseProc: earthen armour takes half the blow, before the armour worn.
@@ -210,18 +235,23 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   // Hero.attackProc: a thrown weapon's own effect, then the weapon's enchantment (Weapon.proc).
   let staffAfter: (() => void) | undefined;
   if (isHero(attacker) && !isHero(defender)) {
+    // Talent.onAttackProc: the Duelist's patient strike and deadly followup.
+    if (mods) damage = mods.proc(damage);
     // MagesStaff.proc: a battlemage's staff does what its wand does on a hit, before its enchantment.
     if (!thrown && attacker.weapon?.kind === 'weapon.magesStaff') staffAfter = staffBlow(ctx, attacker, attacker.weapon, defender, damage);
     if (thrown) damage = missileProc(ctx, attacker, defender, damage, override.weapon!);
     // (No enchantment works while magic will not: MagicImmune.)
-    if (damage >= 0 && isAlive(defender) && !isMagicImmune(attacker)) damage = weaponProc(ctx, attacker, defender, damage, strike, blow);
+    if (damage >= 0 && isAlive(defender) && !isMagicImmune(attacker)) damage = weaponProc(ctx, attacker, defender, damage, strike ?? override.enchantFrom ?? null, blow);
     // FireImbue.proc and FrostImbue.proc: half the blows set the foe alight; every one chills it.
     if (isAlive(defender) && (attacker.buffs?.fireImbue ?? 0) > 0 && ctx.rng.int(2) === 0) igniteChar(ctx, defender);
     if (isAlive(defender) && (attacker.buffs?.frostImbue ?? 0) > 0) chillChar(defender, 3);
     // Weapon.proc: every blow that lands makes the weapon in hand better known (a thrown one, see throwing.ts).
-    if (!thrown && attacker.weapon) familiarise(ctx, attacker, attacker.weapon);
+    if (!thrown && (override.ability ?? attacker.weapon) && !override.unarmed) familiarise(ctx, attacker, (override.ability ?? attacker.weapon)!);
     damage = Math.max(0, damage);
-    if (!isAlive(defender)) return true;
+    if (!isAlive(defender)) {
+      if (!thrown) mods?.after();
+      return true;
+    }
   }
   // Armor.proc: and every blow taken makes the armour better known.
   if (isHero(defender) && !isHero(attacker)) familiarise(ctx, defender, defender.armor);
@@ -251,11 +281,21 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     ctx.effects.push({ type: 'enchanted', depth: ctx.depth, pos: defender.pos, enchant: 'vorpal' });
     return true;
   }
+  // Sickle.HarvestBleedTracker: the blow's damage is dealt as bleeding instead (unless the foe cannot bleed).
+  if (isHero(attacker) && attacker.cls?.harvest && !isHero(defender) && !bleedImmune(defender)) {
+    defender.bleeding = Math.max(defender.bleeding ?? 0, damage);
+    markHarvest(defender);
+    ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0, ...struck });
+    mods?.after();
+    return true;
+  }
   const before = defender.hp;
   ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage, ...struck });
   hurt(ctx, defender, damage, attacker);
+  mods?.landed(defender, wasEnemy, damage);
   staffAfter?.();
   if (isHero(attacker) && !isHero(defender)) afterBlow(ctx, attacker, defender, damage, before, blow);
+  if (mods && !thrown) mods.after();
   // Pickaxe.proc: a vampire bat slain with the pickaxe leaves its blood on it, as the blacksmith wants.
   if (isHero(attacker) && attacker.weapon?.kind === 'weapon.pickaxe' && !thrown && !isHero(defender) && defender.kind === 'bat' && !isAlive(defender)) {
     attacker.weapon.bloody = true;
@@ -508,6 +548,8 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
     for (const hero of heroesOn(ctx.world, ctx.depth)) {
       // Mob.die: only a monster worth something teaches anything.
       if (stats.exp > 0 && hero.lvl <= stats.maxLvl) earnExp(ctx, hero, stats.exp);
+      // Mob.destroy: a Monk gains energy from every enemy that falls.
+      if (!mob.ally && mob.state !== 'passive') gainEnergy(ctx, hero, mob);
     }
   }
 
@@ -599,6 +641,7 @@ export function lootAndExp(ctx: Ctx, mob: Mob, hero: Hero): void {
   hero.kills++;
   const stats = mobStats(mob);
   if (stats.exp > 0 && hero.lvl <= stats.maxLvl) earnExp(ctx, hero, stats.exp);
+  gainEnergy(ctx, hero, mob);
 }
 
 /**

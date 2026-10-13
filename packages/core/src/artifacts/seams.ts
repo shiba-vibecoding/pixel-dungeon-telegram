@@ -4,6 +4,7 @@ import { EXOTIC_OF, type Item, itemDef, type ItemKind } from '../items';
 import { isMagicImmune } from '../buffs';
 import { readScroll } from '../reading';
 import type { World } from '../world';
+import { classEatingTime, classFoodEaten } from '../classes/hooks';
 import { regenOn as heroRegenOn } from '../hero';
 import { energyArtifactMultiplier } from '../rings';
 
@@ -49,13 +50,14 @@ export function magicImmune(hero: Hero): boolean {
 }
 
 /** Seam (talents stream): Food.eatingTime — the meal talents eat two turns faster than Food.TIME_TO_EAT. */
-export function eatingTime(_hero: Hero): number {
-  return 3;
+export function eatingTime(hero: Hero): number {
+  // The classes stream's meals (FOCUSED_MEAL and ENLIGHTENING_MEAL) eat two turns faster; the talents stream adds its own.
+  return classEatingTime(hero);
 }
 
 /** Seam (talents stream): Talent.onFoodEaten, after the horn of plenty fed the hero `energy`. */
-export function onFoodEaten(_ctx: Ctx, _hero: Hero, _energy: number, _item: Item): void {
-  // Nothing until talents exist.
+export function onFoodEaten(ctx: Ctx, hero: Hero, _energy: number, _item: Item): void {
+  classFoodEaten(ctx, hero);
 }
 
 /** Seam (talents stream): CloakOfShadows.cloakStealth.attachTo — the assassin's Preparation and protective shadows. */

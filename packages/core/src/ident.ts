@@ -1,4 +1,5 @@
 import { type Hero, heroBelongings, heroEquipped, heroRings } from './actors';
+import { intuitionSpeed } from './classes/duelist-talents';
 import type { Ctx } from './floor';
 import { itemDef, type Item, type ItemKind, knownIn, labelKind } from './items';
 import type { World } from './world';
@@ -93,7 +94,11 @@ export function unidentified(item: Item): Item {
 }
 
 /** Talent seam: Talent.itemIDSpeedFactor (Adventurer's and Veteran's Intuition), 1 until the talents stream. */
-export const idSpeedFactor = (_hero: Hero, _item: Item): number => 1;
+export function idSpeedFactor(hero: Hero, item: Item): number {
+  // The classes stream's part: the Duelist's adventurer's intuition (melee weapons 2.5x, armour 1.75x at +1; instant and 2.5x at +2).
+  const category = itemDef(item.kind).category;
+  return category === 'weapon' || category === 'armor' ? intuitionSpeed(hero, category) : 1;
+}
 
 const f32 = Math.fround;
 const usesToID = (item: Item): number => {
