@@ -25,12 +25,14 @@ function range(heroClass: HeroClass, seed = 7): { world: World; ratPos: number }
 }
 
 describe('thrown weapons and wands', () => {
-  it('starting kits: darts for the warrior and rogue, a boomerang for the huntress, a wand for the mage', () => {
+  it('starting kits: stand-ins for the stones, knives and bow, a wand for the mage (heroclass.ts KIT_SEAMS)', () => {
     const world = createWorld(1);
     for (const heroClass of ['warrior', 'mage', 'rogue', 'huntress'] as const) addHero(world, { id: heroClass, name: heroClass, heroClass });
     expect(heroById(world, 'warrior')!.items).toEqual([
       { kind: 'missile.dart', qty: 8, level: 0 },
       { kind: 'food.ration', qty: 1, level: 0 },
+      { kind: 'bag.seeds', qty: 1, level: 0 },
+      { kind: 'waterskin', qty: 1, level: 0 },
     ]);
     expect(heroById(world, 'rogue')!.items[0]).toMatchObject({ kind: 'missile.dart', qty: 8 });
     expect(heroById(world, 'huntress')!.items[0]).toMatchObject({ kind: 'missile.boomerang' });
@@ -85,14 +87,14 @@ describe('thrown weapons and wands', () => {
     expect(hero.items[0]!.charges).toBe(1);
   });
 
-  it('warriors throw clumsily, huntresses deftly, nobody well point-blank', () => {
+  it('every class throws alike (Shattered has no class bonuses); nobody well point-blank', () => {
     const world = createWorld(2);
     for (const heroClass of ['warrior', 'rogue', 'huntress'] as const) addHero(world, { id: heroClass, name: heroClass, heroClass });
     const dart = { kind: 'missile.dart' as const, qty: 1, level: 0 };
     const skill = (id: string, pointBlank = false) => heroRangedSkill(heroById(world, id)!, dart, pointBlank);
     expect(skill('huntress')).toBe(10);
     expect(skill('rogue')).toBe(10);
-    expect(skill('warrior')).toBe(4);
+    expect(skill('warrior')).toBe(10);
     expect(skill('rogue', true)).toBe(5);
   });
 });

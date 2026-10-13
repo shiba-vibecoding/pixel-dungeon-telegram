@@ -36,6 +36,12 @@ function asFound(item: Item, depth: number): Item {
   if (item.kind === 'gold') return item;
   const found: Item = { ...item, cursed: true };
   delete found.curseUnknown;
+  // Armor.reset: armour can be kept in bones between runs, the warrior's seal cannot.
+  delete found.seal;
+  // Weapon and Armor.reset: what was learned of it is forgotten.
+  delete found.usesLeftToID;
+  delete found.availableUsesToID;
+  delete found.levelsToID;
   const category = itemDef(found.kind).category;
   if (category === 'weapon' || category === 'armor' || category === 'ring' || category === 'wand') {
     const most = Math.trunc(((depth - 1) * 3) / 5) + 1;

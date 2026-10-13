@@ -62,6 +62,9 @@ export function isUpgradable(item: Item): boolean {
       return item.kind !== 'ring.haggler' && item.kind !== 'ring.thorns';
     case 'missile':
       return item.kind === 'missile.boomerang';
+    // BrokenSeal.isUpgradable: a scroll of upgrade can be read on the seal itself, once.
+    case 'seal':
+      return item.level === 0;
     default:
       return false;
   }
@@ -215,6 +218,8 @@ export function upgradeItem(ctx: Ctx, hero: Hero, item: Item, infusion = false):
     delete item.glyph;
     ctx.effects.push({ type: 'disenchanted', hero: hero.id, item });
   }
+  // Armor.upgrade: the seal on the armour takes the upgrade with it, once.
+  if (item.seal && item.seal.level === 0) item.seal.level = 1;
   item.level++;
   // Item.upgrade: no curse, and that is known (cursedKnown), though the level stays as known as it was.
   delete item.curseUnknown;

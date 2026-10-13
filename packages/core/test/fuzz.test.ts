@@ -18,7 +18,7 @@ function stock(world: World, id: string, rng: Rng): void {
   rng.shuffle(kinds);
   hero.items = kinds.slice(0, 18).map((kind) => {
     const item = createItem(kind, itemDef(kind).category === 'missile' || kind === 'bomb' ? 3 : 1);
-    if (kind === 'vial') item.volume = 10;
+    if (kind === 'waterskin') item.volume = 10;
     if (kind.startsWith('key.')) item.depth = hero.depth;
     return item;
   });

@@ -89,7 +89,7 @@ describe('harmful potions', () => {
   });
 
   it('a thrown healing potion splashes harmlessly and stays unknown', () => {
-    const world = solo();
+    const world = solo('mage');
     const hero = heroById(world, 'p')!;
     hero.items = [createItem('potion.healing')];
     const level = levelAt(world, 1);

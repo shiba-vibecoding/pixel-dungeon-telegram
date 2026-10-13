@@ -70,7 +70,8 @@ describe('the backpack', () => {
   });
 
   it('heals with a potion, and the whole party learns what it was', () => {
-    const world = soloAt(2);
+    // The mage, who does not know healing from the start (the warrior does).
+    const world = soloAt(2, 'mage');
     addHero(world, { id: 'q', name: 'Q', heroClass: 'rogue' });
     const hero = heroById(world, 'p')!;
     hero.items.push(createItem('potion.healing', 2));

@@ -16,8 +16,6 @@ export interface RunState {
   labels: Labels;
   /** The troll blacksmith has set up his forge in the caves (absent in older runs). */
   blacksmithSpawned?: boolean;
-  /** The dew vial has been laid out in the sewers (absent in older runs). */
-  dewVialSpawned?: boolean;
   /** Shattered's decks of potions, scrolls, runestones and trinkets, as dealt so far (items.ts drawFromDeck). */
   decks?: Partial<Record<DeckCategory, Deck>>;
   /** Dungeon.LimitedDrops: the stone of intuition, the trinket catalyst and the stone of enchantment have been laid out. */

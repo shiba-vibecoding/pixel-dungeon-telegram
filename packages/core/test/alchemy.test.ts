@@ -245,7 +245,7 @@ describe('exotic potions and scrolls', () => {
   it('are known with their ordinary counterpart, and drawn a row below it', () => {
     const { world, hero } = atPot();
     hero.items = [createItem('potion.healing'), createItem('potion.shielding')];
-    expect(world.known).not.toContain('potion.healing');
+    world.known = world.known.filter((kind) => kind !== 'potion.healing');
     act(world, 'p', { type: 'use', item: 0 });
     expect(world.known).toContain('potion.healing');
     expect(REGULAR_POTIONS).toHaveLength(12);

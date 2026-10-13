@@ -25,9 +25,10 @@ function heroAt(world: World, depth: number, pos: number): void {
 }
 
 describe('the ankh', () => {
+  // The mage: the warrior's seal would shield him from the last blow.
   it('brings its bearer back at the stairs, at the cost of the pack and the gold', () => {
     const world = createWorld(5);
-    addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
+    addHero(world, { id: 'p', name: 'P', heroClass: 'mage' });
     const hero = heroById(world, 'p')!;
     hero.items = [createItem('ankh'), createItem('potion.healing', 3), { ...createItem('key.iron'), depth: 1 }];
     hero.gold = 300;
@@ -49,7 +50,7 @@ describe('the ankh', () => {
 
   it("on a boss's level, the hero rises where they fell: the stairs may be cut off from the fight", () => {
     const world = createWorld(5);
-    addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
+    addHero(world, { id: 'p', name: 'P', heroClass: 'mage' });
     const hero = heroById(world, 'p')!;
     const level = levelAt(world, 10);
     // Somewhere well away from the stairs.

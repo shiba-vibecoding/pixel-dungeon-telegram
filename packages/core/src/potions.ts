@@ -88,7 +88,7 @@ export function drinkPotion(ctx: Ctx, hero: Hero, kind: ItemKind, use: PotionUse
       hero.gasImmune = Math.max(hero.gasImmune ?? 0, 20);
       return;
     case 'potion.experience':
-      earnExp(ctx, hero, maxExp(hero));
+      earnExp(ctx, hero, maxExp(hero), 'potion');
       return;
     case 'potion.shielding':
       // ~75% of a potion of healing, as a shield.

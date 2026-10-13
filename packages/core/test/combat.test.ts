@@ -65,7 +65,8 @@ describe('monsters', () => {
 
   it('use the original weapons, armour and stats', () => {
     const stats = (kind: ItemKind, level = 0) => weaponStats(createItem(kind, 1, level));
-    expect(stats('weapon.shortSword')).toMatchObject({ min: 1, max: 10, str: 11 });
+    // The warrior's, as Shattered's worn shortsword: ten strength.
+    expect(stats('weapon.shortSword')).toMatchObject({ min: 1, max: 10, str: 10 });
     expect(stats('weapon.dagger')).toMatchObject({ min: 1, max: 8, str: 10 });
     expect(stats('weapon.knuckles')).toMatchObject({ min: 1, max: 5, delay: 0.5 });
     expect(stats('weapon.mace')).toMatchObject({ min: 3, max: 12, str: 14 });
@@ -131,7 +132,7 @@ describe('fighting through the sewers', () => {
       const result = act(world, 'p', { type: 'search' });
       expect(level.map[door]).toBe(T.DOOR);
       expect(result.ok && result.effects).toContainEqual({ type: 'discovered', depth, cell: door });
-      expect([2, 4]).toContain(hero.time);
+      expect(hero.time).toBe(2);
       checked++;
     }
     expect(checked).toBeGreaterThan(0);
