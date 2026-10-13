@@ -3,7 +3,7 @@ import { type Ballistica, ballistica, cone, MAGIC_BOLT, PROJECTILE, STOP_SOLID, 
 import { drRoll, hurt } from './combat';
 import { castShadow } from './fov';
 import { charAt, type Char, type Ctx, enterCell, heroView, isHero, landItem, leaveCell } from './floor';
-import { createItem, type Item, itemDef, ItemGenerator, WAND_KINDS } from './items';
+import { createItem, type Item, itemDef, ItemGenerator, randomArmorCurse, randomWeaponCurse, WAND_KINDS } from './items';
 import { distance, LENGTH, NEIGHBOURS8, NEIGHBOURS9 } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import { isBossDepth } from './level/builder';
@@ -304,7 +304,9 @@ function apply(ctx: Ctx, effect: CursedEffect, user: Hero, origin: Item | null, 
       const pool = priority.length > 0 ? priority : can;
       if (pool.length > 0) {
         const item = pool[rng.int(pool.length)]!;
-        // Seam for the gear stream: a curse enchantment or glyph on what had none (Enchantment.randomCurse).
+        // CursingTrap.curse(item): a curse enchantment or glyph on what had none (Enchantment.randomCurse, Glyph's).
+        if (itemDef(item.kind).category === 'armor') item.glyph ??= randomArmorCurse(rng);
+        else item.enchant ??= randomWeaponCurse(rng);
         item.cursed = true;
         delete item.curseUnknown;
         ctx.effects.push({ type: 'cursedEquip', hero: user.id, item });

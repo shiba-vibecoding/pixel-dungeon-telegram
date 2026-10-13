@@ -21,9 +21,9 @@ export function maxDurability(item: Item): number {
   switch (itemDef(item.kind).category) {
     case 'wand':
       return left(6);
-    // Ring.maxDurability: a +1 ring never wears out.
+    // Shattered's rings never wear out.
     case 'ring':
-      return item.level <= 1 ? Infinity : left(100);
+      return Infinity;
     default:
       return Infinity;
   }

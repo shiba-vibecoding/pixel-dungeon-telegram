@@ -1,4 +1,4 @@
-import { type Labels, rollLabels } from './items';
+import { type ItemKind, type Labels, rollLabels } from './items';
 import { RoomType, SPECIALS } from './level/room';
 import { deriveSeed, Rng, Stream } from './rng';
 
@@ -22,6 +22,8 @@ export interface RunState {
    */
   decks?: Record<string, number[]>;
   deckDrops?: Record<string, number>;
+  /** Generator's artifact deck: the kinds not dealt yet (absent until the first is; see artifacts/artifact.ts). */
+  artifactsLeft?: ItemKind[];
   /** Generator.Category.WAND's deck: how many of each wand kind (in WAND_KINDS order) are left, and how many were dealt. */
   wandDeck?: number[];
   wandsDealt?: number;

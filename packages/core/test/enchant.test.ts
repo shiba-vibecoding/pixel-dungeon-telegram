@@ -169,8 +169,8 @@ describe('curses', () => {
     const hero = heroById(world, 'p')!;
     hero.items = [{ ...createItem('ring.haste', 1, -1), cursed: true }, createItem('scroll.upgrade')];
     act(world, 'p', { type: 'equip', item: 0 });
-    const ring = hero.rings.findIndex((r) => r.kind === 'ring.haste');
-    expect(act(world, 'p', { type: 'remove', ring })).toEqual({ ok: false, reason: 'it is cursed: you cannot take it off' });
+    expect(hero.ring?.kind).toBe('ring.haste');
+    expect(act(world, 'p', { type: 'remove', slot: 'ring' })).toEqual({ ok: false, reason: 'it is cursed: you cannot take it off' });
     hero.weapon = { ...createItem('weapon.sword', 1, -1), cursed: true };
     act(world, 'p', { type: 'use', item: hero.items.findIndex((i) => i.kind === 'scroll.upgrade'), target: 'weapon' });
     expect(hero.weapon.cursed).toBeUndefined();

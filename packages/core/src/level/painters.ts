@@ -500,6 +500,9 @@ function paintShop(level: LevelBuilder, room: Room): void {
     // Shops also keep an ankh, for those who fear the end.
     { roll: 'kind', kind: 'ankh' },
   ];
+  // ShopRoom.generateItems: and now and then something rare (the last shop, LastShopLevel's, keeps to its own), where
+  // the room has the space for it and the shopkeeper.
+  if (level.depth < 21 && wares.length + 2 <= (room.width() - 2) * (room.height() - 2)) wares.push({ roll: 'rare' });
   // ShopRoom sizes itself by its stock; a room here may be too small for all of it, and lets the lesser wares go
   // first (seam: the levels stream's ShopRoom).
   while (wares.length > (room.width() - 1) * (room.height() - 1) - 1) {

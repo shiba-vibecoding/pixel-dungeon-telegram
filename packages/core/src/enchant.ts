@@ -17,6 +17,7 @@ import { cellX, cellY, distance, LENGTH, NEIGHBOURS8, NEIGHBOURS9 } from './leve
 import { F, hasFlag, T } from './level/terrain';
 import { burst, immuneTo } from './traps';
 import { chill } from './status';
+import { enchantPowerMultiplier } from './rings';
 import { freezing } from './cursed';
 import { explodeBomb } from './inventory';
 
@@ -41,11 +42,11 @@ const OOZE_TURNS = 20;
 export const ADRENALINE_TURNS = 10;
 
 /**
- * Enchantment.genericProcChanceMultiplier and Glyph's: 1 here. Seam: the ring of arcana, a berserker's rage, the
- * runic blade's slash, smite, the elemental strike, the spirit blades and striking wave talents (rings, classes,
- * talents, abilities) would raise it.
+ * Enchantment.genericProcChanceMultiplier and Glyph's: a hero's rings of arcana (RingOfArcana.enchantPowerMultiplier);
+ * 1 for the rest. Seam: a berserker's rage, the runic blade's slash, smite, the elemental strike, the spirit blades and
+ * striking wave talents (classes, talents, abilities) would raise it.
  */
-export const procMultiplier = (_char: Char): number => 1;
+export const procMultiplier = (char: Char): number => (isHero(char) ? enchantPowerMultiplier(char) : 1);
 
 /* Who is who (Char.Property; a seam for the mobs stream's own) */
 

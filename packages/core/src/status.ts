@@ -246,7 +246,7 @@ export function heroStatusTime(ctx: Ctx, hero: Hero, time: number, ticks: number
   if (hero.lightningCharge) hero.lightningCharge = Math.max(0, hero.lightningCharge - time);
   if (hero.recharging) hero.recharging = Math.max(0, hero.recharging - time);
   if (hero.disguise && (hero.disguise.turns -= time) <= 0) delete hero.disguise;
-  if (hero.stasis) hero.stasis = Math.max(0, hero.stasis - time);
+  // TimeStasis runs out turn by turn in heroTurns (hero.ts), the hourglass's and a cursed wand's alike.
 }
 
 /** Char.speed under chill: a slowed creature is slowed only (they do not stack). */

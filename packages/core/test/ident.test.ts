@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, canEnter, charAt, createItem, createMob, createWorld, type Effect, floorAt, type HeroClass, heroById, isIdentified, type Item,
+  act, addHero, canEnter, charAt, createItem, createMob, createWorld, type Effect, floorAt, type HeroClass, heroBelongings, heroById, isIdentified, type Item,
   ItemGenerator, itemDef, itemPrice, levelAt, NEIGHBOURS8, Rng, scrollTargets, type World,
 } from '../src/index';
 import { pacify } from './helpers';
@@ -67,7 +67,7 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
     for (const heroClass of ['warrior', 'mage', 'rogue', 'huntress'] as HeroClass[]) {
       const world = createWorld(3);
       const hero = addHero(world, { id: 'p', name: 'P', heroClass });
-      for (const item of [hero.weapon, hero.armor, ...hero.rings, ...hero.items]) {
+      for (const item of heroBelongings(hero)) {
         if (item) expect(isIdentified(world, item), `${heroClass}: ${item.kind}`).toBe(true);
       }
     }
@@ -133,21 +133,21 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
   it('putting something on tells whether it is cursed, and a cursed thing binds itself', () => {
     const world = pacify(createWorld(5));
     const hero = addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
-    hero.items = [unknown({ ...createItem('weapon.mace', 1, -2), cursed: true }), unknown(createItem('ring.mending', 1, 2))];
+    hero.items = [unknown({ ...createItem('weapon.mace', 1, -2), cursed: true }), unknown(createItem('ring.energy', 1, 2))];
     const first = act(world, 'p', { type: 'equip', item: 0 });
     expect(hero.weapon).toMatchObject({ kind: 'weapon.mace', cursed: true, levelUnknown: true });
     expect(hero.weapon!.curseUnknown).toBeUndefined();
     expect(first.ok && first.effects.some((e) => e.type === 'cursedEquip')).toBe(true);
-    const ring = hero.items.findIndex((item) => item.kind === 'ring.mending');
+    const ring = hero.items.findIndex((item) => item.kind === 'ring.energy');
     act(world, 'p', { type: 'equip', item: ring });
-    expect(hero.rings[0]!.curseUnknown).toBeUndefined();
-    expect(hero.rings[0]!.levelUnknown).toBe(true);
+    expect(hero.ring!.curseUnknown).toBeUndefined();
+    expect(hero.ring!.levelUnknown).toBe(true);
   });
 
   it('a ring worn for a level of experience is known through and through, its kind for the whole party (Ring.onHeroGainExp)', () => {
     const world = pacify(createWorld(5));
     const hero = addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
-    hero.rings = [{ ...unknown(createItem('ring.mending', 1, 1)), curseUnknown: undefined }];
+    hero.ring = { ...unknown(createItem('ring.energy', 1, 1)), curseUnknown: undefined };
     const effects: Effect[] = [];
     // Time alone teaches nothing now.
     for (let i = 0; i < 250; i++) {
@@ -155,11 +155,11 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
       const result = act(world, 'p', { type: 'wait' });
       if (result.ok) effects.push(...result.effects);
     }
-    expect(isIdentified(world, hero.rings[0]!)).toBe(false);
-    for (let i = 0; i < 11 && !isIdentified(world, hero.rings[0]!); i++) effects.push(...slayRat(world));
-    expect(isIdentified(world, hero.rings[0]!)).toBe(true);
-    expect(world.known).toContain('ring.mending');
-    expect(effects.filter((e) => e.type === 'familiar')).toEqual([{ type: 'familiar', hero: 'p', item: hero.rings[0], learned: true }]);
+    expect(isIdentified(world, hero.ring!)).toBe(false);
+    for (let i = 0; i < 11 && !isIdentified(world, hero.ring!); i++) effects.push(...slayRat(world));
+    expect(isIdentified(world, hero.ring!)).toBe(true);
+    expect(world.known).toContain('ring.energy');
+    expect(effects.filter((e) => e.type === 'familiar')).toEqual([{ type: 'familiar', hero: 'p', item: hero.ring, learned: true }]);
   });
 
   it('a scroll of identify is read on anything not yet identified, and reveals all of it', () => {
@@ -225,12 +225,12 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
         const hero = addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
         Object.assign(hero, { depth, pos: from, time: floorAt(world, depth).now });
         hero.weapon = unknown(createItem('weapon.spear', 1, 1));
-        hero.rings = [{ ...unknown(createItem('ring.evasion', 1, 2)), curseUnknown: undefined }];
+        hero.ring = { ...unknown(createItem('ring.evasion', 1, 2)), curseUnknown: undefined };
         hero.items = [unknown({ ...createItem('armor.scale', 1, -2), cursed: true }), createItem('potion.frost')];
         const result = act(world, 'p', { type: 'move', to: well.pos });
         expect(result.ok && result.effects.some((e) => e.type === 'well' && e.water === 'awareness')).toBe(true);
         expect(isIdentified(world, hero.weapon)).toBe(true);
-        expect(isIdentified(world, hero.rings[0]!)).toBe(true);
+        expect(isIdentified(world, hero.ring!)).toBe(true);
         expect(world.known).toContain('ring.evasion');
         expect(hero.items[0]).toMatchObject({ cursed: true, levelUnknown: true });
         expect(hero.items[0]!.curseUnknown).toBeUndefined();

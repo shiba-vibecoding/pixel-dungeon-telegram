@@ -8,10 +8,15 @@ import {
 import { isDart, missileMax, missileMin, missileStr, missileSurprise } from './missiles';
 import { type HeroClass, startingKit } from './heroclass';
 import { isStarving } from './hero';
+import {
+  accuracyMultiplier, attackSpeedMultiplier, evasionMultiplier, forceArmedBonus, forceRange, mightStrength, sharpshootingBonus, speedMultiplier,
+} from './rings';
 import type { Rng } from './rng';
 import { adjacent } from './level/geometry';
 import { T } from './level/terrain';
 import type { Action, PlanStep } from './world';
+import type { Awareness, PendingScroll } from './artifacts';
+import type { WealthCounters } from './rings';
 
 /*
  * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
@@ -66,8 +71,13 @@ export interface Hero {
   /** The weapon in hand; none after a monk's disarming blow, until the hero takes one up again. */
   weapon: Item | null;
   armor: Item;
-  /** Rings worn, two at most. */
-  rings: Item[];
+  /**
+   * Belongings' artifact, misc and ring slots (KindofMisc): an artifact, a second artifact or ring,
+   * and a ring. Read them through heroRings and heroArtifacts.
+   */
+  artifact: Item | null;
+  misc: Item | null;
+  ring: Item | null;
   items: Item[];
   gold: number;
   /** Turns left of sensing every monster on the level / of being unseen. */
@@ -137,7 +147,7 @@ export interface Hero {
   invulnerable?: number;
   /** HeroDisguise: turns left of looking like a hero of another class. */
   disguise?: { heroClass: HeroClass; turns: number };
-  /** TimeStasis: turns left of being frozen in time, untouchable and still. */
+  /** TimeStasis: turns left of being frozen in time, untouchable and still (a cursed wand's, or the timekeeper's hourglass's stasis, unseen too). */
   stasis?: number;
   /** CursedWand's lingering effects: a supernova building up, gravity gone wild, the ground about to give way. */
   supernova?: { pos: number; turns: number; harmsAllies: boolean };
@@ -145,6 +155,12 @@ export interface Hero {
   sinkhole?: { cells: number[]; turns: number; depth: number };
   /** Sungrass.Health (a battlemage's staff of regrowth): health still to come back while standing there, and what has gathered. */
   herbal?: { level: number; pos: number; partial: number };
+  /** The unstable spellbook's scroll the player has yet to settle: read as it is or empowered, and on what. */
+  pendingScroll?: PendingScroll;
+  /** Creatures and heaps the talisman of foresight shows for a while (CharAwareness, HeapAwareness). */
+  aware?: Awareness[];
+  /** The ring of wealth's counters (TriesToDropTracker, DropsToEquipTracker), once one has been worn. */
+  wealth?: WealthCounters;
   /** Hunger.level: 0 when fed, hungry from HUNGRY, starving at STARVING (it grows a point a turn). */
   hunger: number;
   /** Unused since Shattered's hunger (kept for the shape of older saves). */
@@ -224,7 +240,9 @@ export function createHero(player: PlayerInfo, depth: number, pos: number, time:
     ooze: -1,
     weapon: kit.weapon,
     armor: kit.armor,
-    rings: kit.rings,
+    artifact: kit.artifact,
+    misc: null,
+    ring: null,
     items: kit.items,
     gold: 0,
     mindVision: 0,
@@ -256,19 +274,41 @@ export const STARTING_STR = 10;
 
 export const isAlive = (char: { hp: number }): boolean => char.hp > 0;
 
-/** The levels of every worn ring of a kind, added up (several buffs of a kind stack in the original). */
-export const ringBonus = (hero: Hero, kind: ItemKind): number =>
-  (hero.rings ?? []).reduce((sum, ring) => (ring.kind === kind ? sum + effectiveLevel(ring) : sum), 0);
+/* Belongings: the equipment slots of a hero */
 
-/** Hero.STR: weakness takes two points of strength away while it lasts. */
-export const heroStr = (hero: Hero): number => hero.str - (hero.weakened > 0 ? 2 : 0);
+/** The three slots of KindofMisc: an artifact, an artifact or a ring, a ring. */
+export type MiscSlot = 'artifact' | 'misc' | 'ring';
+export const MISC_SLOTS: readonly MiscSlot[] = ['artifact', 'misc', 'ring'];
+
+/** The rings a hero wears: in the ring slot, and one in the misc slot. */
+export const heroRings = (hero: Hero): Item[] =>
+  [hero.misc, hero.ring].filter((item): item is Item => item != null && itemDef(item.kind).category === 'ring');
+
+/** The artifacts a hero wears: in the artifact slot, and one in the misc slot. */
+export const heroArtifacts = (hero: Hero): Item[] =>
+  [hero.artifact, hero.misc].filter((item): item is Item => item != null && itemDef(item.kind).category === 'artifact');
+
+/** Everything a hero wears or holds in hand (Belongings' equipped items), in the order of its slots. */
+export const heroEquipped = (hero: Hero): Item[] =>
+  [hero.weapon, hero.armor, hero.artifact, hero.misc, hero.ring].filter((item): item is Item => item != null);
+
+/** Everything a hero has: what is worn, then the pack (Belongings.iterator). */
+export const heroBelongings = (hero: Hero): Item[] => [...heroEquipped(hero), ...hero.items];
+
+/** Ring.getBonus: what the worn rings of a kind add (rings.ts). */
+export { ringBonus } from './rings';
+
+/** Hero.STR: rings of might add to it (RingOfMight.strengthBonus); weakness takes two points away while it lasts. */
+export const heroStr = (hero: Hero): number => hero.str + mightStrength(hero) - (hero.weakened > 0 ? 2 : 0);
 
 /** Fury.LEVEL: below this share of health, a berserker flies into a fury. */
 export const FURY_LEVEL = 0.4;
 
-/** The numbers of the weapon in hand, or of bare fists (RingOfForce.damageRoll without the ring: 1 to STR-8). */
+/** The numbers of the weapon in hand, or of bare fists (RingOfForce.damageRoll: as a weapon of the strength's tier with a ring of force, else 1 to STR-8). */
 export function heroWeapon(hero: Hero): WeaponStats {
-  return hero.weapon ? weaponStats(hero.weapon) : { min: 1, max: Math.max(1, heroStr(hero) - 8), str: 0, accuracy: 1, delay: 1, reach: 1 };
+  if (hero.weapon) return weaponStats(hero.weapon);
+  const force = forceRange(hero, heroStr(hero));
+  return { min: force?.[0] ?? 1, max: force?.[1] ?? Math.max(1, heroStr(hero) - 8), str: 0, accuracy: 1, delay: 1, reach: 1 };
 }
 
 /** What a hero strikes with: the weapon in hand, or a thrown weapon (or the spirit bow, for its arrow) in flight. */
@@ -302,11 +342,9 @@ function accuracyFactor(hero: Hero, weapon: Item, targetPos?: number): number {
 /** Char.hit with Bless: the blessed roll a quarter higher, attacking and defending alike. */
 const blessing = (hero: Hero): number => ((hero.blessed ?? 0) > 0 ? 1.25 : 1);
 
-/** Hero.attackSkill: with a weapon, times its accuracy factor; a ring of accuracy helps either way. */
+/** Hero.attackSkill: with a weapon, times its accuracy factor; a ring of accuracy helps either way (RingOfAccuracy.accuracyMultiplier). */
 export function heroAttackSkill(hero: Hero, targetPos?: number, weapon: Strike = hero.weapon): number {
-  // RingOfAccuracy: 1.4 times as accurate a level.
-  const bonus = ringBonus(hero, 'ring.accuracy');
-  const accuracy = f32((bonus === 0 ? 1 : f32(1.4 ** bonus)) * blessing(hero));
+  const accuracy = f32(accuracyMultiplier(hero) * blessing(hero));
   if (!weapon) return Math.max(1, jround(f32(hero.attackSkill * accuracy)));
   return Math.max(1, jround(f32(f32(hero.attackSkill * accuracy) * accuracyFactor(hero, weapon, targetPos))));
 }
@@ -316,9 +354,8 @@ export function heroAttackSkill(hero: Hero, targetPos?: number, weapon: Strike =
  * a point of strength short, and its augment's evasion added. Armour of stone is never dodged.
  */
 export function heroDefenseSkill(hero: Hero): number {
-  // RingOfEvasion: 1.2 times as evasive a level.
-  const bonus = ringBonus(hero, 'ring.evasion');
-  let evasion = f32(f32(hero.defenseSkill * (bonus === 0 ? 1 : f32(1.2 ** bonus))) * blessing(hero));
+  // RingOfEvasion.evasionMultiplier.
+  let evasion = f32(f32(hero.defenseSkill * evasionMultiplier(hero)) * blessing(hero));
   if (hero.paralysed > 0) evasion = f32(evasion / 2);
   if (hero.armor.glyph === 'stone') return 0;
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
@@ -358,19 +395,23 @@ export function heroDrRoll(hero: Hero, rng: Rng): number {
 export function heroDamageRoll(hero: Hero, rng: Rng, surprised = false, weapon: Strike = hero.weapon): number {
   let damage: number;
   if (!weapon) {
-    damage = rng.normalIntRange(1, Math.max(heroStr(hero) - 8, 1));
+    // RingOfForce.damageRoll: bare-handed, as a weapon of the strength's tier with a ring of force; else 1 to STR-8.
+    const force = forceRange(hero, heroStr(hero));
+    damage = force ? rng.normalIntRange(force[0], force[1]) : rng.normalIntRange(1, Math.max(heroStr(hero) - 8, 1));
   } else {
     const category = itemDef(weapon.kind).category;
     let min: number;
     let max: number;
     let share = 0;
+    // RingOfSharpshooting.levelDamageBonus: levels more for thrown weapons and the spirit bow's arrows.
+    const sharp = category === 'bow' || category === 'missile' ? sharpshootingBonus(hero) : 0;
     if (category === 'bow') {
-      min = bowMin(hero.lvl, weapon);
-      max = bowMax(hero.lvl, weapon);
+      min = bowMin(hero.lvl, weapon, sharp);
+      max = bowMax(hero.lvl, weapon, sharp);
     } else if (category === 'missile') {
       const crossbow = hero.weapon?.kind === 'weapon.crossbow' && isDart(weapon.kind) ? hero.weapon : null;
-      min = crossbow ? crossbowDartMin(crossbow) : missileMin(weapon);
-      max = crossbow ? crossbowDartMax(crossbow) : missileMax(weapon);
+      min = crossbow ? crossbowDartMin(crossbow) + sharp : missileMin(weapon, gearLevel(weapon) + sharp);
+      max = crossbow ? crossbowDartMax(crossbow) + 2 * sharp : missileMax(weapon, gearLevel(weapon) + sharp);
       share = missileSurprise(weapon.kind);
     } else {
       min = meleeMin(weapon);
@@ -382,21 +423,26 @@ export function heroDamageRoll(hero: Hero, rng: Rng, surprised = false, weapon: 
       : augmentDamage(weapon, rng.normalIntRange(min, max));
     const excess = heroStr(hero) - strikeStr(hero, weapon);
     if (excess > 0) damage += rng.normalIntRange(0, excess);
+    // RingOfForce.armedDamageBonus: rings of force add to a weapon's blow as well.
+    damage += forceArmedBonus(hero);
   }
   // Fury: a berserker badly hurt hits half as hard again (seam: Shattered's Berserk is the talents stream's).
   if (hero.subclass === 'berserker' && hero.hp > 0 && hero.hp <= hero.ht * FURY_LEVEL) damage = Math.trunc(damage * 1.5);
   return Math.max(0, damage);
 }
 
-/** Hero.attackDelay: the weapon's delay (Weapon.delayFactor: augmented, 1.2× slower a point of strength short); bare hands, a turn. */
+/**
+ * Hero.attackDelay: the weapon's delay (Weapon.delayFactor: augmented, 1.2× slower a point of strength short); bare
+ * hands, a turn; quicker with rings of furor (RingOfFuror.attackSpeedMultiplier).
+ */
 export function heroAttackDelay(hero: Hero, weapon: Strike = hero.weapon): number {
-  if (!weapon) return 1;
+  if (!weapon) return f32(1 / attackSpeedMultiplier(hero));
   const category = itemDef(weapon.kind).category;
   let delay = augmentDelay(weapon, category === 'weapon' ? weaponDly(weapon.kind) : 1);
   const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
   if (encumbrance > 0) delay = f32(delay * 1.2 ** encumbrance);
-  // Seam: the ring of furor and the scimitar's sword dance (rings, classes) would speed it up.
-  return delay;
+  // Seam: the scimitar's sword dance (classes) would speed it up.
+  return f32(delay / attackSpeedMultiplier(hero));
 }
 
 /** Weapon.reachFactor: how far the weapon in hand strikes (a projecting one a cell further). */
@@ -431,17 +477,17 @@ export function heroSpeed(hero: Hero, footing?: Footing): number {
   if (footing && glyph === 'swiftness' && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));
   if (footing && glyph === 'flow' && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
   if (footing && glyph === 'bulk' && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
-  return speed;
+  // RingOfHaste.speedMultiplier.
+  return f32(speed * speedMultiplier(hero));
 }
 
 /** A hero's armour at its most (Armor.DRMax, with the weapon's parrying and the bark at theirs), for what wants one figure. */
 export const heroArmor = (hero: Hero): number =>
   armorDrMax(hero.armor) + (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon' ? weaponDefense(hero.weapon) : 0) +
   Math.max(0, Math.ceil(hero.barkskin ?? 0));
-/** Hero.stealth: armour of obfuscation adds 1 and a third a level (Obfuscation.stealthBoost). */
-export const heroStealth = (hero: Hero): number =>
-  ringBonus(hero, 'ring.shadows') +
-  (hero.armor.glyph === 'obfuscation' ? Math.fround(1 + gearLevel(hero.armor) / 3) : 0);
+/** Hero.stealth: armour of obfuscation adds 1 and a third a level (Obfuscation.stealthBoost); talents add to it in their stream. */
+export const heroStealth = (hero: Hero): number => (hero.armor.glyph === 'obfuscation' ? Math.fround(1 + gearLevel(hero.armor) / 3) : 0);
+/** Hero.maxExp: what the next level costs. */
 export const maxExp = (hero: Hero): number => 5 + hero.lvl * 5;
 
 /* Monsters */
@@ -454,7 +500,7 @@ export type MobKind =
   | 'succubus' | 'eye' | 'scorpio' | 'yog' | 'rottingFist' | 'burningFist' | 'larva' | 'mimic'
   | 'statue' | 'piranha' | 'imp' | 'sheep' | 'blacksmith' | 'mirror'
   | 'albino' | 'bandit' | 'shielded' | 'senior' | 'acidic'
-  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper'
+  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper' | 'ghostHero'
   /** WandOfWarding.Ward, WandOfLivingEarth.EarthGuardian, WandOfRegrowth.Lotus. */
   | 'ward' | 'guardian' | 'lotus';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
@@ -547,11 +593,22 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   guardian: { name: 'earthen guardian', ht: 1, attack: 0, defense: 0, damage: [2, 4], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** The wand of regrowth's lotus, which withers a little every turn. */
   lotus: { name: 'golden lotus', ht: 25, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** DriedRose.GhostHero: the sad ghost come back as a companion (its numbers come from its rose and its hero, see mobStats). */
+  ghostHero: { name: 'sad ghost', ht: 40, attack: 10, defense: 5, damage: [1, 5], dr: 0, exp: 0, maxLvl: 0, speed: 1, flying: true },
 };
 
 /** A monster's numbers: the table's, but a mimic is as strong as the depth it lurks on (Mimic.adjustStats). */
 export function mobStats(mob: Mob): MobStats {
   const depth = mob.level ?? 1;
+  if (mob.kind === 'ghostHero' && mob.ghostGear) {
+    // GhostHero: as accurate as the hero (lvl + 9) and as nimble (lvl + 4), striking with its weapon or bare-handed.
+    const { lvl, str, weapon, armor } = mob.ghostGear;
+    const w = weapon ? weaponStats(weapon) : null;
+    return {
+      ...MOBS.ghostHero, ht: mob.ht, attack: Math.trunc((lvl + 9) * (w?.accuracy ?? 1)), defense: lvl + 4,
+      damage: w ? [w.min, w.max] : [1, Math.max(1, str - 8)], dr: armor ? armorDrMax(armor) : 0, attackDelay: w?.delay ?? 1,
+    };
+  }
   if (mob.kind === 'statue' && mob.item) {
     // Statue: its numbers grow with the depth, and it fights with the weapon it holds.
     const weapon = weaponStats(mob.item);
@@ -708,6 +765,12 @@ export interface Mob {
   lotus?: { level: number };
   /** When its conditions last wore on (status.ts mobStatusTurn), so that they do so once a turn. */
   statusAt?: number;
+  /** The rose's ghost (DirectableAlly, an ally too): whose it is, and the place it was told to hold (-1: none) and whether it is on its way. */
+  directed?: { owner: string; defend: number; moving: boolean };
+  /** The rose's ghost: its hero's level, its strength and the gear the rose gave it (GhostHero.updateRose). */
+  ghostGear?: { lvl: number; str: number; weapon?: Item; armor?: Item };
+  /** MasterThievesArmband.StolenTracker: robbed by the armband (nothing more to drop), or tried. */
+  robbed?: 'stolen' | 'tried';
 }
 
 /** Mob.beckon: called towards a spot. Statue.beckon: an animated statue does not stir for it. */

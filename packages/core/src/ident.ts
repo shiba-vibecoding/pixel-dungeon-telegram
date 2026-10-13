@@ -1,4 +1,4 @@
-import type { Hero } from './actors';
+import { type Hero, heroBelongings, heroEquipped, heroRings } from './actors';
 import type { Ctx } from './floor';
 import { itemDef, type Item, type ItemKind } from './items';
 import type { World } from './world';
@@ -83,7 +83,7 @@ export function identify(world: World, item: Item): boolean {
 /** As the Generator makes them (a new Item: levelKnown and cursedKnown false): a melee weapon, armour, ring or wand tells nothing yet. */
 export function unidentified(item: Item): Item {
   const category = itemDef(item.kind).category;
-  if (category !== 'weapon' && category !== 'armor' && category !== 'missile' && category !== 'ring' && category !== 'wand') return item;
+  if (category !== 'weapon' && category !== 'armor' && category !== 'missile' && category !== 'ring' && category !== 'wand' && category !== 'artifact') return item;
   item.levelUnknown = true;
   item.curseUnknown = true;
   if (category === 'wand') item.chargesUnknown = true;
@@ -130,7 +130,7 @@ export function heroGainsExp(ctx: Ctx, hero: Hero, percent: number): void {
     const factor = f32(percent * idSpeedFactor(hero, item));
     if (usesAvailable(item) <= half) item.availableUsesToID = Math.min(half, f32(usesAvailable(item) + f32(factor * usesToID(item))));
   }
-  for (const ring of hero.rings) {
+  for (const ring of heroRings(hero)) {
     if (isIdentified(ctx.world, ring)) continue;
     ring.levelsToID = f32((ring.levelsToID ?? RING_LEVELS_TO_ID) - f32(percent * idSpeedFactor(hero, ring)));
     if (ring.levelsToID > 0) continue;
@@ -141,9 +141,7 @@ export function heroGainsExp(ctx: Ctx, hero: Hero, percent: number): void {
 
 /** Belongings.identify: everything a hero carries and wears is known (Dungeon.win, Hero.die). */
 export function identifyBelongings(world: World, hero: Hero): void {
-  for (const item of [hero.weapon, hero.armor, ...hero.rings, ...hero.items]) {
-    if (item) identify(world, item);
-  }
+  for (const item of heroBelongings(hero)) identify(world, item);
 }
 
 /**
@@ -153,8 +151,8 @@ export function identifyBelongings(world: World, hero: Hero): void {
  */
 export function observeBelongings(world: World, hero: Hero): ItemKind[] {
   const learned: ItemKind[] = [];
-  for (const item of [hero.weapon, hero.armor, ...hero.rings]) {
-    if (item && identify(world, item)) learned.push(item.kind);
+  for (const item of heroEquipped(hero)) {
+    if (identify(world, item)) learned.push(item.kind);
   }
   for (const item of hero.items) delete item.curseUnknown;
   return learned;

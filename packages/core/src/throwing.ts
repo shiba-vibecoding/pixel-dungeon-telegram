@@ -13,6 +13,8 @@ import {
 } from './missiles';
 import { burst, immuneTo } from './traps';
 import { CHILL_TURNS, ignite, timeScale } from './status';
+import { sharpshootingDurability } from './rings';
+import { gearLevel } from './weapons';
 import { isImmune } from './props';
 import { collect, pressUnderItem } from './inventory';
 import { S } from './spd-sprites';
@@ -70,7 +72,7 @@ export function throwPos(ctx: Ctx, hero: Hero, weapon: Item, target: number): nu
  */
 function decrementDurability(ctx: Ctx, hero: Hero, thrown: Item): void {
   if (parent) {
-    const perUse = durabilityPerUse(parent);
+    const perUse = durabilityPerUse(parent, gearLevel(parent), sharpshootingDurability(hero));
     if (durabilityLeft(parent) <= perUse) {
       thrown.durability = 0;
       delete parent.durability;
@@ -83,7 +85,7 @@ function decrementDurability(ctx: Ctx, hero: Hero, thrown: Item): void {
     parent = null;
     return;
   }
-  const perUse = durabilityPerUse(thrown);
+  const perUse = durabilityPerUse(thrown, gearLevel(thrown), sharpshootingDurability(hero));
   thrown.durability = durabilityLeft(thrown) - perUse;
   if (thrown.durability > 0 && thrown.durability <= perUse) ctx.effects.push({ type: 'worn', hero: hero.id, item: thrown, state: 'warning' });
   else if (perUse < 100 && thrown.durability <= 0) ctx.effects.push({ type: 'worn', hero: hero.id, item: thrown, state: 'broken' });
@@ -238,7 +240,7 @@ export function missileProc(ctx: Ctx, hero: Hero, mob: Mob, damage: number, thro
   const stack = parent ?? thrown;
   delete thrown.curseUnknown;
   delete stack.curseUnknown;
-  const last = !parent && durabilityLeft(thrown) <= durabilityPerUse(thrown);
+  const last = !parent && durabilityLeft(thrown) <= durabilityPerUse(thrown, gearLevel(thrown), sharpshootingDurability(hero));
   if (!last) {
     familiarise(ctx, hero, stack);
     if (!stack.levelUnknown) delete thrown.levelUnknown;

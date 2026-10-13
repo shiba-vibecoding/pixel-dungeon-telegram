@@ -161,10 +161,11 @@ export const bowLevel = (heroLevel: number, item?: Item): number => {
   const level = Math.trunc(heroLevel / 5);
   return item?.infused ? level + 1 + Math.trunc(level / 6) : level;
 };
-export const bowMin = (heroLevel: number, item?: Item): number =>
-  Math.max(0, 1 + Math.trunc(heroLevel / 5) + (item?.infused ? 1 + Math.trunc(heroLevel / 30) : 0));
-export const bowMax = (heroLevel: number, item?: Item): number =>
-  Math.max(0, 6 + Math.trunc(f32(heroLevel / 2.5)) + (item?.infused ? 2 + Math.trunc(heroLevel / 15) : 0));
+/** SpiritBow.min and max: with the bearer's level, the ring of sharpshooting's levels (sharp) and a curse infused. */
+export const bowMin = (heroLevel: number, item?: Item, sharp = 0): number =>
+  Math.max(0, 1 + Math.trunc(heroLevel / 5) + sharp + (item?.infused ? 1 + Math.trunc(heroLevel / 30) : 0));
+export const bowMax = (heroLevel: number, item?: Item, sharp = 0): number =>
+  Math.max(0, 6 + Math.trunc(f32(heroLevel / 2.5)) + 2 * sharp + (item?.infused ? 2 + Math.trunc(heroLevel / 15) : 0));
 /** SpiritBow.STRReq: a tier 1 weapon's, at the bow's level. */
 export const bowStr = (heroLevel: number, item?: Item): number => strReq(1, bowLevel(heroLevel, item));
 

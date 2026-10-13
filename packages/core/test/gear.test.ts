@@ -3,6 +3,8 @@ import {
   act, addHero, canEnter, charAt, createItem, createMob, createWorld, distance, type Effect, type Enchantment, floorAt, type Glyph, heroById,
   heroDefenseSkill, heroSpeed, heroStealth, type Item, levelAt, type Mob, type MobKind, NEIGHBOURS8, T, WIDTH, type World,
 } from '../src/index';
+import { durabilityPerUse, missileStats, sharpshootingBonus, sharpshootingDurability } from '../src/index';
+import { procMultiplier } from '../src/enchant';
 import { pacify } from './helpers';
 
 /*
@@ -382,5 +384,19 @@ describe('reach (Weapon.RCH)', () => {
     // KindOfWeapon.canReach: a way of open ground no longer than the reach, round whoever stands between if need be.
     mob.pos = hero.pos + 4 * dir;
     expect(act(world, 'p', { type: 'attack', target: mob.id })).toEqual({ ok: false, reason: 'too far away' });
+  });
+});
+
+describe("rings on the gear (the artifacts stream's rings)", () => {
+  it('arcana makes enchantments work more often; sharpshooting makes thrown weapons last longer and hit harder', () => {
+    const world = solo();
+    const hero = heroById(world, 'p')!;
+    // Ring.soloBonus: a +2 ring counts three.
+    hero.ring = createItem('ring.arcana', 1, 2);
+    expect(procMultiplier(hero)).toBeCloseTo(1.175 ** 3, 4);
+    hero.ring = createItem('ring.sharpshooting', 1, 1);
+    const stone = createItem('missile.throwingStone', 3);
+    expect(durabilityPerUse(stone, 0, sharpshootingDurability(hero))).toBeLessThan(durabilityPerUse(stone));
+    expect(missileStats(stone, sharpshootingBonus(hero)).max).toBeGreaterThan(missileStats(stone).max);
   });
 });

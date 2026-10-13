@@ -43,7 +43,7 @@ describe('the classes (HeroClass.initHero)', () => {
     // The mage's staff is the real one (the wands stream's MagesStaff), with a wand of magic missile imbued.
     expect(heroById(solo('mage'), 'p')!.weapon).toMatchObject({ kind: 'weapon.magesStaff', wand: { kind: 'wand.magicMissile' } });
     expect(heroById(solo('rogue'), 'p')!.weapon!.kind).toBe('weapon.dagger');
-    expect(heroById(solo('rogue'), 'p')!.rings[0]!.kind).toBe(KIT_SEAMS.cloakOfShadows.kind);
+    expect(heroById(solo('rogue'), 'p')!.artifact!.kind).toBe('artifact.cloak');
     expect(heroById(solo('huntress'), 'p')!.weapon!.kind).toBe('weapon.gloves');
     expect(heroById(solo('huntress'), 'p')!.items[0]!.kind).toBe('spiritBow');
     // The quick slots each class starts with (Dungeon.quickslot.setSlot).

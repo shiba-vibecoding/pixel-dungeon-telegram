@@ -51,7 +51,11 @@ export type ItemSpec =
   | { roll: 'shopWeapon'; tier: number }
   | { roll: 'shopMissile'; tier: number }
   /** Two darts tipped with a random seed (TippedDart.randomTipped(2)). */
-  | { roll: 'tippedDarts' };
+  | { roll: 'tippedDarts' }
+  /** An artifact the run has not dealt yet (or a ring, if it has none left). */
+  | { roll: 'artifact' }
+  /** ShopRoom's rare ware: now and then a wand, a ring or an artifact. */
+  | { roll: 'rare' };
 
 export type WellWater = 'health' | 'awareness' | 'transmutation';
 

@@ -1,10 +1,12 @@
 import {
   armorStats, augmentDamage, bowMax, bowMin, bowStr, buffedLevel, chargeLimit, chargesKnown, chargesPerCast, cursedKnown, durabilityOf, isBroken,
   isCurseEnchant, isCurseGlyph, isIdentified, isTippedDart, kindKnown, levelKnown, maxCharges, maxDurability, CLASS_ARMOR, CLASS_ARMOR_OF, type Hero,
-  type HeroClass, type Item, itemDef, type ItemKind, itemSprite, missileStats, SCROLL_RUNES, sealShield, usesLeft, visiblyCursed, wandDamage,
-  WATERSKIN_VOLUME, weaponStats, type World,
+  type HeroClass, type Item, itemDef, type ItemKind, itemSprite, missileStats, SCROLL_RUNES, sealShield, sharpshootingBonus, sharpshootingDurability, usesLeft,
+  visiblyCursed, visiblyUpgraded,
+  wandDamage, WATERSKIN_VOLUME, weaponStats, type World,
 } from '@pd/core';
 import { fmt, t } from './i18n';
+import { artifactInfo, artifactName } from './artifacttext';
 
 /*
  * How items are called and described, given what the party knows: the kinds
@@ -21,6 +23,11 @@ export function itemName(world: World, item: Item): string {
   const category = itemDef(item.kind).category;
   if (category === 'gold') return `${item.qty} ${t.goldShort}`;
   if (category === 'vial') return `${t.items[item.kind]} (${item.volume ?? 0}/${WATERSKIN_VOLUME})`;
+  // Artifact: its own name (the sandals' grows), and the level shown +0 to +10 (visiblyUpgraded).
+  if (category === 'artifact') {
+    const level = visiblyUpgraded(item);
+    return level === 0 ? artifactName(item) : `${artifactName(item)} +${level}`;
+  }
   if (!isKnown(world, item)) {
     const label = world.run.labels[item.kind] ?? 0;
     // Ring.name goes by the gem; Item.toString adds a known level all the same.
@@ -277,9 +284,9 @@ export function gearInfo(hero: Hero, item: Item): string[] | null {
     return [t.itemInfo[item.kind] ?? '', volume === 0 ? t.hero.waterskinWater : t.hero.waterskinHeal, ...(volume >= WATERSKIN_VOLUME ? [t.hero.waterskinFullDesc] : [])];
   }
   if (category === 'missile') {
-    const stats = missileStats(shown);
-    const uses = usesLeft(item);
-    const typicalUses = usesLeft(typical(item));
+    const stats = missileStats(shown, sharpshootingBonus(hero));
+    const uses = usesLeft(item, sharpshootingDurability(hero));
+    const typicalUses = usesLeft(typical(item), sharpshootingDurability(hero));
     const tipped = isTippedDart(item.kind);
     const dart = item.kind === 'missile.dart';
     return [
@@ -298,7 +305,7 @@ export function gearInfo(hero: Hero, item: Item): string[] | null {
     const str = bowStr(hero.lvl, item);
     return [
       t.itemInfo[item.kind] ?? '',
-      `${fmt(t.gear.bowStats, augmentDamage(item, bowMin(hero.lvl, item)), augmentDamage(item, bowMax(hero.lvl, item)), str)} ${strengthLines(true, str, hero, true).join(' ')}`.trim(),
+      `${fmt(t.gear.bowStats, augmentDamage(item, bowMin(hero.lvl, item, sharpshootingBonus(hero))), augmentDamage(item, bowMax(hero.lvl, item, sharpshootingBonus(hero))), str)} ${strengthLines(true, str, hero, true).join(' ')}`.trim(),
       ...(item.augment === 'speed' ? [t.gear.faster] : item.augment === 'damage' ? [t.gear.stronger] : []),
       t.gear.distance,
     ];
@@ -333,7 +340,10 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
     return [item.kind === 'key.golden' ? t.goldenKeyInfo(item.depth ?? 0) : t.keyInfo(item.depth ?? 0)];
   }
   if (category === 'gold') return [];
-  if (category === 'beacon') return [t.itemInfo[item.kind] ?? '', ...(item.returnTo ? [t.beaconSetAt(item.returnTo.depth)] : [])];
+  // Artifact.desc and info, Shattered's texts (artifacttext.ts).
+  if (category === 'artifact') {
+    return [...artifactInfo(world, hero, item, (kind) => t.items[kind as ItemKind] ?? kind), ...(visiblyCursed(item) ? [t.cursedInfo] : [])];
+  }
   return [isKnown(world, item) ? (t.itemInfo[item.kind] ?? '') : t.unknownInfo];
 }
 

@@ -110,14 +110,15 @@ export const missileSurprise = (kind: ItemKind): number => def(kind).surprise ??
 /**
  * MissileWeapon.durabilityPerUse(level): what a hit takes off the stack's durability; 0 for what never wears out
  * (a hundred uses or more). A speed augment makes them last half as long again, a damage one a third less; the
- * crystal enchantment halves it, to thirty uses at most. Seams: the durable projectiles talent, a magical holster
- * and the ring of sharpshooting (talents and rings) would multiply the uses; the regrowth wand's lotus would spare
- * tipped darts.
+ * crystal enchantment halves it, to thirty uses at most; a ring of sharpshooting (`multi`, its durabilityMultiplier)
+ * makes them last longer. Seams: the durable projectiles talent and a magical holster (talents, the bags) would
+ * multiply the uses; the regrowth wand's lotus would spare tipped darts.
  */
-export function durabilityPerUse(item: Item, lvl = gearLevel(item)): number {
+export function durabilityPerUse(item: Item, lvl = gearLevel(item), multi = 1): number {
   if (item.kind === 'missile.rotDart') return MAX_DURABILITY / 5;
   let usages = f32((def(item.kind).uses ?? 8) * f32(1.5 ** lvl));
   usages = f32(usages / augmentDelay(item, 1));
+  if (multi !== 1) usages = f32(usages * multi);
   if (item.enchant === 'crystal') usages = Math.min(f32(usages / 2), 30);
   if (isTippedDart(item.kind)) {
     // TippedDart.durabilityPerUse: no rounding before its own.
@@ -132,8 +133,8 @@ export function durabilityPerUse(item: Item, lvl = gearLevel(item)): number {
 export const durabilityLeft = (item: Item): number => item.durability ?? MAX_DURABILITY;
 
 /** MissileWeapon.info's uses left: of the stack's first one, and of a whole one; null when they never wear out. */
-export function usesLeft(item: Item): { left: number; max: number } | null {
-  const perUse = durabilityPerUse(item);
+export function usesLeft(item: Item, multi = 1): { left: number; max: number } | null {
+  const perUse = durabilityPerUse(item, gearLevel(item), multi);
   if (perUse <= 0) return null;
   return { left: Math.ceil(durabilityLeft(item) / perUse), max: Math.ceil(MAX_DURABILITY / perUse) };
 }
@@ -146,10 +147,11 @@ export interface MissileStats {
 }
 
 /** MissileWeapon.info: augment.damageFactor(min) and (max), STRReq. */
-export function missileStats(item: Item): MissileStats {
+export function missileStats(item: Item, sharp = 0): MissileStats {
+  // MissileWeapon.min and max: with the ring of sharpshooting's levels (`sharp`).
   return {
-    min: augmentDamage(item, missileMin(item)),
-    max: augmentDamage(item, missileMax(item)),
+    min: augmentDamage(item, missileMin(item, gearLevel(item) + sharp)),
+    max: augmentDamage(item, missileMax(item, gearLevel(item) + sharp)),
     str: missileStr(item),
     tier: itemDef(item.kind).tier!,
   };
