@@ -38,6 +38,8 @@ export const BUFF_ICONS = {
   stealth: 1012, timeFreeze: 1007, thorns: 1031,
   // The armour abilities': Endure's stored blows (BuffIndicator.ARMOR) and Nature's Power (NATURE_POWER).
   endure: 1020, naturesPower: 1058,
+  // The monsters' curses (mobs stream): BuffIndicator.VULNERABLE, HEX, DEGRADE.
+  degrade: 1048,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 
@@ -92,6 +94,7 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
     ...((me.blessed ?? 0) > 0 ? [{ name: 'bless' as const, turns: Math.ceil(me.blessed!) }] : []),
     ...alchemyBuffs(me),
     ...artifactBuffs(me),
+    ...((me.degraded ?? 0) > 0 ? [{ name: 'degrade' as const, turns: turns(me.degraded!) }] : []),
     ...abilityBuffs(me),
   ];
 }

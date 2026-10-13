@@ -1,3 +1,4 @@
+import { hasProp } from './props';
 import { isAlive, MOBS } from './actors';
 import { hurt } from './combat';
 import { type Char, charAt, type Ctx, type Floor, heroesOn, isHero, isWater } from './floor';
@@ -231,10 +232,10 @@ function afterSpreading(ctx: Ctx, kind: GasKind, cells: number[], cur: Int32Arra
       return;
     }
     case 'stench':
-      // StenchGas: Paralysis.DURATION / 5.
+      // StenchGas: Paralysis.DURATION / 5 (a fetid rat breathes its own unharmed: FetidRat immunities).
       for (const cell of cells) {
         const char = charIn(cell);
-        if (char) char.paralysed = Math.max(char.paralysed ?? 0, 2);
+        if (char && !(!isHero(char) && char.kind === 'fetidRat')) char.paralysed = Math.max(char.paralysed ?? 0, 2);
       }
       return;
     case 'storm':
@@ -447,14 +448,18 @@ function evolveWeb(ctx: Ctx, web: Array<[number, number]>): void {
   }
 }
 
-const ROOTS_IMMUNE: ReadonlySet<string> = new Set(['spinner', 'piranha', 'ghost', 'curse']);
+const ROOTS_IMMUNE: ReadonlySet<string> = new Set(['spinner', 'piranha', 'phantomPiranha', 'ghost', 'curse', 'spawner', 'dm201']);
 
 /** Everyone on the depth who breathes: heroes, and monsters other than the harmless. */
 function breathers(ctx: Ctx): Char[] {
-  return [...heroesOn(ctx.world, ctx.depth), ...ctx.floor.mobs.filter((mob) => mob.state !== 'passive' || mob.ally)];
+  return [...heroesOn(ctx.world, ctx.depth), ...ctx.floor.mobs.filter((mob) => mob.state !== 'passive' || mob.ally || mob.kind === 'spawner')];
 }
 
 function breathe(ctx: Ctx, char: Char, kind: GasKind): void {
+  // Char.Property: the inorganic breathe no toxic gas (INORGANIC immunities); the static know no paralysis, nor does a
+  // fetid rat its own stench (StenchGas).
+  if (kind === 'toxic' && hasProp(char, 'inorganic')) return;
+  if (kind === 'paralytic' && (hasProp(char, 'static') || (!isHero(char) && char.kind === 'fetidRat'))) return;
   if (kind === 'paralytic') {
     char.paralysed = Math.max(char.paralysed ?? 0, PARALYSIS_TURNS);
     return;

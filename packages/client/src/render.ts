@@ -1,3 +1,4 @@
+import { drawAura, drawBeams } from './mobfx';
 import { HEIGHT, type Level, LENGTH, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
 import { FALL_MS, type Puppet, TILE, type View } from './view';
@@ -196,8 +197,10 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.fillRect(snap(x + 5), snap(y + TILE - 3), 6, 1);
   }
 
+  drawAura(ctx, puppet, x, y, now);
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
+  if (puppet.alpha !== undefined) ctx.globalAlpha = puppet.alpha;
   // ScrollOfTeleportation.appear: faded in from nothing over 0.4 s; ShadowSprite.resetColor: a shade at 0.8.
   if (puppet.appearAt !== undefined) ctx.globalAlpha *= Math.min(1, Math.max(0, (now - puppet.appearAt) / 400));
   if (puppet.kind === 'shadow') ctx.globalAlpha *= 0.8;
@@ -234,6 +237,13 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   ctx.drawImage(sheet.image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
   // ShadowSprite.resetColor: brightness 0, the clone is a silhouette of darkness.
   if (puppet.kind === 'shadow') tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#000000', 1);
+  if (puppet.sprite.brightness !== undefined) {
+    // CharSprite.brightness: darker, its own pixels only.
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = `rgba(0, 0, 0, ${1 - puppet.sprite.brightness})`;
+    ctx.fillRect(0, 0, sheet.w, sheet.h);
+    ctx.globalCompositeOperation = 'source-over';
+  }
   if (puppet.alive) {
     // IceBlock: tinted (0.83, 1.17, 1.33) at 0.6. DarkBlock: brightness 0.4. WardSprite.resetColor: a ward dims as it shoots.
     if (puppet.marked) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#ff2020', 0.2 + 0.15 * Math.sin(now / 120));
@@ -607,6 +617,7 @@ export function render(
     ctx.restore();
   }
 
+  drawBeams(ctx, view, now);
   // Chains.update: the ethereal chain's links spread out from the hero to where it was thrown, then vanish.
   view.chains = view.chains.filter((c) => now - c.start < c.duration);
   for (const c of view.chains) {

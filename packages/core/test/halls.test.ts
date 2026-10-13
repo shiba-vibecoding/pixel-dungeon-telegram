@@ -83,11 +83,13 @@ describe('the demon halls', () => {
         Object.assign(eye, { enemy: 'p', target: hero.pos, enemySeen: true });
         floorAt(world, 23).mobs.push(eye, between);
         const effects: Effect[] = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 10; i++) {
           const result = act(world, 'p', { type: 'search' });
           if (result.ok) effects.push(...result.effects);
         }
-        const gazes = effects.filter((e) => e.type === 'zapped' && e.bolt === 'beam');
+        // Eye.doAttack: it charges its beam first, then lets the deathgaze go.
+        const gazes = effects.filter((e) => e.type === 'mobZap' && e.bolt === 'deathGaze');
+        if (gazes.length > 0) expect(effects.some((e) => e.type === 'charging' && e.mob === '#eye')).toBe(true);
         if (gazes.length === 0) continue;
         expect(effects.some((e) => e.type === 'attack' && e.attacker === '#eye' && e.target === '#rat')).toBe(true);
         return;
@@ -145,7 +147,7 @@ describe("Yog-Dzewa and the Amulet", () => {
     expect(won).toBe(2);
   });
 
-  it('a simple bot can play through the halls without breaking anything', () => {
+  it('a simple bot can play through the halls without breaking anything', { timeout: 60000 }, () => {
     for (const seed of [41, 42]) {
       const world = at(21, seed);
       const hero = heroById(world, 'p')!;

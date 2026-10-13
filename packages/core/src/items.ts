@@ -175,7 +175,7 @@ export const ITEMS = {
   'quest.gooBlob': of('material', S.BLOB),
   'quest.metalShard': of('material', S.SHARD),
   'quest.embers': of('material', S.EMBER),
-  /** Honeypot.ShatteredPot: what is left of a broken honeypot. */
+  /** Honeypot.ShatteredPot: what is left of a broken honeypot, which its bee still guards. */
   'honeypot.shattered': of('material', S.SHATTPOT),
 
   // Melee weapons (MeleeWeapon), by tier; their numbers are in weapons.ts.
@@ -695,7 +695,7 @@ const BOMB_PRICES: Partial<Record<ItemKind, number>> = {
   'bomb.regrowth': 50, 'bomb.holy': 50, 'bomb.arcane': 50, 'bomb.shrapnel': 70,
 };
 
-const MATERIAL_PRICES: Partial<Record<ItemKind, number>> = { resin: 30, liquidMetal: 1, 'quest.gooBlob': 30, 'quest.metalShard': 50 };
+const MATERIAL_PRICES: Partial<Record<ItemKind, number>> = { resin: 30, liquidMetal: 1, 'quest.gooBlob': 30, 'quest.metalShard': 50, 'honeypot.shattered': 5 };
 
 /** Value of one of a kind, as the Java value() with quantity 1 (unknown potions and scrolls at the plain 30). */
 function unitValue(kind: ItemKind, known: boolean): number {
@@ -775,7 +775,7 @@ export function itemPrice(item: Item, known: boolean): number {
     case 'elixir':
       return (item.kind === 'elixir.honeyedHealing' ? 40 : 60) * item.qty;
     case 'material':
-      // ArcaneResin, LiquidMetal, GooBlob and MetalShard (an emptied honeypot and embers are worth nothing).
+      // ArcaneResin, LiquidMetal, GooBlob and MetalShard and a shattered honeypot (five; embers are worth nothing).
       return (MATERIAL_PRICES[item.kind] ?? 0) * item.qty;
     case 'artifact':
       return artifactValue(item);
@@ -1158,7 +1158,9 @@ export class ItemGenerator {
 
 /** `forSale`: a shop's wares, bought rather than picked up. */
 /** hidden: unseen until a hero searches right next to it. */
-export type HeapKind = 'heap' | 'chest' | 'skeleton' | 'tomb' | 'forSale' | 'mimic' | 'lockedChest' | 'crystalChest' | 'hidden';
+/** `goldenMimic` and `crystalMimic`: mimics looking like a locked and a crystal chest (GoldenMimic, CrystalMimic). */
+export type HeapKind =
+  | 'heap' | 'chest' | 'skeleton' | 'tomb' | 'forSale' | 'mimic' | 'lockedChest' | 'crystalChest' | 'hidden' | 'goldenMimic' | 'crystalMimic';
 
 export interface Heap {
   pos: number;
@@ -1170,6 +1172,7 @@ export interface Heap {
 /** A mimic looks just like a chest. */
 export const HEAP_SPRITES: Readonly<Record<Exclude<HeapKind, 'heap' | 'forSale'>, number>> = {
   chest: S.CHEST, skeleton: S.BONES, tomb: S.TOMB, mimic: S.CHEST, lockedChest: S.LOCKED_CHEST, crystalChest: S.CRYSTAL_CHEST,
+  goldenMimic: S.LOCKED_CHEST, crystalMimic: S.CRYSTAL_CHEST,
   hidden: S.SOMETHING, // never drawn
 };
 

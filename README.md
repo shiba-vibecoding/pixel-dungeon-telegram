@@ -122,6 +122,8 @@ Yendor on depth 26:
   wear bars; tabbed help. `packages/client/scripts/build-ui-css.mjs` regenerates
   `src/ui.css` from the design system's tokens and components.
 
+The home screen is a camp, «Привал»: a live scene at the dungeon's gate (the season's colours, a campfire, torches, the hero breathing and blinking) where a tap makes the hero swing and answer in his class's words, four quick taps make him sulk, and a swipe or the arrows walk him into the shadow and bring the next class out for a new game; the player's card, the mail, rankings, Pixel-Mart and settings at its edges, the day's dungeon and the ways in below. The first run is taught in four steps (an enemy, the stairs, the backpack, the quick slot), shown as each comes up; the tutorial's end is kept with the profile on the server too. When a day or week closes and the player placed in its top 3 or 10, a letter comes to the mail (kept 30 days from the close, however long they were away); claiming it puts the trophy on the shelf, once. The boards show what each place wins and the time to their close. Pixel-Mart also sells three more camps (the crystal cave, the prison yard, the dwarven hall) at 100 Stars.
+
 Fire burns scrolls, lying about or in a burning hero's pack.
 
 Worse-than-plain gear is cursed: once worn, it will not come off until a
