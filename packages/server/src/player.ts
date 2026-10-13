@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import { type Action, dayOf, type HeroClass, isPatron, RULES_VERSION, type Wallet } from '@pd/core';
+import { type Action, dayOf, type HeroClass, HERO_CLASSES, isPatron, RULES_VERSION, type Wallet } from '@pd/core';
 import { BOARD_KINDS, type BoardKind, boardName, boardOfRun, boardsFor, finishedBoards, trophyPlaces } from './boards';
 import { CORS, json, jsonBody } from './http';
 import type { Env } from './index';
@@ -26,7 +26,6 @@ import { verifyInitData, WEEK_SECONDS } from './telegram-auth';
 
 /** The largest sync: init data and MAX_SYNC_ACTIONS actions. */
 const MAX_RUN_BYTES = 128 * 1024;
-const HERO_CLASSES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
 /** How many entries a board shows. */
 const BOARD_TOP = 50;
 

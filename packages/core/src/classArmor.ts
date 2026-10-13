@@ -17,7 +17,7 @@ import { S } from './spd-sprites';
  */
 
 export const CLASS_ARMOR_OF: Readonly<Record<HeroClass, ItemKind>> = {
-  warrior: 'armor.warrior', mage: 'armor.mage', rogue: 'armor.rogue', huntress: 'armor.huntress',
+  warrior: 'armor.warrior', mage: 'armor.mage', rogue: 'armor.rogue', huntress: 'armor.huntress', duelist: 'armor.duelist', cleric: 'armor.cleric',
 };
 export const CLASS_ARMOR: readonly ItemKind[] = Object.values(CLASS_ARMOR_OF);
 
@@ -127,5 +127,9 @@ export function classSpecial(ctx: Ctx, hero: Hero, target: number | undefined): 
       }
       return heroAttackDelay(hero);
     }
+    case 'duelist':
+    case 'cleric':
+      // SEAM(classes): the duelist's and the cleric's abilities (classes/) come in the next commits.
+      return 0;
   }
 }

@@ -40,6 +40,7 @@ const RARE_KINDS = ['albino', 'bandit', 'shielded', 'senior', 'acidic'];
 const BOSSES: Readonly<Record<string, BadgeId>> = { goo: 'boss1', tengu: 'boss2', dm300: 'boss3', king: 'boss4' };
 const SUBCLASSES = ['gladiator', 'berserker', 'warlock', 'battlemage', 'freerunner', 'assassin', 'sniper', 'warden'];
 const CLASSES = ['warrior', 'mage', 'rogue', 'huntress'];
+// (The duelist's and the cleric's own badges: SEAM(badges) — Shattered's mastery, unlock and all-classes badges name six.)
 const DEATHS: Readonly<Record<string, BadgeId>> = {
   burning: 'deathFire', poison: 'deathPoison', gas: 'deathGas', hunger: 'deathHunger', fall: 'deathFalling',
   multiplicity: 'deathGlyph', deferred: 'deathGlyph',

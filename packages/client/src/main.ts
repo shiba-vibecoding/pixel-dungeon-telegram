@@ -2,7 +2,7 @@ import {
   type Action, adjacent, blockers, liveBlockers, distance, type Mob, trapAt, buyPrice, cellX, cellY, createHero, createWorld, type Effect, exploredCells, F, findPath, hasFlag,
   HEAP_SPRITES,
   type Hero, type Item, type Level,
-  BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
+  BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, HERO_CLASSES, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
   visibleCells, chargesKnown, staffReach, WIDTH,
   type World, charAt, swapsWithHero, canReach, heroReach, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
@@ -80,7 +80,6 @@ import { STEP_MS, TILE, View } from './view';
  * the daily dungeon or the arena of waves; the server (VITE_SERVER_URL) keeps the boards.
  */
 
-const HERO_CLASSES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
 const SOLO_SLOT = 'pd-solo';
 /** The arena of waves' solo run has a slot of its own: it never takes the dungeon run's place. */
 const ARENA_SLOT = 'pd-arena';

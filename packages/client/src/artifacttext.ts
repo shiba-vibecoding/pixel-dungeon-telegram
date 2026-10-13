@@ -3,6 +3,7 @@ import {
   SEED_CHARGE, toolkitWarming, type World,
 } from '@pd/core';
 import { ART_EN, ART_RU } from './i18n-artifacts';
+import { CLS_EN, CLS_RU } from './i18n-classes';
 import { lang } from './i18n';
 
 /*
@@ -17,10 +18,14 @@ export const ARTIFACT_CLASS: Readonly<Record<ArtifactKind, string>> = {
   'artifact.hourglass': 'timekeepershourglass', 'artifact.talisman': 'talismanofforesight', 'artifact.spellbook': 'unstablespellbook',
   'artifact.chains': 'etherealchains', 'artifact.rose': 'driedrose', 'artifact.armband': 'masterthievesarmband',
   'artifact.sandals': 'sandalsofnature', 'artifact.cape': 'capeofthorns', 'artifact.toolkit': 'alchemiststoolkit',
-  'artifact.beacon': 'lloydsbeacon',
+  'artifact.beacon': 'lloydsbeacon', 'artifact.tome': 'holytome',
 };
 
-const table: Record<string, string> = lang === 'ru' ? ART_RU : ART_EN;
+/** The holy tome's lines (the classes stream's texts, i18n-classes.ts), keyed like the artifacts' own. */
+const tomeTexts = (all: Record<string, string>): Record<string, string> =>
+  Object.fromEntries(Object.entries(all).filter(([key]) => key.startsWith('items.artifacts.holytome')).map(([key, text]) => [key.slice('items.artifacts.'.length), text]));
+
+const table: Record<string, string> = lang === 'ru' ? { ...ART_RU, ...tomeTexts(CLS_RU) } : { ...ART_EN, ...tomeTexts(CLS_EN) };
 
 /** Messages.format: %d, %s, %1$d, %2$s… filled in order or by number; %% is a percent sign. */
 export function format(text: string, args: ReadonlyArray<string | number> = []): string {
@@ -143,7 +148,7 @@ export function chargeOf(world: World, hero: Hero, item: Item): { share: number;
 
 /** The card's state line: what the artifact is doing now. */
 export function artifactState(world: World, hero: Hero, item: Item): { text: string; on: boolean } | null {
-  const ru = table === ART_RU;
+  const ru = lang === 'ru';
   if (item.stealth) return { text: ru ? 'Вы невидимы.' : 'You are invisible.', on: true };
   if (item.freeze) return { text: artText('timekeepershourglass$timefreeze.name'), on: true };
   if ((hero.stasis ?? 0) > 0 && item.kind === 'artifact.hourglass') return { text: ru ? 'Вы вне времени.' : 'You are in stasis.', on: true };

@@ -228,6 +228,8 @@ export const ITEMS = {
   'armor.mage': armor(6, S.ARMOR_MAGE),
   'armor.rogue': armor(6, S.ARMOR_ROGUE),
   'armor.huntress': armor(6, S.ARMOR_HUNTRESS),
+  'armor.duelist': armor(6, S.ARMOR_DUELIST),
+  'armor.cleric': armor(6, S.ARMOR_CLERIC),
 
   // Thrown weapons (MissileWeapon), by tier; their numbers are in missiles.ts.
   'missile.throwingStone': missile(1, S.THROWING_STONE),
@@ -348,6 +350,8 @@ export const ITEMS = {
   'artifact.sandals': { category: 'artifact', sprite: S.ARTIFACT_SANDALS },
   'artifact.cape': { category: 'artifact', sprite: S.ARTIFACT_CAPE },
   'artifact.toolkit': { category: 'artifact', sprite: S.ARTIFACT_TOOLKIT },
+  /** The cleric's own (HolyTome): never dealt, it casts the cleric's spells and grows with the charges they spend. */
+  'artifact.tome': { category: 'artifact', sprite: S.ARTIFACT_TOME },
   /** Goo's legacy now and then: takes its bearer back to a place set beforehand (LloydsBeacon, an artifact in Shattered). */
   'artifact.beacon': { category: 'artifact', sprite: S.ARTIFACT_BEACON },
   /** TimekeepersHourglass.sandBag: sold in the shops to whoever has the hourglass, it makes it stronger. */

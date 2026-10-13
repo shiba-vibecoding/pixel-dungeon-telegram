@@ -1,7 +1,7 @@
 import {
   ALCHEMIZE_CHOICES, augmentsFor, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
   knownIn, MUST_THROW, TARGETED_SPELLS,
-  type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass,
+  type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass, HERO_CLASSES,
   type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
   visiblyCursed, type World, CLASS_ARMOR_OF, heroById, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
 } from '@pd/core';
@@ -28,9 +28,8 @@ import type { LogLine } from './view';
  */
 
 const root = document.getElementById('overlay')!;
-const HERO_CLASSES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
 /** Heroes in avatars.png and in the heroes strip, in this order. */
-export const AVATAR: Readonly<Record<HeroClass, number>> = { warrior: 0, mage: 1, rogue: 2, huntress: 3 };
+export const AVATAR: Readonly<Record<HeroClass, number>> = { warrior: 0, mage: 1, rogue: 2, huntress: 3, duelist: 4, cleric: 5 };
 
 let assets: Assets | null = null;
 
@@ -432,9 +431,15 @@ function rankingsButton(onClick: () => void): HTMLButtonElement {
 
 export function showTitle(options: TitleOptions): void {
   let selected = options.heroClass;
-  const name = el('span', { className: 'pd-class-name', textContent: t.classes[selected] });
+  // ShHeroes: six classes in a row; Shattered's new two (the duelist, the cleric) carry a gold dot, and a chip by their name.
+  const isNew = (heroClass: HeroClass): boolean => heroClass === 'duelist' || heroClass === 'cleric';
+  const name = el('span', { className: 'pd-class-name' });
+  const showName = (heroClass: HeroClass): void => {
+    name.replaceChildren(t.classes[heroClass], ...(isNew(heroClass) ? [el('span', { className: 'pd-chip', textContent: t.newClass })] : []));
+  };
+  showName(selected);
   const about = info(t.classInfo[selected], 'pd-note');
-  const classes = el('div', { className: 'pd-classes' });
+  const classes = el('div', { className: 'pd-classes six' });
   classes.setAttribute('role', 'radiogroup');
   const renderClasses = (): void => {
     classes.replaceChildren(
@@ -444,12 +449,12 @@ export function showTitle(options: TitleOptions): void {
         const node = el(
           'button',
           {
-            className: `pd-class${heroClass === selected ? ' selected' : ''}`,
+            className: `pd-class${heroClass === selected ? ' selected' : ''}${isNew(heroClass) ? ' new' : ''}`,
             ariaLabel: t.classes[heroClass],
             onclick: () => {
               audio.play('click');
               selected = heroClass;
-              name.textContent = t.classes[heroClass];
+              showName(heroClass);
               about.textContent = t.classInfo[heroClass];
               options.onClass(heroClass);
               renderClasses();

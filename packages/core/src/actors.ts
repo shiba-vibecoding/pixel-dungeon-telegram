@@ -33,12 +33,15 @@ export type { HeroClass } from './heroclass';
 export { HUNGRY, isHungry, isStarving, STARVING } from './hero';
 
 /** HeroSubClass: the two ways each class can master with the Tome of Mastery. */
-export type SubClass = 'gladiator' | 'berserker' | 'battlemage' | 'warlock' | 'freerunner' | 'assassin' | 'sniper' | 'warden';
+export type SubClass =
+  | 'gladiator' | 'berserker' | 'battlemage' | 'warlock' | 'freerunner' | 'assassin' | 'sniper' | 'warden' | 'champion' | 'monk' | 'priest' | 'paladin';
 export const SUBCLASSES: Readonly<Record<HeroClass, readonly [SubClass, SubClass]>> = {
   warrior: ['gladiator', 'berserker'],
   mage: ['battlemage', 'warlock'],
   rogue: ['freerunner', 'assassin'],
   huntress: ['sniper', 'warden'],
+  duelist: ['champion', 'monk'],
+  cleric: ['priest', 'paladin'],
 };
 
 /** Backpack slots, equipment aside. */

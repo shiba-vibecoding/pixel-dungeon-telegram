@@ -7,7 +7,7 @@ export { Feeling, HeapType, type ItemSpawn, type ItemSpec, isBossDepth, LAST_SHO
 export { generateLevel, type Level, type RoomInfo } from './level/generate';
 export { discoverable, passable } from './level/flags';
 export * from './actors';
-export { KIT_SEAMS, startingKit, type StartingKit } from './heroclass';
+export { HERO_CLASSES, KIT_SEAMS, startingKit, type StartingKit } from './heroclass';
 export {
   affectHunger, earnExp, floorLocked, growHT, heroHT, isEnemy, MAX_LEVEL, maxExpFor, REGENERATION_DELAY, regenOn, TIME_TO_SEARCH, visibleEnemies,
 } from './hero';

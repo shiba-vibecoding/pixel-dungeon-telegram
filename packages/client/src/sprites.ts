@@ -389,7 +389,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
   const names = [
     'tiles0', 'water0', 'tiles1', 'water1', 'tiles2', 'water2', 'spinner', 'dm300', 'tiles3', 'water3',
     'elemental', 'monk', 'warlock', 'golem', 'king', 'undead', 'tiles4', 'water4',
-    'succubus', 'eye', 'scorpio', 'yog', 'rottingFist', 'burningFist', 'larva', 'mimic', 'statue', 'piranha', 'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'bee', 'warrior', 'mage', 'rogue', 'ranger', 'rat', 'gnoll', 'crab', 'goo', 'ghost',
+    'succubus', 'eye', 'scorpio', 'yog', 'rottingFist', 'burningFist', 'larva', 'mimic', 'statue', 'piranha', 'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'bee', 'warrior', 'mage', 'rogue', 'ranger', 'duelist', 'cleric', 'rat', 'gnoll', 'crab', 'goo', 'ghost',
     'skeleton', 'thief', 'swarm', 'shaman', 'bat', 'brute', 'tengu', 'shopkeeper', 'wandmaker', 'spd/ghost', 'spd/effects',
     'icons', 'items', 'plants', 'spd/wards', 'spd/guardian', 'spd/lotus',
   ] as const;
@@ -421,6 +421,8 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
       mage: hero(images.mage),
       rogue: hero(images.rogue),
       huntress: hero(images.ranger),
+      duelist: hero(images.duelist),
+      cleric: hero(images.cleric),
     },
     mobs: Object.fromEntries((Object.keys(MOB_SPRITES) as MobKind[]).map((kind) => [kind, mob(kind)])) as Record<MobKind, CharSprite>,
     icons: images.icons,

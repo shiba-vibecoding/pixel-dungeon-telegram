@@ -25,7 +25,9 @@ interface Words {
 }
 
 const EN: Words = {
-  look: { warrior: 'Warrior look', mage: 'Mage look', rogue: 'Rogue look', huntress: 'Huntress look' },
+  look: {
+    warrior: 'Warrior look', mage: 'Mage look', rogue: 'Rogue look', huntress: 'Huntress look', duelist: 'Duelist look', cleric: 'Cleric look',
+  },
   skin: {
     ash: ['Ashen', 'Armour gone grey with ash, the hair too.'],
     royal: ['Royal', 'Gold for metal and light cloth, purple for the rest.'],
@@ -45,7 +47,9 @@ const EN: Words = {
 };
 
 const RU: Words = {
-  look: { warrior: 'Облик воина', mage: 'Облик мага', rogue: 'Облик разбойника', huntress: 'Облик охотницы' },
+  look: {
+    warrior: 'Облик воина', mage: 'Облик мага', rogue: 'Облик разбойника', huntress: 'Облик охотницы', duelist: 'Облик дуэлянтки', cleric: 'Облик клирика',
+  },
   skin: {
     ash: ['Пепельный', 'Броня, посеревшая от пепла, и пепельные волосы.'],
     royal: ['Королевский', 'Металл и светлая ткань в золото, цветное в пурпур.'],

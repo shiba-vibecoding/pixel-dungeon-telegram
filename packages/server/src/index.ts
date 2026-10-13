@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
-  allowedLook, type ClientMessage, emptyWallet, type GameMode, type HeroClass, isPatron, type Look, type PlayerInfo, RULES_VERSION, type Wallet,
+  allowedLook, type ClientMessage, emptyWallet, type GameMode, type HeroClass, HERO_CLASSES, isPatron, type Look, type PlayerInfo, RULES_VERSION, type Wallet,
 } from '@pd/core';
 import { botApi, createInvoice, handleUpdate, type TelegramUpdate, type Wallets } from './payments';
 import { ChunkWriter, chunkKeys, fromChunks } from './chunks';
@@ -171,8 +171,6 @@ export class ReportStore extends DurableObject<Env> {
     return new Response(JSON.stringify(reports), { headers: { 'Content-Type': 'application/json' } });
   }
 }
-
-const HERO_CLASSES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
 
 function heroClassOf(params: URLSearchParams): HeroClass {
   const value = params.get('hero');

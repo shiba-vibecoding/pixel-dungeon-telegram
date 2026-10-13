@@ -17,7 +17,7 @@ import { S } from '../spd-sprites';
 export type ArtifactKind =
   | 'artifact.cloak' | 'artifact.horn' | 'artifact.chalice' | 'artifact.hourglass' | 'artifact.talisman' | 'artifact.spellbook'
   | 'artifact.chains' | 'artifact.rose' | 'artifact.armband' | 'artifact.sandals' | 'artifact.cape' | 'artifact.toolkit'
-  | 'artifact.beacon';
+  | 'artifact.beacon' | 'artifact.tome';
 
 export const isArtifact = (item: Item | null | undefined): boolean => !!item && itemDef(item.kind).category === 'artifact';
 
@@ -25,7 +25,7 @@ export const isArtifact = (item: Item | null | undefined): boolean => !!item && 
 export const LEVEL_CAP: Readonly<Record<ArtifactKind, number>> = {
   'artifact.cloak': 10, 'artifact.horn': 10, 'artifact.chalice': 10, 'artifact.hourglass': 5, 'artifact.talisman': 10,
   'artifact.spellbook': 10, 'artifact.chains': 5, 'artifact.rose': 10, 'artifact.armband': 10, 'artifact.sandals': 3,
-  'artifact.cape': 10, 'artifact.toolkit': 10, 'artifact.beacon': 3,
+  'artifact.cape': 10, 'artifact.toolkit': 10, 'artifact.beacon': 3, 'artifact.tome': 10,
 };
 
 export const levelCap = (item: Item): number => LEVEL_CAP[item.kind as ArtifactKind] ?? 0;
@@ -51,6 +51,9 @@ export function chargeCap(item: Item): number {
       return 100;
     case 'artifact.beacon':
       return 3 + level;
+    case 'artifact.tome':
+      // HolyTome: Math.min(level()+3, 10).
+      return Math.min(level + 3, 10);
     default:
       return 0;
   }
@@ -63,6 +66,7 @@ function startingCharge(item: Item): number {
     case 'artifact.hourglass':
     case 'artifact.spellbook':
     case 'artifact.rose':
+    case 'artifact.tome':
       return chargeCap(item);
     case 'artifact.chains':
       return 5;
