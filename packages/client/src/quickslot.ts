@@ -35,12 +35,17 @@ export function chooseQuickslot(kind: ItemKind, slot = 0): void {
 
 export const isQuickslotted = (kind: ItemKind): boolean => chosen.includes(kind);
 
-/** What a quickslot tap does with an item: aim a throw or a zap, or use it at once. */
-export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'use' | null {
+/**
+ * What a quickslot tap does with an item: aim a throw or a zap, use it at once, or do what its
+ * first action in the backpack does ('item': a potion, a scroll, a runestone, a spell... which may
+ * want a target or a choice first).
+ */
+export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'use' | 'item' | null {
   const category = itemDef(kind).category;
   if (category === 'wand') return 'zap';
+  if (['potion', 'scroll', 'stone', 'spell', 'brew', 'elixir', 'catalyst'].includes(category) || kind === 'resin') return 'item';
   if (category === 'missile' || category === 'bomb' || category === 'honeypot' || category === 'seed') return 'throw';
-  if (['potion', 'scroll', 'food', 'torch', 'vial', 'wipeout'].includes(category) || kind === 'quest.fish') return 'use';
+  if (['food', 'torch', 'vial', 'wipeout'].includes(category) || kind === 'quest.fish') return 'use';
   return null;
 }
 

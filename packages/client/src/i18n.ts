@@ -616,6 +616,34 @@ const ALCH_RU: typeof ALCH_EN = {
 const en = {
   /** Shattered's alchemy: the pot, its items' messages, buffs and the alchemy guide (ALCH_EN). */
   alch: ALCH_EN,
+  /** The alchemy pot's window and the choices alchemy's items ask for (ShAlchemy in the design system). */
+  alchUi: {
+    brew: 'Brew',
+    toEnergy: 'Turn into energy',
+    recipes: 'Recipes',
+    clear: 'Clear',
+    add: 'Add',
+    noEnergy: 'No energy needed',
+    cost: (n: number) => `${n} energy`,
+    short: (need: number, have: number) => `Needs ${need}, have ${have}`,
+    youGet: 'You get',
+    pickTitle: 'Into the pot',
+    energyOf: (n: number) => `energy ${n}`,
+    intoPot: 'Into the pot',
+    nothing: 'Put in up to three ingredients',
+    random: 'Something random',
+    sameColour: 'of the same colour',
+    anyPotion: 'any potion',
+    anyScroll: 'any scroll',
+    seeds: 'three seeds',
+    tier: (n: number) => `Tier ${n}`,
+    energyCounter: (n: number) => `energy ${n}`,
+    use: 'Use',
+    cast: 'Cast',
+    imbue: 'Imbue',
+    choose: 'Choose',
+    lightThrow: 'Light & throw',
+  },
   subtitle: 'Telegram edition',
   menu: 'Menu',
   history: 'History',
@@ -1958,6 +1986,33 @@ type Strings = typeof en;
 
 const ru: Strings = {
   alch: ALCH_RU,
+  alchUi: {
+    brew: 'Сварить',
+    toEnergy: 'Превратить в энергию',
+    recipes: 'Рецепты',
+    clear: 'Очистить',
+    add: 'Добавить',
+    noEnergy: 'Без энергии',
+    cost: (n) => `${n} ${plural(n, 'энергия', 'энергии', 'энергии')}`,
+    short: (need, have) => `Нужно ${need}, есть ${have}`,
+    youGet: 'Получите',
+    pickTitle: 'В котёл',
+    energyOf: (n) => `энергия ${n}`,
+    intoPot: 'В котёл',
+    nothing: 'Положите до трёх ингредиентов',
+    random: 'Что-то случайное',
+    sameColour: 'того же цвета',
+    anyPotion: 'любое зелье',
+    anyScroll: 'любой свиток',
+    seeds: 'три семени',
+    tier: (n) => `Ярус ${n}`,
+    energyCounter: (n) => `энергия ${n}`,
+    use: 'Использовать',
+    cast: 'Сотворить',
+    imbue: 'Насытить',
+    choose: 'Выбрать',
+    lightThrow: 'Поджечь и бросить',
+  },
   subtitle: 'издание для Telegram',
   menu: 'Меню',
   history: 'История',
@@ -3310,3 +3365,15 @@ export const t: Strings = lang === 'ru' ? ru : en;
 export const locale = lang === 'ru' ? 'ru-RU' : 'en-US';
 if (typeof document !== 'undefined') document.documentElement.lang = lang;
 export { capitalize };
+
+/** Messages.format: a Shattered template's %s, %d, %.1f and %1$d filled in order (or by number), %% a percent sign. */
+export function fill(template: string, ...args: Array<string | number>): string {
+  let next = 0;
+  return template.replace(/%(?:(\d+)\$)?([-0-9.]*)([sdf%])/g, (_whole, at: string | undefined, _flags: string, conv: string) => {
+    if (conv === '%') return '%';
+    const value = args[at ? Number(at) - 1 : next++];
+    if (value === undefined) return '';
+    if (conv === 'd' && typeof value === 'number') return String(Math.trunc(value));
+    return String(value);
+  });
+}

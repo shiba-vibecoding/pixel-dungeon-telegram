@@ -43,7 +43,7 @@ export * from './spd-sprites';
 // Shattered's alchemy: the pot and its recipes, buffs, potions, scrolls, runestones, spells, bombs, trinkets.
 export {
   atPot, availableEnergy, BOMB_RECIPES, brewProblem, energizeProblem, goesInWhole, type Ingredient, type RecipeId, type RecipeOffer,
-  recipesFor, SCROLL_STONES, SEED_POTIONS, toolkit, usableInRecipe,
+  recipesFor, SCROLL_STONES, SEED_POTIONS, SIMPLE_RECIPES, type Simple, toolkit, usableInRecipe,
 } from './alchemy';
 export { type Buffs, buffsOf, chillFactor, isMagicImmune, mightBoost } from './buffs';
 export { CAN_THROW, drinkProblem, MUST_THROW } from './potions';

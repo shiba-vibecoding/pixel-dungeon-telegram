@@ -5,7 +5,7 @@ import {
   type Bones, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
   visibleCells, chargesKnown, WIDTH,
-  type World, charAt, swapsWithHero,
+  type World, charAt, swapsWithHero, atPot,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
@@ -30,7 +30,7 @@ import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
 import { bakeLevel, type Camera, patchLevel, render } from './render';
 import {
   armorTier, closeOverlay, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showReforge, showHelp, showHero,
-  refreshBackpack, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTitle, showTrade, showWaiting, slot, toast, type ShareChoice,
+  refreshBackpack, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTitle, showTrade, showWaiting, slot, toast, type ShareChoice,
 } from './screens';
 import { profileCard, rankingBlock, showBoards, trophyText } from './rankui';
 import { mart } from './mart';
@@ -56,6 +56,7 @@ import {
   homeScreenStatus, addToHomeScreen,
 } from './telegram';
 import { startReporting } from './report';
+import { alchemyOpen, refreshAlchemy, showAlchemy } from './alchemyui';
 import { STEP_MS, TILE, View } from './view';
 
 /*
@@ -727,7 +728,7 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
   (world.floors[depth]?.heaps ?? []).some((heap) => heap.pos === pos && heap.kind !== 'hidden');
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
-let aim: { index: number; kind: 'throw' | 'zap' | 'special' } | null = null;
+let aim: { index: number; kind: 'throw' | 'zap' | 'special' | 'cast' } | null = null;
 
 function toggleQuickslot(slot = 0): void {
   const world = session?.world;
@@ -748,6 +749,8 @@ function toggleQuickslot(slot = 0): void {
   walk.reset();
   const use = quickUse(item.kind);
   if (use === 'use') send({ type: 'use', item: index }, performance.now());
+  // Shattered's potions, scrolls, stones, spells...: whatever the item's first action is (it may want a target or a choice).
+  else if (use === 'item') quickAction(backpackOptions(world!, me), index);
   else if (use) aim = { index, kind: use };
 }
 
@@ -1223,10 +1226,19 @@ function tapCell(cell: number, quiet = false): void {
     const shot = aim;
     aim = null;
     if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
+    // A spell cast, dragon's breath breathed, a siren's song sung at the cell.
+    else if (shot.kind === 'cast') {
+      if (cell !== me.pos && me.items[shot.index]) send({ type: 'use', item: shot.index, cell }, performance.now());
+    }
     else if (cell !== me.pos && me.items[shot.index]) send({ type: shot.kind, item: shot.index, target: cell }, performance.now());
     return;
   }
 
+  // Hero.actAlchemy: the pot, tapped from beside it (or standing in it), opens AlchemyScene.
+  if (level.map[cell] === T.ALCHEMY && atPot(world, me) && (cell === me.pos || adjacent(cell, me.pos))) {
+    openAlchemy();
+    return;
+  }
   if (cell === me.pos) {
     if (heapAt(world, me.depth, me.pos)) takeHere(world, me, performance.now());
     else if (!world.arena && me.pos === level.exit) useStairs(world, 'descend', performance.now());
@@ -1325,6 +1337,35 @@ function openHero(): void {
   showHero({
     hero: me, buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
     looks: looksRows(me.heroClass, (shelf) => showMart({ heroClass: me.heroClass, shelf, onClose: openHero })),
+  });
+}
+
+/** What the backpack (and the windows it opens) are given. */
+function backpackOptions(world: World, me: Hero): Parameters<typeof showBackpack>[0] {
+  return {
+    world,
+    hero: me,
+    onAction: (action) => send(action, performance.now()),
+    onAim: (index, kind) => {
+      aim = { index, kind };
+    },
+    onClose: hideOverlay,
+  };
+}
+
+/** The alchemy pot's window (alchemyui.ts), over the map until closed. */
+function openAlchemy(): void {
+  walk.reset();
+  aim = null;
+  audio.play('click');
+  showAlchemy({
+    current: () => {
+      const world = session?.world;
+      const me = world && heroById(world, session!.myId);
+      return world && me && isAlive(me) ? { world, hero: me } : null;
+    },
+    onAction: (action) => send(action, performance.now()),
+    onClose: hideOverlay,
   });
 }
 
@@ -2233,6 +2274,8 @@ function tick(now: number): void {
     // The backpack, if open, shows the pack as it is now (an item put on, dropped, picked up).
     const mine = session.myId;
     if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
+    // The pot's window, if open, shows the pack and the energy as they are now.
+    if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
     for (const effect of effects) effectFx(effect, view, world, session.myId, vnow);
     motion.effects(effects, world, me.depth, (e) => itemSprite(e.item, world.run.labels));
     scenery.effects(effects, me.depth, vnow);

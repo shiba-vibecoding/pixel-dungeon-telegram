@@ -246,8 +246,6 @@ export type Effect =
   | { type: 'wipedOut'; depth: number; hero: string }
   /** A bomb went off (which kind, for the special ones). */
   | { type: 'exploded'; depth: number; pos: number; bomb?: ItemKind }
-  /** A weapon balanced with a weightstone. */
-  | { type: 'balanced'; hero: string; item: Item }
   /** Terrain burnt down to embers, opening what it blocked. */
   | { type: 'burnt'; depth: number; pos: number }
   /** A thrown potion breaking; `identified` when what came out taught the party what it was. */

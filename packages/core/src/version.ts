@@ -6,4 +6,4 @@
  * without RULES_VERSION going up, and says what RULES_HASH has become.
  */
 export const RULES_VERSION = 17;
-export const RULES_HASH = '15d3265a4da3461c';
+export const RULES_HASH = 'd5113ed6b598d453';

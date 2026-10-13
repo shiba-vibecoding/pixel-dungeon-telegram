@@ -46,7 +46,7 @@ export type RecipeId =
   | 'cookFruit' | 'enhanceBomb' | 'unstableBrew' | 'unstableSpell' | 'alchemize' | 'seedToPotion' | 'meatPie';
 
 /** Recipe.SimpleRecipe: fixed ingredients (identified) for a fixed result. */
-interface Simple {
+export interface Simple {
   inputs: readonly (readonly [ItemKind, number])[];
   cost: number;
   output: ItemKind;
@@ -54,7 +54,7 @@ interface Simple {
 }
 
 /** Every SimpleRecipe, with the size of its list of ingredients (Recipe.oneIngredientRecipes...). */
-const SIMPLE: readonly (Simple & { size: 1 | 2 | 3 })[] = [
+export const SIMPLE_RECIPES: readonly (Simple & { size: 1 | 2 | 3 })[] = [
   // One ingredient.
   { size: 1, inputs: [['potion.frost', 1]], cost: 8, output: 'brew.blizzard', qty: 1 },
   { size: 1, inputs: [['potion.liquidFlame', 1]], cost: 12, output: 'brew.infernal', qty: 1 },
@@ -247,7 +247,7 @@ const RECIPES: readonly Recipe[] = [
     cost: () => 3,
     sample: (_w, ings) => (one(ings).item.levelUnknown ? { item: createItem('liquidMetal'), qty: 0 } : { item: createItem('liquidMetal', metalQuantity(one(ings).item)), qty: metalQuantity(one(ings).item) }),
   },
-  ...SIMPLE.filter((r) => r.size === 1).map(simpleRecipe),
+  ...SIMPLE_RECIPES.filter((r) => r.size === 1).map(simpleRecipe),
   {
     id: 'trinketCatalyst', size: 1,
     test: (_w, ings) => one(ings).item.kind === 'trinket.catalyst',
@@ -286,7 +286,7 @@ const RECIPES: readonly Recipe[] = [
     cost: () => 1,
     sample: () => ({ item: createItem('brew.unstable'), qty: 1 }),
   },
-  ...SIMPLE.filter((r) => r.size === 2 && r.inputs.length === 2).slice(0, 4).map(simpleRecipe),
+  ...SIMPLE_RECIPES.filter((r) => r.size === 2 && r.inputs.length === 2).slice(0, 4).map(simpleRecipe),
   {
     id: 'unstableSpell', size: 2,
     test: (_w, ings) => ings.some((i) => category(i.item) === 'stone') &&
@@ -301,7 +301,7 @@ const RECIPES: readonly Recipe[] = [
     cost: () => 2,
     sample: () => ({ item: createItem('spell.alchemize', 8), qty: 8 }),
   },
-  ...SIMPLE.filter((r) => r.size === 2).slice(4).map(simpleRecipe),
+  ...SIMPLE_RECIPES.filter((r) => r.size === 2).slice(4).map(simpleRecipe),
   // Recipe.threeIngredientRecipes.
   {
     id: 'seedToPotion', size: 3,
@@ -309,7 +309,7 @@ const RECIPES: readonly Recipe[] = [
     cost: () => 0,
     sample: () => ({ item: null, qty: 1 }),
   },
-  ...SIMPLE.filter((r) => r.size === 3).map(simpleRecipe),
+  ...SIMPLE_RECIPES.filter((r) => r.size === 3).map(simpleRecipe),
   {
     id: 'meatPie', size: 3,
     test: (_w, ings) => ings.some((i) => i.item.kind === 'food.pasty' || i.item.kind === 'quest.fish') &&
