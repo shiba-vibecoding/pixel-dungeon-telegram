@@ -1670,3 +1670,127 @@ const camp = PD.camp(root, { scene: worn.camp ?? 'outdoor', season: seasonOf(new
 - `<div class="pd-ranks-cut">Медали недели — места 1–10</div>` после 10-й строки недели.
 - `<p class="pd-board-timer"><i></i>Доска закроется через <b>5 ч 12 мин</b> · награды придут почтой</p>` под `.pd-board-note`; обновляйте раз в минуту, в последний час — раз в секунду.
 - Вкладки: День, Неделя, Лучшие, Мои.
+
+
+## Релиз Shattered (v20)
+
+### «Что нового»
+
+```html
+<section class="pd-window pd-news" role="dialog" aria-label="Что нового">
+  <header class="pd-window-head"><div class="pd-titles"><h2 class="pd-heading">Что нового</h2><span class="pd-sub">Версия 2.4</span></div></header>
+  <ul class="pd-news-list">
+    <li><span class="pd-news-tag add">Добавлено</span><span>Обучение по шагу для новых игроков.</span></li>
+    <li><span class="pd-news-tag now">Теперь</span><span>…</span></li>
+    <li><span class="pd-news-tag fix">Поправлено</span><span>…</span></li>
+    <li><span class="pd-news-tag bal">Баланс</span><span>…</span></li>
+  </ul>
+  <div class="pd-actions"><button class="pd-button primary">Играть</button><button class="pd-button quiet">Все изменения</button></div>
+  <p class="pd-note center">Это окно показывается один раз после обновления</p>
+</section>
+```
+
+Большое: `.pd-news.big`, первым ребёнком — `<div class="pd-news-banner" role="img" aria-label="Шесть героев у костра"><span class="pd-news-kick">Большое обновление · Версия 2.4</span><b>Shattered</b></div>`, затем `<p class="pd-news-sub">` и `<ul class="pd-news-big"><li><span class="pd-news-ico">…</span><span><b>Два новых класса</b>…</span></li>…</ul>`. Значок классов — `<span class="pd-news-faces"><i style="--av:4"></i><i style="--av:5"></i></span>`.
+
+Показ: если `pd-seen-version` меньше текущей — окно после загрузки, до Привала; «Играть» и крестик записывают версию. Для большого релиза (`major: true` в списке изменений) — `.big`.
+
+### «Первопроходец»
+
+- Выдача: сервер ставит трофей `pioneer` всем, у кого есть забег раньше даты релиза, и кладёт письмо в почту. На полке «Мои» он первый.
+- Значки: `.pd-tro.pioneer`, `.pd-tro.big.pioneer`; эмблема в письме — `<i class="pd-pioneer"></i>` (`--spr-pioneer`, 48×48 ×2).
+- Письмо в списке: `<article class="pd-letter special unread">` с `.pd-tro.big.pioneer`; открытое: `.pd-letter-open` (эмблема, «Памятный кубок», заголовок, текст, `.pd-gift`, «Забрать», дата).
+
+### Сообщить о проблеме
+
+```html
+<section class="pd-window pd-report" role="dialog" aria-label="Сообщить о проблеме">
+  <header class="pd-window-head"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-report)"></i><div class="pd-titles"><h2 class="pd-heading">Сообщить о проблеме</h2></div><button class="pd-close"></button></header>
+  <label class="pd-field"><span class="pd-field-label">Что случилось <small>необязательно</small></span><textarea class="pd-textarea" rows="4" placeholder="Например: после лестницы пропал рюкзак"></textarea></label>
+  <button class="pd-check" role="checkbox" aria-checked="true"><i></i><span><b>Приложить журнал забега</b><small>Ходы и действия этого забега, версия игры и телефона. Без имени и переписки.</small></span></button>
+  <div class="pd-actions"><button class="pd-button primary">Отправить</button><button class="pd-button quiet">Отмена</button></div>
+</section>
+```
+
+- Во время отправки: `<button class="pd-button primary" disabled><span class="pd-dots"><i></i><i></i><i></i></span> Отправляем…</button>`.
+- После: `.pd-report-done` — `.pd-report-check`, «Отправлено, спасибо!», текст, `.pd-badge-row` со значком «Охотник за багами», «Закрыть».
+- В настройках: `<button class="pd-linkrow report"><i class="pd-icon" style="background-image:var(--spr-report)"></i><span>Сообщить о проблеме</span></button>`; на экране ошибки — обычная кнопка с тем же значком под «Перезапустить».
+- Отправка — тот же канал, что `/paysupport` в чат админа: текст, `runId`, версии, при отметке — журнал забега.
+
+### Нет связи и обновление
+
+- Окно `.pd-offline` (`role="alertdialog"`): `.pd-offline-ico`, заголовок, два абзаца, «Повторить» (основная), «Играть без связи», «Проверим сами через 20 с».
+- В игре: `<span class="pd-net-badge" role="status">Нет связи · забег засчитается позже</span>` под HUD.
+- Обновление: `<div class="pd-toast update" role="status">Вышла новая версия — обновляем</div>`; значок крутится шагами 8 × 45°, при `prefers-reduced-motion` стоит.
+
+### Правила доски
+
+`<button class="pd-help" aria-label="Правила доски">?</button>` в шапке `.pd-boards-window`; окно:
+
+```html
+<dl class="pd-rules">
+  <div><dt><span class="pd-rules-ico"><i class="pd-tro x1 gold"></i></span>Очки</dt><dd>Как в оригинале: золото + уровень × глубина × 100…</dd></div>
+  …
+</dl>
+```
+
+Пункты: очки (`gold`), места (`week`), когда закрывается (`--spr-hourglass`), равные очки (`<b class="pd-rules-eq">=</b>`), что засчитывается (`--spr-check`).
+
+| Класс | Что это |
+| --- | --- |
+| `.pd-news(.big)`, `.pd-news-list`, `.pd-news-tag(.add/.now/.fix/.bal)`, `.pd-news-banner`, `.pd-news-kick`, `.pd-news-sub`, `.pd-news-big`, `.pd-news-ico`, `.pd-news-faces` | «Что нового» |
+| `.pd-tro.pioneer`, `.pd-pioneer`, `.pd-letter.special`, `.pd-letter-open`, `.pd-letter-kind` | «Первопроходец» |
+| `.pd-report`, `.pd-field-label`, `.pd-textarea`, `.pd-check`, `.pd-report-done`, `.pd-report-check`, `.pd-badge-row`, `.pd-linkrow.report` | сообщить о проблеме |
+| `.pd-offline`, `.pd-offline-ico`, `.pd-net-badge`, `.pd-toast.update` | нет связи, обновление |
+| `.pd-help`, `.pd-rules`, `.pd-rules-ico`, `.pd-rules-eq` | правила доски |
+
+
+## Дополнения от сборки «Привала» (v20)
+
+### Пиксель-Март: пять полок
+
+```html
+<div class="pd-tabs compact shelf" role="tablist">
+  <button class="pd-tab skin" role="tab" aria-selected="false" aria-label="Облики" title="Облики"><i class="pd-tab-ico skin"></i><span>Облики</span></button>
+  <button class="pd-tab camp" role="tab" aria-selected="true" aria-label="Привалы" title="Привалы"><i class="pd-tab-ico camp"></i><span>Привалы</span></button>
+  <button class="pd-tab effect" …><i class="pd-tab-ico effect"></i><span>Эффекты</span></button>
+  <button class="pd-tab frame" …><i class="pd-tab-ico frame"></i><span>Рамки</span></button>
+  <button class="pd-tab patron" …><i class="pd-tab-ico patron"></i><span>Меценат</span></button>
+</div>
+```
+
+Подпись у невыбранных скрыта CSS (`[aria-selected="false"] span { display: none }`), так что в разметке она есть всегда. Сжатие «Мецената» до значка — убрать.
+
+Карточка привала: `<div class="pd-offer-art camp"><i class="pd-camp-card" style="--card:var(--spr-camp-card-cave)" role="img" aria-label="Пещера"></i></div>` — файлы `camp-card-*.png` (группа `Camp`), 66×48, `background-size: 132px 96px`.
+
+Окно привала `.pd-camp-offer`: `<div class="pd-camp-peek" data-camp="cave"></div>` и `PD.camp(box, { scene: 'cave', scale: 3, crop: [0, 46, 94, 73], label: false })`; затем `.pd-info`, `<ul class="pd-camp-facts">`, `.pd-note`, кнопки по состоянию (см. README компонента). «Примерить» — 10 секунд с этим фоном на настоящем привале и обратно.
+
+### Почта
+
+Удалите `<br>` между наградой и «Забрать». Достаточно стилей бандла: `.pd-letter` — `"ico head" "ico text" "act act"`, `.pd-letter-act` — `flex-wrap: wrap`, кнопка `margin-left: auto`, `.pd-gift` в письме — `white-space: normal`. Числа с разделителем тысяч и «4 место» — через U+00A0.
+
+### Лицо на «Продолжить»
+
+Классы `.with-face`, `.pd-camp-face`, `.pd-btn-label` — разметка в README `CampFace`. Портрет — герой сохранённого забега (`run.heroClass`, облик — `run.skin`), не тот, что сейчас в сцене.
+
+### Правила дня
+
+```html
+<div class="pd-daily-title"><h3>Подземелье дня</h3><small class="pd-daily-left">1 попытка · ещё 5 ч</small></div>
+<div class="pd-daily-rules"><span class="bad"><i class="pd-ch-mini" style="--c:2"></i>Фармакофобия</span><span class="boon"><i class="pd-item" data-i="50"></i>Точильный камень</span></div>
+```
+
+Плашку `.pd-chip` «1 попытка» из строки правил — убрать. Когда попытка сыграна — «Сыграно · 12 место»; время — до 00:00 UTC.
+
+### Широкий экран и высокие телефоны
+
+- `PD.camp(el, { fill: true })` (в `campScreen` по умолчанию): холст больше 94×203 — `crop = [−ex, −et, 94 + 2ex, 203 + et + 24]`, где `ex = ⌈(ширина / 4 − 94) / 2⌉`, `et = ⌈высота / 4 / 2⌉`; фон дорисовывается один раз на сцену (`extBg`). `shift(y)` учитывает `et`; `cam.ext` — насколько можно опустить сцену.
+- Подгонка: `shift = min(cam.ext, верх панели − 16 − 516)` — теперь и положительная (высокие экраны).
+- `.pd-camp-ui { max-width: 440px; margin: 0 auto; }` — интерфейс колонкой; на телефоне ничего не меняется.
+- При смене размера пересоздавайте `PD.camp` (или пересчитайте `crop` и сбросьте кэш фона).
+
+| Класс | Что это |
+| --- | --- |
+| `.pd-tabs.shelf`, `.pd-tab-ico.skin/.camp/.effect/.frame/.patron` | пять полок |
+| `.pd-camp-card`, `.pd-offer-art.camp`, `.pd-camp-offer`, `.pd-camp-peek`, `.pd-camp-facts` | привалы в Марте |
+| `.with-face`, `.pd-camp-face`, `.pd-btn-label` | лицо на «Продолжить» |
+| `.pd-daily-left` | попытки и время под заголовком |

@@ -1,0 +1,25 @@
+<!-- @dsCard group="Пиксель-Март" height=852 width=1173 page subtitle="Окно привала: живой кусок сцены ×3 (свет, частицы, герой отвечает на касание), что в нём особенного, «Купить за ★150» и «Примерить на привале» (10 секунд); купленный — «Поставить на привал»; стоящий — «Стоит» и «Вернуть «У входа»»" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Окно привала</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 8px; flex: none; }
+  .cap { margin: 0; height: 20px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .cap b { color: var(--gold); font-weight: 400; }
+  .phone { position: relative; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get('lang') || 'ru', en = L === 'en';
+  function phone(w, h, cap) { var c = document.createElement('div'); c.className = 'col'; c.innerHTML = '<p class="cap">' + (cap || '') + '</p>'; var p = document.createElement('div'); p.className = 'phone pd-phone'; p.style.width = w + 'px'; p.style.height = h + 'px'; c.appendChild(p); document.getElementById('row').appendChild(c); return p; }
+  function game(p) { var g = document.createElement('div'); g.style.cssText = 'position:absolute;inset:0'; p.appendChild(g); PD.demo.game(g); return g; }
+  var a = phone(375, 812, en ? '<b>Not bought</b>' : '<b>Не куплен</b>'); game(a); PD.demo.overlay(a, PD.demo.win.campOffer(L, 'cave')).classList.add('open');
+  var b = phone(375, 812, en ? '<b>Owned</b>' : '<b>Куплен</b>'); game(b); PD.demo.overlay(b, PD.demo.win.campOffer(L, 'prison', 'owned')).classList.add('open');
+  var c = phone(375, 812, en ? '<b>At the camp</b>' : '<b>Стоит на привале</b>'); game(c); PD.demo.overlay(c, PD.demo.win.campOffer(L, 'hall', 'worn')).classList.add('open');
+  PD.sprite(document.body); PD.demo.campPeek(document, L);
+</script>
+</body>
+</html>

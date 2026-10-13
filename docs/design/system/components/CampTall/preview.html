@@ -1,0 +1,25 @@
+<!-- @dsCard group="Привал" height=972 width=1302 page subtitle="Высокие телефоны: ноги героя всегда на 16 px над панелью — сцена опускается, сверху дорисовывается небо (или свод); на 412–440 px бока сцены продолжаются отражением краёв. 430×932, 412×915, 360×800" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Высокие телефоны</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 8px; flex: none; }
+  .cap { margin: 0; height: 20px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .cap b { color: var(--gold); font-weight: 400; }
+  .phone { position: relative; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get('lang') || 'ru', en = L === 'en';
+  function phone(w, h, cap) { var c = document.createElement('div'); c.className = 'col'; c.innerHTML = '<p class="cap">' + (cap || '') + '</p>'; var p = document.createElement('div'); p.className = 'phone pd-phone'; p.style.width = w + 'px'; p.style.height = h + 'px'; c.appendChild(p); document.getElementById('row').appendChild(c); return p; }
+  function game(p) { var g = document.createElement('div'); g.style.cssText = 'position:absolute;inset:0'; p.appendChild(g); PD.demo.game(g); return g; }
+  PD.demo.campScreen(phone(430, 932, '<b>430 × 932</b>'), { lang: L, hero: 0, frame: 'gold' });
+  PD.demo.campScreen(phone(412, 915, '<b>412 × 915</b>'), { lang: L, scene: 'cave', hero: 1, frame: 'patron', effect: 'fireflies' });
+  PD.demo.campScreen(phone(360, 800, '<b>360 × 800</b>'), { lang: L, season: 'winter', hero: 5, frame: 'shadow' });
+  PD.sprite(document.body);
+</script>
+</body>
+</html>
