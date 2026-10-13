@@ -1,4 +1,6 @@
-import { MusicPlayer, type SongName, SONGS } from './music';
+import { MusicPlayer, type SongName } from './music';
+import { type Sample, SAMPLES } from './sfx';
+import { type Fallback, fallbackFor, type Ost, sameTune, TrackQueue, type Tune, tracksOf } from './soundtrack';
 
 /*
  * Sound effects, music and the dungeon's own air.
@@ -7,61 +9,67 @@ import { MusicPlayer, type SongName, SONGS } from './music';
  * their own levels (the music's and the sounds' are the player's to set), and
  * meet in a compressor so that a fight never clips. A sound can come from a
  * place in the world: it is then panned to the side it came from and quieter
- * the farther it is from the hero. No sound plays twice the same: pitch and
- * level wander a little, and a sound piling up on itself is thinned out.
- * Beside the original's samples there are sounds made here from noise and
- * tones (a door's creak and thud, grass, coins, a pickup's pop...), and each
- * region has its air: running water and drips in the sewers, the prison's hum
- * and chains, wind and falling pebbles in the caves, the dwarven city's distant
- * hammers, the demon halls' rumble and embers.
+ * the farther it is from the hero. A sound piling up on itself is thinned out.
+ * The sounds are Shattered Pixel Dungeon's (sfx.ts says which plays when); beside
+ * them a few are made here from noise and tones (a door knocking shut, the zoom's
+ * tick, the arena's crowd...), and each region has its air: running water and
+ * drips in the sewers, the prison's hum and chains, wind and falling pebbles in the
+ * caves, the dwarven city's distant hammers, the demon halls' rumble and embers.
  *
- * The title and the sewers have the original's two tunes, from files; the regions
- * below and the boss fights have tunes of their own, played by music.ts. Either kind
- * crossfades into the other.
+ * The music is Shattered's soundtrack (soundtrack.ts says what plays where): its Ogg
+ * tracks are fetched only when wanted (and a few ahead), decoded, kept a while, and
+ * crossfaded. The game never waits for them: until a track is ready nothing plays.
+ * Where a track cannot be decoded (iOS WebViews may not know Ogg Vorbis) the music
+ * from before plays in its place, silently: the original's two tunes from files and
+ * the tunes music.ts plays.
  *
  * Browsers (and Telegram on iOS) only allow audio after a user gesture, so it
  * all starts on the first tap; everything is suspended while the app is hidden.
  */
 
-export type Sample =
-  | 'hit' | 'miss' | 'step' | 'water' | 'death' | 'levelup' | 'descend' | 'door_open' | 'secret' | 'alert'
-  | 'click' | 'boss' | 'gold' | 'item' | 'drink' | 'bones' | 'read' | 'teleport' | 'trap' | 'lightning' | 'burning'
-  | 'zap' | 'unlock' | 'ghost' | 'eat' | 'shatter' | 'dewdrop' | 'puff' | 'rocks' | 'falling' | 'blast' | 'evoke'
-  | 'beacon' | 'bee' | 'cursed' | 'badge' | 'degrade';
+export type { Sample } from './sfx';
 
 /** Sounds made here rather than loaded. */
 export type Synth =
-  | 'creak' | 'thud' | 'rustle' | 'coin' | 'pop' | 'whoosh' | 'tick' | 'sizzle' | 'clank' | 'drip' | 'pebble' | 'sparkle'
-  | 'stepWood' | 'stepGrass' | 'knock' | 'crowd';
+  | 'creak' | 'thud' | 'pop' | 'whoosh' | 'tick' | 'sizzle' | 'clank' | 'drip' | 'pebble' | 'sparkle' | 'knock' | 'crowd';
 
 export type Sound = Sample | Synth;
 
-/** The music: the original's tunes from files, or one played here. */
-export type Track = 'theme' | 'game' | SongName;
-
-const SONG_NAMES: ReadonlySet<string> = new Set<string>(SONGS);
-const isSong = (track: Track): track is SongName => SONG_NAMES.has(track);
-
-/** A tune playing, faded in and out through its own gain: from a file through an element, or played here. */
+/** A tune in progress (or silence): its fade, the track playing and what comes next, or the music from before in its place. */
 interface Music {
-  track: Track;
+  tune: Tune | null;
+  queue: TrackQueue | null;
+  /** Its own fade, into the music's filter. */
+  gain: GainNode | null;
+  source: AudioBufferSourceNode | null;
+  /** The music from before, when Shattered's could not be decoded: from a file through an element, or played here. */
   element: HTMLAudioElement | null;
   player: MusicPlayer | null;
-  gain: GainNode | null;
+  /** Started (a track asked for); stopped for good (faded out). */
+  started: boolean;
+  stopped: boolean;
+  /** Not before this time (performance.now): it waits for the last one to fade out. */
+  notBefore: number;
 }
 
-const SAMPLES: readonly Sample[] = [
-  'hit', 'miss', 'step', 'water', 'death', 'levelup', 'descend', 'door_open', 'secret', 'alert',
-  'click', 'boss', 'gold', 'item', 'drink', 'bones', 'read', 'teleport', 'trap', 'lightning', 'burning', 'zap', 'unlock', 'ghost',
-  'eat', 'shatter', 'dewdrop', 'puff', 'rocks', 'falling', 'blast', 'evoke', 'beacon', 'bee', 'cursed', 'badge', 'degrade',
-];
+/** Shattered's tracks are wanted at this rate: lower than the context's, a decoded track takes less memory. */
+const DECODE_RATE = 32000;
+/** Decoded tracks kept (the one playing, the next, the last), and fetched files kept. */
+const DECODED_KEPT = 3;
+const FETCHED_KEPT = 14;
+/** Our own crossfade, seconds, where Shattered just switches. */
+export const CROSSFADE = 1.5;
+
+/** A track that could not be fetched (rather than one that could not be decoded). */
+class FetchError extends Error {}
 
 /** How much a sound's pitch wanders from play to play (a fraction), if not the default. */
 const VARY: Partial<Record<Sound, number>> = {
-  click: 0, tick: 0, levelup: 0, boss: 0, badge: 0, descend: 0, secret: 0.02, death: 0.02,
-  step: 0.07, stepGrass: 0.1, stepWood: 0.08, hit: 0.08, miss: 0.08, coin: 0.06, rustle: 0.12, drip: 0.15,
+  click: 0, tick: 0, levelup: 0, boss: 0, badge: 0, descend: 0, secret: 0, death: 0, health_warn: 0, health_critical: 0,
+  hit: 0, hit_slash: 0, hit_stab: 0, hit_crush: 0, hit_strong: 0, hit_parry: 0, hit_arrow: 0, hit_magic: 0,
+  step: 0, sturdy: 0, grass: 0, trample: 0, water: 0, gold: 0, sheep: 0, drip: 0.15,
 };
-const DEFAULT_VARY = 0.04;
+const DEFAULT_VARY = 0.03;
 /** The fewest milliseconds between two of the same sound, and how many may sound at once. */
 const GAP_MS = 28;
 const VOICES = 3;
@@ -119,12 +127,6 @@ function makeSynth(ctx: BaseAudioContext, name: Synth): AudioBuffer {
   const rate = ctx.sampleRate;
   const noise = noiseSource(name.length * 7919 + name.charCodeAt(0));
   switch (name) {
-    case 'rustle': case 'stepGrass': {
-      // Leaves brushed aside: a burst of airy noise.
-      const band = bandpass(rate, 1400, 6500);
-      const d = name === 'rustle' ? 0.22 : 0.12;
-      return render(ctx, d, (t) => band(noise()) * 1.8 * (1 - Math.exp(-t * 150)) * Math.exp(-t * (name === 'rustle' ? 16 : 30)) * (0.7 + 0.3 * Math.sin(t * 190)));
-    }
     case 'thud': {
       // A door falling shut: a low knock and the latch.
       const low = lowpass(rate, 900);
@@ -142,14 +144,6 @@ function makeSynth(ctx: BaseAudioContext, name: Synth): AudioBuffer {
         return Math.sin(phase) * Math.exp(-t * 38) * 0.8 + noise() * Math.exp(-t * 200) * 0.25;
       });
     }
-    case 'stepWood': {
-      let phase = 0;
-      const low = lowpass(rate, 1800);
-      return render(ctx, 0.11, (t) => {
-        phase += (TAU * (150 + 90 * Math.exp(-t * 60))) / rate;
-        return Math.sin(phase) * Math.exp(-t * 45) * 0.55 + low(noise()) * Math.exp(-t * 90) * 0.5;
-      });
-    }
     case 'creak': {
       // Old hinges: a sawing tone that catches and slips.
       const band = bandpass(rate, 250, 2400);
@@ -161,13 +155,6 @@ function makeSynth(ctx: BaseAudioContext, name: Synth): AudioBuffer {
         const stick = 0.55 + 0.45 * Math.sin(t * 80) * Math.sin(t * 23);
         const env = Math.min(1, t / 0.03) * Math.exp(-t * 4.5);
         return band(saw * stick + noise() * 0.15) * 2.2 * env;
-      });
-    }
-    case 'coin': {
-      // A coin's ring: bright partials dying fast.
-      return render(ctx, 0.3, (t) => {
-        const env = Math.min(1, t / 0.002) * Math.exp(-t * 17);
-        return (Math.sin(TAU * 3150 * t) + 0.6 * Math.sin(TAU * 4730 * t) + 0.35 * Math.sin(TAU * 6310 * t + 1)) * 0.38 * env;
       });
     }
     case 'pop': {
@@ -259,8 +246,7 @@ function makeSynth(ctx: BaseAudioContext, name: Synth): AudioBuffer {
 }
 
 const SYNTHS: readonly Synth[] = [
-  'creak', 'thud', 'rustle', 'coin', 'pop', 'whoosh', 'tick', 'sizzle', 'clank', 'drip', 'pebble', 'sparkle', 'stepWood', 'stepGrass', 'knock',
-  'crowd',
+  'creak', 'thud', 'pop', 'whoosh', 'tick', 'sizzle', 'clank', 'drip', 'pebble', 'sparkle', 'knock', 'crowd',
 ];
 
 
@@ -356,7 +342,13 @@ class Audio {
   private musicDuck: GainNode | null = null;
   private musicFilter: BiquadFilterNode | null = null;
   private music: Music | null = null;
-  private track: Track | null = null;
+  /** Shattered's tracks, fetched (the files) and decoded (a few): kept as promises, the oldest let go. */
+  private readonly fetched = new Map<Ost, Promise<ArrayBuffer>>();
+  private readonly decoded = new Map<Ost, Promise<AudioBuffer>>();
+  /** A track would not decode: this device plays the music from before instead. */
+  private oggUnsupported = false;
+  private prefetching: Ost[] = [];
+  private prefetchTimer = 0;
   private region: number | null = null;
   private playing: Playing | null = null;
   private noise: AudioBuffer | null = null;
@@ -386,7 +378,7 @@ class Audio {
     for (const type of ['pointerdown', 'touchend', 'click', 'keydown']) addEventListener(type, unlock, { capture: true });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
-        // A tune played here needs nothing: its clock stops with the context's.
+        // Tracks and tunes played here need nothing: their clock stops with the context's.
         this.music?.element?.pause();
         void this.context?.suspend();
       } else {
@@ -455,7 +447,7 @@ class Audio {
 
   private async load(name: Sample): Promise<void> {
     try {
-      const response = await fetch(`${this.base}${name}.mp3`);
+      const response = await fetch(`${this.base}spd/${name}.mp3`);
       const data = await response.arrayBuffer();
       this.buffers.set(name, await this.context!.decodeAudioData(data));
     } catch {
@@ -474,6 +466,11 @@ class Audio {
     // The music's level is a gentle curve: half way sounds like half.
     this.musicBus.gain.setTargetAtTime(on * this.musicVolume * this.musicVolume * 0.75, at, 0.1);
     if (this.music?.element && !this.music.gain) this.music.element.volume = on * this.musicVolume * 0.6;
+  }
+
+  /** The music playing now (or the silence asked for). */
+  get tune(): Tune | null {
+    return this.music?.tune ?? null;
   }
 
   /** The hero's place, world pixels: what sounds from somewhere is heard from here. */
@@ -534,43 +531,48 @@ class Audio {
     window.setTimeout(() => this.play(name, rate, volume, at), ms);
   }
 
-  /** Coins: one clink for a few, a little cascade for a pile. */
-  coins(amount: number, at?: Place): void {
-    const clinks = Math.min(6, 1 + Math.floor(Math.log2(Math.max(1, amount))));
-    for (let i = 0; i < clinks; i++) this.later(i * 55 + Math.random() * 25, 'coin', 0.92 + i * 0.05, 0.5 - i * 0.05, at);
-  }
-
-  playMusic(track: Track | null): void {
-    if (track === this.track) return;
-    this.track = track;
+  /**
+   * Plays a tune (or none: Music.end), unless it is the one playing (Music.playTracks: the same list, even
+   * shifted, goes on). The last one fades out over `fade` seconds; with `after`, the new one waits for that
+   * (Music.fadeOut and then play), else the two cross.
+   */
+  playMusic(tune: Tune | null, fade = CROSSFADE, after = false): void {
+    if (this.music && sameTune(this.music.tune, tune)) return;
     const old = this.music;
-    this.music = null;
-    if (old) this.fadeOut(old);
+    this.music = {
+      tune, queue: tune ? new TrackQueue(tune) : null, gain: null, source: null, element: null, player: null,
+      started: false, stopped: false, notBefore: after && old?.started ? performance.now() + fade * 1000 : 0,
+    };
+    if (old) this.fadeOut(old, fade);
+    if (this.music.notBefore > 0) window.setTimeout(() => this.startMusic(), fade * 1000 + 20);
     this.startMusic();
   }
 
-  /**
-   * Fades a track out over a second and a half (while the next comes in), then lets it go:
-   * the element paused, or the player's notes stopped and its nodes disconnected.
-   */
-  private fadeOut(old: Music): void {
+  /** Fades a tune out over `seconds` (while the next comes in), then lets it go. */
+  private fadeOut(old: Music, seconds: number): void {
     const ctx = this.context;
+    old.stopped = true;
     const stop = (): void => {
+      try {
+        old.source?.stop();
+      } catch {
+        // Not started.
+      }
       old.element?.pause();
       old.player?.dispose();
       old.gain?.disconnect();
     };
-    if (ctx && old.gain) {
+    if (ctx && old.gain && old.started) {
       // Its own fade-in may not have begun yet: that is dropped, and the fade-out starts from where it is.
       old.gain.gain.cancelScheduledValues(ctx.currentTime);
-      old.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
-      window.setTimeout(stop, 1800);
+      old.gain.gain.setTargetAtTime(0, ctx.currentTime, Math.max(0.05, seconds / 3));
+      window.setTimeout(stop, seconds * 1000 + 300);
     } else {
       stop();
     }
   }
 
-  /** A gain into the music's filter that brings a new track in rather than starting it at full. */
+  /** A gain into the music's filter that brings a new tune in rather than starting it at full. */
   private fadeIn(ctx: AudioContext, filter: AudioNode): GainNode {
     const gain = ctx.createGain();
     gain.gain.value = 0;
@@ -580,35 +582,185 @@ class Audio {
   }
 
   private startMusic(): void {
-    if (!this.unlocked || !this.enabled || !this.track || document.hidden) return;
+    const music = this.music;
+    if (!this.unlocked || !this.enabled || !music?.tune || document.hidden || music.stopped) return;
+    if (performance.now() < music.notBefore) return;
+    if (music.element) void music.element.play().catch(() => undefined);
+    music.player?.play();
+    if (music.started) return;
     const ctx = this.context;
-    if (!this.music) {
-      const track = this.track;
-      if (isSong(track)) {
-        // A tune played here needs the audio graph; without one there is no such music.
-        if (!ctx || !this.musicFilter) return;
-        const gain = this.fadeIn(ctx, this.musicFilter);
-        this.music = { track, element: null, player: new MusicPlayer(ctx, track, gain), gain };
-      } else {
-        const element = new window.Audio(`${this.base}${track}.mp3`);
-        element.loop = true;
-        element.preload = 'auto';
-        let gain: GainNode | null = null;
-        if (ctx && this.musicFilter) {
-          try {
-            const source = ctx.createMediaElementSource(element);
-            gain = this.fadeIn(ctx, this.musicFilter);
-            source.connect(gain);
-          } catch {
-            gain = null;
-          }
-        }
-        this.music = { track, element, player: null, gain };
-      }
-      this.levels();
+    if (!ctx || !this.musicFilter) {
+      // No audio graph: only the original's tunes from files can play.
+      this.startFallback(music, fallbackFor(tracksOf(music.tune)[0]!));
+      return;
     }
-    if (this.music.element) void this.music.element.play().catch(() => undefined);
-    this.music.player?.play();
+    music.started = true;
+    music.gain = this.fadeIn(ctx, this.musicFilter);
+    const first = music.queue!.next();
+    if (first) this.playTrack(music, first);
+  }
+
+  /** One of the tune's tracks, when it is ready; a list goes on to its next track as each ends (Music.trackLooper). */
+  private playTrack(music: Music, track: Ost): void {
+    if (this.oggUnsupported) {
+      this.startFallback(music, fallbackFor(track));
+      return;
+    }
+    this.decode(track).then(
+      (buffer) => {
+        const ctx = this.context;
+        if (music !== this.music || music.stopped || !ctx || !music.gain || !this.enabled) return;
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = 'loop' in music.tune!;
+        source.connect(music.gain);
+        source.onended = () => {
+          source.disconnect();
+          if (music.source !== source || music.stopped || music !== this.music) return;
+          music.source = null;
+          const next = music.queue!.next();
+          if (next) this.playTrack(music, next);
+        };
+        music.source = source;
+        source.start();
+        // The next is fetched and decoded while this one plays, to follow it without a gap.
+        const next = music.queue!.peek();
+        if (next && next !== track) void this.decode(next).catch(() => undefined);
+      },
+      (error: unknown) => {
+        // A file that will not decode: this device cannot play Shattered's tracks. One that would not come: this once.
+        if (!(error instanceof FetchError)) this.oggUnsupported = true;
+        if (music === this.music && !music.stopped) this.startFallback(music, fallbackFor(track));
+      },
+    );
+  }
+
+  /** The music from before in the place of a track: the original's tunes from files, or one played here. */
+  private startFallback(music: Music, fallback: Fallback): void {
+    if (music.element || music.player || music.stopped) return;
+    music.started = true;
+    const ctx = this.context;
+    if (fallback !== 'theme' && fallback !== 'game') {
+      // A tune played here needs the audio graph; without one there is no such music.
+      if (!ctx || !this.musicFilter) return;
+      music.gain ??= this.fadeIn(ctx, this.musicFilter);
+      music.player = new MusicPlayer(ctx, fallback as SongName, music.gain);
+      if (this.enabled && !document.hidden) music.player.play();
+      return;
+    }
+    const element = new window.Audio(`${this.base}${fallback}.mp3`);
+    element.loop = true;
+    element.preload = 'auto';
+    if (ctx && this.musicFilter) {
+      try {
+        const source = ctx.createMediaElementSource(element);
+        music.gain ??= this.fadeIn(ctx, this.musicFilter);
+        source.connect(music.gain);
+      } catch {
+        music.gain = null;
+      }
+    }
+    music.element = element;
+    this.levels();
+    if (this.enabled && !document.hidden) void element.play().catch(() => undefined);
+  }
+
+  /** A track's file, fetched once and kept a while. */
+  private fetchTrack(track: Ost): Promise<ArrayBuffer> {
+    let data = this.fetched.get(track);
+    if (data) {
+      this.fetched.delete(track);
+    } else {
+      const fetching = fetch(`${this.base}spd/music/${track}.ogg`).then(
+        (response) => {
+          if (!response.ok) throw new FetchError(String(response.status));
+          return response.arrayBuffer();
+        },
+        (error: unknown) => {
+          throw new FetchError(String(error));
+        },
+      );
+      // A failed fetch is tried again the next time.
+      fetching.catch(() => {
+        if (this.fetched.get(track) === fetching) this.fetched.delete(track);
+      });
+      data = fetching;
+    }
+    this.fetched.set(track, data);
+    while (this.fetched.size > FETCHED_KEPT) this.fetched.delete(this.fetched.keys().next().value!);
+    return data;
+  }
+
+  /** A track decoded (at a lower rate where the browser allows: less memory), kept while it is among the last few. */
+  private decode(track: Ost): Promise<AudioBuffer> {
+    let buffer = this.decoded.get(track);
+    if (buffer) {
+      this.decoded.delete(track);
+    } else {
+      const decoding = this.fetchTrack(track).then((data) => this.decodeOgg(data));
+      decoding.catch(() => {
+        if (this.decoded.get(track) === decoding) this.decoded.delete(track);
+      });
+      buffer = decoding;
+    }
+    this.decoded.set(track, buffer);
+    while (this.decoded.size > DECODED_KEPT) this.decoded.delete(this.decoded.keys().next().value!);
+    return buffer;
+  }
+
+  private async decodeOgg(data: ArrayBuffer): Promise<AudioBuffer> {
+    // decodeAudioData takes the bytes for itself: each try gets a copy, and the kept file stays whole.
+    const attempt = (ctx: BaseAudioContext): Promise<AudioBuffer> =>
+      new Promise<AudioBuffer>((resolve, reject) => {
+        // Older Safari answers only by callbacks; the others by both.
+        const done = ctx.decodeAudioData(data.slice(0), resolve, reject) as Promise<AudioBuffer> | undefined;
+        done?.then(resolve, reject);
+      });
+    let offline: OfflineAudioContext | null = null;
+    try {
+      offline = new OfflineAudioContext(2, 1, DECODE_RATE);
+    } catch {
+      // No offline context at that rate here: decoded at the context's own.
+    }
+    if (offline) {
+      try {
+        return await attempt(offline);
+      } catch {
+        // Tried once more by the context itself, which may know more.
+      }
+    }
+    if (!this.context) throw new Error('no audio');
+    return attempt(this.context);
+  }
+
+  /**
+   * Shattered's tracks likely wanted soon (the rest of the region's, the boss's, the next region's), fetched
+   * one at a time in the background, nothing decoded.
+   */
+  prefetch(tracks: readonly Ost[]): void {
+    if (this.oggUnsupported || !this.unlocked || !this.enabled) return;
+    const wanted = tracks.filter((track, i) => tracks.indexOf(track) === i && !this.fetched.has(track));
+    if (wanted.join() === this.prefetching.join()) return;
+    this.prefetching = wanted;
+    window.clearTimeout(this.prefetchTimer);
+    const next = (): void => {
+      const track = this.prefetching.shift();
+      if (!track || this.oggUnsupported) return;
+      // While the music has not got its own track yet, it goes first.
+      const music = this.music;
+      if (music?.started && !music.source && !music.element && !music.player) {
+        this.prefetching.unshift(track);
+        this.prefetchTimer = window.setTimeout(next, 1000);
+        return;
+      }
+      this.fetchTrack(track).then(
+        () => {
+          this.prefetchTimer = window.setTimeout(next, 400);
+        },
+        () => undefined,
+      );
+    };
+    this.prefetchTimer = window.setTimeout(next, 2500);
   }
 
   /** The music dips for a moment under something that matters (a boss, a level gained, death). */
@@ -737,10 +889,14 @@ class Audio {
     this.enabled = enabled;
     store('pd-sound', enabled ? 'on' : 'off');
     this.levels();
-    if (enabled) this.startMusic();
-    else {
-      this.music?.element?.pause();
-      this.music?.player?.pause();
+    const music = this.music;
+    if (enabled) {
+      this.startMusic();
+    } else if (music) {
+      // Music.enable(false) stops it; on again, the tune starts over.
+      this.music = null;
+      this.fadeOut(music, 0.2);
+      this.playMusic(music.tune);
     }
   }
 
