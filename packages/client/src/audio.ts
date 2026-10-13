@@ -27,7 +27,9 @@ export type Sample =
   | 'hit' | 'miss' | 'step' | 'water' | 'death' | 'levelup' | 'descend' | 'door_open' | 'secret' | 'alert'
   | 'click' | 'boss' | 'gold' | 'item' | 'drink' | 'bones' | 'read' | 'teleport' | 'trap' | 'lightning' | 'burning'
   | 'zap' | 'unlock' | 'ghost' | 'eat' | 'shatter' | 'dewdrop' | 'puff' | 'rocks' | 'falling' | 'blast' | 'evoke'
-  | 'beacon' | 'bee' | 'cursed' | 'badge' | 'degrade';
+  | 'beacon' | 'bee' | 'cursed' | 'badge' | 'degrade'
+  // Shattered's, for the boss fights: for now the nearest sample we have (ALIASES).
+  | 'chargeup' | 'challenge' | 'ray' | 'gas';
 
 /** Sounds made here rather than loaded. */
 export type Synth =
@@ -54,7 +56,14 @@ const SAMPLES: readonly Sample[] = [
   'hit', 'miss', 'step', 'water', 'death', 'levelup', 'descend', 'door_open', 'secret', 'alert',
   'click', 'boss', 'gold', 'item', 'drink', 'bones', 'read', 'teleport', 'trap', 'lightning', 'burning', 'zap', 'unlock', 'ghost',
   'eat', 'shatter', 'dewdrop', 'puff', 'rocks', 'falling', 'blast', 'evoke', 'beacon', 'bee', 'cursed', 'badge', 'degrade',
+  'chargeup', 'challenge', 'ray', 'gas',
 ];
+
+/**
+ * Shattered's sounds (assets/sounds) the boss fights call for, played as the nearest one we have until the
+ * audio stream brings the files: CHARGEUP as zap, CHALLENGE as alert, RAY as zap, GAS as puff.
+ */
+const ALIASES: Partial<Record<Sample, Sample>> = { chargeup: 'zap', challenge: 'alert', ray: 'zap', gas: 'puff' };
 
 /** How much a sound's pitch wanders from play to play (a fraction), if not the default. */
 const VARY: Partial<Record<Sound, number>> = {
@@ -455,7 +464,7 @@ class Audio {
 
   private async load(name: Sample): Promise<void> {
     try {
-      const response = await fetch(`${this.base}${name}.mp3`);
+      const response = await fetch(`${this.base}${ALIASES[name] ?? name}.mp3`);
       const data = await response.arrayBuffer();
       this.buffers.set(name, await this.context!.decodeAudioData(data));
     } catch {

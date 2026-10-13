@@ -15,12 +15,18 @@ export interface Animation {
   loop: boolean;
 }
 
-export type AnimName = 'idle' | 'run' | 'attack' | 'die' | 'operate' | 'pump';
+export type AnimName = 'idle' | 'run' | 'attack' | 'die' | 'operate' | 'pump' | 'zap' | 'pumpAttack' | 'charge';
 
 export interface CharSprite {
   sheet: Sheet;
   anims: Readonly<Record<AnimName, Animation>>;
 }
+
+/**
+ * Shattered's boss sprites (sprites/*Sprite.java), each with its frames and timing, and the variants a
+ * boss changes to: DM-300 supercharged (DM300Sprite.updateChargeState), a pylon switched on (PylonSprite.activate).
+ */
+export type SpriteVariant = 'dm300.charged' | 'pylon.active';
 
 export interface Assets {
   /** Tiles and water of each region: the sewers, the prison, the caves, the city, the halls. */
@@ -28,6 +34,9 @@ export interface Assets {
   water: HTMLImageElement[];
   heroes: Record<HeroClass, CharSprite>;
   mobs: Record<MobKind, CharSprite>;
+  variants: Record<SpriteVariant, CharSprite>;
+  /** Shattered's custom tiles of the boss levels (assets/spd: sewer_boss, prison_exit, caves_boss, city_boss, halls_special). */
+  bossTiles: Record<'sewer_boss' | 'prison_exit' | 'caves_boss' | 'city_boss' | 'halls_sp', HTMLImageElement>;
   icons: HTMLImageElement;
   items: HTMLImageElement;
   /** 16x16 plants, in the order of PLANT_KINDS. */
@@ -38,8 +47,42 @@ const anim = (fps: number, frames: number[], loop = false): Animation => ({ fps,
 
 /** Animations of a character that has no special ones for operating or pumping up. */
 function basic(idle: Animation, run: Animation, attack: Animation, die: Animation): Record<AnimName, Animation> {
-  return { idle, run, attack, die, operate: idle, pump: idle };
+  return { idle, run, attack, die, operate: idle, pump: idle, zap: attack, pumpAttack: attack, charge: idle };
 }
+
+/** FistSprite: the six fists share a sheet, each its own ten frames from `c`. */
+const fist = (c: number): { w: number; h: number; file: string; anims: Record<AnimName, Animation> } => ({
+  w: 24, h: 17, file: 'spd/yog_fists',
+  anims: {
+    ...basic(anim(2, [c, c, c + 1], true), anim(3, [c, c + 1], true), anim(3, [c]), anim(10, [c, c + 2, c + 3, c + 4])),
+    zap: anim(8, [c, c + 5, c + 6]),
+  },
+});
+
+/** DM300Sprite.updateChargeState: its frames, plain or supercharged (ten further along). */
+const dm300 = (charged: boolean): { w: number; h: number; file: string; anims: Record<AnimName, Animation> } => {
+  const c = charged ? 10 : 0;
+  return {
+    w: 25, h: 22, file: 'spd/dm300',
+    anims: {
+      ...basic(anim(charged ? 15 : 10, [c, c + 1], true), anim(charged ? 15 : 10, [c, c + 2], true), anim(15, [c + 3, c + 4, c + 5]),
+        anim(20, [0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10])),
+      zap: anim(15, [6, 7, 7, 6]),
+      charge: anim(4, [0, 10], true),
+    },
+  };
+};
+
+/** PylonSprite: a still frame, the lit one once it is switched on, a wreck once destroyed. */
+const pylon = (active: boolean): { w: number; h: number; file: string; anims: Record<AnimName, Animation> } => ({
+  w: 10, h: 20, file: 'spd/pylon',
+  anims: basic(anim(1, [active ? 1 : 0]), anim(1, [active ? 1 : 0]), anim(1, [active ? 1 : 0]), anim(1, [2])),
+});
+
+const VARIANTS: Record<SpriteVariant, { w: number; h: number; file: string; anims: Record<AnimName, Animation> }> = {
+  'dm300.charged': dm300(true),
+  'pylon.active': pylon(true),
+};
 
 const HERO_ANIMS: Record<AnimName, Animation> = {
   ...basic(
@@ -60,7 +103,7 @@ const IMP_SPRITE = {
   ),
 };
 
-const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimName, Animation> }> = {
+const MOB_SPRITES: Record<MobKind, { w: number; h: number; file?: string; anims: Record<AnimName, Animation> }> = {
   rat: {
     w: 16,
     h: 15,
@@ -81,12 +124,15 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimNam
     h: 15,
     anims: basic(anim(5, [0, 1], true), anim(10, [0, 1], true), anim(5, [0, 1]), anim(20, [0])),
   },
+  // GooSprite.
   goo: {
     w: 20,
     h: 14,
+    file: 'spd/goo',
     anims: {
-      ...basic(anim(10, [0, 1], true), anim(10, [0, 1], true), anim(10, [5, 0, 6]), anim(10, [2, 3, 4])),
-      pump: anim(20, [0, 1], true),
+      ...basic(anim(10, [2, 1, 0, 0, 1], true), anim(15, [3, 2, 1, 2], true), anim(10, [8, 9, 10]), anim(10, [5, 6, 7])),
+      pump: anim(20, [4, 3, 2, 1, 0], true),
+      pumpAttack: anim(20, [4, 3, 2, 1, 0, 7]),
     },
   },
   shopkeeper: {
@@ -137,11 +183,8 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimNam
     h: 16,
     anims: basic(anim(10, [0, 0, 0, 0, 0, 1, 0, 1], true), anim(15, [0, 2, 0, 3], true), anim(12, [0, 4, 5, 0]), anim(12, [6, 7, 8, 9])),
   },
-  dm300: {
-    w: 22,
-    h: 20,
-    anims: basic(anim(10, [0, 1], true), anim(10, [2, 3], true), anim(15, [4, 5, 6]), anim(20, [0, 7, 0, 7, 0, 7, 0, 7, 0, 7, 0, 7, 8])),
-  },
+  dm300: dm300(false),
+  pylon: pylon(false),
   elemental: {
     w: 12,
     h: 14,
@@ -162,10 +205,19 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimNam
     h: 16,
     anims: basic(anim(4, [0, 1], true), anim(12, [2, 3, 4, 5], true), anim(10, [6, 7, 8]), anim(15, [9, 10, 11, 12, 13])),
   },
+  // KingSprite.
   king: {
     w: 16,
     h: 16,
+    file: 'spd/king',
     anims: basic(anim(12, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2], true), anim(15, [3, 4, 5, 6, 7, 8], true), anim(15, [9, 10, 11]), anim(8, [12, 13, 14, 15])),
+  },
+  // GhoulSprite.
+  ghoul: {
+    w: 12,
+    h: 14,
+    file: 'spd/ghoul',
+    anims: basic(anim(2, [0, 0, 0, 1], true), anim(12, [2, 3, 4, 5, 6, 7], true), anim(12, [0, 8, 9]), anim(15, [0, 10, 11, 12, 13])),
   },
   undead: {
     w: 12,
@@ -190,29 +242,29 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimNam
     h: 17,
     anims: basic(anim(12, [0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 2, 1, 2], true), anim(8, [5, 5, 6, 6], true), anim(15, [0, 3, 4]), anim(12, [0, 7, 8, 9, 10])),
   },
+  // YogSprite.
   yog: {
     w: 20,
     h: 19,
+    file: 'spd/yog',
     anims: basic(anim(10, [0, 1, 2, 2, 1, 0, 3, 4, 4, 3, 0, 5, 6, 6, 5], true), anim(12, [0], true), anim(12, [0]), anim(10, [0, 7, 8, 9])),
   },
-  rottingFist: {
-    w: 24,
-    h: 17,
-    anims: basic(anim(2, [0, 0, 1], true), anim(3, [0, 1], true), anim(2, [0]), anim(10, [0, 2, 3, 4])),
-  },
-  burningFist: {
-    w: 24,
-    h: 17,
-    anims: basic(anim(2, [0, 0, 1], true), anim(3, [0, 1], true), anim(8, [0, 5, 6]), anim(10, [0, 2, 3, 4])),
-  },
+  burningFist: fist(0),
+  soiledFist: fist(10),
+  rottingFist: fist(20),
+  rustedFist: fist(30),
+  brightFist: fist(40),
+  darkFist: fist(50),
   mimic: {
     w: 16,
     h: 16,
     anims: basic(anim(5, [0, 0, 0, 1, 1], true), anim(10, [0, 1, 2, 3, 3, 2, 1], true), anim(10, [0, 4, 5, 6]), anim(5, [7, 8, 9])),
   },
+  // LarvaSprite.
   larva: {
     w: 12,
     h: 8,
+    file: 'spd/larva',
     anims: basic(anim(5, [4, 4, 4, 4, 4, 5, 5], true), anim(12, [0, 1, 2, 3], true), anim(15, [6, 5, 7]), anim(10, [8])),
   },
   imp: IMP_SPRITE,
@@ -290,9 +342,11 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimNam
     h: 16,
     anims: basic(anim(8, [0, 1, 2, 1], true), anim(20, [0, 1, 2, 1], true), anim(20, [3, 4, 5, 6, 7, 8, 9, 10, 11]), anim(4, [12, 13, 14])),
   },
+  // TenguSprite.
   tengu: {
     w: 14,
     h: 16,
+    file: 'spd/tengu',
     anims: basic(anim(2, [0, 0, 0, 1], true), anim(15, [2, 3, 4, 5, 0]), anim(15, [6, 7, 7, 0]), anim(8, [8, 9, 10, 10, 10, 10, 10, 10])),
   },
 };
@@ -369,11 +423,14 @@ export function heroSprite(assets: Assets, heroClass: HeroClass, skin?: string):
 export async function loadAssets(base: string, onProgress?: (done: number) => void): Promise<Assets> {
   assetBase = base;
   const names = [
-    'tiles0', 'water0', 'tiles1', 'water1', 'tiles2', 'water2', 'spinner', 'dm300', 'tiles3', 'water3',
-    'elemental', 'monk', 'warlock', 'golem', 'king', 'undead', 'tiles4', 'water4',
-    'succubus', 'eye', 'scorpio', 'yog', 'rottingFist', 'burningFist', 'larva', 'mimic', 'statue', 'piranha', 'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'bee', 'warrior', 'mage', 'rogue', 'ranger', 'rat', 'gnoll', 'crab', 'goo', 'ghost',
-    'skeleton', 'thief', 'swarm', 'shaman', 'bat', 'brute', 'tengu', 'shopkeeper', 'wandmaker',
+    'tiles0', 'water0', 'tiles1', 'water1', 'tiles2', 'water2', 'spinner', 'tiles3', 'water3',
+    'elemental', 'monk', 'warlock', 'golem', 'undead', 'tiles4', 'water4',
+    'succubus', 'eye', 'scorpio', 'mimic', 'statue', 'piranha', 'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'bee', 'warrior', 'mage', 'rogue', 'ranger', 'rat', 'gnoll', 'crab', 'ghost',
+    'skeleton', 'thief', 'swarm', 'shaman', 'bat', 'brute', 'shopkeeper', 'wandmaker',
     'icons', 'items', 'plants',
+    // Shattered's bosses and their levels' custom tiles.
+    'spd/goo', 'spd/tengu', 'spd/dm300', 'spd/pylon', 'spd/king', 'spd/ghoul', 'spd/yog', 'spd/yog_fists', 'spd/larva',
+    'spd/sewer_boss', 'spd/prison_exit', 'spd/caves_boss', 'spd/city_boss', 'spd/halls_special',
   ] as const;
   let loaded = 0;
   const images = Object.fromEntries(
@@ -390,8 +447,12 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
   const mob = (kind: MobKind): CharSprite => {
     const spec = MOB_SPRITES[kind];
     // A mirror image is drawn with its hero's own sheet (see View.sync); the warrior's stands in here.
-    const image = kind === 'mirror' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp' : baseKind(kind);
+    const image = spec.file ?? (kind === 'mirror' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp' : baseKind(kind));
     return { sheet: sheet(images[image as (typeof names)[number]], spec.w, spec.h), anims: spec.anims };
+  };
+  const variant = (name: SpriteVariant): CharSprite => {
+    const spec = VARIANTS[name];
+    return { sheet: sheet(images[spec.file as (typeof names)[number]], spec.w, spec.h), anims: spec.anims };
   };
   return {
     tiles: [images.tiles0, images.tiles1, images.tiles2, images.tiles3, images.tiles4],
@@ -403,6 +464,11 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
       huntress: hero(images.ranger),
     },
     mobs: Object.fromEntries((Object.keys(MOB_SPRITES) as MobKind[]).map((kind) => [kind, mob(kind)])) as Record<MobKind, CharSprite>,
+    variants: { 'dm300.charged': variant('dm300.charged'), 'pylon.active': variant('pylon.active') },
+    bossTiles: {
+      sewer_boss: images['spd/sewer_boss'], prison_exit: images['spd/prison_exit'], caves_boss: images['spd/caves_boss'],
+      city_boss: images['spd/city_boss'], halls_sp: images['spd/halls_special'],
+    },
     icons: images.icons,
     items: images.items,
     plants: images.plants,

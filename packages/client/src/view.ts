@@ -9,6 +9,7 @@ import { itemName, plainName } from './itemtext';
 import { type AnimName, type Assets, type CharSprite, duration, heroSprite } from './sprites';
 import { haptic } from './telegram';
 import { DEPTH_CARD_MS } from './cards';
+import { bossApply } from './bossfx';
 
 /*
  * What the player sees, as opposed to what the world is: characters slide
@@ -415,10 +416,14 @@ export class View {
         this.puppets.get(mob.id)!.row = itemDef(twin.armor.kind).tier ?? 0;
         continue;
       }
-      place(mob.id, mob.kind, this.assets.mobs[mob.kind], false, mob.pos, mob.hp, mob.ht,
+      // DM-300 supercharged and a pylon switched on look otherwise (DM300Sprite, PylonSprite).
+      const sprite = mob.kind === 'dm300' && mob.boss?.supercharged ? this.assets.variants['dm300.charged']
+        : mob.kind === 'pylon' && mob.boss?.active ? this.assets.variants['pylon.active'] : this.assets.mobs[mob.kind];
+      place(mob.id, mob.kind, sprite, false, mob.pos, mob.hp, mob.ht,
         // A statue biding its time shows no sign of sleep.
-        mob.state === 'sleeping' && mob.kind !== 'statue', mob.pumped);
+        mob.state === 'sleeping' && mob.kind !== 'statue', (mob.boss?.pumpedUp ?? 0) > 0);
       const puppet = this.puppets.get(mob.id)!;
+      puppet.sprite = sprite;
       puppet.burning = (mob.burning ?? 0) > 0;
       puppet.poisoned = (mob.poison ?? 0) > 0;
     }
@@ -444,7 +449,7 @@ export class View {
     this.projectiles = this.projectiles.filter((p) => now - p.start < p.duration);
   }
 
-  private shoot(from: number, to: number, sprite: number | null, now: number, color?: string): void {
+  shoot(from: number, to: number, sprite: number | null, now: number, color?: string): void {
     const cells = Math.max(Math.abs(cellX(to) - cellX(from)), Math.abs(cellY(to) - cellY(from)));
     this.projectiles.push({ from, to, start: now, duration: Math.max(90, cells * 45), sprite, color });
   }
@@ -499,7 +504,7 @@ export class View {
     return { x: x + TILE / 2, y: y + TILE / 2 };
   }
 
-  private float(id: string, text: string, color: string, now: number, word = false): void {
+  float(id: string, text: string, color: string, now: number, word = false): void {
     const puppet = this.puppets.get(id);
     if (!puppet) return;
     const { x, y } = this.position(puppet, now);
@@ -623,25 +628,13 @@ export class View {
         case 'oozed':
           if (effect.hero === myId) this.say(t.oozed, COLORS.negative, now);
           break;
-        case 'pumped':
-          if (effect.depth !== this.depth) break;
-          this.float(effect.mob, '!!!', COLORS.negative, now);
-          this.say(t.gooPumps, COLORS.negative, now);
+        case 'yell':
+        case 'bossLine':
+        case 'bossFx':
+        case 'healedMob':
+          // Shattered's boss fights: their lines, warnings and looks (bossfx.ts).
+          bossApply(this, effect, world, myId, now);
           break;
-        case 'yell': {
-          if (effect.depth !== this.depth) break;
-          const hero = heroById(world, effect.hero ?? myId);
-          const notice = effect.line === 'notice';
-          const line =
-            effect.kind === 'goo' ? notice ? t.gooNotice : t.gooDeath
-            : effect.kind === 'dm300' ? notice ? t.dm300Notice : t.dm300Death
-            : effect.kind === 'yog' ? notice ? t.yogNotice : t.yogDeath
-            : effect.kind === 'king'
-              ? effect.line === 'summon' ? t.kingSummon : notice ? t.kingNotice : t.kingDeath(hero ? t.classes[hero.heroClass] : '')
-            : notice ? t.tenguNotice(hero ? t.classes[hero.heroClass] : '') : t.tenguDeath;
-          this.say(`${t.mobs[effect.kind]}: «${line}»`, COLORS.negative, now);
-          break;
-        }
         case 'bossSlain':
           this.bannerStart = now;
           this.say(t.bossSlain[effect.kind] ?? '', COLORS.highlight, now);
@@ -936,7 +929,8 @@ export class View {
         case 'shop':
           break;
         case 'arena':
-          if (effect.depth === this.depth && effect.sealed) {
+          // Goo's stairs flooding and Yog's burning away say nothing; the doors and the rockfall do.
+          if (effect.depth === this.depth && effect.sealed && effect.depth !== 5 && effect.depth !== 25) {
             this.say(effect.depth === 15 ? t.lairSealed : t.arenaSealed, COLORS.warning, now);
             audio.play(effect.depth === 15 ? 'rocks' : 'door_open', 0.7);
           }

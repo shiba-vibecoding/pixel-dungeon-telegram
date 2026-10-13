@@ -280,6 +280,12 @@ export interface Scene {
   under?: (ctx: CanvasRenderingContext2D) => void;
   /** Drawn over what lies on the floor, under the characters: glints, coins in the air (motion.ts). */
   over?: (ctx: CanvasRenderingContext2D) => void;
+  /** A boss level's ground art and the fight's marks on the floor, right over the tiles (bossfx.ts). */
+  ground?: (ctx: CanvasRenderingContext2D) => void;
+  /** Over the characters: a boss level's walls and overhangs, lightning, beams (bossfx.ts). */
+  top?: (ctx: CanvasRenderingContext2D) => void;
+  /** Words over cells at screen scale (a bomb's «3...»): world pixels, the text, its age (ms). */
+  marks?: ReadonlyArray<{ x: number; y: number; text: string; age: number }>;
 }
 
 export function render(
@@ -313,6 +319,7 @@ export function render(
     }
   }
   ctx.drawImage(baked, 0, 0);
+  scene.ground?.(ctx);
 
   // Items on the floor, remembered (and dimmed by the fog) once seen.
   for (const plant of scene.plants ?? []) {
@@ -476,6 +483,7 @@ export function render(
     })
     .sort((a, b) => Number(a.puppet.alive) - Number(b.puppet.alive) || a.y - b.y);
   for (const { puppet, x, y } of shown) drawPuppet(ctx, puppet, x, y, now);
+  scene.top?.(ctx);
 
   for (const { puppet, x, y } of shown) {
     if (!puppet.alive) continue;
@@ -546,6 +554,9 @@ export function render(
     const scale = floater.scale ?? 1;
     const kind = floater.word ? 'word' : numeric ? (scale >= 2 ? 'kill' : scale > 1 ? 'big' : 'damage') : /^\+\d+$/.test(floater.text) ? 'heal' : 'word';
     floatNumber(ctx, floater.text, kind, floater.color, sx, sy, now - floater.start, px);
+  }
+  for (const mark of scene.marks ?? []) {
+    floatNumber(ctx, mark.text, 'word', '#ff8800', (mark.x - camera.x) * camera.zoom, (mark.y - TILE / 2 - camera.y) * camera.zoom, mark.age, px);
   }
   ctx.globalAlpha = 1;
 

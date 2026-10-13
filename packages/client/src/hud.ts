@@ -1,4 +1,4 @@
-import { FURY_LEVEL, type Hero, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING } from '@pd/core';
+import { FURY_LEVEL, type Hero, isAlive, isHungry, isStarving, type Look, maxExp, type MobKind, shielding, STARVING } from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
 import { AVATAR, durabilityBar, markWear, sprites } from './screens';
@@ -145,6 +145,8 @@ export interface HudState {
   looks: Record<string, Look>;
   /** In the arena of waves: its board and readiness instead of the depth. */
   arena?: ArenaHud | null;
+  /** BossHealthBar: the boss of the fight on my depth, its health and shield; bleeding at its last stand. */
+  boss?: { kind: MobKind; hp: number; ht: number; shield: number; bleed: boolean } | null;
 }
 
 /** «осталось {n}»: the text with the number in bold, as the design writes it. */
@@ -238,6 +240,11 @@ export class Hud {
   private readonly depthStat: HTMLElement;
   /** The arena's board and «To battle!» (hidden in the dungeon). */
   private readonly waveboard: HTMLElement;
+  /** BossHealthBar: the boss's name over its health and shield. */
+  private readonly bossBox: HTMLElement;
+  private readonly bossName: HTMLElement;
+  private readonly bossHp: HTMLElement;
+  private readonly bossText: HTMLElement;
   private readonly fightBox: HTMLElement;
   private readonly fightButton: HTMLButtonElement;
   private readonly fightNote: HTMLElement;
@@ -331,7 +338,13 @@ export class Hud {
         ),
         menu,
       );
-    this.band = el('header', 'pd-hud', this.main, this.waveboard, this.buffBox, this.mates, this.notice);
+    this.bossName = el('span', 'pd-boss-name');
+    this.bossText = el('span', 'pd-bar-text');
+    this.bossHp = el('div', 'pd-bar boss', this.bossText);
+    this.bossBox = el('div', 'pd-bossbar', icon('skull'), this.bossName, this.bossHp);
+    this.bossBox.setAttribute('role', 'status');
+    this.bossBox.hidden = true;
+    this.band = el('header', 'pd-hud', this.main, this.bossBox, this.waveboard, this.buffBox, this.mates, this.notice);
 
     this.more = el('button', 'pd-log-more', t.history);
     this.more.onclick = tap(() => handlers.history());
@@ -547,6 +560,18 @@ export class Hud {
     this.depthStat.style.display = state.arena ? 'none' : '';
     this.updateArena(state.arena ?? null, dead);
     if (this.changed('keys', String(state.keys))) this.keys.data = String(state.keys);
+    const boss = state.boss;
+    if (this.changed('boss', boss ? `${boss.kind}:${boss.hp}/${boss.ht}:${boss.shield}:${boss.bleed}` : '')) {
+      this.bossBox.hidden = !boss;
+      if (boss) {
+        this.bossName.textContent = t.mobs[boss.kind];
+        this.bossHp.style.setProperty('--v', String(Math.max(0, boss.hp) / boss.ht));
+        this.bossHp.style.setProperty('--shield', String(Math.min(1, boss.shield / boss.ht)));
+        this.bossHp.classList.toggle('shield', boss.shield > 0);
+        this.bossBox.classList.toggle('bleeding', boss.bleed);
+        this.bossText.textContent = boss.shield > 0 ? `${boss.hp}+${boss.shield}/${boss.ht}` : `${boss.hp}/${boss.ht}`;
+      }
+    }
     this.avatar.parentElement!.classList.toggle('dead', dead);
 
     const buffKey = state.buffs.map((b) => `${b.name}:${b.turns !== undefined && b.turns <= 3 ? 'f' : ''}`).join(',');
