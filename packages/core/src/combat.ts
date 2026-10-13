@@ -1,6 +1,8 @@
 import { wear } from './wear';
 import { familiarise, identifyBelongings } from './ident';
-import { bossHurt, earnExp } from './hero';
+import { earnExp } from './hero';
+import { bossAfterDamage, bossBeforeDamage, bossDied, bossHoldsOn, bossRules } from './bosses/index';
+import { absorbShield } from './bosses/common';
 import { shieldDamage } from './seal';
 import {
   baseKind, BRUTE_ENRAGED_DAMAGE, isShopkeeper, statsOf, createMob, type Hero, heroArmor, heroAttackSkill, heroDamageRoll, heroDefenseSkill, isAlive,
@@ -30,14 +32,32 @@ import { arenaKill } from './arena';
  * then damage minus a roll of the defender's armour.
  */
 
-function attackSkill(char: Char): number {
-  return isHero(char) ? heroAttackSkill(char) : mobStats(char).attack;
+function attackSkill(ctx: Ctx, char: Char, target: Char): number {
+  if (isHero(char)) return heroAttackSkill(char);
+  return bossRules(char)?.attackSkill?.(ctx, char, target) ?? mobStats(char).attack;
 }
 
-function defenseSkill(char: Char): number {
+function defenseSkill(ctx: Ctx, char: Char): number {
   if (isHero(char)) return heroDefenseSkill(char);
   // A monster that has not spotted its enemy is caught off guard.
-  return char.enemySeen ? mobStats(char).defense : 0;
+  if (!char.enemySeen) return 0;
+  return bossRules(char)?.defenseSkill?.(ctx, char) ?? mobStats(char).defense;
+}
+
+/** Char.hit for a magic attack (a bolt, a beam): its accuracy counts double. */
+export function magicHit(ctx: Ctx, attacker: Char, defender: Char): boolean {
+  const skill = attackSkill(ctx, attacker, defender);
+  if (skill === Infinity) return true;
+  return ctx.rng.floatMax(skill) * 2 >= ctx.rng.floatMax(defenseSkill(ctx, defender));
+}
+
+/** Char.drRoll: what a character's armour takes off a blow (a boss's own roll, if it has one). */
+export function drRollOf(ctx: Ctx, char: Char): number {
+  if (!isHero(char)) {
+    const own = bossRules(char)?.drRoll;
+    if (own) return own(ctx, char);
+  }
+  return ctx.rng.intRange(0, charArmor(char));
 }
 
 export function charArmor(char: Char): number {
@@ -47,6 +67,8 @@ export function charArmor(char: Char): number {
 function damageRoll(ctx: Ctx, char: Char, range?: readonly [number, number]): number {
   if (range) return ctx.rng.normalIntRange(range[0], range[1]);
   if (isHero(char)) return heroDamageRoll(char, ctx.rng);
+  const own = bossRules(char)?.damageRoll;
+  if (own) return own(ctx, char);
   const [min, max] = baseKind(char.kind) === 'brute' && char.enraged ? BRUTE_ENRAGED_DAMAGE : mobStats(char).damage;
   return ctx.rng.normalIntRange(min, max);
 }
@@ -63,8 +85,9 @@ export interface AttackOverride {
 export function attack(ctx: Ctx, attacker: Char, defender: Char, override: AttackOverride = {}): boolean {
   // Striking gives an invisible hero away.
   if (isHero(attacker)) attacker.invisible = 0;
-  const skill = override.attack ?? attackSkill(attacker);
-  const hit = ctx.rng.floatMax(skill) >= ctx.rng.floatMax(defenseSkill(defender));
+  const skill = override.attack ?? attackSkill(ctx, attacker, defender);
+  // Infinite accuracy always hits (Char.INFINITE_ACCURACY).
+  const hit = skill === Infinity || ctx.rng.floatMax(skill) >= ctx.rng.floatMax(defenseSkill(ctx, defender));
   if (!hit) {
     ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0 });
     return false;
@@ -72,13 +95,13 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   // A sniper's thrown weapons find the weak points in any armour.
   const thrown = override.damage !== undefined;
   const sniping = isHero(attacker) && attacker.subclass === 'sniper' && thrown;
-  const reduction = sniping ? 0 : ctx.rng.intRange(0, charArmor(defender));
+  const reduction = sniping ? 0 : drRollOf(ctx, defender);
   let damage = Math.max(damageRoll(ctx, attacker, override.damage) - reduction, 0);
   if (isHero(attacker) && !isHero(defender)) damage = masteredBlow(ctx, attacker, defender, damage, thrown);
-  // Goo's touch may leave caustic ooze that burns until washed off in water.
-  if (!isHero(attacker) && attacker.kind === 'goo' && ctx.rng.int(3) === 0 && isHero(defender)) {
-    if (defender.ooze < 0) ctx.effects.push({ type: 'oozed', hero: defender.id });
-    defender.ooze = 0;
+  // A boss's own attackProc (Goo's and the rotting fist's ooze...).
+  if (!isHero(attacker)) {
+    const proc = bossRules(attacker)?.attackProc;
+    if (proc) damage = proc(ctx, attacker, defender, damage);
   }
   // Char.attackProc and defenseProc: what a blow does besides the damage.
   if (!isHero(attacker)) {
@@ -111,11 +134,6 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
       if (baseKind(attacker.kind) === 'scorpio' && ctx.rng.int(2) === 0) {
         if (defender.crippled <= 0) ctx.effects.push({ type: 'crippled', hero: defender.id });
         defender.crippled = Math.max(defender.crippled, CRIPPLE_TURNS);
-      }
-      // RottingFist.attackProc: one blow in three leaves caustic ooze.
-      if (attacker.kind === 'rottingFist' && ctx.rng.int(3) === 0) {
-        if (defender.ooze < 0) ctx.effects.push({ type: 'oozed', hero: defender.id });
-        defender.ooze = 0;
       }
     }
     // Mimic.attackProc: one bite in three knocks some gold out of the hero's purse.
@@ -167,8 +185,6 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
       hurt(ctx, attacker, acid, defender);
     }
   }
-  // Yog.defenseProc: struck, Yog-Dzewa spawns a larva next to it.
-  if (!isHero(defender) && defender.kind === 'yog') spawnLarva(ctx, defender);
   ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage });
   hurt(ctx, defender, damage, attacker);
   // Pickaxe.proc: a vampire bat slain with the pickaxe leaves its blood on it, as the blacksmith wants.
@@ -249,18 +265,6 @@ function shove(ctx: Ctx, curse: Mob, victim: Char): void {
 /** Cripple.DURATION. */
 export const CRIPPLE_TURNS = 10;
 
-function spawnLarva(ctx: Ctx, yog: Mob): void {
-  const { world, depth, level, rng, floor } = ctx;
-  const cells = NEIGHBOURS8.map((n) => yog.pos + n).filter((c) => isPassable(level, c) && !charAt(world, depth, c));
-  if (cells.length === 0) return;
-  const larva = createMob(`#${++world.nextId}`, 'larva', rng.element(cells)!, 'hunting', floor.now + 1);
-  Object.assign(larva, { enemy: yog.enemy, target: yog.target });
-  floor.mobs.push(larva);
-  enterCell(level, larva.pos);
-}
-
-const isFist = (mob: Mob): boolean => mob.kind === 'rottingFist' || mob.kind === 'burningFist';
-
 /** Thief.steal: a whole stack from the pack (never a key or a quest item), then off it runs. */
 function steal(ctx: Ctx, thief: Mob, hero: Hero): void {
   // (Thief.steal: nor anything unique, as the warrior's seal and the waterskin are.)
@@ -293,16 +297,26 @@ function split(ctx: Ctx, swarm: Mob, damage: number): void {
 }
 
 /** What hurts without being a character. */
-export type Hazard = 'poison' | 'burning' | 'ooze' | 'lightning' | 'gripping' | 'hunger' | 'bones' | 'gas' | 'fall' | 'deferred' | 'bleeding' | 'dry' | 'multiplicity' | 'bomb';
+export type Hazard = 'poison' | 'burning' | 'ooze' | 'lightning' | 'gripping' | 'hunger' | 'bones' | 'gas' | 'fall' | 'deferred' | 'bleeding' | 'dry' | 'multiplicity' | 'bomb'
+  /** The bosses' own: DM-300's falling rocks, the King's summoning and his KingDamager, a life link. */
+  | 'rocks' | 'king' | 'link';
 
 export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Hazard): void {
-  if (!isAlive(victim)) return;
+  // Char.damage: nothing for the dead, nor for negative damage.
+  if (!isAlive(victim) || damage < 0) return;
   // The sad ghost cannot be harmed; the shopkeeper will not stay to be.
   if (!isHero(victim) && victim.state === 'passive' && victim.kind !== 'bee') {
     if (isShopkeeper(victim)) shopkeeperFlees(ctx, victim);
     return;
   }
   const by = typeof source === 'string' ? null : source;
+  // A boss's own Char.damage: invulnerable, deferring, linked... (bosses/*.ts); then its barrier takes what it can.
+  if (!isHero(victim) && (bossRules(victim) || victim.shield)) {
+    const through = bossBeforeDamage(ctx, victim, damage, source);
+    // (A negative blow does nothing: the soiled fist deep in grass.)
+    if (through === null || through < 0) return;
+    damage = absorbShield(victim, through);
+  }
   if (!isHero(victim)) {
     if (victim.state === 'sleeping') victim.state = 'wandering';
     victim.alerted = true;
@@ -321,25 +335,17 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   if (isHero(victim)) damage = earthrootAbsorbs(victim, damage);
   // Char.damage: the warrior's seal may raise its shield, and shields take what they can (not hunger's).
   if (isHero(victim)) damage = shieldDamage(ctx, victim, damage, source === 'hunger');
-  if (!isHero(victim) && victim.kind === 'yog') {
-    // Yog.damage: each living fist halves the harm, and they all come to defend it.
-    const fists = ctx.floor.mobs.filter(isFist);
-    damage >>= fists.length;
-    for (const fist of fists) {
-      if (fist.state !== 'hunting') fist.state = 'wandering';
-      fist.target = victim.pos;
-    }
-  }
+  const before = victim.hp;
   victim.hp -= damage;
-  // Goo.damage, Tengu.damage…: hurting a boss keeps a sealed floor's healing going (LockedFloor.addTime).
-  if (!isHero(victim)) bossHurt(ctx, victim, damage);
+  // Goo.damage, Tengu.damage…: phases, brackets, the sealed floor's healing (LockedFloor.addTime).
+  if (!isHero(victim) && bossRules(victim)) bossAfterDamage(ctx, victim, before, source);
   // Brute.damage: below a quarter of its health, the brute flies into a rage.
   if (!isHero(victim) && baseKind(victim.kind) === 'brute' && isAlive(victim) && !victim.enraged && victim.hp < victim.ht / 4) {
     victim.enraged = true;
     victim.time += 1;
     ctx.effects.push({ type: 'enraged', depth: ctx.depth, mob: victim.id });
   }
-  if (!isAlive(victim)) {
+  if (!isAlive(victim) && !(!isHero(victim) && bossHoldsOn(ctx, victim))) {
     if (isHero(victim)) {
       victim.killedBy = typeof source === 'string' ? source : isHero(source) ? source.heroClass : source.kind;
       heroDied(ctx, victim);
@@ -358,6 +364,13 @@ const ELEMENTAL_BURNING = 8;
 
 /** Crab.lootChance. */
 const CRAB_MEAT_CHANCE = 0.167;
+
+/** Mob.die, for whatever kills a monster outright (a boss's fight ending, its subjects dying with it). */
+export function killMob(ctx: Ctx, mob: Mob, by?: string): void {
+  if (!ctx.floor.mobs.includes(mob)) return;
+  mob.hp = 0;
+  mobDied(ctx, mob, by);
+}
 
 function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   mob.hp = 0;
@@ -399,39 +412,8 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
 
   if (mob.kind === 'skeleton') explode(ctx, mob);
 
-  if (mob.kind === 'yog') {
-    // Its fists die with it.
-    for (const fist of ctx.floor.mobs.filter(isFist)) {
-      ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: fist.id, damage: fist.hp });
-      fist.hp = 0;
-      mobDied(ctx, fist);
-    }
-  }
-  if (mob.kind === 'goo' || mob.kind === 'tengu' || mob.kind === 'dm300' || mob.kind === 'king' || mob.kind === 'yog') {
-    const { level } = ctx;
-    // Goo's lair dries out behind the heroes; Tengu's arena opens; the rock
-    // in DM-300's way back crumbles.
-    if (level.map[level.entrance] === T.WATER_TILES) level.map[level.entrance] = T.ENTRANCE;
-    if (level.arenaDoor !== undefined && (level.map[level.arenaDoor] === T.LOCKED_DOOR || level.map[level.arenaDoor] === T.WALL)) {
-      level.map[level.arenaDoor] = level.map[level.arenaDoor] === T.WALL ? T.EMPTY_DECO : T.DOOR;
-      ctx.effects.push({ type: 'arena', depth: ctx.depth, sealed: false });
-    }
-    // Goo, Tengu, DM-300 and the King drop a skeleton key for the locked way down; Yog's fall opens it.
-    if (mob.kind === 'yog') {
-      if (level.map[level.exit] === T.LOCKED_EXIT) level.map[level.exit] = T.UNLOCKED_EXIT;
-    } else if (!ctx.world.arena) {
-      // (The arena has no locked way down for it to open.)
-      dropItem(ctx.floor, mob.pos, { ...createItem('key.skeleton'), depth: ctx.depth });
-    }
-    ctx.effects.push({ type: 'yell', depth: ctx.depth, mob: mob.id, kind: mob.kind, line: 'death' });
-    ctx.effects.push({ type: 'bossSlain', depth: ctx.depth, kind: mob.kind });
-    // King.die: the armour kit.
-    if (mob.kind === 'king') dropItem(ctx.floor, mob.pos, createItem('kit.armor'));
-    // Tengu.die: a Tome of Mastery, here one for every hero who has not mastered yet.
-    if (mob.kind === 'tengu') {
-      for (const hero of ctx.world.heroes) if (!hero.subclass) dropItem(ctx.floor, mob.pos, createItem('tome.mastery'));
-    }
-  }
+  // A boss's death (Goo.die, Tengu.die...): its level unseals, its drops, its last words.
+  bossDied(ctx, mob, by);
 }
 
 /** What a monster leaves behind (Mob.loot and lootChance, or its own dropLoot). */
@@ -463,10 +445,6 @@ function dropLoot(ctx: Ctx, mob: Mob): Item | null {
       return rng.float() < 0.5 ? rollGold(rng, ctx.depth) : null;
     case 'thief':
       return rng.float() < 0.01 ? randomRing(rng, 'ring.haggler') : null;
-    case 'dm300':
-      return rng.float() < 0.333 ? randomRing(rng, 'ring.thorns') : null;
-    case 'goo':
-      return rng.float() < 0.333 ? createItem('beacon') : null;
     case 'spinner':
       return rng.float() < 0.125 ? createItem('food.meat') : null;
     case 'elemental':

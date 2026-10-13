@@ -1,6 +1,6 @@
 import {
-  act, type Action, addHero, adjacent, createItem, createWorld, type Effect, findPath, floorAt, heroById, type HeroClass,
-  canEnter, isAlive, levelAt, NEIGHBOURS8, swapsWithHero, T, WIDTH, type World,
+  act, type Action, addHero, adjacent, BOTTOM_DOOR, cell, createItem, createWorld, distance, type Effect, findPath, floorAt, GATE_CELLS, hasFlag, heroById, type HeroClass,
+  canEnter, F, isAlive, isFist, levelAt, NEIGHBOURS8, PYLON_POSITIONS, swapsWithHero, T, TENGU_CELL_DOOR, TOP_DOOR, WIDTH, type World, YOG_POS,
 } from '../src/index';
 import { botAction, checkInvariants, skeletonKey, unblock } from './helpers';
 
@@ -11,7 +11,7 @@ import { botAction, checkInvariants, skeletonKey, unblock } from './helpers';
  * world goes through JSON, as a save does, and play goes on from the copy.
  */
 
-const BOSSES = new Set(['goo', 'tengu', 'dm300', 'king', 'yog', 'rottingFist', 'burningFist']);
+const BOSSES = new Set(['goo', 'tengu', 'dm300', 'king', 'yog']);
 
 export function step(world: World, id = 'p'): Action {
   const action = plan(world, id);
@@ -39,16 +39,19 @@ function plan(world: World, id: string): Action {
       if (path && path.length > 0) return { type: 'move', to: path[0]! };
     }
   }
-  // Yog's fists first, then whatever else stands beside the hero.
-  const awake = floor.mobs.filter((m) => adjacent(m.pos, hero.pos) && m.state !== 'passive');
-  const foe = awake.find((m) => m.kind !== 'yog') ?? awake[0];
+  // A boss fight's own course (Shattered's: its stages, what can and cannot be hurt).
+  const fight = bossPlan(world, id);
+  if (fight) return fight;
+  // Whatever stands beside the hero, and can be hurt.
+  const awake = floor.mobs.filter((m) => adjacent(m.pos, hero.pos) && m.state !== 'passive' && !invulnerable(world, m));
+  const foe = awake[0];
   if (foe) return { type: 'attack', target: foe.id };
   // A fallen boss's skeleton key, for the locked way down.
   const skeleton = skeletonKey(world, id);
   if (skeleton) return skeleton;
-  if (hero.pos === level.exit) return { type: 'descend' };
+  if (hero.pos === level.exit || (level.exits?.includes(hero.pos) && level.map[hero.pos] === T.EXIT)) return { type: 'descend' };
   // A boss on the floor is hunted down: its fall opens the way on.
-  const boss = floor.mobs.find((m) => m.kind === 'rottingFist' || m.kind === 'burningFist') ?? floor.mobs.find((m) => BOSSES.has(m.kind));
+  const boss = floor.mobs.find((m) => BOSSES.has(m.kind) && !invulnerable(world, m));
   if (boss) {
     const others = new Set(floor.mobs.filter((m) => m !== boss).map((m) => m.pos));
     const path = findPath(level, hero.pos, boss.pos, others);
@@ -64,7 +67,7 @@ function plan(world: World, id: string): Action {
     const toChest = toward(world, chest.pos, id);
     if (toChest) return toChest;
   }
-  if (level.arenaDoor !== undefined && !floor.arenaEntered) {
+  if (level.arenaDoor !== undefined && hero.depth === 10 && (floor.boss?.prison ?? 'start') === 'start') {
     const door = level.arenaDoor;
     // Through the door, to the side farther from the entrance: that is the arena.
     const far = (cell: number): number => findPath(level, level.entrance, cell, new Set([door]))?.length ?? Infinity;
@@ -90,6 +93,89 @@ function plan(world: World, id: string): Action {
     }
   }
   return action;
+}
+
+/** Whether a monster cannot be hurt now: a boss behind its phase, a fist near Yog, a pylon not switched on. */
+function invulnerable(world: World, m: import('../src/index').Mob): boolean {
+  const floor = floorAt(world, heroById(world, 'p')?.depth ?? 1);
+  if (m.kind === 'dm300') return m.boss?.supercharged === true;
+  if (m.kind === 'pylon') return !m.boss?.active;
+  if (m.kind === 'king') return m.boss?.phase === 2;
+  if (m.kind === 'yog') return (m.boss?.phase ?? 0) === 0 || floor.mobs.some(isFist);
+  if (isFist(m)) return distance(m.pos, YOG_POS) <= 4;
+  return false;
+}
+
+/** What the bot does in a Shattered boss fight, stage by stage; null for the ordinary way. */
+function bossPlan(world: World, id: string): Action | null {
+  const hero = heroById(world, id)!;
+  const floor = floorAt(world, hero.depth);
+  const level = levelAt(world, hero.depth);
+  const hunt = (target: import('../src/index').Mob): Action | null =>
+    adjacent(target.pos, hero.pos) ? { type: 'attack', target: target.id } : toward(world, target.pos, id);
+  switch (hero.depth) {
+    case 10: {
+      const state = floor.boss?.prison ?? 'start';
+      if (state === 'fightPause') return toward(world, cell(10, 8), id);
+      if (state === 'start' && hero.items.some((i) => i.kind === 'key.iron' && i.depth === 10)) {
+        if (hero.pos === TENGU_CELL_DOOR) return { type: 'move', to: TENGU_CELL_DOOR + WIDTH };
+        return toward(world, TENGU_CELL_DOOR, id);
+      }
+      return null;
+    }
+    case 15: {
+      const gateShut = hasFlag(level.map[GATE_CELLS[0]!]!, F.SOLID);
+      if (!floor.boss?.locked && gateShut) {
+        const pylon = [...PYLON_POSITIONS].sort((a, b) => distance(a, hero.pos) - distance(b, hero.pos))[0]!;
+        const near = NEIGHBOURS8.map((n) => pylon + n).find((c) => canEnter(level, c));
+        return near === undefined ? null : toward(world, near, id);
+      }
+      const pylon = floor.mobs.find((m) => m.kind === 'pylon' && m.boss?.active);
+      if (pylon) return hunt(pylon);
+      return null;
+    }
+    case 20: {
+      if (!floor.boss?.locked && level.map[TOP_DOOR] === T.LOCKED_DOOR) {
+        if (hero.pos < BOTTOM_DOOR) return { type: 'wait' };
+        return hero.pos === BOTTOM_DOOR ? { type: 'move', to: BOTTOM_DOOR - WIDTH } : toward(world, BOTTOM_DOOR, id);
+      }
+      const king = floor.mobs.find((m) => m.kind === 'king');
+      if (king?.boss?.phase === 2) {
+        const subjects = floor.mobs.filter((m) => m.minion).sort((a, b) => distance(a.pos, hero.pos) - distance(b.pos, hero.pos));
+        if (subjects[0]) return hunt(subjects[0]);
+        return { type: 'wait' };
+      }
+      return null;
+    }
+    case 25: {
+      // Off the stairs, towards the middle of the hall: Yog rises.
+      if (!floor.boss?.locked && level.map[level.exit] !== T.EXIT) return toward(world, YOG_POS + 2 * WIDTH, id);
+      const fist = floor.mobs.find(isFist);
+      if (fist) {
+        // The soiled fist's grass shields it (SoiledFist.damage): a player burns it away, the bot just clears it.
+        if (fist.kind === 'soiledFist') {
+          for (const n of [0, ...NEIGHBOURS8]) if (level.map[fist.pos + n] === T.HIGH_GRASS) level.map[fist.pos + n] = T.EMBERS;
+        }
+        if (distance(fist.pos, YOG_POS) > 4) return hunt(fist);
+        // Drawn away from Yog: wait for it far off.
+        if (distance(hero.pos, YOG_POS) >= 9) return { type: 'wait' };
+        let far = -1;
+        for (let c = 0; c < level.map.length; c++) {
+          if (canEnter(level, c) && distance(c, YOG_POS) >= 9 && (far === -1 || distance(c, hero.pos) < distance(far, hero.pos))) far = c;
+        }
+        return far === -1 ? null : toward(world, far, id);
+      }
+      const yog = floor.mobs.find((m) => m.kind === 'yog');
+      if (yog) {
+        const larva = floor.mobs.find((m) => m.kind === 'larva' && adjacent(m.pos, hero.pos));
+        if (larva) return { type: 'attack', target: larva.id };
+        return hunt(yog);
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
 }
 
 /** One step toward a cell, cutting through whatever stands in the way; null if there is no way. */

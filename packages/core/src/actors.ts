@@ -4,6 +4,7 @@ import { type HeroClass, startingKit } from './heroclass';
 import { isStarving } from './hero';
 import type { Rng } from './rng';
 import type { Action, PlanStep } from './world';
+import type { BossMob } from './bosses/state';
 
 /*
  * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
@@ -53,8 +54,11 @@ export interface Hero {
   plan?: PlanStep[];
   /** Regeneration.partialRegen: health regained towards the next point. */
   regen: number;
-  /** Caustic ooze from Goo: time since it last burned, or -1 when clean. Water washes it off. */
+  /** Caustic ooze from Goo: 0 while it eats at the hero, -1 when clean. Water washes it off. */
   ooze: number;
+  /** Ooze.left and Ooze.acted: turns before it wears off, and whether it has hurt yet (bosses/goo.ts). */
+  oozeLeft?: number;
+  oozeActed?: boolean;
   /** The weapon in hand; none after a monk's disarming blow, until the hero takes one up again. */
   weapon: Item | null;
   armor: Item;
@@ -313,7 +317,9 @@ export type MobKind =
   | 'succubus' | 'eye' | 'scorpio' | 'yog' | 'rottingFist' | 'burningFist' | 'larva' | 'mimic'
   | 'statue' | 'piranha' | 'imp' | 'sheep' | 'blacksmith' | 'mirror'
   | 'albino' | 'bandit' | 'shielded' | 'senior' | 'acidic'
-  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper';
+  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper'
+  // Shattered's bosses' own: DM-300's pylons, the Dwarf King's ghouls, Yog-Dzewa's other four fists.
+  | 'pylon' | 'ghoul' | 'soiledFist' | 'rustedFist' | 'brightFist' | 'darkFist';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
 export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
 
@@ -341,7 +347,8 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   rat: { name: 'marsupial rat', ht: 8, attack: 8, defense: 3, damage: [1, 5], dr: 1, exp: 1, maxLvl: 5, speed: 1 },
   gnoll: { name: 'gnoll scout', ht: 12, attack: 11, defense: 4, damage: [2, 5], dr: 2, exp: 2, maxLvl: 8, speed: 1 },
   crab: { name: 'sewer crab', ht: 15, attack: 12, defense: 5, damage: [3, 6], dr: 4, exp: 3, maxLvl: 9, speed: 2 },
-  goo: { name: 'Goo', ht: 80, attack: 15, defense: 12, damage: [2, 12], dr: 2, exp: 10, maxLvl: 30, speed: 1 },
+  // Goo (Shattered): its accuracy, damage and evasion change as it is hurt and pumps up (bosses/goo.ts).
+  goo: { name: 'Goo', ht: 100, attack: 10, defense: 8, damage: [1, 8], dr: 2, exp: 10, maxLvl: 29, speed: 1 },
   ghost: { name: 'sad ghost', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 0.5, flying: true },
   shopkeeper: { name: 'shopkeeper', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** ImpShopkeeper: an imp keeps the last shop, in the demon halls. */
@@ -354,25 +361,36 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   shaman: { name: 'gnoll shaman', ht: 18, attack: 11, defense: 8, damage: [2, 6], dr: 4, exp: 6, maxLvl: 14, speed: 1 },
   bat: { name: 'vampire bat', ht: 30, attack: 16, defense: 15, damage: [6, 12], dr: 4, exp: 7, maxLvl: 15, speed: 2, flying: true },
   brute: { name: 'gnoll brute', ht: 40, attack: 20, defense: 15, damage: [8, 18], dr: 8, exp: 8, maxLvl: 15, speed: 1 },
-  tengu: { name: 'Tengu', ht: 120, attack: 20, defense: 20, damage: [8, 15], dr: 5, exp: 20, maxLvl: 30, speed: 1 },
+  // Tengu (Shattered): 10 accurate next to his target, 20 from afar (bosses/tengu.ts).
+  tengu: { name: 'Tengu', ht: 200, attack: 20, defense: 15, damage: [6, 12], dr: 5, exp: 20, maxLvl: 29, speed: 1 },
   // The caves (depths 11-15).
   spinner: { name: 'cave spinner', ht: 50, attack: 20, defense: 14, damage: [12, 16], dr: 6, exp: 9, maxLvl: 16, speed: 1 },
-  dm300: { name: 'DM-300', ht: 200, attack: 28, defense: 18, damage: [18, 24], dr: 10, exp: 30, maxLvl: 30, speed: 1 },
+  dm300: { name: 'DM-300', ht: 300, attack: 20, defense: 15, damage: [15, 25], dr: 10, exp: 30, maxLvl: 29, speed: 1 },
+  /** Pylon: DM-300's power source in a corner of its arena, harmless until switched on. */
+  pylon: { name: 'power pylon', ht: 50, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 1, maxLvl: -2, speed: 1 },
   // The dwarven city (depths 16-20).
   elemental: { name: 'fire elemental', ht: 65, attack: 25, defense: 20, damage: [16, 20], dr: 5, exp: 10, maxLvl: 20, speed: 1, flying: true },
   monk: { name: 'dwarf monk', ht: 70, attack: 30, defense: 30, damage: [12, 16], dr: 2, exp: 11, maxLvl: 21, speed: 1, attackDelay: 0.5 },
   warlock: { name: 'dwarf warlock', ht: 70, attack: 25, defense: 18, damage: [12, 20], dr: 8, exp: 11, maxLvl: 21, speed: 1 },
   golem: { name: 'golem', ht: 85, attack: 28, defense: 18, damage: [20, 40], dr: 12, exp: 12, maxLvl: 22, speed: 1, attackDelay: 1.5 },
-  king: { name: 'King of Dwarves', ht: 300, attack: 32, defense: 25, damage: [20, 38], dr: 14, exp: 40, maxLvl: 30, speed: 1 },
+  king: { name: 'King of Dwarves', ht: 300, attack: 26, defense: 22, damage: [15, 25], dr: 10, exp: 40, maxLvl: 29, speed: 1 },
+  /** DwarfKing.DKGhoul: a ghoul of the King's court (Ghoul's numbers; no partners, no experience). */
+  ghoul: { name: 'dwarven ghoul', ht: 45, attack: 24, defense: 20, damage: [16, 22], dr: 4, exp: 5, maxLvl: 20, speed: 1 },
   undead: { name: 'undead dwarf', ht: 28, attack: 16, defense: 15, damage: [12, 16], dr: 5, exp: 0, maxLvl: 30, speed: 1 },
   // The demon halls (depths 22-25).
   succubus: { name: 'succubus', ht: 80, attack: 40, defense: 25, damage: [15, 25], dr: 10, exp: 12, maxLvl: 25, speed: 1 },
   eye: { name: 'evil eye', ht: 100, attack: 30, defense: 20, damage: [14, 20], dr: 10, exp: 13, maxLvl: 25, speed: 1, attackDelay: 1.6, flying: true },
   scorpio: { name: 'scorpio', ht: 95, attack: 36, defense: 24, damage: [20, 32], dr: 16, exp: 14, maxLvl: 25, speed: 1 },
-  yog: { name: 'Yog-Dzewa', ht: 300, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 50, maxLvl: 30, speed: 1 },
-  rottingFist: { name: 'rotting fist', ht: 300, attack: 36, defense: 25, damage: [24, 36], dr: 15, exp: 0, maxLvl: 30, speed: 1 },
-  burningFist: { name: 'burning fist', ht: 200, attack: 36, defense: 25, damage: [20, 32], dr: 15, exp: 0, maxLvl: 30, speed: 1 },
-  larva: { name: "god's larva", ht: 25, attack: 30, defense: 20, damage: [15, 20], dr: 8, exp: 0, maxLvl: 30, speed: 1 },
+  yog: { name: 'Yog-Dzewa', ht: 1000, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 50, maxLvl: 29, speed: 1 },
+  // YogFist: six kinds, two of a pair never together (bosses/yog.ts); no experience (maxLvl -2).
+  burningFist: { name: 'burning fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  soiledFist: { name: 'soiled fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  rottingFist: { name: 'rotting fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  rustedFist: { name: 'rusted fist', ht: 300, attack: 36, defense: 20, damage: [22, 44], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  brightFist: { name: 'bright fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  darkFist: { name: 'dark fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  /** YogDzewa.Larva. */
+  larva: { name: "god's larva", ht: 20, attack: 30, defense: 12, damage: [15, 25], dr: 4, exp: 5, maxLvl: -2, speed: 1 },
   // A chest that bites; its numbers grow with the depth (see mobStats).
   mimic: { name: 'mimic', ht: 16, attack: 10, defense: 5, damage: [1, 4], dr: 0, exp: 2, maxLvl: 30, speed: 1 },
   // Guardians of special rooms, as strong as their depth (see mobStats): a statue that comes alive, armed;
@@ -400,8 +418,16 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   piranha: { name: 'giant piranha', ht: 15, attack: 22, defense: 12, damage: [1, 6], dr: 1, exp: 0, maxLvl: 30, speed: 2 },
 };
 
-/** A monster's numbers: the table's, but a mimic is as strong as the depth it lurks on (Mimic.adjustStats). */
+/**
+ * A monster's numbers: the table's, but a mimic is as strong as the depth it lurks on (Mimic.adjustStats);
+ * a boss's summoned minion teaches nothing and leaves nothing (maxLvl -2).
+ */
 export function mobStats(mob: Mob): MobStats {
+  const stats = ownStats(mob);
+  return mob.minion ? { ...stats, maxLvl: -2 } : stats;
+}
+
+function ownStats(mob: Mob): MobStats {
   const depth = mob.level ?? 1;
   if (mob.kind === 'statue' && mob.item) {
     // Statue: its numbers grow with the depth, and it fights with the weapon it holds.
@@ -504,11 +530,19 @@ export interface Mob {
   bleeding?: number;
   /** A mirror image: whose twin it is, and the skill and strength it took from them. */
   image?: { owner: string; attack: number; damage: number };
+  /** A boss's own state (Goo's pumping up, Tengu's abilities, DM-300's charge, the King's phases...): bosses/state.ts. */
+  boss?: BossMob;
+  /** Barrier (ShieldBuff): shielding that takes blows before health (DM-300's charge from the wires, the King's shield). */
+  shield?: number;
+  /** Property.BOSS_MINION: summoned by a boss (the King's court, Yog's larvae); teaches nothing (maxLvl -2). */
+  minion?: boolean;
 }
 
 /** Mob.beckon: called towards a spot. Statue.beckon: an animated statue does not stir for it. */
 export function beckon(mob: Mob, pos: number): void {
   if (mob.state === 'passive' || (mob.kind === 'statue' && mob.state === 'sleeping')) return;
+  // Pylon.beckon and YogDzewa.beckon: they never come.
+  if (mob.kind === 'pylon' || mob.kind === 'yog') return;
   if (mob.state !== 'hunting') mob.state = 'wandering';
   mob.target = pos;
 }

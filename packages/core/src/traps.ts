@@ -7,6 +7,7 @@ import { clearGas, seedGas } from './gas';
 import { burnHeaps, chillPack, freezeHeaps } from './cooking';
 import { scaleMob } from './party';
 import { stepOnPlant } from './plants';
+import { tenguDartTrap } from './bosses/index';
 
 /*
  * Traps (levels/traps): set off by stepping on them, visible or hidden; then
@@ -102,6 +103,8 @@ function around(ctx: Ctx, pos: number, radius: number): Char[] {
  * Level.mobPress sets traps off under monsters too (see mobPress): what hurts lands on them.
  */
 export function triggerTrap(ctx: Ctx, victim: Char | null, pos: number): void {
+  // Tengu's cell: its hidden traps are dart traps (TenguDartTrap).
+  if (tenguDartTrap(ctx, victim, pos)) return;
   const { level, rng, depth } = ctx;
   const kind = trapAt(level.map[pos]!);
   if (!kind) return;
@@ -252,4 +255,17 @@ export function mobConditions(ctx: Ctx, mob: Mob): boolean {
     return true;
   }
   return false;
+}
+
+/**
+ * Fire.burn on one cell (Tengu's fire as it goes out): what lies there burns, a plant withers, and
+ * whatever can burn burns down to embers.
+ */
+export function burnCell(ctx: Ctx, cell: number): void {
+  burnHeaps(ctx, cell, 0);
+  if (ctx.floor.plants) ctx.floor.plants = ctx.floor.plants.filter((plant) => plant.pos !== cell);
+  if (hasFlag(ctx.level.map[cell]!, F.FLAMABLE)) {
+    ctx.level.map[cell] = T.EMBERS;
+    ctx.effects.push({ type: 'burnt', depth: ctx.depth, pos: cell });
+  }
 }

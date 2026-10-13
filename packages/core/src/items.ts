@@ -181,8 +181,24 @@ export const ITEMS = {
   'key.iron': { category: 'key', sprite: S.IRON_KEY },
   /** Opens a locked or crystal chest of the level it was found on. */
   'key.golden': { category: 'key', sprite: S.GOLDEN_KEY },
-  /** SkeletonKey: dropped by a boss, it opens the locked way down from its level. */
+  /** WornKey: Goo's, it opens the locked way down from the sewers' boss level. */
   'key.skeleton': { category: 'key', sprite: S.WORN_KEY },
+  /**
+   * Goo's blobs and DM-300's metal shards (GooBlob, MetalShard): left by the bosses, worth energy at the
+   * alchemy pot. SEAM(alchemy): the alchemy stream gives them their recipes and energy.
+   */
+  'quest.gooBlob': { category: 'quest', sprite: S.BLOB },
+  'quest.metalShard': { category: 'quest', sprite: S.SHARD },
+  /**
+   * TengusMask: Tengu's, worn to choose a way to master (as the Tome of Mastery here). SEAM(talents): the
+   * talents stream gives it its subclass choice.
+   */
+  'mask.tengu': { category: 'tome', sprite: S.MASK },
+  /**
+   * KingsCrown: the Dwarf King's, it turns the armour worn into class armour (as the armour kit here).
+   * SEAM(abilities): the abilities stream gives it the choice of an armour ability.
+   */
+  'crown.king': { category: 'kit', sprite: S.CROWN },
   /** The sad ghost's dried rose. */
   'quest.rose': { category: 'quest', sprite: S.ARTIFACT_ROSE1 },
   /** The fetid rat's, for the sad ghost. */
@@ -722,7 +738,7 @@ function kingsPrize(generator: ItemGenerator, rng: Rng): Item {
 }
 
 /** Rolls what a painter asked for. */
-function rollSpec(spec: ItemSpec, generator: ItemGenerator, rng: Rng, depth: number): Item {
+export function rollSpec(spec: ItemSpec, generator: ItemGenerator, rng: Rng, depth: number): Item {
   switch (spec.roll) {
     case 'random':
       return generator.random();

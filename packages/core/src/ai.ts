@@ -1,6 +1,7 @@
 import {
-  baseKind, beckon, createMob, GOO_PUMPED, type Hero, heroDefenseSkill, heroStealth, isAlive, isShopkeeper, type Mob, type MobState, MOBS, mobStats, rollMob,
+  baseKind, beckon, createMob, type Hero, heroDefenseSkill, heroStealth, isAlive, isShopkeeper, type Mob, type MobState, MOBS, mobStats, rollMob,
 } from './actors';
+import { bossRules, populateBoss } from './bosses/index';
 import { attack, hurt } from './combat';
 import { castShadow, LIGHT_DISTANCE, terrainBlocksSight, viewDistance } from './fov';
 import { canEnter, charAt, type Ctx, enterCell, type Floor, heroesOn, heroSight, heroView, isPassable, isWater, leaveCell } from './floor';
@@ -9,7 +10,6 @@ import { altarCallsMob } from './altar';
 import { type Item, itemDef, ItemGenerator, randomEnchantment } from './items';
 import { identify } from './ident';
 import { isBossDepth, LAST_SHOP_DEPTH } from './level/builder';
-import { KING_PEDESTALS } from './level/city-boss';
 import type { Level, RoomInfo } from './level/generate';
 import { adjacent, cellX, cellY, distance, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { RoomType } from './level/room';
@@ -39,6 +39,8 @@ export const TIME_TO_RESPAWN = 50;
  */
 
 function mobSight(mob: Mob, depth: number): number {
+  const own = bossRules(mob)?.sight;
+  if (own !== undefined) return own;
   const demon = mob.kind === 'succubus' || mob.kind === 'eye' || baseKind(mob.kind) === 'scorpio';
   return demon ? Math.max(viewDistance(depth), LIGHT_DISTANCE) : viewDistance(depth);
 }
@@ -46,6 +48,26 @@ function mobSight(mob: Mob, depth: number): number {
 function spend(mob: Mob, time: number): void {
   // Slowed, everything takes twice as long.
   mob.time += (mob.slowed ?? 0) > 0 ? time * 2 : time;
+}
+
+/** Char.spend for a monster, for the bosses' own turns. */
+export const spendMob = spend;
+
+/** Char.speed: a monster's steps a turn (a boss's own, if it has one: DM-300 supercharged). */
+export function speedOf(mob: Mob): number {
+  return bossRules(mob)?.speed?.(mob) ?? MOBS[mob.kind].speed;
+}
+
+/** Level.updateFieldOfView for a monster, `distance` far (its own sight by default). */
+export function mobFov(ctx: Ctx, mob: Mob, distance?: number): boolean[] {
+  if ((mob.blind ?? 0) > 0) return new Array<boolean>(LENGTH).fill(false);
+  return castShadow(mob.pos, terrainBlocksSight(ctx.level.map), distance ?? mobSight(mob, ctx.depth));
+}
+
+/** Mob.doAttack, an ordinary blow: the attack, and the time it takes. */
+export function meleeAttack(ctx: Ctx, mob: Mob, enemy: Hero): void {
+  attack(ctx, mob, enemy);
+  spend(mob, mobStats(mob).attackDelay ?? TICK);
 }
 
 function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Hero | undefined {
@@ -71,6 +93,12 @@ function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Hero | undefined {
 }
 
 export function mobAct(ctx: Ctx, mob: Mob): void {
+  const rules = bossRules(mob);
+  // A pylon keeps to its own turn, on or off (Pylon.act).
+  if (mob.kind === 'pylon') {
+    rules!.act!(ctx, mob);
+    return;
+  }
   if (mob.kind === 'mirror') {
     imageAct(ctx, mob);
     return;
@@ -105,7 +133,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
   if (mob.state === 'passive') {
     const fov = castShadow(mob.pos, terrainBlocksSight(ctx.level.map), mobSight(mob, ctx.depth));
     if (mob.target !== -1 && mob.target !== mob.pos && getCloser(ctx, mob, mob.target, fov)) {
-      spend(mob, 1 / MOBS[mob.kind].speed);
+      spend(mob, 1 / speedOf(mob));
     } else {
       mob.target = randomDestination(ctx.rng, ctx.level);
       spend(mob, TICK);
@@ -133,11 +161,8 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     spend(mob, TICK);
     return;
   }
-  // Yog-Dzewa does not move or strike: its fists and larvae fight for it.
-  if (mob.kind === 'yog') {
-    spend(mob, TICK);
-    return;
-  }
+  // A boss's own turn, or what it does before an ordinary one (Goo heals in water, DM-300's abilities...).
+  if (rules?.act?.(ctx, mob)) return;
   if ((mob.charmed ?? 0) > 0 && --mob.charmed! <= 0) delete mob.charmedBy;
   if ((mob.amok ?? 0) > 0) {
     mob.amok!--;
@@ -148,23 +173,14 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
   if ((mob.terror ?? 0) > 0) {
     mob.terror!--;
     const from = heroesOn(ctx.world, ctx.depth).find((hero) => hero.id === mob.terrorOf);
-    if (from && getFurther(ctx, mob, from.pos) === 'moved') spend(mob, 1 / MOBS[mob.kind].speed);
+    if (from && getFurther(ctx, mob, from.pos) === 'moved') spend(mob, 1 / speedOf(mob));
     else spend(mob, TICK);
     return;
   }
   // CursePersonification.act: the curse mends itself, a point a turn.
   if (mob.kind === 'curse' && mob.hp < mob.ht) mob.hp++;
-  // Goo mends itself in the murky water of its lair, and the rotting fist faster.
-  if (mob.kind === 'goo' && isWater(ctx.level.map[mob.pos]!) && mob.hp < mob.ht) mob.hp++;
-  if (mob.kind === 'rottingFist' && isWater(ctx.level.map[mob.pos]!)) mob.hp = Math.min(mob.ht, mob.hp + 4);
-  // BurningFist.act: everything around the burning fist catches fire.
-  if (mob.kind === 'burningFist') burst(ctx, mob.pos, 'fire', 1, true);
-  if (mob.kind === 'dm300') ventGas(ctx, mob);
-
   // Blinded (a rogue's smoke bomb), it sees no one.
-  const fov = (mob.blind ?? 0) > 0
-    ? new Array<boolean>(LENGTH).fill(false)
-    : castShadow(mob.pos, terrainBlocksSight(ctx.level.map), mobSight(mob, ctx.depth));
+  const fov = mobFov(ctx, mob);
   // Mob.aggro: bitten by a golden bee, it turns on the bee while the bee lives and is in sight.
   if (mob.beeFoe && beeFight(ctx, mob, fov)) return;
   const justAlerted = mob.alerted;
@@ -200,7 +216,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
       }
       mob.enemySeen = false;
       if (mob.target !== -1 && getCloser(ctx, mob, mob.target, fov)) {
-        spend(mob, 1 / MOBS[mob.kind].speed);
+        spend(mob, 1 / speedOf(mob));
       } else {
         mob.target = randomDestination(ctx.rng, ctx.level);
         spend(mob, TICK);
@@ -220,7 +236,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
       }
       if (enemyInFov) mob.target = enemy.pos;
       if (mob.target !== -1 && getCloser(ctx, mob, mob.target, fov)) {
-        spend(mob, 1 / MOBS[mob.kind].speed);
+        spend(mob, 1 / speedOf(mob));
       } else {
         // Lost the trail.
         spend(mob, TICK);
@@ -235,7 +251,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
       if (enemyInFov) mob.target = enemy.pos;
       const fled = mob.target === -1 ? 'cornered' : getFurther(ctx, mob, mob.target);
       if (fled === 'moved') {
-        spend(mob, 1 / MOBS[mob.kind].speed);
+        spend(mob, 1 / speedOf(mob));
       } else {
         spend(mob, TICK);
         if (fled === 'cornered') {
@@ -273,7 +289,7 @@ function imageAct(ctx: Ctx, mob: Mob): void {
   }
   const owner = heroesOn(ctx.world, ctx.depth).find((hero) => hero.id === image.owner);
   const goal = foe?.pos ?? (owner && distance(owner.pos, mob.pos) > 2 ? owner.pos : -1);
-  if (goal !== -1 && getCloser(ctx, mob, goal, fov)) spend(mob, 1 / MOBS[mob.kind].speed);
+  if (goal !== -1 && getCloser(ctx, mob, goal, fov)) spend(mob, 1 / speedOf(mob));
   else spend(mob, TICK);
 }
 
@@ -291,7 +307,7 @@ function beeFight(ctx: Ctx, mob: Mob, fov: boolean[]): boolean {
     return true;
   }
   if (!getCloser(ctx, mob, bee.pos, fov)) return false;
-  spend(mob, 1 / MOBS[mob.kind].speed);
+  spend(mob, 1 / speedOf(mob));
   return true;
 }
 
@@ -332,7 +348,7 @@ function beeAct(ctx: Ctx, mob: Mob): void {
     }
     if (nearest && !adjacent(nearest.pos, mob.pos)) goal = nearest.pos;
   }
-  if (goal !== -1 && getCloser(ctx, mob, goal, fov)) spend(mob, 1 / MOBS[mob.kind].speed);
+  if (goal !== -1 && getCloser(ctx, mob, goal, fov)) spend(mob, 1 / speedOf(mob));
   else spend(mob, TICK);
 }
 
@@ -351,7 +367,7 @@ function runAmok(ctx: Ctx, mob: Mob): void {
     attack(ctx, mob, nearest);
     spend(mob, mobStats(mob).attackDelay ?? TICK);
   } else if (nearest && getCloser(ctx, mob, nearest.pos, fov)) {
-    spend(mob, 1 / MOBS[mob.kind].speed);
+    spend(mob, 1 / speedOf(mob));
   } else {
     spend(mob, TICK);
   }
@@ -394,50 +410,27 @@ function getFurther(ctx: Ctx, mob: Mob, threat: number): 'moved' | 'safe' | 'cor
   return 'moved';
 }
 
-/** DM300.act: the machine leaks toxic gas all around it, a cloud that spreads and lingers (it breathes it unharmed). */
-function ventGas(ctx: Ctx, mob: Mob): void {
-  seedGas(ctx, mob.pos, 'toxic', 30);
-}
-
-/**
- * DM300.move: stepping on a spent trap, it repairs itself; every step shakes
- * rocks loose next to it, stunning whoever they fall on.
- */
-function dm300Steps(ctx: Ctx, mob: Mob, to: number): void {
-  const { level, rng, world, depth } = ctx;
-  if (level.map[to] === T.INACTIVE_TRAP && mob.hp < mob.ht) {
-    mob.hp += rng.intBetween(1, mob.ht - mob.hp);
-    ctx.effects.push({ type: 'repaired', depth, mob: mob.id });
-  }
-  const cell = to + NEIGHBOURS8[rng.int(NEIGHBOURS8.length)]!;
-  ctx.effects.push({ type: 'avalanche', depth, cells: [cell] });
-  if (level.map[cell] === T.EMPTY) level.map[cell] = T.EMPTY_DECO;
-  const struck = charAt(world, depth, cell);
-  if (struck && struck !== mob) struck.paralysed = Math.max(struck.paralysed ?? 0, 2);
-}
-
 function notice(ctx: Ctx, mob: Mob, enemy: Hero, state: MobState): void {
   mob.enemySeen = true;
   mob.state = state;
   mob.target = enemy.pos;
   ctx.effects.push({ type: 'noticed', depth: ctx.depth, mob: mob.id });
-  if (mob.kind === 'goo' || mob.kind === 'tengu' || mob.kind === 'dm300' || mob.kind === 'king') {
-    ctx.effects.push({ type: 'yell', depth: ctx.depth, mob: mob.id, kind: mob.kind, line: 'notice', hero: enemy.id });
-  }
+  // Goo.notice, DM300.notice...: the boss health bar, and its yell.
+  bossRules(mob)?.notice?.(ctx, mob, enemy);
 }
 
 function canAttack(ctx: Ctx, mob: Mob, enemy: Hero): boolean {
+  const own = bossRules(mob)?.canAttack;
+  if (own) return own(ctx, mob, enemy);
   // Shamans cast lightning, warlocks shadow bolts, the burning fist fire, and Tengu throws shuriken
   // at anyone in a clear line.
-  if (mob.kind === 'shaman' || mob.kind === 'warlock' || mob.kind === 'tengu' || mob.kind === 'burningFist') {
+  if (mob.kind === 'shaman' || mob.kind === 'warlock') {
     return ballistica(ctx, mob.pos, enemy.pos).at(-1) === enemy.pos;
   }
   // The evil eye's gaze goes through anyone in the way; the scorpio only stings from afar.
   if (mob.kind === 'eye') return ballistica(ctx, mob.pos, enemy.pos, false).includes(enemy.pos);
   if (baseKind(mob.kind) === 'scorpio') return !adjacent(mob.pos, enemy.pos) && ballistica(ctx, mob.pos, enemy.pos).at(-1) === enemy.pos;
-  // The King goes to a pedestal to raise his undead while his court is short.
-  if (mob.kind === 'king' && kingCanSummon(ctx, mob)) return mob.pos === kingPedestal(mob);
-  return mob.pumped ? distance(mob.pos, enemy.pos) <= 2 : adjacent(mob.pos, enemy.pos);
+  return adjacent(mob.pos, enemy.pos);
 }
 
 /** Shaman.doAttack from afar: a bolt of lightning, worse for someone standing in water. */
@@ -494,79 +487,12 @@ function shadowBolt(ctx: Ctx, mob: Mob, enemy: Hero): void {
 /** Weakness.DURATION. */
 const WEAKNESS_TURNS = 40;
 
-const kingPedestal = (mob: Mob): number => KING_PEDESTALS[mob.rightPedestal ? 1 : 0];
-
-/** King.canTryToSummon: his court is short, and his pedestal is free. */
-function kingCanSummon(ctx: Ctx, mob: Mob): boolean {
-  const army = ctx.floor.mobs.filter((m) => m.kind === 'undead').length;
-  const maxArmy = 1 + Math.trunc((5 * (mob.ht - mob.hp)) / mob.ht);
-  if (army >= maxArmy) return false;
-  const there = charAt(ctx.world, ctx.depth, kingPedestal(mob));
-  return !there || there === mob;
-}
-
-/** King.summon: undead dwarves rise around him, as many as his court is short. */
-function summonUndead(ctx: Ctx, king: Mob): void {
-  const { world, depth, level, floor } = ctx;
-  king.rightPedestal = !king.rightPedestal;
-  const maxArmy = 1 + Math.trunc((5 * (king.ht - king.hp)) / king.ht);
-  let wanted = maxArmy - floor.mobs.filter((m) => m.kind === 'undead').length;
-  const dist = new Int32Array(LENGTH).fill(-1);
-  dist[king.pos] = 0;
-  const queue = [king.pos];
-  for (let head = 0; head < queue.length && wanted > 0; head++) {
-    const c = queue[head]!;
-    for (const n of NEIGHBOURS8) {
-      const next = c + n;
-      if (next < 0 || next >= LENGTH || dist[next]! >= 0 || !adjacent(c, next) || !isPassable(level, next)) continue;
-      dist[next] = dist[c]! + 1;
-      if (charAt(world, depth, next)) continue;
-      queue.push(next);
-      if (wanted > 0) {
-        const undead = createMob(`#${++world.nextId}`, 'undead', next, 'hunting', floor.now + 1);
-        Object.assign(undead, { enemy: king.enemy, target: king.target });
-        floor.mobs.push(undead);
-        enterCell(level, next);
-        wanted--;
-      }
-    }
-  }
-  ctx.effects.push({ type: 'yell', depth, mob: king.id, kind: 'king', line: 'summon' });
-}
-/** Tengu jumps away after this many blows at close quarters. */
-const TENGU_JUMP_DELAY = 5;
-/** ItemSpriteSheet.SHURIKEN. */
-const SHURIKEN_SPRITE = S.SHURIKEN;
-
-/**
- * Tengu.jump: spent traps around flare up as poison traps, and Tengu lands
- * somewhere in sight, never right next to its enemy.
- */
-function tenguJump(ctx: Ctx, mob: Mob): void {
-  const { world, depth, level, rng } = ctx;
-  mob.jumpIn = TENGU_JUMP_DELAY;
-  const fov = castShadow(mob.pos, terrainBlocksSight(level.map), viewDistance(depth));
-  const enemy = heroesOn(world, depth).find((hero) => hero.id === mob.enemy);
-  const pick = (landing: boolean): number =>
-    randomCell(rng, (c) =>
-      fov[c]! && isPassable(level, c) &&
-      (!landing || (!(enemy && adjacent(c, enemy.pos)) && !charAt(world, depth, c))));
-  for (let i = 0; i < 4; i++) {
-    const trap = pick(false);
-    if (trap === -1) break;
-    if (level.map[trap] === T.INACTIVE_TRAP) {
-      level.map[trap] = T.POISON_TRAP;
-      ctx.effects.push({ type: 'discovered', depth, cell: trap });
-    }
-  }
-  const to = pick(true);
-  if (to === -1) return;
-  const from = mob.pos;
-  moveMob(ctx, mob, to);
-  ctx.effects.push({ type: 'jumped', depth, mob: mob.id, from, to });
-}
-
 function doAttack(ctx: Ctx, mob: Mob, enemy: Hero): void {
+  const own = bossRules(mob)?.doAttack;
+  if (own) {
+    own(ctx, mob, enemy);
+    return;
+  }
   if (mob.kind === 'shaman' && !adjacent(mob.pos, enemy.pos)) {
     zapLightning(ctx, mob, enemy);
     return;
@@ -579,71 +505,10 @@ function doAttack(ctx: Ctx, mob: Mob, enemy: Hero): void {
     deathGaze(ctx, mob, enemy);
     return;
   }
-  if (mob.kind === 'burningFist' && !adjacent(mob.pos, enemy.pos)) {
-    // BurningFist.attack from afar: a ball of fire, a magic attack.
-    spend(mob, TICK);
-    ctx.effects.push({ type: 'zapped', depth: ctx.depth, from: mob.pos, to: enemy.pos, bolt: 'fire' });
-    const hit = ctx.rng.floatMax(MOBS.burningFist.attack) * 2 >= ctx.rng.floatMax(heroDefenseSkill(enemy));
-    const damage = hit ? ctx.rng.normalIntRange(...MOBS.burningFist.damage) : 0;
-    ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: mob.id, target: enemy.id, hit, damage });
-    if (hit) hurt(ctx, enemy, damage, mob);
-    return;
-  }
   if (baseKind(mob.kind) === 'scorpio') {
     ctx.effects.push({ type: 'zapped', depth: ctx.depth, from: mob.pos, to: enemy.pos, bolt: 'poison' });
   }
-  if (mob.kind === 'king') {
-    if (kingCanSummon(ctx, mob) && mob.pos === kingPedestal(mob)) {
-      summonUndead(ctx, mob);
-      spend(mob, TICK);
-      return;
-    }
-    // King.attack: a hero standing on his pedestal makes him use the other one.
-    if (charAt(ctx.world, ctx.depth, kingPedestal(mob)) === enemy) mob.rightPedestal = !mob.rightPedestal;
-  }
-  if (mob.kind === 'tengu') {
-    mob.jumpIn = (mob.jumpIn ?? TENGU_JUMP_DELAY) - 1;
-    if (mob.jumpIn <= 0 && adjacent(mob.pos, enemy.pos)) {
-      tenguJump(ctx, mob);
-    } else {
-      if (!adjacent(mob.pos, enemy.pos)) {
-        ctx.effects.push({ type: 'missile', depth: ctx.depth, from: mob.pos, to: enemy.pos, sprite: SHURIKEN_SPRITE });
-      }
-      attack(ctx, mob, enemy);
-    }
-    spend(mob, TICK);
-    return;
-  }
-  if (mob.kind !== 'goo') {
-    attack(ctx, mob, enemy);
-    spend(mob, mobStats(mob).attackDelay ?? TICK);
-    return;
-  }
-  // Goo (Goo.doAttack): sometimes pumps itself up, then strikes hard, leaping
-  // at an enemy two cells away.
-  if (mob.pumped) {
-    if (adjacent(mob.pos, enemy.pos)) {
-      attack(ctx, mob, enemy, { attack: GOO_PUMPED.attack, damage: GOO_PUMPED.damage });
-    } else {
-      const trace = ballistica(ctx, mob.pos, enemy.pos);
-      if (trace.at(-1) !== enemy.pos) {
-        // No clear leap: it deflates and acts again at once.
-        mob.pumped = false;
-        return;
-      }
-      moveMob(ctx, mob, trace.at(-2)!);
-      if (isAlive(mob)) attack(ctx, mob, enemy, { attack: GOO_PUMPED.jumpAttack, damage: GOO_PUMPED.damage });
-    }
-    mob.pumped = false;
-    spend(mob, TICK);
-  } else if (ctx.rng.int(3) > 0) {
-    attack(ctx, mob, enemy);
-    spend(mob, TICK);
-  } else {
-    mob.pumped = true;
-    spend(mob, GOO_PUMPED.delay);
-    ctx.effects.push({ type: 'pumped', depth: ctx.depth, mob: mob.id });
-  }
+  meleeAttack(ctx, mob, enemy);
 }
 
 /**
@@ -695,7 +560,8 @@ export function ballistica(ctx: Ctx, from: number, to: number, hitChars = true, 
 function getCloser(ctx: Ctx, mob: Mob, target: number, fov: boolean[]): boolean {
   // Rooted, it cannot move a step.
   if ((mob.rooted ?? 0) > 0) return false;
-  if (mob.kind === 'goo') mob.pumped = false;
+  const own = bossRules(mob)?.getCloser?.(ctx, mob, target, fov);
+  if (own !== undefined) return own;
   // Scorpio.getCloser: a hunting scorpio keeps its distance, to sting from afar.
   if (baseKind(mob.kind) === 'scorpio' && mob.state === 'hunting') return mob.enemySeen && getFurther(ctx, mob, target) === 'moved';
   // Succubus.getCloser: she blinks up to her prey, now and then, at no cost in time.
@@ -712,17 +578,11 @@ function getCloser(ctx: Ctx, mob: Mob, target: number, fov: boolean[]): boolean 
       moveMob(ctx, mob, cell, false);
       ctx.effects.push({ type: 'jumped', depth: ctx.depth, mob: mob.id, from, to: cell });
       mob.jumpIn = SUCCUBUS_BLINK_DELAY;
-      mob.time -= 1 / MOBS[mob.kind].speed;
+      mob.time -= 1 / speedOf(mob);
       return true;
     }
   }
   if (mob.kind === 'succubus') mob.jumpIn = (mob.jumpIn ?? 0) - 1;
-  if (mob.kind === 'king' && kingCanSummon(ctx, mob)) target = kingPedestal(mob);
-  // Tengu does not walk up to anyone it can see: it jumps.
-  if (mob.kind === 'tengu' && fov[target]) {
-    tenguJump(ctx, mob);
-    return true;
-  }
   const step = findStep(ctx, mob.pos, target, fov, mob);
   if (step === -1) return false;
   moveMob(ctx, mob, step);
@@ -736,21 +596,16 @@ function getCloser(ctx: Ctx, mob: Mob, target: number, fov: boolean[]): boolean 
  */
 function moveMob(ctx: Ctx, mob: Mob, to: number, press = true): void {
   // Crippled, every step takes twice as long.
-  if ((mob.crippled ?? 0) > 0) mob.time += 1 / MOBS[mob.kind].speed;
+  if ((mob.crippled ?? 0) > 0) mob.time += 1 / speedOf(mob);
   const from = mob.pos;
   if (mob.kind === 'spinner' && mob.state === 'fleeing') seedWeb(ctx, from, ctx.rng.intBetween(5, 7));
   mob.pos = to;
   leaveCell(ctx.world, ctx.level, ctx.depth, from);
   enterCell(ctx.level, to);
-  // Once Goo stirs, its lair floods behind the heroes: no way back up.
-  if (mob.kind === 'goo' && ctx.level.map[ctx.level.entrance] === T.ENTRANCE) {
-    ctx.level.map[ctx.level.entrance] = T.WATER_TILES;
-  }
   if (press && !MOBS[mob.kind].flying) {
     mobPress(ctx, mob);
     if (!isAlive(mob)) return;
   }
-  if (mob.kind === 'dm300') dm300Steps(ctx, mob, to);
 }
 
 /**
@@ -874,12 +729,8 @@ export function populate(world: World, level: Level, rng: Rng): Mob[] {
   // The Amulet's hall is empty but for the Amulet.
   if (level.depth >= 26) return [];
   if (isBossDepth(level.depth)) {
-    // Goo sleeps in its lair; Tengu and DM-300 only appear when someone enters their arena.
-    if (level.depth !== 5) return [];
-    const arena = level.rooms.find((room) => room.type === RoomType.BOSS_EXIT)!;
-    const goo = scaleMob(world, createMob(nextMobId(world), rollMob(rng, level.depth, false), randomCellIn(rng, arena), 'sleeping', 0));
-    // The Rat King, in his hidden treasury next door.
-    return level.ratKing === undefined ? [goo] : [goo, createMob(nextMobId(world), 'ratKing', level.ratKing, 'passive', 0)];
+    // Goo sleeps in its nest, DM-300's pylons wait in their corners; the other bosses come with their fights.
+    return populateBoss(world, level, rng, () => nextMobId(world)).map((mob) => (mob.kind === 'goo' ? scaleMob(world, mob) : mob));
   }
   const mobs: Mob[] = [];
   if (level.shopkeeper !== undefined) {

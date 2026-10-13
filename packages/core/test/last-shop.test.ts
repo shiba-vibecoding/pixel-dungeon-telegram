@@ -70,25 +70,15 @@ describe('the last shop (depth 21)', () => {
     }
   });
 
-  it('has no monsters, and the imp keeps shop only once his errand is done', () => {
+  it("has no monsters, and no shop: the imp keeps his below the Dwarf King's throne now (CityBossLevel)", () => {
     for (let seed = 1; seed <= 10; seed++) {
       for (const party of [1, 3]) {
-        const without = floorAt(toLastShop(seed, false, party), LAST_SHOP_DEPTH);
-        expect(without.mobs, `seed ${seed}`).toEqual([]);
-        expect(without.respawn).toBe(-1);
-        const standard = levelAt(toLastShop(seed, false, party), LAST_SHOP_DEPTH).rooms.find((r) => r.type === RoomType.STANDARD)!;
-        expect(without.heaps.every((h) => inside(standard, h.pos)), `seed ${seed}`).toBe(true);
-
-        const world = toLastShop(seed, true, party);
-        const level = levelAt(world, LAST_SHOP_DEPTH);
-        const floor = floorAt(world, LAST_SHOP_DEPTH);
-        expect(floor.mobs.map((m) => m.kind), `seed ${seed}`).toEqual(['impShopkeeper']);
-        expect(floor.mobs[0]!.pos).toBe(level.shopkeeper);
-        expect(floor.respawn).toBe(-1);
-        expect(floor.heaps.length, `seed ${seed}`).toBeGreaterThan(0);
-        expect(floor.heaps.every((h) => h.kind === 'forSale'), `seed ${seed}`).toBe(true);
-        // ShopPainter.placeShopkeeper: the imp stands in water.
-        expect(level.map[level.shopkeeper!]).toBe(T.WATER);
+        for (const done of [false, true]) {
+          const floor = floorAt(toLastShop(seed, done, party), LAST_SHOP_DEPTH);
+          expect(floor.mobs, `seed ${seed}`).toEqual([]);
+          expect(floor.respawn).toBe(-1);
+          expect(floor.heaps.every((h) => h.kind !== 'forSale'), `seed ${seed}`).toBe(true);
+        }
       }
     }
   }, 60000);

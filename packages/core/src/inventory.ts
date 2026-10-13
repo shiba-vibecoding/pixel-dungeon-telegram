@@ -195,7 +195,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
       return weapon.imbue === action.imbue ? 'it is balanced that way already' : null;
     }
     case 'master':
-      if (item.kind !== 'tome.mastery') return 'that is no tome';
+      if (item.kind !== 'tome.mastery' && item.kind !== 'mask.tengu') return 'that is no tome';
       if (hero.subclass) return 'you have already mastered a way';
       return SUBCLASSES[hero.heroClass].includes(action.subclass) ? null : 'not a way for you';
     case 'sell':

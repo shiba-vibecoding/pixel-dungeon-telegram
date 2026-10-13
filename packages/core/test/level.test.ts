@@ -124,14 +124,13 @@ describe('sewer level generation', () => {
       }
       const boss = levels[9]!;
       const where = `seed ${seed} depth 10`;
+      // PrisonBossLevel at its start: Tengu's cell locked, its key in a prison cell, the way down not there yet.
       expect(boss.map[boss.arenaDoor!], where).toBe(T.LOCKED_DOOR);
-      expect(boss.map[boss.exit], where).toBe(T.LOCKED_EXIT);
+      expect(boss.map[boss.exit], where).toBe(T.WALL);
       expect(boss.items.filter((spawn) => spawn.item.roll === 'key'), where).toHaveLength(1);
-      // Through the locked door, the whole level can be reached.
       const seen = reachable(boss.map, boss.entrance);
       expect(seen[boss.items[0]!.pos], where).toBe(true);
       expect(seen[boss.arenaDoor!], where).toBe(true);
-      expect(boss.map.some((t) => t === T.INACTIVE_TRAP), where).toBe(true);
     }
   });
 

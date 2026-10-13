@@ -69,9 +69,12 @@ class Obstacles {
  * Only heroes see by this; monsters keep their own sight (see ai.ts).
  */
 export function viewDistance(depth: number, darkness = false): number {
+  // PrisonBossLevel: the whole of Tengu's arena is in sight (12, whatever the challenges).
+  if (depth === 10) return 12;
   if (depth >= 11 && depth <= 15) return 6;
   if (depth >= 22 && depth <= 24) return Math.max(25 - depth, 1);
-  if (depth === 25) return 3;
+  // HallsBossLevel and LastLevel: min(4, the level's).
+  if (depth >= 25) return Math.min(4, darkness ? DARKNESS_VIEW_DISTANCE : MAX_VIEW_DISTANCE);
   return darkness ? DARKNESS_VIEW_DISTANCE : MAX_VIEW_DISTANCE;
 }
 

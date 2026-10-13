@@ -73,6 +73,12 @@ export class LevelBuilder {
   secretDoors = 0;
   /** Tengu's level: the locked door into the arena. */
   arenaDoor = -1;
+  /** The run's seed, for what a level redraws the same way every time (PrisonBossLevel's cages: seedCurDepth). */
+  layoutSeed = 0;
+  /** A boss level's way down when it is more than one cell (LevelTransition's area). */
+  exits: number[] = [];
+  /** A boss level's own data for its fight and its visuals (Level.boss). */
+  boss: import('./generate').BossLevelInfo | null = null;
   /** A shop's level: where the shopkeeper stands. */
   shopkeeper = -1;
   /** The caves: whether the troll blacksmith may set up his forge here, whether he did, and where he stands. */

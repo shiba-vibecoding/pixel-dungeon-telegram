@@ -87,7 +87,9 @@ export function checkInvariants(world: World): void {
       if (!isAlive(mob) || mob.hp > mob.ht) throw new Error(`${mob.id} has ${mob.hp}/${mob.ht} HP`);
       // A trap may be found under a monster standing on it; a flier may hover over a chasm.
       const flier = MOBS[mob.kind].flying === true;
-      if (!canEnter(level, mob.pos) && !(flier && hasFlag(level.map[mob.pos]!, F.PIT))) throw new Error(`${mob.id} (${mob.kind}) stands in a wall at ${mob.pos} on depth ${depth} (terrain ${level.map[mob.pos]})`);
+      // The Dwarf King sits on his throne (DwarfKing, CityBossLevel.throne).
+      const throned = mob.kind === 'king' && level.boss?.throne === mob.pos;
+      if (!canEnter(level, mob.pos) && !throned && !(flier && hasFlag(level.map[mob.pos]!, F.PIT))) throw new Error(`${mob.id} (${mob.kind}) stands in a wall at ${mob.pos} on depth ${depth} (terrain ${level.map[mob.pos]})`);
       occupy(mob.pos, mob.id);
     }
     for (const hero of world.heroes.filter((h) => h.depth === depth && isAlive(h))) {

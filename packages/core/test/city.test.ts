@@ -30,10 +30,11 @@ describe('the dwarven city', () => {
         expect(level.map[level.exit], `seed ${seed} depth ${level.depth}`).toBe(T.EXIT);
       }
       expect(levels[15]!.rooms.some((r) => r.type === RoomType.SHOP)).toBe(true);
+      // CityBossLevel: four summoning pedestals and the imp's (bosses.test.ts has more).
       const hall = levels[19]!;
-      expect(hall.map[hall.exit]).toBe(T.LOCKED_EXIT);
+      expect(hall.map[hall.exit]).toBe(T.EXIT);
       expect(hall.map[hall.arenaDoor!]).toBe(T.DOOR);
-      expect(hall.map.filter((t) => t === T.PEDESTAL)).toHaveLength(2);
+      expect(hall.map.filter((t) => t === T.PEDESTAL)).toHaveLength(5);
     }
   });
 
@@ -81,56 +82,3 @@ describe('the dwarven city', () => {
   });
 });
 
-describe("the King of Dwarves' hall", () => {
-  it('the King appears, raises undead from his pedestals, and his fall opens the way down', () => {
-    let won = 0;
-    for (const seed of [2, 3]) {
-      const world = at(20, seed);
-      const hero = heroById(world, 'p')!;
-      Object.assign(hero, { attackSkill: 400, defenseSkill: 60, ht: 20000, hp: 20000, str: 20 });
-      hero.weapon = createItem('weapon.warHammer', 1, 6);
-      const level = levelAt(world, 20);
-      const effects: Effect[] = [];
-      const step = (): Action => {
-        const floor = floorAt(world, 20);
-        const king = floor.mobs.find((m) => m.kind === 'king');
-        const foe = floor.mobs.find((m) => adjacent(m.pos, hero.pos));
-        if (foe) return { type: 'attack', target: foe.id };
-        const key = king ? null : skeletonKey(world, 'p');
-        if (key) return key;
-        if (hero.pos === level.exit) return { type: 'descend' };
-        const goal = king ? king.pos : floor.arenaEntered ? level.exit : level.arenaDoor! - WIDTH;
-        const others = new Set(floor.mobs.map((m) => m.pos));
-        others.delete(goal);
-        const path = findPath(level, hero.pos, goal, others);
-        return path && path.length > 0 ? { type: 'move', to: path[0]! } : { type: 'wait' };
-      };
-      for (let i = 0; i < 6000 && !world.over && hero.depth === 20; i++) {
-        let result = act(world, 'p', step());
-        if (!result.ok) result = act(world, 'p', { type: 'wait' });
-        if (result.ok) effects.push(...result.effects);
-        checkInvariants(world);
-      }
-      expect(effects.some((e) => e.type === 'yell' && e.kind === 'king' && e.line === 'summon'), `seed ${seed}`).toBe(true);
-      expect(effects.some((e) => e.type === 'bossSlain' && e.kind === 'king'), `seed ${seed}`).toBe(true);
-      expect(effects.some((e) => e.type === 'arena' && e.sealed), `seed ${seed}`).toBe(true);
-      expect(hero.depth === 21 || world.victory, `seed ${seed}`).toBe(true);
-      won++;
-    }
-    expect(won).toBe(2);
-  });
-
-  it('a simple bot can play through the city without breaking anything', () => {
-    for (const seed of [31, 32]) {
-      const world = at(16, seed);
-      const hero = heroById(world, 'p')!;
-      Object.assign(hero, { attackSkill: 400, defenseSkill: 80, ht: 20000, hp: 20000 });
-      for (let i = 0; i < 6000 && isAlive(hero) && hero.depth < 20; i++) {
-        const result = act(world, 'p', botAction(world, 'p', 20));
-        if (!result.ok) act(world, 'p', { type: 'wait' });
-        checkInvariants(world);
-      }
-      expect(hero.depth, `seed ${seed}`).toBe(20);
-    }
-  });
-});
