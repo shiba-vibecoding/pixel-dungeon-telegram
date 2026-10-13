@@ -1377,7 +1377,8 @@ function tapCell(cell: number, quiet = false): void {
   if (!quiet) walk.goal = cell;
   // Hero.handle: moving to an item doesn't pick it up when enemies are in sight (chests open as usual, above).
   walk.pickup = heapAt(world, me.depth, cell) && enemiesInSight.length === 0;
-  if (world.arena) return;
+  // Hero.handle: walking to the stairs doesn't take them while enemies are in sight (a tap on them, standing there, does).
+  if (world.arena || enemiesInSight.length > 0) return;
   if (cell === level.exit) walk.stairs = 'descend';
   else if (cell === level.entrance && (me.depth > 1 || hasAmulet(me))) walk.stairs = 'ascend';
 }

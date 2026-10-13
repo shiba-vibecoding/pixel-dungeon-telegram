@@ -858,7 +858,7 @@ const en = {
     charm: 'Charmed', light: 'Torchlight', cripple: 'Crippled', dizzy: 'Dizzy', healing: 'Healing', bark: 'Earthroot',
     combo: 'Combo', fury: 'Fury', barkskin: 'Barkskin', levitation: 'Levitating', immunity: 'Immune to gases',
     blindness: 'Blinded', deferred: 'Deferred damage', bleeding: 'Bleeding', sacrifice: 'Marked for sacrifice',
-    sealShield: 'Warrior Shield', lockedFloor: 'Floor is locked',
+    sealShield: 'Warrior Shield', lockedFloor: 'Floor is locked', bless: 'Blessed',
   } as Record<BuffName, string>,
   causes: {
     poison: 'poison', burning: 'fire', ooze: 'caustic ooze', lightning: 'lightning', gripping: 'a gripping trap', hunger: 'starvation',
@@ -1992,7 +1992,7 @@ const ru: Strings = {
     charm: 'Очарование', light: 'Свет факела', cripple: 'Увечье', dizzy: 'Головокружение', healing: 'Исцеление', bark: 'Земляной корень',
     combo: 'Комбо', fury: 'Ярость', barkskin: 'Кора', levitation: 'Левитация', immunity: 'Невосприимчивость к газам',
     blindness: 'Слепота', deferred: 'Отложенный урон', bleeding: 'Кровотечение', sacrifice: 'Отмечен для жертвы',
-    sealShield: 'Щит Воина', lockedFloor: 'Уровень закрыт',
+    sealShield: 'Щит Воина', lockedFloor: 'Уровень закрыт', bless: 'Вдохновлён',
   },
   causes: {
     poison: 'яд', burning: 'огонь', ooze: 'едкая слизь', lightning: 'молния', gripping: 'капкан', hunger: 'голод',

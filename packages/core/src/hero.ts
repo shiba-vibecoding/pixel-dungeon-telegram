@@ -20,6 +20,8 @@ import type { World } from './world';
 
 /** Hero.MAX_LEVEL. */
 export const MAX_LEVEL = 30;
+/** Bless.DURATION. */
+export const BLESS_DURATION = 30;
 
 /** Hero.updateHT's formula: 20 health, five more a level, and whatever potions of might added (HTBoost). */
 export const heroHT = (hero: Hero): number => 20 + 5 * (hero.lvl - 1) + (hero.htBoost ?? 0);
@@ -69,8 +71,9 @@ export function earnExp(ctx: Ctx, hero: Hero, exp: number, source?: 'potion'): v
       hero.attackSkill++;
       hero.defenseSkill++;
     } else {
-      // At the cap: nothing more to gain (Shattered also blesses the hero for a while; Bless is not here yet).
+      // At the cap: no stronger, but a surge of power (Buff.prolong(Bless, Bless.DURATION)).
       hero.exp = 0;
+      hero.blessed = Math.max(hero.blessed ?? 0, BLESS_DURATION);
       ctx.effects.push({ type: 'levelCap', hero: hero.id });
     }
   }

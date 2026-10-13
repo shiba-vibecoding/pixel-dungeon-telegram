@@ -80,6 +80,11 @@ describe('levels (Hero.earnExp)', () => {
     const result = act(world, 'p', { type: 'use', item: hero.items.length - 1 });
     expect(result.ok && result.effects.some((e) => e.type === 'levelCap')).toBe(true);
     expect(hero).toMatchObject({ lvl: 30, exp: 0, ht: 165 });
+    // Bless: a quarter more accurate and evasive for thirty turns.
+    expect(hero.blessed).toBeGreaterThan(25);
+    const skill = heroAttackSkill(hero);
+    hero.blessed = 0;
+    expect(skill).toBe(Math.round(heroAttackSkill(hero) * 1.25));
   });
 
   it('a potion of might adds five health for good', () => {

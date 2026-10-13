@@ -112,6 +112,8 @@ export interface Hero {
   hungerTime: number;
   /** Hunger.partialDamage: starvation's damage building up towards the next point. */
   starve?: number;
+  /** Turns left of Bless (from experience at the level cap): a quarter more accurate and evasive. */
+  blessed?: number;
   /** LockedFloor.left: on a boss's sealed floor, the turns passive healing goes on (see hero.ts). */
   lockedFloor?: number;
   /** BrokenSeal.WarriorShield: the shield left, the cooldown, turns without an enemy in sight, the shield as raised (seal.ts). */
@@ -208,6 +210,9 @@ export function heroWeapon(hero: Hero): WeaponStats {
   return hero.weapon ? weaponStats(hero.weapon) : { min: 1, max: Math.max(1, heroStr(hero) - 8), str: 0, accuracy: 1, delay: 1 };
 }
 
+/** Char.hit with Bless: the blessed roll a quarter higher, attacking and defending alike. */
+const blessing = (hero: Hero): number => ((hero.blessed ?? 0) > 0 ? 1.25 : 1);
+
 /** Pixel Dungeon's ring of accuracy (1.4 a level), until rings are Shattered's (RingOfAccuracy.accuracyMultiplier). */
 const accuracyMultiplier = (hero: Hero): number => {
   const bonus = ringBonus(hero, 'ring.accuracy');
@@ -219,7 +224,7 @@ const accuracyMultiplier = (hero: Hero): number => {
  * its own, divided by 1.5 for every point of strength it wants more); at least 1.
  */
 export function heroAttackSkill(hero: Hero): number {
-  const accuracy = accuracyMultiplier(hero);
+  const accuracy = f32(accuracyMultiplier(hero) * blessing(hero));
   if (!hero.weapon) return Math.max(1, Math.round(f32(hero.attackSkill * accuracy)));
   const weapon = heroWeapon(hero);
   const encumbrance = weapon.str - heroStr(hero);
@@ -235,7 +240,7 @@ export function heroAttackSkill(hero: Hero): number {
  */
 export function heroDefenseSkill(hero: Hero): number {
   const bonus = ringBonus(hero, 'ring.evasion');
-  let evasion = f32(hero.defenseSkill * (bonus === 0 ? 1 : f32(1.2 ** bonus)));
+  let evasion = f32(f32(hero.defenseSkill * (bonus === 0 ? 1 : f32(1.2 ** bonus))) * blessing(hero));
   if (hero.paralysed > 0) evasion = f32(evasion / 2);
   const encumbrance = armorStats(hero.armor).str - heroStr(hero);
   if (encumbrance > 0) evasion = f32(evasion / 1.5 ** encumbrance);
@@ -253,7 +258,7 @@ export function heroRangedSkill(hero: Hero, item: Item, pointBlank: boolean): nu
   const encumbrance = missileStats(item).str - heroStr(hero);
   let factor = encumbrance > 0 ? f32(1 / 1.5 ** encumbrance) : 1;
   if (pointBlank) factor = f32(factor * 0.5);
-  return Math.max(1, Math.round(f32(f32(hero.attackSkill * accuracyMultiplier(hero)) * factor)));
+  return Math.max(1, Math.round(f32(f32(hero.attackSkill * f32(accuracyMultiplier(hero) * blessing(hero))) * factor)));
 }
 
 /**

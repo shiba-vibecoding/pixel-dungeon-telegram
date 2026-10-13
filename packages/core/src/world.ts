@@ -845,6 +845,7 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   hero.charmed = Math.max(0, hero.charmed - time);
   hero.dizzy = Math.max(0, hero.dizzy - time);
   hero.barkskin = Math.max(0, (hero.barkskin ?? 0) - time);
+  if (hero.blessed) hero.blessed = Math.max(0, hero.blessed - time);
   sungrassHeals(hero, time);
   if (hero.charmed <= 0) hero.charmedBy = null;
 
