@@ -3,6 +3,7 @@ import { hasRoom, looseItems } from './bags';
 import { type Ctx, landItem } from './floor';
 import { createItem, type Item, itemDef } from './items';
 import { distance } from './level/geometry';
+import { burnBombs, freezeBombs } from './bombs';
 
 /*
  * What fire and frost do to things (Heap.burn and freeze, Burning and Frost
@@ -15,6 +16,8 @@ import { distance } from './level/geometry';
 export function burnHeaps(ctx: Ctx, pos: number, radius: number): void {
   for (const heap of ctx.floor.heaps) {
     if (heap.kind !== 'heap' || distance(heap.pos, pos) > radius) continue;
+    // Heap.burn: a bomb in it goes off.
+    burnBombs(ctx, heap);
     let burnt = false;
     heap.items = heap.items.flatMap((item): Item[] => {
       if (itemDef(item.kind).category === 'scroll') {
@@ -36,6 +39,7 @@ export function burnHeaps(ctx: Ctx, pos: number, radius: number): void {
 export function freezeHeaps(ctx: Ctx, pos: number, radius: number): void {
   for (const heap of ctx.floor.heaps) {
     if (heap.kind !== 'heap' || distance(heap.pos, pos) > radius) continue;
+    freezeBombs(heap);
     heap.items = heap.items.map((item) => (item.kind === 'food.meat' ? createItem('food.carpaccio', item.qty) : item));
   }
 }

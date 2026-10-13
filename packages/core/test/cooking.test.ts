@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, canEnter, charAt, createItem, createMob, createWorld, F, floorAt, hasFlag, heroAttackDelay, heroAttackSkill, heroById,
+  act, addHero, canEnter, charAt, createItem, createMob, createWorld, F, floorAt, hasFlag, heroAttackDelay, heroById,
   levelAt, type Mob, T, WIDTH, type World,
 } from '../src/index';
 import { pacify } from './helpers';
@@ -71,37 +71,40 @@ describe('cooking, burning and freezing', () => {
 });
 
 describe('bombs', () => {
-  it('blow up where they land, hurting and stunning whoever is next to it, and burning the grass', () => {
+  it('blow up a moment after they land (Bomb.Fuse), hurting whoever is next to them, and burning the grass', () => {
     const { world, near, far } = line();
     const level = levelAt(world, 1);
     const rat: Mob = createMob('#rat', 'rat', far, 'hunting', floorAt(world, 1).now);
-    Object.assign(rat, { enemy: 'p', hp: 1000, ht: 1000 });
+    Object.assign(rat, { enemy: 'p', hp: 1000, ht: 1000, paralysed: 10 });
     floorAt(world, 1).mobs.push(rat);
     const beside = (near + far) / 2;
     level.map[beside] = T.GRASS;
     const hero = heroById(world, 'p')!;
     hero.items = [createItem('bomb', 2)];
-    const result = act(world, 'p', { type: 'throw', item: 0, target: far });
-    expect(result.ok && result.effects.some((e) => e.type === 'exploded')).toBe(true);
+    const thrown = act(world, 'p', { type: 'throw', item: 0, target: far });
+    expect(thrown.ok && thrown.effects.some((e) => e.type === 'exploded')).toBe(false);
+    expect(floorAt(world, 1).heaps.find((h) => h.pos === far)!.items[0]!.fuse).toBeDefined();
+    const effects = [...(act(world, 'p', { type: 'wait' }) as { effects: { type: string }[] }).effects, ...(act(world, 'p', { type: 'wait' }) as { effects: { type: string }[] }).effects];
+    expect(effects.some((e) => e.type === 'exploded')).toBe(true);
     expect(hero.items[0]!.qty).toBe(1);
     expect(rat.hp).toBeLessThan(1000);
     expect(hasFlag(level.map[beside]!, F.FLAMABLE)).toBe(false);
   });
 });
 
-describe('the weightstone', () => {
-  it('balances a melee weapon for speed or for accuracy, and is used up', () => {
+describe('the stone of augmentation', () => {
+  it('reshapes a melee weapon for speed or for damage, and is used up', () => {
     const { world } = line();
     const hero = heroById(world, 'p')!;
-    hero.items = [createItem('weightstone', 2)];
+    hero.items = [createItem('stone.augmentation', 2)];
     const delay = heroAttackDelay(hero);
-    const skill = heroAttackSkill(hero);
-    expect(act(world, 'p', { type: 'balance', item: 0, imbue: 'speed' }).ok).toBe(true);
-    expect(hero.weapon!.imbue).toBe('speed');
-    expect(heroAttackDelay(hero)).toBeCloseTo(delay * 0.6);
-    expect(act(world, 'p', { type: 'balance', item: 0, imbue: 'speed' })).toEqual({ ok: false, reason: 'it is balanced that way already' });
-    expect(act(world, 'p', { type: 'balance', item: 0, imbue: 'accuracy' }).ok).toBe(true);
-    expect(heroAttackSkill(hero)).toBeGreaterThan(skill);
+    // WEAPON_AUGMENTS: none, speed, damage.
+    expect(act(world, 'p', { type: 'use', item: 0, on: 'weapon', choice: 1 }).ok).toBe(true);
+    expect(hero.weapon!.augment).toBe('speed');
+    expect(heroAttackDelay(hero)).toBeCloseTo(delay * (2 / 3));
+    expect(act(world, 'p', { type: 'use', item: 0, on: 'weapon', choice: 1 })).toEqual({ ok: false, reason: 'it is augmented that way already' });
+    expect(act(world, 'p', { type: 'use', item: 0, on: 'weapon', choice: 2 }).ok).toBe(true);
+    expect(heroAttackDelay(hero)).toBeCloseTo(delay * (5 / 3));
     expect(hero.items).toEqual([]);
   });
 });

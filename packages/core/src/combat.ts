@@ -23,6 +23,7 @@ import { mobPress } from './traps';
 import { isBossDepth } from './level/builder';
 import { underChallenges } from './challenges';
 import { arenaKill } from './arena';
+import { absorbShield, challengeFactor, chillChar, igniteChar, isMagicImmune, mightOnLevelUp, onHurt } from './buffs';
 
 /*
  * Melee combat as in Char.attack: an accuracy roll against an evasion roll,
@@ -136,9 +137,12 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
       attacker.target = defender.pos;
     }
   }
-  // Hero.attackProc and defenseProc: an enchanted weapon's blow, an inscribed armour's answer.
+  // Hero.attackProc and defenseProc: an enchanted weapon's blow, an inscribed armour's answer (none while magic will not work).
   if (isHero(attacker) && !isHero(defender)) {
-    weaponProc(ctx, attacker, defender, damage, thrown ? override.weapon ?? null : attacker.weapon);
+    if (!isMagicImmune(attacker)) weaponProc(ctx, attacker, defender, damage, thrown ? override.weapon ?? null : attacker.weapon);
+    // FireImbue.proc and FrostImbue.proc: half the blows set the foe alight; every one chills it.
+    if ((attacker.buffs?.fireImbue ?? 0) > 0 && ctx.rng.int(2) === 0) igniteChar(ctx, defender);
+    if ((attacker.buffs?.frostImbue ?? 0) > 0) chillChar(defender, 3);
     // Weapon.proc: every blow that lands makes the weapon better known, and wears it a little (a thrown boomerang wears as it comes back).
     if (!thrown && attacker.weapon) {
       familiarise(ctx, attacker, attacker.weapon, WEAPON_HITS_TO_KNOW);
@@ -148,7 +152,7 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
 
   if (isHero(defender) && !isHero(attacker)) {
     const mark = ctx.effects.length;
-    damage = armorProc(ctx, attacker, defender, damage);
+    if (!isMagicImmune(defender)) damage = armorProc(ctx, attacker, defender, damage);
     // Armor.proc: and every blow taken makes the armour better known, and wears it.
     familiarise(ctx, defender, defender.armor, ARMOR_HITS_TO_KNOW);
     wear(ctx, defender, defender.armor);
@@ -291,7 +295,9 @@ function split(ctx: Ctx, swarm: Mob, damage: number): void {
 }
 
 /** What hurts without being a character. */
-export type Hazard = 'poison' | 'burning' | 'ooze' | 'lightning' | 'gripping' | 'hunger' | 'bones' | 'gas' | 'fall' | 'deferred' | 'bleeding' | 'dry' | 'multiplicity' | 'bomb';
+export type Hazard = 'poison' | 'burning' | 'ooze' | 'lightning' | 'gripping' | 'hunger' | 'bones' | 'gas' | 'fall' | 'deferred' | 'bleeding' | 'dry' | 'multiplicity' | 'bomb'
+  // Alchemy's: corrosion, electricity, an aqua brew's geyser and the knockback it gives, the psionic blast, the special bombs.
+  | 'corrosion' | 'electricity' | 'geyser' | 'knockback' | 'psionic' | 'arcaneBomb' | 'flashbang' | 'holy' | 'shrapnel';
 
 export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Hazard): void {
   if (!isAlive(victim)) return;
@@ -317,6 +323,10 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   }
   // Earthroot's bark takes the blows first.
   if (isHero(victim)) damage = earthrootAbsorbs(victim, damage);
+  // ScrollOfChallenge.ChallengeArena: two thirds of the harm inside it; a barrier takes what it can (ShieldBuff).
+  if (isHero(victim)) damage = Math.round(damage * challengeFactor(victim));
+  damage = absorbShield(victim, damage);
+  onHurt(victim);
   if (!isHero(victim) && victim.kind === 'yog') {
     // Yog.damage: each living fist halves the harm, and they all come to defend it.
     const fists = ctx.floor.mobs.filter(isFist);
@@ -426,6 +436,12 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
       for (const hero of ctx.world.heroes) if (!hero.subclass) dropItem(ctx.floor, mob.pos, createItem('tome.mastery'));
     }
   }
+}
+
+/** Mob.rollToDropLoot: what a monster would leave behind, dropped where it stands (an enthralled one too). */
+export function dropMobLoot(ctx: Ctx, mob: Mob): void {
+  const loot = dropLoot(ctx, mob);
+  if (loot) landItem(ctx, mob.pos, loot);
 }
 
 /** What a monster leaves behind (Mob.loot and lootChance, or its own dropLoot). */
@@ -566,5 +582,7 @@ export function earnExp(ctx: Ctx, hero: Hero, exp: number): void {
   }
   if (levelUp) {
     ctx.effects.push({ type: 'levelUp', hero: hero.id, lvl: hero.lvl });
+    // ElixirOfMight.HTBoost.onLevelUp.
+    mightOnLevelUp(hero);
   }
 }

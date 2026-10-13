@@ -480,7 +480,7 @@ function paintShop(level: LevelBuilder, room: Room): void {
     : level.depth < 16 ? [pick('weapon.sword', 'weapon.mace'), 'armor.mail']
     : level.depth < 21 ? [pick('weapon.longsword', 'weapon.battleAxe'), 'armor.scale']
     : [rng.oneOf(['weapon.glaive', 'weapon.warHammer', 'armor.plate'] as ItemKind[]), 'torch', 'torch'];
-  if (level.depth < 21) gear.push('weightstone');
+  if (level.depth < 21) gear.push('stone.augmentation');
   // A bag for each of the first three shops: seeds, then scrolls, then wands.
   const bag: ItemKind | undefined = level.depth < 11 ? 'bag.seeds' : level.depth < 16 ? 'bag.scrolls' : level.depth < 21 ? 'bag.wands' : undefined;
   if (bag) gear.push(bag);
@@ -523,8 +523,9 @@ function paintShop(level: LevelBuilder, room: Room): void {
 }
 
 /**
- * LaboratoryPainter: an alchemy pot in the far corner, a few potions about,
- * and a locked door whose key lies somewhere on the level.
+ * LaboratoryRoom (Shattered): an alchemy pot in the far corner, five energy crystals and a prize or two (a
+ * potion or a runestone) about, and a locked door whose key lies somewhere on the level. (Its alchemy guide pages
+ * and the catalyst or strength it may draw from the level's own finds are the levels stream's to bring.)
  */
 function paintLaboratory(level: LevelBuilder, room: Room): void {
   const { rng } = level;
@@ -538,13 +539,18 @@ function paintLaboratory(level: LevelBuilder, room: Room): void {
     : door.y === room.top ? { x: side ? room.left + 1 : room.right - 1, y: room.bottom - 1 }
     : { x: side ? room.left + 1 : room.right - 1, y: room.top + 1 };
   level.setXY(pot.x, pot.y, T.ALCHEMY);
-  const n = rng.intRange(2, 3);
-  for (let i = 0; i < n; i++) {
+  const free = (): number => {
     let pos: number;
     do {
       pos = room.random(rng);
     } while (level.map[pos] !== T.EMPTY_SP || level.items.some((spawn) => spawn.pos === pos));
-    level.dropItem(pos, HeapType.HEAP, { roll: 'category', categories: ['potion'], tries: 1 });
+    return pos;
+  };
+  level.dropItem(free(), HeapType.HEAP, { roll: 'kind', kind: 'energy', qty: 5 });
+  const n = rng.normalIntRange(1, 2);
+  for (let i = 0; i < n; i++) {
+    // LaboratoryRoom.prize: Generator.random(Random.oneOf(POTION, STONE)).
+    level.dropItem(free(), HeapType.HEAP, { roll: 'category', categories: [rng.int(2) === 0 ? 'potion' : 'stone'], tries: 1 });
   }
   lockWithKey(level, room);
 }

@@ -14,7 +14,7 @@ export type HintId =
   | 'monster' | 'attacked' | 'lowHealth' | 'floorItem' | 'container' | 'trap' | 'lockedDoor' | 'stairs' | 'secret'
   | 'hungry' | 'levelUp' | 'well' | 'altar' | 'alchemy' | 'shop' | 'npc' | 'boss' | 'companion' | 'waiting' | 'examine'
   | 'potion' | 'scroll' | 'weapon' | 'armor' | 'ring' | 'wand' | 'food' | 'seed' | 'missile' | 'bomb' | 'key' | 'gold'
-  | 'dew' | 'vial' | 'bag' | 'ankh' | 'honeypot' | 'torch' | 'tome' | 'kit' | 'beacon' | 'weightstone' | 'arena' | 'live';
+  | 'dew' | 'vial' | 'bag' | 'ankh' | 'honeypot' | 'torch' | 'tome' | 'kit' | 'beacon' | 'arena' | 'live';
 
 type Text = readonly [title: string, text: string];
 
@@ -60,7 +60,6 @@ const RU: Record<HintId, Text> = {
   tome: ['Книга мастерства', 'Прочитайте её, чтобы выбрать путь героя: один из двух подклассов.'],
   kit: ['Набор для брони', 'Превращает надетую броню в броню класса со своей особой способностью.'],
   beacon: ['Маяк Ллойда', 'Поставьте маяк, и потом сможете вернуться в это место с любой глубины.'],
-  weightstone: ['Утяжелитель', 'Балансирует оружие в руке: на скорость или на точность.'],
   arena: ['Арена волн', 'Монстры идут волнами через четверо ворот. После волны — передышка: павшие встают, каждый берёт награду. Отдохните и начните следующую.'],
   live: ['Живые ходы', 'Пока спокойно, герой сам идёт, куда сказано, и никого не ждёт. В бою — ходы, как обычно: время стоит, пока вы не сходите, а ходы отряда идут вместе.'],
 };
@@ -107,7 +106,6 @@ const EN: Record<HintId, Text> = {
   tome: ['The tome of mastery', 'Read it to choose your hero\'s way: one of two subclasses.'],
   kit: ['An armour kit', 'Turns the armour worn into class armour, with a special ability.'],
   beacon: ['Lloyd\'s beacon', 'Set it, and you can come back to this spot later from any depth.'],
-  weightstone: ['A weightstone', 'Balances the weapon in hand: for speed or for accuracy.'],
   arena: ['Wave arena', 'Monsters come in waves through four gates. After each wave a breather: the fallen rise, everyone takes a reward. Rest, then start the next.'],
   live: ['Live turns', 'While all is calm, the hero walks where told and waits for no one. In a fight it is turns as ever: time stands still until you move, and the party’s moves play out together.'],
 };

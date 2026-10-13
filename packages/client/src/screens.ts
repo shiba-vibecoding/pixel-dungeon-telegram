@@ -1645,12 +1645,6 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       if (item.returnTo) use(t.beaconReturn, () => act({ type: 'beacon', item: index, mode: 'return' }));
       use(t.beaconSet, () => act({ type: 'beacon', item: index, mode: 'set' }));
     }
-    if (category === 'weightstone' && hero.weapon) {
-      // Weightstone.WndBalance: the weapon in hand, balanced the way it is not yet.
-      for (const imbue of ['speed', 'accuracy'] as const) {
-        if (hero.weapon.imbue !== imbue) use(t.balanceFor[imbue], () => stay({ type: 'balance', item: index, imbue }, { worn: 'weapon' }));
-      }
-    }
     if (category === 'wipeout') use(t.read, () => act({ type: 'use', item: index }));
     if (category === 'vial' && item.volume) use(t.drink, () => act({ type: 'use', item: index }));
     if (category === 'missile' || category === 'wand' || category === 'bomb' || category === 'honeypot') {

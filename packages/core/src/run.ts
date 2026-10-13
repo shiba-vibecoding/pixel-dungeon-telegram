@@ -1,4 +1,4 @@
-import { type Labels, rollLabels } from './items';
+import { type Deck, type DeckCategory, type Labels, rollLabels } from './items';
 import { RoomType, SPECIALS } from './level/room';
 import { deriveSeed, Rng, Stream } from './rng';
 
@@ -18,6 +18,10 @@ export interface RunState {
   blacksmithSpawned?: boolean;
   /** The dew vial has been laid out in the sewers (absent in older runs). */
   dewVialSpawned?: boolean;
+  /** Shattered's decks of potions, scrolls, runestones and trinkets, as dealt so far (items.ts drawFromDeck). */
+  decks?: Partial<Record<DeckCategory, Deck>>;
+  /** Dungeon.LimitedDrops: the stone of intuition, the trinket catalyst and the stone of enchantment have been laid out. */
+  drops?: { intStone?: boolean; catalyst?: boolean; enchStone?: boolean; cookingHp?: number };
 }
 
 export function createRun(seed: number): RunState {

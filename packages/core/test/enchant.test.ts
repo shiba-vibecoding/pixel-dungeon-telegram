@@ -120,10 +120,10 @@ describe('enchantments and glyphs', () => {
     const hero = heroById(world, 'p')!;
     const plain = armorStats(hero.armor).dr;
     hero.items = [createItem('scroll.enchantment', 2)];
-    act(world, 'p', { type: 'use', item: 0, target: 'armor' });
+    act(world, 'p', { type: 'use', item: 0, target: 'armor', choice: 0 });
     expect(hero.armor.glyph).toBeDefined();
     expect(armorStats(hero.armor).dr).toBeGreaterThan(plain);
-    const result = act(world, 'p', { type: 'use', item: 0, target: 'weapon' });
+    const result = act(world, 'p', { type: 'use', item: 0, target: 'weapon', choice: 2 });
     expect(hero.weapon!.enchant).toBeDefined();
     expect(result.ok && result.effects.some((e) => e.type === 'imbued')).toBe(true);
   });
@@ -240,7 +240,11 @@ describe('the remaining scrolls and potions', () => {
     rat.pos = far;
     hero.items = [createItem('potion.frost')];
     act(world, 'p', { type: 'throw', item: 0, target: far });
-    expect(rat.paralysed).toBeGreaterThan(0);
+    // Freezing: the rat is chilled at once, and frozen solid once fully chilled (or thawed if it got out).
+    expect(rat.buffs?.chill).toBeGreaterThan(0);
+    rat.paralysed = 0;
+    for (let i = 0; i < 4; i++) act(world, 'p', { type: 'wait' });
+    expect(rat.buffs?.frost ?? rat.buffs?.chill).toBeGreaterThan(0);
     expect(hero.paralysed).toBe(0);
   });
 

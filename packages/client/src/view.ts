@@ -406,7 +406,9 @@ export class View {
     }
     for (const mob of world.floors[this.depth]?.mobs ?? []) {
       // A mirror image looks like its hero, only fainter.
-      const twin = mob.image && world.heroes.find((hero) => hero.id === mob.image!.owner);
+      // A prismatic image too, its hero's ally.
+      const owner = mob.image?.owner ?? (mob.kind === 'prismatic' ? mob.ally : undefined);
+      const twin = owner !== undefined ? world.heroes.find((hero) => hero.id === owner) : undefined;
       if (twin) {
         place(mob.id, 'mirror', this.assets.heroes[twin.heroClass], false, mob.pos, mob.hp, mob.ht, false, false, true);
         this.puppets.get(mob.id)!.sprite = heroSprite(this.assets, twin.heroClass, this.looks[twin.id]?.skin);
@@ -1100,10 +1102,6 @@ export class View {
         case 'beacon':
           audio.play(effect.mode === 'set' ? 'beacon' : 'teleport');
           if (effect.hero === myId && effect.mode === 'set') this.say(t.beaconDone, COLORS.default, now);
-          break;
-        case 'balanced':
-          audio.play('miss');
-          if (effect.hero === myId && effect.item.imbue) this.say(t.balanced[effect.item.imbue], COLORS.positive, now);
           break;
         case 'interrupted': {
           // Only the reasons worth telling: a refused move into a wall says nothing.

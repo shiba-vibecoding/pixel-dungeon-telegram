@@ -1,5 +1,7 @@
 import { effectiveLevel } from './wear';
-import { armorStats, createItem, type Item, type ItemKind, missileStats, type WeaponStats, weaponStats } from './items';
+import { armorEvasion, armorStats, createItem, type Item, type ItemKind, missileStats, type WeaponStats, weaponStats } from './items';
+import { type Buffs, buffSpeed, isMagicImmune } from './buffs';
+import { CLOVER, FERRET_TUFT, trinketLevel } from './trinkets';
 import type { Rng } from './rng';
 import type { Action, PlanStep } from './world';
 
@@ -122,6 +124,8 @@ export interface Hero {
   /** Hunger.level: 0 when fed, hungry from HUNGRY, starving at STARVING; and time towards its next step. */
   hunger: number;
   hungerTime: number;
+  /** Shattered's buffs from alchemy (buffs.ts): haste, shielding, healing over time, imbues and the like. */
+  buffs?: Buffs;
   /** For the badges (Statistics): gold picked up, food eaten, potions brewed and piranhas slain this run. */
   stats?: RunStats;
   /** For the end of the run: monsters slain, and what dealt the killing blow. */
@@ -198,7 +202,8 @@ export const isAlive = (char: { hp: number }): boolean => char.hp > 0;
 
 /** The levels of every worn ring of a kind, added up (several buffs of a kind stack in the original). */
 export const ringBonus = (hero: Hero, kind: ItemKind): number =>
-  (hero.rings ?? []).reduce((sum, ring) => (ring.kind === kind ? sum + effectiveLevel(ring) : sum), 0);
+  // MagicImmune: rings do nothing while it lasts.
+  isMagicImmune(hero) ? 0 : (hero.rings ?? []).reduce((sum, ring) => (ring.kind === kind ? sum + effectiveLevel(ring) : sum), 0);
 
 /** Hero.STR: weakness takes two points of strength away while it lasts. */
 export const heroStr = (hero: Hero): number => hero.str - (hero.weakened > 0 ? 2 : 0);
@@ -235,7 +240,11 @@ export function heroAttackSkill(hero: Hero): number {
 export function heroDefenseSkill(hero: Hero): number {
   // RingOfEvasion: 1.2 times as evasive a level.
   const bonus = ringBonus(hero, 'ring.evasion');
-  const defense = Math.trunc(f32(hero.defenseSkill * (bonus === 0 ? 1 : f32(1.2 ** bonus))));
+  // Armor.evasionFactor: armour augmented for evasion adds to it, for defense takes from it.
+  let defense = Math.trunc(f32(hero.defenseSkill * (bonus === 0 ? 1 : f32(1.2 ** bonus)))) + armorEvasion(hero.armor);
+  // FerretTuft.evasionMultiplier (Char.defenseSkill's roll, here the skill itself).
+  const tuft = trinketLevel(hero, 'trinket.ferretTuft');
+  if (tuft >= 0) defense = Math.trunc(f32(defense * f32(FERRET_TUFT.evasionMultiplier(tuft))));
   const encumbrance = armorStats(hero.armor).str - heroStr(hero);
   if (encumbrance > 0) {
     return Math.trunc(defense / 1.5 ** encumbrance);
@@ -265,12 +274,16 @@ export function heroSpeed(hero: Hero): number {
   // Char.speed: crippled, half as fast; a freerunner who is not starving nor weighed down, much faster.
   const crippled = hero.crippled > 0 ? 0.5 : 1;
   const running = hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0 ? 1.6 : 1;
-  return (encumbrance > 0 ? 1.3 ** -encumbrance : 1) * crippled * running;
+  // Char.speed: stamina, haste (buffs.ts).
+  return (encumbrance > 0 ? 1.3 ** -encumbrance : 1) * crippled * running * buffSpeed(hero);
 }
 
 export function heroDamageRoll(hero: Hero, rng: Rng): number {
   const weapon = heroWeapon(hero);
   let damage = hero.weapon ? rng.normalIntRange(weapon.min, weapon.max) : rng.intRange(weapon.min, weapon.max);
+  // Hero.damageRoll: a thirteen-leaf clover now and then makes it the most or the least it could be.
+  const clover = trinketLevel(hero, 'trinket.clover');
+  if (clover >= 0 && rng.float() < CLOVER.alterHeroDamageChance(clover)) damage = CLOVER.alterDamageRoll(rng, weapon.min, weapon.max);
   // Fury: a berserker badly hurt hits half as hard again.
   if (hero.subclass === 'berserker' && hero.hp > 0 && hero.hp <= hero.ht * FURY_LEVEL) damage = Math.trunc(damage * 1.5);
   if (hero.heroClass !== 'huntress' && hero.weapon) {
@@ -294,7 +307,9 @@ export function awareness(hero: Hero): number {
 }
 
 /** Hero.dr: the armour's, and a warden's bark. */
-export const heroArmor = (hero: Hero): number => armorStats(hero.armor).dr + Math.max(0, Math.ceil(hero.barkskin ?? 0));
+export const heroArmor = (hero: Hero): number =>
+  // Char.drRoll: earthen armour (Barkskin) adds up to its level.
+  armorStats(hero.armor).dr + Math.max(0, Math.ceil(hero.barkskin ?? 0)) + (hero.buffs?.barkskin?.level ?? 0);
 export const heroStealth = (hero: Hero): number => HERO_CLASSES[hero.heroClass].stealth + ringBonus(hero, 'ring.shadows');
 export const maxExp = (hero: Hero): number => 5 + hero.lvl * 5;
 
@@ -308,7 +323,7 @@ export type MobKind =
   | 'succubus' | 'eye' | 'scorpio' | 'yog' | 'rottingFist' | 'burningFist' | 'larva' | 'mimic'
   | 'statue' | 'piranha' | 'imp' | 'sheep' | 'blacksmith' | 'mirror'
   | 'albino' | 'bandit' | 'shielded' | 'senior' | 'acidic'
-  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper';
+  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper' | 'prismatic';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
 export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
 
@@ -381,6 +396,8 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   acidic: { name: 'acidic scorpio', ht: 95, attack: 36, defense: 24, damage: [20, 32], dr: 16, exp: 14, maxLvl: 25, speed: 1 },
   sheep: { name: 'sheep', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   mirror: { name: 'mirror image', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** PrismaticImage: the hero's ally out of a scroll of prismatic image, as strong as its hero's level (see mobStats). */
+  prismatic: { name: 'prismatic image', ht: 10, attack: 10, defense: 5, damage: [2, 4], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   blacksmith: { name: 'troll blacksmith', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   imp: { name: 'ambitious imp', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   // The sad ghost's errands: the rat that killed it, and the curse that binds it (its numbers grow with the depth).
@@ -409,6 +426,10 @@ export function mobStats(mob: Mob): MobStats {
   if (mob.kind === 'bee') {
     const ht = (3 + depth) * 5;
     return { ...MOBS.bee, ht, attack: 9 + depth, defense: 9 + depth, damage: [Math.trunc(ht / 10), Math.trunc(ht / 4)] };
+  }
+  if (mob.kind === 'prismatic') {
+    // PrismaticImage: the hero's accuracy and evasion (9 + lvl, 4 + lvl) and its own damage, by the hero's level.
+    return { ...MOBS.prismatic, ht: mob.ht, attack: 9 + depth, defense: 4 + depth, damage: [2 + Math.trunc(depth / 4), 4 + Math.trunc(depth / 2)] };
   }
   if (mob.kind === 'wraith') return { ...MOBS.wraith, attack: 10 + depth, defense: (10 + depth) * 5, damage: [1, 3 + depth] };
   if (mob.kind === 'curse') return { ...MOBS.curse, ht: 10 + depth * 3, attack: 10 + depth, defense: 10 + depth };
@@ -499,6 +520,13 @@ export interface Mob {
   bleeding?: number;
   /** A mirror image: whose twin it is, and the skill and strength it took from them. */
   image?: { owner: string; attack: number; damage: number };
+  /** Shattered's buffs from alchemy (buffs.ts): chill, corrosion, dread, aggression, a magical sleep. */
+  buffs?: Buffs;
+  /**
+   * An ally (Char.Alignment.ALLY: enthralled by a siren's song, a prismatic image, a summoned elemental): the hero it
+   * fights for. It goes for the monsters near that hero, and they for it (allies.ts).
+   */
+  ally?: string;
 }
 
 /** Mob.beckon: called towards a spot. Statue.beckon: an animated statue does not stir for it. */

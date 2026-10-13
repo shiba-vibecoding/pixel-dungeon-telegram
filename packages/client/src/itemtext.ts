@@ -72,6 +72,11 @@ export function plainName(world: World, item: Item): string {
   return itemName(world, { ...item, level: 0, durability: undefined });
 }
 
+/** Weapon.info and Armor.info: how a stone of augmentation balanced it. */
+function augmentInfo(augment: 'speed' | 'damage' | 'evasion' | 'defense'): string {
+  return { speed: t.alch.augmentedSpeed, damage: t.alch.augmentedDamage, evasion: t.alch.augmentedEvasion, defense: t.alch.augmentedDefense }[augment];
+}
+
 export function itemInfo(world: World, hero: Hero, item: Item): string[] {
   const category = itemDef(item.kind).category;
   // MeleeWeapon.info and Armor.info: the numbers once the level is known, else what is typical of the kind
@@ -82,7 +87,7 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
     return [
       known ? t.weaponInfo(stats.min, stats.max, stats.str) : t.weaponTypicalInfo(stats.min, stats.max, stats.str),
       ...(item.enchant ? [t.enchantInfo[item.enchant]] : []),
-      ...(item.imbue ? [t.imbueInfo[item.imbue]] : []),
+      ...(item.augment ? [augmentInfo(item.augment)] : []),
       ...(item.kind === 'weapon.pickaxe' ? [t.pickaxeInfo(!!item.bloody)] : []),
       ...(visiblyCursed(item) ? [t.cursedInfo] : []),
       ...(stats.str > hero.str ? [known ? t.tooHeavy : t.probablyTooHeavy] : []),
@@ -93,7 +98,7 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
     const stats = armorStats(known ? item : typical(item));
     return [
       known ? t.armorInfo(stats.dr, stats.str) : t.armorTypicalInfo(stats.dr, stats.str),
-      ...(item.glyph ? [t.glyphInfo[item.glyph]] : []), ...(visiblyCursed(item) ? [t.cursedInfo] : []),
+      ...(item.glyph ? [t.glyphInfo[item.glyph]] : []), ...(item.augment ? [augmentInfo(item.augment)] : []), ...(visiblyCursed(item) ? [t.cursedInfo] : []),
       ...(CLASS_ARMOR.includes(item.kind) ? [t.classArmorInfo[CLASS_OF[item.kind]!], t.specialCost] : []),
       ...(stats.str > hero.str ? [known ? t.tooHeavy : t.probablyTooHeavy] : []),
     ];

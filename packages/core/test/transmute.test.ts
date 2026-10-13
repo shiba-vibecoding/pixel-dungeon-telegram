@@ -5,12 +5,14 @@ import { transmute } from '../src/transmute';
 describe('water of transmutation', () => {
   it('turns an item into another of its kind, keeping its level and curse', () => {
     const rng = Rng.seeded(3);
-    expect(transmute(createItem('potion.strength', 2), rng, 5)).toMatchObject({ kind: 'potion.might', qty: 2 });
+    // ScrollOfTransmutation.changeItem: potions and scrolls to their exotic counterparts and back.
+    expect(transmute(createItem('potion.strength', 2), rng, 5)).toMatchObject({ kind: 'potion.mastery', qty: 2 });
+    expect(transmute(createItem('potion.mastery'), rng, 5)!.kind).toBe('potion.strength');
     expect(transmute(createItem('scroll.upgrade'), rng, 5)!.kind).toBe('scroll.enchantment');
     expect(transmute({ ...createItem('weapon.sword', 1, -2), cursed: true }, rng, 5)).toMatchObject({ kind: 'weapon.mace', level: -2, cursed: true });
-    expect(transmute(createItem('weapon.shortSword'), rng, 5)).toBeNull();
+    expect(itemDef(transmute(createItem('weapon.shortSword'), rng, 5)!.kind).tier).toBe(1);
     expect(transmute(createItem('food.ration'), rng, 5)).toBeNull();
-    for (const kind of ['ring.haste', 'wand.firebolt', 'seed.sungrass', 'scroll.identify', 'potion.healing'] as const) {
+    for (const kind of ['ring.haste', 'wand.firebolt', 'seed.sungrass', 'stone.blink', 'trinket.clover'] as const) {
       const changed = transmute(createItem(kind, 1, kind.startsWith('ring.') ? 2 : 0), rng, 5)!;
       expect(changed.kind).not.toBe(kind);
       expect(itemDef(changed.kind).category).toBe(itemDef(kind).category);
@@ -33,7 +35,7 @@ describe('water of transmutation', () => {
         const result = act(world, 'p', { type: 'drop', item: 0 });
         expect(result.ok && result.effects.some((e) => e.type === 'transmuted')).toBe(true);
         expect(level.map[well.pos]).toBe(T.EMPTY_WELL);
-        expect(floorAt(world, depth).heaps.find((h) => h.pos === well.pos)!.items[0]!.kind).toBe('potion.might');
+        expect(floorAt(world, depth).heaps.find((h) => h.pos === well.pos)!.items[0]!.kind).toBe('potion.mastery');
         return;
       }
     }

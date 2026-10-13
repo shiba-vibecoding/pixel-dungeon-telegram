@@ -34,6 +34,9 @@ import { discover, F, hasFlag, T } from './level/terrain';
 import { deriveSeed, Rng, seedRng, Stream } from './rng';
 import { createRun, type RunState } from './run';
 import { isChallenged, NO_HERBALISM, underChallenges } from './challenges';
+import { chillFactor, hungerPaused, tickHero } from './buffs';
+import { burnFuses, nextFuse } from './bombs';
+import { levelTrinkets, PETRIFIED_SEED, SALT_CUBE, trinketLevel } from './trinkets';
 import { arenaJoined, arenaLevelAt, arenaPick, arenaProblem, arenaReady, type ArenaState, arenaTurn, newArena } from './arena';
 
 /*
@@ -110,6 +113,13 @@ export interface World {
   live?: boolean;
   /** How the run was won: the Amulet's own end, or the way out to the surface (the original's «Happy end»). */
   ending?: 'amulet' | 'surface';
+  /** Alchemical energy (Dungeon.energy): energy crystals picked up and items turned into energy, spent at the pot. */
+  energy?: number;
+  /**
+   * Night when the run began (DimensionalSundial reads the clock; a checked run cannot): set by whoever starts
+   * the run, day when absent. A seam for the server.
+   */
+  night?: boolean;
   /** The daily dungeon's boon the hero set out with (daily.ts), for the screens. */
   boon?: string;
   /** The Amulet of Yendor has been taken up (Statistics.amuletObtained): its question is asked once. */
@@ -213,7 +223,7 @@ export function levelAt(world: World, depth: number): Level {
         respawn: quietDepth(d) ? -1 : TIME_TO_RESPAWN,
         heaps: createItems(
           world.run, level, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d)), quietDepth(d), world.heroes.length,
-          (item) => underChallenges(world, item),
+          (item) => underChallenges(world, item), levelTrinkets(world),
         ),
       };
       if (world.bones && !world.bones.placed && world.bones.depth === d) {
@@ -555,6 +565,7 @@ function turnTime(world: World, floor: Floor, turn: Turn): number {
     case 'respawn': return floor.respawn;
     case 'arena': return world.arena!.tick;
     case 'gas': return floor.gasAt!;
+    case 'fuse': return nextFuse(floor.heaps)!;
   }
 }
 
@@ -677,7 +688,7 @@ function stepTowards(world: World, hero: Hero, to: number): number | null {
   return path && path.length > 0 ? path[0]! : null;
 }
 
-type Turn = { kind: 'hero'; hero: Hero } | { kind: 'mob'; mob: Mob } | { kind: 'respawn' } | { kind: 'gas' } | { kind: 'arena' };
+type Turn = { kind: 'hero'; hero: Hero } | { kind: 'mob'; mob: Mob } | { kind: 'respawn' } | { kind: 'gas' } | { kind: 'arena' } | { kind: 'fuse' };
 
 /** Who is due next on a depth; nothing happens on a depth without living heroes. */
 function nextTurn(world: World, depth: number): Turn | undefined {
@@ -698,7 +709,10 @@ function nextTurn(world: World, depth: number): Turn | undefined {
   const arena = world.arena;
   if (arena?.phase === 'fight' && arena.depth === depth && arena.tick < time) [turn, time] = [{ kind: 'arena' }, arena.tick];
   // Clouds of gas spread a turn at a time (Blob.act).
-  if (floor.gasAt !== undefined && floor.gasAt < time) turn = { kind: 'gas' };
+  if (floor.gasAt !== undefined && floor.gasAt < time) [turn, time] = [{ kind: 'gas' }, floor.gasAt];
+  // Bomb.Fuse: a lit bomb burns down (after the hero, before the others).
+  const fuse = nextFuse(floor.heaps);
+  if (fuse !== undefined && fuse < time) turn = { kind: 'fuse' };
   return turn;
 }
 
@@ -809,19 +823,24 @@ function playTurn(ctx: Ctx, turn: Exclude<Turn, { kind: 'hero' }>): void {
       floor.now = Math.max(floor.now, floor.gasAt!);
       floor.gasAt! += 1;
       evolveGas(ctx);
+      return;
+    case 'fuse':
+      floor.now = Math.max(floor.now, nextFuse(floor.heaps)!);
+      burnFuses(ctx);
   }
 }
 
 function spend(ctx: Ctx, hero: Hero, time: number): void {
-  // Slowed, everything takes twice as long (Char.spend); a ring of haste speeds it all up.
+  // Slowed, everything takes twice as long (Char.spend), chilled somewhat longer; a ring of haste speeds it all up.
   if (hero.slowed > 0) time *= 2;
+  else time /= chillFactor(hero);
   const haste = ringBonus(hero, 'ring.haste');
   if (haste !== 0) time *= 1.1 ** -haste;
   hero.time += time;
   hero.regen += time;
   if (hero.depth === ctx.depth) altarMarksHero(ctx, hero, time);
-  // Regeneration: a ring of mending makes wounds close faster.
-  const regenDelay = REGENERATION_DELAY / 1.2 ** ringBonus(hero, 'ring.mending');
+  // Regeneration: a ring of mending makes wounds close faster, a salt cube slower (SaltCube.healthRegenMultiplier).
+  const regenDelay = REGENERATION_DELAY / 1.2 ** ringBonus(hero, 'ring.mending') / SALT_CUBE.healthRegenMultiplier(trinketLevel(hero, 'trinket.saltCube'));
   while (hero.regen >= regenDelay) {
     hero.regen -= regenDelay;
     // A starving body does not heal (Regeneration).
@@ -892,6 +911,8 @@ function spend(ctx: Ctx, hero: Hero, time: number): void {
     hurt(ctx, hero, hero.bleeding, 'bleeding');
   }
   if (hero.levitating) hero.levitating = Math.max(0, hero.levitating - time);
+  // Shattered's buffs from alchemy (buffs.ts).
+  if (isAlive(hero)) tickHero(ctx, hero, time);
   if (hero.gasImmune) hero.gasImmune = Math.max(0, hero.gasImmune - time);
   if (hero.burning > 0) {
     if (isWater(ctx.level.map[hero.pos]!)) {
@@ -914,7 +935,9 @@ function spend(ctx: Ctx, hero: Hero, time: number): void {
  * healing and now and then costs a hit point.
  */
 function starve(ctx: Ctx, hero: Hero, time: number): void {
-  const step = hungerStep(hero);
+  // Hunger.act: no hunger while well fed, or in a challenge arena; a salt cube slows it (SaltCube.hungerGainMultiplier).
+  if (hungerPaused(hero)) return;
+  const step = hungerStep(hero) / SALT_CUBE.hungerGainMultiplier(trinketLevel(hero, 'trinket.saltCube'));
   hero.hungerTime += time;
   while (hero.hungerTime >= step && isAlive(hero)) {
     hero.hungerTime -= step;
@@ -1020,7 +1043,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
 
     case 'attack': {
       const mob = mobById(world, hero.depth, action.target)!;
-      if (mob.state === 'passive') {
+      if (mob.state === 'passive' || mob.ally) {
         // Not a fight: a word with the sad ghost, or business with the
         // shopkeeper; it takes no time.
         if (isShopkeeper(mob)) ctx.effects.push({ type: 'shop', hero: hero.id });
@@ -1033,7 +1056,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
           ctx.effects.push({ type: 'ratKing', hero: hero.id, line: mob.awake ? 'busy' : 'notSleeping' });
           mob.awake = true;
         }
-        else if (mob.kind === 'mirror' || mob.kind === 'bee') {
+        else if (mob.kind === 'mirror' || mob.kind === 'bee' || mob.ally) {
           // MirrorImage.interact and Bee.interact: the hero and the ally swap places.
           const from = hero.pos;
           hero.pos = mob.pos;
@@ -1309,7 +1332,14 @@ function trample(ctx: Ctx, pos: number, hero?: Hero): void {
   const herbalism = hero ? ringBonus(hero, 'ring.herbalism') : 0;
   // Barren land: the grass sheds nothing at all.
   if (herbalism < 0 || isChallenged(ctx.world, NO_HERBALISM)) return;
-  if (ctx.rng.int(18) <= ctx.rng.int(herbalism + 1)) dropItem(ctx.floor, pos, new ItemGenerator(ctx.rng, ctx.depth).of('seed'));
+  // PetrifiedSeed: more found in the grass, and a runestone now and then instead of a seed (HighGrass.trample).
+  const petrified = trinketLevel(hero, 'trinket.petrifiedSeed');
+  if (petrified >= 0) {
+    if (ctx.rng.float() < (1 / 18) * PETRIFIED_SEED.grassLootMultiplier(petrified)) {
+      const stone = ctx.rng.float() < PETRIFIED_SEED.stoneInsteadOfSeedChance(petrified);
+      dropItem(ctx.floor, pos, new ItemGenerator(ctx.rng, ctx.depth).of(stone ? 'stone' : 'seed'));
+    }
+  } else if (ctx.rng.int(18) <= ctx.rng.int(herbalism + 1)) dropItem(ctx.floor, pos, new ItemGenerator(ctx.rng, ctx.depth).of('seed'));
   if (ctx.rng.int(6) <= ctx.rng.int(herbalism + 1)) dropItem(ctx.floor, pos, createItem('dew'));
 }
 
@@ -1403,6 +1433,18 @@ function beaconProblem(world: World, hero: Hero, index: number, mode: unknown): 
   return null;
 }
 
+/**
+ * InterlevelScene's RETURN: the hero goes straight to another depth (a scroll of passage, a beacon of returning), to
+ * a cell there or, without one, its way in.
+ */
+export function moveToDepth(world: World, hero: Hero, depth: number, pos?: number): void {
+  const fromLevel = levelAt(world, hero.depth);
+  leaveCell(world, fromLevel, hero.depth, hero.pos);
+  const level = levelAt(world, depth);
+  hero.depth = depth;
+  place(world, hero, level, pos ?? level.entrance);
+}
+
 function changeDepth(world: World, hero: Hero, depth: number, arrival: 'entrance' | 'exit'): void {
   const fromLevel = levelAt(world, hero.depth);
   const fromDepth = hero.depth;
@@ -1430,6 +1472,15 @@ function fall(ctx: Ctx, hero: Hero, into: number): void {
   hero.pos = landingCell(world, depth, rng, weakFloor);
   hero.time = floor.now;
   enterCell(below, hero.pos);
+  // ElixirOfFeatherFall.FeatherBuff: the fall hurts nothing, and uses up ten turns of it (Chasm.heroLand).
+  const feather = hero.buffs?.featherFall ?? 0;
+  if (feather > 0) {
+    hero.buffs!.featherFall = feather - 10;
+    if (hero.buffs!.featherFall! <= 0) delete hero.buffs!.featherFall;
+    observe(world, hero);
+    reviveFallen(world, depth, effects);
+    return;
+  }
   hero.crippled = Math.max(hero.crippled, CRIPPLE_TURNS);
   const damage = rng.intRange(Math.trunc(hero.ht / 3), Math.trunc(hero.ht / 2));
   effects.push({ type: 'hurt', depth, who: hero.id, damage });

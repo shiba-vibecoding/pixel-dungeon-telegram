@@ -19,7 +19,9 @@ import { unshakeable } from './enchant';
 /** How a bolt looks in flight. */
 export type Bolt =
   | 'magic' | 'lightning' | 'fire' | 'poison' | 'slow' | 'teleport' | 'blink' | 'beam' | 'rocks' | 'shadow' | 'amok' | 'reach'
-  | 'flock' | 'regrowth';
+  | 'flock' | 'regrowth'
+  // Alchemy's spells: wild energy's chaotic zap, a telekinetic grab.
+  | 'wild' | 'grab';
 
 /** The monster at a cell, if any; heroes are never the target of a hero's wand. */
 function mobAt(ctx: Ctx, cell: number): Mob | undefined {

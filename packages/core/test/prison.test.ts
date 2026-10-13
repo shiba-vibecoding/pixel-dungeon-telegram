@@ -235,7 +235,7 @@ describe('the shop on depth 6', () => {
       const wares = floorAt(world, 6).heaps.filter((h) => h.kind === 'forSale');
       expect(wares.length, `seed ${seed}`).toBe(15);
       expect(wares.some((h) => h.items[0]!.kind === 'bag.seeds'), `seed ${seed}`).toBe(true);
-      expect(wares.some((h) => h.items[0]!.kind === 'weightstone'), `seed ${seed}`).toBe(true);
+      expect(wares.some((h) => h.items[0]!.kind === 'stone.augmentation'), `seed ${seed}`).toBe(true);
       expect(wares.some((h) => h.items[0]!.kind === 'ankh'), `seed ${seed}`).toBe(true);
       expect(floorAt(world, 6).mobs.filter((m) => m.kind === 'shopkeeper'), `seed ${seed}`).toHaveLength(1);
     }

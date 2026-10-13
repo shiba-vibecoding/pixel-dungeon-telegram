@@ -45,7 +45,8 @@ function randomAction(world: World, id: string, rng: Rng): Action {
     case 8: return { type: 'special', target };
     // The beacon, when the hero has one: a random slot would hardly ever hit it.
     case 9: return { type: 'beacon', item: Math.max(0, hero.items.findIndex((i) => i.kind === 'beacon')), mode: rng.int(2) === 0 ? 'set' : 'return' };
-    case 10: return { type: 'balance', item, imbue: rng.int(2) === 0 ? 'speed' : 'accuracy' };
+    // Alchemy's items want an item, a cell or a choice to act on.
+    case 10: return { type: 'use', item, on: rng.int(Math.max(1, hero.items.length)), cell: target, choice: rng.int(4) };
     case 11: return hero.pos === level.exit ? { type: 'descend' } : { type: 'move', to: hero.pos + rng.element(NEIGHBOURS8)! };
     case 12: return { type: 'faceCurse' };
     case 13: return { type: 'remove', ring: 0 };
@@ -87,7 +88,7 @@ describe('chaos', () => {
       }
     }
     // Every kind of action got through at least now and then.
-    for (const type of ['move', 'attack', 'use', 'throw', 'zap', 'equip', 'drop', 'pickup', 'beacon', 'balance']) expect(accepted[type], type).toBeGreaterThan(0);
+    for (const type of ['move', 'attack', 'use', 'throw', 'zap', 'equip', 'drop', 'pickup', 'beacon']) expect(accepted[type], type).toBeGreaterThan(0);
   }, 60000);
 
   it('a world saved as JSON in the middle of chaos carries on exactly like the original', () => {

@@ -1536,7 +1536,7 @@ addEventListener('pd-save-failed', () => {
 
 const HINT_CATEGORIES: ReadonlySet<string> = new Set([
   'potion', 'scroll', 'weapon', 'armor', 'ring', 'wand', 'food', 'seed', 'missile', 'bomb', 'key', 'gold', 'vial', 'bag',
-  'ankh', 'honeypot', 'torch', 'tome', 'kit', 'beacon', 'weightstone',
+  'ankh', 'honeypot', 'torch', 'tome', 'kit', 'beacon',
 ]);
 const NPCS: ReadonlySet<string> = new Set(['ghost', 'wandmaker', 'blacksmith', 'imp', 'ratKing']);
 const BOSS_DEPTHS: ReadonlySet<number> = new Set([5, 10, 15, 20, 25]);
