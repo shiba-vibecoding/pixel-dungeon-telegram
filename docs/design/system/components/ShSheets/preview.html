@@ -1,0 +1,50 @@
+<!-- @dsCard group="Shattered" height=1320 width=1100 page subtitle="Листы v19: баффы с оттенками (18 штук: ускорение и выносливость, три пропитки, барьер, тайная броня, призматический щит, лечение, водное лечение, рост здоровья, баффы артефактов рядом с похожими), снаряды 12 палочек, новые отметки журнала, кадры котла, катализатора, осколка и кучки энергии" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Листы v19</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .wrap { width: 1100px; box-sizing: border-box; padding: 16px 20px; color: var(--ink); display: flex; flex-direction: column; gap: 10px; }
+  h2 { margin: 6px 0 0; font: var(--text-label, 400 18px/20px var(--font-ui)); color: var(--gold); }
+  h2 span { margin-left: 8px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .grid { display: grid; gap: 6px; }
+  .b { display: grid; grid-template-columns: 32px 14px minmax(0, 1fr); align-items: center; gap: 8px; padding: 4px 6px; background: var(--stone-800); clip-path: var(--notch); font: var(--text-caption, 400 15px/18px var(--font-small)); color: var(--ink); }
+  .b small { display: block; color: var(--ink-muted); font: inherit; }
+  .b.pair { box-shadow: inset 0 -2px 0 var(--stone-500); }
+  .w { display: grid; grid-template-columns: 32px 32px 12px minmax(0, 1fr); align-items: center; gap: 6px; padding: 4px 6px; background: var(--stone-800); clip-path: var(--notch); font: var(--text-caption, 400 15px/18px var(--font-small)); }
+  .w i.sw { width: 12px; height: 12px; }
+  canvas { image-rendering: pixelated; display: block; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+  .cell { display: flex; flex-direction: column; gap: 4px; font: var(--text-caption, 400 15px/18px var(--font-small)); color: var(--ink-muted); }
+  .j { display: grid; grid-template-columns: 32px minmax(0,1fr); gap: 8px; align-items: center; padding: 4px 6px; background: var(--stone-800); clip-path: var(--notch); font: var(--text-caption, 400 15px/18px var(--font-small)); }
+</style></head>
+<body>
+<div class="pd-root wrap" id="w"></div>
+<script>
+  var q = new URLSearchParams(location.search), en = q.get('lang') === 'en';
+  var T = [["haste", "Ускорение", "Haste", 41, [0.13, 0.95]], ["stamina", "Выносливость", "Stamina", 41, [0.33, 0.8]], ["fireImbue", "Огненная пропитка", "Fire imbue", 55, [2, 0.75, 0]], ["toxicImbue", "Ядовитая пропитка", "Toxic imbue", 55, [1, 1.5, 0]], ["frostImbue", "Ледяная пропитка", "Frost imbue", 55, [0, 1.6, 2.6]], ["barrier", "Барьер", "Barrier", 20, [0.53, 0.85]], ["arcaneArmor", "Тайная броня", "Arcane armor", 20, [0.78, 0.7]], ["prismatic", "Призматический щит", "Prismatic guard", 20, [0.68, 0.42]], ["prismaticFull", "Призматический щит, усилен", "Prismatic guard, empowered", 20, [1.6, 1.5, 0.9]], ["healing", "Лечение", "Healing", 44, null], ["aquaHealing", "Водное лечение", "Aquatic healing", 44, [0.5, 0.85]], ["might", "Рост здоровья", "Health boost", 44, [0.08, 0.95]], ["cloak", "Плащ теней", "Cloak of shadows", 12, [0.77, 0.6]], ["invisible", "Невидимость (зелье)", "Invisibility (potion)", 12, null], ["hourglass", "Песочные часы: стазис", "Hourglass: stasis", 7, [0.08, 0.9]], ["slow", "Замедление", "Slowed", 7, null], ["capeThorns", "Плащ шипов", "Cape of thorns", 31, [0.08, 0.6]], ["talisman", "Талисман предвидения", "Talisman of foresight", 32, [0.5, 0.65]]], J = [{"key": "shop", "ru": "Лавка", "en": "Shop", "x": 0}, {"key": "imp-shop", "ru": "Лавка беса", "en": "Imp’s shop", "x": 16}, {"key": "rat-king", "ru": "Крысиный король", "en": "Rat king", "x": 32}, {"key": "demon-spawner", "ru": "Логово демонов", "en": "Demon spawner", "x": 48}, {"key": "lost-pack", "ru": "Потерянный рюкзак", "en": "Lost backpack", "x": 64}, {"key": "beacon", "ru": "Маяк возвращения", "en": "Beacon of returning", "x": 80}, {"key": "distant-well", "ru": "Дальний колодец", "en": "Distant well", "x": 96}, {"key": "floor-chasm", "ru": "Этаж: пропасти", "en": "Floor: chasms", "x": 112}, {"key": "floor-water", "ru": "Этаж: вода", "en": "Floor: water", "x": 128}, {"key": "floor-grass", "ru": "Этаж: заросли", "en": "Floor: overgrown", "x": 144}, {"key": "floor-dark", "ru": "Этаж: тьма", "en": "Floor: dark", "x": 160}, {"key": "floor-large", "ru": "Этаж: большой", "en": "Floor: large", "x": 176}, {"key": "floor-traps", "ru": "Этаж: ловушки", "en": "Floor: traps", "x": 192}, {"key": "floor-secrets", "ru": "Этаж: тайники", "en": "Floor: secrets", "x": 208}], w = document.getElementById('w');
+  function sec(t, n) { w.insertAdjacentHTML('beforeend', '<h2>' + t + '<span>' + n + '</span></h2>'); var d = document.createElement('div'); w.appendChild(d); return d; }
+  var g1 = sec(en ? 'Buffs that share an icon' : 'Баффы с одной иконкой', en ? 'buffs-tints-large.png 16×16 and buffs-tints.png 7×7 — pre-tinted; the base icon from Shattered is in the note' : 'buffs-tints-large.png 16×16 и buffs-tints.png 7×7 — уже окрашены; в подписи — исходная иконка Shattered');
+  g1.className = 'grid'; g1.style.gridTemplateColumns = 'repeat(4, minmax(0,1fr))';
+  T.forEach(function (t, i) { g1.insertAdjacentHTML('beforeend', '<div class="b' + ([1, 4, 8, 11, 13, 15].indexOf(i) > -1 ? ' pair' : '') + '"><i class="pd-tbuff large" data-tb="' + i + '"></i><i class="pd-tbuff" data-tb="' + i + '"></i><span>' + (en ? t[2] : t[1]) + '<small>BuffIndicator ' + t[3] + (t[4] ? ' · ' + (t[4].length === 3 ? '×' + t[4].join('/') : 'hue ' + Math.round(t[4][0] * 360) + '°') : (en ? ' · as is' : ' · без изменений')) + '</small></span></div>'); });
+  var g2 = sec(en ? 'Wand bolts' : 'Снаряды палочек', en ? 'wand-bolts.png: 2 frames of 8×8 a row, 90 ms; the trail is 4 squares of the colour on the right' : 'wand-bolts.png: 2 кадра 8×8 на ряд, 90 мс; шлейф — 4 квадрата цвета справа');
+  g2.className = 'grid'; g2.style.gridTemplateColumns = 'repeat(4, minmax(0,1fr))';
+  PD.demo.wands.ru.forEach(function (n, i) { var d = document.createElement('div'); d.className = 'w'; var c1 = document.createElement('canvas'), c2 = document.createElement('canvas'); [c1, c2].forEach(function (c, f) { c.width = 8; c.height = 8; c.style.width = '32px'; c.style.height = '32px'; var im = new Image(); im.onload = function () { c.getContext('2d').drawImage(im, f * 8, i * 8, 8, 8, 0, 0, 8, 8); }; im.src = PD.fxImg('bolts'); d.appendChild(c); }); d.insertAdjacentHTML('beforeend', '<i class="sw" style="background:' + PD.demo.wands.trail[i] + '"></i><span>' + (en ? PD.demo.wands.en[i] : n) + '</span>'); g2.appendChild(d); });
+  var g3 = sec(en ? 'Journal: new landmarks' : 'Журнал: новые отметки', en ? 'journal2.png, 16×16 in a row: shops, lost pack, beacon, quest givers, distant well, level feelings' : 'journal2.png, 16×16 в ряд: лавки, потерянный рюкзак, маяк, квестовые, дальний колодец, особые этажи');
+  g3.className = 'grid'; g3.style.gridTemplateColumns = 'repeat(5, minmax(0,1fr))';
+  J.forEach(function (j, i) { g3.insertAdjacentHTML('beforeend', '<div class="j"><i class="pd-jicon2" data-j2="' + i + '"></i><span>' + (en ? j.en : j.ru) + '</span></div>'); });
+  var g4 = sec(en ? 'Alchemy and map sprites' : 'Алхимия и карта', en ? 'pot ×2, catalyst ×3, shard ×4, energy pile ×3, prismatic image ×3 (4 colour phases), ally heart ×4, chain link ×4' : 'котёл ×2, катализатор ×3, осколок ×4, кучка энергии ×3, призматическое отражение ×3 (4 фазы цвета), сердечко союзника ×4, звено цепи ×4');
+  g4.className = 'row';
+  function strip(src, sw, sh, n, sc, cap, sy) { var c = document.createElement('canvas'); c.width = sw * n; c.height = sh; c.style.width = sw * n * sc + 'px'; c.style.height = sh * sc + 'px'; var im = new Image(); im.onload = function () { c.getContext('2d').drawImage(im, 0, sy || 0, sw * n, sh, 0, 0, sw * n, sh); }; im.src = src; var d = document.createElement('div'); d.className = 'cell'; d.appendChild(c); d.insertAdjacentHTML('beforeend', '<span>' + cap + '</span>'); g4.appendChild(d); }
+  strip(PD.alchImg('brew'), 32, 32, 10, 2, en ? 'pot: brewing' : 'котёл: варка');
+  strip(PD.alchImg('cata'), 32, 32, 10, 2, en ? 'pot: catalyst' : 'котёл: катализатор');
+  strip(PD.alchImg('idle'), 32, 32, 6, 2, en ? 'pot: idle' : 'котёл: кипит');
+  strip(PD.alchImg('catalyst'), 16, 16, 6, 3, en ? 'catalyst' : 'катализатор');
+  strip(PD.alchImg('shard'), 7, 7, 4, 4, en ? 'shard' : 'осколок');
+  strip(PD.alchImg('pile'), 16, 16, 4, 3, en ? 'energy pile' : 'кучка энергии');
+  [0, 15, 30, 45].forEach(function (y, k) { strip(PD.fxImg('prism'), 12, 15, 4, 3, (en ? 'prismatic, phase ' : 'отражение, фаза ') + (k + 1), y); });
+  strip(PD.fxImg('heart'), 7, 7, 2, 4, en ? 'ally' : 'союзник'); strip(PD.fxImg('link'), 6, 4, 2, 4, en ? 'chain' : 'цепь');
+  PD.sprite(document.body);
+</script>
+</body>
+</html>
