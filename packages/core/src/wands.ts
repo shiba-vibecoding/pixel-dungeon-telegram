@@ -419,8 +419,9 @@ function lightning(z: Zap, bolt: Ballistica): void {
     arcs.push([hero.pos, bolt.collisionPos]);
   }
   for (const [from, to] of arcs) ctx.effects.push({ type: 'zapped', depth: ctx.depth, from, to, bolt: 'lightning' });
-  // The zapper's allies (other than the one aimed at) are spared.
-  const struck = affected.filter((ch) => !(ch !== hero && (isHero(ch) || (!isHero(ch) && ch.ally)) && ch.pos !== bolt.collisionPos));
+  // The zapper's allies (other than the one aimed at) are spared, and so is whoever is charged with lightning (LightningCharge).
+  const struck = affected.filter((ch) => !(ch !== hero && (isHero(ch) || (!isHero(ch) && ch.ally)) && ch.pos !== bolt.collisionPos) &&
+    !(isHero(ch) && (ch.lightningCharge ?? 0) > 0));
   if (struck.length === 0) return;
   let multiplier = f32(0.4 + f32(0.6 / struck.length));
   if (isWater(ctx.level.map[bolt.collisionPos]!)) multiplier = 1;

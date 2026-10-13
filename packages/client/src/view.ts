@@ -3,12 +3,13 @@ import {
   visibleCells, WIDTH, type World,
   type Look,
 } from '@pd/core';
-import { audio } from './audio';
+import { audio, type Sound } from './audio';
 import { capitalize, t } from './i18n';
 import { itemName, plainName } from './itemtext';
 import { type AnimName, type Assets, type CharSprite, duration, heroSprite } from './sprites';
 import { haptic } from './telegram';
 import { DEPTH_CARD_MS } from './cards';
+import { BOLT_MS_PER_CELL, wandFx } from './wandfx';
 
 /*
  * What the player sees, as opposed to what the world is: characters slide
@@ -34,6 +35,19 @@ const BOLT_COLORS: Record<string, string> = {
   // Shattered's wands (MagicMissile and Beam kinds).
   frost: '136, 204, 255', corrosion: '255, 136, 0', force: '102, 68, 34', earth: '128, 85, 0', ward: '136, 34, 255', corruption: '40, 0, 40',
   rainbow: '255, 120, 220', foliage: '68, 170, 68', death: '120, 0, 160', light: '255, 255, 210', blood: '204, 0, 0',
+};
+
+/** The bolts of Shattered's wands (and its wards): their zappers move, and they fly as MagicMissile does (wandfx.ts). */
+const WAND_BOLTS = new Set(['magic', 'fire', 'frost', 'corrosion', 'force', 'earth', 'ward', 'corruption', 'rainbow', 'foliage', 'death', 'light', 'blood']);
+
+/** What a wand's bolt sounds like as it strikes (WandOfMagicMissile, Frost, LivingEarth, Corruption: HIT_MAGIC; Corrosion: GAS). */
+const HIT_SOUNDS: Partial<Record<string, Sound>> = { magic: 'hit_magic', frost: 'hit_magic', earth: 'hit_magic', corruption: 'hit_magic', corrosion: 'gas' };
+
+/** CursedWand's effects' sounds (their own; the zap is played with the bolt). */
+const CURSED_SOUNDS: Partial<Record<string, Sound[]>> = {
+  randomGas: ['gas'], selfOoze: ['shatter'], healthTransfer: ['cursed'], alarm: ['challenge', 'alert'], sheepPolymorph: ['puff', 'sheep'],
+  summonSheep: ['puff', 'sheep'], fireBall: ['blast', 'burning'], massInvuln: ['teleport'], petrify: ['teleport'], forestFire: ['teleport'],
+  spawnGoldenMimic: ['mimic'], gravityChaos: ['teleport'], randomTeleport: ['teleport'], interFloorTeleport: ['teleport'],
 };
 
 /** Tints of the clouds: green poison, yellow paralysis, orange flames. */
@@ -113,6 +127,16 @@ export interface Puppet {
   levitating?: boolean;
   /** Fallen into a chasm (a monster): when it began to drop out of sight, spinning and shrinking. */
   fallStart?: number;
+  /** CharSprite's states (Shattered): FROZEN in a block of ice, CHILLED under falling snow, DARKENED (corruption, doom), SHIELDED in a halo. */
+  frozen?: boolean;
+  chilled?: boolean;
+  darkened?: boolean;
+  shielded?: boolean;
+  /** WardSprite: a sentry (tier 4 and up) bobs; a ward dims as it spends its shots (1 bright, down to 0.2). */
+  bob?: boolean;
+  dim?: number;
+  /** LotusSprite: how far its leaves fall about it (cells). */
+  reach?: number;
 }
 
 /** MobSprite.FALL_TIME: how long a monster takes to drop out of sight into a chasm. */
@@ -254,7 +278,11 @@ export class View {
   /** The arena's wave banner: its words, its kind, and when it shows (after a sinking card, if one is up). */
   waveCard: { title: string; sub: string; kind: '' | 'champions' | 'boss'; start: number } | null = null;
   /** Thrown items and magic bolts in flight; `sprite` null for a bolt. */
-  projectiles: Array<{ from: number; to: number; start: number; duration: number; sprite: number | null; color?: string }> = [];
+  projectiles: Array<{
+    from: number; to: number; start: number; duration: number; sprite: number | null; color?: string;
+    /** A wand's bolt (MagicMissile): its particles' kind (wandfx.ts), and whether it is one of a cone's (a wider emitter). */
+    trail?: string; wide?: boolean;
+  }> = [];
 
   constructor(private readonly assets: Assets) {}
 
@@ -402,6 +430,7 @@ export class View {
         puppet.burning = hero.burning > 0;
         puppet.poisoned = hero.poison > 0;
         puppet.levitating = (hero.levitating ?? 0) > 0;
+        this.condition(puppet, (hero.frozen ?? 0) > 0, (hero.chill ?? 0) > 0, false, (hero.shield ?? 0) > 0 || (hero.invulnerable ?? 0) > 0, now);
         puppet.row = itemDef(hero.armor.kind).tier ?? 0;
         puppet.label = hero.id === myId ? '' : hero.name;
       }
@@ -424,6 +453,12 @@ export class View {
       puppet.levitating = (mob.levitating ?? 0) > 0;
       puppet.burning = (mob.burning ?? 0) > 0;
       puppet.poisoned = (mob.poison ?? 0) > 0;
+      this.condition(puppet, (mob.frozen ?? 0) > 0, (mob.chill ?? 0) > 0, !!mob.corrupted || !!mob.doomed, (mob.shield ?? 0) > 0 || (mob.invulnerable ?? 0) > 0, now);
+      if (mob.ward) {
+        puppet.bob = mob.ward.tier >= 4;
+        puppet.dim = mob.ward.tier <= 3 ? Math.max(0.2, 1 - mob.ward.zaps / (2 * mob.ward.tier - 1)) : 1;
+      }
+      if (mob.lotus) puppet.reach = mob.lotus.level;
     }
     for (const [id, puppet] of this.puppets) {
       if (!seen.has(id) && (puppet.alive || now >= puppet.removeAt)) this.puppets.delete(id);
@@ -447,9 +482,41 @@ export class View {
     this.projectiles = this.projectiles.filter((p) => now - p.start < p.duration);
   }
 
-  private shoot(from: number, to: number, sprite: number | null, now: number, color?: string): void {
+  private shoot(from: number, to: number, sprite: number | null, now: number, color?: string, trail?: string, wide?: boolean): void {
     const cells = Math.max(Math.abs(cellX(to) - cellX(from)), Math.abs(cellY(to) - cellY(from)));
-    this.projectiles.push({ from, to, start: now, duration: Math.max(90, cells * 45), sprite, color });
+    // MagicMissile flies at its own pace (200 pixels a second), a thrown thing faster.
+    const duration = trail ? Math.min(600, Math.max(90, Math.hypot(cellX(to) - cellX(from), cellY(to) - cellY(from)) * BOLT_MS_PER_CELL)) : Math.max(90, cells * 45);
+    this.projectiles.push({ from, to, start: now, duration, sprite, color, trail, wide });
+  }
+
+  /** CharSprite.add/remove(State): the conditions a creature is shown under, with their comings and goings. */
+  private condition(puppet: Puppet, frozen: boolean, chilled: boolean, darkened: boolean, shielded: boolean, now: number): void {
+    if (puppet.frozen && !frozen && puppet.alive) {
+      // IceBlock.melt: Splash of 0xB2D6FF.
+      const at = cellMiddle(puppet.to);
+      wandFx.burst('melt', at.x, at.y, now, 5);
+    }
+    puppet.frozen = frozen;
+    puppet.chilled = chilled;
+    puppet.darkened = darkened;
+    puppet.shielded = shielded;
+  }
+
+  /** A zapper's motion (Shattered's CharSprite.zap): a hero swings as in an attack; a ward flashes, sparks rising off it. */
+  private zapper(cell: number, target: number, now: number): void {
+    for (const puppet of this.puppets.values()) {
+      if (!puppet.alive || puppet.to !== cell) continue;
+      if (puppet.isHero) {
+        puppet.anim = 'attack';
+        puppet.animStart = now;
+        if (cellX(target) !== cellX(cell)) puppet.flip = cellX(target) < cellX(cell);
+      } else if (puppet.kind === 'ward') {
+        puppet.flashUntil = now + 160;
+        const at = cellMiddle(cell);
+        wandFx.burst('ward', at.x, at.y - 4, now, 2);
+      }
+      return;
+    }
   }
 
   /** How long my hero's step has still to go (ms; 0 or less when standing): the walk sends the next step as it ends. */
@@ -561,6 +628,17 @@ export class View {
               puppet.anim = 'die';
               puppet.animStart = now;
               puppet.removeAt = puppet.isHero ? Infinity : now + duration(puppet.sprite.anims.die) + 700;
+              if (puppet.kind === 'ward') {
+                // WardSprite.die: no death to play, it fades away over two seconds as sparks rise off it.
+                puppet.anim = 'idle';
+                puppet.removeAt = now + 2000;
+                const at = cellMiddle(puppet.to);
+                wandFx.burst('ward', at.x, at.y, now, 10);
+              } else if (puppet.frozen) {
+                // IceBlock.melt: the ice splashes off.
+                const at = cellMiddle(puppet.to);
+                wandFx.burst('melt', at.x, at.y, now, 5);
+              }
             }
           }
           if (effect.who.startsWith('#')) {
@@ -751,6 +829,10 @@ export class View {
           if (effect.kind === 'removeCurse') {
             if (effect.hero === myId) this.say(effect.count > 0 ? t.uncursed : t.nothingCursed, COLORS.default, now);
           } else if (effect.kind === 'recharging') {
+            // ScrollOfRecharging: the charge-up, and energy gathering on the reader.
+            audio.play('chargeup');
+            const at = this.placeOf(effect.hero, now);
+            if (at) wandFx.burst('energy', at.x, at.y, now, 15);
             if (effect.hero === myId) this.say(effect.count > 0 ? t.recharged : t.nothingToRecharge, COLORS.default, now);
           } else if (effect.kind === 'psionic') {
             audio.play('blast');
@@ -835,10 +917,33 @@ export class View {
             this.shoot(effect.from, effect.to, itemSprite({ kind: effect.item, qty: 1, level: 0 }, world.run.labels), now);
           }
           break;
-        case 'zapped':
-          if (effect.depth === this.depth) this.shoot(effect.from, effect.to, null, now, BOLT_COLORS[effect.bolt ?? 'magic']);
-          audio.play(effect.bolt === 'lightning' ? 'lightning' : 'zap', 1, 1, effect.depth === this.depth ? cellMiddle(effect.from) : undefined);
+        case 'zapped': {
+          const bolt = effect.bolt ?? 'magic';
+          const here = effect.depth === this.depth;
+          const from = cellMiddle(effect.from);
+          const to = cellMiddle(effect.to);
+          if (here && WAND_BOLTS.has(bolt)) this.zapper(effect.from, effect.to, now);
+          if (here && wandFx.isBeam(bolt)) {
+            // Beam.DeathRay, LightRay, HealthRay: at once from end to end, fading.
+            wandFx.beam(from.x, from.y, to.x, to.y, bolt, now);
+          } else if (here && bolt === 'lightning') {
+            // Lightning: an arc, and sparks off what it strikes.
+            if (effect.from === effect.to) wandFx.arc(from.x, from.y - 8, to.x, to.y + 4, now);
+            else wandFx.arc(from.x, from.y, to.x, to.y, now);
+            wandFx.burst('spark', to.x, to.y, now, 3);
+            this.flashes.push({ cell: effect.to, start: now, color: '255, 255, 220', duration: 200 });
+          } else if (here) {
+            this.shoot(effect.from, effect.to, null, now, BOLT_COLORS[bolt], WAND_BOLTS.has(bolt) ? bolt : undefined);
+          }
+          const at = here ? from : undefined;
+          // Shattered's sounds: a ray for the beams, lightning's own, the zap for every missile.
+          audio.play(wandFx.isBeam(bolt) ? 'ray' : bolt === 'lightning' ? 'lightning' : 'zap', 1, 1, at);
+          // On striking: magic hits (DamageWand's missiles, frost, living earth, corruption), corrosive gas let out.
+          const arrive = here && !wandFx.isBeam(bolt) && bolt !== 'lightning' ? Math.min(600, Math.hypot(cellX(effect.to) - cellX(effect.from), cellY(effect.to) - cellY(effect.from)) * BOLT_MS_PER_CELL) : 0;
+          const impact = HIT_SOUNDS[bolt];
+          if (impact) audio.later(arrive, impact, 0.87 + Math.random() * 0.28, 1, here ? to : undefined);
           break;
+        }
         case 'avalanche':
           if (effect.depth !== this.depth) break;
           for (const cell of effect.cells) this.flashes.push({ cell, start: now, color: '150, 140, 120', duration: 900 });
@@ -963,22 +1068,31 @@ export class View {
             : effect.note === 'selfTarget' ? COLORS.default : COLORS.warning;
           this.say(note(name), tone, now);
           if (effect.note === 'curseDiscover') audio.play('cursed');
-          if (effect.note === 'staffImbued') audio.play('burning');
+          if (effect.note === 'staffImbued') {
+            // MagesStaff.imbueWand: a burst of Elmo's fire off the mage.
+            audio.play('burning');
+            const at = this.placeOf(effect.hero, now);
+            if (at) wandFx.burst('elmo', at.x, at.y, now, 12);
+          }
           break;
         }
         case 'cone': {
           // MagicMissile's cones: a missile to the tip of every outer ray (every other one, if there are many).
           if (effect.depth !== this.depth) break;
           const step = effect.cells.length > 16 ? 2 : 1;
-          for (let i = 0; i < effect.cells.length; i += step) this.shoot(effect.from, effect.cells[i]!, null, now, BOLT_COLORS[effect.bolt]);
-          audio.play(effect.bolt === 'fire' ? 'burning' : 'zap', 1, 1, cellMiddle(effect.from));
+          this.zapper(effect.from, effect.cells[Math.floor(effect.cells.length / 2)] ?? effect.from, now);
+          for (let i = 0; i < effect.cells.length; i += step) this.shoot(effect.from, effect.cells[i]!, null, now, BOLT_COLORS[effect.bolt], effect.bolt, true);
+          // WandOfFireblast.fx: the zap and the roar of fire; the others, the zap alone.
+          audio.play('zap', 1, 1, cellMiddle(effect.from));
+          if (effect.bolt === 'fire') audio.play('burning', 1, 1, cellMiddle(effect.from));
           break;
         }
         case 'blast':
           // WandOfBlastWave.BlastWave: a ripple out from where it struck.
           if (effect.depth !== this.depth) break;
-          for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) {
-            this.flashes.push({ cell: effect.pos + x + y * WIDTH, start: now, color: '255, 255, 255', duration: 300 });
+          {
+            const at = cellMiddle(effect.pos);
+            wandFx.ripple(at.x, at.y, effect.radius, now);
           }
           audio.play('blast', 1, 1, cellMiddle(effect.pos));
           break;
@@ -992,8 +1106,15 @@ export class View {
           if (effect.depth !== this.depth) break;
           const word = t.allyEvents[effect.event];
           if (word) this.float(effect.mob, word, effect.event === 'doomed' ? COLORS.negative : '#cc66ff', now, true);
-          if (effect.event === 'dissolved') this.puppets.delete(effect.mob);
-          audio.play(effect.event === 'corrupted' || effect.event === 'doomed' ? 'cursed' : 'zap', 1, 1);
+          const place = this.placeOf(effect.mob, now);
+          if (effect.event === 'dissolved') {
+            // EarthGuardian / Ward dissolving: a puff of their particles where they stood.
+            const kind = this.puppets.get(effect.mob)?.kind;
+            if (place) wandFx.burst(kind === 'ward' ? 'ward' : kind === 'lotus' ? 'foliage' : 'earth', place.x, place.y, now, 10);
+            this.puppets.delete(effect.mob);
+          }
+          // Corruption and doom: the cursed sound; a ward or guardian rising, a lotus growing: the zap's.
+          audio.play(effect.event === 'corrupted' || effect.event === 'doomed' ? 'cursed' : 'zap', 1, 1, place);
           break;
         }
         case 'debuffed': {
@@ -1006,6 +1127,8 @@ export class View {
           if (effect.hero !== myId) break;
           const line = t.cursedEffects[effect.effect];
           if (line) this.say(line, effect.effect === 'massInvuln' ? COLORS.positive : COLORS.warning, now);
+          // CursedWand's effects' own sounds.
+          for (const name of CURSED_SOUNDS[effect.effect] ?? []) audio.play(name);
           break;
         }
         case 'supernova':

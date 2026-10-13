@@ -2,6 +2,7 @@ import { type Effect, HEIGHT, type Level, type MobKind, T, visibleCells, WIDTH, 
 import { type BurstOptions, fx, type Piece } from './fx';
 import { type Puppet, STEP_MS, TILE, type View } from './view';
 import { audio } from './audio';
+import { wandFx } from './wandfx';
 import { duration, levelRegion } from './sprites';
 
 /*
@@ -382,7 +383,12 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
       if (!here(effect.depth)) return;
       const at = cellCentre(effect.to);
       const colors = BOLT_GLOW[effect.bolt ?? 'magic'] ?? BOLT_GLOW.magic!;
-      fx.burst(at.x, at.y, now, { count: 16, colors, glow: true, speed: [20, 80], life: [250, 600], drag: 0.2, size: [1, 2] });
+      // A wand's missile bursts where it lands, when it gets there; beams and lightning strike at once.
+      const bolt = effect.bolt ?? 'magic';
+      const flies = WAND_MISSILES.has(bolt);
+      wandFx.later(flies ? wandFx.flight(cellCentre(effect.from), at) : 0, now, (t) => {
+        fx.burst(at.x, at.y, t, { count: 16, colors, glow: true, speed: [20, 80], life: [250, 600], drag: 0.2, size: [1, 2] });
+      });
       if (effect.bolt === 'lightning') {
         fx.flash('230, 240, 255', 0.35, 160, now);
         fx.shake(3, 220, now);
@@ -584,6 +590,9 @@ export function lightsFor(level: Level, visible: readonly boolean[], view: View,
   return lights;
 }
 
+/** The wands' bolts that fly as missiles (MagicMissile), not beams or arcs. */
+const WAND_MISSILES = new Set(['magic', 'fire', 'frost', 'corrosion', 'force', 'earth', 'ward', 'corruption', 'rainbow', 'foliage']);
+
 /** Every frame: embers off whoever burns, bubbles off the poisoned, sparkles behind bolts in flight. */
 /** Pixel-Mart effects' colours. */
 const SPARKS = ['#fff3b0', '#ffcc66', '#ffeba4', '#ffffff'];
@@ -617,8 +626,10 @@ export function ambientFx(view: View, now: number, dt: number): void {
       fx.burst(x - 8 + Math.random() * 32, y - 14, now, { count: 1, colors: SNOW, speed: [2, 6], life: [900, 1400], gravity: 18, drag: 0.6, size: [1, 1], spread: 0 });
     }
   }
+  // The wands' missiles pour their particles; snow about the chilled, leaves about a lotus (wandfx.ts).
+  wandFx.emit(view.projectiles, view.puppets.values(), (cell) => ({ x: (cell % WIDTH) * TILE + TILE / 2, y: Math.trunc(cell / WIDTH) * TILE + TILE / 2 }), now);
   for (const p of view.projectiles) {
-    if (p.sprite !== null || !chance(90)) continue;
+    if (p.sprite !== null || p.trail || !chance(90)) continue;
     const k = Math.min(1, (now - p.start) / p.duration);
     const x = ((p.from % WIDTH) + ((p.to % WIDTH) - (p.from % WIDTH)) * k) * TILE + TILE / 2;
     const y = (Math.trunc(p.from / WIDTH) + (Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)) * k) * TILE + TILE / 2;

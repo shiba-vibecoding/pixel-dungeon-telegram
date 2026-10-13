@@ -381,7 +381,9 @@ function apply(ctx: Ctx, effect: CursedEffect, user: Hero, origin: Item | null, 
       }
       return;
     case 'petrify':
+      // TimeStasis: out of time, still and unseen, for a hundred turns.
       user.stasis = Math.max(user.stasis ?? 0, STASIS_TURNS);
+      user.invisible = Math.max(user.invisible, STASIS_TURNS);
       return;
 
     /* Very rare */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, createItem, createMob, createWorld, type Effect, floorAt, type Hero, heroById, type Item, type ItemKind, ITEMS, itemDef,
+  act, addHero, charAt, createItem, createMob, createWorld, type Effect, floorAt, type Hero, heroById, type Item, type ItemKind, ITEMS, itemDef,
   itemPrice, itemSprite, kindKnown, levelAt, type Mob, type MobKind, Rng, T, wandMaxCharges, WIDTH, type World,
 } from '../src/index';
 import { chargeWands, wandsGainExp } from '../src/wands';
@@ -543,5 +543,59 @@ describe('the warlock (SoulMark)', () => {
       marked = (golem.soulMarked ?? 0) > 0;
     }
     expect(marked).toBe(true);
+  });
+});
+
+describe('every wand, every way', () => {
+  it('zapped plain and cursed, from the pack and from a battlemage\'s staff, struck with: the world holds together', () => {
+    for (const kind of WANDS) {
+      for (const cursed of [false, true]) {
+        const { world, hero, wand } = ground(kind, 3, 'mage', 11);
+        hero.hp = hero.ht = 500;
+        wand!.cursed = cursed;
+        const foes = [addMob(world, 'gnoll', hero.pos + 3), addMob(world, 'golem', hero.pos + 4 + WIDTH), addMob(world, 'skeleton', hero.pos + 5)];
+        for (const foe of foes) foe.hp = foe.ht = 300;
+        for (let i = 0; i < 4; i++) {
+          wand!.charges = 5;
+          const target = foes.find((f) => f.hp > 0 && floorAt(world, 1).mobs.includes(f))?.pos ?? hero.pos + 3;
+          expect(act(world, 'p', { type: 'zap', item: 0, target }).ok).toBe(true);
+          checkInvariants(world);
+        }
+        if (!cursed) {
+          hero.subclass = 'battlemage';
+          hero.attackSkill = 1000;
+          floorAt(world, 1).mobs = floorAt(world, 1).mobs.filter((m) => m.kind !== 'gnoll' && m.kind !== 'golem' && m.kind !== 'skeleton');
+          if (charAt(world, 1, hero.pos + 1)) continue;
+          act(world, 'p', { type: 'imbue', staff: 'weapon', wand: 0 });
+          const foe = addMob(world, 'golem', hero.pos + 1);
+          foe.hp = foe.ht = 5000;
+          for (let i = 0; i < 6 && floorAt(world, 1).mobs.includes(foe); i++) {
+            foe.pos = hero.pos + 1;
+            act(world, 'p', { type: 'attack', target: foe.id });
+            checkInvariants(world);
+          }
+        }
+        wait(world, 5);
+        checkInvariants(world);
+      }
+    }
+  }, 120_000);
+
+  it('a monster goes for a ward nearer than the hero, and the ward fights back', () => {
+    const { world, hero } = ground('wand.warding', 3);
+    zap(world, hero.pos + 4);
+    const ward = floorAt(world, 1).mobs.find((m) => m.kind === 'ward')!;
+    // Grown into a sentry, it can take a blow.
+    for (let i = 0; i < 3; i++) {
+      hero.items[0]!.charges = 5;
+      zap(world, ward.pos);
+    }
+    expect(ward.ward!.tier).toBe(4);
+    const rat = addMob(world, 'gnoll', ward.pos + 2);
+    rat.hp = rat.ht = 1000;
+    hero.invisible = 1000;
+    for (let i = 0; i < 3; i++) wait(world);
+    expect(rat.enemy).toBe(ward.id);
+    expect(rat.hp).toBeLessThan(1000);
   });
 });

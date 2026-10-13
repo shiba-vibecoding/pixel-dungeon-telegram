@@ -27,7 +27,9 @@ export type Sample =
   | 'hit' | 'miss' | 'step' | 'water' | 'death' | 'levelup' | 'descend' | 'door_open' | 'secret' | 'alert'
   | 'click' | 'boss' | 'gold' | 'item' | 'drink' | 'bones' | 'read' | 'teleport' | 'trap' | 'lightning' | 'burning'
   | 'zap' | 'unlock' | 'ghost' | 'eat' | 'shatter' | 'dewdrop' | 'puff' | 'rocks' | 'falling' | 'blast' | 'evoke'
-  | 'beacon' | 'bee' | 'cursed' | 'badge' | 'degrade';
+  | 'beacon' | 'bee' | 'cursed' | 'badge' | 'degrade'
+  /** Shattered's (assets/sounds), for its wands: played with a stand-in until their files come (STAND_INS). */
+  | 'ray' | 'hit_magic' | 'gas' | 'sheep' | 'chargeup' | 'challenge' | 'mimic';
 
 /** Sounds made here rather than loaded. */
 export type Synth =
@@ -54,7 +56,13 @@ const SAMPLES: readonly Sample[] = [
   'hit', 'miss', 'step', 'water', 'death', 'levelup', 'descend', 'door_open', 'secret', 'alert',
   'click', 'boss', 'gold', 'item', 'drink', 'bones', 'read', 'teleport', 'trap', 'lightning', 'burning', 'zap', 'unlock', 'ghost',
   'eat', 'shatter', 'dewdrop', 'puff', 'rocks', 'falling', 'blast', 'evoke', 'beacon', 'bee', 'cursed', 'badge', 'degrade',
+  'ray', 'hit_magic', 'gas', 'sheep', 'chargeup', 'challenge', 'mimic',
 ];
+
+/** The nearest sound there is, for one of Shattered's whose file is not here yet. */
+const STAND_INS: Partial<Record<Sample, Sample>> = {
+  ray: 'zap', hit_magic: 'hit', gas: 'puff', sheep: 'puff', chargeup: 'evoke', challenge: 'alert', mimic: 'alert',
+};
 
 /** How much a sound's pitch wanders from play to play (a fraction), if not the default. */
 const VARY: Partial<Record<Sound, number>> = {
@@ -455,7 +463,10 @@ class Audio {
 
   private async load(name: Sample): Promise<void> {
     try {
-      const response = await fetch(`${this.base}${name}.mp3`);
+      let response = await fetch(`${this.base}${name}.mp3`);
+      const standIn = STAND_INS[name];
+      // Not there (a dev server answers with its page instead): the stand-in.
+      if (standIn && (!response.ok || (response.headers.get('content-type') ?? '').includes('html'))) response = await fetch(`${this.base}${standIn}.mp3`);
       const data = await response.arrayBuffer();
       this.buffers.set(name, await this.context!.decodeAudioData(data));
     } catch {

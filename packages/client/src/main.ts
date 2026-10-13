@@ -2354,6 +2354,11 @@ function tick(now: number): void {
   const gas = [
     ...(clouds.toxic ?? []).map(([pos, volume]) => ({ pos, volume, color: '80, 200, 60' })),
     ...(clouds.paralytic ?? []).map(([pos, volume]) => ({ pos, volume, color: '230, 220, 70' })),
+    // Shattered's: orange corrosive gas, pale confusion gas, green regrowth; fire, thick for the few turns it burns.
+    ...(clouds.corrosive ?? []).map(([pos, volume]) => ({ pos, volume, color: '220, 140, 40' })),
+    ...(clouds.confusion ?? []).map(([pos, volume]) => ({ pos, volume, color: '200, 170, 230' })),
+    ...(clouds.regrowth ?? []).map(([pos, volume]) => ({ pos, volume, color: '90, 200, 90' })),
+    ...(clouds.fire ?? []).map(([pos, volume]) => ({ pos, volume: 30 + volume * 10, color: '255, 110, 20' })),
   ];
   const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
   const explored = exploredCells(world, me.depth);

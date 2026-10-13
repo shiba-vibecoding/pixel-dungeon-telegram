@@ -172,9 +172,9 @@ export type Effect =
   | { type: 'thrown'; depth: number; from: number; to: number; item: ItemKind }
   /** A magic bolt: the mage's wand, or a shaman's lightning. */
   | { type: 'zapped'; depth: number; from: number; to: number; bolt?: Bolt }
-  /** Rocks falling on these cells (wand of avalanche). */
+  /** Rocks falling on these cells (DM-300 shaking them loose). */
   | { type: 'avalanche'; depth: number; cells: number[] }
-  /** Magic sheep appear on these cells (wand of flock); one fades away; one is spoken to. */
+  /** Magic sheep appear on these cells (a cursed wand's flock); one fades away; one is spoken to. */
   | { type: 'flock'; depth: number; cells: number[] }
   /** Mirror images of a hero appear on these cells. */
   | { type: 'mirrored'; depth: number; hero: string; cells: number[] }

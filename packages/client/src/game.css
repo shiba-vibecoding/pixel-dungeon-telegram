@@ -197,3 +197,5 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 
 /* Shattered's buff icons (BuffIndicator, 7×7, 18 a row), for the conditions Pixel Dungeon's sheet has none of. */
 .pd-buff i.spd, i.spd[data-b] { background-image: url("/assets/spd/buffs.png"); background-size: 384px 192px; }
+/* A question's text may come in paragraphs (MagesStaff's imbue: what it makes of the staff, what it costs). */
+.pd-window .pd-info.center { white-space: pre-line; }
