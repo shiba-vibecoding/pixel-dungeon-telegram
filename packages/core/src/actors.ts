@@ -313,7 +313,8 @@ export type MobKind =
   | 'succubus' | 'eye' | 'scorpio' | 'yog' | 'rottingFist' | 'burningFist' | 'larva' | 'mimic'
   | 'statue' | 'piranha' | 'imp' | 'sheep' | 'blacksmith' | 'mirror'
   | 'albino' | 'bandit' | 'shielded' | 'senior' | 'acidic'
-  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper';
+  | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper'
+  | 'gnollTrickster' | 'greatCrab' | 'sentry' | 'demonSpawner';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
 export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
 
@@ -389,7 +390,11 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   blacksmith: { name: 'troll blacksmith', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   imp: { name: 'ambitious imp', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   // The sad ghost's errands: the rat that killed it, and the curse that binds it (its numbers grow with the depth).
-  fetidRat: { name: 'fetid rat', ht: 15, attack: 12, defense: 5, damage: [2, 6], dr: 2, exp: 3, maxLvl: 5, speed: 1 },
+  fetidRat: { name: 'fetid rat', ht: 20, attack: 12, defense: 5, damage: [1, 4], dr: 3, exp: 4, maxLvl: 5, speed: 1 },
+  // GnollTrickster: keeps its distance and throws, each hit worse than the last (see ai.ts and combat.ts).
+  gnollTrickster: { name: 'gnoll trickster', ht: 20, attack: 16, defense: 5, damage: [1, 6], dr: 2, exp: 5, maxLvl: 8, speed: 1 },
+  // GreatCrab: parries every blow from whoever it is watching, and is slower than its kin.
+  greatCrab: { name: 'great crab', ht: 25, attack: 12, defense: 0, damage: [1, 7], dr: 4, exp: 6, maxLvl: 9, speed: 1 },
   curse: { name: 'curse personification', ht: 16, attack: 12, defense: 12, damage: [3, 5], dr: 1, exp: 0, maxLvl: 5, speed: 0.5, flying: true },
   /** A vengeful spirit out of disturbed remains: one blow kills it, but it is very hard to hit (its numbers grow with the depth). */
   wraith: { name: 'wraith', ht: 1, attack: 11, defense: 55, damage: [1, 4], dr: 0, exp: 0, maxLvl: 30, speed: 1, flying: true },
@@ -398,6 +403,10 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   /** Asleep (or so he says) in his hidden treasury beside Goo's lair. */
   ratKing: { name: 'rat king', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 2 },
   piranha: { name: 'giant piranha', ht: 15, attack: 22, defense: 12, damage: [1, 6], dr: 1, exp: 0, maxLvl: 30, speed: 2 },
+  /** SentryRoom.Sentry: an immovable, invulnerable watcher that burns whoever walks its room's floor (see roommobs.ts). */
+  sentry: { name: 'sentry', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** DemonSpawner: rooted in its room of the demon halls, it breeds demons until destroyed (see roommobs.ts). */
+  demonSpawner: { name: 'demon spawner', ht: 120, attack: 0, defense: 0, damage: [0, 0], dr: 12, exp: 15, maxLvl: 29, speed: 1 },
 };
 
 /** A monster's numbers: the table's, but a mimic is as strong as the depth it lurks on (Mimic.adjustStats). */
@@ -474,6 +483,9 @@ export interface Mob {
   generation?: number;
   /** Brutes: enraged below a quarter of their health. */
   enraged?: boolean;
+  /** GnollTrickster: hits in a row, each worse than the last; GreatCrab: steps taken towards the next pause. */
+  combo?: number;
+  moving?: number;
   /** Tengu: attacks left before it jumps away. */
   jumpIn?: number;
   /** The King of Dwarves: which pedestal he summons his undead from next. */
@@ -502,6 +514,13 @@ export interface Mob {
   /** Turns left of moving at half speed (a javelin's wound), and how hard it still bleeds (a tomahawk's). */
   crippled?: number;
   bleeding?: number;
+  /** SentryRoom.Sentry: the room it watches, and its charge (the turns a hero may stand on its floor). */
+  room?: { left: number; top: number; right: number; bottom: number };
+  initialChargeDelay?: number;
+  curChargeDelay?: number;
+  /** DemonSpawner: turns until its next demon. */
+  spawnCooldown?: number;
+  spawnRecorded?: boolean;
   /** A mirror image: whose twin it is, and the skill and strength it took from them. */
   image?: { owner: string; attack: number; damage: number };
 }

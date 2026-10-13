@@ -1,4 +1,5 @@
-import { F, hasFlag, type Mob, type MobKind, type PlantKind, T, trapAt } from '@pd/core';
+import { type Level, type Mob, type MobKind, type PlantKind, T } from '@pd/core';
+import { lt, plain, terrainText, trapText } from './levelnames';
 import { lang } from './i18n';
 
 /*
@@ -144,96 +145,18 @@ export function plantText(kind: PlantKind): { name: string; desc: string } {
   return { name, desc };
 }
 
-type Tile =
-  | 'chasm' | 'floor' | 'grass' | 'water' | 'wall' | 'door' | 'openDoor' | 'entrance' | 'exit' | 'embers' | 'lockedDoor' | 'pedestal'
-  | 'barricade' | 'highGrass' | 'lockedExit' | 'unlockedExit' | 'sign' | 'well' | 'emptyWell' | 'statue' | 'trap' | 'spentTrap'
-  | 'bookshelf' | 'alchemy';
+/**
+ * Level.tileName and tileDesc, the region's own where it has them (levelnames.ts); a trap in sight
+ * says what trap it is (WndInfoTrap: its name, «inactive» once spent, and its description).
+ */
+export function tileText(level: Level, pos: number): { name: string; desc: string } {
+  const terrain = level.map[pos]!;
+  const trap = level.traps?.find((tr) => tr.pos === pos);
+  if (trap && (terrain === T.TRAP || terrain === T.INACTIVE_TRAP)) {
+    const { name, desc } = trapText(trap.kind);
+    return { name, desc: trap.active ? desc : `${plain(lt('windows.wndinfotrap.inactive'))}
 
-const EN_TILES: Record<Tile, readonly [string, string]> = {
-  chasm: ['Chasm', 'You cannot see the bottom.'],
-  floor: ['Floor', ''],
-  grass: ['Grass', ''],
-  water: ['Water', 'If you are on fire, step into the water to put it out.'],
-  wall: ['Wall', ''],
-  door: ['Closed door', ''],
-  openDoor: ['Open door', ''],
-  entrance: ['Depth entrance', 'Stairs lead up to the depth above.'],
-  exit: ['Depth exit', 'Stairs lead down to the depth below.'],
-  embers: ['Embers', 'Embers cover the floor.'],
-  lockedDoor: ['Locked door', 'This door is locked: you need the matching key to open it.'],
-  pedestal: ['Pedestal', ''],
-  barricade: ['Barricade', 'The wooden barricade is firmly set but has dried over the years. Might it burn?'],
-  highGrass: ['High grass', 'Dense vegetation blocks the view.'],
-  lockedExit: ['Locked depth exit', 'Heavy bars block the stairs leading down.'],
-  unlockedExit: ['Unlocked depth exit', 'Stairs lead down to the depth below.'],
-  sign: ['Sign', 'You cannot read the text from here.'],
-  well: ['Well', 'Its water may hold some power.'],
-  emptyWell: ['Empty well', 'The well has run dry.'],
-  statue: ['Statue', 'Someone wanted to adorn this place, but failed, obviously.'],
-  trap: ['Trap', 'Stepping onto a hidden pressure plate will set off the trap.'],
-  spentTrap: ['Triggered trap', 'The trap has been set off before, and is not dangerous any more.'],
-  bookshelf: ['Bookshelf', ''],
-  alchemy: ['Alchemy pot', 'Drop some seeds here to brew a potion.'],
-};
-
-const RU_TILES: Record<Tile, readonly [string, string]> = {
-  chasm: ['Пропасть', 'Дна не видно.'],
-  floor: ['Пол', ''],
-  grass: ['Трава', ''],
-  water: ['Вода', 'Если вы горите, шагните в воду, чтобы потушить огонь.'],
-  wall: ['Стена', ''],
-  door: ['Закрытая дверь', ''],
-  openDoor: ['Открытая дверь', ''],
-  entrance: ['Вход на уровень', 'Лестница ведёт наверх, на уровень выше.'],
-  exit: ['Выход с уровня', 'Лестница ведёт вниз, на уровень ниже.'],
-  embers: ['Угли', 'Пол покрыт углями.'],
-  lockedDoor: ['Запертая дверь', 'Дверь заперта: чтобы открыть её, нужен подходящий ключ.'],
-  pedestal: ['Пьедестал', ''],
-  barricade: ['Баррикада', 'Деревянная баррикада прочно стоит, но за годы рассохлась. Может, она горит?'],
-  highGrass: ['Высокая трава', 'Густая растительность закрывает обзор.'],
-  lockedExit: ['Запертый выход', 'Тяжёлая решётка перекрывает лестницу вниз.'],
-  unlockedExit: ['Открытый выход', 'Лестница ведёт вниз, на уровень ниже.'],
-  sign: ['Табличка', 'Отсюда не прочесть, что на ней написано.'],
-  well: ['Колодец', 'В его воде, возможно, есть какая-то сила.'],
-  emptyWell: ['Пустой колодец', 'Колодец пересох.'],
-  statue: ['Статуя', 'Кто-то хотел украсить это место, но, очевидно, не преуспел.'],
-  trap: ['Ловушка', 'Если наступить на скрытую нажимную плиту, ловушка сработает.'],
-  spentTrap: ['Сработавшая ловушка', 'Ловушка уже срабатывала и больше не опасна.'],
-  bookshelf: ['Книжная полка', ''],
-  alchemy: ['Алхимический котёл', 'Бросьте сюда семена, чтобы сварить зелье.'],
-};
-
-function tileOf(terrain: number): Tile {
-  if (terrain >= T.WATER_TILES) return 'water';
-  if (trapAt(terrain) && !hasFlag(terrain, F.SECRET)) return 'trap';
-  if (hasFlag(terrain, F.PIT)) return 'chasm';
-  switch (terrain) {
-    case T.GRASS: return 'grass';
-    case T.WALL: case T.WALL_DECO: case T.SECRET_DOOR: return 'wall';
-    case T.DOOR: return 'door';
-    case T.OPEN_DOOR: return 'openDoor';
-    case T.ENTRANCE: return 'entrance';
-    case T.EXIT: return 'exit';
-    case T.EMBERS: return 'embers';
-    case T.LOCKED_DOOR: return 'lockedDoor';
-    case T.PEDESTAL: return 'pedestal';
-    case T.BARRICADE: return 'barricade';
-    case T.HIGH_GRASS: return 'highGrass';
-    case T.LOCKED_EXIT: return 'lockedExit';
-    case T.UNLOCKED_EXIT: return 'unlockedExit';
-    case T.SIGN: return 'sign';
-    case T.WELL: return 'well';
-    case T.EMPTY_WELL: return 'emptyWell';
-    case T.STATUE: case T.STATUE_SP: return 'statue';
-    case T.INACTIVE_TRAP: return 'spentTrap';
-    case T.BOOKSHELF: return 'bookshelf';
-    case T.ALCHEMY: return 'alchemy';
-    default: return 'floor';
+${desc}` };
   }
-}
-
-/** Level.tileName and tileDesc: what a cell's terrain is called, and what there is to know about it. */
-export function tileText(terrain: number): { name: string; desc: string } {
-  const [name, desc] = (lang === 'ru' ? RU_TILES : EN_TILES)[tileOf(terrain)];
-  return { name, desc };
+  return terrainText(level, terrain);
 }

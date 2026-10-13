@@ -1,4 +1,5 @@
-import { baseKind, type HeroClass, LAST_SHOP_DEPTH, type MobKind } from '@pd/core';
+import { baseKind, type HeroClass, type MobKind } from '@pd/core';
+import type { TileSheets } from './tiles';
 
 /* Sprite sheets and animations of the original (HeroSprite, RatSprite, …). */
 
@@ -32,6 +33,8 @@ export interface Assets {
   items: HTMLImageElement;
   /** 16x16 plants, in the order of PLANT_KINDS. */
   plants: HTMLImageElement;
+  /** Shattered's environment: tiles, water, terrain features, raised terrain, occlusion shadows, custom tiles (tiles.ts). */
+  env: TileSheets;
 }
 
 const anim = (fps: number, frames: number[], loop = false): Animation => ({ fps, frames, loop });
@@ -60,7 +63,49 @@ const IMP_SPRITE = {
   ),
 };
 
-const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimName, Animation> }> = {
+/** A monster's sheet: its frame size and animations, and, for Shattered's sheets (assets/spd/<spd>.png), which file. */
+interface MobSheet {
+  w: number;
+  h: number;
+  anims: Record<AnimName, Animation>;
+  spd?: string;
+}
+
+/** Shattered's sprites for the levels stream's characters (sprites/*Sprite.java): the quests' givers and foes. */
+const SPD_MOBS: Partial<Record<MobKind, MobSheet>> = {
+  // GhostSprite.
+  ghost: {
+    w: 14, h: 15, spd: 'ghost',
+    anims: basic(anim(5, [0, 1], true), anim(10, [0, 1], true), anim(10, [0, 2, 3]), anim(8, [0, 4, 5, 6, 7])),
+  },
+  // FetidRatSprite: the rat sheet's fifth row.
+  fetidRat: {
+    w: 16, h: 15, spd: 'rat',
+    anims: basic(anim(2, [32, 32, 32, 33], true), anim(10, [38, 39, 40, 41, 42], true), anim(15, [34, 35, 36, 37, 32]), anim(10, [43, 44, 45, 46])),
+  },
+  // GnollTricksterSprite: the gnoll sheet from frame 42.
+  gnollTrickster: {
+    w: 12, h: 15, spd: 'gnoll',
+    anims: basic(anim(2, [42, 42, 42, 43, 42, 42, 43, 43], true), anim(12, [46, 47, 48, 49], true), anim(12, [44, 45, 42]), anim(12, [50, 51, 52])),
+  },
+  // SentrySprite.Red: one still frame, the first of the sentry sheet (it bobs, see render.ts).
+  sentry: {
+    w: 8, h: 15, spd: 'sentry',
+    anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0], true), anim(1, [0], true)),
+  },
+  // SpawnerSprite: sixteen frames turning over and over, whatever it does (it bobs, see render.ts).
+  demonSpawner: {
+    w: 16, h: 16, spd: 'spawner',
+    anims: basic(...([0, 1, 2, 3].map(() => anim(8, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], true)) as [Animation, Animation, Animation, Animation])),
+  },
+  // GreatCrabSprite: the crab sheet from frame 32, a slower run.
+  greatCrab: {
+    w: 16, h: 16, spd: 'crab',
+    anims: basic(anim(5, [32, 33, 32, 34], true), anim(10, [35, 36, 37, 38], true), anim(12, [39, 40, 41]), anim(12, [42, 43, 44, 45])),
+  },
+};
+
+const MOB_SPRITES: Partial<Record<MobKind, MobSheet>> = {
   rat: {
     w: 16,
     h: 15,
@@ -299,10 +344,9 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; anims: Record<AnimNam
 
 /**
  * The tiles and water of a depth: 0 for the sewers (depths 1-5), 1 for the prison (6-10), 2 for the caves (11-15),
- * 3 for the city (16-20) and the last shop (21, LastShopLevel.tilesTex), 4 for the halls.
+ * 3 for the city (16-20), 4 for the halls.
  */
-export const regionOf = (depth: number): number =>
-  depth === LAST_SHOP_DEPTH ? 3 : Math.min(4, Math.max(0, Math.floor((depth - 1) / 5)));
+export const regionOf = (depth: number): number => Math.min(4, Math.max(0, Math.floor((depth - 1) / 5)));
 
 /** The region whose look a level takes: its own (the arena of waves takes its tier's), else its depth's. */
 export const levelRegion = (level: { depth: number; region?: number }): 0 | 1 | 2 | 3 | 4 =>
@@ -387,13 +431,34 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
   ) as Record<(typeof names)[number], HTMLImageElement>;
 
   const hero = (image: HTMLImageElement): CharSprite => ({ sheet: sheet(image, 12, 15), anims: HERO_ANIMS });
+  // Shattered's sheets the quests' characters are drawn from.
+  const spdMobs = new Map<string, HTMLImageElement>();
+  await Promise.all([...new Set(Object.values(SPD_MOBS).map((spec) => spec!.spd!))].map(async (name) => {
+    spdMobs.set(name, await loadImage(`${base}spd/${name}.png`));
+  }));
   const mob = (kind: MobKind): CharSprite => {
-    const spec = MOB_SPRITES[kind];
+    const shattered = SPD_MOBS[kind];
+    if (shattered) return { sheet: sheet(spdMobs.get(shattered.spd!)!, shattered.w, shattered.h), anims: shattered.anims };
+    const spec = MOB_SPRITES[kind]!;
     // A mirror image is drawn with its hero's own sheet (see View.sync); the warrior's stands in here.
     const image = kind === 'mirror' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp' : baseKind(kind);
     return { sheet: sheet(images[image as (typeof names)[number]], spec.w, spec.h), anims: spec.anims };
   };
+  // Shattered's environment (assets/spd): the regions' tiles and water, the mine's tiles, and the layers over them.
+  const spd = async (name: string): Promise<HTMLImageElement> => loadImage(`${base}spd/${name}.png`);
+  const [sewers, prison, caves, city, halls, crystal, gnoll, w0, w1, w2, w3, w4, features, raised, occlusion] = await Promise.all([
+    'tiles_sewers', 'tiles_prison', 'tiles_caves', 'tiles_city', 'tiles_halls', 'tiles_caves_crystal', 'tiles_caves_gnoll',
+    'water0', 'water1', 'water2', 'water3', 'water4', 'terrain_features', 'raised_terrain', 'occlusion_shadows',
+  ].map(spd));
+  const custom = new Map<string, HTMLImageElement>();
+  for (const name of CUSTOM_TILES) {
+    void loadImage(`${base}spd/custom_tiles/${name}.png`).then((image) => custom.set(name, image)).catch(() => undefined);
+  }
   return {
+    env: {
+      tiles: [sewers!, prison!, caves!, city!, halls!], minesCrystal: crystal!, minesGnoll: gnoll!, water: [w0!, w1!, w2!, w3!, w4!],
+      features: features!, raised: raised!, occlusion: occlusion!, custom,
+    },
     tiles: [images.tiles0, images.tiles1, images.tiles2, images.tiles3, images.tiles4],
     water: [images.water0, images.water1, images.water2, images.water3, images.water4],
     heroes: {
@@ -402,12 +467,18 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
       rogue: hero(images.rogue),
       huntress: hero(images.ranger),
     },
-    mobs: Object.fromEntries((Object.keys(MOB_SPRITES) as MobKind[]).map((kind) => [kind, mob(kind)])) as Record<MobKind, CharSprite>,
+    mobs: Object.fromEntries(([...new Set([...Object.keys(MOB_SPRITES), ...Object.keys(SPD_MOBS)])] as MobKind[]).map((kind) => [kind, mob(kind)])) as Record<MobKind, CharSprite>,
     icons: images.icons,
     items: images.items,
     plants: images.plants,
   };
 }
+
+/** Shattered's environment/custom_tiles. */
+const CUSTOM_TILES = [
+  'carpet', 'caves_boss', 'caves_quest', 'city_boss', 'city_quest', 'halls_special', 'prison_exit', 'prison_quest', 'rat_king_room',
+  'sewer_boss', 'weak_floor',
+];
 
 /** Rectangles in icons.png, from Icons.java. */
 export const ICONS = {

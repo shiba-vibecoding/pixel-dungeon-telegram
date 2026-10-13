@@ -54,7 +54,7 @@ export function spawnWandmaker(world: World, level: Level, mobs: Mob[], rng: Rng
   for (let attempt = 0; attempt < 100 && pos === -1; attempt++) {
     const cell = rng.intBetween(room.left + 1, room.right) + rng.intBetween(room.top + 1, room.bottom) * WIDTH;
     const terrain = level.map[cell]!;
-    if (cell !== level.entrance && terrain !== T.SIGN && hasFlag(terrain, F.PASSABLE) && !mobs.some((m) => m.pos === cell)) pos = cell;
+    if (cell !== level.entrance && hasFlag(terrain, F.PASSABLE) && !mobs.some((m) => m.pos === cell)) pos = cell;
   }
   if (pos === -1) return;
   mobs.push(createMob(`#${++world.nextId}`, 'wandmaker', pos, 'passive', 0));

@@ -9,16 +9,16 @@ import { startingKit } from './heroclass';
 import { type Note, noteLandmarks } from './journal';
 import { attack, CRIPPLE_TURNS, hurt } from './combat';
 import {
-  canEnter, type Char, charAt, type Ctx, dropItem, type Effect, enterCell, exploredCells, type Floor, freeCellNear, heroesOn,
+  canEnter, type Char, charAt, discoverCell, type Ctx, dropItem, type Effect, enterCell, exploredCells, type Floor, freeCellNear, heroesOn,
   heroView, isPassable, isWater, leaveCell, observe,
   swapsWithHero,
 } from './floor';
 import { inventoryProblem, isInventoryAction, type InventoryAction, performInventory } from './inventory';
 import { type Bones, layBones } from './bones';
-import { createItem, createItems, ItemGenerator, type ItemKind, shareOfDepth, WAND_RECHARGE, wandMaxCharges } from './items';
+import { createItem, createItems, type Item, ItemGenerator, type ItemKind, shareOfDepth, WAND_RECHARGE, wandMaxCharges } from './items';
 import { staggerTarget, stepOnPlant, sungrassHeals } from './plants';
 import { discoverable } from './level/flags';
-import { faceCurse, faceCurseProblem, type GhostQuest, rewardFromGhost, rewardProblem, spawnGhost, talkToGhost } from './quest';
+import { type GhostQuest, rewardFromGhost, rewardProblem, talkToGhost } from './quest';
 import { trapAt, triggerTrap } from './traps';
 import { evolveGas } from './gas';
 import { levelSpan, partySize, regrowBoss, scaleMob } from './party';
@@ -27,11 +27,14 @@ import { altarMarksHero } from './altar';
 import { type ImpQuest, impRewardProblem, ringFromImp, spawnImp, talkToImp } from './imp';
 import { type ItemRef, reforge, reforgeProblem, type SmithQuest, spawnBlacksmith, talkToSmith } from './smith';
 import { spawnWandmaker, talkToWandmaker, type WandQuest, wandFromWandmaker, wandRewardProblem } from './wandmaker';
-import { isBossDepth, LAST_SHOP_DEPTH } from './level/builder';
+import { isBossDepth } from './level/builder';
+import { skeletonKeyLocks } from './skeletonkey';
 import { generateLevel, type Level } from './level/generate';
 import { adjacent, cellX, cellY, distance, HEIGHT, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { breakStairsRoom } from './level/halls-boss';
 import { RoomType } from './level/room';
+import { spawnLevelPlants } from './levelspawn';
+import { BRANCH_GATES } from './branchgates';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { deriveSeed, Rng, seedRng, Stream } from './rng';
 import { createRun, type RunState } from './run';
@@ -55,6 +58,8 @@ export type Action =
   | { type: 'move'; to: number }
   | { type: 'attack'; target: string }
   | { type: 'descend' }
+  /** Down to the depth's side level from its way in (the mine, the vault), or back up from it. */
+  | { type: 'branch' }
   | { type: 'ascend' }
   /** Into the chasm next to the hero, down to the depth below. */
   | { type: 'jump'; to: number }
@@ -68,8 +73,6 @@ export type Action =
   | { type: 'reforge'; first: ItemRef; second: ItemRef }
   /** The old wandmaker's reward: a battle wand or a useful one. */
   | { type: 'wandReward'; choice: 'battle' | 'utility' }
-  /** Agree to free the sad ghost of its curse, and face it. */
-  | { type: 'faceCurse' }
   /** The Amulet of Yendor's «Let's call it a day»: the party wins here. */
   | { type: 'endGame' }
   /** Live turns: what the hero is to do from now on, a turn at a time (an empty plan stops them). */
@@ -136,6 +139,15 @@ export interface World {
   arena?: ArenaState;
   /** The journal's notes of what the party has come across (journal.ts; absent until the first). */
   notes?: Note[];
+  /** Statistics.questScores: what each quest added to the score (the ghost, the wandmaker, the blacksmith, the imp). */
+  questScores?: number[];
+  /**
+   * The level of a depth laid aside while its other is in play (the depth's side level while the hero is on
+   * the depth, the depth while the hero is down its side level), with its floor and what was seen of it.
+   */
+  parked?: Record<number, { level: Level; floor: Floor; explored: boolean[] }>;
+  /** Dungeon.droppedItems: what fell into a chasm as a depth was made, waiting for the depth below to be made. */
+  chasmItems?: Record<number, Item[]>;
 }
 
 /** The kinds of run: down the dungeon, or the arena of waves. */
@@ -154,6 +166,8 @@ const WANDMAKER_STREAM = 2;
 const IMP_STREAM = 3;
 const BLACKSMITH_STREAM = 4;
 const BONES_STREAM = 5;
+/** The stream that lays out what fell from the depth above as the depth was made. */
+const CHASM_STREAM = 6;
 /** Sub-streams of a depth's streams for a hero joining the party, by party size. */
 const JOIN_STREAM = 100;
 
@@ -189,55 +203,101 @@ export function giveBones(world: World, bones: Bones): void {
 
 export function levelAt(world: World, depth: number): Level {
   if (world.mode === 'arena') return arenaLevelAt(world, depth);
-  for (let d = 1; d <= depth; d++) {
-    if (!world.levels[d]) {
-      // A party's depths spread wider, with more rooms (party.ts); boss levels keep their layout.
-      // The last shop opens only once the imp's errand is done (LastShopLevel.build).
-      const level = generateLevel(world.run, d, levelSpan(partySize(world)), world.impQuest?.done === true);
-      world.levels[d] = level;
-      const mobs = populate(world, level, Rng.seeded(deriveSeed(world.run.seed, Stream.MOBS, d)));
-      // What the depth gives every hero, so that a hero who joins later gets theirs (party.ts).
-      const found = { strength: world.run.strengthFound, upgrades: world.run.upgradesFound };
-      spawnGhost(world, level, mobs, Rng.seeded(deriveSeed(world.run.seed, Stream.MOBS, d, GHOST_STREAM)));
-      spawnWandmaker(world, level, mobs, Rng.seeded(deriveSeed(world.run.seed, Stream.MOBS, d, WANDMAKER_STREAM)));
-      spawnImp(world, level, mobs, Rng.seeded(deriveSeed(world.run.seed, Stream.MOBS, d, IMP_STREAM)));
-      spawnBlacksmith(world, level, mobs, Rng.seeded(deriveSeed(world.run.seed, Stream.MOBS, d, BLACKSMITH_STREAM)));
-      world.floors[d] = {
-        mobs,
-        rng: seedRng(deriveSeed(world.run.seed, Stream.PLAY, d)),
-        now: 0,
-        plants: [...(level.plants ?? [])],
-        ...(level.altar ? { altar: { ...level.altar } } : {}),
-        // Boss levels, the last shop's (LastShopLevel.respawner and createItems) and the Amulet's hall
-        // never fill up again, and hold only what their layout asks for.
-        respawn: quietDepth(d) ? -1 : TIME_TO_RESPAWN,
-        heaps: createItems(
-          world.run, level, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d)), quietDepth(d), world.heroes.length,
-          (item) => underChallenges(world, item),
-        ),
-      };
-      if (world.bones && !world.bones.placed && world.bones.depth === d) {
-        layBones(world.bones, level, world.floors[d]!, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d, BONES_STREAM)));
-      }
-      const perHero: ItemKind[] = [
-        ...(world.run.strengthFound > found.strength ? ['potion.strength' as const] : []),
-        ...(world.run.upgradesFound > found.upgrades ? ['scroll.upgrade' as const] : []),
-      ];
-      if (perHero.length > 0) world.floors[d]!.perHero = perHero;
-    }
-  }
+  for (let d = 1; d <= depth; d++) if (!world.levels[d]) makeDepth(world, d, 0);
   return world.levels[depth]!;
 }
 
 /**
- * Depths that hold nothing but their layout and never fill up with monsters
- * again: the bosses' levels, the last shop's (LastShopLevel: no mobs, no
- * respawner, only bones) and the Amulet's hall.
- * The original still rolled the last shop's potion of strength and scroll of
- * upgrade, counted them and never dropped them; here they are not rolled
- * there, so the depths below make up for them.
+ * Dungeon.newLevel for a depth, or for its side level (`branch` 1: the blacksmith's mine, the vault),
+ * with its floor: what lies about, its monsters and its clock.
  */
-const quietDepth = (d: number): boolean => isBossDepth(d) || d === LAST_SHOP_DEPTH || d >= 26;
+function makeDepth(world: World, d: number, branch: number): void {
+  // What the depth gives every hero, so that a hero who joins later gets theirs (party.ts).
+  const found = { strength: world.run.strengthFound, upgrades: world.run.upgradesFound };
+  const level = generateLevel(world.run, d, levelSpan(partySize(world)), false, world, branch);
+  world.levels[d] = level;
+  // A side level's streams are its own.
+  const stream = (s: number, ...more: number[]): bigint => deriveSeed(world.run.seed, s, d, ...(branch ? [1000 * branch, ...more] : more));
+  const mobs = populate(world, level, Rng.seeded(stream(Stream.MOBS)));
+  if (!branch) {
+    spawnWandmaker(world, level, mobs, Rng.seeded(stream(Stream.MOBS, WANDMAKER_STREAM)));
+    spawnImp(world, level, mobs, Rng.seeded(stream(Stream.MOBS, IMP_STREAM)));
+    spawnBlacksmith(world, level, mobs, Rng.seeded(stream(Stream.MOBS, BLACKSMITH_STREAM)));
+  }
+  world.floors[d] = {
+    mobs,
+    rng: seedRng(stream(Stream.PLAY)),
+    now: 0,
+    plants: [...(level.plants ?? [])],
+    ...(level.altar ? { altar: { ...level.altar } } : {}),
+    // Boss levels, the side levels and the Amulet's hall never fill up again, and hold only what their layout asks for.
+    respawn: quietDepth(d) || branch ? -1 : TIME_TO_RESPAWN,
+    heaps: level.spawn
+      // Shattered's levels are made with their items (RegularLevel.createItems and the rooms'), which come
+      // to lie on the floor through Level.drop: what the challenges forbid is gold instead.
+      ? level.spawn.heaps.map((heap) => ({ ...heap, items: heap.items.map((item) => underChallenges(world, item)) }))
+      : createItems(
+        world.run, level, Rng.seeded(stream(Stream.ITEMS)), quietDepth(d), world.heroes.length,
+        (item) => underChallenges(world, item),
+      ),
+  };
+  if (level.spawn) {
+    spawnLevelPlants(level, world.floors[d]!);
+    level.spawn.heaps = [];
+    // Dungeon.dropToChasm while the level was made: for the depth below.
+    if (level.spawn.fallen?.length) {
+      const below = ((world.chasmItems ??= {})[d + 1] ??= []);
+      below.push(...level.spawn.fallen);
+      level.spawn.fallen = [];
+    }
+  }
+  // GameScene: what fell from above as that depth was made lies about here (Level.fallCell).
+  const fallen = world.chasmItems?.[d];
+  if (fallen && !branch) {
+    delete world.chasmItems![d];
+    const rng = Rng.seeded(stream(Stream.ITEMS, CHASM_STREAM));
+    for (const item of fallen) dropItem(world.floors[d]!, landingCell(world, d, rng, false), item);
+  }
+  if (!branch && world.bones && !world.bones.placed && world.bones.depth === d) {
+    layBones(world.bones, level, world.floors[d]!, Rng.seeded(stream(Stream.ITEMS, BONES_STREAM)));
+  }
+  const perHero: ItemKind[] = [
+    ...(world.run.strengthFound > found.strength ? ['potion.strength' as const] : []),
+    ...(world.run.upgradesFound > found.upgrades ? ['scroll.upgrade' as const] : []),
+  ];
+  if (perHero.length > 0) world.floors[d]!.perHero = perHero;
+}
+
+/**
+ * A hero takes a branch transition (LevelTransition BRANCH_EXIT or BRANCH_ENTRANCE): from a depth down to
+ * its side level, or back. Only one of the two is in play at a time: the other is laid aside
+ * (world.parked) as it was, and its clock stands still, as a level the hero has left does.
+ */
+function changeBranch(ctx: Ctx, hero: Hero, toBranch: number): void {
+  const { world } = ctx;
+  const d = hero.depth;
+  leaveCell(world, ctx.level, d, hero.pos);
+  const current = { level: world.levels[d]!, floor: world.floors[d]!, explored: world.explored[d] ?? [] };
+  const parked = world.parked?.[d];
+  if (parked && (parked.level.branch ?? 0) === toBranch) {
+    world.levels[d] = parked.level;
+    world.floors[d] = parked.floor;
+    world.explored[d] = parked.explored;
+  } else {
+    delete world.explored[d];
+    makeDepth(world, d, toBranch);
+  }
+  (world.parked ??= {})[d] = current;
+  const level = world.levels[d]!;
+  const arrival = toBranch
+    ? level.transitions?.find((t) => t.type === 'branchEntrance')?.cell ?? level.entrance
+    : level.transitions?.find((t) => t.type === 'branchExit')?.cell ?? level.entrance;
+  place(world, hero, level, arrival);
+  ctx.effects.push({ type: 'branched', hero: hero.id, depth: d, branch: toBranch });
+}
+
+/** Depths that hold nothing but their layout and never fill up with monsters again: the bosses' levels and the Amulet's hall. */
+const quietDepth = (d: number): boolean => isBossDepth(d) || d >= 26;
 
 export function floorAt(world: World, depth: number): Floor {
   levelAt(world, depth);
@@ -352,8 +412,16 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       return null;
     case 'move':
       if (hero.rooted > 0) return 'you are rooted';
+      // Hero.actUnlock: an iron key opens a locked door, a crystal key a crystal one; keys do not work on the quests' side levels.
       if (Number.isInteger(action.to) && adjacent(hero.pos, action.to) && level.map[action.to] === T.LOCKED_DOOR) {
-        return keyFor(hero) >= 0 ? null : 'the door is locked';
+        return !level.branch && keyFor(hero) >= 0 ? null : 'the door is locked';
+      }
+      if (Number.isInteger(action.to) && adjacent(hero.pos, action.to) && level.map[action.to] === T.CRYSTAL_DOOR) {
+        return !level.branch && keyFor(hero, 'key.crystal') >= 0 ? null : 'the door is locked';
+      }
+      // A door the skeleton key locked opens to anyone, but its bearer (SkeletonKey.locked_with_key).
+      if (Number.isInteger(action.to) && adjacent(hero.pos, action.to) && level.map[action.to] === T.HERO_LKD_DR) {
+        return skeletonKeyLocks(hero) ? 'locked with the skeleton key' : null;
       }
       // A boss's level: its way down opens to the skeleton key it dropped.
       if (Number.isInteger(action.to) && adjacent(hero.pos, action.to) && level.map[action.to] === T.LOCKED_EXIT) {
@@ -383,10 +451,14 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       return reforgeProblem(world, hero, action.first, action.second);
     case 'descend':
       return hero.pos === level.exit ? null : 'not on the stairs';
+    case 'branch': {
+      const transition = level.transitions?.find((t) => t.cell === hero.pos && (t.type === 'branchExit' || t.type === 'branchEntrance'));
+      if (!transition) return 'not on the way there';
+      // Level.activateTransition: the quest whose level it is may refuse (BranchGates, quests' modules).
+      return BRANCH_GATES[transition.type === 'branchExit' ? 'enter' : 'leave'](world, hero, level);
+    }
     case 'beacon':
       return beaconProblem(world, hero, action.item, action.mode);
-    case 'faceCurse':
-      return faceCurseProblem(world, hero);
     case 'jump':
       if (hero.rooted > 0) return 'you are rooted';
       if ((hero.levitating ?? 0) > 0) return 'you are floating';
@@ -397,7 +469,7 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       return isBossDepth(hero.depth + 1) || hero.depth + 1 >= DEEPEST_AVAILABLE ? 'the chasm has a bottom' : null;
     case 'ascend':
       if (hero.pos !== level.entrance) return 'not on the stairs';
-      if (level.map[hero.pos] !== T.ENTRANCE) return 'the way up is flooded';
+      if (level.map[hero.pos] !== T.ENTRANCE && level.map[hero.pos] !== T.ENTRANCE_SP) return 'the way up is flooded';
       // Hero.actAscend: only the Amulet opens the way out of the dungeon.
       return hero.depth <= 1 && !hasAmulet(hero) ? 'the way up is sealed' : null;
     case 'endGame':
@@ -941,6 +1013,17 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
         level.map[action.to] = T.DOOR;
         ctx.effects.push({ type: 'unlocked', depth: hero.depth, pos: action.to, hero: hero.id });
       }
+      if (level.map[action.to] === T.CRYSTAL_DOOR) {
+        // The crystal key: the door vanishes in a shimmer (Level.set(doorCell, EMPTY)).
+        hero.items.splice(keyFor(hero, 'key.crystal'), 1);
+        level.map[action.to] = T.EMPTY;
+        ctx.effects.push({ type: 'unlocked', depth: hero.depth, pos: action.to, hero: hero.id, crystal: true });
+      }
+      if (level.map[action.to] === T.HERO_LKD_DR) {
+        // A door the skeleton key locked: it is forced open again (SkeletonKey.force_lock).
+        level.map[action.to] = T.DOOR;
+        ctx.effects.push({ type: 'unlocked', depth: hero.depth, pos: action.to, hero: hero.id });
+      }
       if (level.map[action.to] === T.LOCKED_EXIT) {
         // Hero.actUnlock: the skeleton key opens the way down for the whole party.
         hero.items.splice(keyFor(hero, 'key.skeleton'), 1);
@@ -967,7 +1050,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
       if (hero.pos === from) break;
       // The step is done, then the trap goes off; floating, the hero touches nothing (Char.move).
       const floating = (hero.levitating ?? 0) > 0;
-      if (!floating && trapAt(level.map[hero.pos]!)) triggerTrap(ctx, hero, hero.pos);
+      if (!floating && trapAt(level, hero.pos)) triggerTrap(ctx, hero, hero.pos);
       if (!floating && level.map[hero.pos] === T.WELL) drinkFromWell(ctx, hero);
       if (!floating) stepOnPlant(ctx, hero, hero.pos);
       if (!floating && level.map[hero.pos] === T.HIGH_GRASS) trample(ctx, hero.pos, hero);
@@ -1039,10 +1122,6 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
       ringFromImp(ctx, hero);
       break;
 
-    case 'faceCurse':
-      faceCurse(ctx, hero);
-      break;
-
     case 'reforge':
       reforge(ctx, hero, action.first, action.second);
       spend(ctx, hero, TIME_TO_REFORGE);
@@ -1061,6 +1140,10 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
     case 'jump':
       fall(ctx, hero, action.to);
       return;
+
+    case 'branch':
+      changeBranch(ctx, hero, level.branch ? 0 : 1);
+      break;
 
     case 'ascend':
       if (hero.depth <= 1) {
@@ -1091,7 +1174,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
       place(world, hero, levelAt(world, depth), pos);
       ctx.effects.push({ type: 'teleported', hero: hero.id });
       const there = levelAt(world, depth);
-      if (depth === ctx.depth && trapAt(there.map[hero.pos]!) && !(hero.levitating ?? 0)) triggerTrap(ctx, hero, hero.pos);
+      if (depth === ctx.depth && trapAt(there, hero.pos) && !(hero.levitating ?? 0)) triggerTrap(ctx, hero, hero.pos);
       break;
     }
   }
@@ -1315,7 +1398,7 @@ export function canSelfTrample(world: World, hero: Hero): boolean {
 }
 
 /** The backpack slot of an iron key for the hero's current depth, or -1. */
-function keyFor(hero: Hero, kind: 'key.iron' | 'key.skeleton' = 'key.iron'): number {
+function keyFor(hero: Hero, kind: 'key.iron' | 'key.skeleton' | 'key.crystal' = 'key.iron'): number {
   return hero.items.findIndex((item) => item.kind === kind && item.depth === hero.depth);
 }
 
@@ -1350,7 +1433,7 @@ function drinkFromWell(ctx: Ctx, hero: Hero): void {
     discoverable(level.map).forEach((open, i) => {
       if (!open) return;
       explored[i] = true;
-      if (hasFlag(level.map[i]!, F.SECRET)) level.map[i] = discover(level.map[i]!);
+      discoverCell(level, i);
     });
   }
   ctx.effects.push({ type: 'well', hero: hero.id, water });
@@ -1508,7 +1591,7 @@ export function findPath(
       const next = cell + n;
       if (next < 0 || next >= LENGTH || previous.has(next) || !adjacent(cell, next)) continue;
       // A locked door may end a path: walking into it unlocks it with a key.
-      const lockedGoal = next === to && (level.map[next] === T.LOCKED_DOOR || level.map[next] === T.LOCKED_EXIT);
+      const lockedGoal = next === to && (level.map[next] === T.LOCKED_DOOR || level.map[next] === T.LOCKED_EXIT || level.map[next] === T.CRYSTAL_DOOR || level.map[next] === T.HERO_LKD_DR);
       const overPit = floating && hasFlag(level.map[next]!, F.PIT) && canEnter(level, next) === false && next % WIDTH > 0 &&
         next % WIDTH < WIDTH - 1 && next >= WIDTH && next < LENGTH - WIDTH;
       if ((!canEnter(level, next) && !lockedGoal && !overPit) || (blocked.has(next) && next !== to)) continue;

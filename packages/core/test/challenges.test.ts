@@ -64,18 +64,9 @@ describe('challenges', () => {
     expect(heap.items[0]).toMatchObject({ kind: 'gold', qty: 10 });
   });
 
-  it('faith is my armor: no armour anywhere, and the ghost offers only worn cloth', () => {
+  it('faith is my armor: no armour anywhere', () => {
     expect(floorItems(NO_ARMOR, 7).some((item) => category(item) === 'armor')).toBe(false);
     expect(floorItems(0, 7).some((item) => category(item) === 'armor')).toBe(true);
-    let ghosts = 0;
-    for (let seed = 1; seed <= 30; seed++) {
-      const world = createWorld(seed, NO_ARMOR);
-      levelAt(world, 4);
-      if (!world.quest) continue;
-      ghosts++;
-      expect(world.quest.armor).toMatchObject({ kind: 'armor.cloth', level: -1 });
-    }
-    expect(ghosts).toBeGreaterThan(0);
     expect(heroById(solo(NO_ARMOR), 'p')!.armor.kind).toBe('armor.cloth');
   });
 

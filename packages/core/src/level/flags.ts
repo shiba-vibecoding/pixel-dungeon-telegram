@@ -1,66 +1,19 @@
-import { LENGTH, NEIGHBOURS4, NEIGHBOURS9, WIDTH } from './geometry';
-import { F, hasFlag, T, terrainFlags } from './terrain';
+import { LENGTH, NEIGHBOURS9, WIDTH } from './geometry';
+import { F, T, terrainFlags } from './terrain';
 
-/*
- * Final touches on a generated map: water and chasm tiles take the shape of
- * their surroundings, and walls far from any open space become undiscoverable.
- */
+/* Flag maps of a finished level: which walls are worth showing, and where one may walk. */
 
-function waterTile(map: readonly number[], pos: number): number {
-  let tile: number = T.WATER_TILES;
-  for (let j = 0; j < NEIGHBOURS4.length; j++) {
-    if (hasFlag(map[pos + NEIGHBOURS4[j]!]!, F.UNSTITCHABLE)) {
-      tile += 1 << j;
-    }
-  }
-  return tile;
-}
-
-export function stitchTerrain(map: number[]): void {
-  const water = map.map((t) => hasFlag(t, F.LIQUID));
-  const pit = map.map((t) => hasFlag(t, F.PIT));
-  for (let i = WIDTH; i < LENGTH - WIDTH; i++) {
-    if (water[i]) {
-      map[i] = waterTile(map, i);
-    }
-    if (pit[i] && !pit[i - WIDTH]) {
-      const above = map[i - WIDTH]!;
-      if (above === T.EMPTY_SP || above === T.STATUE_SP) {
-        map[i] = T.CHASM_FLOOR_SP;
-      } else if (water[i - WIDTH]) {
-        map[i] = T.CHASM_WATER;
-      } else if (hasFlag(above, F.UNSTITCHABLE)) {
-        map[i] = T.CHASM_WALL;
-      } else {
-        map[i] = T.CHASM_FLOOR;
-      }
-    }
-  }
-}
-
-/** Cells worth showing on the map: next to something that is not solid wall or pit. */
+/** Level.cleanWalls: cells worth showing on the map, those next to something that is not solid wall. */
 export function discoverable(map: readonly number[]): boolean[] {
   const result = new Array<boolean>(LENGTH).fill(false);
   for (let i = 0; i < LENGTH; i++) {
-    let open = false;
     for (const n of NEIGHBOURS9) {
       const j = i + n;
       if (j >= 0 && j < LENGTH && map[j] !== T.WALL && map[j] !== T.WALL_DECO) {
-        open = true;
+        result[i] = true;
         break;
       }
     }
-    if (open) {
-      open = false;
-      for (const n of NEIGHBOURS9) {
-        const j = i + n;
-        if (j >= 0 && j < LENGTH && !hasFlag(map[j]!, F.PIT)) {
-          open = true;
-          break;
-        }
-      }
-    }
-    result[i] = open;
   }
   return result;
 }

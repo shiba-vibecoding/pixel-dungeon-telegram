@@ -27,10 +27,13 @@ import { ArenaView } from './arenaview';
 import { levelRegion } from './sprites';
 import { capitalize, t } from './i18n';
 import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
-import { bakeLevel, type Camera, patchLevel, render } from './render';
+import { type Camera, render } from './render';
+import type { GhostLine } from '@pd/core';
+import { LevelTiles } from './tiles';
+import { lt } from './levelnames';
 import {
   armorTier, closeOverlay, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showReforge, showHelp, showHero,
-  refreshBackpack, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTitle, showTrade, showWaiting, slot, toast, type ShareChoice,
+  refreshBackpack, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showTitle, showTrade, showWaiting, slot, toast, type ShareChoice,
 } from './screens';
 import { profileCard, rankingBlock, showBoards, trophyText } from './rankui';
 import { mart } from './mart';
@@ -1111,7 +1114,7 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
       bossFight = { session, generation: session.generation, depth: effect.depth };
     }
     if (effect.type === 'bossSlain' && effect.depth === bossFight?.depth) bossFight = null;
-    if (effect.type === 'ghost' && effect.hero === myId) talkWithGhost(effect.line, effect.errand);
+    if (effect.type === 'ghost' && effect.hero === myId) talkWithGhost(effect.line, effect.questType);
     if (effect.type === 'ratKing' && effect.hero === myId) talkWithRatKing(effect.line);
     if (effect.type === 'wandmaker' && effect.hero === myId) talkWithWandmaker(effect.line);
     if (effect.type === 'imp' && effect.hero === myId) talkWithImp(effect.line);
@@ -1158,29 +1161,39 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
   }
 }
 
-function talkWithGhost(line: 'intro' | 'remind' | 'reward' | 'farewell', errand: 'rose' | 'rat' | 'curse'): void {
+/**
+ * Ghost.interact and WndSadGhost: the ghost's story of its foe (rat_1, gnoll_1, crab_1), the reminder
+ * (rat_2 ...), its «find me» when the foe falls, and, the foe slain, its thanks with the weapon and the
+ * armour to choose from; then its farewell.
+ */
+function talkWithGhost(line: GhostLine, type: 1 | 2 | 3): void {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
   if (!world || !me) return;
   audio.play('ghost');
+  const foe = (['rat', 'gnoll', 'crab'] as const)[type - 1]!;
+  if (line === 'findMe') {
+    view.say(lt('actors.mobs.npcs.ghost.find_me'), '#ff4444');
+    return;
+  }
+  if (line === 'farewell') {
+    view.say(lt('windows.wndsadghost.farewell'), '#ffffff');
+    return;
+  }
   walk.reset();
   const quest = world.quest;
-  // Each errand has its own words; the curse is only taken on if the hero says yes.
   const text =
-    line === 'farewell' ? t.ghost.farewell
-    : errand === 'rat' ? t.ghostRat[line]
-    : errand === 'curse' ? (line === 'reward' ? t.ghostCurse.reward(t.classes[me.heroClass]) : t.ghostCurse.intro)
-    : t.ghost[line];
+    line === 'intro' ? lt(`actors.mobs.npcs.ghost.${foe}_1`, capitalize(me.name || t.heroDefault))
+    : line === 'remind' ? lt(`actors.mobs.npcs.ghost.${foe}_2`)
+    : `${lt(`windows.wndsadghost.${foe}`)}\n\n${lt('windows.wndsadghost.give_item')}`;
   showQuest({
     world,
     hero: me,
     who: 'ghost',
+    ...(line === 'reward' ? { title: lt(`windows.wndsadghost.${foe}_title`), icon: (['fetidRat', 'gnollTrickster', 'greatCrab'] as const)[type - 1] } : {}),
     text,
     offers: line === 'reward' && quest ? [quest.weapon, quest.armor] : [],
     onChoose: (index) => send({ type: 'reward', choice: index === 0 ? 'weapon' : 'armor' }, performance.now()),
-    ...(errand === 'curse' && line === 'intro'
-      ? { answers: [{ label: t.ghostCurse.yes, onAnswer: () => send({ type: 'faceCurse' }, performance.now()) }, { label: t.ghostCurse.no, onAnswer: () => undefined }] }
-      : {}),
     onClose: hideOverlay,
   });
 }
@@ -1296,7 +1309,7 @@ function tapCell(cell: number, quiet = false): void {
     else if (core.canSelfTrample(world, me)) send({ type: 'move', to: me.pos }, performance.now());
     else if (!world.arena && me.pos === level.exit) useStairs(world, 'descend', performance.now());
     else if (!world.arena && me.pos === level.entrance && (me.depth > 1 || hasAmulet(me))) useStairs(world, 'ascend', performance.now());
-    else if (me.pos === level.entrance && heapAt(world, me.depth, me.pos) === undefined && me.depth === 1 && level.map[me.pos] === T.ENTRANCE) {
+    else if (me.pos === level.entrance && heapAt(world, me.depth, me.pos) === undefined && me.depth === 1 && (level.map[me.pos] === T.ENTRANCE || level.map[me.pos] === T.ENTRANCE_SP)) {
       // Hero.actAscend without the Amulet: the way out stays shut.
       toast(t.wayUpSealed);
     }
@@ -1658,7 +1671,7 @@ function learnFromSight(world: World, me: Hero, level: Level, visible: readonly 
     if (!visible[cell]) continue;
     const terrain = level.map[cell]!;
     // A trap one can see: a hidden one says nothing.
-    if (trapAt(terrain) && !hasFlag(terrain, F.SECRET)) hints.first('trap');
+    if (terrain === T.TRAP) hints.first('trap');
     if (terrain === T.LOCKED_DOOR) hints.first('lockedDoor');
     if (terrain === T.WELL) hints.first('well');
     if (terrain === T.ALCHEMY) hints.first('alchemy');
@@ -1815,7 +1828,7 @@ function examineCell(pos: number): void {
   }
   const plant = world.floors[me.depth]?.plants?.find((p) => p.pos === pos);
   const level = levelAt(world, me.depth);
-  const { name, desc } = plant ? plantText(plant.kind) : tileText(level.map[pos]!);
+  const { name, desc } = plant ? plantText(plant.kind) : tileText(level, pos);
   const well = level.map[pos] === T.WELL ? level.wells.find((w) => w.pos === pos) : undefined;
   // Level.tileDesc: and what covers it (Web.tileDesc).
   const webbed = seen && world.floors[me.depth]?.gas?.web?.some(([cell]) => cell === pos);
@@ -1984,10 +1997,9 @@ resize();
 /** Stands in for the hero while an online session is still connecting. */
 const placeholderHero: Hero = createHero({ id: '', name: '', heroClass: 'warrior' }, 1, 0, 0);
 
-let baked: HTMLCanvasElement | null = null;
+/** Shattered's tile layers of the level in view (tiles.ts), and for which depth and world they were baked. */
+let tiles: LevelTiles | null = null;
 let bakedKey = '';
-/** The map the baked tiles show, and for which depth and world. */
-let bakedMap = new Uint8Array(0);
 let bakedFor = '';
 let visible: boolean[] = [];
 let busySince = 0;
@@ -1997,7 +2009,9 @@ const backdrop = (() => {
   const world = createWorld(20240501);
   const level = levelAt(world, 1);
   const all = new Array<boolean>(level.map.length).fill(true);
-  return { level, baked: bakeLevel(level, assets), all, view: new View(assets) };
+  const tiles = new LevelTiles(level, assets.env, world.run.seed);
+  tiles.bake(world.floors[1]?.plants ?? []);
+  return { level, tiles, all, view: new View(assets) };
 })();
 
 /** What I picked up, waiting for its moment to set off (motion.ts). */
@@ -2107,7 +2121,7 @@ function drawBackdrop(now: number): void {
   camera.x = Math.round(middle.x - canvas.width / camera.zoom / 2 + Math.sin(now / 9000) * 60);
   camera.y = Math.round(middle.y - canvas.height / camera.zoom / 2 + Math.cos(now / 11000) * 40);
   render(
-    ctx, { level, baked: backdrop.baked, visible: all, explored: all, heaps: [], seeAll: false },
+    ctx, { level, tiles: backdrop.tiles, visible: all, explored: all, heaps: [], seeAll: false },
     backdrop.view, '', assets, camera, now,
   );
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -2253,25 +2267,13 @@ function tick(now: number): void {
       stride = -stride;
       // Each surface underfoot sounds its own: stone, water, grass, the wood of a doorway, hot embers.
       const pitch = 1 + stride * 0.05;
-      if (terrain >= T.WATER_TILES && terrain <= T.WATER) audio.play('water', pitch, 0.5);
+      if (terrain === T.WATER) audio.play('water', pitch, 0.5);
       else if (terrain === T.OPEN_DOOR || terrain === T.DOOR) audio.play('stepWood', pitch, 0.55);
       else audio.play('step', pitch, 0.45);
-      if (terrain === T.GRASS || terrain === T.HIGH_GRASS) audio.play('stepGrass', pitch, 0.4);
+      if (terrain === T.GRASS || terrain === T.HIGH_GRASS || terrain === T.FURROWED_GRASS) audio.play('grass', pitch, 0.4);
       if (terrain === T.EMBERS) audio.play('sizzle', 1.3, 0.12);
       // And what the step stirs where it left: dust, a splash, a few blades of grass.
       stepFx(level.map[lastPlace.pos] ?? terrain, lastPlace.pos, vnow);
-      // Stepping onto a sign reads it.
-      // Below the last shop the signs burst into flames as one reads them (Sign.read).
-      const tip = t.signs[me.depth - 1] ?? t.signBurns;
-      if (terrain === T.SIGN && tip) {
-        if (walk.queue.length > 0 || held.code) {
-          // Passed over on the way somewhere: read in passing, into the log, and the walk goes on.
-          view.say(`${t.signTitle} ${tip}`, '#ffff44');
-        } else {
-          walk.reset();
-          showSign(tip, hideOverlay);
-        }
-      }
     }
   }
   // Setting out: the sewers' card.
@@ -2285,12 +2287,13 @@ function tick(now: number): void {
   if (key !== bakedKey) {
     // The tiles are baked once per depth; after that only the cells that changed are redrawn.
     const where = `${me.depth}:${session.generation}`;
-    if (!baked || bakedFor !== where) {
-      baked = bakeLevel(level, assets);
-      bakedMap = Uint8Array.from(level.map);
+    const plantsHere = world.floors[me.depth]?.plants ?? [];
+    if (!tiles || bakedFor !== where || tiles.level !== level || tiles.customStale) {
+      tiles = new LevelTiles(level, assets.env, world.run.seed);
+      tiles.bake(plantsHere);
       bakedFor = where;
     } else {
-      patchLevel(baked, bakedMap, level, assets);
+      tiles.patch(plantsHere);
     }
     visible = visibleCells(world, me.depth);
     bakedKey = key;
@@ -2420,7 +2423,6 @@ function tick(now: number): void {
     flyToBag(launch);
     return false;
   });
-  const plants = (world.floors[me.depth]?.plants ?? []).map((p) => ({ pos: p.pos, index: PLANT_KINDS.indexOf(p.kind) }));
   // Clouds of gas: green toxic, yellow paralytic.
   const clouds = world.floors[me.depth]?.gas ?? {};
   const gas = [
@@ -2430,7 +2432,7 @@ function tick(now: number): void {
   const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
   const explored = exploredCells(world, me.depth);
   const scene = {
-    level, baked: baked!, visible, explored, heaps, plants, gas, webs, seeAll: me.mindVision > 0,
+    level, tiles: tiles!, visible, explored, heaps, gas, webs, seeAll: me.mindVision > 0,
       ...((world.floors[me.depth]?.altar?.volume ?? 0) > 0 ? { altar: world.floors[me.depth]!.altar!.pos } : {}),
     focus: { x: at.x + TILE / 2, y: at.y + TILE / 2 },
     lights: world.arena ? [...lightsFor(level, visible, view, vnow), ...arenaView.lights(level, visible, vnow)] : lightsFor(level, visible, view, vnow),

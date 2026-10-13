@@ -1,68 +1,95 @@
-import { type Hero, isShopkeeper, maxExp, type Mob, mobStats } from './actors';
+import { baseKind, createMob, type Hero, isShopkeeper, type Mob, mobStats, rollMob } from './actors';
+import { randomRespawnCell } from './ai';
 import { hurt } from './combat';
-import { type Char, type Ctx, dropItem, isHero, leaveCell } from './floor';
+import { type Char, type Ctx, dropItem, heroesOn, isHero, leaveCell } from './floor';
+import { distance } from './level/geometry';
+import { scaleMob } from './party';
 import { createItem } from './items';
 
 /*
- * The altar room (AltarPainter, SacrificialFire). While its fire burns, every
- * monster on the level is drawn towards it; whoever stands in the fire is
- * marked for a few turns, and a marked creature that dies is an offering,
- * worth its experience (one to three times over, for a monster). Once the
- * fire has had enough, it goes out and leaves a scroll of wipe out.
+ * The sacrificial fire of a sacrifice room (SacrificeRoom, SacrificialFire). Whoever stands on or beside
+ * it is marked for a couple of turns, and a marked creature that dies there is an offering, worth its
+ * experience (two or three times over, for a monster; enough for anything, for a hero). Once it has had
+ * enough (6 + 4 per depth), it flares up, goes out, and leaves its prize: a cursed weapon of the next
+ * set of floors. While it burns and the level is empty of foes, it calls up a few more to offer.
  */
 
 /** SacrificialFire.Marked.DURATION. */
-export const MARKED_TURNS = 5;
+export const MARKED_TURNS = 2;
 
 /** The fire still burns on this depth. */
 export const fireBurns = (ctx: Ctx): boolean => (ctx.floor.altar?.volume ?? 0) > 0;
 
-/** SacrificialFire.evolve, for a monster's turn: drawn to the fire, and marked while in it. */
+/** SacrificialFire.evolve: within a step of the fire (NEIGHBOURS9), a creature is marked. */
+const byTheFire = (ctx: Ctx, pos: number): boolean => fireBurns(ctx) && distance(pos, ctx.floor.altar!.pos) <= 1;
+
+/** SacrificialFire.evolve, for a monster's turn: marked while by the fire, and a while after. */
 export function altarCallsMob(ctx: Ctx, mob: Mob): void {
-  const fire = ctx.floor.altar;
-  if (!fire || fire.volume <= 0 || mob.state === 'passive') {
-    if ((mob.marked ?? 0) > 0) mob.marked!--;
-    return;
-  }
-  if (mob.pos === fire.pos) {
+  if (byTheFire(ctx, mob.pos)) {
     if (!mob.marked) ctx.effects.push({ type: 'marked', depth: ctx.depth, who: mob.id });
     mob.marked = MARKED_TURNS;
   } else if ((mob.marked ?? 0) > 0) {
     mob.marked!--;
   }
-  // Mob.beckon: whoever is not already after someone heads for the fire.
-  if (mob.state !== 'hunting') {
-    mob.state = 'wandering';
-    mob.target = fire.pos;
-  }
 }
 
-/** SacrificialFire.evolve, for a hero's time passing: marked while in the fire, and a while after. */
+/**
+ * SacrificialFire.evolve, for a hero's time passing: marked while by the fire, and a while after; and,
+ * the fire found and no foe left on the level, it calls one up (Level.spawnMob(4)), three times at most
+ * beyond one for every worthy offering.
+ */
 export function altarMarksHero(ctx: Ctx, hero: Hero, time: number): void {
-  if (fireBurns(ctx) && hero.pos === ctx.floor.altar!.pos) {
+  if (byTheFire(ctx, hero.pos)) {
     if (!hero.marked) ctx.effects.push({ type: 'marked', depth: ctx.depth, who: hero.id });
     hero.marked = MARKED_TURNS;
   } else if ((hero.marked ?? 0) > 0) {
     hero.marked = Math.max(0, hero.marked! - time);
   }
+  const fire = ctx.floor.altar;
+  if (!fire || fire.volume <= 0 || (fire.bonusSpawns ?? BONUS_SPAWNS) <= 0) return;
+  if (!ctx.world.explored[ctx.depth]?.[fire.pos] || ctx.floor.mobs.some((mob) => mob.state !== 'passive')) return;
+  const heroes = heroesOn(ctx.world, ctx.depth);
+  const pos = randomRespawnCell(ctx.rng, ctx.world, ctx.level, (cell) => heroes.every((h) => distance(h.pos, cell) >= 4));
+  if (pos === -1) return;
+  ctx.floor.mobs.push(scaleMob(ctx.world, createMob(`#${++ctx.world.nextId}`, rollMob(ctx.rng, ctx.depth), pos, 'wandering', ctx.floor.now)));
+  fire.bonusSpawns = (fire.bonusSpawns ?? BONUS_SPAWNS) - 1;
 }
 
-/** SacrificialFire.sacrifice: a marked creature has died on the fire's level. */
+/** SacrificialFire.bonusSpawns: the monsters it may call up to be offered. */
+const BONUS_SPAWNS = 3;
+
+/** SacrificialFire.sacrifice: what an offering is worth, as the wand of corruption reckons it. */
+function offeringWorth(ctx: Ctx, char: Char): number {
+  if (isHero(char)) return 1_000_000;
+  const kind = baseKind(char.kind);
+  let exp = 0;
+  if (kind === 'statue' || kind === 'mimic') exp = 1 + ctx.depth;
+  else if (kind === 'piranha' || kind === 'bee') exp = 1 + Math.trunc(ctx.depth / 2);
+  else if (kind === 'wraith') exp = 1 + Math.trunc(ctx.depth / 3);
+  else if (kind === 'swarm' && (char.generation ?? 0) > 0) exp = 1;
+  else if (mobStats(char).exp > 0) exp = 1 + mobStats(char).exp;
+  return exp * ctx.rng.intRange(2, 3);
+}
+
+/** SacrificialFire.sacrifice: a marked creature has died by the fire. */
 export function sacrifice(ctx: Ctx, char: Char): void {
   const fire = ctx.floor.altar;
   if (!fire || fire.volume <= 0 || !((char.marked ?? 0) > 0)) return;
-  const exp = isHero(char) ? maxExp(char) : mobStats(char).exp * ctx.rng.intRange(1, 3);
+  const exp = offeringWorth(ctx, char);
   if (exp <= 0) {
     ctx.effects.push({ type: 'sacrifice', depth: ctx.depth, pos: fire.pos, outcome: 'unworthy' });
     return;
   }
-  fire.volume -= exp;
-  if (fire.volume > 0) {
+  if (fire.volume - exp > 0) {
+    fire.volume -= exp;
+    fire.bonusSpawns = (fire.bonusSpawns ?? BONUS_SPAWNS) + 1;
     ctx.effects.push({ type: 'sacrifice', depth: ctx.depth, pos: fire.pos, outcome: 'worthy' });
     return;
   }
   fire.volume = 0;
-  dropItem(ctx.floor, fire.pos, createItem('wipeOut'));
+  // SEAM(gear): SacrificeRoom.prize(level) when the fire had none; the room always gives it one here.
+  dropItem(ctx.floor, fire.pos, fire.prize ?? createItem('wipeOut'));
+  delete fire.prize;
   ctx.effects.push({ type: 'sacrifice', depth: ctx.depth, pos: fire.pos, outcome: 'reward' });
 }
 

@@ -39,10 +39,10 @@ export function sanitizeAction(raw: unknown): Action | null {
   switch (a.type) {
     case 'descend':
     case 'ascend':
+    case 'branch':
     case 'wait':
     case 'search':
     case 'impReward':
-    case 'faceCurse':
     case 'endGame':
     case 'pickup':
     case 'buy':

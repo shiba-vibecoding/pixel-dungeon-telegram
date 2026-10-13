@@ -11,7 +11,7 @@ import { attack, charArmor, CRIPPLE_TURNS, earnExp, hurt } from './combat';
 import { fearless, TERROR_TURNS } from './enchant';
 import { conjureImages } from './allies';
 import {
-  canEnter, charAt, type Ctx, dropItem, enterCell, exploredCells, heroView, isHero, isPassable, isWater, landItem, leaveCell,
+  canEnter, charAt, type Ctx, discoverCell, dropItem, enterCell, exploredCells, heroView, isHero, isPassable, isWater, landItem, leaveCell,
 } from './floor';
 import {
   buyPrice, createItem, type Heap, isStackable, type Item, itemDef, ItemGenerator, type ItemKind, itemPrice,
@@ -119,9 +119,15 @@ const INVISIBILITY_DURATION = 15;
 const LEVITATION_DURATION = 20;
 const GAS_IMMUNITY_DURATION = 15;
 
-/** The backpack slot of a golden key for the hero's current depth, or -1. */
-const goldenKeyFor = (hero: Hero): number =>
-  hero.items.findIndex((item) => item.kind === 'key.golden' && item.depth === hero.depth);
+/**
+ * The backpack slot of the key a chest wants (Hero.actOpenChest): a golden key for a locked chest, a crystal
+ * key for a crystal chest, of the hero's depth; -1 if none. Keys do not work on the quests' side levels.
+ */
+function chestKeyFor(world: World, hero: Hero, heap: Heap): number {
+  if (world.levels[hero.depth]?.branch) return -1;
+  const kind = heap.kind === 'crystalChest' ? 'key.crystal' : 'key.golden';
+  return hero.items.findIndex((item) => item.kind === kind && item.depth === hero.depth);
+}
 
 function heapAt(world: World, hero: Hero): Heap | undefined {
   return world.floors[hero.depth]?.heaps.find((heap) => heap.pos === hero.pos);
@@ -131,7 +137,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
   if (action.type === 'pickup') {
     const heap = heapAt(world, hero);
     if (!heap) return 'nothing here';
-    if ((heap.kind === 'lockedChest' || heap.kind === 'crystalChest') && goldenKeyFor(hero) < 0) return 'the chest is locked';
+    if ((heap.kind === 'lockedChest' || heap.kind === 'crystalChest') && chestKeyFor(world, hero, heap) < 0) return 'the chest is locked';
     if (heap.kind === 'hidden') return 'nothing here';
     return heap.kind === 'forSale' ? 'that is for sale' : null;
   }
@@ -139,7 +145,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     const heap = Number.isInteger(action.cell) ? world.floors[hero.depth]?.heaps.find((h) => h.pos === action.cell) : undefined;
     if (!heap || heap.kind === 'heap' || heap.kind === 'forSale' || heap.kind === 'hidden') return 'nothing to open';
     if (heap.pos !== hero.pos && !adjacent(heap.pos, hero.pos)) return 'too far away';
-    if ((heap.kind === 'lockedChest' || heap.kind === 'crystalChest') && goldenKeyFor(hero) < 0) return 'the chest is locked';
+    if ((heap.kind === 'lockedChest' || heap.kind === 'crystalChest') && chestKeyFor(world, hero, heap) < 0) return 'the chest is locked';
     return null;
   }
   if (action.type === 'mine') return mineProblem(world, hero);
@@ -510,7 +516,7 @@ function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
  */
 function pressUnderItem(ctx: Ctx, pos: number): void {
   if (hasFlag(ctx.level.map[pos]!, F.PIT)) return;
-  if (trapAt(ctx.level.map[pos]!)) triggerTrap(ctx, null, pos);
+  if (trapAt(ctx.level, pos)) triggerTrap(ctx, null, pos);
   stepOnPlant(ctx, null, pos);
 }
 
@@ -648,8 +654,8 @@ export function collect(hero: Hero, item: Item): boolean {
 /** Heap.open: a chest unlocked (with the golden key, if it wants one), a tomb or remains disturbed; false if a mimic sprang instead. */
 function openHeap(ctx: Ctx, hero: Hero, heap: Heap): boolean {
   if (heap.kind === 'mimic' && springMimic(ctx, hero, heap)) return false;
-  // A locked or crystal chest: the golden key turns in its lock and stays there.
-  if (heap.kind === 'lockedChest' || heap.kind === 'crystalChest') hero.items.splice(goldenKeyFor(hero), 1);
+  // A locked chest takes the golden key, a crystal chest the crystal one (Notes.remove).
+  if (heap.kind === 'lockedChest' || heap.kind === 'crystalChest') hero.items.splice(chestKeyFor(ctx.world, hero, heap), 1);
   if (heap.kind !== 'heap') {
     ctx.effects.push({ type: 'opened', depth: ctx.depth, pos: heap.pos, heap: heap.kind });
     disturb(ctx, hero, heap);
@@ -968,7 +974,7 @@ function use(ctx: Ctx, hero: Hero, index: number, target: Item | undefined): voi
       discoverable(map).forEach((open, i) => {
         if (!open) return;
         explored[i] = true;
-        if (hasFlag(map[i]!, F.SECRET)) map[i] = discover(map[i]!);
+        discoverCell(ctx.level, i);
       });
       ctx.effects.push({ type: 'mapped', hero: hero.id });
       break;

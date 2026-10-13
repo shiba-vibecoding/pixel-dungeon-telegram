@@ -748,6 +748,9 @@ export interface QuestOptions {
   hero: Hero;
   /** Who is speaking: the sad ghost or the old wandmaker. */
   who: MobKind;
+  /** The window's title and icon, when not the speaker's (WndSadGhost: «Defeated fetid rat» and the foe). */
+  title?: string;
+  icon?: MobKind;
   text: string;
   /** Rewards on offer, one of which the hero may take. */
   offers?: readonly Item[];
@@ -789,7 +792,7 @@ export function showQuest(options: QuestOptions): void {
         }, i === 0 ? 'primary' : 'quiet')),
     );
   const box = windowOf(
-    { title: capitalize(t.mobs[options.who]), icon: portrait(options.who), onClose: answers.length > 0 ? undefined : options.onClose },
+    { title: options.title ?? capitalize(t.mobs[options.who]), icon: portrait(options.icon ?? options.who), onClose: answers.length > 0 ? undefined : options.onClose },
     info(options.text, 'pd-speech'),
     offers.length > 0 && el('div', { className: 'pd-rewards' }, ...offers.map(card)),
     answerRow,

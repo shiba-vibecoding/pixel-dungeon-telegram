@@ -1,4 +1,5 @@
-import { HEIGHT, type Level, LENGTH, T, WIDTH } from '@pd/core';
+import { HEIGHT, type Level, LENGTH, WIDTH } from '@pd/core';
+import { drawWater, type LevelTiles } from './tiles';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
 import { FALL_MS, type Puppet, TILE, type View } from './view';
 import { bossCard, depthCard, floatNumber, levelCard, nameplate, slainCard, waveCard } from './cards';
@@ -19,44 +20,6 @@ export interface Camera {
   x: number;
   y: number;
   zoom: number;
-}
-
-const isWater = (terrain: number): boolean => terrain >= T.WATER_TILES && terrain <= T.WATER;
-
-/** Draws the static tile layer; water is animated underneath it. Redraw when terrain changes. */
-export function bakeLevel(level: Level, assets: Assets): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
-  canvas.width = WIDTH * TILE;
-  canvas.height = HEIGHT * TILE;
-  const ctx = canvas.getContext('2d')!;
-  const tiles = assets.tiles[levelRegion(level)]!;
-  const columns = tiles.width / TILE;
-  for (let i = 0; i < LENGTH; i++) {
-    const terrain = level.map[i]!;
-    const sx = (terrain % columns) * TILE;
-    const sy = Math.trunc(terrain / columns) * TILE;
-    ctx.drawImage(tiles, sx, sy, TILE, TILE, (i % WIDTH) * TILE, Math.trunc(i / WIDTH) * TILE, TILE, TILE);
-  }
-  return canvas;
-}
-
-/**
- * Brings a baked tile layer up to date with the level, redrawing only the cells that changed
- * (a door opened, grass trampled) rather than all of them; `seen` is the map it was baked from.
- */
-export function patchLevel(baked: HTMLCanvasElement, seen: Uint8Array, level: Level, assets: Assets): void {
-  const ctx = baked.getContext('2d')!;
-  const tiles = assets.tiles[levelRegion(level)]!;
-  const columns = tiles.width / TILE;
-  for (let i = 0; i < LENGTH; i++) {
-    const terrain = level.map[i]!;
-    if (seen[i] === terrain) continue;
-    seen[i] = terrain;
-    const x = (i % WIDTH) * TILE;
-    const y = Math.trunc(i / WIDTH) * TILE;
-    ctx.clearRect(x, y, TILE, TILE);
-    ctx.drawImage(tiles, (terrain % columns) * TILE, Math.trunc(terrain / columns) * TILE, TILE, TILE, x, y, TILE, TILE);
-  }
 }
 
 function drawIcon(ctx: CanvasRenderingContext2D, assets: Assets, icon: readonly [number, number, number, number], x: number, y: number): void {
@@ -155,6 +118,14 @@ function puffImage(color: string): HTMLCanvasElement {
   return image;
 }
 
+/** SentrySprite and SpawnerSprite.update: they hang in the air, bobbing (sin of the time in seconds; the spawner a third as much). */
+function bobbing(puppet: Puppet, now: number): number {
+  if (!puppet.alive || quality.reducedMotion) return 0;
+  if (puppet.kind === 'sentry') return Math.round(-Math.sin(now / 1000));
+  if (puppet.kind === 'demonSpawner') return Math.round(-Math.sin(now / 1000) / 3);
+  return 0;
+}
+
 function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y: number, now: number): void {
   const { sheet, anims } = puppet.sprite;
   const anim = puppet.anim === 'idle' && puppet.pumped ? 'pump' : puppet.anim;
@@ -166,9 +137,9 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   const knock = knockback(puppet, now);
   const dx = snap(x + (TILE - sheet.w) / 2 + lunge * (puppet.lungeX ?? 0)) + knock * (puppet.knockX ?? 0);
   // Floating: a few pixels up, bobbing slowly, with its shadow left on the floor.
-  const hover = puppet.levitating && puppet.alive ? 4 + Math.round(Math.sin(now / 320)) : 0;
+  const hover = (puppet.levitating && puppet.alive ? 4 + Math.round(Math.sin(now / 320)) : 0) + bobbing(puppet, now);
   const dy = snap(y + TILE - sheet.h + lunge * (puppet.lungeY ?? 0)) + knock * (puppet.knockY ?? 0) - hover;
-  if (hover) {
+  if (puppet.levitating && puppet.alive) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
     ctx.fillRect(snap(x + 4), snap(y + TILE - 2), 8, 2);
     ctx.fillRect(snap(x + 5), snap(y + TILE - 3), 6, 1);
@@ -249,13 +220,12 @@ function drawHealth(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
 
 export interface Scene {
   level: Level;
-  baked: HTMLCanvasElement;
+  /** Shattered's tile layers, baked (tiles.ts). */
+  tiles: LevelTiles;
   visible: readonly boolean[];
   explored: readonly boolean[];
   /** Items lying around, with their sprite index in items.png, and the colour of their glow, if magic. */
   heaps: ReadonlyArray<{ pos: number; sprite: number; aura?: string }>;
-  /** Plants growing here, with their index in plants.png. */
-  plants?: ReadonlyArray<{ pos: number; index: number }>;
   /** Clouds of gas: how much is in each cell, and its colour. */
   gas?: ReadonlyArray<{ pos: number; volume: number; color: string }>;
   /** Spinners' webs, and how much is left of each. */
@@ -291,7 +261,7 @@ export function render(
   camera: Camera,
   now: number,
 ): void {
-  const { level, baked, visible, explored } = scene;
+  const { level, tiles, visible, explored } = scene;
   const { canvas } = ctx;
   ctx.imageSmoothingEnabled = false;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -301,24 +271,10 @@ export function render(
   fine = 1 / camera.zoom;
   ctx.setTransform(camera.zoom, 0, 0, camera.zoom, -Math.round(camera.x * camera.zoom), -Math.round(camera.y * camera.zoom));
 
-  // Slowly drifting water under the transparent parts of water tiles.
-  const water = assets.water[levelRegion(level)]!;
-  const pattern = ctx.createPattern(water, 'repeat')!;
-  const drift = (now / 120) % water.width;
-  pattern.setTransform(new DOMMatrix().translate(drift, drift * 0.5));
-  ctx.fillStyle = pattern;
-  for (let i = 0; i < LENGTH; i++) {
-    if (isWater(level.map[i]!)) {
-      ctx.fillRect((i % WIDTH) * TILE, Math.trunc(i / WIDTH) * TILE, TILE, TILE);
-    }
-  }
-  ctx.drawImage(baked, 0, 0);
+  // Water under the tiles that let it show, scrolling slowly (GameScene's water layer); then the ground layer.
+  drawWater(ctx, tiles, assets.env.water[levelRegion(level)]!, now, quality.reducedMotion);
+  ctx.drawImage(tiles.ground, 0, 0);
 
-  // Items on the floor, remembered (and dimmed by the fog) once seen.
-  for (const plant of scene.plants ?? []) {
-    if (!explored[plant.pos]) continue;
-    ctx.drawImage(assets.plants, plant.index * 16, 0, 16, 16, (plant.pos % WIDTH) * TILE, Math.trunc(plant.pos / WIDTH) * TILE, 16, 16);
-  }
   // What fights left on the floor (blood, chunks, bodies), under what lies there: remembered
   // where the party has been, and dimmed with the rest of it by the fog.
   fx.drawDecals(ctx, now, (x, y) => explored[Math.trunc(y / TILE) * WIDTH + Math.trunc(x / TILE)] === true);
@@ -422,6 +378,22 @@ export function render(
     ctx.globalAlpha = 1;
   }
 
+  const seen = (x: number, y: number): boolean => visible[Math.trunc(y / TILE) * WIDTH + Math.trunc(x / TILE)] === true;
+
+  // Characters, back to front. Monsters only show where the party can see.
+  const shown = [...view.puppets.values()]
+    .filter((puppet) => puppet.isHero || scene.seeAll || visible[puppet.to] || visible[puppet.from] || (puppet.aim !== undefined && visible[puppet.aim]))
+    .map((puppet) => {
+      // On whole screen pixels, as the map is: a walker between them shimmered against the floor.
+      const at = view.position(puppet, now);
+      return { puppet, x: Math.round(at.x * camera.zoom) / camera.zoom, y: Math.round(at.y * camera.zoom) / camera.zoom };
+    })
+    .sort((a, b) => Number(a.puppet.alive) - Number(b.puppet.alive) || a.y - b.y);
+  for (const { puppet, x, y } of shown) drawPuppet(ctx, puppet, x, y, now);
+
+  // The upper layer over the characters: the tops of walls, lintels, the tops of tall grass and statues.
+  ctx.drawImage(tiles.upper, 0, 0);
+
   // The region's mist, drifting slowly over what can be seen (the dark of the fog covers the rest).
   const mist = sheet(`fog${levelRegion(level)}`);
   if (mist && !quality.light) {
@@ -463,19 +435,6 @@ export function render(
   // edges between are soft. Each cell's darkness eases toward what it should be,
   // so what comes into sight surfaces quickly and what leaves it sinks slowly.
   drawFog(ctx, level, visible, explored, now);
-
-  const seen = (x: number, y: number): boolean => visible[Math.trunc(y / TILE) * WIDTH + Math.trunc(x / TILE)] === true;
-
-  // Characters, back to front. Monsters only show where the party can see.
-  const shown = [...view.puppets.values()]
-    .filter((puppet) => puppet.isHero || scene.seeAll || visible[puppet.to] || visible[puppet.from] || (puppet.aim !== undefined && visible[puppet.aim]))
-    .map((puppet) => {
-      // On whole screen pixels, as the map is: a walker between them shimmered against the floor.
-      const at = view.position(puppet, now);
-      return { puppet, x: Math.round(at.x * camera.zoom) / camera.zoom, y: Math.round(at.y * camera.zoom) / camera.zoom };
-    })
-    .sort((a, b) => Number(a.puppet.alive) - Number(b.puppet.alive) || a.y - b.y);
-  for (const { puppet, x, y } of shown) drawPuppet(ctx, puppet, x, y, now);
 
   for (const { puppet, x, y } of shown) {
     if (!puppet.alive) continue;

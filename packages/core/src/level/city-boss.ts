@@ -70,5 +70,5 @@ function decorateBossLevel(level: LevelBuilder): void {
     if (map[i] === T.EMPTY && rng.int(10) === 0) map[i] = T.EMPTY_DECO;
     else if (map[i] === T.WALL && rng.int(8) === 0) map[i] = T.WALL_DECO;
   }
-  map[level.arenaDoor + WIDTH + 1] = T.SIGN;
+  map[level.arenaDoor + WIDTH + 1] = T.EMPTY;
 }

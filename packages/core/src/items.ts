@@ -20,7 +20,7 @@ import { S } from './spd-sprites';
 
 export type ItemCategory =
   | 'gold' | 'potion' | 'scroll' | 'weapon' | 'armor' | 'missile' | 'wand' | 'ring' | 'seed' | 'food' | 'dew' | 'torch' | 'key'
-  | 'tome' | 'quest' | 'ankh' | 'kit' | 'bomb' | 'weightstone' | 'beacon' | 'honeypot' | 'vial' | 'bag' | 'wipeout' | 'seal';
+  | 'tome' | 'quest' | 'ankh' | 'kit' | 'bomb' | 'weightstone' | 'beacon' | 'honeypot' | 'vial' | 'bag' | 'wipeout' | 'seal' | 'artifact';
 
 export interface ItemDef {
   category: ItemCategory;
@@ -171,6 +171,8 @@ export const ITEMS = {
   'bag.seeds': { category: 'bag', sprite: S.POUCH },
   'bag.scrolls': { category: 'bag', sprite: S.HOLDER },
   'bag.wands': { category: 'bag', sprite: S.HOLSTER },
+  /** PotionBandolier: Shattered's fourth bag, for potions. */
+  'bag.potions': { category: 'bag', sprite: S.BANDOLIER },
   /** Every hero's, from the start: it keeps the dew picked up, to be drunk when hurt (Waterskin; Pixel Dungeon's dew vial). */
   waterskin: { category: 'vial', sprite: S.WATERSKIN },
   /** The Warrior's broken seal, when it is not affixed to armour (BrokenSeal; on armour it is Item.seal). */
@@ -181,6 +183,8 @@ export const ITEMS = {
   'key.iron': { category: 'key', sprite: S.IRON_KEY },
   /** Opens a locked or crystal chest of the level it was found on. */
   'key.golden': { category: 'key', sprite: S.GOLDEN_KEY },
+  /** CrystalKey: opens the crystal door or the crystal chests of the level it was found on. */
+  'key.crystal': { category: 'key', sprite: S.CRYSTAL_KEY },
   /** SkeletonKey: dropped by a boss, it opens the locked way down from its level. */
   'key.skeleton': { category: 'key', sprite: S.WORN_KEY },
   /** The sad ghost's dried rose. */
@@ -198,6 +202,8 @@ export const ITEMS = {
   'tome.mastery': { category: 'tome', sprite: S.MASTERY },
   /** Lit, it lets one see further in the dark halls for a while. */
   torch: { category: 'torch', sprite: S.TORCH },
+  /** SkeletonKey: Shattered v4's artifact, the vault's prize among others: it opens locks, locks doors and raises walls with its charge. */
+  'artifact.skeletonKey': { category: 'artifact', sprite: S.ARTIFACT_KEY },
   /** The King of Dwarves' legacy: it turns the armour worn into the hero's class armour. */
   'kit.armor': { category: 'kit', sprite: S.KIT },
   /** Brings its bearer back to life once, at a price: everything else in the pack, and all gold. */
@@ -378,7 +384,8 @@ export function itemPrice(item: Item, known: boolean): number {
     case 'honeypot':
       return 50 * item.qty;
     case 'bag':
-      return 50;
+      // Bag.value: the pouch 30, the holder and the bandolier 40, the holster 60.
+      return ({ 'bag.seeds': 30, 'bag.scrolls': 40, 'bag.potions': 40, 'bag.wands': 60 } as Partial<Record<ItemKind, number>>)[item.kind] ?? 50;
     case 'wipeout':
       return 100 * item.qty;
     case 'weightstone':
@@ -651,18 +658,22 @@ export class ItemGenerator {
 
 /** `forSale`: a shop's wares, bought rather than picked up. */
 /** hidden: unseen until a hero searches right next to it. */
-export type HeapKind = 'heap' | 'chest' | 'skeleton' | 'tomb' | 'forSale' | 'mimic' | 'lockedChest' | 'crystalChest' | 'hidden';
+export type HeapKind = 'heap' | 'chest' | 'skeleton' | 'tomb' | 'forSale' | 'mimic' | 'lockedChest' | 'crystalChest' | 'hidden' | 'remains';
 
 export interface Heap {
   pos: number;
   kind: HeapKind;
   items: Item[];
+  /** Heap.haunted: remains with something cursed among them; disturbing them raises a wraith. */
+  haunted?: boolean;
+  /** Heap.autoExplored: made by the level for show, not counted as something missed. */
+  autoExplored?: boolean;
 }
 
 /** Sprites of closed containers in items.png. */
 /** A mimic looks just like a chest. */
 export const HEAP_SPRITES: Readonly<Record<Exclude<HeapKind, 'heap' | 'forSale'>, number>> = {
-  chest: S.CHEST, skeleton: S.BONES, tomb: S.TOMB, mimic: S.CHEST, lockedChest: S.LOCKED_CHEST, crystalChest: S.CRYSTAL_CHEST,
+  chest: S.CHEST, skeleton: S.BONES, tomb: S.TOMB, mimic: S.CHEST, lockedChest: S.LOCKED_CHEST, crystalChest: S.CRYSTAL_CHEST, remains: S.REMAINS,
   hidden: S.SOMETHING, // never drawn
 };
 

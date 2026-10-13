@@ -36,7 +36,11 @@ function atTheLair(seed: number): World {
   // Hidden doors and traps are no part of this test: open and disarm them all.
   for (let i = 0; i < LENGTH; i++) {
     if (level.map[i] === T.SECRET_DOOR) level.map[i] = T.DOOR;
-    if (trapAt(level.map[i]!)) level.map[i] = T.INACTIVE_TRAP;
+    const trap = trapAt(level, i);
+    if (trap) {
+      trap.active = false;
+      level.map[i] = T.INACTIVE_TRAP;
+    }
   }
   return world;
 }
@@ -131,7 +135,7 @@ describe("Goo's lair", () => {
     goo.enemy = 'p';
     goo.target = heroById(world, 'p')!.pos;
     for (let i = 0; i < 5; i++) act(world, 'p', { type: 'wait' });
-    expect(level.map[level.entrance]).toBe(T.WATER_TILES);
+    expect(level.map[level.entrance]).toBe(T.WATER);
     expect(act(world, 'p', { type: 'ascend' }).ok).toBe(false);
   });
 
@@ -146,7 +150,7 @@ describe("Goo's lair", () => {
     expect(hero.hp).toBe(before - 1);
 
     const level = levelAt(world, 1);
-    const water = NEIGHBOURS8.map((n) => hero.pos + n).find((c) => level.map[c]! >= T.WATER_TILES && level.map[c]! <= T.WATER);
+    const water = NEIGHBOURS8.map((n) => hero.pos + n).find((c) => level.map[c] === T.WATER);
     if (water !== undefined) {
       act(world, 'p', { type: 'move', to: water });
       expect(hero.ooze).toBe(-1);

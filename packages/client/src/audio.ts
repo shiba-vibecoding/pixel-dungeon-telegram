@@ -34,7 +34,17 @@ export type Synth =
   | 'creak' | 'thud' | 'rustle' | 'coin' | 'pop' | 'whoosh' | 'tick' | 'sizzle' | 'clank' | 'drip' | 'pebble' | 'sparkle'
   | 'stepWood' | 'stepGrass' | 'knock' | 'crowd';
 
-export type Sound = Sample | Synth;
+/**
+ * Shattered's sounds (Assets.Sounds) the levels stream plays that have no file of their own here yet:
+ * each plays the nearest existing one until the audio stream brings Shattered's files.
+ */
+export type LevelSound = 'gas' | 'ray' | 'mine' | 'trample' | 'tomb' | 'sheep' | 'grass' | 'chains' | 'chime' | 'scan' | 'mimic' | 'boulder';
+const LEVEL_SOUNDS: Readonly<Record<LevelSound, Sample | Synth>> = {
+  gas: 'puff', ray: 'zap', mine: 'rocks', trample: 'rustle', tomb: 'bones', sheep: 'puff', grass: 'stepGrass', chains: 'clank',
+  chime: 'sparkle', scan: 'zap', mimic: 'bones', boulder: 'rocks',
+};
+
+export type Sound = Sample | Synth | LevelSound;
 
 /** The music: the original's tunes from files, or one played here. */
 export type Track = 'theme' | 'game' | SongName;
@@ -488,7 +498,7 @@ class Audio {
   play(name: Sound, rate = 1, volume = 1, at?: Place, pan?: number): void {
     const ctx = this.context;
     if (!this.enabled || !ctx || !this.sfx || document.hidden || ctx.state !== 'running') return;
-    const buffer = this.buffers.get(name);
+    const buffer = this.buffers.get(name) ?? this.buffers.get(LEVEL_SOUNDS[name as LevelSound]);
     if (!buffer) return;
     const now = performance.now();
     // Not the same sound on top of itself, nor too many at once.

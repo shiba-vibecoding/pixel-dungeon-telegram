@@ -105,7 +105,7 @@ function decorateBossLevel(level: LevelBuilder): void {
   for (let attempt = 0; attempt < 100; attempt++) {
     const pos = roomEntrance.random(rng);
     if (pos !== level.entrance) {
-      map[pos] = T.SIGN;
+      map[pos] = T.EMPTY;
       return;
     }
   }

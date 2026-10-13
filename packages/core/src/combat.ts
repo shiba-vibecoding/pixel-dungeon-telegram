@@ -1,4 +1,5 @@
 import { wear } from './wear';
+import { spawnerDamage } from './roommobs';
 import { familiarise, identifyBelongings } from './ident';
 import { bossHurt, earnExp } from './hero';
 import { shieldDamage } from './seal';
@@ -15,7 +16,7 @@ import { NEIGHBOURS4, NEIGHBOURS8 } from './level/geometry';
 import { armorProc, TERROR_TURNS, weaponProc } from './enchant';
 import { earthrootAbsorbs } from './plants';
 import { impQuestKill } from './imp';
-import { curseBroken, questKill } from './quest';
+import { addQuestScore, ghostFoeSlain } from './quest';
 import { seedGas } from './gas';
 import { looseItems } from './bags';
 import { sacrifice } from './altar';
@@ -34,8 +35,13 @@ function attackSkill(char: Char): number {
   return isHero(char) ? heroAttackSkill(char) : mobStats(char).attack;
 }
 
-function defenseSkill(char: Char): number {
+function defenseSkill(char: Char, attacker?: Char): number {
   if (isHero(char)) return heroDefenseSkill(char);
+  // GreatCrab.defenseSkill: it parries every blow from the one it is watching, awake and free to move.
+  if (char.kind === 'greatCrab' && attacker && char.enemySeen && char.state !== 'sleeping' && (char.paralysed ?? 0) <= 0 &&
+    char.enemy === attacker.id && (!isHero(attacker) || attacker.invisible <= 0)) {
+    return Number.POSITIVE_INFINITY;
+  }
   // A monster that has not spotted its enemy is caught off guard.
   return char.enemySeen ? mobStats(char).defense : 0;
 }
@@ -64,7 +70,13 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   // Striking gives an invisible hero away.
   if (isHero(attacker)) attacker.invisible = 0;
   const skill = override.attack ?? attackSkill(attacker);
-  const hit = ctx.rng.floatMax(skill) >= ctx.rng.floatMax(defenseSkill(defender));
+  const evasion = defenseSkill(defender, attacker);
+  const hit = evasion !== Number.POSITIVE_INFINITY && ctx.rng.floatMax(skill) >= ctx.rng.floatMax(evasion);
+  if (evasion === Number.POSITIVE_INFINITY) {
+    // GreatCrab: «The crab notices the attack and blocks with its massive claw!» (and the quest's score suffers).
+    ctx.effects.push({ type: 'parried', depth: ctx.depth, mob: defender.id });
+    if (isHero(attacker)) addQuestScore(ctx.world, 0, -50);
+  }
   if (!hit) {
     ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0 });
     return false;
@@ -128,6 +140,25 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     }
     // CursePersonification.attackProc: each blow throws its victim back a step, if there is room.
     if (attacker.kind === 'curse') shove(ctx, attacker, defender);
+    // FetidRat.attackProc: one bite in three leaves caustic ooze (and, out of water, costs the quest's score).
+    if (attacker.kind === 'fetidRat' && ctx.rng.int(3) === 0 && isHero(defender)) {
+      if (defender.ooze < 0) ctx.effects.push({ type: 'oozed', hero: defender.id });
+      defender.ooze = 0;
+      if (!isWater(ctx.level.map[defender.pos]!)) addQuestScore(ctx.world, 0, -50);
+    }
+    // GnollTrickster.attackProc: each hit in a row worse than the last — poison, and from the sixth on, fire.
+    if (attacker.kind === 'gnollTrickster') {
+      if ((attacker.combo ?? 0) >= 1 && isHero(defender)) addQuestScore(ctx.world, 0, -50);
+      attacker.combo = (attacker.combo ?? 0) + 1;
+      const effect = ctx.rng.int(4) + attacker.combo;
+      if (effect > 2) {
+        if (effect >= 6 && (defender.burning ?? 0) <= 0) {
+          if (!isWater(ctx.level.map[defender.pos]!)) defender.burning = Math.max(defender.burning ?? 0, ELEMENTAL_BURNING);
+        } else {
+          defender.poison = Math.max(defender.poison ?? 0, effect - 2);
+        }
+      }
+    }
     // Undead.attackProc: now and then a blow stuns.
     if (attacker.kind === 'undead' && ctx.rng.int(5) === 0) defender.paralysed = Math.max(defender.paralysed ?? 0, 1);
     // Spinner.attackProc: half its bites are venomous, and then it backs off.
@@ -330,6 +361,8 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
       fist.target = victim.pos;
     }
   }
+  // DemonSpawner.damage: heavy blows blunted, every point hastening its next demon.
+  if (!isHero(victim) && victim.kind === 'demonSpawner') damage = spawnerDamage(victim, damage);
   victim.hp -= damage;
   // Goo.damage, Tengu.damage…: hurting a boss keeps a sealed floor's healing going (LockedFloor.addTime).
   if (!isHero(victim)) bossHurt(ctx, victim, damage);
@@ -364,11 +397,6 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   ctx.floor.mobs.splice(ctx.floor.mobs.indexOf(mob), 1);
   leaveCell(ctx.world, ctx.level, ctx.depth, mob.pos);
   ctx.effects.push({ type: 'died', depth: ctx.depth, who: mob.id, pos: mob.pos, kind: mob.kind, ...(by ? { by } : {}) });
-  // The curse, broken, is the ghost again: nothing to learn from it, nothing left behind.
-  if (mob.kind === 'curse') {
-    curseBroken(ctx, mob);
-    return;
-  }
   sacrifice(ctx, mob);
   arenaKill(ctx, mob);
 
@@ -380,14 +408,12 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
     if (stats.exp > 0 && hero.lvl <= stats.maxLvl) earnExp(ctx, hero, stats.exp);
   }
 
-  questKill(ctx, mob);
+  ghostFoeSlain(ctx, mob, by);
   impQuestKill(ctx, mob);
 
   // A thief's stolen goods fall where it dies, and a mimic's treasure (Level.drop: as the challenges allow;
   // a flier slain over a chasm drops them through it).
   if (mob.item) landItem(ctx, mob.pos, mob.item);
-  // FetidRat.die: its skull, for the sad ghost.
-  if (mob.kind === 'fetidRat') dropItem(ctx.floor, mob.pos, createItem('quest.skull'));
   for (const item of mob.loot ?? []) landItem(ctx, mob.pos, item);
 
   // Mob.dropLoot, unless the party has outgrown the monster.
@@ -411,7 +437,7 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
     const { level } = ctx;
     // Goo's lair dries out behind the heroes; Tengu's arena opens; the rock
     // in DM-300's way back crumbles.
-    if (level.map[level.entrance] === T.WATER_TILES) level.map[level.entrance] = T.ENTRANCE;
+    if (level.map[level.entrance] === T.WATER) level.map[level.entrance] = T.ENTRANCE;
     if (level.arenaDoor !== undefined && (level.map[level.arenaDoor] === T.LOCKED_DOOR || level.map[level.arenaDoor] === T.WALL)) {
       level.map[level.arenaDoor] = level.map[level.arenaDoor] === T.WALL ? T.EMPTY_DECO : T.DOOR;
       ctx.effects.push({ type: 'arena', depth: ctx.depth, sealed: false });
@@ -439,6 +465,26 @@ function dropLoot(ctx: Ctx, mob: Mob): Item | null {
   const { rng } = ctx;
   const generator = (): ItemGenerator => new ItemGenerator(rng, ctx.depth);
   switch (baseKind(mob.kind)) {
+    // GnollTrickster.createLoot: always a set of thrown weapons, plain, uncursed and known, half of them.
+    case 'gnollTrickster': {
+      let loot = generator().of('weapon');
+      // SEAM(gear): Generator.Category.MISSILE; Pixel Dungeon's weapon table holds the thrown ones.
+      for (let i = 0; i < 20 && itemDef(loot.kind).category !== 'missile'; i++) loot = generator().of('weapon');
+      if (itemDef(loot.kind).category !== 'missile') loot = createItem('missile.dart', 4);
+      loot.level = 0;
+      delete loot.cursed;
+      delete loot.enchant;
+      delete loot.levelUnknown;
+      delete loot.curseUnknown;
+      loot.qty = Math.trunc((loot.qty + 1) / 2);
+      return loot;
+    }
+    // DemonSpawner: always a potion of healing.
+    case 'demonSpawner':
+      return createItem('potion.healing');
+    // GreatCrab: always two pieces of mystery meat.
+    case 'greatCrab':
+      return createItem('food.meat', 2);
     case 'gnoll':
       return rng.float() < 0.5 ? rollGold(rng, ctx.depth) : null;
     case 'crab':

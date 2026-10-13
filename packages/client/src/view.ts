@@ -1,12 +1,13 @@
 import {
   adjacent, cellX, cellY, type Effect, F, terrainFlags, type Enchantment, heroById, isAlive, itemDef, type ItemKind, itemSprite, LENGTH, type MobKind,
-  visibleCells, WIDTH, type World,
+  type TrapKind, visibleCells, WIDTH, type World,
   type Look,
 } from '@pd/core';
-import { audio } from './audio';
+import { audio, type Sound } from './audio';
 import { capitalize, t } from './i18n';
 import { itemName, plainName } from './itemtext';
 import { type AnimName, type Assets, type CharSprite, duration, heroSprite } from './sprites';
+import { lt, plain, trapText } from './levelnames';
 import { haptic } from './telegram';
 import { DEPTH_CARD_MS } from './cards';
 
@@ -15,6 +16,15 @@ import { DEPTH_CARD_MS } from './cards';
  * between cells, play attack and death animations, flash when hit; numbers
  * float up; the message log fills. Everything here is cosmetic and local.
  */
+
+/** The sound each trap makes as it goes off, after the click (Assets.Sounds in each Trap.activate). */
+const TRAP_SOUNDS: Partial<Record<TrapKind, Sound>> = {
+  alarm: 'alert', blazing: 'burning', burning: 'burning', chilling: 'shatter', frost: 'shatter', confusion: 'gas', corrosion: 'gas',
+  toxic: 'gas', cursing: 'cursed', disarming: 'teleport', disintegration: 'ray', explosive: 'blast', flashing: 'blast', flock: 'sheep',
+  gateway: 'teleport', geyser: 'gas', grim: 'cursed', guardian: 'alert', ooze: 'gas', pitfall: 'rocks',
+  poisonDart: 'miss', tenguDart: 'miss', wornDart: 'miss', rockfall: 'rocks', gnollRockfall: 'rocks', shocking: 'lightning', storm: 'lightning',
+  summoning: 'teleport', teleportation: 'teleport', warping: 'teleport', weakening: 'cursed', distortion: 'teleport',
+};
 
 export const STEP_MS = 110;
 /**
@@ -987,11 +997,12 @@ export class View {
           this.float(effect.mob, '+', COLORS.positive, now);
           this.say(t.repaired, COLORS.negative, now);
           break;
-        case 'trap':
+        case 'trap': {
           trapped = true;
+          const sound = TRAP_SOUNDS[effect.kind];
           if (effect.mob) {
             // Level.mobPress: a monster sets off a trap; heard and seen only where the party can see it
-            // (but an alarm rings throughout the dungeon).
+            // (but an alarm rings throughout the dungeon: AlarmTrap's ALERT).
             const here = effect.depth === this.depth && seen(effect.pos);
             if (!here) {
               if (effect.kind === 'alarm' && effect.depth === this.depth) audio.play('alert');
@@ -999,25 +1010,26 @@ export class View {
             }
             this.flashes.push({ cell: effect.pos, start: now });
             const at = { x: cellX(effect.pos) * TILE + TILE / 2, y: cellY(effect.pos) * TILE + TILE / 2 };
-            audio.play(effect.kind === 'lightning' ? 'lightning' : effect.kind === 'fire' ? 'burning' : 'trap', 1, 1, at);
+            audio.play('trap', 1, 1, at);
+            if (sound) audio.later(60, sound, 1, 0.9, at);
             const kind = this.puppets.get(effect.mob)?.kind as MobKind | undefined;
             if (kind) this.say(t.mobTrap(t.mobs[kind]), COLORS.warning, now);
-            if (effect.kind === 'alarm') {
-              audio.play('alert');
-              this.say(t.traps.alarm, COLORS.warning, now);
-            }
+            if (effect.kind === 'alarm') this.say(plain(lt('levels.traps.alarmtrap.alarm')), COLORS.warning, now);
             break;
           }
           if (effect.depth === this.depth) this.flashes.push({ cell: effect.pos, start: now });
-          audio.play(effect.kind === 'lightning' ? 'lightning' : effect.kind === 'fire' ? 'burning' : 'trap');
+          audio.play('trap');
+          if (sound) audio.later(60, sound);
           if (effect.hero === myId) {
-            this.say(t.plateClicks, COLORS.warning, now);
-            this.say(t.traps[effect.kind], COLORS.negative, now);
+            // Level.pressCell: stepping on a hidden one, «A hidden <trap> activates!».
+            if (effect.hidden) this.say(lt('levels.level.hidden_trap', trapText(effect.kind).name), COLORS.warning, now);
+            if (effect.kind === 'alarm') this.say(plain(lt('levels.traps.alarmtrap.alarm')), COLORS.warning, now);
             haptic('hurt');
           } else if (effect.depth === this.depth) {
             this.say(t.companionTrap(this.name(world, effect.hero)), COLORS.warning, now);
           }
           break;
+        }
         case 'ate':
           audio.play('eat', 1, 1, this.placeOf(effect.hero, now));
           this.busy(effect.hero, now);
@@ -1091,6 +1103,8 @@ export class View {
         case 'sacrifice':
           if (effect.depth === this.depth) {
             this.say(t.sacrifice[effect.outcome], effect.outcome === 'reward' ? COLORS.highlight : COLORS.warning, now);
+            // SacrificialFire.sacrifice: BURNING, three times over for the reward.
+            audio.play('burning');
             this.flashes.push({ cell: effect.pos, start: now, color: '102, 255, 255', duration: 900 });
           }
           break;

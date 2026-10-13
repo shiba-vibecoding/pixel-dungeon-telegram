@@ -3,9 +3,11 @@ export * from './run';
 export * from './level/terrain';
 export * from './level/geometry';
 export { RoomType, DoorType } from './level/room';
-export { Feeling, HeapType, type ItemSpawn, type ItemSpec, isBossDepth, LAST_SHOP_DEPTH } from './level/builder';
+export { HeapType, type ItemSpawn, type ItemSpec, isBossDepth } from './level/builder';
+export { Feeling } from './level/gen/dungeon';
 export { generateLevel, type Level, type RoomInfo } from './level/generate';
 export { discoverable, passable } from './level/flags';
+export type { LevelTransition, CustomTile, MobSpawn } from './level/gen/genlevel';
 export * from './actors';
 export { KIT_SEAMS, startingKit, type StartingKit } from './heroclass';
 export {
@@ -18,11 +20,15 @@ export { journalNotes, LANDMARKS, type Landmark, type Note } from './journal';
 export { WATERSKIN_VOLUME } from './waterskin';
 export * from './items';
 export { type InventoryAction, isInventoryAction, shopkeeperBeside } from './inventory';
-export { trapAt, type TrapKind } from './traps';
+export { disarmTrap, revealTrap, setTrap, trapAt, type TrapKind } from './traps';
+export { TRAPS, type TrapInfo, trapVisual, TRAP_COLOR, TRAP_SHAPE } from './level/trapdefs';
+export * as TileSheet from './level/tilesheet';
+export * as TileVisuals from './level/tilevisuals';
 export { PLANT_KINDS, type PlantInfo, type PlantKind, SEED_PLANTS } from './plants';
 export { charAt, type Effect, type Floor, heroesOn, heroSight, isWater, swapsWithHero } from './floor';
 
 export { ORE_WANTED, type SmithLine, type SmithQuest } from './smith';
+export { type GhostLine, type GhostQuest, type GhostType, GHOST_FOES } from './quest';
 export {
   canTarget, isEnchantable, isItemRef, isUnidentified, isUpgradable, itemAt, type ItemRef, scrollTargets, type TargetedScroll,
 } from './scrolls';

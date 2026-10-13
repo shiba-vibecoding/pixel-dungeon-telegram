@@ -81,7 +81,7 @@ export function classSpecial(ctx: Ctx, hero: Hero, target: number | undefined): 
         leaveCell(world, level, depth, hero.pos);
         hero.pos = dest;
         enterCell(level, dest);
-        if (trapAt(level.map[dest]!)) triggerTrap(ctx, hero, dest);
+        if (trapAt(level, dest)) triggerTrap(ctx, hero, dest);
       }
       for (const n of NEIGHBOURS8) {
         const char = charAt(world, depth, hero.pos + n);

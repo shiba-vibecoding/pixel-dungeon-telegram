@@ -8,13 +8,15 @@ import { isChallenged, SWARM_INTELLIGENCE } from './challenges';
 import { altarCallsMob } from './altar';
 import { type Item, itemDef, ItemGenerator, randomEnchantment } from './items';
 import { identify } from './ident';
-import { isBossDepth, LAST_SHOP_DEPTH } from './level/builder';
+import { isBossDepth } from './level/builder';
+import { spawnLevelMobs } from './levelspawn';
+import { sentryAct, spawnerAct } from './roommobs';
 import { KING_PEDESTALS } from './level/city-boss';
 import type { Level, RoomInfo } from './level/generate';
 import { adjacent, cellX, cellY, distance, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { RoomType } from './level/room';
 import { F, hasFlag, T } from './level/terrain';
-import { burst, mobConditions, mobPress } from './traps';
+import { burst, mobConditions, mobPress, setTrap } from './traps';
 import { seedGas, seedWeb } from './gas';
 import { staggerTarget } from './plants';
 import type { Rng } from './rng';
@@ -98,6 +100,15 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     mob.greeted = true;
     ctx.effects.push({ type: 'greeting', depth: ctx.depth, mob: mob.id });
   }
+  // The room characters: the sentry watching its floor, the demon spawner breeding demons.
+  if (mob.kind === 'sentry') {
+    sentryAct(ctx, mob);
+    return;
+  }
+  if (mob.kind === 'demonSpawner') {
+    spawnerAct(ctx, mob);
+    return;
+  }
   if (mob.state === 'passive' && (isShopkeeper(mob) || mob.kind === 'wandmaker' || mob.kind === 'imp' || mob.kind === 'blacksmith' || mob.kind === 'ratKing')) {
     spend(mob, TICK);
     return;
@@ -112,7 +123,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     }
     return;
   }
-  // SacrificialFire.evolve: drawn to the altar's fire, and marked while in it.
+  // SacrificialFire.evolve: marked while by the fire.
   altarCallsMob(ctx, mob);
   // Piranha.act: out of the water, a piranha dies.
   if (mob.kind === 'piranha' && !isWater(ctx.level.map[mob.pos]!)) {
@@ -202,7 +213,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
       if (mob.target !== -1 && getCloser(ctx, mob, mob.target, fov)) {
         spend(mob, 1 / MOBS[mob.kind].speed);
       } else {
-        mob.target = randomDestination(ctx.rng, ctx.level);
+        mob.target = GHOST_FOE_KINDS.has(mob.kind) ? closerDestination(ctx, mob) : randomDestination(ctx.rng, ctx.level);
         spend(mob, TICK);
       }
       return;
@@ -435,6 +446,8 @@ function canAttack(ctx: Ctx, mob: Mob, enemy: Hero): boolean {
   // The evil eye's gaze goes through anyone in the way; the scorpio only stings from afar.
   if (mob.kind === 'eye') return ballistica(ctx, mob.pos, enemy.pos, false).includes(enemy.pos);
   if (baseKind(mob.kind) === 'scorpio') return !adjacent(mob.pos, enemy.pos) && ballistica(ctx, mob.pos, enemy.pos).at(-1) === enemy.pos;
+  // GnollTrickster.canAttack: it only throws, from a cell away or more, along a clear line.
+  if (mob.kind === 'gnollTrickster') return !adjacent(mob.pos, enemy.pos) && ballistica(ctx, mob.pos, enemy.pos).at(-1) === enemy.pos;
   // The King goes to a pedestal to raise his undead while his court is short.
   if (mob.kind === 'king' && kingCanSummon(ctx, mob)) return mob.pos === kingPedestal(mob);
   return mob.pumped ? distance(mob.pos, enemy.pos) <= 2 : adjacent(mob.pos, enemy.pos);
@@ -555,7 +568,7 @@ function tenguJump(ctx: Ctx, mob: Mob): void {
     const trap = pick(false);
     if (trap === -1) break;
     if (level.map[trap] === T.INACTIVE_TRAP) {
-      level.map[trap] = T.POISON_TRAP;
+      setTrap(level, trap, 'poisonDart', true);
       ctx.effects.push({ type: 'discovered', depth, cell: trap });
     }
   }
@@ -591,6 +604,10 @@ function doAttack(ctx: Ctx, mob: Mob, enemy: Hero): void {
   }
   if (baseKind(mob.kind) === 'scorpio') {
     ctx.effects.push({ type: 'zapped', depth: ctx.depth, from: mob.pos, to: enemy.pos, bolt: 'poison' });
+  }
+  // GnollTrickster: a dart thrown (GnollTricksterSprite's ParalyticDart missile).
+  if (mob.kind === 'gnollTrickster') {
+    ctx.effects.push({ type: 'missile', depth: ctx.depth, from: mob.pos, to: enemy.pos, sprite: S.DART });
   }
   if (mob.kind === 'king') {
     if (kingCanSummon(ctx, mob) && mob.pos === kingPedestal(mob)) {
@@ -696,8 +713,20 @@ function getCloser(ctx: Ctx, mob: Mob, target: number, fov: boolean[]): boolean 
   // Rooted, it cannot move a step.
   if ((mob.rooted ?? 0) > 0) return false;
   if (mob.kind === 'goo') mob.pumped = false;
-  // Scorpio.getCloser: a hunting scorpio keeps its distance, to sting from afar.
-  if (baseKind(mob.kind) === 'scorpio' && mob.state === 'hunting') return mob.enemySeen && getFurther(ctx, mob, target) === 'moved';
+  // Scorpio.getCloser: a hunting scorpio keeps its distance, to sting from afar; so does the gnoll
+  // trickster, whose run of hits is over once it moves (GnollTrickster.getCloser).
+  if (mob.kind === 'gnollTrickster') mob.combo = 0;
+  if ((baseKind(mob.kind) === 'scorpio' || mob.kind === 'gnollTrickster') && mob.state === 'hunting') {
+    return mob.enemySeen && getFurther(ctx, mob, target) === 'moved';
+  }
+  // GreatCrab.getCloser: it keeps up only two steps in three.
+  if (mob.kind === 'greatCrab') {
+    mob.moving = (mob.moving ?? 0) + 1;
+    if (mob.moving >= 3) {
+      mob.moving = 0;
+      return true;
+    }
+  }
   // Succubus.getCloser: she blinks up to her prey, now and then, at no cost in time.
   if (mob.kind === 'succubus' && fov[target] && distance(mob.pos, target) > 2 && (mob.jumpIn ?? 0) <= 0) {
     const trace = ballistica(ctx, mob.pos, target);
@@ -744,7 +773,7 @@ function moveMob(ctx: Ctx, mob: Mob, to: number, press = true): void {
   enterCell(ctx.level, to);
   // Once Goo stirs, its lair floods behind the heroes: no way back up.
   if (mob.kind === 'goo' && ctx.level.map[ctx.level.entrance] === T.ENTRANCE) {
-    ctx.level.map[ctx.level.entrance] = T.WATER_TILES;
+    ctx.level.map[ctx.level.entrance] = T.WATER;
   }
   if (press && !MOBS[mob.kind].flying) {
     mobPress(ctx, mob);
@@ -817,6 +846,32 @@ export function getStep(from: number, to: number, passable: (cell: number) => bo
   return best;
 }
 
+/** The sad ghost's foes (FetidRat, GnollTrickster, GreatCrab), whose wandering seeks the hero out. */
+const GHOST_FOE_KINDS: ReadonlySet<string> = new Set(['fetidRat', 'gnollTrickster', 'greatCrab']);
+
+/** Their Wandering.randomDestination: of two places to wander to, the one nearer the hero (a walk away). */
+function closerDestination(ctx: Ctx, mob: Mob): number {
+  const pos1 = randomDestination(ctx.rng, ctx.level);
+  const pos2 = randomDestination(ctx.rng, ctx.level);
+  const hero = heroesOn(ctx.world, ctx.depth)[0];
+  if (!hero) return pos1;
+  // PathFinder.buildDistanceMap(hero.pos, passable).
+  const dist = new Map<number, number>([[hero.pos, 0]]);
+  const queue = [hero.pos];
+  for (let head = 0; head < queue.length; head++) {
+    const cell = queue[head]!;
+    for (const n of NEIGHBOURS8) {
+      const next = cell + n;
+      if (dist.has(next) || !adjacent(cell, next) || !isPassable(ctx.level, next)) continue;
+      dist.set(next, dist.get(cell)! + 1);
+      queue.push(next);
+    }
+  }
+  const far = Number.MAX_SAFE_INTEGER;
+  return (dist.get(pos2) ?? far) < (dist.get(pos1) ?? far) ? pos2 : pos1;
+  void mob;
+}
+
 /** A random cell inside a room, as Room.random(). */
 function randomCellIn(rng: Rng, room: RoomInfo): number {
   return rng.intBetween(room.left + 1, room.right) + rng.intBetween(room.top + 1, room.bottom) * WIDTH;
@@ -849,7 +904,6 @@ function randomCell(rng: Rng, ok: (cell: number) => boolean): number {
  * teleports there, as under the original's "strong magic aura".
  */
 export function randomRespawnCell(rng: Rng, world: World, level: Level, hidden: (cell: number) => boolean): number {
-  if (level.depth === LAST_SHOP_DEPTH) return -1;
   const free = (cell: number): boolean =>
     cell >= 0 && cell < LENGTH && hidden(cell) && isPassable(level, cell) && !charAt(world, level.depth, cell);
   for (let count = 0; count < 10; count++) {
@@ -881,13 +935,9 @@ export function populate(world: World, level: Level, rng: Rng): Mob[] {
     // The Rat King, in his hidden treasury next door.
     return level.ratKing === undefined ? [goo] : [goo, createMob(nextMobId(world), 'ratKing', level.ratKing, 'passive', 0)];
   }
+  // Shattered's levels come with their monsters (RegularLevel.createMobs and the rooms').
+  if (level.spawn) return spawnLevelMobs(world, level);
   const mobs: Mob[] = [];
-  if (level.shopkeeper !== undefined) {
-    // ShopPainter.placeShopkeeper: the last shop is the ambitious imp's.
-    mobs.push(createMob(nextMobId(world), level.depth === LAST_SHOP_DEPTH ? 'impShopkeeper' : 'shopkeeper', level.shopkeeper, 'passive', 0));
-  }
-  // LastShopLevel.createMobs: no monsters, only the shopkeeper if there is a shop.
-  if (level.depth === LAST_SHOP_DEPTH) return mobs;
   if (level.statue !== undefined) mobs.push(animatedStatue(world, level, rng));
   for (const pos of level.piranhas ?? []) {
     const piranha = createMob(nextMobId(world), 'piranha', pos, 'sleeping', 0);
@@ -930,7 +980,7 @@ function animatedStatue(world: World, level: Level, rng: Rng): Mob {
  * monsters a party that size calls for (party.ts), asleep, out of sight.
  */
 export function reinforce(world: World, level: Level, floor: Floor, rng: Rng, party: number): void {
-  if (level.depth >= 26 || level.depth === LAST_SHOP_DEPTH || isBossDepth(level.depth)) return;
+  if (level.depth >= 26 || isBossDepth(level.depth)) return;
   const base = nMobs(rng, level.depth);
   const extra = mobCount(base, party) - mobCount(base, party - 1);
   const seen = heroesOn(world, level.depth).map((hero) => castShadow(hero.pos, terrainBlocksSight(level.map), heroSight(world, level.depth)));

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, createItem, createMob, createWorld, type Effect, floorAt, heroById, levelAt, type Mob, type MobKind, type MobState, T, WIDTH,
+  act, addHero, createItem, createMob, createWorld, type Effect, floorAt, heroById, levelAt, type Mob, type MobKind, type MobState, setTrap, T, WIDTH,
   type World,
 } from '../src/index';
 import { pacify } from './helpers';
@@ -41,58 +41,55 @@ describe('monsters and traps (Level.mobPress)', () => {
   it('a monster stepping on a trap the party can see sets it off, and takes the harm', () => {
     const world = openGround();
     const trap = CENTRE + 3 * WIDTH - 2;
-    levelAt(world, 1).map[trap] = T.POISON_TRAP;
+    setTrap(levelAt(world, 1), trap, 'poisonDart', true);
     // Wandering to that very cell, right next to it: a goal next to it is stepped onto, whatever it is.
     const rat = addMob(world, 'rat', trap - 1, 'wandering', trap);
     const effects = wait(world);
-    expect(effects).toContainEqual({ type: 'trap', depth: 1, pos: trap, kind: 'poison', hero: '', mob: rat.id });
+    expect(effects).toContainEqual({ type: 'trap', depth: 1, pos: trap, kind: 'poisonDart', hero: '', mob: rat.id });
     expect(levelAt(world, 1).map[trap]).toBe(T.INACTIVE_TRAP);
     expect(rat.pos).toBe(trap);
     expect(rat.poison).toBeGreaterThan(0);
   });
 
-  it('a gripping trap holds a monster bleeding and crippled; lightning burns it', () => {
+  it('a gripping trap holds a monster bleeding and crippled, and goes on working', () => {
     const world = openGround();
     const grip = CENTRE + 3 * WIDTH - 2;
-    const bolt = CENTRE - 3 * WIDTH + 2;
-    levelAt(world, 1).map[grip] = T.GRIPPING_TRAP;
-    levelAt(world, 1).map[bolt] = T.LIGHTNING_TRAP;
+    setTrap(levelAt(world, 1), grip, 'gripping', true);
     const gnoll = addMob(world, 'gnoll', grip - 1, 'wandering', grip);
-    const crab = addMob(world, 'crab', bolt + 1, 'wandering', bolt);
     const effects = wait(world);
-    expect(gnoll.crippled).toBe(10);
-    expect(effects).toContainEqual({ type: 'trap', depth: 1, pos: bolt, kind: 'lightning', hero: '', mob: crab.id });
-    expect(effects.some((e) => e.type === 'hurt' && e.who === crab.id)).toBe(true);
-    expect(crab.hp).toBeLessThan(crab.ht);
+    expect(effects).toContainEqual({ type: 'trap', depth: 1, pos: grip, kind: 'gripping', hero: '', mob: gnoll.id });
+    expect(gnoll.crippled).toBeGreaterThan(0);
+    expect(gnoll.bleeding).toBeGreaterThan(0);
+    expect(levelAt(world, 1).map[grip]).toBe(T.TRAP);
   });
 
   it('a hidden trap stays hidden under a monster: only a hero finds it', () => {
     const world = openGround();
     const trap = CENTRE + 3 * WIDTH - 2;
-    levelAt(world, 1).map[trap] = T.SECRET_POISON_TRAP;
+    setTrap(levelAt(world, 1), trap, 'toxic', false);
     const rat = addMob(world, 'rat', trap - 1, 'wandering', trap);
     const effects = wait(world);
     expect(rat.pos).toBe(trap);
     expect(effects.some((e) => e.type === 'trap')).toBe(false);
-    expect(levelAt(world, 1).map[trap]).toBe(T.SECRET_POISON_TRAP);
+    expect(levelAt(world, 1).map[trap]).toBe(T.SECRET_TRAP);
   });
 
   it('a monster walks around a trap it can see on its way somewhere further', () => {
     const world = openGround();
     const from = CENTRE + 3 * WIDTH - 4;
     const trap = from + 1;
-    levelAt(world, 1).map[trap] = T.ALARM_TRAP;
+    setTrap(levelAt(world, 1), trap, 'alarm', true);
     const rat = addMob(world, 'rat', from, 'wandering', from + 3);
     for (let i = 0; i < 4; i++) wait(world);
     expect(rat.pos).toBe(from + 3);
-    expect(levelAt(world, 1).map[trap]).toBe(T.ALARM_TRAP);
+    expect(levelAt(world, 1).map[trap]).toBe(T.TRAP);
   });
 
   it('a monster blinded with rage charges straight over it, and sets it off', () => {
     const world = openGround();
     const from = CENTRE + 3 * WIDTH - 4;
     const trap = from + 1;
-    levelAt(world, 1).map[trap] = T.ALARM_TRAP;
+    setTrap(levelAt(world, 1), trap, 'alarm', true);
     const rat = addMob(world, 'rat', from, 'wandering', from + 3);
     rat.rage = 5;
     const other = addMob(world, 'gnoll', CENTRE - 3 * WIDTH, 'sleeping', -1);
@@ -158,7 +155,7 @@ describe('monsters set down by magic (WandOfFlock)', () => {
     const level = levelAt(world, 1);
     const spot = CENTRE + 3;
     level.map[spot] = T.CHASM;
-    for (const n of [-1, 1, -WIDTH, WIDTH, -WIDTH - 1, -WIDTH + 1, WIDTH - 1, WIDTH + 1]) level.map[spot + n] = T.ALARM_TRAP;
+    for (const n of [-1, 1, -WIDTH, WIDTH, -WIDTH - 1, -WIDTH + 1, WIDTH - 1, WIDTH + 1]) setTrap(level, spot + n, 'alarm', true);
     const result = act(world, 'p', { type: 'zap', item: 0, target: spot });
     const effects = result.ok ? result.effects : [];
     expect(effects).toContainEqual(expect.objectContaining({ type: 'mobFell', pos: spot, kind: 'sheep' }));

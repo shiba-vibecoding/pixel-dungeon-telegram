@@ -57,7 +57,7 @@ export function buildCavesBossLevel(level: LevelBuilder): boolean {
   // The stairs room in the middle, with a row of toxic traps along its top.
   level.fill(ROOM_LEFT - 1, ROOM_TOP - 1, ROOM_RIGHT - ROOM_LEFT + 3, ROOM_BOTTOM - ROOM_TOP + 3, T.WALL);
   level.fill(ROOM_LEFT, ROOM_TOP + 1, ROOM_RIGHT - ROOM_LEFT + 1, ROOM_BOTTOM - ROOM_TOP, T.EMPTY);
-  level.fill(ROOM_LEFT, ROOM_TOP, ROOM_RIGHT - ROOM_LEFT + 1, 1, T.TOXIC_TRAP);
+  level.fillTraps(ROOM_LEFT, ROOM_TOP, ROOM_RIGHT - ROOM_LEFT + 1, 'toxic', true);
   level.arenaDoor = rng.intBetween(ROOM_LEFT, ROOM_RIGHT) + (ROOM_BOTTOM + 1) * WIDTH;
   map[level.arenaDoor] = T.DOOR;
   level.entrance = rng.intBetween(ROOM_LEFT + 1, ROOM_RIGHT - 1) + rng.intBetween(ROOM_TOP + 1, ROOM_BOTTOM - 1) * WIDTH;
@@ -89,5 +89,5 @@ function decorateBossLevel(level: LevelBuilder): void {
   do {
     sign = rng.intBetween(ROOM_LEFT, ROOM_RIGHT) + rng.intBetween(ROOM_TOP, ROOM_BOTTOM) * WIDTH;
   } while (sign === level.entrance);
-  map[sign] = T.SIGN;
+  map[sign] = T.EMPTY;
 }

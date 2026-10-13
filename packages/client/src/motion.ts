@@ -132,7 +132,7 @@ function bounce(k: number): number {
   return 0.06 * (1 - (2 * b - 1) ** 2);
 }
 
-const isWater = (terrain: number): boolean => terrain >= T.WATER_TILES && terrain <= T.WATER;
+const isWater = (terrain: number): boolean => terrain === T.WATER;
 
 /** The middle of a cell, world pixels: where its sounds come from. */
 const centre = (cell: number): { x: number; y: number } => ({ x: (cell % WIDTH) * TILE + TILE / 2, y: Math.trunc(cell / WIDTH) * TILE + TILE / 2 });

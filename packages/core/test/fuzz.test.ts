@@ -47,7 +47,7 @@ function randomAction(world: World, id: string, rng: Rng): Action {
     case 9: return { type: 'beacon', item: Math.max(0, hero.items.findIndex((i) => i.kind === 'beacon')), mode: rng.int(2) === 0 ? 'set' : 'return' };
     case 10: return { type: 'balance', item, imbue: rng.int(2) === 0 ? 'speed' : 'accuracy' };
     case 11: return hero.pos === level.exit ? { type: 'descend' } : { type: 'move', to: hero.pos + rng.element(NEIGHBOURS8)! };
-    case 12: return { type: 'faceCurse' };
+    case 12: return { type: 'branch' };
     case 13: return { type: 'remove', ring: 0 };
     case 14: return { type: 'sell', item };
     default: return { type: 'wait' };

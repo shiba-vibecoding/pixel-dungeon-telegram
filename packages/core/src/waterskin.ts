@@ -45,7 +45,7 @@ export function pickUpDew(ctx: Ctx, hero: Hero, pos: number, quantity = 1): bool
     return true;
   }
   const terrain = ctx.level.map[pos];
-  const stairs = terrain === T.ENTRANCE || terrain === T.EXIT || terrain === T.UNLOCKED_EXIT;
+  const stairs = terrain === T.ENTRANCE || terrain === T.ENTRANCE_SP || terrain === T.EXIT || terrain === T.UNLOCKED_EXIT;
   const heal = consumeDew(hero, quantity, stairs);
   if (heal === null) ctx.effects.push({ type: 'dewFull', hero: hero.id });
   else ctx.effects.push({ type: 'dew', hero: hero.id, amount: heal });

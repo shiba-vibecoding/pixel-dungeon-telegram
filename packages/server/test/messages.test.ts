@@ -5,6 +5,8 @@ import { parseClientMessage, sanitizeAction, sanitizeLook } from '../src/message
 describe('client messages', () => {
   it('rebuilds actions from the fields the rules read, and nothing else', () => {
     expect(sanitizeAction({ type: 'wait', junk: 'x'.repeat(1000) })).toEqual({ type: 'wait' });
+    // Down to a depth's side level (the mine, the vault) or back.
+    expect(sanitizeAction({ type: 'branch', to: 5 })).toEqual({ type: 'branch' });
     expect(sanitizeAction({ type: 'move', to: 42, extra: { deep: true } })).toEqual({ type: 'move', to: 42 });
     expect(sanitizeAction({ type: 'attack', target: '#3', also: 1 })).toEqual({ type: 'attack', target: '#3' });
     expect(sanitizeAction({ type: 'use', item: 2, target: 'armor' })).toEqual({ type: 'use', item: 2, target: 'armor' });

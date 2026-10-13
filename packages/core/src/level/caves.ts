@@ -1,4 +1,5 @@
-import { Feeling, isBossDepth, type LevelBuilder } from './builder';
+import { isBossDepth, type LevelBuilder } from './builder';
+import { Feeling } from './gen/dungeon';
 import { cell, LENGTH, WIDTH } from './geometry';
 import type { RegionStyle } from './regular';
 import { RoomType } from './room';
@@ -12,14 +13,6 @@ export const CAVES_STYLE: RegionStyle = {
   water: (feeling) => [feeling === Feeling.WATER ? 0.6 : 0.45, 6],
   grass: (feeling) => [feeling === Feeling.GRASS ? 0.55 : 0.35, 3],
   trapChances: [1, 1, 1, 1, 1, 1, 1, 1],
-  // Blacksmith.Quest.spawn: deeper in the caves, ever likelier, the troll blacksmith sets up his forge in a big room.
-  roomTypes: (level) => {
-    if (!level.blacksmithWanted || level.depth <= 11 || level.rng.int(15 - level.depth) !== 0) return;
-    const room = level.rooms.find((r) => r.type === RoomType.STANDARD && r.width() > 4 && r.height() > 4);
-    if (!room) return;
-    room.type = RoomType.BLACKSMITH;
-    level.blacksmithPlaced = true;
-  },
   decorate: decorateCaves,
 };
 
@@ -61,7 +54,7 @@ function decorateCaves(level: LevelBuilder): void {
   for (let attempt = 0; attempt < 100; attempt++) {
     const pos = roomEntrance.random(rng);
     if (pos !== level.entrance) {
-      map[pos] = T.SIGN;
+      map[pos] = T.EMPTY;
       break;
     }
   }

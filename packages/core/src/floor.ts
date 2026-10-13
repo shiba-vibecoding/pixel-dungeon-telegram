@@ -7,7 +7,7 @@ import type { Enchantment, Glyph, Heap, HeapKind, Item, ItemKind } from './items
 import type { WellWater } from './level/builder';
 import type { MeatOutcome } from './inventory';
 import type { PlantInfo, PlantKind } from './plants';
-import type { GhostErrand, GhostLine } from './quest';
+import type { GhostLine, GhostType } from './quest';
 import type { Burst, TrapKind } from './traps';
 import type { WandmakerLine } from './wandmaker';
 import type { ImpLine } from './imp';
@@ -16,7 +16,7 @@ import type { Bolt } from './wands';
 import type { GasKind } from './gas';
 import type { Level } from './level/generate';
 import { LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
-import { F, hasFlag, T } from './level/terrain';
+import { discover, F, hasFlag, T } from './level/terrain';
 import type { Rng, RngState } from './rng';
 import type { World } from './world';
 
@@ -49,7 +49,7 @@ export interface Floor {
   gas?: Partial<Record<GasKind, Array<[number, number]>>>;
   gasAt?: number;
   /** An altar room's sacrificial fire: where it burns, and how much more it hungers for (0 once it has gone out). */
-  altar?: { pos: number; volume: number };
+  altar?: { pos: number; volume: number; prize?: Item; bonusSpawns?: number };
   /** What this depth gave every hero (strength, upgrades): a hero who joins later gets theirs too (party.ts). */
   perHero?: ItemKind[];
 }
@@ -77,7 +77,7 @@ export function dropItem(floor: Floor, pos: number, item: Item): void {
   }
 }
 
-export const isWater = (terrain: number): boolean => terrain >= T.WATER_TILES && terrain <= T.WATER;
+export const isWater = (terrain: number): boolean => terrain === T.WATER;
 
 /** What players should see happen; returned by every accepted action. */
 export type Effect =
@@ -171,9 +171,21 @@ export type Effect =
   /** A hero put on something cursed: it will not come off. */
   | { type: 'cursedEquip'; hero: string; item: Item }
   /** A trap went off: under a hero (`hero`), a monster (`mob`, with `hero` empty) or nothing (an item landing on it). */
-  | { type: 'trap'; depth: number; pos: number; kind: TrapKind; hero: string; mob?: string }
+  | { type: 'trap'; depth: number; pos: number; kind: TrapKind; hero: string; mob?: string; hidden?: boolean }
   /** Chasm.mobFall: a monster stepped (or was thrown) over a chasm and fell out of the level. */
   | { type: 'mobFell'; depth: number; mob: string; pos: number; kind: MobKind }
+  /** A trap let a blob loose on these cells (Blob.seed: Fire, Freezing, Electricity, ConfusionGas). */
+  | { type: 'blob'; depth: number; blob: 'fire' | 'freezing' | 'electricity' | 'confusion'; cells: number[] }
+  /** Items a trap sent elsewhere on the level (teleportation, gateway, disarming: `hero` whose weapon it was). */
+  | { type: 'itemTeleported'; depth: number; from: number; to: number; hero?: string }
+  /** A hero thrown back by a geyser (WandOfBlastWave.throwChar; a monster's is `pushed`). */
+  | { type: 'knockedBack'; depth: number; hero: string; from: number; to: number }
+  /** PitfallTrap: the floor around starts to give way (`warn`), gives way a turn later (`open`), or holds (`none`: no_pit). */
+  | { type: 'pitfall'; depth: number; cells: number[]; stage: 'warn' | 'open' | 'none' }
+  /** A monster a trap brought into the level (ScrollOfTeleportation.appear: summoning, distortion). */
+  | { type: 'appeared'; depth: number; mob: string; pos: number }
+  /** CursingTrap.curse: the hero's gear (the item, if any could be) turns cursed. */
+  | { type: 'trapCursed'; hero: string; item?: Item }
   | { type: 'thrown'; depth: number; from: number; to: number; item: ItemKind }
   /** A magic bolt: the mage's wand, or a shaman's lightning. */
   | { type: 'zapped'; depth: number; from: number; to: number; bolt?: Bolt }
@@ -205,8 +217,10 @@ export type Effect =
   | { type: 'shopkeeperFled'; depth: number; mob: string; pos: number }
   /** Tengu's arena: sealed when the fight starts, opened when it ends. */
   | { type: 'arena'; depth: number; sealed: boolean }
-  | { type: 'unlocked'; depth: number; pos: number; hero: string }
-  | { type: 'ghost'; hero: string; line: GhostLine; errand: GhostErrand }
+  | { type: 'unlocked'; depth: number; pos: number; hero: string; crystal?: boolean }
+  /** A hero went down to a depth's side level (`branch` 1) or back up from it (0). */
+  | { type: 'branched'; hero: string; depth: number; branch: number }
+  | { type: 'ghost'; hero: string; line: GhostLine; questType: GhostType }
   /** The curse binding the sad ghost took shape and turned to fight. */
   | { type: 'cursed'; depth: number; mob: string; pos: number }
   /** A word with the Rat King. */
@@ -226,6 +240,10 @@ export type Effect =
   | { type: 'burst'; depth: number; pos: number; kind: Burst; radius: number; silent?: boolean }
   /** DM-300 mended itself on a spent trap. */
   | { type: 'repaired'; depth: number; mob: string }
+  /** A great crab parried a blow with its claw (GreatCrab: «noticed», def_verb). */
+  | { type: 'parried'; depth: number; mob: string }
+  /** SentryRoom.Sentry: it starts charging at a hero on its floor (CHARGEUP), or stops. */
+  | { type: 'sentry'; depth: number; mob: string; charging: boolean }
   /** A dewdrop picked up, and the health it gave; one left lying, the hero being unhurt (Dewdrop.already_full). */
   | { type: 'dew'; hero: string; amount: number }
   | { type: 'dewFull'; hero: string }
@@ -308,7 +326,8 @@ export function swapsWithHero(char: Char | undefined): boolean {
 }
 
 /** Level.viewDistance for heroes on a depth: shorter under the DARKNESS challenge. */
-export const heroSight = (world: World, depth: number): number => viewDistance(depth, isChallenged(world, DARKNESS));
+export const heroSight = (world: World, depth: number): number =>
+  world.levels[depth]?.viewDistance ?? viewDistance(depth, isChallenged(world, DARKNESS));
 
 /** Field of view of one hero (Dungeon.switchLevel and Light: a torch lights up to Light.DISTANCE). */
 export function heroView(world: World, hero: Hero): boolean[] {
@@ -383,4 +402,13 @@ export function freeCellNear(world: World, level: Level, depth: number, pos: num
     }
   }
   return pos;
+}
+
+/** Level.discover: a secret door or trap on a cell is found (the trap in sight from now on). */
+export function discoverCell(level: Level, cell: number): void {
+  const terrain = level.map[cell]!;
+  if (!hasFlag(terrain, F.SECRET)) return;
+  level.map[cell] = discover(terrain);
+  const trap = level.traps?.find((t) => t.pos === cell);
+  if (trap) trap.visible = true;
 }

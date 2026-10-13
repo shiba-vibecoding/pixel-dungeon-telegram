@@ -1,6 +1,6 @@
 import type { Hero, MobKind } from './actors';
 import { heroView } from './floor';
-import { Feeling } from './level/builder';
+import { Feeling } from './level/gen/dungeon';
 import { cellX, cellY } from './level/geometry';
 import { RoomType } from './level/room';
 import { T } from './level/terrain';

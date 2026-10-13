@@ -84,7 +84,7 @@ export function buildPrisonBossLevel(level: LevelBuilder): boolean {
   const nTraps = rng.intBetween(1, rooms.length + level.depth);
   for (let i = 0; i < nTraps; i++) {
     const pos = rng.int(LENGTH);
-    if (level.map[pos] === T.EMPTY) level.map[pos] = T.POISON_TRAP;
+    if (level.map[pos] === T.EMPTY) level.setTrap(pos, 'poisonDart', true);
   }
 
   // The key to the arena, in a chest in the room before it.

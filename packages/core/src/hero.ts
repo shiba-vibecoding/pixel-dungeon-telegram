@@ -5,6 +5,7 @@ import { heroGainsExp } from './ident';
 import { isBossDepth } from './level/builder';
 import { cellX, cellY, HEIGHT, WIDTH } from './level/geometry';
 import { discover, F, hasFlag, T } from './level/terrain';
+import { TRAPS } from './level/trapdefs';
 import { sealShieldTick } from './seal';
 import type { World } from './world';
 
@@ -256,10 +257,14 @@ export function search(ctx: Ctx, hero: Hero, intentional: boolean): boolean {
     for (let x = Math.max(cx - distance, 0); x <= Math.min(cx + distance, WIDTH - 1); x++) {
       const p = x + y * WIDTH;
       if (!fov[p] || p === hero.pos) continue;
-      if (hasFlag(ctx.level.map[p]!, F.SECRET)) {
+      // Tengu's darts are not found by searching (Trap.canBeSearched).
+      const trap = ctx.level.map[p] === T.SECRET_TRAP ? ctx.level.traps?.find((tr) => tr.pos === p) : undefined;
+      if (hasFlag(ctx.level.map[p]!, F.SECRET) && (!trap || TRAPS[trap.kind].canBeSearched)) {
         const chance = intentional ? 1 : ctx.level.map[p] === T.SECRET_DOOR ? 0.2 - hero.depth / 100 : 0.4 - hero.depth / 250;
         if (ctx.rng.float() < chance) {
           ctx.level.map[p] = discover(ctx.level.map[p]!);
+          // Level.discover: a trap found is in sight from now on.
+          if (trap) trap.visible = true;
           exploredCells(ctx.world, hero.depth)[p] = true;
           ctx.effects.push({ type: 'discovered', depth: hero.depth, cell: p });
           found = true;

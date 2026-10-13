@@ -395,7 +395,7 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
         // (LightningTrap: sparks and arcs; the rest a puff of dust off the plate).
         if (!visibleCells(world, view.depth)[effect.pos]) return;
         const at = cellCentre(effect.pos);
-        if (effect.kind === 'lightning') {
+        if (effect.kind === 'shocking' || effect.kind === 'storm') {
           fx.burst(at.x, at.y, now, { count: 18, colors: BOLT_GLOW.lightning!, glow: true, speed: [40, 120], life: [200, 450], drag: 0.2, size: [1, 2] });
           fx.flash('230, 240, 255', 0.25, 160, now);
         } else {
@@ -403,7 +403,7 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
         }
         return;
       }
-      if (effect.kind === 'lightning') {
+      if (effect.kind === 'shocking' || effect.kind === 'storm') {
         fx.flash('230, 240, 255', 0.5, 220, now);
         fx.shake(4, 300, now);
       } else {
@@ -628,7 +628,7 @@ export function ambientFx(view: View, now: number, dt: number): void {
 export function stepFx(terrain: number, cell: number, now: number): void {
   const x = (cell % WIDTH) * TILE + TILE / 2;
   const y = Math.trunc(cell / WIDTH) * TILE + TILE - 2;
-  if (terrain >= T.WATER_TILES && terrain <= T.WATER) {
+  if (terrain === T.WATER) {
     fx.burst(x, y - 1, now, { count: 5, colors: ['#9ad4ff', '#d8f0ff', '#5fa8e0'], speed: [14, 34], life: [220, 420], gravity: 220, drag: 0.2, angle: -Math.PI / 2, cone: 1.6, size: [1, 1], spread: 3 });
   } else if (terrain === T.GRASS || terrain === T.HIGH_GRASS) {
     fx.burst(x, y - 2, now, { count: 3, colors: ['#6aa84f', '#93c47d', '#38761d'], speed: [8, 20], life: [300, 520], gravity: 120, drag: 0.3, angle: -Math.PI / 2, cone: 2.2, size: [1, 1], spread: 3 });

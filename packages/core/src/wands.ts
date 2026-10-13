@@ -159,7 +159,7 @@ export function zapWand(ctx: Ctx, hero: Hero, wand: Item, target: number): void 
         const victim = mobAt(ctx, cell);
         if (victim) victims.push(victim);
         const terrain = level.map[cell]!;
-        if (terrain === T.DOOR || terrain === T.OPEN_DOOR || terrain === T.SIGN) {
+        if (terrain === T.DOOR || terrain === T.OPEN_DOOR) {
           level.map[cell] = T.EMBERS;
           ctx.effects.push({ type: 'burnt', depth, pos: cell });
         } else if (terrain === T.HIGH_GRASS) {

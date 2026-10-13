@@ -1,4 +1,4 @@
-import { type Effect, LENGTH, type Level, T, type TrapKind, WIDTH } from '@pd/core';
+import { type Effect, LENGTH, type Level, T, WIDTH } from '@pd/core';
 import { quality } from './quality';
 import { TILE } from './view';
 import { drawFrame, frameAt, sheet } from './worldsheets';
@@ -12,9 +12,6 @@ import { levelRegion } from './sprites';
  * trap's plate is seen to sink when someone steps on it. Out of sight, the
  * walls keep their lights (they were seen) but nothing moves.
  */
-
-/** The traps' order on the sheets' `traps` row: two frames each. */
-const TRAP_ORDER: readonly TrapKind[] = ['toxic', 'fire', 'paralytic', 'poison', 'alarm', 'lightning', 'gripping', 'summoning'];
 
 /** Something played once: a bubble, a glint in a vein, an ember rising, a trap's plate. */
 interface Once {
@@ -33,24 +30,16 @@ interface Once {
 /** A number from a cell that stays the same: phases and pauses differ from place to place. */
 const hash = (cell: number): number => ((cell * 2654435761) >>> 0) / 4294967296;
 
-const isWater = (terrain: number): boolean => terrain >= T.WATER_TILES && terrain <= T.WATER;
+const isWater = (terrain: number): boolean => terrain === T.WATER;
 
 export class Scenery {
   private onces: Once[] = [];
   private next = 0;
   private depth = 0;
 
-  /** A trap goes off: its plate sinks and flashes. */
-  effects(effects: readonly Effect[], depth: number, now: number): void {
-    for (const effect of effects) {
-      if (effect.type !== 'trap' || effect.depth !== depth) continue;
-      const index = TRAP_ORDER.indexOf(effect.kind);
-      if (index < 0) continue;
-      this.onces.push({
-        key: 'traps', from: index * 2, count: 2,
-        x: (effect.pos % WIDTH) * TILE, y: Math.trunc(effect.pos / WIDTH) * TILE, start: now, life: 300,
-      });
-    }
+  /** What happened, for the region's life to answer (nothing does yet). */
+  effects(_effects: readonly Effect[], _depth: number, _now: number): void {
+    // Shattered's traps have no plate animation: a spent trap turns black (tiles.ts).
   }
 
   /** Over the floor and walls, under what lies about: the region's living things. */
