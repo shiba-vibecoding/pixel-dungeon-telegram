@@ -9,7 +9,8 @@ import {
   FERRET_TUFT, SPYGLASS,
 } from '@pd/core';
 import { fill, fmt, t } from './i18n';
-import { artifactInfo, artifactName } from './artifacttext';
+import { artifactInfo, artifactName, artText } from './artifacttext';
+import { abilityShort, chargeText } from './abilitytext';
 
 /*
  * How items are called and described, given what the party knows: the kinds
@@ -293,6 +294,14 @@ function statsLine(item: Item): string[] {
   return [line];
 }
 
+/** ClassArmor.desc: the ability the armour gives and what using it costs now, or that it has none. */
+function classArmorLines(hero: Hero, item: Item): string[] {
+  if (item.kind !== `armor.${hero.heroClass}`) return [];
+  const kind = hero.ability;
+  if (!kind) return [artText('items.armor.classarmor.no_ability')];
+  return [abilityShort(kind), artText('items.armor.classarmor.charge_use', [chargeText(undefined, hero, kind)])];
+}
+
 /** MeleeWeapon.info, Armor.info, MissileWeapon.info and SpiritBow.info, without the enchantment (the card shows it apart). */
 export function gearInfo(hero: Hero, item: Item): string[] | null {
   const category = itemDef(item.kind).category;
@@ -319,10 +328,10 @@ export function gearInfo(hero: Hero, item: Item): string[] | null {
   if (category === 'armor') {
     const stats = armorStats(shown);
     return [
-      t.itemInfo[item.base ?? item.kind] ?? '',
+      CLASS_ARMOR.includes(item.kind) ? artText(`items.armor.${CLASS_OF[item.kind]}armor.desc`) : t.itemInfo[item.base ?? item.kind] ?? '',
       `${fmt(known ? t.gear.armorKnown : t.gear.armorTypical, stats.tier, stats.min, stats.max, stats.str)} ${strengthLines(known, stats.str, hero, false).join(' ')}`.trim(),
       ...(item.augment === 'evasion' ? [t.gear.armorEvasion] : item.augment === 'defense' ? [t.gear.armorDefense] : []),
-      ...(CLASS_ARMOR.includes(item.kind) ? [t.classArmorInfo[CLASS_OF[item.kind]!], t.specialCost] : []),
+      ...(CLASS_ARMOR.includes(item.kind) ? classArmorLines(hero, item) : []),
       // Armor.info: the warrior's seal on it, and the shield it gives.
       ...(item.seal ? [t.hero.sealAttached(sealShield(hero, item))] : []),
       ...curseLines(item, worn, false, isCurseGlyph(item.glyph)),

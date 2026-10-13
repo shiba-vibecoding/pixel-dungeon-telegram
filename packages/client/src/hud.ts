@@ -1,4 +1,4 @@
-import { FURY_LEVEL, prismaticMaxHp, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING, stealthCloak } from '@pd/core';
+import { FURY_LEVEL, prismaticMaxHp, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING, stealthCloak, talentPointsAvailable } from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
 import { AVATAR, durabilityBar, markWear, sprites } from './screens';
@@ -37,6 +37,8 @@ export const BUFF_ICONS = {
   prismaticGuard: 1020, challengeArena: 1054,
   // The artifacts': the cloak's stealth (INVISIBLE, dimmed), the hourglass's time freeze and stasis (TIME), the cape's THORNS, the talisman's FORESIGHT.
   stealth: 1012, timeFreeze: 1007, thorns: 1031,
+  // The armour abilities': Endure's stored blows (BuffIndicator.ARMOR) and Nature's Power (NATURE_POWER).
+  endure: 1020, naturesPower: 1058,
   // The monsters' curses (mobs stream): BuffIndicator.VULNERABLE, HEX, DEGRADE.
   degrade: 1048,
 } as const;
@@ -105,8 +107,22 @@ export function heroBuffs(me: Hero): BuffEntry[] {
     ...alchemyBuffs(me),
     ...artifactBuffs(me),
     ...((me.degraded ?? 0) > 0 ? [{ name: 'degrade' as const, turns: turns(me.degraded!) }] : []),
+    ...abilityBuffs(me),
   ];
   return list.map(tinted);
+}
+
+/**
+ * The armour abilities' buffs: Endure's blows to pay back (shown once the stance is over: the damage stored), Nature's Power
+ * (turns left).
+ */
+function abilityBuffs(me: Hero): BuffEntry[] {
+  const endure = me.abil?.endure;
+  const nature = me.abil?.nature;
+  return [
+    ...(endure && !endure.enduring && me.time < endure.until ? [{ name: 'endure' as const, turns: endure.damageBonus }] : []),
+    ...(nature && me.time < nature.until ? [{ name: 'naturesPower' as const, turns: Math.ceil(nature.until - me.time) }] : []),
+  ];
 }
 
 /**
@@ -325,6 +341,8 @@ export class Hud {
   readonly root: HTMLElement;
   private readonly band: HTMLElement;
   private readonly avatar: HTMLElement;
+  /** ShTalents' gold plus on the hero button while there are talent points to spend. */
+  private readonly talentBadge: HTMLElement;
   private readonly level: HTMLElement;
   private readonly hp: HTMLElement;
   private readonly hpText: HTMLElement;
@@ -383,6 +401,8 @@ export class Hud {
 
     const avatarButton = el('button', 'pd-avatar');
     avatarButton.ariaLabel = t.heroLabel;
+    this.talentBadge = el('i', 'pd-talent-badge');
+    this.talentBadge.hidden = true;
     this.avatar = el('i');
     avatarButton.append(this.avatar);
     avatarButton.onclick = tap(() => handlers.hero());
@@ -416,7 +436,7 @@ export class Hud {
     this.main = el(
         'div',
         'pd-hud-main',
-        el('div', 'pd-avatar-wrap', avatarButton, this.level),
+        el('div', 'pd-avatar-wrap', avatarButton, this.level, this.talentBadge),
         el(
           'div',
           'pd-hud-bars',
@@ -710,6 +730,10 @@ export class Hud {
     this.updateArena(state.arena ?? null, dead);
     if (this.changed('keys', String(state.keys))) this.keys.data = String(state.keys);
     this.avatar.parentElement!.classList.toggle('dead', dead);
+    // The armour ability's tier 4 points (the talents stream's tiers 1 to 3 add to it): a blinking plus on the hero.
+    const points = isAlive(me) && talentPointsAvailable(me, 4) > 0;
+    this.talentBadge.hidden = !points;
+    this.avatar.parentElement!.classList.toggle('talent', points);
 
     const buffKey = state.buffs.map((b) => `${b.name}${b.tint ?? ''}:${b.turns !== undefined && b.turns <= 3 ? 'f' : ''}`).join(',');
     if (this.changed('buffs', buffKey)) {

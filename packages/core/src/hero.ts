@@ -11,6 +11,7 @@ import { isBossDepth } from './level/builder';
 import { cellX, cellY, HEIGHT, WIDTH } from './level/geometry';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { sealShieldTick } from './seal';
+import { chargeClassArmor } from './classArmor';
 import type { World } from './world';
 import { artifactsAct, artifactsGainExp, chaliceRegenDelay, talismanBlinds, talismanFound } from './artifacts';
 
@@ -254,6 +255,8 @@ export function heroTurns(ctx: Ctx, hero: Hero, from: number, to: number): numbe
     lockedFloorTurn(ctx, hero);
     hungerTurn(ctx, hero);
     sealShieldTick(ctx, hero);
+    // ClassArmor.Charger: worn class armour gathers charge.
+    chargeClassArmor(ctx, hero);
     // The artifacts' buffs (Artifact.ArtifactBuff), on the hero's own depth; the time a cursed hourglass steals.
     if (hero.depth === ctx.depth) lost += artifactsAct(ctx, hero);
     // timeStasis.detach: back in time.

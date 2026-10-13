@@ -38,7 +38,7 @@ import { transmute } from './transmute';
 import { drinkFromWaterskin, pickUpDew, TIME_TO_DRINK, WATERSKIN_VOLUME } from './waterskin';
 import { hasRoom } from './bags';
 import { wipeOut } from './altar';
-import { applyArmorKit, CLASS_ARMOR, CLASS_ARMOR_OF, classSpecial, specialProblem, TIME_TO_APPLY_KIT } from './classArmor';
+import { CLASS_ARMOR, CLASS_ARMOR_OF, crownProblem, TIME_TO_CROWN, TIME_TO_TRANSFER, transferArmor, transferProblem, useCrown } from './classArmor';
 import type { World } from './world';
 import { scaleMob } from './party';
 import { ambush, cleanseSpirit, potDropped, potPickedUp, spawnBee, spawnWraith as spawnShatteredWraith } from './mobskills';
@@ -108,8 +108,11 @@ export type InventoryAction =
   | { type: 'master'; item: number; subclass: SubClass }
   /** Mine the vein of dark gold next to the hero with the blacksmith's pickaxe. */
   | { type: 'mine' }
-  /** The special ability of the class armour worn: a cell for the warrior's leap and the rogue's smoke bomb. */
-  | { type: 'special'; target?: number }
+  /**
+   * ClassArmor.AC_TRANSFER: the class armour (`to`: the one worn or one in the pack) takes over the properties of another
+   * armour in the pack (`from`), which is destroyed.
+   */
+  | { type: 'transfer'; to: SealSource; from: SealSource }
   /**
    * AlchemyScene: brew at an alchemy pot. `inputs` are pack slots, one item from each (a stack of thrown weapons or
    * of liquid metal whole; a slot twice for two of it); `recipe` which of the recipes they make (alchemy.ts).
@@ -136,7 +139,7 @@ export type InventoryAction =
   | { type: 'detach'; armor: SealSource };
 
 const INVENTORY_ACTIONS: ReadonlySet<string> = new Set([
-  'pickup', 'open', 'use', 'equip', 'drop', 'throw', 'zap', 'buy', 'sell', 'remove', 'unequip', 'master', 'mine', 'special', 'alchemy',
+  'pickup', 'open', 'use', 'equip', 'drop', 'throw', 'zap', 'buy', 'sell', 'remove', 'unequip', 'master', 'mine', 'transfer', 'alchemy',
   'energize', 'augment', 'shoot', 'tip', 'clean', 'imbue', 'affix', 'detach',
 ]);
 
@@ -206,7 +209,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
   }
   if (action.type === 'affix') return affixProblem(hero, action.from, action.to);
   if (action.type === 'detach') return detachProblem(hero, action.armor);
-  if (action.type === 'special') return specialProblem(world, hero, action.target);
+  if (action.type === 'transfer') return transferProblem(hero, action.to, action.from);
   if (action.type === 'unequip') {
     if (!hero.weapon) return 'nothing in hand';
     // EquipableItem.doUnequip: a cursed weapon will not leave the hand.
@@ -288,7 +291,8 @@ function useProblem(world: World, hero: Hero, item: Item, action: Extract<Invent
   if (!usable.includes(category) && item.kind !== 'quest.fish' && !inventoryStone && item.kind !== 'resin' && item.kind !== 'liquidMetal') {
     return 'that cannot be used';
   }
-  if (category === 'kit' && CLASS_ARMOR.includes(hero.armor.kind)) return 'your armour is already a class armour';
+  // KingsCrown.execute: any armour will do (class armour too: the crown gives it another ability).
+  if (category === 'kit') return crownProblem(action.choice);
   if (category === 'vial' && !item.volume) return 'your waterskin is empty';
   if (category === 'wipeout' && (hero.blind ?? 0) > 0) return 'you cannot read while blinded';
   if (action.target !== undefined && action.target !== 'weapon' && action.target !== 'armor') return 'bad target';
@@ -354,8 +358,9 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
     case 'detach':
       detachSeal(ctx, hero, action.armor);
       return 0;
-    case 'special':
-      return classSpecial(ctx, hero, action.target);
+    case 'transfer':
+      transferArmor(ctx, hero, action.to, action.from);
+      return TIME_TO_TRANSFER;
     case 'alchemy':
       // AlchemyScene: brewing takes no time.
       brew(ctx, hero, action.inputs, action.recipe ?? 0);
@@ -426,8 +431,8 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
         return TIME_TO_THROW;
       }
       if (itemDef(hero.items[action.item]!.kind).category === 'kit') {
-        applyArmorKit(ctx, hero, action.item);
-        return TIME_TO_APPLY_KIT;
+        useCrown(ctx, hero, action.item, action.choice!);
+        return TIME_TO_CROWN;
       }
       if (itemDef(hero.items[action.item]!.kind).category === 'torch') {
         // Torch.execute: lit, it lights the way for a good while.

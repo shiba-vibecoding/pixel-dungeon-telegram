@@ -71,6 +71,8 @@ const PROPERTIES: Partial<Record<MobKind, readonly Property[]>> = {
   ward: ['immovable', 'inorganic'],
   guardian: ['inorganic'],
   lotus: ['immovable', 'static'],
+  shadow: ['inorganic'],
+  ninjaLog: ['inorganic'],
 };
 
 /** Char.properties; a hero has none; a giant champion is large (Char.properties with ChampionEnemy.Giant). */

@@ -1,3 +1,4 @@
+import { abilityProcBonus } from './abilities';
 import { rollMob } from './spawner';
 import {
   baseKind, beckon, createMob, enchantLevel, type Hero, heroAttackDelay, heroDefenseSkill, isAlive, isShopkeeper, isStarving, type Mob, type MobKind,
@@ -47,7 +48,7 @@ export const ADRENALINE_TURNS = 10;
  * 1 for the rest. Seam: a berserker's rage, the runic blade's slash, smite, the elemental strike, the spirit blades and
  * striking wave talents (classes, talents, abilities) would raise it.
  */
-export const procMultiplier = (char: Char): number => (isHero(char) ? enchantPowerMultiplier(char) : 1);
+export const procMultiplier = (char: Char): number => (isHero(char) ? enchantPowerMultiplier(char) + abilityProcBonus(char) : 1);
 
 /* Who is who (Char.Property; a seam for the mobs stream's own) */
 
