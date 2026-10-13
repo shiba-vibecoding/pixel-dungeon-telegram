@@ -32,6 +32,8 @@ describe('thrown weapons and wands', () => {
     expect(heroById(world, 'warrior')!.items).toEqual([
       { kind: 'missile.throwingStone', qty: 3, level: 0 },
       { kind: 'food.ration', qty: 1, level: 0 },
+      { kind: 'bag.seeds', qty: 1, level: 0 },
+      { kind: 'waterskin', qty: 1, level: 0 },
     ]);
     expect(heroById(world, 'rogue')!.items[0]).toMatchObject({ kind: 'missile.throwingKnife', qty: 3 });
     expect(heroById(world, 'huntress')!.items[0]).toMatchObject({ kind: 'spiritBow' });
@@ -99,5 +101,10 @@ describe('thrown weapons and wands', () => {
     // Too heavy (a trident wants 17): 1.5× less accurate a point short.
     const trident = { kind: 'missile.trident' as const, qty: 1, level: 0 };
     expect(heroAttackSkill(hero, hero.pos + 3, trident)).toBe(Math.round(15 / 1.5 ** 7));
+    // Every class throws alike (Shattered has no class bonuses).
+    for (const heroClass of ['warrior', 'huntress'] as const) {
+      const other = addHero(world, { id: heroClass, name: heroClass, heroClass });
+      expect(heroAttackSkill(other, other.pos + 3, knife)).toBe(15);
+    }
   });
 });

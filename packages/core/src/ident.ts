@@ -8,8 +8,9 @@ import type { World } from './world';
  * melee weapon, armour, ring or wand as found tells neither its level nor
  * whether it is cursed, and a wand not how many charges it has left. Putting
  * it on tells the curse (a cursed thing binds itself at once); striking with a
- * weapon, being struck in armour, zapping a wand or wearing a ring long enough
- * tells the rest; a scroll of identify, a well of awareness and the end of the
+ * weapon or being struck in armour as experience comes (Shattered's numbers),
+ * wearing a ring for a level's worth of experience, or zapping a wand often
+ * enough tells the rest; a scroll of identify, a well of awareness and the end of the
  * run tell everything. Potions, scrolls, wands and rings also hide their kind,
  * which the party learns together (World.known). Thrown weapons hide their
  * level and curse as melee weapons do (known after ten hits); darts, class
@@ -20,10 +21,18 @@ import type { World } from './world';
  * bearer had learned of it.
  */
 
-/** Weapon.HITS_TO_KNOW and Armor.HITS_TO_KNOW: blows struck, and blows taken, before the level is known. */
-export const WEAPON_HITS_TO_KNOW = 20;
-export const ARMOR_HITS_TO_KNOW = 10;
-/** Wand.USAGES_TO_KNOW: zaps before a wand is known through and through. */
+/**
+ * Weapon.usesToID and Armor.USES_TO_ID: blows struck with a weapon, and taken in armour, to know
+ * it through and through. Only half of them are ready at first; the rest come with experience
+ * (onHeroGainExp), so an item is known after use and time together.
+ */
+export const WEAPON_USES_TO_ID = 20;
+export const ARMOR_USES_TO_ID = 10;
+/** MissileWeapon.usesToID: half of a melee weapon's. */
+export const MISSILE_USES_TO_ID = 10;
+/** Ring.levelsToID: a ring worn is known after a level's worth of experience. */
+export const RING_LEVELS_TO_ID = 1;
+/** Wand.USAGES_TO_KNOW: zaps before a wand is known through and through (Pixel Dungeon's, until the wands stream). */
 export const WAND_USAGES_TO_KNOW = 40;
 
 export const levelKnown = (item: Item): boolean => !item.levelUnknown;
@@ -59,7 +68,9 @@ export function identify(world: World, item: Item): boolean {
   delete item.curseUnknown;
   delete item.chargesUnknown;
   delete item.familiarity;
-  delete item.idAvailable;
+  delete item.usesLeftToID;
+  delete item.availableUsesToID;
+  delete item.levelsToID;
   const category = itemDef(item.kind).category;
   const hides = category === 'potion' || category === 'scroll' || category === 'wand' || category === 'ring';
   return hides && learn(world, item.kind);
@@ -75,39 +86,53 @@ export function unidentified(item: Item): Item {
   return item;
 }
 
+/** Talent seam: Talent.itemIDSpeedFactor (Adventurer's and Veteran's Intuition), 1 until the talents stream. */
+export const idSpeedFactor = (_hero: Hero, _item: Item): number => 1;
+
+const f32 = Math.fround;
+const usesToID = (item: Item): number => {
+  const category = itemDef(item.kind).category;
+  return category === 'armor' ? ARMOR_USES_TO_ID : category === 'missile' ? MISSILE_USES_TO_ID : WEAPON_USES_TO_ID;
+};
+const usesLeft = (item: Item): number => item.usesLeftToID ?? usesToID(item);
+const usesAvailable = (item: Item): number => item.availableUsesToID ?? usesToID(item) / 2;
+
 /**
- * Weapon.proc and Armor.proc: every blow struck with a weapon, or taken in
- * armour, makes its bearer more familiar with it, and after `hitsToKnow` of
- * them it is known through and through. Only half of that can be had at a
- * time: the rest comes back with experience (availableUsesToID; see gainExp).
+ * Weapon.proc and Armor.proc: every blow struck with a weapon, or taken in armour, uses up one of
+ * the uses ready towards knowing it; the last one makes it known (Weapon.identify: "You are now
+ * familiar enough with your weapon to identify it").
  */
-export function familiarise(ctx: Ctx, hero: Hero, item: Item, hitsToKnow: number): void {
+export function familiarise(ctx: Ctx, hero: Hero, item: Item): void {
   if (levelKnown(item)) return;
-  const available = item.idAvailable ?? hitsToKnow / 2;
-  const uses = Math.min(available, 1);
-  if (uses <= 0) return;
-  item.idAvailable = available - uses;
-  item.familiarity = (item.familiarity ?? 0) + uses;
-  if (item.familiarity < hitsToKnow) return;
-  delete item.levelUnknown;
-  delete item.curseUnknown;
-  delete item.familiarity;
-  delete item.idAvailable;
+  const uses = Math.min(usesAvailable(item), idSpeedFactor(hero, item));
+  item.availableUsesToID = f32(usesAvailable(item) - uses);
+  item.usesLeftToID = f32(usesLeft(item) - uses);
+  if (item.usesLeftToID > 0) return;
+  identify(ctx.world, item);
   ctx.effects.push({ type: 'familiar', hero: hero.id, item, learned: false });
 }
 
 /**
- * Weapon.onHeroGainExp and Armor's: experience gained lets the hero get used to the weapon in hand (and thrown weapons
- * carried) and the armour worn again, up to half of what knowing them takes over half a level.
+ * Item.onHeroGainExp, for everything the hero has: experience (as a share of the level) readies
+ * more uses towards knowing the weapon in hand and the armour worn, enough over half a level
+ * (Weapon and Armor.onHeroGainExp; thrown weapons in the pack too); a ring worn a level's worth is known
+ * (Ring.onHeroGainExp).
  */
-export function gainExp(hero: Hero, levelPercent: number): void {
-  const refill = (item: Item, uses: number): void => {
-    if (levelKnown(item) || (item.idAvailable ?? uses / 2) > uses / 2) return;
-    item.idAvailable = Math.min(uses / 2, (item.idAvailable ?? uses / 2) + levelPercent * uses);
-  };
-  if (hero.weapon) refill(hero.weapon, WEAPON_HITS_TO_KNOW);
-  refill(hero.armor, ARMOR_HITS_TO_KNOW);
-  for (const item of hero.items) if (itemDef(item.kind).category === 'missile') refill(item, 10);
+export function heroGainsExp(ctx: Ctx, hero: Hero, percent: number): void {
+  const missiles = hero.items.filter((item) => itemDef(item.kind).category === 'missile');
+  for (const item of [hero.weapon, hero.armor, ...missiles]) {
+    if (!item || levelKnown(item)) continue;
+    const half = usesToID(item) / 2;
+    const factor = f32(percent * idSpeedFactor(hero, item));
+    if (usesAvailable(item) <= half) item.availableUsesToID = Math.min(half, f32(usesAvailable(item) + f32(factor * usesToID(item))));
+  }
+  for (const ring of hero.rings) {
+    if (isIdentified(ctx.world, ring)) continue;
+    ring.levelsToID = f32((ring.levelsToID ?? RING_LEVELS_TO_ID) - f32(percent * idSpeedFactor(hero, ring)));
+    if (ring.levelsToID > 0) continue;
+    const learned = identify(ctx.world, ring);
+    ctx.effects.push({ type: 'familiar', hero: hero.id, item: ring, learned });
+  }
 }
 
 /** Belongings.identify: everything a hero carries and wears is known (Dungeon.win, Hero.die). */

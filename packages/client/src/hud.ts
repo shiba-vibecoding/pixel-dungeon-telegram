@@ -1,7 +1,8 @@
-import { FURY_LEVEL, type Hero, isAlive, isHungry, isStarving, type Look, maxExp, STARVING } from '@pd/core';
+import { FURY_LEVEL, type Hero, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING } from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
 import { AVATAR, durabilityBar, markWear, sprites } from './screens';
+import { QUICKSLOTS } from './quickslot';
 import type { LogLine } from './view';
 
 /*
@@ -13,7 +14,7 @@ import type { LogLine } from './view';
  * A wide screen (900 px and more, design system v12) arranges the same
  * nodes otherwise: the hero's panel, the party's cards and the status in a
  * column at the top left; journal, settings and menu in the top right
- * corner; the toolbar split in two islands (actions left; two quick slots
+ * corner; the toolbar split in two islands (actions left; the quick slots
  * and the backpack right), each button with its key. The whole layer is
  * scaled up by a whole number (--ui) on big monitors, so the pixels stay sharp.
  */
@@ -23,6 +24,8 @@ export const BUFF_ICONS = {
   mindVision: 0, fire: 2, poison: 3, paralysis: 4, hunger: 5, starvation: 6, slow: 7, ooze: 8, roots: 11, invisible: 12,
   weakness: 14, combo: 17, fury: 18, healing: 19, bark: 20, charm: 21, light: 22, cripple: 23, barkskin: 24, dizzy: 29,
   levitation: 1, blindness: 16, immunity: 25, deferred: 28, bleeding: 26, sacrifice: 31,
+  // From 1000: Shattered's buffs.png (assets/spd/buffs.png), BuffIndicator.SEAL_SHIELD and LOCKED_FLOOR.
+  sealShield: 1084, lockedFloor: 1035, bless: 1037,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 
@@ -55,6 +58,11 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
     ...(me.subclass === 'berserker' && me.hp > 0 && me.hp <= me.ht * FURY_LEVEL ? [{ name: 'fury' as const }] : []),
     ...(me.barkskin > 0 ? [{ name: 'barkskin' as const, turns: turns(me.barkskin) }] : []),
     ...(isStarving(me) ? [{ name: 'starvation' as const }] : isHungry(me) ? [{ name: 'hunger' as const }] : []),
+    // WarriorShield.icon: while shielded or cooling down; the shield left, else the cooldown.
+    ...(me.sealShield && (me.sealShield.shield > 0 || me.sealShield.cooldown !== 0)
+      ? [{ name: 'sealShield' as const, turns: me.sealShield.shield > 0 ? me.sealShield.shield : me.sealShield.cooldown }] : []),
+    ...(me.lockedFloor !== undefined ? [{ name: 'lockedFloor' as const }] : []),
+    ...((me.blessed ?? 0) > 0 ? [{ name: 'bless' as const, turns: Math.ceil(me.blessed!) }] : []),
   ];
 }
 
@@ -67,9 +75,12 @@ export interface HudHandlers {
   rest(): void;
   search(): void;
   examine(): void;
-  quick(): void;
-  /** The second quick slot (wide screens). */
-  quick2(): void;
+  /** A tap on a quick slot (0-5): use what it holds, or choose what it should hold. */
+  quick(slot: number): void;
+  /** Holding a quick slot: choose what it should hold (Toolbar's quickslot_assign). */
+  assignQuick(slot: number): void;
+  /** A tap on the danger indicator: the next enemy in sight. */
+  danger(): void;
   backpack(): void;
   journal(): void;
   settings(): void;
@@ -119,10 +130,10 @@ export interface HudState {
   status: HudStatus | null;
   log: readonly LogLine[];
   buffs: ReadonlyArray<{ name: BuffName; turns?: number }>;
-  /** The quickslot: a thrown weapon or a wand, ready to use. */
-  quick: QuickState | null;
-  /** The second quick slot (shown on wide screens). */
-  quick2?: QuickState | null;
+  /** The quick slots shown (QuickSlot), each with what it holds, or null when empty. */
+  quick: ReadonlyArray<QuickState | null>;
+  /** DangerIndicator: how many enemies the hero sees. */
+  danger: number;
   /** Companions the party is waiting for now (their cards say «their move»). */
   waitingFor?: readonly string[];
   /** Iron keys for the current depth. */
@@ -150,6 +161,8 @@ export interface QuickState {
   sprite: number;
   label: string;
   aiming: boolean;
+  /** QuickSlot.isPlaceholder: none of it left; drawn greyed until more is picked up. */
+  placeholder?: boolean;
   wear?: { left: number; max: number } | null;
 }
 
@@ -234,7 +247,11 @@ export class Hud {
   private readonly notice: HTMLElement;
   private readonly log: HTMLElement;
   private readonly more: HTMLElement;
-  private readonly tools: Record<'wait' | 'search' | 'examine' | 'quick' | 'quick2' | 'bag', HTMLButtonElement>;
+  private readonly tools: Record<'wait' | 'search' | 'examine' | 'bag', HTMLButtonElement>;
+  /** The six quick slots (QuickSlot.SIZE); as many shown as there is room for. */
+  private readonly quicks: HTMLButtonElement[];
+  /** DangerIndicator: the count of enemies in sight, by the buffs. */
+  private readonly dangerBox: HTMLButtonElement;
   private readonly main: HTMLElement;
   private readonly menu: HTMLButtonElement;
   private readonly toolbar: HTMLElement;
@@ -331,14 +348,18 @@ export class Hud {
       wait: tool(t.waitLabel, '', 'Space', glyph('tool-wait', 12, 12)),
       search: tool(t.searchLabel, '', 'F', glyph('tool-search', 12, 12)),
       examine: tool(t.examineLabel, '', 'X', glyph('tool-info', 8, 12)),
-      quick: tool(t.quickLabel, 'quick empty', '1'),
-      quick2: tool(t.quickLabel, 'quick empty', '2'),
       bag: tool(t.backpack, 'bag', 'I', glyph('tool-backpack', 14, 15)),
     };
+    this.quicks = Array.from({ length: QUICKSLOTS }, (_, slot) => {
+      const node = tool(t.quickLabel, 'quick empty', String(slot + 1));
+      this.holdToAssign(node, slot);
+      return node;
+    });
+    this.dangerBox = el('button', 'pd-danger');
+    this.dangerBox.hidden = true;
+    this.dangerBox.onclick = tap(() => handlers.danger());
     this.tools.search.onclick = tap(() => handlers.search());
     this.tools.examine.onclick = tap(() => handlers.examine());
-    this.tools.quick.onclick = tap(() => handlers.quick());
-    this.tools.quick2.onclick = tap(() => handlers.quick2());
     this.tools.bag.onclick = tap(() => handlers.backpack());
     this.holdToRest(this.tools.wait);
     this.toolbar = el('nav', 'pd-toolbar');
@@ -391,15 +412,15 @@ export class Hud {
     this.menu.className = wide ? 'pd-mapbtn menu' : 'pd-menu';
     this.mates.className = wide ? 'pd-party' : 'pd-mates';
     delete this.shown.mates;
-    delete this.shown.quick;
-    delete this.shown.quick2;
+    for (let slot = 0; slot < QUICKSLOTS; slot++) delete this.shown[`quick${slot}`];
     if (wide) {
       this.main.querySelector('.pd-menu, .pd-mapbtn.menu')?.remove();
       this.corner.append(this.menu);
       this.panel.append(this.main, this.buffBox);
       this.column.append(this.panel, this.mates, this.notice);
       this.islandLeft.append(this.tools.wait, this.tools.search, this.tools.examine);
-      this.islandRight.append(this.tools.quick, this.tools.quick2, this.tools.bag);
+      this.islandRight.append(...this.quicks, this.tools.bag);
+      this.corner.append(this.dangerBox);
       this.band.remove();
       this.toolbar.remove();
       // The arena's board stands at the top in the middle.
@@ -409,13 +430,36 @@ export class Hud {
       this.main.append(this.menu);
       this.waveboard.classList.remove('top');
       this.band.append(this.main, this.waveboard, this.buffBox, this.mates, this.notice);
-      this.toolbar.append(this.tools.wait, this.tools.search, this.tools.examine, this.tools.quick, this.tools.bag);
+      this.toolbar.append(this.tools.wait, this.tools.search, this.tools.examine, ...this.quicks, this.tools.bag);
+      this.band.append(this.dangerBox);
       this.column.remove();
       this.corner.remove();
       this.islandLeft.remove();
       this.islandRight.remove();
       this.root.prepend(this.band, this.log, this.toolbar);
     }
+  }
+
+  /** A quick slot: a tap uses it; holding it chooses what it holds (QuickSlotButton's long click). */
+  private holdToAssign(button: HTMLButtonElement, slot: number): void {
+    let timer = 0;
+    let fired = false;
+    button.addEventListener('pointerdown', () => {
+      fired = false;
+      clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        fired = true;
+        this.handlers.assignQuick(slot);
+      }, HOLD_MS);
+    });
+    const stop = (): void => clearTimeout(timer);
+    button.addEventListener('pointerleave', stop);
+    button.addEventListener('pointercancel', stop);
+    button.addEventListener('pointerup', stop);
+    button.onclick = (): void => {
+      audio.play('click');
+      if (!fired) this.handlers.quick(slot);
+    };
   }
 
   /** The hourglass: a tap waits a turn; holding it fills a bar in steps, then rests until healed. */
@@ -477,7 +521,9 @@ export class Hud {
     }
     if (this.changed('lvl', String(me.lvl))) this.level.textContent = String(me.lvl);
     const hp = Math.max(0, me.hp);
-    if (this.changed('hp', `${hp}/${me.ht}/${me.poison > 0}`)) {
+    // StatusPane: the shield (the warrior's seal) over the health bar, and «hp+shield/ht».
+    const shield = shielding(me);
+    if (this.changed('hp', `${hp}/${me.ht}/${me.poison > 0}/${shield}`)) {
       const share = hp / me.ht;
       const before = Number(this.hp.style.getPropertyValue('--v') || share);
       this.hp.style.setProperty('--v', String(share));
@@ -486,7 +532,9 @@ export class Hud {
       else window.setTimeout(() => this.hpLag.style.setProperty('--lag', String(share)), 0);
       this.hp.classList.toggle('low', hp <= me.ht / 4);
       this.hp.classList.toggle('poisoned', me.poison > 0);
-      this.hpText.textContent = `${hp}/${me.ht}`;
+      this.hp.classList.toggle('shield', shield > 0);
+      this.hp.style.setProperty('--shield', String(Math.min(1, shield / me.ht)));
+      this.hpText.textContent = shield > 0 ? `${hp}+${shield}/${me.ht}` : `${hp}/${me.ht}`;
     }
     if (this.changed('xp', `${me.exp}/${maxExp(me)}`)) this.xp.style.setProperty('--v', String(Math.min(1, me.exp / maxExp(me))));
     if (this.changed('food', String(Math.round(me.hunger)))) {
@@ -577,8 +625,17 @@ export class Hud {
 
     this.updateLog(state.log);
 
-    this.drawQuick('quick', this.tools.quick, state.quick);
-    this.drawQuick('quick2', this.tools.quick2, state.quick2 ?? null);
+    // Toolbar.layout: as many slots as the screen has room for; the toolbar's columns follow.
+    this.quicks.forEach((button, slot) => {
+      button.hidden = slot >= state.quick.length;
+      this.drawQuick(`quick${slot}`, button, state.quick[slot] ?? null);
+    });
+    if (this.changed('quickCount', String(state.quick.length))) this.toolbar.style.setProperty('--tools', String(4 + state.quick.length));
+    if (this.changed('danger', String(state.danger))) {
+      this.dangerBox.hidden = state.danger === 0;
+      this.dangerBox.textContent = String(state.danger);
+      this.dangerBox.ariaLabel = t.hero.danger(state.danger);
+    }
     this.tools.examine.setAttribute('aria-pressed', String(state.examining));
     this.tools.bag.classList.toggle('alert', state.newLoot);
     this.tools.wait.classList.toggle('resting', resting);
@@ -637,8 +694,9 @@ export class Hud {
   /** A quick slot's button: the item, its count or charges, its wear; the key on a wide screen. */
 
   private drawQuick(key: string, button: HTMLButtonElement, quick: QuickState | null): void {
-    if (!this.changed(key, quick ? `${quick.sprite}:${quick.label}:${quick.aiming}:${quick.wear?.left ?? ''}` : '')) return;
+    if (!this.changed(key, quick ? `${quick.sprite}:${quick.label}:${quick.aiming}:${quick.wear?.left ?? ''}:${quick.placeholder ?? ''}` : '')) return;
     button.classList.toggle('empty', !quick);
+    button.classList.toggle('placeholder', Boolean(quick?.placeholder));
     button.classList.toggle('targeting', Boolean(quick?.aiming));
     const label = this.wide ? [el('span', 'pd-key', button.dataset.key ?? '')] : [];
     if (quick) {

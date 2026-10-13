@@ -26,8 +26,6 @@ import type { Level } from './level/generate';
  * turn by turn.
  */
 
-/** MissileWeapon.usesToID: half a melee weapon's. */
-export const MISSILE_USES_TO_ID = 10;
 /** Shuriken.ShurikenInstantTracker.DURATION. */
 const SHURIKEN_TURNS = 20;
 /** HeavyBoomerang.CircleBack: it is back after this many turns. */
@@ -241,7 +239,7 @@ export function missileProc(ctx: Ctx, hero: Hero, mob: Mob, damage: number, thro
   delete stack.curseUnknown;
   const last = !parent && durabilityLeft(thrown) <= durabilityPerUse(thrown);
   if (!last) {
-    familiarise(ctx, hero, stack, MISSILE_USES_TO_ID);
+    familiarise(ctx, hero, stack);
     if (!stack.levelUnknown) delete thrown.levelUnknown;
   }
   const ally = isAlly(mob);

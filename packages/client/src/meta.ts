@@ -1,7 +1,7 @@
-import { challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, RoomType, S, T, type World } from '@pd/core';
+import { challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, journalNotes, type Landmark, S, type World } from '@pd/core';
 import { audio } from './audio';
 import { fx } from './fx';
-import { lang, locale, t } from './i18n';
+import { capitalize, lang, locale, t } from './i18n';
 import { itemInfo, itemName } from './itemtext';
 import { type FxMode, quality } from './quality';
 import { el, info, show, sprites, windowOf } from './screens';
@@ -370,66 +370,32 @@ export function showChallenges(options: ChallengesOptions): void {
 
 /* Journal */
 
-/** Journal.Feature, in the order of journal.png. */
+/** Journal.Feature, in the order of journal.png: the icons the notes take from it. */
 const enum Feature {
   WellOfHealth, WellOfAwareness, WellOfTransmutation, Sacrifice, Alchemy, Garden, Statue, Ghost, Wandmaker, Troll, Imp,
 }
 
-const WELLS: Readonly<Record<string, Feature>> = {
-  health: Feature.WellOfHealth, awareness: Feature.WellOfAwareness, transmutation: Feature.WellOfTransmutation,
+/** A landmark's icon (Notes.LandmarkRecord.icon): journal.png's where it has one, else an item's picture. */
+const LANDMARK_ICONS: Readonly<Record<Landmark, { feature: Feature } | { item: number } | null>> = {
+  chasmFloor: null, waterFloor: null, grassFloor: null,
+  shop: { item: S.GOLD }, alchemy: { feature: Feature.Alchemy }, garden: { feature: Feature.Garden },
+  wellOfHealth: { feature: Feature.WellOfHealth }, wellOfAwareness: { feature: Feature.WellOfAwareness },
+  wellOfTransmutation: { feature: Feature.WellOfTransmutation }, sacrificialFire: { feature: Feature.Sacrifice },
+  statue: { feature: Feature.Statue }, beaconLocation: { item: S.BEACON }, ghost: { feature: Feature.Ghost }, ratKing: { item: S.CROWN },
+  wandmaker: { feature: Feature.Wandmaker }, troll: { feature: Feature.Troll }, imp: { feature: Feature.Imp },
 };
 
-export interface JournalEntry {
-  feature: number;
-  depth: number;
-  /** Used up, slain or done with: kept in the list, dimmed. */
-  done: boolean;
-}
-
-/**
- * What the party has come across, depth by depth (Journal.add): wells,
- * the altar, alchemy pots, gardens, the statue and the dungeon's people,
- * once a cell of theirs has been seen.
- */
-export function journalEntries(world: World): JournalEntry[] {
-  const entries: JournalEntry[] = [];
-  for (const key of Object.keys(world.levels)) {
-    const depth = Number(key);
-    const level = world.levels[depth]!;
-    const floor = world.floors[depth];
-    const seen = world.explored[depth];
-    if (!seen) continue;
-    const add = (feature: Feature, done = false): void => {
-      if (!entries.some((e) => e.feature === feature && e.depth === depth)) entries.push({ feature, depth, done });
-    };
-    for (const well of level.wells) if (seen[well.pos]) add(WELLS[well.water] ?? Feature.WellOfHealth);
-    const altar = floor?.altar ?? level.altar;
-    if (altar && seen[altar.pos]) add(Feature.Sacrifice, altar.volume <= 0);
-    if (level.map.some((terrain, cell) => terrain === T.ALCHEMY && seen[cell])) add(Feature.Alchemy);
-    for (const room of level.rooms) {
-      if (room.type !== RoomType.GARDEN) continue;
-      if (roomSeen(room, seen, level.map.length)) add(Feature.Garden);
-    }
-    if (level.statue !== undefined && seen[level.statue]) {
-      add(Feature.Statue, !(floor?.mobs ?? []).some((mob) => mob.kind === 'statue'));
-    }
-    const met = (kind: string): boolean => (floor?.mobs ?? []).some((mob) => mob.kind === kind && seen[mob.pos]);
-    if (world.quest?.depth === depth && (world.quest.given || met('ghost'))) add(Feature.Ghost, world.quest.done);
-    if (world.wandQuest?.depth === depth && (world.wandQuest.given || met('wandmaker'))) add(Feature.Wandmaker, world.wandQuest.done);
-    if (world.smithQuest?.depth === depth && (world.smithQuest.given || (level.blacksmith !== undefined && seen[level.blacksmith]))) {
-      add(Feature.Troll, world.smithQuest.done);
-    }
-    if (world.impQuest?.depth === depth && (world.impQuest.given || met('imp'))) add(Feature.Imp, world.impQuest.done);
+function noteIcon(landmark: Landmark): HTMLElement {
+  const icon = LANDMARK_ICONS[landmark];
+  if (icon && 'item' in icon) {
+    const node = el('i', { className: 'pd-item' });
+    node.dataset.i = String(icon.item);
+    return el('span', { className: 'pd-jicon item' }, node);
   }
-  return entries.sort((a, b) => a.depth - b.depth || a.feature - b.feature);
-}
-
-function roomSeen(room: { left: number; top: number; right: number; bottom: number }, seen: readonly boolean[], length: number): boolean {
-  const width = Math.round(Math.sqrt(length));
-  for (let y = room.top + 1; y < room.bottom; y++) {
-    for (let x = room.left + 1; x < room.right; x++) if (seen[y * width + x]) return true;
-  }
-  return false;
+  const node = el('i', { className: 'pd-jicon' });
+  if (icon) node.style.setProperty('--j', String(icon.feature));
+  else node.classList.add('blank');
+  return node;
 }
 
 /** What the catalog lists, by tab, and the silhouette an unknown one shows (items.png). */
@@ -465,23 +431,38 @@ export function showJournal(options: JournalOptions, tab: 'notes' | 'catalog' = 
   );
 }
 
+/**
+ * WndJournal.NotesTab: the notes the core keeps (journal.ts), floor by floor, deepest first, with the
+ * keys the hero holds for each floor (Notes.KeyRecord).
+ */
 function notesView(world: World, hero: Hero): HTMLElement {
-  const entries = journalEntries(world);
-  if (entries.length === 0) return el('p', { className: 'pd-empty pd-note center', textContent: t.meta.journalEmpty });
+  const notes = journalNotes(world);
+  const keys = hero.items.filter((item) => itemDef(item.kind).category === 'key' && item.depth !== undefined);
+  const depths = [...new Set([...notes.map((note) => note.depth), ...keys.map((key) => key.depth!)])].sort((a, b) => b - a);
+  if (depths.length === 0) return el('p', { className: 'pd-empty pd-note center', textContent: t.hero.notesDesc });
   const list = el('div', { className: 'pd-journal' });
-  for (const entry of entries) {
-    const icon = el('i', { className: 'pd-jicon' });
-    icon.style.setProperty('--j', String(entry.feature));
-    list.append(
-      el(
+  for (const depth of depths) {
+    list.append(el('div', { className: 'pd-jdepth-mark', textContent: t.hero.floorHeader(depth) }));
+    for (const note of notes.filter((n) => n.depth === depth)) {
+      list.append(el(
         'div',
-        { className: `pd-jrow${entry.depth === hero.depth ? ' here' : ''}${entry.done ? ' done' : ''}` },
-        icon,
-        el('span', { className: 'pd-jname', textContent: t.meta.features[entry.feature] ?? '' }),
-        el('span', { className: 'pd-jdepth', textContent: String(entry.depth) }),
-      ),
-    );
+        { className: `pd-jrow${depth === hero.depth ? ' here' : ''}` },
+        noteIcon(note.landmark),
+        el('span', { className: 'pd-jname', textContent: capitalize(t.hero.landmarks[note.landmark]) }),
+      ));
+    }
+    for (const key of keys.filter((k) => k.depth === depth)) {
+      const icon = el('i', { className: 'pd-item' });
+      icon.dataset.i = String(itemSprite(key, world.run.labels));
+      list.append(el(
+        'div',
+        { className: `pd-jrow${depth === hero.depth ? ' here' : ''}` },
+        el('span', { className: 'pd-jicon item' }, icon),
+        el('span', { className: 'pd-jname', textContent: capitalize(itemName(world, key)) }),
+      ));
+    }
   }
+  sprites(list);
   return list;
 }
 

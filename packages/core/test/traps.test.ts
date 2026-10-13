@@ -9,7 +9,8 @@ import { pacify } from './helpers';
 /** A hero next to a freshly laid trap of the given terrain. */
 function besideTrap(trap: number, seed = 6): { world: World; cell: number } {
   const world = pacify(createWorld(seed));
-  addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
+  // The mage: the warrior's seal would shield him from the traps' blows.
+  addHero(world, { id: 'p', name: 'P', heroClass: 'mage' });
   const hero = heroById(world, 'p')!;
   const level = levelAt(world, 1);
   // Any plain floor beside the hero (not a door or the stairs): the trap is laid there.

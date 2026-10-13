@@ -4,6 +4,7 @@ import {
 } from './actors';
 import { conjureImages } from './allies';
 import { hurt } from './combat';
+import { isEnemy as enemyMob } from './hero';
 import { beyond, geyser, MAGIC_BOLT, STOP_TARGET, teleportChar, throwChar, trajectory } from './displace';
 import { castShadow, terrainBlocksSight, viewDistance } from './fov';
 import { type Char, charAt, type Ctx, enterCell, heroesOn, heroView, isHero, isPassable, isWater } from './floor';
@@ -67,7 +68,7 @@ const corruptImmune = (mob: Mob): boolean => BOSSES.has(mob.kind) || MINIBOSSES.
 /** Who fights alongside the heroes (Char.Alignment.ALLY): mirror images, golden bees, the corrupted. */
 export const isAlly = (char: Char): boolean => isHero(char) || char.corrupted === true || char.kind === 'mirror' || char.kind === 'bee';
 /** Who fights the heroes (Char.Alignment.ENEMY): any monster not passive, and not an ally. */
-export const isEnemy = (char: Char): boolean => !isHero(char) && char.state !== 'passive' && !char.corrupted;
+export const isEnemy = (char: Char): boolean => !isHero(char) && enemyMob(char);
 
 /** A monster's field of view (Char.fieldOfView). */
 const mobView = (ctx: Ctx, mob: Mob): boolean[] =>

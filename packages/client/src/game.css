@@ -196,3 +196,21 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 }
 /* Six classes (design system v17): the narrow title's faces come from the 144-wide avatars too. */
 @media (max-height: 700px) { .pd-class .pd-class-face { background-size: 216px 48px; } }
+/* Shattered's buff icons (the hero stream: the warrior's shield, a sealed floor), from its own buffs.png, 18 a row. */
+.pd-buff i.spd { background-image: url("/assets/spd/buffs.png"); background-size: 384px 192px; }
+/* Shattered's quick slots (QuickSlot.SIZE 6; the hero stream): the toolbar grows a column for each slot shown; a slot whose item is used up keeps it greyed. */
+.pd-toolbar { grid-template-columns: repeat(var(--tools, 5), 1fr); gap: 4px; }
+.pd-tool[hidden] { display: none; }
+.pd-tool.quick.placeholder .pd-item { opacity: .35; filter: grayscale(1); }
+/* DangerIndicator: how many enemies are in sight; a tap steps to the next. Under the HUD's right edge (wide: in the corner). */
+.pd-danger {
+  position: absolute; right: calc(var(--safe-r, 0px) + 8px); bottom: -40px; pointer-events: auto;
+  min-width: 36px; height: 32px; padding: 0 8px; display: grid; place-items: center;
+  font: var(--text-digits, 400 15px/15px var(--font-small)); color: var(--ink); text-shadow: var(--text-outline);
+  background: var(--bad, #a33); clip-path: var(--notch); box-shadow: inset 0 0 0 var(--u, 2px) var(--void);
+}
+.pd-danger[hidden] { display: none; }
+.pd-dcorner .pd-danger { position: static; height: auto; }
+/* The journal's notes (the hero stream): a landmark journal.png has no icon for takes an item's picture; a floor's feeling, none. */
+.pd-jicon.item { background: none; display: grid; place-items: center; }
+.pd-jicon.blank { background: none; }

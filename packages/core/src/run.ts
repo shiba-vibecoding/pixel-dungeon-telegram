@@ -16,8 +16,6 @@ export interface RunState {
   labels: Labels;
   /** The troll blacksmith has set up his forge in the caves (absent in older runs). */
   blacksmithSpawned?: boolean;
-  /** The dew vial has been laid out in the sewers (absent in older runs). */
-  dewVialSpawned?: boolean;
   /**
    * Generator's decks for weapons and thrown weapons by tier (Generator.Category.probs, as gear.ts deals them),
    * and how many each has dealt (Category.dropped); absent until the first is dealt.

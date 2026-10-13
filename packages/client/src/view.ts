@@ -158,6 +158,8 @@ export const COLORS = {
   warning: '#ff8800',
   highlight: '#ffff44',
   neutral: '#cccccc',
+  /** CharSprite's shielding status (FloatingText.SHIELDING). */
+  shield: '#bbbbff',
 };
 
 /**
@@ -1076,8 +1078,26 @@ export class View {
           audio.play('drink');
           if (effect.amount > 0) this.float(effect.hero, `+${effect.amount}`, COLORS.positive, now);
           break;
-        case 'vialSaved':
-          if (effect.hero === myId) this.say(t.vialSaved, COLORS.warning, now);
+        case 'dewFull':
+          if (effect.hero === myId) this.say(t.hero.dewFull, COLORS.default, now);
+          break;
+        case 'levelCap':
+          if (effect.hero === myId) this.say(t.hero.levelCap, COLORS.positive, now);
+          break;
+        // Hero.noticed_smth is said once for what was found ('discovered', above).
+        case 'shielded':
+          // WarriorShield.activate: the shield's worth floats up over the warrior (FloatingText.SHIELDING).
+          this.float(effect.hero, `+${effect.amount}`, COLORS.shield, now);
+          if (effect.hero === myId) audio.play('levelup', 1.6, 0.4);
+          break;
+        case 'sealAffixed':
+          if (effect.hero === myId) {
+            this.say(t.hero.affixed, COLORS.positive, now);
+            audio.play('unlock');
+          }
+          break;
+        case 'sealDetached':
+          if (effect.hero === myId) this.say(t.hero.detached, COLORS.default, now);
           break;
         case 'greeting':
           if (effect.depth === this.depth) this.say(`${t.mobs.impShopkeeper}: «${t.impGreeting}»`, COLORS.default, now);

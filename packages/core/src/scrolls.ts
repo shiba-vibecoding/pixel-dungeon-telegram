@@ -60,6 +60,9 @@ export function isUpgradable(item: Item): boolean {
       return true;
     case 'ring':
       return item.kind !== 'ring.haggler' && item.kind !== 'ring.thorns';
+    // BrokenSeal.isUpgradable: a scroll of upgrade can be read on the seal itself, once.
+    case 'seal':
+      return item.level === 0;
     default:
       return false;
   }
@@ -155,6 +158,8 @@ export function upgradeItem(ctx: Ctx, hero: Hero, item: Item): void {
   } else {
     item.level++;
   }
+  // Armor.upgrade: the seal on the armour takes the upgrade with it, once.
+  if (item.seal && item.seal.level === 0) item.seal.level = 1;
   // Item.upgrade: no curse, and that is known (cursedKnown), though the level stays as known as it was.
   delete item.curseUnknown;
   mend(item);

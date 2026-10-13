@@ -4,7 +4,8 @@ import { pacify } from './helpers';
 
 function withRemains(kind: 'tomb' | 'skeleton', cursed: boolean) {
   const world = pacify(createWorld(12));
-  addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
+  // Not the warrior: his seal's shield would take the curse's blow.
+  addHero(world, { id: 'p', name: 'P', heroClass: 'mage' });
   const hero = heroById(world, 'p')!;
   const item = { ...createItem('weapon.sword', 1, cursed ? -2 : 0), ...(cursed ? { cursed: true } : {}) };
   floorAt(world, 1).heaps.push({ pos: hero.pos, kind, items: [item] });

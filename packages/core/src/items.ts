@@ -22,7 +22,7 @@ import { defaultQuantity, missileValue, TIPPED_DARTS } from './missiles';
 
 export type ItemCategory =
   | 'gold' | 'potion' | 'scroll' | 'weapon' | 'armor' | 'missile' | 'wand' | 'ring' | 'seed' | 'food' | 'dew' | 'torch' | 'key'
-  | 'tome' | 'quest' | 'ankh' | 'kit' | 'bomb' | 'weightstone' | 'beacon' | 'honeypot' | 'vial' | 'bag' | 'wipeout' | 'bow';
+  | 'tome' | 'quest' | 'ankh' | 'kit' | 'bomb' | 'weightstone' | 'beacon' | 'honeypot' | 'vial' | 'bag' | 'wipeout' | 'bow' | 'seal';
 
 export interface ItemDef {
   category: ItemCategory;
@@ -186,16 +186,17 @@ export const ITEMS = {
   'seed.fadeleaf': { category: 'seed', sprite: S.SEED_FADELEAF },
   /** Only from the shrub the old wandmaker is after; it brews strength. */
   'seed.rotberry': { category: 'seed', sprite: S.SEED_ROTBERRY },
-  // Food (Food, Pasty, MysteryMeat): a ration staves off hunger for a while,
-  // a pasty completely; mystery meat from crabs is a gamble.
-  'food.ration': { category: 'food', sprite: S.RATION, energy: 260 },
-  'food.pasty': { category: 'food', sprite: S.PASTY, energy: 360 },
-  'food.meat': { category: 'food', sprite: S.MEAT, energy: 100 },
+  // Food (Food, Pasty, MysteryMeat), as filling as Shattered makes it (Hunger.HUNGRY is 300): a ration
+  // staves off hunger for a while (Food.energy = HUNGRY), a pasty completely (STARVING); mystery meat
+  // from crabs is a gamble, worth half a ration.
+  'food.ration': { category: 'food', sprite: S.RATION, energy: 300 },
+  'food.pasty': { category: 'food', sprite: S.PASTY, energy: 450 },
+  'food.meat': { category: 'food', sprite: S.MEAT, energy: 150 },
   // Mystery meat cooked by fire or frozen by frost (ChargrilledMeat, FrozenCarpaccio), and the
-  // shops' smaller, dearer ration (OverpricedRation).
-  'food.steak': { category: 'food', sprite: S.STEAK, energy: 100 },
-  'food.carpaccio': { category: 'food', sprite: S.CARPACCIO, energy: 100 },
-  'food.overpriced': { category: 'food', sprite: S.OVERPRICED, energy: 100 },
+  // shops' smaller ration (SmallRation, Pixel Dungeon's overpriced one): half a ration each.
+  'food.steak': { category: 'food', sprite: S.STEAK, energy: 150 },
+  'food.carpaccio': { category: 'food', sprite: S.CARPACCIO, energy: 150 },
+  'food.overpriced': { category: 'food', sprite: S.OVERPRICED, energy: 150 },
   /** Shattered, it lets out a golden bee that fights for whoever broke it, for a while (Honeypot). */
   honeypot: { category: 'honeypot', sprite: S.HONEYPOT },
   /** The sacrificial fire's reward: read, it kills every monster on the level but its boss (ScrollOfWipeOut). */
@@ -213,8 +214,10 @@ export const ITEMS = {
   'bag.seeds': { category: 'bag', sprite: S.POUCH },
   'bag.scrolls': { category: 'bag', sprite: S.HOLDER },
   'bag.wands': { category: 'bag', sprite: S.HOLSTER },
-  /** Keeps spare dew for later; full, it saves its bearer from death once (DewVial). */
-  vial: { category: 'vial', sprite: S.VIAL },
+  /** Every hero's, from the start: it keeps the dew picked up, to be drunk when hurt (Waterskin; Pixel Dungeon's dew vial). */
+  waterskin: { category: 'vial', sprite: S.WATERSKIN },
+  /** The Warrior's broken seal, when it is not affixed to armour (BrokenSeal; on armour it is Item.seal). */
+  seal: { category: 'seal', sprite: S.SEAL },
   /** Shaken from tall grass; heals whoever picks it up. */
   dew: { category: 'dew', sprite: S.DEWDROP },
   /** Opens the locked room of the level it was found on. */
@@ -271,8 +274,10 @@ export interface Item {
   cursed?: boolean;
   /** Class armour: the armour it was made from, whose protection it keeps. */
   base?: ItemKind;
-  /** The dew vial: how many drops it holds, ten at most. */
+  /** The waterskin: how many drops of dew it holds, twenty at most. */
   volume?: number;
+  /** Armour: the Warrior's broken seal affixed to it, and the upgrade it carries (0 or 1); see seal.ts. */
+  seal?: { level: number };
   /** Lloyd's beacon: where it was set, if it was. */
   returnTo?: { depth: number; pos: number };
   /**
@@ -293,13 +298,16 @@ export interface Item {
   levelUnknown?: boolean;
   curseUnknown?: boolean;
   chargesUnknown?: boolean;
-  /** Weapons, armour and wands: blows struck, blows taken or zaps so far towards knowing them (Weapon.usesLeftToID, Armor's, Wand.usagesToKnow). */
+  /** Wands: zaps so far towards knowing them (Wand.usagesToKnow). */
   familiarity?: number;
   /**
-   * Weapons and armour: how many more uses towards knowing them can be had before more experience is gained
-   * (Weapon.availableUsesToID, Armor's); absent, half of what knowing them takes.
+   * Weapons, thrown weapons and armour: uses left before they are known, and how many of those are ready now
+   * (Weapon and Armor.usesLeftToID, availableUsesToID); rings: the share of a level still to gain
+   * while worn (Ring.levelsToID). Absent: as found. See ident.ts.
    */
-  idAvailable?: number;
+  usesLeftToID?: number;
+  availableUsesToID?: number;
+  levelsToID?: number;
   /** Thrown weapons: the set this stack belongs to (MissileWeapon.setID); absent, the kind's own set (as darts share one). */
   set?: number;
   /** The explosive curse's fuse (Explosive.durability, of 100); absent while 100. */
@@ -437,6 +445,8 @@ export function itemPrice(item: Item, known: boolean): number {
     case 'weapon':
       return item.kind === 'weapon.pickaxe' ? 0 : weaponValue(item);
     case 'armor':
+      // Armor.value: the warrior's sealed armour is not for sale.
+      if (item.seal) return 0;
       return armorValue(item);
     case 'potion':
       return (known ? POTION_PRICES[item.kind] ?? 20 : 20) * item.qty;

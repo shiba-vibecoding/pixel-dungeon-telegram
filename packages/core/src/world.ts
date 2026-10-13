@@ -1,12 +1,15 @@
 import { wear } from './wear';
-import { identify, identifyBelongings, isIdentified, observeBelongings } from './ident';
+import { identifyBelongings, observeBelongings } from './ident';
 import { mobAct, populate, reinforce, respawn, TIME_TO_RESPAWN } from './ai';
 import {
-  awareness, createHero, createMob, type Footing, type Hero, heroAttackDelay, type HeroClass, heroReach, heroSpeed, hungerGrowth, hungerStep,
-  HUNGRY, isAlive, isShopkeeper, isStarving, type Mob, type PlayerInfo, ringBonus, STARVING,
+  createHero, createMob, type Footing, type Hero, heroAttackDelay, heroReach, heroSpeed, isAlive, isShopkeeper, type Mob, type PlayerInfo,
+  ringBonus,
 } from './actors';
 import { camouflage, isEnemy } from './enchant';
 import { canReach, gearTick } from './throwing';
+import { heroTurns, search, TIME_TO_SEARCH } from './hero';
+import { startingKit } from './heroclass';
+import { type Note, noteLandmarks } from './journal';
 import { attack, CRIPPLE_TURNS, hurt } from './combat';
 import {
   canEnter, type Char, charAt, type Ctx, dropItem, type Effect, enterCell, exploredCells, type Floor, freeCellNear, heroesOn,
@@ -134,6 +137,8 @@ export interface World {
   mode?: 'arena';
   /** The arena of waves' state, in an arena run. */
   arena?: ArenaState;
+  /** The journal's notes of what the party has come across (journal.ts; absent until the first). */
+  notes?: Note[];
 }
 
 /** The kinds of run: down the dungeon, or the arena of waves. */
@@ -146,10 +151,6 @@ const TIME_TO_REST = 1;
 const TIME_TO_REFORGE = 2;
 /** LloydsBeacon.TIME_TO_USE: setting it takes a moment; returning, none. */
 const TIME_TO_USE_BEACON = 1;
-const TIME_TO_SEARCH = 2;
-/** How far a deliberate search reaches; the original only checked adjacent cells. */
-const SEARCH_RADIUS = 2;
-const REGENERATION_DELAY = 10;
 /** Sub-stream of a depth's monster stream for the sad ghost. */
 const GHOST_STREAM = 1;
 const WANDMAKER_STREAM = 2;
@@ -277,21 +278,14 @@ export function addHero(world: World, player: PlayerInfo): Hero {
   // The arena's waves are made for whoever is there when they come; nothing lies about to share.
   if (world.arena) arenaJoined(world, hero, new Rng(floorAt(world, depth).rng));
   else if (world.heroes.length > 1) welcome(world);
-  // Heroes know what they set out with, and each class one kind more (HeroClass.initHero).
-  for (const kind of [...hero.items, ...hero.rings].map((item) => item.kind).concat(CLASS_KNOWLEDGE[hero.heroClass])) {
+  // Heroes know what they set out with, and each class its two kinds (HeroClass.initHero: `new X().identify()`).
+  for (const kind of [...hero.items, ...hero.rings].map((item) => item.kind).concat(startingKit(hero.heroClass).known)) {
     if (!world.known.includes(kind)) world.known.push(kind);
   }
   observe(world, hero);
+  noteLandmarks(world, hero);
   return hero;
 }
-
-/** HeroClass.initWarrior/initMage/initRogue: the kind each class knows from the start (the huntress none). */
-const CLASS_KNOWLEDGE: Readonly<Record<HeroClass, readonly ItemKind[]>> = {
-  warrior: ['potion.strength'],
-  mage: ['scroll.identify'],
-  rogue: ['scroll.mapping'],
-  huntress: [],
-};
 
 /** Adds a hero once; joining again (e.g. after a reconnect) keeps the existing one. */
 export function joinHero(world: World, player: PlayerInfo): Hero {
@@ -368,6 +362,8 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       if (Number.isInteger(action.to) && adjacent(hero.pos, action.to) && level.map[action.to] === T.LOCKED_EXIT) {
         return keyFor(hero, 'key.skeleton') >= 0 ? null : 'the way down is locked';
       }
+      // Hero.actMove: a move to where the hero stands tramples the grass or the plant there (canSelfTrample).
+      if (action.to === hero.pos) return canSelfTrample(world, hero) ? null : 'cannot move there';
       if (!heroCanEnter(level, hero, action.to) || !adjacent(hero.pos, action.to)) return 'cannot move there';
       {
         const there = charAt(world, hero.depth, action.to);
@@ -816,25 +812,25 @@ function playTurn(ctx: Ctx, turn: Exclude<Turn, { kind: 'hero' }>): void {
   }
 }
 
-function spend(ctx: Ctx, hero: Hero, time: number): void {
-  // Slowed, everything takes twice as long (Char.spend); a ring of haste speeds it all up.
-  if (hero.slowed > 0) time *= 2;
-  const haste = ringBonus(hero, 'ring.haste');
-  if (haste !== 0) time *= 1.1 ** -haste;
-  hero.time += time;
-  hero.regen += time;
-  if (hero.depth === ctx.depth) altarMarksHero(ctx, hero, time);
-  // Regeneration: a ring of mending makes wounds close faster.
-  const regenDelay = REGENERATION_DELAY / 1.2 ** ringBonus(hero, 'ring.mending');
-  while (hero.regen >= regenDelay) {
-    hero.regen -= regenDelay;
-    // A starving body does not heal (Regeneration).
-    if (isAlive(hero) && hero.hp < hero.ht && !isStarving(hero)) hero.hp++;
+/**
+ * Char.spend: time passes for the hero, slowed twice as long and quicker with a ring of haste
+ * (Pixel Dungeon's); `constant`, as Hero.spendConstant (resting), it is neither. The hero's buffs act
+ * for every turn passed (hero.ts heroTurns: hunger, regeneration, the sealed floor, the seal's shield).
+ */
+function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
+  if (!constant) {
+    if (hero.slowed > 0) time *= 2;
+    const haste = ringBonus(hero, 'ring.haste');
+    if (haste !== 0) time *= 1.1 ** -haste;
   }
-  starve(ctx, hero, time);
-  wearRings(ctx, hero, time);
+  const from = hero.time;
+  hero.time += time;
+  if (hero.depth === ctx.depth) altarMarksHero(ctx, hero, time);
+  heroTurns(ctx, hero, from, hero.time);
+  for (const ring of hero.rings) wear(ctx, hero, ring, time);
   // The hero's gear as time passes: shields fade, boomerangs come back, crystal mends (throwing.ts).
   if (hero.depth === ctx.depth) gearTick(ctx, hero, time);
+
   // Caustic ooze burns every turn until washed off in water.
   if (hero.ooze >= 0) {
     hero.ooze += time;
@@ -856,6 +852,7 @@ function spend(ctx: Ctx, hero: Hero, time: number): void {
   hero.charmed = Math.max(0, hero.charmed - time);
   hero.dizzy = Math.max(0, hero.dizzy - time);
   hero.barkskin = Math.max(0, (hero.barkskin ?? 0) - time);
+  if (hero.blessed) hero.blessed = Math.max(0, hero.blessed - time);
   sungrassHeals(hero, time);
   if (hero.charmed <= 0) hero.charmedBy = null;
 
@@ -914,69 +911,36 @@ function spend(ctx: Ctx, hero: Hero, time: number): void {
   }
 }
 
-/**
- * Hunger: it grows a step at a time until the hero is starving, which stops
- * healing and now and then costs a hit point.
- */
-function starve(ctx: Ctx, hero: Hero, time: number): void {
-  const step = hungerStep(hero);
-  hero.hungerTime += time;
-  while (hero.hungerTime >= step && isAlive(hero)) {
-    hero.hungerTime -= step;
-    if (isStarving(hero)) {
-      if (ctx.rng.float() < 0.3 && (hero.hp > 1 || hero.paralysed <= 0)) {
-        ctx.effects.push({ type: 'hurt', depth: hero.depth, who: hero.id, damage: 1 });
-        hurt(ctx, hero, 1, 'hunger');
-      }
-      continue;
-    }
-    const before = hero.hunger;
-    hero.hunger = Math.min(Math.max(0, before + hungerGrowth(hero)), STARVING);
-    if (hero.hunger >= STARVING) ctx.effects.push({ type: 'hunger', hero: hero.id, state: 'starving' });
-    else if (hero.hunger >= HUNGRY && before < HUNGRY) ctx.effects.push({ type: 'hunger', hero: hero.id, state: 'hungry' });
-  }
-}
-
-/**
- * RingBuff.act: a ring wears with every turn it is worn, and worn long enough
- * is known through and through: its kind, for the whole party, and its level.
- */
-function wearRings(ctx: Ctx, hero: Hero, time: number): void {
-  for (const ring of hero.rings) {
-    if (!isIdentified(ctx.world, ring)) {
-      ring.worn = (ring.worn ?? 0) + time;
-      if (ring.worn >= RING_TICKS_TO_KNOW) {
-        const learned = identify(ctx.world, ring);
-        ctx.effects.push({ type: 'familiar', hero: hero.id, item: ring, learned });
-      }
-    }
-    wear(ctx, hero, ring, time);
-  }
-}
-
-const RING_TICKS_TO_KNOW = 200;
-
 function perform(ctx: Ctx, hero: Hero, action: Action): void {
   const { world, level } = ctx;
   if (isInventoryAction(action)) {
     spend(ctx, hero, performInventory(ctx, hero, action));
-    if (isAlive(hero)) observe(world, hero);
+    if (isAlive(hero)) {
+      observe(world, hero);
+      noteLandmarks(world, hero);
+    }
     return;
   }
   switch (action.type) {
     case 'wait':
-      spend(ctx, hero, TIME_TO_REST);
+      // Hero.rest: resting takes a turn, whatever slows or hastens the hero (spendConstant).
+      spend(ctx, hero, TIME_TO_REST, true);
       break;
 
-    case 'search': {
-      const found = search(ctx, hero, true);
-      const skill = awareness(hero);
-      ctx.effects.push({ type: 'searched', hero: hero.id });
-      spend(ctx, hero, found && ctx.rng.float() >= 2 * skill - skill * skill ? TIME_TO_SEARCH * 2 : TIME_TO_SEARCH);
+    case 'search':
+      // Hero.search(true): a deliberate search, which takes two turns.
+      search(ctx, hero, true);
+      spend(ctx, hero, TIME_TO_SEARCH);
       break;
-    }
 
     case 'move': {
+      if (action.to === hero.pos) {
+        // Hero.actMove: moving in place tramples the grass or sets off the plant underfoot (Level.pressCell).
+        if (level.map[hero.pos] === T.HIGH_GRASS) trample(ctx, hero.pos, hero);
+        stepOnPlant(ctx, hero, hero.pos);
+        spend(ctx, hero, 1 / heroSpeed(hero));
+        break;
+      }
       if (level.map[action.to] === T.LOCKED_DOOR) {
         // The iron key turns in the lock and stays there.
         hero.items.splice(keyFor(hero), 1);
@@ -1137,7 +1101,10 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
       break;
     }
   }
-  if (isAlive(hero)) observe(world, hero);
+  if (isAlive(hero)) {
+    observe(world, hero);
+    noteLandmarks(world, hero);
+  }
 }
 
 /**
@@ -1333,11 +1300,26 @@ function awakenYog(ctx: Ctx, hero: Hero): void {
   ctx.effects.push({ type: 'yell', depth, mob: yog.id, kind: 'yog', line: 'notice', hero: hero.id });
 }
 
-/** HighGrass.trample: walked through, tall grass is flattened and sometimes sheds a seed or a dewdrop. */
+/**
+ * HighGrass.trample: walked through, tall grass is flattened and sometimes sheds a seed or a dewdrop.
+ * The huntress travels through it without trampling it: it only furrows (FURROWED_GRASS, which still
+ * stands and hides, but sheds nothing more and is flattened by anyone else).
+ */
 function trample(ctx: Ctx, pos: number, hero?: Hero): void {
-  ctx.level.map[pos] = T.GRASS;
-  // Armour of camouflage: trampling tall grass, its wearer melts into it.
+  const level = ctx.level;
+  const furrowed = isFurrowed(level, pos);
+  // Armour of camouflage: trampling tall grass (or furrowing it), its wearer melts into it.
   if (hero) camouflage(hero);
+  if (hero?.heroClass === 'huntress') {
+    if (furrowed) return;
+    furrow(level, pos);
+  } else {
+    ctx.level.map[pos] = T.GRASS;
+    if (furrowed) {
+      unfurrow(level, pos);
+      return;
+    }
+  }
   // A warden draws bark from the grass.
   if (hero?.subclass === 'warden') hero.barkskin = Math.max(hero.barkskin, Math.trunc(hero.ht / 3));
   // A ring of herbalism makes both more likely (HighGrass.trample).
@@ -1346,6 +1328,26 @@ function trample(ctx: Ctx, pos: number, hero?: Hero): void {
   if (herbalism < 0 || isChallenged(ctx.world, NO_HERBALISM)) return;
   if (ctx.rng.int(18) <= ctx.rng.int(herbalism + 1)) dropItem(ctx.floor, pos, new ItemGenerator(ctx.rng, ctx.depth).of('seed'));
   if (ctx.rng.int(6) <= ctx.rng.int(herbalism + 1)) dropItem(ctx.floor, pos, createItem('dew'));
+}
+
+/** Terrain.FURROWED_GRASS, kept beside the map until the levels stream brings the terrain (Level.furrowed). */
+const isFurrowed = (level: Level, pos: number): boolean => level.map[pos] === T.HIGH_GRASS && (level.furrowed ?? []).includes(pos);
+function furrow(level: Level, pos: number): void {
+  (level.furrowed ??= []).push(pos);
+}
+function unfurrow(level: Level, pos: number): void {
+  level.furrowed = (level.furrowed ?? []).filter((cell) => cell !== pos);
+}
+
+/**
+ * Hero.canSelfTrample: standing in tall grass (not furrowed grass for the huntress, who would not
+ * flatten it) or on a plant, and not rooted or floating, the hero may trample it where they stand.
+ */
+export function canSelfTrample(world: World, hero: Hero): boolean {
+  if (hero.rooted > 0 || (hero.levitating ?? 0) > 0) return false;
+  const level = levelAt(world, hero.depth);
+  const grass = level.map[hero.pos] === T.HIGH_GRASS && !(hero.heroClass === 'huntress' && isFurrowed(level, hero.pos));
+  return grass || (floorAt(world, hero.depth).plants ?? []).some((plant) => plant.pos === hero.pos);
 }
 
 /** The backpack slot of an iron key for the hero's current depth, or -1. */
@@ -1388,39 +1390,6 @@ function drinkFromWell(ctx: Ctx, hero: Hero): void {
     });
   }
   ctx.effects.push({ type: 'well', hero: hero.id, water });
-}
-
-/**
- * Hero.search: hidden doors and traps around the hero may be noticed in
- * passing after every step, and are always found by a deliberate search.
- */
-function search(ctx: Ctx, hero: Hero, intentional: boolean): boolean {
-  // A ring of detection widens the search.
-  const radius = Math.max(0, (intentional ? SEARCH_RADIUS : 1) + ringBonus(hero, 'ring.detection'));
-  const fov = heroView(ctx.world, hero);
-  const chance = awareness(hero);
-  const cx = cellX(hero.pos);
-  const cy = cellY(hero.pos);
-  let found = false;
-  for (let y = Math.max(cy - radius, 0); y <= Math.min(cy + radius, HEIGHT - 1); y++) {
-    for (let x = Math.max(cx - radius, 0); x <= Math.min(cx + radius, WIDTH - 1); x++) {
-      const p = x + y * WIDTH;
-      if (fov[p] && hasFlag(ctx.level.map[p]!, F.SECRET) && (intentional || ctx.rng.float() < chance)) {
-        ctx.level.map[p] = discover(ctx.level.map[p]!);
-        exploredCells(ctx.world, hero.depth)[p] = true;
-        ctx.effects.push({ type: 'discovered', depth: hero.depth, cell: p });
-        found = true;
-      }
-      // Only a deliberate search turns up what lies hidden (the phantom fish).
-      const hidden = intentional ? ctx.floor.heaps.find((heap) => heap.pos === p && heap.kind === 'hidden') : undefined;
-      if (hidden) {
-        hidden.kind = 'heap';
-        ctx.effects.push({ type: 'opened', depth: hero.depth, pos: p, heap: 'hidden' });
-        found = true;
-      }
-    }
-  }
-  return found;
 }
 
 /**

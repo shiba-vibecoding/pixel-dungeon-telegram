@@ -88,6 +88,14 @@ export type Effect =
   | { type: 'noticed'; depth: number; mob: string }
   | { type: 'exp'; hero: string; amount: number }
   | { type: 'levelUp'; hero: string; lvl: number }
+  /** Hero.earnExp at the level cap: experience can make the hero no stronger (Hero.level_cap). */
+  | { type: 'levelCap'; hero: string }
+  /** Hero.search found something in sight (Hero.noticed_smth). */
+  | { type: 'noticedSecret'; hero: string }
+  /** The warrior's broken seal raised its shield (WarriorShield.activate); the seal affixed to armour, or taken off it. */
+  | { type: 'shielded'; hero: string; amount: number }
+  | { type: 'sealAffixed'; hero: string; item: Item }
+  | { type: 'sealDetached'; hero: string; item: Item }
   | { type: 'revived'; hero: string }
   /** An ankh brought a hero back from death, at the stairs. */
   | { type: 'resurrected'; hero: string }
@@ -247,8 +255,9 @@ export type Effect =
   | { type: 'burst'; depth: number; pos: number; kind: Burst; radius: number; silent?: boolean }
   /** DM-300 mended itself on a spent trap. */
   | { type: 'repaired'; depth: number; mob: string }
-  /** A dewdrop picked up, and the health it gave. */
+  /** A dewdrop picked up, and the health it gave; one left lying, the hero being unhurt (Dewdrop.already_full). */
   | { type: 'dew'; hero: string; amount: number }
+  | { type: 'dewFull'; hero: string }
   /** Scrolls burnt up and meat cooked on a heap; a hero's scroll or meat caught fire in the pack. */
   | { type: 'heapBurnt'; depth: number; pos: number }
   | { type: 'burntUp'; hero: string; kind: ItemKind }
@@ -258,10 +267,9 @@ export type Effect =
   | { type: 'wraiths'; depth: number; pos: number }
   /** A honeypot broke at rom, and a golden bee flew out to pos. */
   | { type: 'bee'; depth: number; pos: number; from: number }
-  /** Dew kept in the dew vial; the vial drunk from; a full vial emptied to save its bearer from death. */
+  /** Dew kept in the waterskin; the waterskin drunk from, and the health it gave. */
   | { type: 'dewCollected'; hero: string; full: boolean }
   | { type: 'vial'; hero: string; amount: number }
-  | { type: 'vialSaved'; hero: string }
   /** The imp of the last shop greets the heroes. */
   | { type: 'greeting'; depth: number; mob: string }
   /** The sacrificial fire marked someone; an offering was made to it (the last one puts it out); a scroll of wipe out was read. */

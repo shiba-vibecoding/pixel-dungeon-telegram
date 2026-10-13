@@ -1,9 +1,11 @@
 import { wear } from './wear';
 import { chargesKnown, identify, isIdentified, learn, WAND_USAGES_TO_KNOW } from './ident';
 import {
-  BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, isAlive, maxExp, type Mob, mobStats, STARVING, type SubClass,
+  BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, isAlive, maxExp, type Mob, mobStats, type SubClass,
   SUBCLASSES,
 } from './actors';
+import { affectHunger, growHT } from './hero';
+import { affixProblem, affixSeal, detachProblem, detachSeal, type SealSource } from './seal';
 import { ballistica, randomRespawnCell } from './ai';
 import { charArmor, earnExp, hurt } from './combat';
 import { fearless, TERROR_TURNS } from './enchant';
@@ -26,7 +28,7 @@ import { plant, SEED_PLANTS, stepOnPlant } from './plants';
 import { zapWand } from './wands';
 import { mine, mineProblem, TIME_TO_MINE } from './smith';
 import { transmute } from './transmute';
-import { DEW_VIAL_VOLUME, drinkFromVial } from './vial';
+import { drinkFromWaterskin, pickUpDew, TIME_TO_DRINK, WATERSKIN_VOLUME } from './waterskin';
 import { hasRoom } from './bags';
 import { wipeOut } from './altar';
 import { applyArmorKit, CLASS_ARMOR, CLASS_ARMOR_OF, classSpecial, specialProblem, TIME_TO_APPLY_KIT } from './classArmor';
@@ -86,11 +88,17 @@ export type InventoryAction =
   /** Dart.AC_TIP: darts (`item`) tipped with a seed (`seed`): two for the seed, or (`all`) as many as the seeds will tip. */
   | { type: 'tip'; item: number; seed: number; all?: boolean }
   /** TippedDart.AC_CLEAN: one tipped dart, or (`all`) the whole stack, wiped back to plain darts. */
-  | { type: 'clean'; item: number; all?: boolean };
+  | { type: 'clean'; item: number; all?: boolean }
+  /**
+   * BrokenSeal.AC_AFFIX: the warrior's seal, from the pack or off the armour it is on (`from`: a pack slot,
+   * or 'armor' for the one worn), onto an armour (`to`, the same way); and Armor.AC_DETACH, the seal off an armour.
+   */
+  | { type: 'affix'; from: SealSource; to: SealSource }
+  | { type: 'detach'; armor: SealSource };
 
 const INVENTORY_ACTIONS: ReadonlySet<string> = new Set([
   'pickup', 'open', 'use', 'equip', 'drop', 'throw', 'zap', 'buy', 'sell', 'remove', 'unequip', 'master', 'mine', 'special', 'augment', 'shoot',
-  'tip', 'clean',
+  'tip', 'clean', 'affix', 'detach',
 ]);
 
 export function isInventoryAction(action: { type: string }): action is InventoryAction {
@@ -149,6 +157,8 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     return null;
   }
   if (action.type === 'mine') return mineProblem(world, hero);
+  if (action.type === 'affix') return affixProblem(hero, action.from, action.to);
+  if (action.type === 'detach') return detachProblem(hero, action.armor);
   if (action.type === 'special') return specialProblem(world, hero, action.target);
   if (action.type === 'unequip') {
     if (!hero.weapon) return 'nothing in hand';
@@ -176,7 +186,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
         return 'that cannot be used';
       }
       if (category === 'kit' && CLASS_ARMOR.includes(hero.armor.kind)) return 'your armour is already a class armour';
-      if (category === 'vial' && !item.volume) return 'your dew vial is empty';
+      if (category === 'vial' && !item.volume) return 'your waterskin is empty';
       if (category === 'wipeout' && (hero.blind ?? 0) > 0) return 'you cannot read while blinded';
       if (action.target !== undefined && action.target !== 'weapon' && action.target !== 'armor') return 'bad target';
       if (action.on !== undefined && !isItemRef(action.on)) return 'bad target';
@@ -246,6 +256,13 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
     case 'mine':
       mine(ctx, hero);
       return TIME_TO_MINE;
+    // BrokenSeal.affixToArmor and Armor.AC_DETACH take no time.
+    case 'affix':
+      affixSeal(ctx, hero, action.from, action.to);
+      return 0;
+    case 'detach':
+      detachSeal(ctx, hero, action.armor);
+      return 0;
     case 'special':
       return classSpecial(ctx, hero, action.target);
     case 'augment': {
@@ -296,8 +313,8 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
         return TIME_TO_EAT_FISH;
       }
       if (itemDef(hero.items[action.item]!.kind).category === 'vial') {
-        drinkFromVial(ctx, hero, hero.items[action.item]!);
-        return TIME_TO_USE;
+        drinkFromWaterskin(ctx, hero, hero.items[action.item]!);
+        return TIME_TO_DRINK;
       }
       if (itemDef(hero.items[action.item]!.kind).category === 'honeypot') {
         // Honeypot.execute: shattered right where the hero stands.
@@ -351,8 +368,6 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
         // Ring.doEquip: put on, a ring's curse is known (it binds itself at once, if it is cursed).
         delete item.curseUnknown;
         if (item.cursed) ctx.effects.push({ type: 'cursedEquip', hero: hero.id, item });
-        // RingBuff.attachTo: a rogue knows a ring for what it is the moment it is on.
-        if (hero.heroClass === 'rogue' && learn(ctx.world, item.kind)) ctx.effects.push({ type: 'identified', hero: hero.id, kind: item.kind });
         return TIME_TO_EQUIP;
       }
       const slot = itemDef(item.kind).category as 'weapon' | 'armor';
@@ -380,10 +395,10 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
         ctx.effects.push({ type: 'transmuted', hero: hero.id, from: item, to: changed });
         return TIME_TO_DROP;
       }
-      // DewVial into a well of health (WaterOfHealth.affectItem): it comes out full, and the well runs dry.
+      // The waterskin into a well of health (WaterOfHealth.affectItem): it comes out full, and the well runs dry.
       const healing = ctx.level.wells.findIndex((w) => w.pos === hero.pos && w.water === 'health');
-      if (item.kind === 'vial' && (item.volume ?? 0) < DEW_VIAL_VOLUME && healing >= 0 && ctx.level.map[hero.pos] === T.WELL) {
-        item.volume = DEW_VIAL_VOLUME;
+      if (item.kind === 'waterskin' && (item.volume ?? 0) < WATERSKIN_VOLUME && healing >= 0 && ctx.level.map[hero.pos] === T.WELL) {
+        item.volume = WATERSKIN_VOLUME;
         ctx.level.wells.splice(healing, 1);
         ctx.level.map[hero.pos] = T.EMPTY_WELL;
         dropItem(ctx.floor, hero.pos, item);
@@ -661,7 +676,8 @@ function pickUp(ctx: Ctx, hero: Hero): void {
   const left: Item[] = [];
   for (const item of heap.items) {
     if (item.kind === 'dew') {
-      drinkDew(ctx, hero, item);
+      // Dewdrop.doPickUp: an unhurt hero with a full waterskin leaves it lying.
+      if (!pickUpDew(ctx, hero, heap.pos, item.qty)) left.push(item);
     } else if (outdatedCopy(hero, item)) {
       // MissileWeapon.doPickUp: a copy of a set upgraded since crumbles to dust.
       ctx.effects.push({ type: 'dust', hero: hero.id, item });
@@ -678,7 +694,7 @@ function pickUp(ctx: Ctx, hero: Hero): void {
       left.push(item);
     }
   }
-  if (left.length > 0) ctx.effects.push({ type: 'packFull', hero: hero.id });
+  if (left.some((item) => item.kind !== 'dew')) ctx.effects.push({ type: 'packFull', hero: hero.id });
   heap.items = left;
   if (left.length === 0) ctx.floor.heaps.splice(ctx.floor.heaps.indexOf(heap), 1);
 }
@@ -779,27 +795,16 @@ function brew(ctx: Ctx, pos: number, hero: Hero): void {
 export type MeatOutcome = 'hot' | 'legs' | 'unwell' | 'stuffed' | 'invisible' | 'barkskin' | 'refreshed' | 'better';
 
 /**
- * Food.execute: hunger goes away; warriors also get some health back and
- * mages a charge in every wand. Mystery meat (MysteryMeat) has a four in
- * five chance of disagreeing with the eater.
+ * Food.execute: the food's energy takes hunger away (Food.satisfy; Pixel Dungeon's warrior healed and
+ * mage recharged as they ate, which Shattered leaves to the talents). Mystery meat (MysteryMeat) has a
+ * four in five chance of disagreeing with the eater.
  */
 function eat(ctx: Ctx, hero: Hero, index: number): void {
   const item = hero.items[index]!;
   const kind = item.kind;
   if (--item.qty <= 0) hero.items.splice(index, 1);
-  hero.hunger = Math.min(Math.max(0, hero.hunger - itemDef(kind).energy!), STARVING);
+  affectHunger(ctx, hero, itemDef(kind).energy!);
   statsOf(hero).food++;
-  if (hero.heroClass === 'warrior' && hero.hp < hero.ht) {
-    const amount = Math.min(5, hero.ht - hero.hp);
-    hero.hp += amount;
-    ctx.effects.push({ type: 'healed', hero: hero.id, amount });
-  }
-  if (hero.heroClass === 'mage') {
-    // Belongings.charge: a charge more in every wand that is not full.
-    for (const wand of hero.items) {
-      if (wand.charges !== undefined && wand.charges < wandMaxCharges(wand)) wand.charges++;
-    }
-  }
   let outcome: MeatOutcome | null = null;
   if (kind === 'food.meat') {
     outcome = (['hot', 'legs', 'unwell', 'stuffed', null] as const)[ctx.rng.int(5)]!;
@@ -865,21 +870,6 @@ function rotberryRoar(ctx: Ctx, hero: Hero): void {
   ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'challenge', count: roused.length });
 }
 
-/** Dewdrop.doPickUp: a little health, more for the huntress; wasted on the unhurt. */
-function drinkDew(ctx: Ctx, hero: Hero, dew: Item): void {
-  // Dewdrop.doPickUp: unhurt, a hero with a dew vial that is not full keeps the dew for later.
-  const vial = hero.items.find((item) => item.kind === 'vial');
-  if (vial && hero.hp >= hero.ht && (vial.volume ?? 0) < DEW_VIAL_VOLUME) {
-    vial.volume = Math.min(DEW_VIAL_VOLUME, (vial.volume ?? 0) + dew.qty);
-    ctx.effects.push({ type: 'dewCollected', hero: hero.id, full: vial.volume >= DEW_VIAL_VOLUME });
-    return;
-  }
-  const value = 1 + Math.trunc((ctx.depth - 1) / 5) + (hero.heroClass === 'huntress' ? 1 : 0);
-  const amount = Math.max(0, Math.min(hero.ht - hero.hp, value * dew.qty));
-  hero.hp += amount;
-  ctx.effects.push({ type: 'dew', hero: hero.id, amount });
-}
-
 /**
  * InventoryScroll: the item a scroll of upgrade, enchantment or identify was
  * read on, found before the scroll leaves the pack (which moves the slots
@@ -930,17 +920,17 @@ function use(ctx: Ctx, hero: Hero, index: number, target: Item | undefined): voi
       break;
     }
     case 'potion.experience':
-      earnExp(ctx, hero, maxExp(hero) - hero.exp);
+      earnExp(ctx, hero, maxExp(hero) - hero.exp, 'potion');
       break;
     case 'potion.strength':
       hero.str++;
       ctx.effects.push({ type: 'strength', hero: hero.id });
       break;
     case 'potion.might':
-      // PotionOfMight: a point of strength, and five of health.
+      // PotionOfMight: a point of strength, and five of health for good (Hero.HTBoost).
       hero.str++;
-      hero.ht += 5;
-      hero.hp += 5;
+      hero.htBoost = (hero.htBoost ?? 0) + 5;
+      growHT(hero, 5, true);
       ctx.effects.push({ type: 'strength', hero: hero.id });
       break;
     case 'potion.mindVision':

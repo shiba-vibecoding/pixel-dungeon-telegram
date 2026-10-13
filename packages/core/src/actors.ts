@@ -6,20 +6,24 @@ import {
   meleeStr, surpriseShare, weaponAcc, weaponDefense, weaponDly, weaponRch, type WeaponStats, weaponStats,
 } from './weapons';
 import { isDart, missileMax, missileMin, missileStr, missileSurprise } from './missiles';
+import { type HeroClass, startingKit } from './heroclass';
+import { isStarving } from './hero';
 import type { Rng } from './rng';
 import { adjacent } from './level/geometry';
 import { T } from './level/terrain';
 import type { Action, PlanStep } from './world';
 
 /*
- * Heroes and monsters as plain data, with the numbers of the original:
- * starting kits (HeroClass, MeleeWeapon, Armor), Hero and Mob stats and the
- * sewer part of the Bestiary.
+ * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
+ * Dungeon has them (Hero: accuracy, evasion, damage and speed with what is
+ * worn; the kits are in heroclass.ts, the rest of the hero's rules in
+ * hero.ts), and the monsters' with the original's Bestiary.
  */
 
 const f32 = Math.fround;
 
-export type HeroClass = 'warrior' | 'mage' | 'rogue' | 'huntress';
+export type { HeroClass } from './heroclass';
+export { HUNGRY, isHungry, isStarving, STARVING } from './hero';
 
 /** HeroSubClass: the two ways each class can master with the Tome of Mastery. */
 export type SubClass = 'gladiator' | 'berserker' | 'battlemage' | 'warlock' | 'freerunner' | 'assassin' | 'sniper' | 'warden';
@@ -28,30 +32,6 @@ export const SUBCLASSES: Readonly<Record<HeroClass, readonly [SubClass, SubClass
   mage: ['battlemage', 'warlock'],
   rogue: ['freerunner', 'assassin'],
   huntress: ['sniper', 'warden'],
-};
-
-interface ClassKit {
-  ht: number;
-  str: number;
-  weapon: ItemKind;
-  /** Extra starting items and how many. */
-  items: ReadonlyArray<readonly [ItemKind, number]>;
-  /** A ring worn from the start, and its level. */
-  ring?: readonly [ItemKind, number];
-  stealth: number;
-}
-
-/**
- * HeroClass.initWarrior/initMage/initRogue/initHuntress, as to weapons (Shattered's): the warrior's worn shortsword
- * and three throwing stones, the rogue's dagger and three throwing knives, the huntress's studded gloves and spirit
- * bow. Seam: the mage's staff is the wands stream's (the studded gloves stand in), the rest of the kits the classes'.
- */
-export const HERO_CLASSES: Readonly<Record<HeroClass, ClassKit>> = {
-  warrior: { ht: 20, str: 11, weapon: 'weapon.wornShortsword', items: [['missile.throwingStone', 3]], stealth: 0 },
-  mage: { ht: 20, str: 10, weapon: 'weapon.gloves', items: [['wand.magicMissile', 1]], stealth: 0 },
-  // The rogue sets out wearing a ring of shadows +1.
-  rogue: { ht: 20, str: 10, weapon: 'weapon.dagger', items: [['missile.throwingKnife', 3]], ring: ['ring.shadows', 1], stealth: 0 },
-  huntress: { ht: 15, str: 10, weapon: 'weapon.gloves', items: [['spiritBow', 1]], stealth: 0 },
 };
 
 /** Backpack slots, equipment aside. */
@@ -64,7 +44,9 @@ export interface Hero {
   depth: number;
   pos: number;
   hp: number;
+  /** Hero.HT: 20, five more a level, and whatever potions of might added (htBoost); see hero.ts updateHT. */
   ht: number;
+  htBoost?: number;
   str: number;
   lvl: number;
   exp: number;
@@ -77,7 +59,7 @@ export interface Hero {
   intent: Action | null;
   /** Live turns (world.live): what the player has told the hero to do, done a turn at a time (see liveTick). */
   plan?: PlanStep[];
-  /** Time spent since the last regenerated hit point. */
+  /** Regeneration.partialRegen: health regained towards the next point. */
   regen: number;
   /** Caustic ooze from Goo: time since it last burned, or -1 when clean. Water washes it off. */
   ooze: number;
@@ -132,9 +114,18 @@ export interface Hero {
   levitating?: number;
   /** Turns left of breathing no gas (a potion of purity). */
   gasImmune?: number;
-  /** Hunger.level: 0 when fed, hungry from HUNGRY, starving at STARVING; and time towards its next step. */
+  /** Hunger.level: 0 when fed, hungry from HUNGRY, starving at STARVING (it grows a point a turn). */
   hunger: number;
+  /** Unused since Shattered's hunger (kept for the shape of older saves). */
   hungerTime: number;
+  /** Hunger.partialDamage: starvation's damage building up towards the next point. */
+  starve?: number;
+  /** Turns left of Bless (from experience at the level cap): a quarter more accurate and evasive. */
+  blessed?: number;
+  /** LockedFloor.left: on a boss's sealed floor, the turns passive healing goes on (see hero.ts). */
+  lockedFloor?: number;
+  /** BrokenSeal.WarriorShield: the shield left, the cooldown, turns without an enemy in sight, the shield as raised (seal.ts). */
+  sealShield?: { shield: number; cooldown: number; idle: number; initial: number };
   /** For the badges (Statistics): gold picked up, food eaten, potions brewed and piranhas slain this run. */
   stats?: RunStats;
   /** For the end of the run: monsters slain, and what dealt the killing blow. */
@@ -180,17 +171,18 @@ export interface PlayerInfo {
   heroClass: HeroClass;
 }
 
+/** A new hero (Hero, HeroClass.initHero): 20 health, 10 strength, the class's kit (heroclass.ts). */
 export function createHero(player: PlayerInfo, depth: number, pos: number, time: number): Hero {
-  const kit = HERO_CLASSES[player.heroClass];
+  const kit = startingKit(player.heroClass);
   return {
     id: player.id,
     name: player.name,
     heroClass: player.heroClass,
     depth,
     pos,
-    hp: kit.ht,
-    ht: kit.ht,
-    str: kit.str,
+    hp: 20,
+    ht: 20,
+    str: STARTING_STR,
     lvl: 1,
     exp: 0,
     attackSkill: 10,
@@ -199,11 +191,10 @@ export function createHero(player: PlayerInfo, depth: number, pos: number, time:
     intent: null,
     regen: 0,
     ooze: -1,
-    weapon: createItem(kit.weapon),
-    armor: createItem('armor.cloth'),
-    rings: kit.ring ? [createItem(kit.ring[0], 1, kit.ring[1])] : [],
-    // Everyone sets out with a ration of food (HeroClass.initCommon).
-    items: [...kit.items.map(([kind, qty]) => createItem(kind, qty)), createItem('food.ration')],
+    weapon: kit.weapon,
+    armor: kit.armor,
+    rings: kit.rings,
+    items: kit.items,
     gold: 0,
     mindVision: 0,
     invisible: 0,
@@ -229,6 +220,9 @@ export function createHero(player: PlayerInfo, depth: number, pos: number, time:
   };
 }
 
+/** Hero.STARTING_STR. */
+export const STARTING_STR = 10;
+
 export const isAlive = (char: { hp: number }): boolean => char.hp > 0;
 
 /** The levels of every worn ring of a kind, added up (several buffs of a kind stack in the original). */
@@ -238,19 +232,8 @@ export const ringBonus = (hero: Hero, kind: ItemKind): number =>
 /** Hero.STR: weakness takes two points of strength away while it lasts. */
 export const heroStr = (hero: Hero): number => hero.str - (hero.weakened > 0 ? 2 : 0);
 
-/* Hunger */
-
-export const HUNGRY = 260;
-export const STARVING = 360;
-/** Hunger grows by this much every this many turns; rogues go longer without food. */
-export const HUNGER_STEP = 10;
-export const hungerStep = (hero: Hero): number => (hero.heroClass === 'rogue' ? HUNGER_STEP * 1.2 : HUNGER_STEP);
-/** Hunger.act: how much hunger a step adds; a ring of satiety takes some away (or adds, if negative). */
-export const hungerGrowth = (hero: Hero): number => HUNGER_STEP - ringBonus(hero, 'ring.satiety');
-export const isStarving = (hero: Hero): boolean => hero.hunger >= STARVING;
 /** Fury.LEVEL: below this share of health, a berserker flies into a fury. */
 export const FURY_LEVEL = 0.4;
-export const isHungry = (hero: Hero): boolean => hero.hunger >= HUNGRY;
 
 /** The numbers of the weapon in hand, or of bare fists (RingOfForce.damageRoll without the ring: 1 to STR-8). */
 export function heroWeapon(hero: Hero): WeaponStats {
@@ -285,11 +268,14 @@ function accuracyFactor(hero: Hero, weapon: Item, targetPos?: number): number {
   return factor;
 }
 
+/** Char.hit with Bless: the blessed roll a quarter higher, attacking and defending alike. */
+const blessing = (hero: Hero): number => ((hero.blessed ?? 0) > 0 ? 1.25 : 1);
+
 /** Hero.attackSkill: with a weapon, times its accuracy factor; a ring of accuracy helps either way. */
 export function heroAttackSkill(hero: Hero, targetPos?: number, weapon: Strike = hero.weapon): number {
   // RingOfAccuracy: 1.4 times as accurate a level.
   const bonus = ringBonus(hero, 'ring.accuracy');
-  const accuracy = bonus === 0 ? 1 : f32(1.4 ** bonus);
+  const accuracy = f32((bonus === 0 ? 1 : f32(1.4 ** bonus)) * blessing(hero));
   if (!weapon) return Math.max(1, jround(f32(hero.attackSkill * accuracy)));
   return Math.max(1, jround(f32(f32(hero.attackSkill * accuracy) * accuracyFactor(hero, weapon, targetPos))));
 }
@@ -301,7 +287,7 @@ export function heroAttackSkill(hero: Hero, targetPos?: number, weapon: Strike =
 export function heroDefenseSkill(hero: Hero): number {
   // RingOfEvasion: 1.2 times as evasive a level.
   const bonus = ringBonus(hero, 'ring.evasion');
-  let evasion = f32(hero.defenseSkill * (bonus === 0 ? 1 : f32(1.2 ** bonus)));
+  let evasion = f32(f32(hero.defenseSkill * (bonus === 0 ? 1 : f32(1.2 ** bonus))) * blessing(hero));
   if (hero.paralysed > 0) evasion = f32(evasion / 2);
   if (hero.armor.glyph === 'stone') return 0;
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
@@ -417,19 +403,13 @@ export function heroSpeed(hero: Hero, footing?: Footing): number {
   return speed;
 }
 
-/** Chance to notice a hidden door or trap next to the hero, as Hero.updateAwareness. */
-export function awareness(hero: Hero): number {
-  return 1 - (hero.heroClass === 'rogue' ? 0.85 : 0.9) ** ((1 + Math.min(hero.lvl, 9)) * 0.5);
-}
-
-/** Hero.dr: the armour's, and a warden's bark. */
 /** A hero's armour at its most (Armor.DRMax, with the weapon's parrying and the bark at theirs), for what wants one figure. */
 export const heroArmor = (hero: Hero): number =>
   armorDrMax(hero.armor) + (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon' ? weaponDefense(hero.weapon) : 0) +
   Math.max(0, Math.ceil(hero.barkskin ?? 0));
 /** Hero.stealth: armour of obfuscation adds 1 and a third a level (Obfuscation.stealthBoost). */
 export const heroStealth = (hero: Hero): number =>
-  HERO_CLASSES[hero.heroClass].stealth + ringBonus(hero, 'ring.shadows') +
+  ringBonus(hero, 'ring.shadows') +
   (hero.armor.glyph === 'obfuscation' ? Math.fround(1 + gearLevel(hero.armor) / 3) : 0);
 export const maxExp = (hero: Hero): number => 5 + hero.lvl * 5;
 

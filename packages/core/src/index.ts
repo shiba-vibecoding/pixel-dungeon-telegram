@@ -7,6 +7,15 @@ export { Feeling, HeapType, type ItemSpawn, type ItemSpec, isBossDepth, LAST_SHO
 export { generateLevel, type Level, type RoomInfo } from './level/generate';
 export { discoverable, passable } from './level/flags';
 export * from './actors';
+export { KIT_SEAMS, startingKit, type StartingKit } from './heroclass';
+export {
+  affectHunger, earnExp, floorLocked, growHT, heroHT, isEnemy, MAX_LEVEL, maxExpFor, REGENERATION_DELAY, regenOn, TIME_TO_SEARCH, visibleEnemies,
+} from './hero';
+export {
+  canTransferGlyph, coolingDown, maxShield, offersSealTransfer, SHIELD_COOLDOWN, sealShield, type SealSource, shielding,
+} from './seal';
+export { journalNotes, LANDMARKS, type Landmark, type Note } from './journal';
+export { WATERSKIN_VOLUME } from './waterskin';
 export * from './items';
 export { type InventoryAction, isInventoryAction, shopkeeperBeside } from './inventory';
 export { trapAt, type TrapKind } from './traps';
@@ -34,7 +43,9 @@ export {
 export * from './protocol';
 export * from './version';
 export { durabilityOf, effectiveLevel, isBroken, maxDurability } from './wear';
-export { chargesKnown, cursedKnown, isIdentified, kindKnown, levelKnown, visiblyCursed } from './ident';
+export {
+  ARMOR_USES_TO_ID, chargesKnown, cursedKnown, isIdentified, kindKnown, levelKnown, RING_LEVELS_TO_ID, visiblyCursed, WEAPON_USES_TO_ID,
+} from './ident';
 export * from './shop';
 export * from './verify';
 export * from './badges';
@@ -48,4 +59,4 @@ export {
 } from './missiles';
 export { gearUpgradable, MISSILE_TIERS, WEAPON_TIERS } from './gear';
 export { canReach } from './throwing';
-export { isAlly, isEnemy } from './enchant';
+export { isAlly } from './enchant';

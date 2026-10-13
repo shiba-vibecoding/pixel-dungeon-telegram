@@ -138,7 +138,7 @@ describe('fighting through the sewers', () => {
       const result = act(world, 'p', { type: 'search' });
       expect(level.map[door]).toBe(T.DOOR);
       expect(result.ok && result.effects).toContainEqual({ type: 'discovered', depth, cell: door });
-      expect([2, 4]).toContain(hero.time);
+      expect(hero.time).toBe(2);
       checked++;
     }
     expect(checked).toBeGreaterThan(0);
