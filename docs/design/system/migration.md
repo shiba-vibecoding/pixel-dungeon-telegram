@@ -1794,3 +1794,81 @@ const camp = PD.camp(root, { scene: worn.camp ?? 'outdoor', season: seasonOf(new
 | `.pd-camp-card`, `.pd-offer-art.camp`, `.pd-camp-offer`, `.pd-camp-peek`, `.pd-camp-facts` | привалы в Марте |
 | `.with-face`, `.pd-camp-face`, `.pd-btn-label` | лицо на «Продолжить» |
 | `.pd-daily-left` | попытки и время под заголовком |
+
+
+## Монстры Shattered (v21)
+
+### Портреты
+
+`bestiary.png` (группа `Monsters`): ячейки 24×24, 11 в ряд. Номер — порядок в `PD.demo.best.keys`. Столбец `n % 11`, строка `⌊n / 11⌋`:
+
+```html
+<i class="pd-mob" style="--mx:8;--my:0"></i>              <!-- DM-100, ×2 = 48 px -->
+<i class="pd-mob x3" style="--mx:8;--my:0"></i>           <!-- ×3 = 72 px -->
+<i class="pd-mob silhouette" style="--mx:5;--my:2"></i>   <!-- не встречен -->
+```
+
+На карте этот же атлас годится для неподвижных портретов, но в игре у вас анимированные листы Shattered — атлас только для интерфейса.
+
+### Бестиарий
+
+```html
+<div class="pd-tabs compact shelf" role="tablist">
+  <button class="pd-tab" role="tab" aria-selected="false" aria-label="Зелья" title="Зелья"><i class="pd-item pd-tab-item" data-i="57"></i><span>Зелья</span></button>
+  … Свитки 44, Кольца 34, Палочки 50 …
+  <button class="pd-tab" role="tab" aria-selected="true" aria-label="Бестиарий" title="Бестиарий"><i class="pd-tab-ico bestiary"></i><span>Бестиарий</span></button>
+</div>
+<div class="pd-cat-count">Встречено 25 из 66 · убито 287</div>
+<div class="pd-scroll pd-best">
+  <section class="pd-best-group">
+    <header class="pd-best-head"><b>Тюрьма</b><span>глубины 6–9</span><em>5/5</em></header>
+    <div class="pd-best-grid" role="listbox" aria-label="Тюрьма">
+      <button class="pd-best-cell selected" role="option" aria-selected="true" aria-label="DM-100, убито 11"><i class="pd-mob" style="--mx:8;--my:0"></i><span class="pd-best-n">11</span></button>
+      <button class="pd-best-cell unseen" role="option" aria-selected="false" aria-label="Ещё не встречен"><i class="pd-mob silhouette" style="--mx:6;--my:1"></i></button>
+    </div>
+  </section>
+</div>
+<div class="pd-best-detail"><span class="pd-best-face"><i class="pd-mob x3" style="…"></i></span><span class="pd-best-text"><b>DM-100</b><small>Тюрьма · глубины 6–9 · Убито: 11</small><span>…</span></span></div>
+```
+
+Детали `.pd-best-detail` — вне прокрутки, под ней. Не встреченный — `.pd-best-detail.unseen`, силуэт ×3. «Убито:» — с неразрывным пробелом.
+
+### Ауры чемпионов
+
+На карте: за спрайтом, по центру спрайта, `globalCompositeOperation = 'lighter'`. Готовая отрисовка — `auraCanvas(цвет, лучей, радиус, шаг)` внутри `PD.demo.mobFx` в бандле. Шаг = `⌊t / 167⌋ mod 24`, угол = шаг × 15° + 45°. Кэшируйте 24 кадра на чемпиона. Цвета и лучи — в README `MobChampions`.
+
+Окно существа:
+
+```html
+<section class="pd-window pd-mob-window" role="dialog">
+  <header class="pd-window-head"><span class="pd-mob-face champ" style="--champ:#ff8800"><i class="pd-mob" …></i></span><div class="pd-titles"><h2 class="pd-heading">Гнолл-громила</h2><span class="pd-champ-tag" style="--champ:#ff8800">Огненный чемпион</span></div><button class="pd-close"></button></header>
+  <div class="pd-mob-hp"><div class="pd-bar" style="--v:.8"><span class="pd-bar-text">Здоровье 32/40</span></div></div>
+  <ul class="pd-mob-buffs"><li><i class="pd-mbuff large" style="--ix:4"></i><span><b style="color:#ff8800">Огненный чемпион</b>+25% урона вблизи…</span></li></ul>
+</section>
+```
+
+### Снаряды и лучи
+
+- Шар: кадр 8×8 из `mob-bolts.png` (или `wand-bolts.png` для огня и мороза) ×2, смена кадра 90 мс, полёт 600 мс, шлейф 4 квадрата 2×2 цвета снаряда.
+- Молния DM-100: ломаная из 5 отрезков, поперечный сдвиг до ±9 px, каждые 66 мс новая; три прохода — `#4a7aff` 3 px, `#ffffff` 1 px, `#bcd4ff` 1 px.
+- Лучи: текстура 16×8 из `mob-beams.png`, повернуть по направлению и класть подряд; прозрачность 1 → 0,66 → 0,33 за 500 мс. Смертельный взгляд — до стены за героем, световой луч грозового элементаля — на 60% дальше цели.
+- Злой глаз: 1 с зарядки — 6 точек 1×1 сходятся к глазу (`#e0a0ff`, `#ffffff`), потом луч.
+- Попадание: значок состояния 16×16 ×2 над героем поднимается 5 ступенями по 100 мс, гаснет; в HUD — `<button class="pd-buff"><i class="mob" style="--ix:1"></i></button>`.
+
+### Гуль и эбеновый мимик
+
+- `ghoul-fall.png`: 0 стоит, 1–2 падает, 3 лежит, 4 мёртв. Упавший держит кадр 3; пунктир к напарнику и точки ходов — README `MobGhoulMimic`. В окне — `<i class="pd-ghoul-fallen"></i>`, `.pd-bar.fallen`, `.pd-rise-pips`.
+- `ebony-hidden.png`: 0 — спрятан, 1 — вспышка (раз в 2,4 с на 133 мс), 2 — сундук, 3 — мимик. В окне — `<i class="pd-ebony-hidden"></i>` (вспышка — CSS-анимацией).
+
+### Состояния
+
+`.pd-buff i.mob` (7×7 ×3) и `.pd-mbuff`, `.pd-mbuff.large` (16×16 ×2), `--ix`: 0 уязвимость, 1 порча, 2 деградация, 3 слабость, 4–9 чемпионы. Окно — `.pd-window.narrow.pd-buff-window`.
+
+| Класс | Что это |
+| --- | --- |
+| `.pd-mob`, `.pd-mob.x3`, `.pd-mob.silhouette` | портрет существа |
+| `.pd-best`, `.pd-best-group`, `.pd-best-head`, `.pd-best-grid`, `.pd-best-cell(.unseen/.selected)`, `.pd-best-n`, `.pd-best-detail`, `.pd-best-face`, `.pd-best-text` | бестиарий |
+| `.pd-tab-item`, `.pd-tab-ico.bestiary` | значки подвкладок каталога |
+| `.pd-mob-window`, `.pd-mob-face(.champ)`, `.pd-champ-tag`, `.pd-mob-hp`, `.pd-mob-buffs` | окно существа |
+| `.pd-ghoul-fallen`, `.pd-bar.fallen`, `.pd-rise-pips`, `.pd-ebony-hidden` | гуль и мимик |
+| `.pd-buff i.mob`, `.pd-mbuff(.large)`, `.pd-buff-window` | состояния |
