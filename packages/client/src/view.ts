@@ -12,6 +12,7 @@ import { type Flight, flightOf } from './gearfx';
 import { type AnimName, type Assets, type CharSprite, duration, heroSprite } from './sprites';
 import { haptic } from './telegram';
 import { DEPTH_CARD_MS } from './cards';
+import { dressMob, mobEffect } from './mobfx';
 import { BOLT_MS_PER_CELL, wandFx } from './wandfx';
 import { SPELL_FRAMES, SPELL_LIFE, type Spell } from './spellfx';
 import { subclassName, tal, talentMessage, talentTitle } from './talenttext';
@@ -164,6 +165,13 @@ export interface Puppet {
   levitating?: boolean;
   /** Fallen into a chasm (a monster): when it began to drop out of sight, spinning and shrinking. */
   fallStart?: number;
+  /**
+   * Shattered's monsters (mobfx.ts): what it shows when standing about (an eye charging, a necromancer summoning, a
+   * ripper about to leap, a ghoul crumpled, a hidden mimic), a champion's aura, how faint it is drawn.
+   */
+  rest?: AnimName;
+  aura?: { color: string; rays: number };
+  alpha?: number;
   /** CharSprite's states (Shattered): FROZEN in a block of ice, CHILLED under falling snow, DARKENED (corruption, doom), SHIELDED in a halo. */
   frozen?: boolean;
   chilled?: boolean;
@@ -174,7 +182,15 @@ export interface Puppet {
   dim?: number;
   /** LotusSprite: how far its leaves fall about it (cells). */
   reach?: number;
+  /** A prismatic image: drawn from prismatic.png, its own glass figure with four colour phases (design v19). */
+  prismatic?: boolean;
+  /** An ally of the heroes: marked with a heart over its head (ally-heart.png, design v19). */
+  ally?: boolean;
 }
+
+/** The ethereal chains fly out in this long (design v19: ShMapFx), then pull in this long. */
+export const CHAIN_MS = 600;
+export const CHAIN_PULL_MS = 250;
 
 /** MobSprite.FALL_TIME: how long a monster takes to drop out of sight into a chasm. */
 export const FALL_MS = 1000;
@@ -318,6 +334,8 @@ export class View {
   depthCard: { depth: number; start: number; intro: boolean; title?: string; sub?: string; region?: number } | null = null;
   /** The arena's wave banner: its words, its kind, and when it shows (after a sinking card, if one is up). */
   waveCard: { title: string; sub: string; kind: '' | 'champions' | 'boss'; start: number } | null = null;
+  /** Beams and arcs for a moment (Shattered's Beam and Lightning): from a cell to a cell, in a colour, of a kind. */
+  beams: Array<{ from: number; to: number; start: number; duration: number; color: string; kind: 'beam' | 'lightning' | 'chain' }> = [];
   /** Thrown items and magic bolts in flight; `sprite` null for a bolt. */
   projectiles: Array<{
     from: number; to: number; start: number; duration: number; sprite: number | null; color?: string;
@@ -343,6 +361,7 @@ export class View {
     this.bossIntro = null;
     this.levelCard = null;
     this.projectiles = [];
+    this.beams = [];
     this.chains = [];
   }
 
@@ -495,6 +514,8 @@ export class View {
         place(mob.id, 'mirror', this.assets.heroes[twin.heroClass], false, mob.pos, mob.hp, mob.ht, false, false, true);
         this.puppets.get(mob.id)!.sprite = heroSprite(this.assets, twin.heroClass, this.looks[twin.id]?.skin);
         this.puppets.get(mob.id)!.row = itemDef(twin.armor.kind).tier ?? 0;
+        this.puppets.get(mob.id)!.prismatic = mob.kind === 'prismatic';
+        this.puppets.get(mob.id)!.ally = mob.kind === 'prismatic';
         continue;
       }
       place(mob.id, mob.kind, this.assets.mobs[mob.kind], false, mob.pos, mob.hp, mob.ht,
@@ -503,6 +524,7 @@ export class View {
       const puppet = this.puppets.get(mob.id)!;
       // WardSprite.updateTier: a ward drawn as its tier is (one a row of its sheet).
       if (mob.kind === 'ward') puppet.row = (mob.ward?.tier ?? 1) - 1;
+      puppet.ally = mob.ally === true && mob.kind !== 'ward' && mob.kind !== 'lotus';
       puppet.levitating = (mob.levitating ?? 0) > 0;
       puppet.burning = (mob.burning ?? 0) > 0;
       puppet.poisoned = (mob.poison ?? 0) > 0;
@@ -512,6 +534,18 @@ export class View {
         puppet.dim = mob.ward.tier <= 3 ? Math.max(0.2, 1 - mob.ward.zaps / (2 * mob.ward.tier - 1)) : 1;
       }
       if (mob.lotus) puppet.reach = mob.lotus.level;
+      dressMob(this.assets, puppet, mob, now);
+    }
+    // Ghouls lying crumpled (GhoulLifeLink), until they rise or die for good.
+    for (const link of world.floors[this.depth]?.downed ?? []) {
+      seen.add(link.mob.id);
+      const puppet = this.puppets.get(link.mob.id);
+      if (puppet && puppet.rest !== 'crumple') {
+        puppet.rest = 'crumple';
+        puppet.anim = 'crumple';
+        puppet.animStart = now;
+        puppet.hp = 0;
+      }
     }
     for (const [id, puppet] of this.puppets) {
       if (!seen.has(id) && (puppet.alive || now >= puppet.removeAt)) this.puppets.delete(id);
@@ -523,10 +557,11 @@ export class View {
       if (!puppet.alive) continue;
       const moving = now - puppet.moveStart < (puppet.moveDur ?? this.stepMs) + WALK_GRACE_MS || (puppet.queue?.length ?? 0) > 0;
       if (puppet.anim === 'run' && !moving) {
-        puppet.anim = 'idle';
+        puppet.anim = puppet.rest ?? 'idle';
         puppet.animStart = now;
-      } else if (puppet.anim !== 'idle' && puppet.anim !== 'run' && now - puppet.animStart > duration(puppet.sprite.anims[puppet.anim])) {
-        puppet.anim = moving ? 'run' : 'idle';
+      } else if (puppet.anim !== (puppet.rest ?? 'idle') && puppet.anim !== 'run' && (!puppet.sprite.anims[puppet.anim].loop || puppet.anim === 'idle') &&
+        now - puppet.animStart > duration(puppet.sprite.anims[puppet.anim])) {
+        puppet.anim = moving ? 'run' : puppet.rest ?? 'idle';
         puppet.animStart = now;
       }
     }
@@ -534,9 +569,10 @@ export class View {
     this.spells = this.spells.filter((spell) => now - spell.start < SPELL_LIFE);
     this.flashes = this.flashes.filter((flash) => now - flash.start < (flash.duration ?? 600));
     this.projectiles = this.projectiles.filter((p) => now - p.start < p.duration);
+    this.beams = this.beams.filter((b) => now - b.start < b.duration);
   }
 
-  private shoot(
+  shoot(
     from: number, to: number, sprite: number | null, now: number, color?: string, trail?: string, wide?: boolean, crossbow = false,
   ): void {
     const cells = Math.max(Math.abs(cellX(to) - cellX(from)), Math.abs(cellY(to) - cellY(from)));
@@ -622,14 +658,14 @@ export class View {
   }
 
   /** Where a character is, world pixels (its middle), for sounds that come from it. */
-  private placeOf(id: string, now: number): { x: number; y: number } | undefined {
+  placeOf(id: string, now: number): { x: number; y: number } | undefined {
     const puppet = this.puppets.get(id);
     if (!puppet) return undefined;
     const { x, y } = this.position(puppet, now);
     return { x: x + TILE / 2, y: y + TILE / 2 };
   }
 
-  private float(id: string, text: string, color: string, now: number, word = false): void {
+  float(id: string, text: string, color: string, now: number, word = false): void {
     const puppet = this.puppets.get(id);
     if (!puppet) return;
     const { x, y } = this.position(puppet, now);
@@ -680,7 +716,9 @@ export class View {
           const attacker = this.puppets.get(effect.attacker);
           const target = this.puppets.get(effect.target);
           if (attacker) {
-            attacker.anim = 'attack';
+            // MonkSprite's kick, RipperSprite's stab: now and then the other way to strike.
+            attacker.anim = attacker.anim === 'zap' && now - attacker.animStart < 60 ? 'zap'
+              : attacker.sprite.altAttack && Math.random() < attacker.sprite.altAttack ? 'attack2' : 'attack';
             attacker.animStart = now;
             if (target && cellX(target.to) !== cellX(attacker.to)) attacker.flip = cellX(target.to) < cellX(attacker.to);
           }
@@ -1045,6 +1083,10 @@ export class View {
             audio.play(crossbow ? 'atk_crossbow' : 'miss', crossbow ? 1 : 1.5, 0.6, cellMiddle(effect.from));
           }
           break;
+        case 'mobZap': case 'mobSays': case 'afflicted': case 'mobHealed': case 'arcs': case 'summoning': case 'summoned':
+        case 'crumpled': case 'mobTeleported': case 'gathering': case 'charging': case 'leapReady': case 'escaped': case 'champion':
+          mobEffect(this, effect, world, myId, now);
+          break;
         case 'zapped': {
           const kind = effect.bolt ?? 'magic';
           // (The blow it strikes next is the bolt's: its impact sounds as it lands, below.)
@@ -1368,8 +1410,9 @@ export class View {
           break;
         case 'mimic':
           if (effect.depth !== this.depth) break;
-          this.say(t.isMimic, COLORS.negative, now);
-          audio.play('mimic');
+          // Mimic.stopHiding: «That chest is a mimic!», with its own sound.
+          this.say(mobKind(effect.depth, effect.mob, 'mimic') === 'ebonyMimic' ? t.mobLines.ebonyReveal : t.mobLines.mimicReveal, COLORS.negative, now);
+          audio.play('mimic', mobKind(effect.depth, effect.mob, 'mimic') === 'crystalMimic' ? 1.25 : 1);
           if (effect.hero === myId) haptic('hurt');
           break;
         case 'charmed':
@@ -1726,12 +1769,12 @@ export class View {
           this.busy(effect.hero, now);
           break;
         case 'chained':
-          // EtherealChains: Sounds.CHAINS, and the ethereal chain thrown out (Chains: 200 ms, and 50 a cell).
+          // EtherealChains: Sounds.CHAINS, and the ethereal chain thrown out (design v19: links fly out in 600 ms).
           if (effect.depth !== this.depth) break;
           audio.play('chains', 1, 1, cellMiddle(effect.from));
           this.chains.push({
             from: effect.from, to: effect.to, start: now,
-            duration: 200 + (Math.hypot(cellX(effect.to) - cellX(effect.from), cellY(effect.to) - cellY(effect.from)) * TILE * 1000) / 320,
+            duration: CHAIN_MS + CHAIN_PULL_MS,
           });
           break;
         case 'ghostSummoned':

@@ -573,7 +573,7 @@
         '<section class="pd-set-group"><h3 class="pd-set-head">' + L.screen + '</h3><div class="pd-set-row stack"><span class="pd-info">' + L.fx + '</span>' + seg(L.fxOpts, fx) + '<p class="pd-note">' + L.fxNote[fx] + '</p></div>' + sw(L.full, false) +
         '<div class="pd-set-row"><span class="pd-info">' + L.lang + '</span>' + seg([['ru', 'Русский'], ['en', 'English']], lang || 'ru', 'inline') + '</div></section></div>' +
         '<div class="pd-col">' +
-        '<section class="pd-set-group"><h3 class="pd-set-head">' + L.more + '</h3><button class="pd-linkrow"><span>' + L.about + '</span></button><button class="pd-linkrow ext"><span>' + L.privacy + '</span></button><button class="pd-linkrow ext"><span>' + L.terms + '</span></button></section>' +
+        '<section class="pd-set-group"><h3 class="pd-set-head">' + L.more + '</h3><button class="pd-linkrow"><span>' + L.about + '</span></button><button class="pd-linkrow report"><i class="pd-icon" style="width:24px;height:24px;background-image:var(--spr-report)"></i><span>' + (lang === 'en' ? 'Report a problem' : 'Сообщить о проблеме') + '</span></button><button class="pd-linkrow ext"><span>' + L.privacy + '</span></button><button class="pd-linkrow ext"><span>' + L.terms + '</span></button></section>' +
         '<section class="pd-set-group danger"><button class="pd-button danger">' + L.reset + '</button></section></div>' +
         '</div></section>';
     },
@@ -895,7 +895,7 @@
       prize: ['Кубок дня', 'Медаль недели'], cut: 'Медали недели — места 1–10', timer: { daily: 'Доска закроется через <b>5 ч 12 мин</b> · награды придут почтой', week: 'Неделя закроется через <b>2 дн 7 ч</b> · медали в понедельник' },
       placeOf: function (n, m) { return 'Ваше место: ' + n + ' из ' + m; }, cls: ['Воин', 'Маг', 'Разбойник', 'Охотница'], lvl: 'ур.', depth: 'гл.', wave: 'волна',
       checked: 'Проверено сервером', checking: 'Сервер проверяет забег…', record: 'Новый личный рекорд!', unchecked: 'Вне рейтинга: сыграно без сервера', places: [['#3', 'Неделя', 'week', 1], ['#12', 'Лучшие', '', 0], ['#8', 'День', 'gold', 0]],
-      shelf: [['gold', 'День', '#1'], ['silver', 'День', '#2'], ['bronze', 'День', '#3'], ['week', 'Неделя', '#4'], ['arena', 'Арена', '#7']] },
+      shelf: [['pioneer', 'Перво&shy;проходец', '★'], ['gold', 'День', '#1'], ['silver', 'День', '#2'], ['bronze', 'День', '#3'], ['week', 'Неделя', '#4']] },
     en: { streak: function (n) { return n + ' ' + (n === 1 ? 'day' : 'days') + ' in a row'; }, streakNone: 'Play the daily dungeon to start a streak', best: 'Best', games: 'Runs', today: 'Today', fresh: 'Your first run is ahead',
       daily: 'Daily dungeon', dailyOpen: 'The same dungeon for everyone; one attempt counts.', dailyDone: 'Today’s attempt is played. Come back tomorrow or practise.', descend: 'Descend', train: 'Practice', board: 'Day’s board', open: '1 attempt', done: 'played', of: function (n, m) { return 'of ' + m; },
       play: 'Continue', playMeta: 'Warrior, level 7 · depth 9', newGame: 'New game', challenges: 'Challenges', arena: 'Wave arena', arenaSub: 'best: <b>wave 12</b>', rating: 'Rankings', mart: 'Pixel-Mart',
@@ -904,7 +904,7 @@
       prize: ['Cup of the day', 'Week medal'], cut: 'Week medals — places 1–10', timer: { daily: 'The board closes in <b>5 h 12 min</b> · prizes come by mail', week: 'The week closes in <b>2 d 7 h</b> · medals on Monday' },
       placeOf: function (n, m) { return 'Your place: ' + n + ' of ' + m; }, cls: ['Warrior', 'Mage', 'Rogue', 'Huntress'], lvl: 'lv', depth: 'd', wave: 'wave',
       checked: 'Checked by the server', checking: 'The server is checking the run…', record: 'New personal best!', unchecked: 'Unranked: played without the server', places: [['#3', 'Week', 'week', 1], ['#12', 'Best', '', 0], ['#8', 'Day', 'gold', 0]],
-      shelf: [['gold', 'Day', '#1'], ['silver', 'Day', '#2'], ['bronze', 'Day', '#3'], ['week', 'Week', '#4'], ['arena', 'Arena', '#7']] }
+      shelf: [['pioneer', 'Pioneer', '★'], ['gold', 'Day', '#1'], ['silver', 'Day', '#2'], ['bronze', 'Day', '#3'], ['week', 'Week', '#4']] }
   };
   var NAMES = ['Ёжик', 'Morgana', 'Тень_77', 'dwarf_slayer', 'Аня', 'Shiba', 'Гоша', 'Lumen', 'Кот-Учёный', 'nyx', 'Боря', 'Rook', 'Сова', 'mira_k', 'Стрелок', 'Pixel', 'Вера', 'tengu_main', 'Зоя', 'Ash'];
   PD.demo.profile = function (lang, o) {
@@ -953,7 +953,7 @@
       body = '<div class="pd-ranks">' + list + '</div>' + (me > rows ? '<div class="pd-ranks-me"><div class="pd-ranks-gap">· · ·</div>' + rankRow(L, me, me, tab, false) + '<div class="pd-board-place">' + L.placeOf(me, total) + '</div></div>' : '<div class="pd-ranks-me"><div class="pd-board-place">' + L.placeOf(me, total) + '</div></div>');
     }
     var icon = tab === 'daily' ? 'gold' : tab === 'week' ? 'week' : tab === 'arena' ? 'arena' : '';
-    return '<section class="pd-window pd-boards-window" role="dialog" aria-label="' + L.title + '"><div class="pd-window-head"><div class="pd-titles"><h2 class="pd-heading">' + L.title + '</h2></div><button class="pd-close" aria-label="×"></button></div>' +
+    return '<section class="pd-window pd-boards-window" role="dialog" aria-label="' + L.title + '"><div class="pd-window-head"><div class="pd-titles"><h2 class="pd-heading">' + L.title + '</h2></div><button class="pd-help" aria-label="' + (L === RT.en ? 'Board rules' : 'Правила доски') + '">?</button><button class="pd-close" aria-label="×"></button></div>' +
       '<div class="pd-tabs compact" role="tablist">' + L.tabs.map(function (t) { return '<button class="pd-tab" role="tab" aria-selected="' + (t[0] === tab) + '">' + t[1] + '</button>'; }).join('') + '</div>' +
       '<p class="pd-board-note">' + (icon ? '<i class="pd-tro ' + icon + '"></i>' : '') + L.note[tab] + '</p>' + (L.timer[tab] ? '<p class="pd-board-timer"><i></i>' + L.timer[tab] + '</p>' : '') + '<div class="pd-scroll pd-boards">' + body + '</div></section>';
   };
@@ -1222,11 +1222,13 @@
   PD.camp = function (el, o) {
     o = o || {}; var lang = o.lang || 'ru', T = CAMPT[lang];
     var W = 94, H = 203, sc = o.scale || 4, crop = o.crop || [0, 0, W, H];
+    /* o.fill: сцена дорисовывается до краёв el — по бокам отражением краёв с уходом в темноту, сверху небом/сводом, снизу землёй */
+    if (o.fill) { var ex = Math.max(0, Math.ceil(((el.clientWidth || W * sc) / sc - W) / 2)), et = Math.ceil((el.clientHeight || H * sc) / sc / 2); crop = [-ex, -et, W + 2 * ex, H + et + 24]; }
     var cv = document.createElement('canvas'); cv.width = crop[2]; cv.height = crop[3]; cv.className = 'pd-camp-canvas';
     cv.style.width = crop[2] * sc + 'px'; cv.style.height = crop[3] * sc + 'px';
-    el.classList.add('pd-camp'); el.insertBefore(cv, el.firstChild);
+    el.classList.add('pd-camp'); el.insertBefore(cv, el.firstChild); if (o.fill) cv.style.top = crop[1] * sc + 'px';
     var ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
-    var layer = document.createElement('div'); layer.className = 'pd-camp-layer'; layer.style.width = cv.style.width; layer.style.height = cv.style.height; el.insertBefore(layer, cv.nextSibling);
+    var layer = document.createElement('div'); layer.className = 'pd-camp-layer'; layer.style.width = cv.style.width; layer.style.height = cv.style.height; if (o.fill) layer.style.top = crop[1] * sc + 'px'; el.insertBefore(layer, cv.nextSibling);
     var st = { scene: o.scene || 'outdoor', season: o.season || 'summer', hero: o.hero || 0, skin: o.skin || null, effect: o.effect || null };
     var S, bgKey, lights = [], stars = [], parts = [], R = rng(7), t0 = performance.now(), last = t0, taps = [], mode = 'idle', modeT = 0, next = null, face = -1, raf = 0, bubbleT = 0, sayI = 0;
     var heroBtn = document.createElement('button'); heroBtn.className = 'pd-camp-hero';
@@ -1252,6 +1254,23 @@
       var c = document.createElement('canvas'); c.width = W; c.height = H; var g = c.getContext('2d'); g.drawImage(im, 0, 0);
       if (!S.sky) return; var d = g.getImageData(0, 0, W, S.sky).data;
       for (var i = 0; i < d.length; i += 4) if (d[i] === 232 && d[i + 1] === 226 && d[i + 2] === 200) stars.push([(i / 4) % W, Math.floor(i / 4 / W), R() * 9]);
+    }
+    var EXT = {};
+    function extBg(k) {
+      if (EXT[k]) return EXT[k]; var im = img2(k); if (!im.complete || !im.naturalWidth) return null;
+      var cw = crop[2], ch = crop[3], ox = -crop[0], oy = -crop[1], c = document.createElement('canvas'); c.width = cw; c.height = ch; var g = c.getContext('2d');
+      g.drawImage(im, ox, oy); var d = g.getImageData(0, 0, cw, ch), a = d.data, x, y, i, j, P = 2 * W, rr = rng(11);
+      var best = 0, top = [11, 11, 9]; /* сверху — самый тёмный цвет первой строки: небо, свод */
+      for (x = 0; x < W; x++) { i = (oy * cw + ox + x) * 4; var lum = a[i] + a[i + 1] + a[i + 2]; if (!x || lum < best) { best = lum; top = [a[i], a[i + 1], a[i + 2]]; } }
+      for (y = oy; y < oy + H; y++) for (x = 0; x < cw; x++) { var sx = x - ox; if (sx >= 0 && sx < W) continue; var m = ((sx % P) + P) % P; m = m < W ? m : P - 1 - m; i = (y * cw + x) * 4; j = (y * cw + ox + m) * 4; a[i] = a[j]; a[i + 1] = a[j + 1]; a[i + 2] = a[j + 2]; a[i + 3] = 255; }
+      for (y = 0; y < ch; y++) { if (y >= oy && y < oy + H) continue; for (x = 0; x < cw; x++) { i = (y * cw + x) * 4;
+        if (y < oy) { var st = S.sky && rr() < .012; a[i] = st ? 232 : top[0]; a[i + 1] = st ? 226 : top[1]; a[i + 2] = st ? 200 : top[2]; }
+        else { j = ((2 * (oy + H) - 1 - y) * cw + x) * 4; a[i] = a[j]; a[i + 1] = a[j + 1]; a[i + 2] = a[j + 2]; }
+        a[i + 3] = 255; } }
+      for (y = 0; y < ch; y++) for (x = 0; x < cw; x++) { var dd = x < ox ? ox - x : x >= ox + W ? x - ox - W + 1 : 0; if (dd <= 4) continue;
+        var kk = Math.min(1, (dd - 4) / 26), th = (BAY[(y % 4) * 4 + x % 4] + .5) / 16; i = (y * cw + x) * 4;
+        if (th < kk) { a[i] = 11; a[i + 1] = 11; a[i + 2] = 9; } else { a[i] = Math.round(a[i] * (1 - .4 * kk)); a[i + 1] = Math.round(a[i + 1] * (1 - .4 * kk)); a[i + 2] = Math.round(a[i + 2] * (1 - .35 * kk)); } }
+      g.putImageData(d, 0, 0); return (EXT[k] = c);
     }
     var IMG = {}; function img2(k) { if (!IMG[k]) { IMG[k] = new Image(); IMG[k].src = CAMPIMG[k]; } return IMG[k]; }
     var BLINK = {};
@@ -1281,8 +1300,8 @@
       var n;
       /* искры костра */
       if (R() < dt * 0.008) parts.push({ k: 'spark', x: FIRE[0] + (R() * 6 - 3), y: FIRE[1] - 10, vx: (R() - .5) * .006, vy: -.018 - R() * .012, a: 0, l: 700 + R() * 900 });
-      if (st.scene === 'outdoor' && st.season === 'winter' && R() < dt * 0.03) parts.push({ k: 'snow', x: R() * W, y: -2, vx: (R() - .5) * .004, vy: .012 + R() * .01, a: 0, l: 20000, s: R() < .2 ? 2 : 1 });
-      if (st.scene === 'outdoor' && st.season === 'autumn' && R() < dt * 0.0025) parts.push({ k: 'leaf', x: R() * W, y: 40 + R() * 30, vx: .008 + R() * .006, vy: .006 + R() * .005, a: 0, l: 9000, c: ['#d8682a', '#b8402a', '#e0a030'][Math.floor(R() * 3)], ph: R() * 6 });
+      if (st.scene === 'outdoor' && st.season === 'winter' && R() < dt * 0.03) parts.push({ k: 'snow', x: crop[0] + R() * crop[2], y: crop[1] - 2, vx: (R() - .5) * .004, vy: .012 + R() * .01, a: 0, l: 20000, s: R() < .2 ? 2 : 1 });
+      if (st.scene === 'outdoor' && st.season === 'autumn' && R() < dt * 0.0025) parts.push({ k: 'leaf', x: crop[0] + R() * crop[2], y: 40 + R() * 30, vx: .008 + R() * .006, vy: .006 + R() * .005, a: 0, l: 9000, c: ['#d8682a', '#b8402a', '#e0a030'][Math.floor(R() * 3)], ph: R() * 6 });
       if (st.scene === 'outdoor' && st.season === 'summer' && R() < dt * 0.00012) parts.push({ k: 'shoot', x: 10 + R() * 50, y: 4 + R() * 16, vx: .07, vy: .025, a: 0, l: 420 });
       if (S.motes && R() < dt * 0.004) parts.push({ k: 'mote', x: R() * W, y: 60 + R() * 70, vx: (R() - .5) * .003, vy: -.004 - R() * .004, a: 0, l: 3000 + R() * 3000, c: S.motes });
       if (st.effect === 'sparks' && R() < dt * 0.006) parts.push({ k: 'twinkle', x: HERO[0] - 7 + R() * 14, y: HERO[1] - 18 + R() * 16, vx: 0, vy: -.002, a: 0, l: 520 });
@@ -1314,7 +1333,7 @@
       spawn(now, dt);
       var bg = img2(bgKey);
       ctx.clearRect(0, 0, cv.width, cv.height);
-      if (bg.complete && bg.naturalWidth) ctx.drawImage(bg, -crop[0], -crop[1]);
+      if (o.fill) { var eb = extBg(bgKey); if (eb) ctx.drawImage(eb, 0, 0); } else if (bg.complete && bg.naturalWidth) ctx.drawImage(bg, -crop[0], -crop[1]);
       stars.forEach(function (s) { var ph = (t / 1000 + s[2]) % 9; if (ph < .5) { ctx.fillStyle = '#5c628f'; ctx.fillRect(s[0] - crop[0], s[1] - crop[1], 1, 1); } else if (ph > 8.4) { ctx.fillStyle = 'rgba(232,226,200,.45)'; ctx.fillRect(s[0] - 1 - crop[0], s[1] - crop[1], 3, 1); ctx.fillRect(s[0] - crop[0], s[1] - 1 - crop[1], 1, 3); ctx.fillStyle = '#ffffff'; ctx.fillRect(s[0] - crop[0], s[1] - crop[1], 1, 1); } });
       var tf = img2('torch'), ff = img2('fire');
       S.torches.forEach(function (tc, i) { if (tf.complete) ctx.drawImage(tf, (Math.floor(t / 130) + i * 2) % 4 * 5, 0, 5, 7, tc[0] - 2 - crop[0], tc[1] - 7 - crop[1], 5, 7); });
@@ -1352,19 +1371,22 @@
     if (o.demo === 'tap') { setTimeout(tap, 300); }
     if (o.say) say(o.say, 1e9);
     raf = requestAnimationFrame(frame);
-    return { shift: function (y) { cv.style.top = y + 'px'; layer.style.top = y + 'px'; }, tap: tap, swipe: swipe, setHero: function (i) { st.hero = i; label.querySelector('span').textContent = T.cls[i]; }, setSeason: function (s) { st.season = s; setScene(); }, stop: function () { cancelAnimationFrame(raf); } };
+    return { ext: o.fill ? -crop[1] * sc : 0, shift: function (y) { cv.style.top = y + crop[1] * sc * !!o.fill + 'px'; layer.style.top = y + crop[1] * sc * !!o.fill + 'px'; }, tap: tap, swipe: swipe, setHero: function (i) { st.hero = i; label.querySelector('span').textContent = T.cls[i]; }, setSeason: function (s) { st.season = s; setScene(); }, stop: function () { cancelAnimationFrame(raf); } };
   };
 
   /* ---------- Привал целиком: сцена + карточка игрока + значки по краям + нижняя панель ---------- */
   var CAMPUI = {
     ru: { name: 'QA', streak: function (n) { return RT.ru.streak(n); }, best: 'Рекорд', games: 'Забегов', quests: 'Задания', mail: 'Почта', ranks: 'Рейтинг', mart: 'Март', prefs: 'Настройки',
-      daily: 'Подземелье дня', open: '1 попытка', rulesK: 'Сегодня:', hard: 'Во тьму', boon: 'Припасы', boonInfo: '2 зелья лечения и паёк', play: 'Продолжить', playMeta: 'Воин, уровень 7 · глубина 9', neu: 'Новая игра', ch: 'Испытания', descend: 'Спуститься', board: 'Таблица дня' },
+      daily: 'Подземелье дня', open: '1 попытка', rulesK: 'Сегодня:', hard: 'Во тьму', boon: 'Припасы', boonInfo: '2 зелья лечения и паёк', play: 'Продолжить', playMeta: 'Воин · ур. 7 · глубина 9', neu: 'Новая игра', ch: 'Испытания', descend: 'Спуститься', board: 'Таблица дня', left: 'ещё 5 ч' },
     en: { name: 'QA', streak: function (n) { return RT.en.streak(n); }, best: 'Best', games: 'Runs', quests: 'Quests', mail: 'Mail', ranks: 'Rankings', mart: 'Mart', prefs: 'Settings',
-      daily: 'Daily dungeon', open: '1 attempt', rulesK: 'Today:', hard: 'Into darkness', boon: 'Supplies', boonInfo: '2 potions of healing and a ration', play: 'Continue', playMeta: 'Warrior, level 7 · depth 9', neu: 'New game', ch: 'Challenges', descend: 'Descend', board: 'Day’s board' }
+      daily: 'Daily dungeon', open: '1 attempt', rulesK: 'Today:', hard: 'Into darkness', boon: 'Supplies', boonInfo: '2 potions of healing and a ration', play: 'Continue', playMeta: 'Warrior · lv 7 · depth 9', neu: 'New game', ch: 'Challenges', descend: 'Descend', board: 'Day’s board', left: '5 h left' }
   };
   PD.demo.campScreen = function (el, o) {
     o = o || {}; var lang = o.lang || 'ru', L = CAMPUI[lang], n = o.streak == null ? 12 : o.streak;
-    var cam = PD.camp(el, o);
+    if (o.fill == null) o.fill = true;
+    var cam = PD.camp(el, o), sv = o.saved == null ? (o.hero || 0) : o.saved, svSkin = o.saved == null ? o.skin : o.savedSkin;
+    var faceI = sv > 3 && svSkin ? '<i class="skin" style="--av:' + ((sv - 4) * 3 + ['ash', 'royal', 'shadow'].indexOf(svSkin)) + '"></i>' : '<i style="--av:' + sv + '"></i>';
+    var hardN = o.hardName || L.hard, hardC = o.hardC == null ? 5 : o.hardC, boonN = o.boonName || L.boon, boonI = o.boonI == null ? 56 : o.boonI;
     var ui = document.createElement('div'); ui.className = 'pd-camp-ui';
     var icon = function (k, label, count) { return '<button class="pd-camp-icon ' + k + '" aria-label="' + label + (count ? ', ' + count : '') + '" title="' + label + '"><i></i>' + (count ? '<span class="pd-count' + (count === '•' ? ' dot' : '') + '">' + (count === '•' ? '' : count) + '</span>' : '') + '</button>'; };
     ui.innerHTML = '<div class="pd-camp-top"><button class="pd-profile framed" aria-label="' + L.ranks + '"><span class="pd-profile-face' + (o.frame ? ' frame-' + o.frame : '') + '">' + (o.hero > 3 && o.skin ? '<i class="skin" style="--av:' + ((o.hero - 4) * 3 + ['ash', 'royal', 'shadow'].indexOf(o.skin)) + '"></i>' : '<i style="--av:' + (o.hero || 0) + '"></i>') + '</span>' +
@@ -1372,14 +1394,15 @@
         '<span class="pd-profile-side"><span class="pd-counter frost"><i class="pd-tro frost"></i>1</span><span class="pd-counter trophies"><i class="pd-tro gold"></i>3</span></span></button></div>' +
       '<div class="pd-camp-edges"><nav class="pd-camp-edge left">' + (o.quests ? icon('quests', L.quests, o.quests) : '') + icon('mail', L.mail, o.mail == null ? '3' : o.mail) + '</nav>' +
         '<nav class="pd-camp-edge right">' + icon('ranks', L.ranks) + icon('mart', L.mart) + icon('prefs', L.prefs) + '</nav></div>' +
-      '<div class="pd-camp-sheet"><div class="pd-daily compact"><i class="pd-icon" style="background-image:var(--spr-stairs)"></i><div class="pd-daily-title"><h3>' + L.daily + '</h3></div>' +
-        '<div class="pd-daily-rules" aria-label="' + L.rulesK + ' ' + L.hard + ', ' + L.boon + ' — ' + L.boonInfo + '"><span class="bad"><i class="pd-ch-mini" style="--c:5"></i>' + L.hard + '</span><span class="boon" title="' + L.boonInfo + '"><i class="pd-item" data-i="56"></i>' + L.boon + '</span><span class="pd-chip">' + L.open + '</span></div>' +
+      '<div class="pd-camp-sheet"><div class="pd-daily compact"><i class="pd-icon" style="background-image:var(--spr-stairs)"></i><div class="pd-daily-title"><h3>' + L.daily + '</h3>' + (o.oldRules ? '' : '<small class="pd-daily-left">' + L.open + ' · ' + L.left + '</small>') + '</div>' +
+        '<div class="pd-daily-rules" aria-label="' + L.rulesK + ' ' + hardN + ', ' + boonN + ' — ' + L.boonInfo + '"><span class="bad"><i class="pd-ch-mini" style="--c:' + hardC + '"></i>' + hardN + '</span><span class="boon" title="' + L.boonInfo + '"><i class="pd-item" data-i="' + boonI + '"></i>' + boonN + '</span>' + (o.oldRules ? '<span class="pd-chip">' + L.open + '</span>' : '') + '</div>' +
         '<button class="pd-button">' + L.descend + '</button></div>' +
-        '<div class="pd-actions"><button class="pd-button primary big stacked">' + L.play + '<span class="pd-btn-sub">' + L.playMeta + '</span></button>' +
+        '<div class="pd-actions">' + (o.face === false ? '<button class="pd-button primary big stacked">' + L.play + '<span class="pd-btn-sub">' + L.playMeta + '</span></button>' :
+          '<button class="pd-button primary big stacked with-face"><span class="pd-camp-face" aria-hidden="true">' + faceI + '</span><span class="pd-btn-label">' + L.play + '</span><span class="pd-btn-sub">' + (o.playMeta || L.playMeta) + '</span></button>') +
         '<div class="pd-row"><button class="pd-button">' + L.neu + '</button><button class="pd-button pd-ch-btn"><i class="pd-icon" style="width:24px;height:24px;background-image:var(--spr-challenge-off)"></i>' + L.ch + '</button></div></div></div>';
     el.appendChild(ui); PD.sprite(ui);
     /* низкий экран: сцена поднимается, чтобы ноги героя стояли на 16 px выше панели */
-    var fit = function () { var top = ui.querySelector('.pd-camp-sheet').getBoundingClientRect().top - el.getBoundingClientRect().top; cam.shift(Math.min(0, Math.round(top - 16 - 129 * 4))); };
+    var fit = function () { var top = ui.querySelector('.pd-camp-sheet').getBoundingClientRect().top - el.getBoundingClientRect().top; cam.shift(Math.min(cam.ext, Math.round(top - 16 - 129 * 4))); };
     fit(); if (window.ResizeObserver) new ResizeObserver(fit).observe(el);
     return cam;
   };
@@ -1419,6 +1442,7 @@
     o = o || {}; var L = MAIL[lang || 'ru'], claimed = o.claimed || [3];
     var gift = function (g) { return '<span class="pd-gift">' + (g[0] === 'stars' ? '<i class="pd-icon" style="width:14px;height:14px;background-image:var(--spr-stars)"></i><span class="price">' + g[1] + '</span>' : g[0] === 'frame' ? '<i class="pd-icon" style="width:16px;height:16px;border:4px solid transparent;box-sizing:border-box;border-image:var(--spr-frame-shadow) 4 / 4px"></i>' + g[1] : '<i class="pd-tro x1 ' + g[0].split(' ')[1] + '"></i>' + g[1]) + '</span>'; };
     var rows = o.empty ? '<p class="pd-mail-empty">' + L.empty + '</p>' : L.l.map(function (m, i) { var done = claimed.indexOf(i) > -1; return '<article class="pd-letter' + (done ? ' claimed' : i < 2 ? ' unread' : '') + '"><span class="pd-letter-ico">' + (m[0] === 'frost' ? '<i class="pd-icon" style="background-image:var(--spr-season)"></i>' : '<i class="pd-tro big ' + m[0] + '"></i>') + '</span><header class="pd-letter-head"><b>' + m[1] + '</b><time>' + m[2] + '</time></header><p class="pd-letter-text">' + m[3] + '</p><div class="pd-letter-act"><span class="pd-letter-gifts">' + m[4].map(gift).join('') + '</span>' + (done ? '<span class="pd-letter-done">' + L.got + '</span>' : '<button class="pd-button' + (i === 0 ? ' primary' : '') + '">' + L.claim + '</button>') + '</div></article>'; }).join('');
+    if (o.pioneer) { var P = V20[lang || 'ru']; rows = '<article class="pd-letter special unread"><span class="pd-letter-ico"><i class="pd-tro big pioneer"></i></span><header class="pd-letter-head"><b>' + P.pioneerT + '</b><time>' + P.today + '</time></header><p class="pd-letter-text">' + P.pioneerD + ' · ' + P.pioneerText.split('.')[0] + '.</p><div class="pd-letter-act"><span class="pd-letter-gifts"><span class="pd-gift"><i class="pd-tro x1 pioneer"></i>' + P.pioneerGift + '</span></span><button class="pd-button primary">' + P.claim + '</button></div></article>' + rows.replace(' primary">', '">'); }
     return '<section class="pd-window pd-mail-window" role="dialog" aria-label="' + L.title + '"><header class="pd-window-head"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-mail)"></i><div class="pd-titles"><h2 class="pd-heading">' + L.title + '</h2></div><button class="pd-close" aria-label="×"></button></header>' +
       '<div class="pd-scroll"><div class="pd-mail">' + rows + '</div></div>' + (o.empty ? '' : '<div class="pd-mail-foot"><span>' + L.keep + '</span><button class="pd-button quiet">' + L.all + '</button></div>') + '</section>';
   };
@@ -1506,6 +1530,117 @@
     if (n >= 4) { for (var j = 0; j < 4; j++) out += q(j); return '<nav class="pd-toolbar q4" aria-label="Действия">' + tool('wait', 12, 12, 'Ждать') + tool('search', 12, 12, 'Искать') + out + tool('backpack', 14, 15, 'Рюкзак') + '</nav>'; }
     return '<nav class="pd-toolbar" aria-label="Действия">' + tool('wait', 12, 12, 'Ждать') + tool('search', 12, 12, 'Искать') + q(0) + q(1) + tool('backpack', 14, 15, 'Рюкзак') + '</nav>';
   };
+  /* ---------- v20: «Что нового», «Первопроходец», сообщить о проблеме, нет связи, обновление, правила доски ---------- */
+  var V20 = {
+    ru: { new: 'Что нового', ver: 'Версия 2.4', play: 'Играть', all: 'Все изменения', once: 'Это окно показывается один раз после обновления',
+      tags: { add: 'Добавлено', now: 'Теперь', fix: 'Поправлено', bal: 'Баланс' },
+      small: [['add', 'Обучение по шагу для новых игроков.'], ['add', 'Почта: кубки и итоги недели приходят письмом.'], ['now', 'Под призовым местом на доске видна награда.'], ['now', 'Доска показывает, когда закроется.'], ['fix', 'Карточка предмета больше не ломается в рюкзаке.'], ['fix', 'Свайп на Привале не срабатывает при прокрутке.'], ['bal', 'Подземелье дня: дар «Точило» даёт +1 вместо +2.']],
+      bigKick: 'Большое обновление', bigTitle: 'Shattered', bigSub: 'Игра выросла до Shattered Pixel Dungeon v4',
+      big: [['classes', 'Два новых класса', 'Дуэлянтка с особыми приёмами оружия и Клирик со священным томом.'], ['talents', 'Таланты', 'Четыре яруса, путь мастерства и способность брони.'], ['alchemy', 'Алхимия', 'Котёл, энергия, особые зелья, заклинания и безделушки.'], ['bosses', 'Новые боссы и уровни', 'Переработаны все пять регионов и их хозяева.']],
+      more: 'и ещё 40 изменений', allMore: 'Все изменения (ещё 40)',
+      pioneerT: 'Первопроходец', pioneerD: 'Памятный кубок', pioneerText: 'Вы спускались в подземелье ещё до Shattered. Этот кубок — память о первых забегах: он навсегда встанет на полку «Мои». Спасибо, что были с нами с самого начала.', pioneerGift: 'Кубок «Первопроходец»', claim: 'Забрать', today: 'сегодня', shelf: 'на полке «Мои»',
+      repT: 'Сообщить о проблеме', repLabel: 'Что случилось', repOpt: 'необязательно', repPh: 'Например: после лестницы пропал рюкзак', repLog: 'Приложить журнал забега', repLogNote: 'Ходы и действия этого забега, версия игры и телефона. Без имени и переписки.', send: 'Отправить', cancel: 'Отмена',
+      sentT: 'Отправлено, спасибо!', sentText: 'Мы посмотрим журнал. Если ошибка подтвердится, вы получите значок «Охотник за багами».', close: 'Закрыть', badgeT: 'Охотник за багами', badgeD: 'Нашли ошибку, и её подтвердили', sending: 'Отправляем…',
+      offT: 'Нет связи с сервером', offText: 'Играйте дальше: забег сохраняется на телефоне. Когда связь вернётся, он дойдёт до сервера и попадёт в рейтинг.', offNote: 'Пока без связи — без рейтинга и почты.', retry: 'Повторить', offPlay: 'Играть без связи', offAuto: 'Проверим сами через 20 с', offBadge: 'Нет связи · забег засчитается позже',
+      upd: 'Вышла новая версия — обновляем', updDone: 'Готово: версия 2.4',
+      rulesT: 'Правила доски', rules: [['score', 'Очки', 'Как в оригинале: золото + уровень × глубина × 100. Победа с амулетом удваивает очки. Каждое испытание добавляет четверть.'], ['places', 'Места', 'День: тройка лучших получает кубок. Неделя: десятка лучших — медаль. Награды приходят в почту, когда доска закрывается.'], ['close', 'Когда закрывается', 'День — в полночь по UTC (03:00 по Москве). Неделя — в ночь на понедельник, тоже в 00:00 UTC. Таймер — под пояснением доски.'], ['tie', 'Равные очки', 'Выше тот, кто закончил забег раньше.'], ['check', 'Что засчитывается', 'Только забеги, проверенные сервером. Без связи забег засчитается, когда она вернётся.']] },
+    en: { new: 'What’s new', ver: 'Version 2.4', play: 'Play', all: 'All changes', once: 'This window shows once after an update',
+      tags: { add: 'Added', now: 'Now', fix: 'Fixed', bal: 'Balance' },
+      small: [['add', 'A step-by-step tutorial for new players.'], ['add', 'Mail: cups and week results arrive as letters.'], ['now', 'Prize places on the boards show their reward.'], ['now', 'The board shows when it closes.'], ['fix', 'The item card no longer breaks in the backpack.'], ['fix', 'Swiping at the camp no longer fires while scrolling.'], ['bal', 'Daily dungeon: the «Whetstone» boon gives +1 instead of +2.']],
+      bigKick: 'Major update', bigTitle: 'Shattered', bigSub: 'The game grew into Shattered Pixel Dungeon v4',
+      big: [['classes', 'Two new classes', 'The Duelist with weapon abilities and the Cleric with a holy tome.'], ['talents', 'Talents', 'Four tiers, a path of mastery and an armor ability.'], ['alchemy', 'Alchemy', 'The pot, energy, exotic potions, spells and trinkets.'], ['bosses', 'New bosses and levels', 'All five regions and their masters reworked.']],
+      more: 'and 40 more changes', allMore: 'All changes (40 more)',
+      pioneerT: 'Pioneer', pioneerD: 'Commemorative cup', pioneerText: 'You went down the dungeon before Shattered. This cup remembers your first runs: it stays on your «Mine» shelf for good. Thank you for being here from the start.', pioneerGift: 'The «Pioneer» cup', claim: 'Claim', today: 'today', shelf: 'on the «Mine» shelf',
+      repT: 'Report a problem', repLabel: 'What happened', repOpt: 'optional', repPh: 'E.g. my backpack vanished after the stairs', repLog: 'Attach the run’s log', repLogNote: 'The run’s moves and actions, game and phone versions. No name, no chats.', send: 'Send', cancel: 'Cancel',
+      sentT: 'Sent, thank you!', sentText: 'We will look at the log. If the bug is confirmed, you get the «Bug hunter» badge.', close: 'Close', badgeT: 'Bug hunter', badgeD: 'Found a bug, and it was confirmed', sending: 'Sending…',
+      offT: 'No connection to the server', offText: 'Keep playing: the run is saved on your phone. When the connection is back, it reaches the server and counts for the boards.', offNote: 'While offline — no boards and no mail.', retry: 'Retry', offPlay: 'Play offline', offAuto: 'We will check again in 20 s', offBadge: 'Offline · the run will count later',
+      upd: 'A new version is out — updating', updDone: 'Done: version 2.4',
+      rulesT: 'Board rules', rules: [['score', 'Score', 'As in the original: gold + level × depth × 100. A win with the amulet doubles it. Each challenge adds a quarter.'], ['places', 'Places', 'Day: the top three win a cup. Week: the top ten win a medal. Prizes arrive by mail when the board closes.'], ['close', 'When it closes', 'Day — at midnight UTC. Week — on the night to Monday, also at 00:00 UTC. The timer is under the board’s note.'], ['tie', 'Equal scores', 'Whoever finished the run earlier is higher.'], ['check', 'What counts', 'Only runs checked by the server. An offline run counts once the connection is back.']] }
+  };
+  PD.demo.v20 = V20;
+  PD.demo.win.whatsNew = function (lang, big) {
+    var L = V20[lang || 'ru'];
+    if (!big) return '<section class="pd-window pd-news" role="dialog" aria-label="' + L.new + '"><header class="pd-window-head"><div class="pd-titles"><h2 class="pd-heading">' + L.new + '</h2><span class="pd-sub">' + L.ver + '</span></div></header>' +
+      '<ul class="pd-news-list">' + L.small.map(function (r) { return '<li><span class="pd-news-tag ' + r[0] + '">' + L.tags[r[0]] + '</span><span>' + r[1] + '</span></li>'; }).join('') + '</ul>' +
+      '<div class="pd-actions"><button class="pd-button primary">' + L.play + '</button><button class="pd-button quiet">' + L.all + '</button></div><p class="pd-note center">' + L.once + '</p></section>';
+    var ico = { classes: '<span class="pd-news-faces"><i style="--av:4"></i><i style="--av:5"></i></span>', talents: '<i class="pd-icon" style="width:26px;height:26px;background-image:var(--spr-talent)"></i>', alchemy: '<i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-alchemy)"></i>', bosses: '<i class="pd-icon" style="width:28px;height:28px;background-image:var(--spr-skull)"></i>' };
+    return '<section class="pd-window pd-news big" role="dialog" aria-label="' + L.new + ' · ' + L.bigTitle + '"><div class="pd-news-banner" role="img" aria-label="' + (lang === 'en' ? 'Six heroes by the fire' : 'Шесть героев у костра') + '"><span class="pd-news-kick">' + L.bigKick + ' · ' + L.ver + '</span><b>' + L.bigTitle + '</b></div><p class="pd-news-sub">' + L.bigSub + '</p>' +
+      '<ul class="pd-news-big">' + L.big.map(function (r) { return '<li><span class="pd-news-ico">' + ico[r[0]] + '</span><span><b>' + r[1] + '</b>' + r[2] + '</span></li>'; }).join('') + '</ul>' +
+      '<div class="pd-actions"><button class="pd-button primary big">' + L.play + '</button><button class="pd-button quiet">' + L.allMore + '</button></div></section>';
+  };
+  PD.demo.win.pioneerLetter = function (lang) {
+    var L = V20[lang || 'ru'];
+    return '<section class="pd-window pd-mail-window" role="dialog" aria-label="' + L.pioneerT + '"><header class="pd-window-head"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-mail)"></i><div class="pd-titles"><h2 class="pd-heading">' + (lang === 'en' ? 'Mail' : 'Почта') + '</h2></div><button class="pd-close" aria-label="×"></button></header>' +
+      '<article class="pd-letter-open"><i class="pd-pioneer" aria-hidden="true"></i><span class="pd-letter-kind">' + L.pioneerD + '</span><h3>' + L.pioneerT + '</h3><p>' + L.pioneerText + '</p><span class="pd-gift"><i class="pd-tro x1 pioneer"></i>' + L.pioneerGift + '</span><button class="pd-button primary">' + L.claim + '</button><time>' + L.today + '</time></article></section>';
+  };
+  PD.demo.win.report = function (lang, state) {
+    var L = V20[lang || 'ru'];
+    if (state === 'sent') return '<section class="pd-window narrow pd-report" role="dialog" aria-label="' + L.sentT + '"><div class="pd-report-done"><i class="pd-report-check" aria-hidden="true"></i><h2 class="pd-heading center">' + L.sentT + '</h2><p class="pd-info center">' + L.sentText + '</p><div class="pd-badge-row"><i class="pd-icon" style="width:48px;height:48px;background-image:var(--spr-badge-bughunter)"></i><span><b>' + L.badgeT + '</b>' + L.badgeD + '</span></div></div><button class="pd-button">' + L.close + '</button></section>';
+    return '<section class="pd-window pd-report" role="dialog" aria-label="' + L.repT + '"><header class="pd-window-head"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-report)"></i><div class="pd-titles"><h2 class="pd-heading">' + L.repT + '</h2></div><button class="pd-close" aria-label="×"></button></header>' +
+      '<label class="pd-field"><span class="pd-field-label">' + L.repLabel + ' <small>' + L.repOpt + '</small></span><textarea class="pd-textarea" rows="4" placeholder="' + L.repPh + '"></textarea></label>' +
+      '<button class="pd-check" role="checkbox" aria-checked="true"><i aria-hidden="true"></i><span><b>' + L.repLog + '</b><small>' + L.repLogNote + '</small></span></button>' +
+      '<div class="pd-actions">' + (state === 'sending' ? '<button class="pd-button primary" disabled><span class="pd-dots" aria-hidden="true"><i></i><i></i><i></i></span> ' + L.sending + '</button>' : '<button class="pd-button primary">' + L.send + '</button>') + '<button class="pd-button quiet">' + L.cancel + '</button></div></section>';
+  };
+  PD.demo.win.offline = function (lang) {
+    var L = V20[lang || 'ru'];
+    return '<section class="pd-window narrow pd-offline" role="alertdialog" aria-label="' + L.offT + '"><i class="pd-offline-ico" aria-hidden="true"></i><h2 class="pd-heading center">' + L.offT + '</h2><p class="pd-info center">' + L.offText + '</p><p class="pd-note center">' + L.offNote + '</p>' +
+      '<div class="pd-actions"><button class="pd-button primary">' + L.retry + '</button><button class="pd-button">' + L.offPlay + '</button></div><p class="pd-note center">' + L.offAuto + '</p></section>';
+  };
+  PD.demo.win.boardRules = function (lang) {
+    var L = V20[lang || 'ru'], ico = { score: '<i class="pd-tro x1 gold"></i>', places: '<i class="pd-tro x1 week"></i>', close: '<i class="pd-icon" style="width:14px;height:18px;background-image:var(--spr-hourglass)"></i>', tie: '<b class="pd-rules-eq">=</b>', check: '<i class="pd-icon" style="width:18px;height:16px;background-image:var(--spr-check)"></i>' };
+    return '<section class="pd-window" role="dialog" aria-label="' + L.rulesT + '"><header class="pd-window-head"><div class="pd-titles"><h2 class="pd-heading">' + L.rulesT + '</h2></div><button class="pd-close" aria-label="×"></button></header>' +
+      '<div class="pd-scroll"><dl class="pd-rules">' + L.rules.map(function (r) { return '<div><dt><span class="pd-rules-ico">' + ico[r[0]] + '</span>' + r[1] + '</dt><dd>' + r[2] + '</dd></div>'; }).join('') + '</dl></div></section>';
+  };
+
+  /* ---------- v20: дополнения от сборки «Привала» ---------- */
+  var V20B = {
+    ru: { mart: 'Пиксель-Март', martSub: 'Безопасная жизнь в подземелье.', tabs: [['skin', 'Облики'], ['camp', 'Привалы'], ['effect', 'Эффекты'], ['frame', 'Рамки'], ['patron', 'Меценат']],
+      camps: { outdoor: ['У входа', 'Сам меняет время года: лето, осень с листопадом, зима со снегом.', ['По календарю', 'Звёзды и луна'], 'У входа'], cave: ['Пещера', 'Свет кристаллов дышит, в воздухе пылинки.', ['Кристаллы светятся', 'Пылинки в воздухе', 'Без неба']], prison: ['Тюремный двор', 'Зубцы стены, окна с решёткой, поднятая решётка ворот.', ['Факелы и окна', 'Ночное небо'], 'Тюрьма'], hall: ['Гномий зал', 'Колонны, знамёна, светильники и ковёр к лестнице.', ['Тёплые светильники', 'Золотые пылинки']] },
+      kind: 'Фон привала', buy: 'Купить', put: 'Поставить', stands: 'Стоит', owned: 'Куплено', free: 'Бесплатно', buyFor: 'Купить за', tryOn: 'Примерить на привале', putOn: 'Поставить на привал', standsOn: 'Стоит на привале', back: 'Вернуть «У\u00a0входа»', pay: 'Оплата звёздами Telegram',
+      only: 'Меняется только фон: герой, костёр, кнопки — те же. Сезоны — только «У\u00a0входа».', tryNote: 'Примерка — 10 секунд на вашем привале, потом фон вернётся.',
+      mail: 'Почта', claim: 'Забрать', l: [['week', 'Итоги недели', 'пн', 'Неделя 41: <em>4\u00a0место</em> из 1\u00a0902.', [['tro week', 'Медаль недели'], ['stars', '25']]], ['gold', 'Кубок дня', 'сегодня', 'Подземелье дня 13.10: <em>1\u00a0место</em>.', [['tro gold', 'Золотой кубок']]], ['frost', 'Награда сезона', '1 окт', 'Сезон «Листопад» закрыт: вы в первой сотне.', [['frame', 'Рамка «Тень» на 30 дней и 3 льда серии']]]] },
+    en: { mart: 'Pixel Mart', martSub: 'Safe living in the dungeon.', tabs: [['skin', 'Looks'], ['camp', 'Camps'], ['effect', 'Effects'], ['frame', 'Frames'], ['patron', 'Patron']],
+      camps: { outdoor: ['At the gate', 'Changes with the season: summer, autumn with falling leaves, winter with snow.', ['By the calendar', 'Stars and moon'], 'At the gate'], cave: ['Cave', 'Crystal light breathes, motes drift in the air.', ['Glowing crystals', 'Motes in the air', 'No sky']], prison: ['Prison yard', 'Battlements, barred windows, the portcullis up.', ['Torches and windows', 'Night sky'], 'Prison'], hall: ['Dwarf hall', 'Columns, banners, lamps and a carpet to the stairs.', ['Warm lamps', 'Golden motes']] },
+      kind: 'Camp background', buy: 'Buy', put: 'Set', stands: 'Set', owned: 'Owned', free: 'Free', buyFor: 'Buy for', tryOn: 'Try it at the camp', putOn: 'Set at the camp', standsOn: 'At the camp now', back: 'Back to «At\u00a0the gate»', pay: 'Paid with Telegram Stars',
+      only: 'Only the background changes: the hero, the fire and the buttons stay. Only «At\u00a0the gate» has seasons.', tryNote: 'A try-on lasts 10 seconds at your camp, then the background comes back.',
+      mail: 'Mail', claim: 'Claim', l: [['week', 'Week results', 'Mon', 'Week 41: <em>4th place</em> of 1,902.', [['tro week', 'Week medal'], ['stars', '25']]], ['gold', 'Daily cup', 'today', 'Daily dungeon 13.10: <em>1st place</em>.', [['tro gold', 'Gold cup']]], ['frost', 'Season reward', 'Oct 1', 'Season «Leaf fall» closed: you made the top hundred.', [['frame', '«Shadow» frame for 30 days and 3 streak frosts']]]] }
+  };
+  PD.demo.v20b = V20B;
+  PD.demo.win.martTabs = function (lang, sel) {
+    var L = V20B[lang || 'ru'];
+    return '<div class="pd-tabs compact shelf" role="tablist">' + L.tabs.map(function (t) { return '<button class="pd-tab ' + t[0] + '" role="tab" aria-selected="' + (t[0] === sel) + '" aria-label="' + t[1] + '" title="' + t[1] + '"><i class="pd-tab-ico ' + t[0] + '" aria-hidden="true"></i><span>' + t[1] + '</span></button>'; }).join('') + '</div>';
+  };
+  PD.demo.win.martCamps = function (lang, o) {
+    o = o || {}; var L = V20B[lang || 'ru'], C = L.camps;
+    var card = function (k, st) {
+      var meta = st === 'worn' ? C[k][1] && k === 'outdoor' ? L.free : L.owned : st === 'owned' ? L.owned : '<span class="pd-stars small">150</span>';
+      var btn = st === 'worn' ? '<button class="pd-button small quiet" disabled>' + L.stands + '</button>' : st === 'owned' ? '<button class="pd-button small">' + L.put + '</button>' : '<button class="pd-button small">' + L.buy + '</button>';
+      return '<article class="pd-offer ' + (st || '') + '"><div class="pd-offer-art camp">' + (st === 'worn' ? '<span class="pd-chip">' + L.stands + '</span>' : '') + '<i class="pd-camp-card" style="--card:var(--spr-camp-card-' + k + ')" role="img" aria-label="' + C[k][0] + '"></i></div><h3 class="pd-offer-name">' + (C[k][3] || C[k][0]) + '</h3><p class="pd-offer-meta">' + meta + '</p>' + btn + '</article>';
+    };
+    return '<section class="pd-window pd-mart-window" role="dialog" aria-label="' + L.mart + '"><header class="pd-window-head">' + (o.keeper ? '<div class="pd-portrait"><i class="keeper" style="--keeper:url(' + o.keeper + ')"></i></div>' : '') + '<div class="pd-titles"><h2 class="pd-heading">' + L.mart + '</h2><span class="pd-note">' + L.martSub + '</span></div><button class="pd-close" aria-label="×"></button></header>' +
+      PD.demo.win.martTabs(lang, 'camp') + '<div class="pd-scroll"><div class="pd-shop-grid">' + card('outdoor', 'worn') + card('cave') + card('prison', 'owned') + card('hall') + '</div></div></section>';
+  };
+  PD.demo.win.campOffer = function (lang, k, st) {
+    var L = V20B[lang || 'ru'], C = L.camps[k];
+    var act = st === 'worn' ? '<button class="pd-button" disabled>' + L.standsOn + '</button><button class="pd-button quiet">' + L.back + '</button>'
+      : st === 'owned' ? '<button class="pd-button primary">' + L.putOn + '</button>'
+      : '<button class="pd-button primary">' + L.buyFor + ' <span class="pd-stars">150</span></button><button class="pd-button quiet">' + L.tryOn + '</button>';
+    return '<section class="pd-window pd-camp-offer" role="dialog" aria-label="' + C[0] + '"><header class="pd-window-head"><div class="pd-titles"><h2 class="pd-heading">' + C[0] + '</h2><span class="pd-note">' + L.kind + '</span></div><button class="pd-close" aria-label="×"></button></header>' +
+      '<div class="pd-camp-peek" data-camp="' + k + '">' + (st === 'worn' ? '<span class="pd-chip">' + L.stands + '</span>' : '') + '</div>' +
+      '<p class="pd-info">' + C[1] + '</p><ul class="pd-camp-facts">' + C[2].map(function (f) { return '<li>' + f + '</li>'; }).join('') + '</ul>' +
+      '<p class="pd-note">' + L.only + '</p><div class="pd-actions">' + act + '</div>' + (st ? '' : '<p class="pd-note center">' + L.tryNote + '<br>' + L.pay + '</p>') + '</section>';
+  };
+  /* живой кусок сцены ×3 в окне привала: арка, костёр, герой; герой отвечает на касание */
+  PD.demo.campPeek = function (root, lang) {
+    (root || document).querySelectorAll('.pd-camp-peek[data-camp]').forEach(function (b) { if (b._cam) return; b._cam = PD.camp(b, { scene: b.getAttribute('data-camp'), scale: 3, crop: [0, 46, 94, 73], label: false, hero: +(b.getAttribute('data-hero') || 0), lang: lang }); });
+  };
+  PD.demo.win.mailNarrow = function (lang) {
+    var L = V20B[lang || 'ru'];
+    var gift = function (g) { return '<span class="pd-gift">' + (g[0] === 'stars' ? '<i class="pd-icon" style="width:14px;height:14px;background-image:var(--spr-stars)"></i><span class="price">' + g[1] + '</span>' : g[0] === 'frame' ? '<i class="pd-icon" style="width:16px;height:16px;border:4px solid transparent;box-sizing:border-box;border-image:var(--spr-frame-shadow) 4 / 4px"></i><span>' + g[1] + '</span>' : '<i class="pd-tro x1 ' + g[0].split(' ')[1] + '"></i><span>' + g[1] + '</span>') + '</span>'; };
+    return '<section class="pd-window pd-mail-window" role="dialog" aria-label="' + L.mail + '"><header class="pd-window-head"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-mail)"></i><div class="pd-titles"><h2 class="pd-heading">' + L.mail + '</h2></div><button class="pd-close" aria-label="×"></button></header><div class="pd-scroll"><div class="pd-mail">' +
+      L.l.map(function (m) { return '<article class="pd-letter unread"><span class="pd-letter-ico">' + (m[0] === 'frost' ? '<i class="pd-icon" style="background-image:var(--spr-season)"></i>' : '<i class="pd-tro big ' + m[0] + '"></i>') + '</span><header class="pd-letter-head"><b>' + m[1] + '</b><time>' + m[2] + '</time></header><p class="pd-letter-text">' + m[3] + '</p><div class="pd-letter-act"><span class="pd-letter-gifts">' + m[4].map(gift).join('') + '</span><button class="pd-button primary">' + L.claim + '</button></div></article>'; }).join('') + '</div></div></section>';
+  };
+
   /* окно поверх экрана макета: box — .phone; html — строка окна */
   PD.demo.overlay = function (box, html) { var o = document.createElement('div'); o.className = 'pd-overlay static'; o.innerHTML = html; box.appendChild(o); PD.sprite(o); return o; };
 

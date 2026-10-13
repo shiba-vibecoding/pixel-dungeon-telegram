@@ -1,5 +1,6 @@
 import { fx, type BurstOptions } from './fx';
 import { quality } from './quality';
+import { loaded, shImage, WAND_BOLT_ROW } from './shfx';
 import type { Puppet } from './view';
 
 /*
@@ -164,6 +165,8 @@ class WandFx {
       for (const p of projectiles) {
         const trail = p.trail && TRAILS[p.trail];
         if (!trail) continue;
+        // A bolt with a sprite of its own (wand-bolts.png) has its four squares instead of a stream of particles (render.ts).
+        if (WAND_BOLT_ROW[p.trail!] !== undefined && loaded(shImage('wand-bolts'))) continue;
         const k = Math.min(1, Math.max(0, (now - p.start) / p.duration));
         const a = where(p.from);
         const b = where(p.to);

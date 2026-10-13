@@ -4,6 +4,7 @@ import { type Hero, heroRings } from './actors';
 import { underChallenges } from './challenges';
 import type { Ctx } from './floor';
 import { createItem, type Item, itemDef, ItemGenerator, type ItemKind, rollGold } from './items';
+import { dpow } from './fmath';
 import type { Rng } from './rng';
 
 /*
@@ -48,34 +49,34 @@ export function ringBuffedBonus(hero: Hero, kind: ItemKind): number {
 const f32 = Math.fround;
 
 /** RingOfAccuracy.accuracyMultiplier. */
-export const accuracyMultiplier = (hero: Hero): number => f32(f32(1.3) ** ringBuffedBonus(hero, 'ring.accuracy'));
+export const accuracyMultiplier = (hero: Hero): number => f32(dpow(f32(1.3), ringBuffedBonus(hero, 'ring.accuracy')));
 
 /** RingOfEvasion.evasionMultiplier. */
-export const evasionMultiplier = (hero: Hero): number => f32(1.125 ** ringBuffedBonus(hero, 'ring.evasion'));
+export const evasionMultiplier = (hero: Hero): number => f32(dpow(1.125, ringBuffedBonus(hero, 'ring.evasion')));
 
 /** RingOfHaste.speedMultiplier: on the move. */
-export const speedMultiplier = (hero: Hero): number => f32(1.15 ** ringBuffedBonus(hero, 'ring.haste'));
+export const speedMultiplier = (hero: Hero): number => f32(dpow(1.15, ringBuffedBonus(hero, 'ring.haste')));
 
 /** RingOfFuror.attackSpeedMultiplier. */
-export const attackSpeedMultiplier = (hero: Hero): number => f32(1.09051 ** ringBuffedBonus(hero, 'ring.furor'));
+export const attackSpeedMultiplier = (hero: Hero): number => f32(dpow(1.09051, ringBuffedBonus(hero, 'ring.furor')));
 
 /** RingOfMight.strengthBonus. */
 export const mightStrength = (hero: Hero): number => ringBonus(hero, 'ring.might');
 
 /** RingOfMight.HTMultiplier. */
-export const mightHTMultiplier = (hero: Hero): number => f32(1.035 ** ringBuffedBonus(hero, 'ring.might'));
+export const mightHTMultiplier = (hero: Hero): number => f32(dpow(1.035, ringBuffedBonus(hero, 'ring.might')));
 
 /** RingOfEnergy.wandChargeMultiplier (the talents' light reading aside). */
-export const wandChargeMultiplier = (hero: Hero): number => f32(1.175 ** ringBuffedBonus(hero, 'ring.energy'));
+export const wandChargeMultiplier = (hero: Hero): number => f32(dpow(1.175, ringBuffedBonus(hero, 'ring.energy')));
 
 /** RingOfEnergy.artifactChargeMultiplier (the talents' light cloak aside). */
-export const energyArtifactMultiplier = (hero: Hero): number => f32(1.175 ** ringBuffedBonus(hero, 'ring.energy'));
+export const energyArtifactMultiplier = (hero: Hero): number => f32(dpow(1.175, ringBuffedBonus(hero, 'ring.energy')));
 
 /** RingOfEnergy.armorChargeMultiplier: the class armour's charge. */
-export const armorChargeMultiplier = (hero: Hero): number => f32(1.175 ** ringBuffedBonus(hero, 'ring.energy'));
+export const armorChargeMultiplier = (hero: Hero): number => f32(dpow(1.175, ringBuffedBonus(hero, 'ring.energy')));
 
 /** RingOfArcana.enchantPowerMultiplier: how much more often enchantments and glyphs work (the gear stream's to apply). */
-export const enchantPowerMultiplier = (hero: Hero): number => f32(f32(1.175) ** ringBuffedBonus(hero, 'ring.arcana'));
+export const enchantPowerMultiplier = (hero: Hero): number => f32(dpow(f32(1.175), ringBuffedBonus(hero, 'ring.arcana')));
 
 /** RingOfSharpshooting.levelDamageBonus: levels added to a thrown weapon's damage. */
 export const sharpshootingBonus = (hero: Hero): number => ringBuffedBonus(hero, 'ring.sharpshooting');
@@ -84,21 +85,21 @@ export const sharpshootingBonus = (hero: Hero): number => ringBuffedBonus(hero, 
 export const sharpshootingDurability = (hero: Hero): number => {
   // MissileWeapon.durabilityPerUse: durable projectiles (+50%/75%) and the ring of sharpshooting's multiplier.
   const durable = pointsInTalent(hero, 'durable_projectiles');
-  return f32(f32(durable > 0 ? f32(1.25 + 0.25 * durable) : 1) * f32(1.2 ** ringBonus(hero, 'ring.sharpshooting')));
+  return f32(f32(durable > 0 ? f32(1.25 + 0.25 * durable) : 1) * f32(dpow(1.2, ringBonus(hero, 'ring.sharpshooting'))));
 };
 
 /** RingOfTenacity.damageMultiplier: less harm the more of the wearer's health is gone. */
 export const tenacityMultiplier = (hero: Hero): number =>
-  f32(0.85 ** (ringBuffedBonus(hero, 'ring.tenacity') * f32((hero.ht - hero.hp) / hero.ht)));
+  f32(dpow(0.85, ringBuffedBonus(hero, 'ring.tenacity') * f32((hero.ht - hero.hp) / hero.ht)));
 
 /** RingOfElements.resist: what the elements (fire, frost, ooze, paralysis, poison, gas, lightning, magic) do to the wearer. */
 export const elementsResist = (hero: Hero): number => {
   const bonus = ringBuffedBonus(hero, 'ring.elements');
-  return bonus === 0 ? 1 : 0.825 ** bonus;
+  return bonus === 0 ? 1 : dpow(0.825, bonus);
 };
 
 /** RingOfWealth.dropChanceMultiplier. */
-export const wealthDropMultiplier = (hero: Hero): number => f32(1.2 ** ringBuffedBonus(hero, 'ring.wealth'));
+export const wealthDropMultiplier = (hero: Hero): number => f32(dpow(1.2, ringBuffedBonus(hero, 'ring.wealth')));
 
 /** RingOfForce's tier for a hero's strength: a weapon tier from strength, each point past 18 half as much. */
 function forceTier(str: number): number {

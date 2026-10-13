@@ -1,4 +1,5 @@
 import { type Item, itemDef, type ItemKind } from './items';
+import { dpow } from './fmath';
 import { augmentDamage, augmentDelay, gearLevel, strReq } from './weapons';
 
 /*
@@ -116,7 +117,7 @@ export const missileSurprise = (kind: ItemKind): number => def(kind).surprise ??
  */
 export function durabilityPerUse(item: Item, lvl = gearLevel(item), multi = 1): number {
   if (item.kind === 'missile.rotDart') return MAX_DURABILITY / 5;
-  let usages = f32((def(item.kind).uses ?? 8) * f32(1.5 ** lvl));
+  let usages = f32((def(item.kind).uses ?? 8) * f32(dpow(1.5, lvl)));
   usages = f32(usages / augmentDelay(item, 1));
   if (multi !== 1) usages = f32(usages * multi);
   if (item.enchant === 'crystal') usages = Math.min(f32(usages / 2), 30);

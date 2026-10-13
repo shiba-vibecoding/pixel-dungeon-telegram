@@ -1,5 +1,5 @@
 import {
-  ALCHEMIZE_CHOICES, augmentsFor, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
+  ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
   knownIn, MUST_THROW, TARGETED_SPELLS,
   type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass,
   type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
@@ -11,15 +11,13 @@ import { audio } from './audio';
 import { type ChoiceOption, showChoice } from './alchemyui';
 import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse, WEAPON_SLOT } from './quickslot';
 import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
-import { BUFF_ICONS, type BuffName } from './hud';
+import { BUFF_ICONS, type BuffEntry, type BuffName } from './hud';
 import { capitalize, fill, fmt, locale, t } from './i18n';
 import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
 import { mart } from './mart';
 import { showHeroWindow } from './talentui';
 import { showMetamorphosis, showSubclassPick } from './talentui';
 import { subclassName, tal } from './talenttext';
-import { rankIcon, trophyKind } from './trophyicons';
-import { countChallenges } from './meta';
 import type { RunRecord } from './rankings';
 import { type Assets, heroSprite } from './sprites';
 import type { LogLine } from './view';
@@ -31,7 +29,6 @@ import type { LogLine } from './view';
  */
 
 const root = document.getElementById('overlay')!;
-const HERO_CLASSES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
 /** Heroes in avatars.png and in the heroes strip, in this order. */
 export const AVATAR: Readonly<Record<HeroClass, number>> = { warrior: 0, mage: 1, rogue: 2, huntress: 3 };
 
@@ -144,6 +141,9 @@ export function sprites(scope: ParentNode): void {
     node.style.setProperty('--ix', String(s % 16));
     node.style.setProperty('--iy', String(Math.floor(s / 16)));
   });
+  // The sheets of v19 in one row each: tinted buffs (buffs-tints.png, 18), the journal's new marks (journal2.png, 14).
+  scope.querySelectorAll<HTMLElement>('[data-tb]').forEach((node) => node.style.setProperty('--ix', node.dataset.tb!));
+  scope.querySelectorAll<HTMLElement>('[data-j2]').forEach((node) => node.style.setProperty('--ix', node.dataset.j2!));
   scope.querySelectorAll<HTMLElement>('[data-b]').forEach((node) => {
     // From 1000: Shattered's buffs.png, the same 18 a row but more rows (see BUFF_ICONS).
     const spd = Number(node.dataset.b) >= 1000;
@@ -267,11 +267,14 @@ interface SlotOptions {
   hero?: Hero;
   /** An empty equipment place: the silhouette of what goes there (Shattered's holders in items.png). */
   placeholder?: number;
+  /** The empty «misc» place (design v19: slot-misc.png, a ring and an amulet in silhouette) in place of a holder. */
+  misc?: boolean;
 }
 
 /** A 52×52 slot: the sprite and up to three corner labels (level, strength, quantity). */
 export function slot(world: World, item: Item | undefined, options: SlotOptions = {}): HTMLElement {
   if (!item) {
+    if (options.misc) return el('div', { className: 'pd-slot placeholder misc', ariaLabel: t.miscEmpty });
     if (options.placeholder !== undefined) {
       const icon = el('i', { className: 'pd-item' });
       icon.dataset.i = String(options.placeholder);
@@ -390,187 +393,6 @@ const inQuickslot = (hero: Hero, item: Item): boolean =>
     ? item === hero.artifact || item === hero.misc
     : hero.items.find((other) => other.kind === item.kind) === item || (item === hero.weapon && item.kind === 'weapon.magesStaff'));
 
-/* Title */
-
-export interface TitleOptions {
-  heroClass: HeroClass;
-  /** The solo run that can be continued, if any. */
-  save: { heroClass: HeroClass; lvl: number; depth: number } | null;
-  /** Shown outside Telegram, where the name is not known. */
-  askName: string | null;
-  onClass(heroClass: HeroClass): void;
-  onName(name: string): void;
-  onContinue(): void;
-  onSolo(): void;
-  onDaily(): void;
-  /** Shows today's board; absent without checked runs. */
-  onDailyBoard?: () => void;
-  /**
-   * The daily dungeon today, as the server knows it: its attempt open, under way, or played (with
-   * the place it took of how many); absent without checked runs.
-   */
-  dailyState?: { state: 'open' | 'going' | 'done'; place: number | null; total: number };
-  /** Practice in today's dungeon, once its attempt is played. */
-  onPractice?: () => void;
-  /** Today's rules of the daily dungeon, as a line. */
-  dailyRules?: string;
-  /** The player's card (rankui.ts profileCard), once the server has told who they are. */
-  profile?: HTMLElement;
-  onRankings(): void;
-  onMart(): void;
-  onSettings(): void;
-  /** Challenges switched on for the next new game (a bit mask). */
-  challenges: number;
-  onChallenges(): void;
-  /** The arena of waves' entry, under «Play with friends» (arenaui.ts). */
-  arena?: HTMLElement;
-}
-
-/** «Rankings» with its cup. */
-function rankingsButton(onClick: () => void): HTMLButtonElement {
-  const node = button(t.ranked.title, onClick);
-  node.prepend(rankIcon('gold', { x1: true }));
-  return node;
-}
-
-export function showTitle(options: TitleOptions): void {
-  let selected = options.heroClass;
-  const name = el('span', { className: 'pd-class-name', textContent: t.classes[selected] });
-  const about = info(t.classInfo[selected], 'pd-note');
-  const classes = el('div', { className: 'pd-classes' });
-  classes.setAttribute('role', 'radiogroup');
-  const renderClasses = (): void => {
-    classes.replaceChildren(
-      ...HERO_CLASSES.map((heroClass) => {
-        const face = el('i', { className: 'pd-class-face' });
-        face.style.setProperty('--av', String(AVATAR[heroClass]));
-        const node = el(
-          'button',
-          {
-            className: `pd-class${heroClass === selected ? ' selected' : ''}`,
-            ariaLabel: t.classes[heroClass],
-            onclick: () => {
-              audio.play('click');
-              selected = heroClass;
-              name.textContent = t.classes[heroClass];
-              about.textContent = t.classInfo[heroClass];
-              options.onClass(heroClass);
-              renderClasses();
-            },
-          },
-          face,
-        );
-        node.setAttribute('role', 'radio');
-        node.setAttribute('aria-checked', String(heroClass === selected));
-        return node;
-      }),
-    );
-  };
-  renderClasses();
-
-  const field =
-    options.askName !== null &&
-    el(
-      'div',
-      { className: 'pd-field' },
-      el('label', { htmlFor: 'pd-name', textContent: t.heroName }),
-      el('input', {
-        id: 'pd-name',
-        className: 'pd-input',
-        value: options.askName,
-        maxLength: 20,
-        placeholder: t.yourName,
-        oninput: (event: Event) => options.onName((event.target as HTMLInputElement).value),
-      }),
-    );
-
-  const { save } = options;
-  const main: HTMLElement[] = [];
-  const rest: HTMLElement[] = [];
-  if (save) {
-    const resume = button(t.continueRun, options.onContinue, `${main.length ? '' : 'primary big '}stacked`);
-    resume.append(el('span', { className: 'pd-btn-sub', textContent: t.continueMeta(t.classes[save.heroClass], save.lvl, save.depth) }));
-    (main.length ? rest : main).push(resume);
-  }
-  const fresh = button(save ? t.newRun : t.solo, options.onSolo, main.length ? '' : 'primary big');
-  // The challenges go with a new game: beside it, the cup lit when some are on.
-  const on = countChallenges(options.challenges);
-  const challenges = button(t.meta.challenges, options.onChallenges);
-  const cup = el('i', { className: 'pd-icon' });
-  cup.style.cssText = `width:24px;height:24px;background-image:var(--spr-challenge-${on ? 'on' : 'off'})`;
-  challenges.prepend(cup);
-  if (on) challenges.append(el('b', { className: 'pd-ch-n', textContent: String(on) }));
-  if (main.length) rest.push(el('div', { className: 'pd-row' }, fresh, challenges));
-  else main.push(fresh, challenges);
-
-  // The daily dungeon: its attempt open (or under way), or played, with the place it took (a cup for 1–3).
-  const day = options.dailyState;
-  const done = day?.state === 'done';
-  const chip = day && el('span', { className: `pd-chip${done ? ' done' : ''}`, textContent: done ? t.ranked.dailyChipDone : day.state === 'going' ? t.ranked.dailyChipGoing : t.ranked.dailyChipOpen });
-  const place = done && day.place !== null
-    ? el(
-      'div',
-      { className: 'pd-daily-place' },
-      day.place <= 3 ? rankIcon(trophyKind('daily', day.place)) : null,
-      el('b', { textContent: `#${day.place}` }),
-      el('span', { textContent: t.ranked.ofTotal(Math.max(day.total, day.place)) }),
-    )
-    : null;
-  const daily = el(
-    'div',
-    { className: `pd-daily${done ? ' done' : ''}` },
-    el('div', { className: 'pd-daily-head' }, picture('stairs'), el('h3', { textContent: t.daily }), chip),
-    place,
-    options.dailyRules ? el('p', { className: 'pd-daily-rules', textContent: options.dailyRules }) : null,
-    info(done ? t.ranked.dailyDone : day ? t.ranked.dailyOpenNote : t.dailyInfo, 'pd-note'),
-    el(
-      'div',
-      { className: 'pd-row' },
-      done && options.onPractice ? button(t.ranked.practice2, options.onPractice) : button(t.descendDaily, options.onDaily),
-      options.onDailyBoard && button(t.dailyBoard, options.onDailyBoard),
-    ),
-  );
-
-  const logo = el(
-    'div',
-    { className: 'pd-logo' },
-    el('img', { src: 'assets/banner-title.png', alt: 'Pixel Dungeon' }),
-    el('span', { className: 'pd-logo-sub', textContent: t.subtitle }),
-  );
-
-  show(
-    el(
-      'main',
-      { className: `pd-title-screen${options.profile ? ' ranked' : ''}` },
-      el(
-        'div',
-        { className: 'pd-corner' },
-        el('button', { className: 'pd-iconbtn prefs', ariaLabel: t.meta.settings, onclick: () => (audio.play('click'), options.onSettings()) }),
-      ),
-      logo,
-      options.profile,
-      el(
-        'section',
-        { className: 'pd-window' },
-        classes,
-        el('div', { className: 'pd-class-info' }, name, about),
-        field,
-        el(
-          'div',
-          { className: 'pd-actions' },
-          daily,
-          ...main,
-          ...rest,
-          options.arena,
-          el('div', { className: 'pd-row' }, rankingsButton(options.onRankings), button(t.mart, options.onMart)),
-        ),
-      ),
-    ),
-    null,
-    true,
-  );
-}
-
 /* Menu */
 
 export interface MenuOptions {
@@ -676,7 +498,7 @@ export interface HeroOptions {
   looks?: HTMLElement;
   /** The look the hero wears, for their portrait. */
   skin?: string;
-  buffs: ReadonlyArray<{ name: BuffName; turns?: number }>;
+  buffs: readonly BuffEntry[];
   onClose(): void;
 }
 
@@ -692,8 +514,9 @@ export function stats(rows: ReadonlyArray<readonly [string, string, string?]>): 
 export function showHero(options: HeroOptions): void {
   const { hero } = options;
   const buffs = options.buffs.map((buff) => {
-    const icon = el('i');
-    icon.dataset.b = String(BUFF_ICONS[buff.name]);
+    const icon = el('i', buff.tint !== undefined ? 'pd-tbuff' : '');
+    if (buff.tint !== undefined) icon.dataset.tb = String(buff.tint);
+    else icon.dataset.b = String(BUFF_ICONS[buff.name]);
     const text = buff.turns ? `${t.buffs[buff.name]} (${t.turnsLeft(buff.turns)})` : t.buffs[buff.name];
     return el('div', { className: 'pd-row' }, el('span', { className: 'pd-buff' }, icon), info(text));
   });
@@ -756,6 +579,7 @@ export function showTrade(options: TradeOptions): void {
         }, options.onClose);
     }
   }, 'small');
+  stealButton?.prepend(el('i', { className: 'pd-steal' }));
   const head = windowOf(
     { title: capitalize(itemName(world, item)), icon: slot(world, item, { hero }), onClose: options.onClose },
     ...describedItem(world, hero, item),
@@ -1346,7 +1170,7 @@ export function showBackpack(options: BackpackOptions, choice: BagChoice | null 
   const worn = (item: Item | undefined, placeholder: number, ref: ItemRef, here: BagChoice): HTMLElement =>
     item
       ? mark(slot(world, item, { hero, equipped: true, onClick: () => choose(here) }), ref, here, item)
-      : withDrop(slot(world, undefined, { hero, equipped: true, placeholder }), String(ref));
+      : withDrop(slot(world, undefined, { hero, equipped: true, placeholder, misc: ref === 'misc' || ref === 'artifact' || ref === 'ring' }), String(ref));
   // The key ring: how many keys there are; what they open is said on the map.
   const keyCount = keys.reduce((sum, entry) => sum + entry.item.qty, 0);
   const keyring = el(
@@ -1697,8 +1521,11 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
   const main: HTMLElement[] = [];
   const more: HTMLElement[] = [];
   const danger: HTMLElement[] = [];
-  const use = (label: string, onClick: () => void): void => {
-    (main.length === 0 ? main : more).push(button(label, onClick, main.length === 0 ? 'primary' : ''));
+  const use = (label: string, onClick: () => void, icon?: 'steal'): void => {
+    const node = button(label, onClick, main.length === 0 ? 'primary' : '');
+    // The thieves' armband's «Steal» wears its picture (design v19: icon-steal.png).
+    if (icon) node.prepend(el('i', { className: `pd-${icon}` }));
+    (main.length === 0 ? main : more).push(node);
   };
   if (index !== null) {
     const known = isKnown(world, item);
@@ -1799,18 +1626,14 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
           const target = itemAt(hero, on);
           if (!target) return;
           if (item.kind === 'stone.augmentation') {
-            // StoneOfAugmentation.WndAugment: for one property against the other, or none.
-            const label: Record<Augment | 'none', string> = {
-              speed: t.alch.augSpeed, damage: t.alch.augDamage, evasion: t.alch.augEvasion, defense: t.alch.augDefense, none: t.alch.augNone,
-            };
-            return choose(t.alch.augmentTitle, t.alch.augmentChoice, target, augmentsFor(target).map((augment, choice) => ({
-              label: label[augment ?? 'none'], disabled: (target.augment ?? null) === augment, onPick: () => act({ type: 'use', item: index, on, choice }),
-            })));
+            // StoneOfAugmentation.WndAugment: one property against the other, or none (the numbers before and after).
+            openBag = null;
+            return showAugmentStone(options, index, on, target, act);
           }
           if (item.kind === 'stone.intuition') {
             // StoneOfIntuition.WndGuess: what kind it might be.
             return choose(t.alch.intuitionTitle, t.alch.guessText, target, intuitionChoices(world, target).map((kind, choice) => ({
-              label: capitalize(t.items[kind]), onPick: () => act({ type: 'use', item: index, on, choice }),
+              label: capitalize(t.items[kind]), sprite: guessSprite(itemDef(kind).category), onPick: () => act({ type: 'use', item: index, on, choice }),
             })));
           }
           act({ type: 'use', item: index, on });
@@ -1896,7 +1719,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       });
     }
     // Artifact.actions, from the pack (the beacon's set and return, the rose's outfit; the rest want it worn).
-    if (category === 'artifact') for (const action of artifactActions(artifactHost(options, index), item, index)) use(action.label, action.run);
+    if (category === 'artifact') for (const action of artifactActions(artifactHost(options, index), item, index)) use(action.label, action.run, action.icon);
     // Armor.AC_DETACH: the warrior's seal off an armour in the pack.
     if (item.seal) more.push(button(t.hero.detach, () => stay({ type: 'detach', armor: index }, null)));
     // SpiritBow.AC_SHOOT; Dart.AC_TIP; TippedDart.AC_CLEAN.
@@ -1922,7 +1745,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     const slot = options.slot;
     // Artifact.actions on a worn artifact, then taking it off.
     if (itemDef(item.kind).category === 'artifact') {
-      for (const action of artifactActions(artifactHost(options, slot), item, slot)) use(action.label, action.run);
+      for (const action of artifactActions(artifactHost(options, slot), item, slot)) use(action.label, action.run, action.icon);
       // Shattered's quick slots hold a worn artifact too (the rogue's cloak starts in one).
       if (!isQuickslotted(item.kind)) more.push(quickslotButton(world, hero, item));
     }
@@ -1988,59 +1811,216 @@ function showAugment(options: ItemOptions, stone: number, on: ItemRef, act: (act
   );
 }
 
+/** The picture beside a guess in a stone of intuition's window (design v19: ShIcons): the holder of what is guessed at. */
+const guessSprite = (category: string): number | undefined =>
+  category === 'potion' ? S.POTION_HOLDER : category === 'scroll' ? S.SCROLL_HOLDER : category === 'ring' ? S.RING_HOLDER : category === 'wand' ? S.WAND_HOLDER
+  : category === 'stone' ? S.STONE_HOLDER : category === 'spell' ? S.SPELL_HOLDER : category === 'trinket' ? S.TRINKET_HOLDER : undefined;
+
 /** Seeds in the pack that darts can be tipped with (TippedDart.types). */
 const tippingSeeds = (hero: Hero): number[] =>
   hero.items.flatMap((item, i) => (itemDef(item.kind).category === 'seed' && TIPPED_DARTS[item.kind] ? [i] : []));
 
-/** Dart.AC_TIP: a seed, and how many darts it tips (two, or as many as the seeds will). */
+/** A Shattered item sprite (items.png) in the design system's markup (.pd-sitem, data-s). */
+function sitem(sprite: number): HTMLElement {
+  const icon = el('i', { className: 'pd-sitem' });
+  icon.dataset.s = String(sprite);
+  return icon;
+}
+
+/** A slot holding an item's picture, with a quantity if there are several. */
+function plainSlot(world: World, item: Item, qty?: number): HTMLElement {
+  const node = el('span', { className: 'pd-slot' }, sitem(itemSprite(item, world.run.labels)));
+  if (qty !== undefined && qty > 1) node.append(el('span', { className: 'pd-qty', textContent: String(qty) }));
+  return node;
+}
+
+/**
+ * Dart.AC_TIP (design v19: ShWeapons): the seeds of the pack in a row with their numbers, the chosen one framed;
+ * what it makes of the darts (two darts to a seed) and its effect; «tip 2» and «tip all».
+ */
 function showTip(options: ItemOptions, index: number, act: (action: Action) => void): void {
   const { world, hero } = options;
   const darts = hero.items[index]!;
   const back = (): void => showBackpack(options, { index });
-  const rows = tippingSeeds(hero).map((seedIndex) => {
-    const seed = hero.items[seedIndex]!;
-    const tipped = { kind: TIPPED_DARTS[seed.kind]!, qty: 1, level: 0 };
-    const maxToTip = Math.min(darts.qty, seed.qty * 2);
-    const choices = [
-      button(darts.qty === 1 ? t.gear.tipOne : t.gear.tipTwo, () => act({ type: 'tip', item: index, seed: seedIndex }), 'small'),
-      ...(darts.qty > 2 && maxToTip > 2
-        ? [button(fmt(t.gear.tipAll, maxToTip, Math.trunc((maxToTip + 1) / 2)), () => act({ type: 'tip', item: index, seed: seedIndex, all: true }), 'small')]
-        : []),
-    ];
-    // Shattered's labels are long: they wrap rather than run out of the button.
-    for (const choice of choices) Object.assign(choice.style, { whiteSpace: 'normal', height: 'auto', minHeight: '36px', lineHeight: '20px' });
-    return el(
-      'div',
-      { className: 'pd-choice' },
-      el('div', { className: 'pd-pick-head' }, slot(world, seed, { hero }), el('span', { className: 'pd-choice-name', textContent: capitalize(itemName(world, tipped)) })),
-      el('p', { className: 'pd-choice-desc', textContent: t.itemInfo[tipped.kind] ?? '' }),
-      ...choices,
+  const seeds = tippingSeeds(hero);
+  let chosen = seeds[0]!;
+  const row = el('div', { className: 'pd-dart-seeds' });
+  const preview = el('div', { className: 'pd-dart-preview' });
+  const buttons = el('div', { className: 'pd-actions' });
+  const draw = (): void => {
+    const seed = hero.items[chosen]!;
+    const tipped: Item = { kind: TIPPED_DARTS[seed.kind]!, qty: 1, level: 0 };
+    const two = Math.min(darts.qty, 2);
+    const most = Math.min(darts.qty, seed.qty * 2);
+    row.querySelectorAll<HTMLElement>('.pd-slot').forEach((node) => node.classList.toggle('selected', node.dataset.seed === String(chosen)));
+    preview.replaceChildren(
+      plainSlot(world, tipped, two),
+      el(
+        'span',
+        { className: 'pd-dart-text' },
+        el('b', { textContent: `${capitalize(itemName(world, { ...seed, qty: 1 }))} → ${t.weaponsUi.tipResult(two, capitalize(itemName(world, tipped)))}` }),
+        t.itemInfo[tipped.kind] ?? '',
+      ),
     );
-  });
+    const one = button(darts.qty === 1 ? t.gear.tipOne : t.gear.tipTwo, () => act({ type: 'tip', item: index, seed: chosen }), 'primary');
+    const all = darts.qty > 2 && most > 2
+      ? [button(fmt(t.gear.tipAll, most, Math.trunc((most + 1) / 2)), () => act({ type: 'tip', item: index, seed: chosen, all: true }))]
+      : [];
+    // Shattered's labels are long: they wrap rather than run out of the button.
+    for (const choice of [one, ...all]) Object.assign(choice.style, { whiteSpace: 'normal', height: 'auto', minHeight: '36px', lineHeight: '20px' });
+    buttons.replaceChildren(one, ...all);
+  };
+  for (const seedIndex of seeds) {
+    const seed = hero.items[seedIndex]!;
+    const node = el(
+      'button',
+      {
+        className: 'pd-slot',
+        ariaLabel: capitalize(itemName(world, { ...seed, qty: 1 })),
+        onclick: () => {
+          audio.play('click');
+          chosen = seedIndex;
+          draw();
+        },
+      },
+      sitem(itemSprite(seed, world.run.labels)),
+      el('span', { className: 'pd-qty', textContent: String(seed.qty) }),
+    );
+    node.dataset.seed = String(seedIndex);
+    row.append(node);
+  }
+  draw();
   show(
     windowOf(
-      { title: t.gear.tipTitle, icon: slot(world, darts, { hero }), onClose: back },
-      // Dart.tip_desc without its last sentence, which names the seed's dart (each choice below does).
-      info(t.gear.tipDesc.replace(/[^.!?\n]*%s[^.!?]*[.!?]?/, '').trim()),
-      el('div', { className: 'pd-choices' }, ...rows),
+      { title: t.gear.tipTitle, sub: t.weaponsUi.tipSub, icon: slot(world, darts, { hero }), onClose: back },
+      el('p', { className: 'pd-note', textContent: t.gear.tipPrompt }),
+      row,
+      preview,
+      buttons,
     ),
     back,
   );
 }
 
-/** TippedDart.AC_CLEAN: one, or the whole stack, back to plain darts. */
+/** TippedDart.AC_CLEAN (design v19: ShWeapons): the tipped dart, an arrow, the plain dart; one, or the whole stack. */
 function showClean(options: ItemOptions, index: number, act: (action: Action) => void): void {
   const { world, hero } = options;
   const darts = hero.items[index]!;
   const back = (): void => showBackpack(options, { index });
+  const plain: Item = { kind: 'missile.dart', qty: 1, level: 0 };
   show(
     windowOf(
-      { title: t.gear.cleanTitle, icon: slot(world, darts, { hero }), onClose: back },
+      { title: t.gear.cleanTitle, sub: `${capitalize(itemName(world, { ...darts, qty: 1 }))} ×${darts.qty}`, icon: slot(world, darts, { hero }), onClose: back, narrow: true },
+      el('div', { className: 'pd-dart-clean' }, plainSlot(world, { ...darts, qty: 1 }), el('i', { className: 'pd-alch-arrow ready' }), plainSlot(world, plain)),
       info(t.gear.cleanDesc),
       actions(
-        [button(t.gear.cleanOne, () => act({ type: 'clean', item: index }), 'primary')],
-        darts.qty > 1 ? [button(t.gear.cleanAll, () => act({ type: 'clean', item: index, all: true }))] : [],
+        [],
+        [
+          button(t.gear.cleanOne, () => act({ type: 'clean', item: index })),
+          ...(darts.qty > 1 ? [button(`${t.gear.cleanAll} (${darts.qty})`, () => act({ type: 'clean', item: index, all: true }))] : []),
+          button(t.cancel, back, 'quiet'),
+        ],
       ),
+    ),
+    back,
+  );
+}
+
+/**
+ * StoneOfAugmentation.WndAugment (design v19: ShWeapons): the item, and three ways to balance it with what each leaves
+ * of its numbers: a gain in green, a cost in red, the present state marked «now».
+ */
+function showAugmentStone(options: ItemOptions, stone: number, on: ItemRef, target: Item, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const back = (): void => showBackpack(options, { index: stone });
+  const armour = itemDef(target.kind).category === 'armor';
+  const augments = augmentsFor(target);
+  const current = target.augment ?? null;
+  const names: Record<Augment | 'none', string> = {
+    speed: t.weaponsUi.speed, damage: t.weaponsUi.damage, evasion: t.weaponsUi.evasion, defense: t.weaponsUi.defense, none: t.weaponsUi.none,
+  };
+  const as = (augment: Augment | null): Item => {
+    const copy: Item = { ...target };
+    if (augment) copy.augment = augment;
+    else delete copy.augment;
+    return copy;
+  };
+  type Tone = 'good' | 'bad' | '';
+  interface Line { label: string; value: string; tone: Tone; note: string }
+  const signed = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '0');
+  const percent = (n: number): string => `${n > 0 ? '+' : '−'}${Math.abs(n)}%`;
+  const tone = (better: number): Tone => (better > 0 ? 'good' : better < 0 ? 'bad' : '');
+  const linesOf = (augment: Augment | null): Line[] => {
+    const now = as(current);
+    const item = as(augment);
+    const same = augment === current;
+    if (armour) {
+      const had = armorStats(now);
+      const has = armorStats(item);
+      const evasion = armorEvasionBonus(item);
+      return [
+        { label: t.weaponsUi.armorRow, value: `${has.min}–${has.max}`, tone: same ? '' : tone(has.max - had.max), note: same || has.max === had.max ? '' : signed(has.max - had.max) },
+        { label: t.weaponsUi.evasionRow, value: signed(evasion), tone: same ? '' : tone(evasion - armorEvasionBonus(now)), note: '' },
+      ];
+    }
+    const had = weaponStats(now);
+    const has = weaponStats(item);
+    const damageShift = had.max > 0 ? Math.round((has.max / had.max - 1) * 100) : 0;
+    const delayShift = had.delay > 0 ? Math.round((has.delay / had.delay - 1) * 100) : 0;
+    return [
+      { label: t.weaponsUi.damageRow, value: `${has.min}–${has.max}`, tone: same ? '' : tone(damageShift), note: same || damageShift === 0 ? '' : percent(damageShift) },
+      {
+        label: t.weaponsUi.attackRow, value: t.weaponsUi.turns(has.delay), tone: same ? '' : tone(-delayShift),
+        note: same || delayShift === 0 ? '' : delayShift < 0 ? t.weaponsUi.faster(Math.abs(delayShift)) : t.weaponsUi.slower(delayShift),
+      },
+    ];
+  };
+  // In the design's order: the two ways, then none.
+  const order: Array<Augment | null> = [augments[1] ?? null, augments[2] ?? null, null];
+  let chosen: Augment | null = order.find((augment) => augment !== current) ?? null;
+  const list = el('div', { className: 'pd-aug-opts' });
+  list.setAttribute('role', 'radiogroup');
+  const apply = button(t.weaponsUi.apply, () => act({ type: 'use', item: stone, on, choice: augments.indexOf(chosen) }), 'primary');
+  const paint = (): void => {
+    list.querySelectorAll<HTMLElement>('.pd-aug-opt').forEach((node) => {
+      const selected = node.dataset.augment === String(chosen);
+      node.classList.toggle('selected', selected);
+      node.setAttribute('aria-checked', String(selected));
+    });
+    apply.disabled = chosen === current;
+  };
+  for (const augment of order) {
+    const node = el(
+      'button',
+      {
+        className: 'pd-aug-opt',
+        onclick: () => {
+          audio.play('click');
+          chosen = augment;
+          paint();
+        },
+      },
+      el('span', { className: 'pd-aug-name' }, names[augment ?? 'none'], augment === current ? el('span', { className: 'pd-chip', textContent: t.weaponsUi.now }) : null),
+      ...linesOf(augment).map((line) =>
+        el(
+          'span',
+          { className: 'pd-aug-row' },
+          el('span', { textContent: line.label }),
+          el('b', { className: line.tone, textContent: line.value }),
+          line.note ? el('em', { className: line.tone, textContent: line.note }) : null,
+        )),
+    );
+    node.setAttribute('role', 'radio');
+    node.dataset.augment = String(augment);
+    list.append(node);
+  }
+  paint();
+  show(
+    windowOf(
+      { title: t.alch.augmentTitle, sub: t.weaponsUi.augSub, icon: plainSlot(world, hero.items[stone]!), onClose: back },
+      el('div', { className: 'pd-aug-item' }, slot(world, target, { hero }), el('b', { textContent: capitalize(itemName(world, target)) })),
+      list,
+      el('div', { className: 'pd-actions' }, apply),
     ),
     back,
   );

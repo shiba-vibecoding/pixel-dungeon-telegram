@@ -1,8 +1,9 @@
 import { pointsInTalent } from './talents/data';
 import { berserkEnchantFactor } from './talents/berserk';
+import { rollMob } from './spawner';
 import {
   baseKind, beckon, createMob, enchantLevel, type Hero, heroAttackDelay, heroDefenseSkill, isAlive, isShopkeeper, isStarving, type Mob, type MobKind,
-  MOBS, mobStats, rollMob, STARVING,
+  MOBS, mobStats, STARVING,
 } from './actors';
 import { conjureImages } from './allies';
 import { hurt } from './combat';
@@ -15,7 +16,7 @@ import { durabilityPerUse, isDart, isMissile } from './missiles';
 import { plant, SEED_PLANTS, stepOnPlant } from './plants';
 import { seedGas } from './gas';
 import { gearLevel } from './weapons';
-import { cellX, cellY, distance, LENGTH, NEIGHBOURS8, NEIGHBOURS9 } from './level/geometry';
+import { cellX, cellY, distance, LENGTH, NEIGHBOURS8, NEIGHBOURS9, squaredDistance } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import { burst, immuneTo } from './traps';
 import { chill } from './status';
@@ -71,7 +72,7 @@ export const bleedImmune = (mob: Mob): boolean => INORGANIC.has(mob.kind);
 const corruptImmune = (mob: Mob): boolean => BOSSES.has(mob.kind) || MINIBOSSES.has(mob.kind) || mob.kind === 'mimic' || mob.kind === 'statue';
 
 /** Who fights alongside the heroes (Char.Alignment.ALLY): mirror images, golden bees, wards, the guardian, the corrupted. */
-export const isAlly = (char: Char): boolean => isHero(char) || char.ally === true || char.kind === 'mirror' || char.kind === 'bee';
+export const isAlly = (char: Char): boolean => isHero(char) || char.ally === true || char.kind === 'mirror';
 /** Who fights the heroes (Char.Alignment.ENEMY): any monster not passive, and not an ally. */
 export const isEnemy = (char: Char): boolean => !isHero(char) && enemyMob(char);
 
@@ -157,11 +158,10 @@ function explosiveCurse(ctx: Ctx, hero: Hero, mob: Char, weapon: Item): void {
   else if (before > 10 && after <= 10) ctx.effects.push({ type: 'explosive', hero: hero.id, item: weapon, state: 'hot' });
   else if (after <= 0) {
     let pos = -1;
-    const trueDistance = (a: number, b: number): number => Math.hypot(cellX(a) - cellX(b), cellY(a) - cellY(b));
     for (const n of NEIGHBOURS8) {
       const cell = mob.pos + n;
       if (hasFlag(ctx.level.map[cell]!, F.SOLID)) continue;
-      if (pos === -1 || trueDistance(hero.pos, cell) < trueDistance(hero.pos, pos)) pos = cell;
+      if (pos === -1 || squaredDistance(hero.pos, cell) < squaredDistance(hero.pos, pos)) pos = cell;
     }
     weapon.explosive = after + 100;
     // The explosion damages thrown weapons (MissileWeapon.damage: they cannot break of it).
