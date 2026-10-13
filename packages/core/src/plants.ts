@@ -111,9 +111,9 @@ export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number): void {
       break;
     }
     case 'rotberry':
-      // Its berries taste like sweet, sweet death: a cloud of toxic gas, roots for whoever stepped on it, and its seed.
+      // Rotberry.activate: a puff of toxic gas (SEAM(talents): a warden's adrenaline surge instead);
+      // Rotberry.wither: its seed, always.
       burst(ctx, pos, 'toxic', 2, false, 100);
-      if (who && isHero(who)) who.rooted = Math.max(who.rooted, 3);
       dropItem(ctx.floor, pos, createItem('seed.rotberry'));
       break;
   }

@@ -1,5 +1,7 @@
 import { isAlive, type Mob, MOBS, mobStats } from './actors';
-import { earnExp, hurt } from './combat';
+import { burstOnEternalFire } from './roomblobs';
+import { isTallGrass, trample } from './highgrass';
+import { chasmLoot, earnExp, hurt } from './combat';
 import { type Char, type Ctx, enterCell, exploredCells, heroesOn, isHero, isWater, leaveCell } from './floor';
 import { distance } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
@@ -7,6 +9,7 @@ import { clearGas, seedGas } from './gas';
 import { burnHeaps, chillPack, freezeHeaps } from './cooking';
 import { stepOnPlant } from './plants';
 import { activate } from './trap-effects';
+import { frostHurtsElemental } from './wandmaker-mobs';
 import type { Level } from './level/generate';
 import { type TrapInfo, type TrapKind, TRAPS } from './level/trapdefs';
 
@@ -65,6 +68,8 @@ export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost'): boolean
   if (char.kind === 'piranha') return true;
   // DM-300 breathes its own fumes unharmed.
   if (harm === 'gas' && char.kind === 'dm300') return true;
+  // A newborn fire elemental does not burn (Char.Property.FIERY).
+  if (harm === 'burning' && char.kind === 'newbornElemental') return true;
   return harm !== 'frost' && (char.kind === 'yog' || (harm === 'burning' && char.kind === 'burningFist'));
 }
 
@@ -87,8 +92,8 @@ export function burst(ctx: Ctx, pos: number, kind: Burst, radius = GAS_RADIUS, s
     if (kind === 'fire' && !isWater(level.map[char.pos]!) && !immuneTo(char, 'burning')) {
       char.burning = Math.max(char.burning ?? 0, BURNING_TURNS);
     }
-    // Freezing: frozen stiff, and any fire put out.
-    if (kind === 'frost' && !immuneTo(char, 'frost')) {
+    // Freezing: frozen stiff, and any fire put out (Elemental.add: a newborn fire elemental is hurt instead).
+    if (kind === 'frost' && !frostHurtsElemental(ctx, char) && !immuneTo(char, 'frost')) {
       char.paralysed = Math.max(char.paralysed ?? 0, Math.round(FROST_TURNS * ctx.rng.floatRange(1, 1.5)));
       char.burning = 0;
     }
@@ -96,6 +101,8 @@ export function burst(ctx: Ctx, pos: number, kind: Burst, radius = GAS_RADIUS, s
     if (kind === 'frost' && isHero(char) && !immuneTo(char, 'frost')) chillPack(ctx, char);
   }
   if (kind === 'frost') freezeHeaps(ctx, pos, radius);
+  // EternalFire: frost puts it out, and a potion of purity cleanses it.
+  if (kind === 'frost' || kind === 'purity') burstOnEternalFire(ctx, pos, radius);
   if (kind !== 'fire') return;
   burnHeaps(ctx, pos, radius);
   // Whatever can burn nearby burns down to embers: grass, doors, barricades, bookshelves.
@@ -169,13 +176,15 @@ export function mobPress(ctx: Ctx, mob: Mob): void {
     return;
   }
   if (trapAt(ctx.level, cell) && (terrain === T.TRAP || mob.kind === 'sheep')) triggerTrap(ctx, mob, cell);
+  // Level.pressCell: tall grass is trampled under it.
+  if (isTallGrass(ctx.level.map[cell])) trample(ctx, cell, isAlive(mob) ? mob : null);
   enterCell(ctx.level, cell);
   stepOnPlant(ctx, isAlive(mob) ? mob : null, cell);
 }
 
 /**
- * Chasm.mobFall: the monster drops out of the level for good (Mob.destroy, not Mob.die): the
- * party still learns from it, but whatever it carried or would have dropped falls with it.
+ * Chasm.mobFall: the monster falls to its death (Mob.die(Chasm)): the party learns half as much from
+ * it, and whatever it carried or would have dropped falls through to the depth below.
  */
 export function mobFall(ctx: Ctx, mob: Mob): void {
   const index = ctx.floor.mobs.indexOf(mob);
@@ -184,10 +193,16 @@ export function mobFall(ctx: Ctx, mob: Mob): void {
   mob.hp = 0;
   leaveCell(ctx.world, ctx.level, ctx.depth, mob.pos);
   ctx.effects.push({ type: 'mobFell', depth: ctx.depth, mob: mob.id, pos: mob.pos, kind: mob.kind });
+  // Mob.die(Chasm): half the experience (an odd point rounded up or down at random), and its loot
+  // falls with it.
   const stats = mobStats(mob);
+  let exp = stats.exp;
+  if (exp % 2 === 1) exp += ctx.rng.int(2);
+  exp = Math.trunc(exp / 2);
   for (const hero of heroesOn(ctx.world, ctx.depth)) {
-    if (stats.exp > 0 && hero.lvl <= stats.maxLvl) earnExp(ctx, hero, stats.exp);
+    if (exp > 0 && hero.lvl <= stats.maxLvl) earnExp(ctx, hero, exp);
   }
+  chasmLoot(ctx, mob);
 }
 
 /** Hurt a monster's turn by the conditions traps leave behind; true if it loses the turn. */

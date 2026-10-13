@@ -3,14 +3,14 @@ import {
   HEAP_SPRITES,
   type Hero, type Item, type Level,
   type Bones, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
-  ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
+  type PlanStep, PLANT_KINDS, T,
   visibleCells, chargesKnown, WIDTH,
   type World, charAt, swapsWithHero, visibleEnemies,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
 import './game.css';
-import { mobDescription, plantText, tileText, wellText } from './examine';
+import { blobTexts, mobDescription, plantText, tileText, wellText } from './examine';
 import { chooseQuickslot, isPlaceholder, quickIndex, quickKind, quickUse, syncQuickslots, visibleQuickslots } from './quickslot';
 import { fx } from './fx';
 import { ambientFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
@@ -30,9 +30,11 @@ import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
 import { type Camera, render } from './render';
 import type { GhostLine } from '@pd/core';
 import { LevelTiles } from './tiles';
-import { lt } from './levelnames';
+import { feelingLine, lt, spawnerWarning } from './levelnames';
+import { levelFx } from './levelfx';
+import { mineTarget, setSmithToast, type SmithEnv, smithBranch, talkWithBlacksmith } from './blacksmith-ui';
 import {
-  armorTier, closeOverlay, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showReforge, showHelp, showHero,
+  armorTier, closeOverlay, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showHelp, showHero,
   refreshBackpack, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showTitle, showTrade, showWaiting, slot, toast, type ShareChoice,
 } from './screens';
 import { profileCard, rankingBlock, showBoards, trophyText } from './rankui';
@@ -715,6 +717,10 @@ const walk = {
   open: null as number | null,
   /** Pick up what lies at the end of the walk. */
   pickup: false,
+  /** The blacksmith's mine: the rock to mine once the walk has brought the hero beside it (HeroAction.Mine). */
+  mine: null as number | null,
+  /** A way to a depth's side level or back (a branch transition) at the end of the walk. */
+  branch: false,
   /** Resting until healed (a long press on the hourglass), stopped by any danger. */
   resting: false,
   lastSent: 0,
@@ -726,6 +732,8 @@ const walk = {
     this.resting = false;
     this.goal = null;
     this.open = null;
+    this.mine = null;
+    this.branch = false;
   },
 };
 
@@ -982,6 +990,21 @@ function step(world: World, now: number, visible: readonly boolean[]): void {
     }
   }
 
+  if (walk.mine !== null) {
+    const cell = walk.mine;
+    walk.mine = null;
+    if (adjacent(me.pos, cell)) {
+      send({ type: 'mine', cell }, now);
+      return;
+    }
+  }
+
+  if (walk.branch) {
+    walk.branch = false;
+    takeBranch();
+    return;
+  }
+
   if (walk.pickup) {
     walk.pickup = false;
     if (heapAt(world, me.depth, me.pos)) {
@@ -1116,9 +1139,12 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
     if (effect.type === 'bossSlain' && effect.depth === bossFight?.depth) bossFight = null;
     if (effect.type === 'ghost' && effect.hero === myId) talkWithGhost(effect.line, effect.questType);
     if (effect.type === 'ratKing' && effect.hero === myId) talkWithRatKing(effect.line);
-    if (effect.type === 'wandmaker' && effect.hero === myId) talkWithWandmaker(effect.line);
+    if (effect.type === 'wandmaker' && effect.hero === myId) talkWithWandmaker(effect.line, effect.questType);
     if (effect.type === 'imp' && effect.hero === myId) talkWithImp(effect.line);
-    if (effect.type === 'smith' && effect.hero === myId) talkWithSmith(effect.line);
+    if (effect.type === 'blacksmith' && effect.hero === myId) {
+      const env = smithEnv();
+      if (env) talkWithBlacksmith(env, effect.line, effect.questType);
+    }
     if (effect.type === 'shop' && effect.hero === myId) openShop();
     // The Amulet of Yendor: its question for whoever takes it (once a run); the party hears of it.
     if (effect.type === 'amulet' && world && me) {
@@ -1130,6 +1156,8 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
       }
     }
     if (effect.type === 'fell' && effect.hero === myId) justFell = true;
+    // Off to a depth's side level or back: the walk was for the level left.
+    if (effect.type === 'branched' && effect.hero === myId) walk.reset();
     // Hero.interrupt: an item breaking stops whatever the hero was doing.
     if (effect.type === 'worn' && effect.hero === myId && effect.state === 'broken') walk.reset();
     // What flies into the backpack is motion.ts's: from wherever it lay. The find shows a moment under the HUD.
@@ -1207,48 +1235,53 @@ function talkWithRatKing(line: 'notSleeping' | 'busy'): void {
   showQuest({ world, hero: me, who: 'ratKing', text: t.ratKing[line], onClose: hideOverlay });
 }
 
-function talkWithWandmaker(line: 'intro' | 'remind' | 'reward' | 'farewell'): void {
+/**
+ * Wandmaker.interact and WndWandmaker: his errand in two windows (a greeting for the hero's class, then what
+ * he is after), a reminder, or, with it in the pack, his two wands to choose from; his farewell as he leaves.
+ */
+function talkWithWandmaker(line: core.WandmakerLine, type: core.WandmakerType): void {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
   if (!world || !me) return;
+  const name = capitalize(me.name || t.heroDefault);
+  const errand = (['dust', 'ember', 'berry'] as const)[type - 1]!;
+  const key = 'actors.mobs.npcs.wandmaker';
+  if (line === 'farewell') {
+    view.say(lt('windows.wndwandmaker.farewell', name), '#ffffff');
+    return;
+  }
   walk.reset();
+  const speak = (text: string, onClose: () => void): void => showQuest({ world, hero: me, who: 'wandmaker', text, onClose });
+  if (line === 'intro') {
+    speak(`${lt(`${key}.intro_${me.heroClass}`, name)}${lt(`${key}.intro_1`)}`, () => speak(`${lt(`${key}.intro_${errand}`)}${lt(`${key}.intro_2`)}`, hideOverlay));
+    return;
+  }
+  if (line === 'reminder') {
+    speak(lt(`${key}.reminder_${errand}`, name), hideOverlay);
+    return;
+  }
   const quest = world.wandQuest;
+  const wanted = me.items.find((item) => item.kind === core.WANDMAKER_WANTS[type]);
   showQuest({
     world,
     hero: me,
     who: 'wandmaker',
-    // He may be after a rotberry seed rather than corpse dust.
-    text: quest?.wants === 'berry' && line === 'intro' ? t.wandmaker.introBerry
-      : quest?.wants === 'berry' && line === 'remind' ? t.wandmaker.remindBerry
-      : quest?.wants === 'fish' && line === 'intro' ? t.wandmaker.introFish
-      : quest?.wants === 'fish' && line === 'remind' ? t.wandmaker.remindFish
-      : t.wandmaker[line],
-    offers: line === 'reward' && quest ? [quest.battle, quest.utility] : [],
-    onChoose: (index) => send({ type: 'wandReward', choice: index === 0 ? 'battle' : 'utility' }, performance.now()),
+    ...(wanted ? { title: capitalize(itemName(world, wanted)) } : {}),
+    text: lt(`windows.wndwandmaker.${errand}`),
+    offers: quest?.wand1 && quest.wand2 ? [quest.wand1, quest.wand2] : [],
+    onChoose: (index) => send({ type: 'wandReward', choice: index === 0 ? 1 : 2 }, performance.now()),
     onClose: hideOverlay,
   });
 }
 
-function talkWithSmith(line: SmithLine): void {
+/** What the blacksmith's windows need (blacksmith-ui.ts): the world, my hero, and a way to act. */
+function smithEnv(): SmithEnv | null {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
-  const quest = world?.smithQuest;
-  if (!world || !me || !quest) return;
+  if (!world || !me) return null;
   walk.reset();
-  const text =
-    line === 'intro' ? t.smith.intro[quest.wants]
-    : line === 'noGold' ? t.smith.noGold(ORE_WANTED)
-    : t.smith[line];
-  // Done with the errand: his services are on offer at once.
-  if (line === 'completed' || line === 'reforge') {
-    showReforge({
-      world, hero: me, text,
-      onReforge: (first, second) => send({ type: 'reforge', first, second }, performance.now()),
-      onClose: hideOverlay,
-    });
-    return;
-  }
-  showQuest({ world, hero: me, who: 'blacksmith', text, onClose: hideOverlay });
+  setSmithToast((text) => view.say(text, '#ff8800'));
+  return { world, hero: me, send: (action) => send(action, performance.now()), close: hideOverlay };
 }
 
 function talkWithImp(line: 'intro' | 'remind' | 'reward' | 'farewell'): void {
@@ -1307,6 +1340,8 @@ function tapCell(cell: number, quiet = false): void {
     if (heapAt(world, me.depth, me.pos)) takeHere(world, me, performance.now());
     // Hero.handle on the hero's own cell: standing in tall grass or on a plant, it is trampled where the hero stands.
     else if (core.canSelfTrample(world, me)) send({ type: 'move', to: me.pos }, performance.now());
+    // A way to the depth's side level (the blacksmith's mine) or back up from it.
+    else if (branchAt(level, me.pos)) takeBranch();
     else if (!world.arena && me.pos === level.exit) useStairs(world, 'descend', performance.now());
     else if (!world.arena && me.pos === level.entrance && (me.depth > 1 || hasAmulet(me))) useStairs(world, 'ascend', performance.now());
     else if (me.pos === level.entrance && heapAt(world, me.depth, me.pos) === undefined && me.depth === 1 && (level.map[me.pos] === T.ENTRANCE || level.map[me.pos] === T.ENTRANCE_SP)) {
@@ -1340,10 +1375,29 @@ function tapCell(cell: number, quiet = false): void {
       return;
     }
   }
-  // A vein of dark gold beside the hero, with the blacksmith's pickaxe at hand: mine it.
-  const pickaxe = me.weapon?.kind === 'weapon.pickaxe' || me.items.some((i) => i.kind === 'weapon.pickaxe');
-  if (level.map[cell] === T.WALL_DECO && adjacent(me.pos, cell) && pickaxe && me.depth >= 11 && me.depth <= 15) {
-    send({ type: 'mine' }, performance.now());
+  // Hero.handle on the blacksmith's mine, with his pickaxe: rock, a vein, a crystal or a boulder is mined
+  // (HeroAction.Mine), from beside it; from afar, the hero walks up to it first.
+  const mining = mineTarget(world, me, level, cell);
+  if (mining === 'mine') {
+    send({ type: 'mine', cell }, performance.now());
+    return;
+  }
+  if (mining === 'walk') {
+    const known = exploredCells(world, me.depth);
+    let best: number[] | null = null;
+    for (const n of core.NEIGHBOURS8) {
+      const to = cell + n;
+      if (!known[to] || !core.canEnter(level, to)) continue;
+      const way = findPath(level, me.pos, to, occupiedCells(world, me.depth), known, floating);
+      if (way && (!best || way.length < best.length)) best = way;
+    }
+    if (best && best.length > 0) {
+      walk.queue = best;
+      walk.mine = cell;
+      if (!quiet) feedback.aim(cell, false, vnow);
+    } else if (!quiet) {
+      feedback.refuse(cell, vnow);
+    }
     return;
   }
   // Chasm.heroJump: a chasm right beside the hero asks whether to jump in; floating, one drifts over it.
@@ -1394,6 +1448,19 @@ function tapCell(cell: number, quiet = false): void {
   if (world.arena || enemiesInSight.length > 0) return;
   if (cell === level.exit) walk.stairs = 'descend';
   else if (cell === level.entrance && (me.depth > 1 || hasAmulet(me))) walk.stairs = 'ascend';
+  else if (branchAt(level, cell)) walk.branch = true;
+}
+
+/** A way to the depth's side level, or back up from it, on a cell (LevelTransition BRANCH_EXIT or BRANCH_ENTRANCE). */
+const branchAt = (level: Level, cell: number): boolean =>
+  (level.transitions ?? []).some((tr) => tr.cell === cell && (tr.type === 'branchExit' || tr.type === 'branchEntrance'));
+
+/** Level.activateTransition for a branch: the blacksmith asks his questions first (blacksmith-ui.ts); any other way is taken at once. */
+function takeBranch(): void {
+  const env = smithEnv();
+  if (!env) return;
+  if (!branchAt(levelAt(env.world, env.hero.depth), env.hero.pos)) return;
+  if (!smithBranch(env)) env.send({ type: 'branch' });
 }
 
 /** A tap on a buff icon (BuffIndicator): its name and turns; Shattered's longer ones (the seal's shield, a sealed floor, hunger) in a window. */
@@ -1832,7 +1899,7 @@ function examineCell(pos: number): void {
   const well = level.map[pos] === T.WELL ? level.wells.find((w) => w.pos === pos) : undefined;
   // Level.tileDesc: and what covers it (Web.tileDesc).
   const webbed = seen && world.floors[me.depth]?.gas?.web?.some(([cell]) => cell === pos);
-  showInfo(name, [well ? wellText(well.water) : desc, ...(webbed ? [t.webHere] : [])], hideOverlay);
+  showInfo(name, [well ? wellText(well.water) : desc, ...(webbed ? [t.webHere] : []), ...blobTexts(world, me.depth, pos, seen === true)], hideOverlay);
 }
 
 function startResting(): void {
@@ -2254,8 +2321,12 @@ function tick(now: number): void {
         if (me.depth === 16 && lastPlace.depth === 15) view.say(t.enterCity, '#ffff44');
         if (me.depth === 21 && lastPlace.depth === 20) view.say(t.enterHalls, '#ffff44');
         if (me.depth === 26 && lastPlace.depth === 25) view.say(t.enterLast, '#ffff44');
-        const feeling = t.feelings[level.feeling];
-        if (feeling && me.depth > lastPlace.depth) view.say(feeling, '#ffff44');
+        // GameScene on a new deepest floor: demon spawners left alive above are felt (GLog.n).
+        const spawners = me.depth > lastPlace.depth && me.depth === (world.reached ?? me.depth) ? spawnerWarning(world, me.depth) : '';
+        if (spawners) view.say(spawners, '#ff4444');
+        // GameScene: GLog.w(Dungeon.level.feeling.desc()) on every arrival.
+        const feeling = feelingLine(level);
+        if (feeling) view.say(feeling, '#ff8800');
       }
       justFell = false;
     } else if (me.pos !== lastPlace.pos) {
@@ -2337,6 +2408,7 @@ function tick(now: number): void {
   fx.update(vnow, dt);
   ambientFx(view, vnow, dt);
   regionFx(level, visible, vnow, dt);
+  levelFx.frame(world, me.depth, visible, view, vnow);
 
   const mine = view.puppets.get(me.id);
   const at = mine ? view.position(mine, vnow) : { x: cellX(me.pos) * TILE, y: cellY(me.pos) * TILE };

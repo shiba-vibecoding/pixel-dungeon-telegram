@@ -111,7 +111,7 @@ export function checkBadges(progress: BadgeProgress, world: World, me: Hero, eff
   tiers(['item1', 'item2', 'item3', 'item4'], best, [3, 6, 9, 12]);
   earn('haggler', belongings.some((item) => item.kind === 'ring.haggler'));
   earn('thorns', belongings.some((item) => item.kind === 'ring.thorns'));
-  earn('bags', ['bag.seeds', 'bag.scrolls', 'bag.wands'].every((kind) => me.items.some((item) => item.kind === kind)));
+  earn('bags', ['bag.seeds', 'bag.scrolls', 'bag.potions', 'bag.wands'].every((kind) => me.items.some((item) => item.kind === kind)));
 
   const known = new Set(world.known);
   const all = (category: string): boolean => labelled(category).every((kind) => known.has(kind));

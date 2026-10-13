@@ -28,7 +28,7 @@ const PREFIXES = [
   'items.quest.', 'items.keys.', 'items.bags.', 'items.artifacts.skeletonkey', 'items.heap', 'items.journal.',
   'windows.wndblacksmith', 'windows.wndsadghost', 'windows.wndwandmaker', 'windows.wndimp', 'windows.wndtradeitem', 'windows.wndquest',
   'windows.wndinfotrap', 'windows.wndjournal', 'windows.wndkeyring', 'journal.notes', 'journal.document',
-  'scenes.interlevelscene', 'plants.',
+  'scenes.interlevelscene', 'scenes.gamescene.', 'plants.',
 ];
 
 function read(file) {

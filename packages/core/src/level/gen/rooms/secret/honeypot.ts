@@ -31,7 +31,7 @@ export class SecretHoneypotRoom extends SecretRoom {
     this.potCell = potCell;
 
     // Bee.spawn(depth), at full health, guarding the pot no one holds (Bee.setPotInfo(pot, null)).
-    level.mobs.push({ kind: 'bee', pos: potCell, level: Dungeon.depth, state: 'wandering' });
+    level.mobs.push({ kind: 'bee', pos: potCell, level: Dungeon.depth, state: 'wandering', beeHome: potCell });
 
     this.placeItem(createItem('honeypot'), level);
 

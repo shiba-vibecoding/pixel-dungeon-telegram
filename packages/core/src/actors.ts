@@ -4,6 +4,8 @@ import { type HeroClass, startingKit } from './heroclass';
 import { isStarving } from './hero';
 import type { Rng } from './rng';
 import type { Action, PlanStep } from './world';
+import type { VaultMob } from './vault-types';
+import type { MineMobState } from './mine-types';
 
 /*
  * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
@@ -314,9 +316,20 @@ export type MobKind =
   | 'statue' | 'piranha' | 'imp' | 'sheep' | 'blacksmith' | 'mirror'
   | 'albino' | 'bandit' | 'shielded' | 'senior' | 'acidic'
   | 'fetidRat' | 'curse' | 'ratKing' | 'wraith' | 'bee' | 'impShopkeeper'
-  | 'gnollTrickster' | 'greatCrab' | 'sentry' | 'demonSpawner';
-/** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
-export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
+  | 'gnollTrickster' | 'greatCrab' | 'sentry' | 'demonSpawner'
+  | 'rotHeart' | 'rotLasher' | 'newbornElemental'
+  // The blacksmith's mine (minemobs.ts).
+  | 'crystalWisp' | 'crystalGuardian' | 'crystalSpire' | 'gnollGuard' | 'gnollSapper' | 'gnollGeomancer'
+  | 'fungalSentry' | 'fungalSpinner' | 'fungalCore'
+  // The dwarven vault (vault.ts, vaultmobs.ts, vaultboss.ts).
+  | 'vaultSentry' | 'vaultLaser' | 'vaultMirror' | 'vaultTokenDoor' | 'vaultRat' | 'vaultSkeleton' | 'vaultDM100' | 'vaultDM200'
+  | 'vaultGhoul' | 'vaultGolem' | 'vaultShaman' | 'vaultFireElemental' | 'vaultFrostElemental' | 'vaultShockElemental'
+  | 'vaultBossElemental';
+/**
+ * `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot;
+ * `investigating`: a vault monster that glimpsed someone and goes to look (Mob.INVESTIGATING, vaultmobs.ts).
+ */
+export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive' | 'investigating';
 
 /** Who keeps a shop: the shopkeeper, or the imp of the last one. */
 export const isShopkeeper = (mob: { kind: MobKind }): boolean => mob.kind === 'shopkeeper' || mob.kind === 'impShopkeeper';
@@ -407,6 +420,42 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   sentry: { name: 'sentry', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** DemonSpawner: rooted in its room of the demon halls, it breeds demons until destroyed (see roommobs.ts). */
   demonSpawner: { name: 'demon spawner', ht: 120, attack: 0, defense: 0, damage: [0, 0], dr: 12, exp: 15, maxLvl: 29, speed: 1 },
+  // The old wandmaker's errands (wandmaker-mobs.ts): the rotberry's heart and its lashers, rooted in their garden,
+  // and the newborn fire elemental of the ritual site.
+  rotHeart: { name: 'rot heart', ht: 80, attack: 0, defense: 0, damage: [0, 0], dr: 5, exp: 4, maxLvl: 30, speed: 1 },
+  rotLasher: { name: 'rot lasher', ht: 80, attack: 25, defense: 0, damage: [10, 20], dr: 8, exp: 1, maxLvl: 30, speed: 1 },
+  newbornElemental: { name: 'newborn fire elemental', ht: 60, attack: 15, defense: 12, damage: [10, 12], dr: 5, exp: 10, maxLvl: 20, speed: 1, flying: true },
+  // The blacksmith's mine (minemobs.ts). maxLvl -2: no experience and no loot from the quest's monsters.
+  crystalWisp: { name: 'crystal wisp', ht: 30, attack: 18, defense: 16, damage: [5, 10], dr: 5, exp: 7, maxLvl: -2, speed: 1, flying: true },
+  crystalGuardian: { name: 'crystal guardian', ht: 100, attack: 20, defense: 14, damage: [10, 16], dr: 10, exp: 10, maxLvl: -2, speed: 1 },
+  /** CrystalSpire: immovable, hurt only by the pickaxe; it calls its guardians and sends crystal spikes (minemobs.ts). */
+  crystalSpire: { name: 'crystal spire', ht: 300, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 20, maxLvl: 29, speed: 1 },
+  gnollGuard: { name: 'gnoll guard', ht: 35, attack: 20, defense: 15, damage: [6, 12], dr: 6, exp: 7, maxLvl: -2, speed: 1 },
+  gnollSapper: { name: 'gnoll sapper', ht: 45, attack: 18, defense: 15, damage: [1, 6], dr: 6, exp: 10, maxLvl: -2, speed: 1 },
+  /** GnollGeomancer: immovable but for its dashes; armoured in rock, it throws boulders and brings rocks down (minemobs.ts). */
+  gnollGeomancer: { name: 'gnoll geomancer', ht: 150, attack: 20, defense: 0, damage: [3, 6], dr: 6, exp: 20, maxLvl: 29, speed: 1 },
+  fungalSentry: { name: 'fungal sentry', ht: 200, attack: 50, defense: 12, damage: [5, 10], dr: 0, exp: 10, maxLvl: -2, speed: 1 },
+  fungalSpinner: { name: 'fungal spinner', ht: 40, attack: 22, defense: 16, damage: [10, 20], dr: 6, exp: 7, maxLvl: -2, speed: 1 },
+  fungalCore: { name: 'fungal core', ht: 300, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 20, maxLvl: 29, speed: 1 },
+  // The dwarven vault's hazards and fixtures (VaultSentry, VaultLaser, VaultMirror, VaultTokenDoor): immovable, never hurt.
+  vaultSentry: { name: 'scanning sentry', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  vaultLaser: { name: 'disintegration sentry', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  vaultMirror: { name: 'strange mirror', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  vaultTokenDoor: { name: 'strange door', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  // The vault's guards (actors/mobs/quest/vault): Shattered's monsters, sharper and tougher, worth no experience but a
+  // dwarf token each; the base kind's numbers with the vault's accuracy, evasion and extra armour (vaultmobs.ts).
+  vaultRat: { name: 'marsupial rat', ht: 8, attack: 24, defense: 18, damage: [1, 4], dr: 1, exp: 0, maxLvl: 30, speed: 1 },
+  vaultSkeleton: { name: 'dwarven skeleton', ht: 25, attack: 24, defense: 20, damage: [2, 10], dr: 9, exp: 0, maxLvl: 30, speed: 1 },
+  vaultDM100: { name: 'modified DM-100', ht: 20, attack: 25, defense: 18, damage: [2, 8], dr: 8, exp: 0, maxLvl: 30, speed: 1 },
+  vaultDM200: { name: 'modified DM-200', ht: 80, attack: 28, defense: 15, damage: [10, 25], dr: 8, exp: 0, maxLvl: 30, speed: 1 },
+  vaultGhoul: { name: 'dwarven ghoul', ht: 45, attack: 24, defense: 20, damage: [16, 22], dr: 4, exp: 0, maxLvl: 30, speed: 1 },
+  vaultGolem: { name: 'golem', ht: 120, attack: 28, defense: 15, damage: [25, 30], dr: 12, exp: 0, maxLvl: 30, speed: 1 },
+  vaultShaman: { name: 'captured shaman', ht: 35, attack: 25, defense: 18, damage: [5, 25], dr: 11, exp: 0, maxLvl: 30, speed: 1 },
+  vaultFireElemental: { name: 'fire elemental', ht: 60, attack: 25, defense: 20, damage: [20, 25], dr: 5, exp: 0, maxLvl: 30, speed: 1, flying: true },
+  vaultFrostElemental: { name: 'frost elemental', ht: 60, attack: 25, defense: 20, damage: [20, 25], dr: 5, exp: 0, maxLvl: 30, speed: 1, flying: true },
+  vaultShockElemental: { name: 'shock elemental', ht: 60, attack: 25, defense: 20, damage: [20, 25], dr: 5, exp: 0, maxLvl: 30, speed: 1, flying: true },
+  /** VaultBossElemental: the greater elemental guarding the vault's treasure, its form changing as it is hurt (vaultboss.ts). */
+  vaultBossElemental: { name: 'greater elemental', ht: 600, attack: 28, defense: 20, damage: [20, 25], dr: 10, exp: 30, maxLvl: 29, speed: 1 },
 };
 
 /** A monster's numbers: the table's, but a mimic is as strong as the depth it lurks on (Mimic.adjustStats). */
@@ -465,6 +514,8 @@ export interface Mob {
   pumped?: boolean;
   /** Turns left of being marked by the sacrificial fire: dying meanwhile, it is an offering. */
   marked?: number;
+  /** SecretHoneypotRoom's bee: the shattered pot it guards (Bee.potPos), no one holding it. */
+  beeHome?: number;
   /** Bitten by a golden bee (Mob.aggro): the bee it has turned on. */
   beeFoe?: string;
   /** The imp who keeps the last shop has greeted the heroes. */
@@ -521,13 +572,25 @@ export interface Mob {
   /** DemonSpawner: turns until its next demon. */
   spawnCooldown?: number;
   spawnRecorded?: boolean;
+  /** CorpseDust.DustWraith: a wraith the corpse dust raised, and how many times it went for the hero (atkCount). */
+  dust?: number;
+  /** Elemental.rangedCooldown; NewbornFireElemental.targetingPos (-1: not charging). */
+  rangedCooldown?: number;
+  targetingPos?: number;
   /** A mirror image: whose twin it is, and the skill and strength it took from them. */
   image?: { owner: string; attack: number; damage: number };
+  /** The dwarven vault's characters: their scans, beams, wandering rounds and spells (vault-types.ts). */
+  vault?: VaultMob;
+  /** The blacksmith's mine's monsters: colours, partners, abilities, rocks on their way (mine-types.ts). */
+  mine?: MineMobState;
 }
 
 /** Mob.beckon: called towards a spot. Statue.beckon: an animated statue does not stir for it. */
 export function beckon(mob: Mob, pos: number): void {
   if (mob.state === 'passive' || (mob.kind === 'statue' && mob.state === 'sleeping')) return;
+  // CrystalGuardian and GnollGeomancer.beckon: not while asleep; CrystalSpire.beckon: never; the fungi are rooted.
+  if ((mob.kind === 'crystalGuardian' || mob.kind === 'gnollGeomancer') && mob.state === 'sleeping') return;
+  if (mob.kind === 'crystalSpire' || mob.kind === 'fungalCore' || mob.kind === 'fungalSentry') return;
   if (mob.state !== 'hunting') mob.state = 'wandering';
   mob.target = pos;
 }
@@ -541,8 +604,6 @@ export function createMob(id: string, kind: MobKind, pos: number, state: MobStat
  * Who lives where (Bestiary.mobClass), with the original's rare visitors from
  * the region below: a swarm of flies, a skeleton or a thief in the sewers,
  * fire elementals and dwarf monks in the caves, a succubus in the city.
- * Depth 21, the last shop (LastShopLevel), has no monsters and no row: like
- * any depth beyond the table it would get the default.
  */
 const BESTIARY: Readonly<Record<number, ReadonlyArray<readonly [MobKind, number]>>> = {
   1: [['rat', 1]],
@@ -565,6 +626,8 @@ const BESTIARY: Readonly<Record<number, ReadonlyArray<readonly [MobKind, number]
   18: [['elemental', 1], ['monk', 2], ['golem', 1], ['warlock', 1]],
   19: [['elemental', 1], ['monk', 2], ['golem', 3], ['warlock', 1], ['succubus', 0.02]],
   20: [['king', 1]],
+  // SEAM(mobs): depth 21 is a halls level now (no last shop); depth 22's roster stands in until Shattered's bestiary lands.
+  21: [['succubus', 1], ['eye', 1]],
   22: [['succubus', 1], ['eye', 1]],
   23: [['succubus', 1], ['eye', 2], ['scorpio', 1]],
   24: [['succubus', 1], ['eye', 2], ['scorpio', 3]],

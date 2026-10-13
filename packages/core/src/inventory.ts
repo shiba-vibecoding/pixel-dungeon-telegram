@@ -23,7 +23,7 @@ import { discover, F, hasFlag, T } from './level/terrain';
 import { type Burst, burst, immuneTo, trapAt, triggerTrap } from './traps';
 import { plant, SEED_PLANTS, stepOnPlant } from './plants';
 import { zapWand } from './wands';
-import { mine, mineProblem, TIME_TO_MINE } from './smith';
+import { mineCell, mineProblem, pickaxeKept, TIME_TO_MINE } from './blacksmith';
 import { transmute } from './transmute';
 import { drinkFromWaterskin, pickUpDew, TIME_TO_DRINK, WATERSKIN_VOLUME } from './waterskin';
 import { hasRoom } from './bags';
@@ -32,6 +32,7 @@ import { applyArmorKit, CLASS_ARMOR, CLASS_ARMOR_OF, classSpecial, specialProble
 import type { World } from './world';
 import { scaleMob } from './party';
 import { underChallenges } from './challenges';
+import { checkCandles, dustPickedUp, UNDROPPABLE } from './wandmaker';
 import {
   canTarget, defaultTarget, enchantItem, isItemRef, isTargetedScroll, itemAt, type ItemRef, TARGET_PROBLEMS, type TargetedScroll, upgradeItem,
 } from './scrolls';
@@ -70,8 +71,8 @@ export type InventoryAction =
   | { type: 'unequip' }
   /** Read the Tome of Mastery and master one of the two ways of the hero's class. */
   | { type: 'master'; item: number; subclass: SubClass }
-  /** Mine the vein of dark gold next to the hero with the blacksmith's pickaxe. */
-  | { type: 'mine' }
+  /** HeroAction.Mine: on the blacksmith's mine, break the wall, vein of dark gold, crystal or boulder beside the hero with his pickaxe. */
+  | { type: 'mine'; cell: number }
   /** The special ability of the class armour worn: a cell for the warrior's leap and the rogue's smoke bomb. */
   | { type: 'special'; target?: number }
   /** Balance a melee weapon with a weightstone, for speed or accuracy: the one in the pack at weapon, or the one in hand. */
@@ -148,7 +149,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     if ((heap.kind === 'lockedChest' || heap.kind === 'crystalChest') && chestKeyFor(world, hero, heap) < 0) return 'the chest is locked';
     return null;
   }
-  if (action.type === 'mine') return mineProblem(world, hero);
+  if (action.type === 'mine') return mineProblem(world, hero, action.cell);
   if (action.type === 'affix') return affixProblem(hero, action.from, action.to);
   if (action.type === 'detach') return detachProblem(hero, action.armor);
   if (action.type === 'special') return specialProblem(world, hero, action.target);
@@ -192,7 +193,10 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
       return hero[category]?.cursed ? CURSED : null;
     }
     case 'drop':
-      return null;
+      // CorpseDust.actions: none, not even dropping it.
+      if (UNDROPPABLE.has(item.kind)) return 'you cannot drop that';
+      // Pickaxe.actions: not on the mine, where it is needed.
+      return pickaxeKept(world, hero, item) ? 'you need the pickaxe down here' : null;
     case 'balance': {
       if (category !== 'weightstone') return 'that is no weightstone';
       if (action.imbue !== 'speed' && action.imbue !== 'accuracy') return 'bad choice';
@@ -210,8 +214,9 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     case 'throw':
     case 'zap': {
       // Item.AC_THROW: anything in the pack may be thrown (a bag would scatter what it holds: not that).
-      const fits = action.type === 'throw' ? category !== 'bag' : category === 'wand';
+      const fits = action.type === 'throw' ? category !== 'bag' && !UNDROPPABLE.has(item.kind) : category === 'wand';
       if (!fits) return `that cannot be ${action.type === 'throw' ? 'thrown' : 'zapped'}`;
+      if (pickaxeKept(world, hero, item)) return 'you need the pickaxe down here';
       if (!Number.isInteger(action.target) || action.target < 0 || action.target >= LENGTH || action.target === hero.pos) {
         return 'bad target';
       }
@@ -231,7 +236,7 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       openHeap(ctx, hero, ctx.floor.heaps.find((h) => h.pos === action.cell)!);
       return TIME_TO_UNLOCK;
     case 'mine':
-      mine(ctx, hero);
+      mineCell(ctx, hero, action.cell);
       return TIME_TO_MINE;
     // BrokenSeal.affixToArmor and Armor.AC_DETACH take no time.
     case 'affix':
@@ -378,6 +383,8 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       landItem(ctx, hero.pos, item);
       ctx.effects.push({ type: 'dropped', hero: hero.id, item });
       if (ctx.level.map[hero.pos] === T.ALCHEMY) brew(ctx, hero.pos, hero);
+      // CeremonialCandle.doDrop: the ritual may be complete.
+      if (item.kind === 'quest.candle') checkCandles(ctx);
       return TIME_TO_DROP;
     }
     case 'throw': {
@@ -470,6 +477,8 @@ function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
     const end = ballistica(ctx, hero.pos, target).at(-1)!;
     ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: item.kind });
     landItem(ctx, end, flying);
+    // CeremonialCandle.onThrow: the ritual may be complete.
+    if (flying.kind === 'quest.candle') checkCandles(ctx);
     return;
   }
   const boomerang = item.kind === 'missile.boomerang';
@@ -674,7 +683,8 @@ function pickUp(ctx: Ctx, hero: Hero): void {
       if (!pickUpDew(ctx, hero, heap.pos, item.qty)) left.push(item);
     } else if (collect(hero, item)) {
       ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
-      if (item.kind === 'seed.rotberry') rotberryRoar(ctx, hero);
+      // CorpseDust.doPickUp: its curse takes hold.
+      if (item.kind === 'quest.dust') dustPickedUp(ctx, hero);
       if (item.kind === 'quest.amulet') {
         // Amulet.doPickUp: the journey's goal. Its bearer may end the run here («Let's call it a day»)
         // or carry it on, up to the surface; the question comes once, as AmuletScene with its text.
@@ -852,13 +862,6 @@ function springMimic(ctx: Ctx, hero: Hero, heap: Heap): boolean {
   enterCell(level, pos);
   ctx.effects.push({ type: 'mimic', depth, mob: mimic.id, hero: hero.id });
   return true;
-}
-
-/** Rotberry.Seed.collect: picked, the seed lets out a roar that brings the whole level running. */
-function rotberryRoar(ctx: Ctx, hero: Hero): void {
-  const roused = ctx.floor.mobs.filter((mob) => mob.state !== 'passive');
-  for (const mob of roused) beckon(mob, hero.pos);
-  ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'challenge', count: roused.length });
 }
 
 /**

@@ -145,7 +145,7 @@ describe('sewer level generation', () => {
       // SewerLevel.trapClasses: on the first depth, only worn dart traps.
       // (a traps room brings its own: TrapsRoom.levelTraps)
       const roomOf = (pos: number) => first.rooms.find((r) => pos % WIDTH >= r.left && pos % WIDTH <= r.right && Math.trunc(pos / WIDTH) >= r.top && Math.trunc(pos / WIDTH) <= r.bottom);
-      expect((first.traps ?? []).filter((trap) => trap.kind !== 'wornDart' && roomOf(trap.pos)?.kind !== 'TrapsRoom')).toEqual([]);
+      expect((first.traps ?? []).filter((trap) => trap.kind !== 'wornDart' && trap.kind !== 'toxicVent' && roomOf(trap.pos)?.kind !== 'TrapsRoom')).toEqual([]);
       expect(first.feeling).toBe(Feeling.NONE);
     }
   });

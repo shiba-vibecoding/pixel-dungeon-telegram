@@ -1,4 +1,4 @@
-import { type Level, type Mob, type MobKind, type PlantKind, T } from '@pd/core';
+import { type Level, type Mob, type MobKind, type PlantKind, T, WIDTH, type World } from '@pd/core';
 import { lt, plain, terrainText, trapText } from './levelnames';
 import { lang } from './i18n';
 
@@ -96,7 +96,17 @@ const SAME_AS: Partial<Record<MobKind, MobKind>> = {
   albino: 'rat', bandit: 'thief', shielded: 'brute', senior: 'monk', acidic: 'scorpio', larva: 'yog', rottingFist: 'yog', burningFist: 'yog',
 };
 
+/** Shattered's own descriptions (Mob.description) of the wandmaker's quest's characters. */
+const WANDMAKER_MOB_TEXTS: Partial<Record<MobKind, readonly string[]>> = {
+  wandmaker: ['actors.mobs.npcs.wandmaker.desc'],
+  rotHeart: ['actors.mobs.rotheart.desc'],
+  rotLasher: ['actors.mobs.rotlasher.desc'],
+  newbornElemental: ['actors.mobs.elemental$newbornfireelemental.desc', 'actors.mobs.elemental$newbornfireelemental.desc_boss'],
+};
+
 export function mobDescription(mob: Mob): string {
+  const keys = WANDMAKER_MOB_TEXTS[mob.kind];
+  if (keys) return keys.map((key) => plain(lt(key))).join(' ');
   const table = lang === 'ru' ? RU_MOBS : EN_MOBS;
   return table[mob.kind] ?? table[SAME_AS[mob.kind] ?? mob.kind] ?? '';
 }
@@ -158,5 +168,64 @@ export function tileText(level: Level, pos: number): { name: string; desc: strin
 
 ${desc}` };
   }
-  return terrainText(level, terrain);
+  const base = terrainText(level, terrain);
+  const custom = customText(level, pos);
+  return { name: custom?.name ?? base.name, desc: custom?.desc ?? base.desc };
+}
+
+/**
+ * WndInfoCell.cellName and its description: the last custom tilemap drawing something on the cell (not those
+ * drawn over the characters) may name and describe it (CustomTilemap.name, desc); otherwise the terrain does.
+ */
+function customText(level: Level, pos: number): { name?: string; desc?: string } | undefined {
+  const x = pos % WIDTH;
+  const y = Math.trunc(pos / WIDTH);
+  let found: { kind: string; tx: number; ty: number; tile: number } | undefined;
+  for (const c of level.customTiles ?? []) {
+    if (c.wall || x < c.x || x >= c.x + c.w || y < c.y || y >= c.y + c.h) continue;
+    const tile = c.data?.[x - c.x + (y - c.y) * c.w] ?? -1;
+    if (tile >= 0) found = { kind: c.kind, tx: x - c.x, ty: y - c.y, tile };
+  }
+  if (!found) return undefined;
+  const text = (key: string): { name: string; desc: string } => ({ name: plain(lt(`${key}.name`)), desc: plain(lt(`${key}.desc`)) });
+  switch (found.kind) {
+    case 'Carpet':
+      // Carpet: its own name and description, but a tile laid over it (a statue, a pedestal) is the terrain's.
+      return found.tile < 80 ? text('tiles.custom.carpet') : undefined;
+    case 'RatKingRoomDeco': {
+      const key = 'levels.rooms.secret.ratkingroom$ratkingroomdeco';
+      if (level.map[pos] === T.CUSTOM_DECO) return { name: plain(lt(`${key}.statue_name`)), desc: plain(lt(`${key}.statue_desc`)) };
+      if (found.tx === 2 && found.ty === 2) return { name: plain(lt(`${key}.pillow_name`)), desc: plain(lt(`${key}.pillow_desc`)) };
+      return undefined;
+    }
+    case 'WeakFloorRoom.HiddenWell':
+      return text('levels.rooms.special.weakfloorroom$hiddenwell');
+    // The old wandmaker's rooms: the mass grave's bones, the ritual site's marker and tables.
+    case 'MassGraveRoom$MassGraveDeco':
+      return text('levels.rooms.quest.massgraveroom$massgravedeco');
+    case 'RitualSiteRoom$RitualMarker':
+      return text('levels.rooms.quest.ritualsiteroom$ritualmarker');
+    case 'RitualSiteRoom$Table':
+      return text('levels.rooms.quest.ritualsiteroom$table');
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * WndInfoCell: what lies over the cell, after its description (Blob.tileDesc, for the blobs seen there): the
+ * sacrificial fire, the eternal fire, a garden's foliage, toxic gas.
+ */
+export function blobTexts(world: World, depth: number, pos: number, seen: boolean): string[] {
+  const level = world.levels[depth];
+  const floor = world.floors[depth];
+  if (!level || !floor) return [];
+  const texts: string[] = [];
+  // SacrificialFire is alwaysVisible; the rest only where the party can see.
+  if (floor.altar && floor.altar.volume > 0 && floor.altar.pos === pos) texts.push(plain(lt('actors.blobs.sacrificialfire.desc')));
+  if (!seen) return texts;
+  if (level.eternalFire?.includes(pos)) texts.push(plain(lt('levels.rooms.special.magicalfireroom$eternalfire.desc')));
+  if (floor.foliage?.includes(pos)) texts.push(plain(lt('actors.blobs.foliage.desc')));
+  if (floor.gas?.toxic?.some(([cell, volume]) => cell === pos && volume > 0)) texts.push(plain(lt('actors.blobs.toxicgas.desc')));
+  return texts.filter(Boolean);
 }

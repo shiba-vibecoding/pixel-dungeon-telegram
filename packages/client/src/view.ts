@@ -3,13 +3,16 @@ import {
   type TrapKind, visibleCells, WIDTH, type World,
   type Look,
 } from '@pd/core';
-import { audio, type Sound } from './audio';
+import { audio } from './audio';
 import { capitalize, t } from './i18n';
 import { itemName, plainName } from './itemtext';
 import { type AnimName, type Assets, type CharSprite, duration, heroSprite } from './sprites';
-import { lt, plain, trapText } from './levelnames';
+import { feelingLine, lt, plain, trapText } from './levelnames';
+import { TELEPORTING, TRAP_ACTIVATION } from './levelfx';
 import { haptic } from './telegram';
 import { DEPTH_CARD_MS } from './cards';
+import { mineSprite } from './minesprites';
+import { mineEffect } from './blacksmith-ui';
 
 /*
  * What the player sees, as opposed to what the world is: characters slide
@@ -17,14 +20,8 @@ import { DEPTH_CARD_MS } from './cards';
  * float up; the message log fills. Everything here is cosmetic and local.
  */
 
-/** The sound each trap makes as it goes off, after the click (Assets.Sounds in each Trap.activate). */
-const TRAP_SOUNDS: Partial<Record<TrapKind, Sound>> = {
-  alarm: 'alert', blazing: 'burning', burning: 'burning', chilling: 'shatter', frost: 'shatter', confusion: 'gas', corrosion: 'gas',
-  toxic: 'gas', cursing: 'cursed', disarming: 'teleport', disintegration: 'ray', explosive: 'blast', flashing: 'blast', flock: 'sheep',
-  gateway: 'teleport', geyser: 'gas', grim: 'cursed', guardian: 'alert', ooze: 'gas', pitfall: 'rocks',
-  poisonDart: 'miss', tenguDart: 'miss', wornDart: 'miss', rockfall: 'rocks', gnollRockfall: 'rocks', shocking: 'lightning', storm: 'lightning',
-  summoning: 'teleport', teleportation: 'teleport', warping: 'teleport', weakening: 'cursed', distortion: 'teleport',
-};
+/** The dart traps: their dart is heard landing (HIT), not thrown. */
+const DART_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['poisonDart', 'tenguDart', 'wornDart']);
 
 export const STEP_MS = 110;
 /**
@@ -122,10 +119,19 @@ export interface Puppet {
   levitating?: boolean;
   /** Fallen into a chasm (a monster): when it began to drop out of sight, spinning and shrinking. */
   fallStart?: number;
+  /** Teleported in (ScrollOfTeleportation.appear: AlphaTweener to 1 over `appearMs`): when it began to show. */
+  appearStart?: number;
+  appearMs?: number;
 }
 
 /** MobSprite.FALL_TIME: how long a monster takes to drop out of sight into a chasm. */
 export const FALL_MS = 1000;
+
+/** How a character newly on the level shows up: faded in (teleported, a wraith rising), or pushed out of a cell (Pushing). */
+interface Arrival {
+  fadeMs?: number;
+  from?: number;
+}
 
 export interface Floater {
   text: string;
@@ -266,6 +272,8 @@ export class View {
   waveCard: { title: string; sub: string; kind: '' | 'champions' | 'boss'; start: number } | null = null;
   /** Thrown items and magic bolts in flight; `sprite` null for a bolt. */
   projectiles: Array<{ from: number; to: number; start: number; duration: number; sprite: number | null; color?: string }> = [];
+  /** Characters about to show up on the level (from the effects), for sync to bring in as they came. */
+  private readonly arrivals = new Map<string, Arrival>();
 
   constructor(private readonly assets: Assets) {}
 
@@ -273,6 +281,7 @@ export class View {
   reset(depth: number): void {
     this.depth = depth;
     this.puppets.clear();
+    this.arrivals.clear();
     this.floaters = [];
     this.flashes = [];
     this.bannerStart = 0;
@@ -345,6 +354,22 @@ export class View {
         if (!puppet.alive) {
           puppet.anim = 'die';
           puppet.animStart = -1e9;
+        }
+        const arrival = this.arrivals.get(id);
+        if (arrival) {
+          this.arrivals.delete(id);
+          if (arrival.fadeMs) {
+            puppet.appearStart = now;
+            puppet.appearMs = arrival.fadeMs;
+          }
+          if (arrival.from !== undefined && arrival.from !== pos) {
+            // Pushing: out of the cell it came from, onto its own.
+            puppet.from = arrival.from;
+            puppet.aim = pos;
+            puppet.moveStart = now;
+            puppet.moveDur = this.stepMs;
+            puppet.anim = 'run';
+          }
         }
         this.puppets.set(id, puppet);
       } else if (puppet.to !== pos) {
@@ -425,16 +450,20 @@ export class View {
         this.puppets.get(mob.id)!.row = itemDef(twin.armor.kind).tier ?? 0;
         continue;
       }
-      place(mob.id, mob.kind, this.assets.mobs[mob.kind], false, mob.pos, mob.hp, mob.ht,
+      place(mob.id, mob.kind, mineSprite(this.assets, mob), false, mob.pos, mob.hp, mob.ht,
         // A statue biding its time shows no sign of sleep.
         mob.state === 'sleeping' && mob.kind !== 'statue', mob.pumped);
       const puppet = this.puppets.get(mob.id)!;
+      // The mine's monsters change their looks (colour, cracks, crumpling, rock armour).
+      puppet.sprite = mineSprite(this.assets, mob);
       puppet.burning = (mob.burning ?? 0) > 0;
       puppet.poisoned = (mob.poison ?? 0) > 0;
     }
     for (const [id, puppet] of this.puppets) {
       if (!seen.has(id) && (puppet.alive || now >= puppet.removeAt)) this.puppets.delete(id);
     }
+    // An arrival is for the update it came with.
+    this.arrivals.clear();
     for (const puppet of this.puppets.values()) advance(puppet, now, this.stepMs);
 
     // Finished one-off animations fall back to idle (or keep running while moving).
@@ -531,6 +560,8 @@ export class View {
     let discovered = false;
     // Traps announce their own gas and flames.
     let trapped = false;
+    // The trap that went off last in this update: what follows it (bolts, darts, teleports, pits) is its doing.
+    let lastTrap: Extract<Effect, { type: 'trap' }> | undefined;
     const mobKind = (depth: number, id: string, fallback: MobKind): MobKind =>
       world.floors[depth]?.mobs.find((mob) => mob.id === id)?.kind ?? fallback;
     // What the party sees on the depth shown, worked out only if something needs it.
@@ -746,8 +777,9 @@ export class View {
           if (effect.hero === myId) this.say(t.mended(itemName(world, effect.item)), COLORS.positive, now);
           break;
         case 'teleported':
-          // Appear at once in the new place rather than sliding across the map.
+          // Appear at once in the new place rather than sliding across the map, fading in (ScrollOfTeleportation.appear).
           this.puppets.delete(effect.hero);
+          this.arrivals.set(effect.hero, { fadeMs: 400 });
           audio.play('teleport');
           if (effect.hero === myId) this.say(t.teleported, COLORS.default, now);
           break;
@@ -842,13 +874,29 @@ export class View {
             this.shoot(effect.from, effect.to, itemSprite({ kind: effect.item, qty: 1, level: 0 }, world.run.labels), now);
           }
           break;
-        case 'zapped':
-          if (effect.depth === this.depth) this.shoot(effect.from, effect.to, null, now, BOLT_COLORS[effect.bolt ?? 'magic']);
-          audio.play(effect.bolt === 'lightning' ? 'lightning' : 'zap', 1, 1, effect.depth === this.depth ? cellMiddle(effect.from) : undefined);
+        case 'zapped': {
+          const here = effect.depth === this.depth;
+          if (effect.bolt === 'beam') {
+            // Beam.DeathRay (the disintegration trap, a sentry, an evil eye, the wand): no bolt in flight, the ray
+            // is there at once (levelfx.ts), with RAY where the party can see either end.
+            if (here && (seen(effect.from) || seen(effect.to))) audio.play('ray', 1, 1, cellMiddle(effect.from));
+            break;
+          }
+          if (here) this.shoot(effect.from, effect.to, null, now, BOLT_COLORS[effect.bolt ?? 'magic']);
+          if (effect.bolt === 'shadow' && lastTrap?.kind === 'grim' && lastTrap.pos === effect.from) {
+            // GrimTrap: the bolt lands with CURSED on a hero, BURNING on anyone else.
+            if (!here || !(seen(effect.from) || seen(effect.to))) break;
+            const cells = Math.max(Math.abs(cellX(effect.to) - cellX(effect.from)), Math.abs(cellY(effect.to) - cellY(effect.from)));
+            const onHero = world.heroes.some((h) => h.depth === effect.depth && h.pos === effect.to);
+            audio.later(Math.max(90, cells * 45), onHero ? 'cursed' : 'burning', 1, 1, cellMiddle(effect.to));
+            break;
+          }
+          audio.play(effect.bolt === 'lightning' ? 'lightning' : 'zap', 1, 1, here ? cellMiddle(effect.from) : undefined);
           break;
+        }
         case 'avalanche':
-          if (effect.depth !== this.depth) break;
-          for (const cell of effect.cells) this.flashes.push({ cell, start: now, color: '150, 140, 120', duration: 900 });
+          // RockfallTrap: ROCKS, if any of the rocks fell where the party can see (the rocks: levelfx.ts).
+          if (effect.depth !== this.depth || !effect.cells.some(seen)) break;
           audio.play('rocks');
           break;
         case 'disarmed':
@@ -872,12 +920,11 @@ export class View {
           }
           if (effect.hero === myId) this.say(t.specialUsed[effect.ability]!, COLORS.highlight, now);
           break;
+        // The blacksmith and his mine (blacksmith-ui.ts).
         case 'mined':
-          if (effect.depth !== this.depth) break;
-          this.flashes.push({ cell: effect.pos, start: now, color: '255, 210, 90', duration: 500 });
-          audio.play('rocks', 1.3, 0.5, cellMiddle(effect.pos));
-          break;
-        case 'smith':
+        case 'mineEvent':
+        case 'blacksmith':
+          mineEffect(this, effect, myId, now);
           break;
         case 'mirrored':
           if (effect.depth !== this.depth) break;
@@ -886,8 +933,8 @@ export class View {
           if (effect.hero === myId) this.say(t.mirrored(effect.cells.length), COLORS.default, now);
           break;
         case 'flock':
-          if (effect.depth !== this.depth) break;
-          for (const cell of effect.cells) this.flashes.push({ cell, start: now, color: '255, 255, 255', duration: 500 });
+          // Wool where each sheep appears (levelfx.ts); the flock trap plays its own PUFF and SHEEP.
+          if (effect.depth !== this.depth || lastTrap?.kind === 'flock') break;
           audio.play('puff');
           break;
         case 'faded':
@@ -900,11 +947,25 @@ export class View {
           break;
         case 'missile':
           if (effect.depth === this.depth) this.shoot(effect.from, effect.to, effect.sprite, now);
+          if (lastTrap && DART_TRAPS.has(lastTrap.kind) && lastTrap.pos === effect.from) {
+            // PoisonDartTrap, WornDartTrap: the dart flies, then HIT where it lands (pitch 0.8 to 1.25).
+            if (effect.depth !== this.depth || !(seen(effect.from) || seen(effect.to))) break;
+            const cells = Math.max(Math.abs(cellX(effect.to) - cellX(effect.from)), Math.abs(cellY(effect.to) - cellY(effect.from)));
+            audio.later(Math.max(90, cells * 45), 'hit', 0.8 + Math.random() * 0.45, 1, cellMiddle(effect.to));
+            break;
+          }
           audio.play('miss', 1.4, 0.6);
           break;
         case 'jumped':
-          // Gone in a puff of smoke, and there at once in the new place.
           if (effect.depth !== this.depth) break;
+          if (lastTrap && TELEPORTING.has(lastTrap.kind)) {
+            // A trap teleported it (ScrollOfTeleportation.appear): TELEPORT if seen either end, and it fades in there.
+            this.puppets.delete(effect.mob);
+            this.arrivals.set(effect.mob, { fadeMs: 400 });
+            if (seen(effect.from) || seen(effect.to)) audio.play('teleport', 1, 1, cellMiddle(effect.to));
+            break;
+          }
+          // Gone in a puff of smoke, and there at once in the new place.
           this.puppets.delete(effect.mob);
           this.flashes.push({ cell: effect.from, start: now, color: '220, 220, 220', duration: 500 });
           this.flashes.push({ cell: effect.to, start: now, color: '220, 220, 220', duration: 500 });
@@ -999,35 +1060,113 @@ export class View {
           break;
         case 'trap': {
           trapped = true;
-          const sound = TRAP_SOUNDS[effect.kind];
-          if (effect.mob) {
-            // Level.mobPress: a monster sets off a trap; heard and seen only where the party can see it
-            // (but an alarm rings throughout the dungeon: AlarmTrap's ALERT).
-            const here = effect.depth === this.depth && seen(effect.pos);
-            if (!here) {
-              if (effect.kind === 'alarm' && effect.depth === this.depth) audio.play('alert');
-              break;
-            }
-            this.flashes.push({ cell: effect.pos, start: now });
-            const at = { x: cellX(effect.pos) * TILE + TILE / 2, y: cellY(effect.pos) * TILE + TILE / 2 };
-            audio.play('trap', 1, 1, at);
-            if (sound) audio.later(60, sound, 1, 0.9, at);
-            const kind = this.puppets.get(effect.mob)?.kind as MobKind | undefined;
-            if (kind) this.say(t.mobTrap(t.mobs[kind]), COLORS.warning, now);
-            if (effect.kind === 'alarm') this.say(plain(lt('levels.traps.alarmtrap.alarm')), COLORS.warning, now);
-            break;
+          lastTrap = effect;
+          if (effect.depth !== this.depth) break;
+          // Trap.trigger: TRAP where the party can see the trap; then what its activate() plays, some of it only
+          // when seen, some (an alarm's ALERT, flames, gas) heard all over the level. What it shows: levelfx.ts.
+          const inSight = seen(effect.pos);
+          const at = cellMiddle(effect.pos);
+          if (inSight) audio.play('trap', 1, 1, at);
+          for (const s of TRAP_ACTIVATION[effect.kind] ?? []) {
+            if (inSight || !s.seen) audio.later(60, s.sound, s.rate ?? 1, 1, at);
           }
-          if (effect.depth === this.depth) this.flashes.push({ cell: effect.pos, start: now });
-          audio.play('trap');
-          if (sound) audio.later(60, sound);
-          if (effect.hero === myId) {
+          if (effect.mob) {
+            // Level.mobPress: a monster sets off a trap where the party can see it.
+            const kind = this.puppets.get(effect.mob)?.kind as MobKind | undefined;
+            if (kind && inSight) this.say(t.mobTrap(t.mobs[kind]), COLORS.warning, now);
+          } else if (effect.hero === myId) {
             // Level.pressCell: stepping on a hidden one, «A hidden <trap> activates!».
             if (effect.hidden) this.say(lt('levels.level.hidden_trap', trapText(effect.kind).name), COLORS.warning, now);
-            if (effect.kind === 'alarm') this.say(plain(lt('levels.traps.alarmtrap.alarm')), COLORS.warning, now);
             haptic('hurt');
-          } else if (effect.depth === this.depth) {
+          } else if (effect.hero) {
             this.say(t.companionTrap(this.name(world, effect.hero)), COLORS.warning, now);
           }
+          // AlarmTrap, GuardianTrap: «The trap emits a piercing sound…», when seen.
+          if ((effect.kind === 'alarm' || effect.kind === 'guardian') && inSight) {
+            this.say(plain(lt(`levels.traps.${effect.kind}trap.alarm`)), COLORS.warning, now);
+          }
+          // GrimTrap with no one to aim at: BURNING (a bolt that follows says otherwise: 'zapped').
+          if (effect.kind === 'grim' && !effects.some((e) => e.type === 'zapped' && e.depth === effect.depth && e.from === effect.pos)) {
+            audio.later(60, 'burning', 1, 1, at);
+          }
+          break;
+        }
+        case 'blob':
+          // Fire, Freezing, Electricity, ConfusionGas let loose: their trap has made its sound; they show in levelfx.ts.
+          break;
+        case 'itemTeleported':
+          // TeleportationTrap, GatewayTrap, DisarmingTrap: TELEPORT as an item is sent away; the hero hears of their weapon.
+          if (effect.depth === this.depth && (seen(effect.from) || seen(effect.to) || effect.hero === myId)) audio.play('teleport', 1, 1, cellMiddle(effect.from));
+          if (effect.hero === myId) this.say(plain(lt('levels.traps.disarmingtrap.disarm')), COLORS.warning, now);
+          break;
+        case 'knockedBack':
+          // WandOfBlastWave.throwChar (a geyser): the hero is pushed along; sync slides them there.
+          break;
+        case 'pitfall':
+          if (effect.depth !== this.depth) break;
+          if (effect.stage === 'none') {
+            // PitfallTrap: «the ground is too solid for a pitfall trap to work here.»
+            this.say(plain(lt('levels.traps.pitfalltrap.no_pit')), COLORS.warning, now);
+          } else if (effect.stage === 'warn') {
+            // «The ground starts to give way around you!», or around the trap, when seen.
+            const mine = lastTrap?.kind === 'pitfall' && lastTrap.hero === myId;
+            if (mine) this.say(plain(lt('levels.traps.pitfalltrap.triggered_hero')), COLORS.negative, now);
+            else if (lastTrap?.kind === 'pitfall' ? seen(lastTrap.pos) : effect.cells.some(seen)) {
+              this.say(plain(lt('levels.traps.pitfalltrap.triggered')), COLORS.negative, now);
+            }
+          }
+          break;
+        case 'appeared': {
+          if (effect.depth !== this.depth) break;
+          const kind = mobKind(effect.depth, effect.mob, 'rat');
+          const spawner = !lastTrap ? [...this.puppets.values()].find((p) => p.kind === 'demonSpawner' && p.alive && adjacent(p.to, effect.pos)) : undefined;
+          if (kind === 'wraith') {
+            // Wraith.spawnAt: it rises, fading in over half a second.
+            this.arrivals.set(effect.mob, { fadeMs: 500 });
+          } else if (spawner) {
+            // DemonSpawner.act: the demon is pushed out of the spawner (Pushing), if the spawner is in sight.
+            if (seen(spawner.to)) this.arrivals.set(effect.mob, { from: spawner.to });
+          } else {
+            // ScrollOfTeleportation.appear (the summoning traps): TELEPORT if seen, and it fades in.
+            this.arrivals.set(effect.mob, { fadeMs: 400 });
+            if (seen(effect.pos)) audio.play('teleport', 1, 1, cellMiddle(effect.pos));
+          }
+          break;
+        }
+        case 'trapCursed':
+          // CursingTrap.curse(Hero): «Your worn equipment becomes cursed!».
+          if (effect.hero === myId) this.say(plain(lt('levels.traps.cursingtrap.curse')), COLORS.negative, now);
+          break;
+        case 'parried': {
+          // GreatCrab: showStatus(NEUTRAL, def_verb), HIT_PARRY, GLog.n(noticed).
+          if (effect.depth !== this.depth) break;
+          this.float(effect.mob, plain(lt('actors.mobs.greatcrab.def_verb')), COLORS.neutral, now, true);
+          audio.play('hit_parry', 0.96 + Math.random() * 0.09, 1, this.placeOf(effect.mob, now));
+          this.say(plain(lt('actors.mobs.greatcrab.noticed')), COLORS.negative, now);
+          break;
+        }
+        case 'sentry': {
+          // SentrySprite.charge: CHARGEUP, if it is in sight (its charging light: levelfx.ts).
+          if (effect.depth !== this.depth || !effect.charging) break;
+          const puppet = this.puppets.get(effect.mob);
+          if (puppet && seen(puppet.to)) audio.play('chargeup', 1, 1, this.placeOf(effect.mob, now));
+          break;
+        }
+        case 'branched': {
+          // InterlevelScene to or from a depth's side level, then GameScene's greeting: «You descend to floor %d of
+          // the dungeon.» (or «You return to…»), DESCEND, and the new level's feeling.
+          if (effect.hero !== myId) {
+            if (effect.depth === this.depth) this.puppets.delete(effect.hero);
+            break;
+          }
+          this.reset(effect.depth);
+          // DESCEND (and «You descend…») going down on the deepest floor yet; «You return…» otherwise.
+          const descend = effect.branch !== 0 && effect.depth === (world.reached ?? effect.depth);
+          if (descend) audio.play('descend');
+          this.say(plain(lt(descend ? 'scenes.gamescene.descend' : 'scenes.gamescene.return', effect.depth)), COLORS.highlight, now);
+          const level = world.levels[effect.depth];
+          const feeling = level ? feelingLine(level) : '';
+          if (feeling) this.say(feeling, COLORS.warning, now);
           break;
         }
         case 'ate':
@@ -1095,17 +1234,19 @@ export class View {
           if (effect.depth === this.depth) this.say(`${t.mobs.impShopkeeper}: «${t.impGreeting}»`, COLORS.default, now);
           break;
         case 'marked':
-          if (effect.depth === this.depth) {
-            audio.play('burning');
-            this.float(effect.who, t.marked, COLORS.warning, now);
-          }
+          // SacrificialFire: a burst of its flame on whoever it marks (levelfx.ts), without a sound.
+          if (effect.depth === this.depth) this.float(effect.who, t.marked, COLORS.warning, now);
           break;
         case 'sacrifice':
           if (effect.depth === this.depth) {
             this.say(t.sacrifice[effect.outcome], effect.outcome === 'reward' ? COLORS.highlight : COLORS.warning, now);
-            // SacrificialFire.sacrifice: BURNING, three times over for the reward.
-            audio.play('burning');
-            this.flashes.push({ cell: effect.pos, start: now, color: '102, 255, 255', duration: 900 });
+            // SacrificialFire.sacrifice: BURNING, three times over for the reward (its flames: levelfx.ts).
+            const at = cellMiddle(effect.pos);
+            if (effect.outcome !== 'unworthy') audio.play('burning', 1, 1, at);
+            if (effect.outcome === 'reward') {
+              audio.later(60, 'burning', 0.95, 1, at);
+              audio.later(120, 'burning', 1.05, 1, at);
+            }
           }
           break;
         case 'wipedOut':
@@ -1126,6 +1267,44 @@ export class View {
             this.flashes.push({ cell: effect.pos, start: now, duration: 500 });
             this.say(t.wraiths, COLORS.negative, now);
           }
+          break;
+        // The old wandmaker's quest (core wandmaker.ts): the corpse dust's chill and its wraiths, the ritual,
+        // the newborn elemental's charged blasts, the rot lashers mending.
+        case 'corpseDust':
+          if (effect.hero === myId) this.say(plain(lt('items.quest.corpsedust.chill')), COLORS.negative, now);
+          break;
+        case 'dustWraith':
+          // Wraith.spawnAt: a curse's shadow burst, CURSED.
+          if (effect.depth === this.depth) {
+            audio.play('cursed', 1, 1, cellMiddle(effect.pos));
+            this.flashes.push({ cell: effect.pos, start: now, color: '40, 0, 60', duration: 600 });
+          }
+          break;
+        case 'ritual':
+          if (effect.depth !== this.depth) break;
+          // CeremonialCandle: the candles alight; all four, flames burst round the marker and the elemental is born (BURNING).
+          for (const cell of effect.lit) this.flashes.push({ cell, start: now, color: '255, 170, 60', duration: 700 });
+          if (effect.mob) {
+            for (const n of [0, -1, 1, -WIDTH, WIDTH, -WIDTH - 1, -WIDTH + 1, WIDTH - 1, WIDTH + 1]) {
+              this.flashes.push({ cell: effect.pos + n, start: now, color: BURST_COLORS.fire, duration: 1200 });
+            }
+            audio.play('burning', 1, 1, cellMiddle(effect.pos));
+          }
+          break;
+        case 'elementalCharge':
+          if (effect.depth !== this.depth) break;
+          // GameScene.targetedCell over where the blast will fall, and «The elemental is charging up!».
+          for (const cell of effect.cells) this.flashes.push({ cell, start: now, color: '255, 60, 30', duration: 1400 });
+          this.say(plain(lt('actors.mobs.elemental$newbornfireelemental.charging')), COLORS.negative, now);
+          break;
+        case 'elementalBlast':
+          if (effect.depth !== this.depth) break;
+          this.shoot(effect.from, effect.to, null, now, BOLT_COLORS.fire);
+          for (const cell of effect.cells) this.flashes.push({ cell, start: now, color: BURST_COLORS.fire, duration: 900 });
+          audio.play('burning', 1, 1, cellMiddle(effect.to));
+          break;
+        case 'lasherMends':
+          if (effect.depth === this.depth) this.float(effect.mob, `+${effect.amount}`, COLORS.positive, now);
           break;
         case 'cursed':
           audio.play('ghost');

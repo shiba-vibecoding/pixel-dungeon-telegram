@@ -11,6 +11,8 @@ import { identify } from './ident';
 import { isBossDepth } from './level/builder';
 import { spawnLevelMobs } from './levelspawn';
 import { sentryAct, spawnerAct } from './roommobs';
+import { mineCanAttack, mineCanStand, mineDoAttack, mineMayWake, mineMobAct, mineMoved, mineRespawn, mineWanderTarget } from './minemobs';
+import { newbornCanAttack, newbornDoAttack, wandmakerMobAct } from './wandmaker-mobs';
 import { KING_PEDESTALS } from './level/city-boss';
 import type { Level, RoomInfo } from './level/generate';
 import { adjacent, cellX, cellY, distance, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
@@ -40,17 +42,17 @@ export const TIME_TO_RESPAWN = 50;
  * Never the DARKNESS challenge's: in the original only the hero's sight follows the level's.
  */
 
-function mobSight(mob: Mob, depth: number): number {
+export function mobSight(mob: Mob, depth: number): number {
   const demon = mob.kind === 'succubus' || mob.kind === 'eye' || baseKind(mob.kind) === 'scorpio';
   return demon ? Math.max(viewDistance(depth), LIGHT_DISTANCE) : viewDistance(depth);
 }
 
-function spend(mob: Mob, time: number): void {
+export function spend(mob: Mob, time: number): void {
   // Slowed, everything takes twice as long.
   mob.time += (mob.slowed ?? 0) > 0 ? time * 2 : time;
 }
 
-function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Hero | undefined {
+export function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Hero | undefined {
   // Invisible heroes cannot be picked out.
   const heroes = heroesOn(ctx.world, ctx.depth).filter((hero) => hero.invisible <= 0);
   const current = heroes.find((hero) => hero.id === mob.enemy);
@@ -77,7 +79,8 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     imageAct(ctx, mob);
     return;
   }
-  if (mob.kind === 'bee') {
+  // (A secret honeypot room's bee guards its pot as any monster would: SEAM(mobs), Shattered's Bee.)
+  if (mob.kind === 'bee' && mob.beeHome === undefined) {
     beeAct(ctx, mob);
     return;
   }
@@ -109,6 +112,8 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     spawnerAct(ctx, mob);
     return;
   }
+  // The blacksmith's mine: the crystal spire, the gnoll geomancer and the like take their own turns (minemobs.ts).
+  if (mineMobAct(ctx, mob)) return;
   if (mob.state === 'passive' && (isShopkeeper(mob) || mob.kind === 'wandmaker' || mob.kind === 'imp' || mob.kind === 'blacksmith' || mob.kind === 'ratKing')) {
     spend(mob, TICK);
     return;
@@ -135,6 +140,8 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     spend(mob, TICK);
     return;
   }
+  // The wandmaker's quest: the rot heart and its lashers; a newborn fire elemental's charged blast.
+  if (wandmakerMobAct(ctx, mob)) return;
   // Dizzy, it staggers about instead of doing anything useful.
   if ((mob.dizzy ?? 0) > 0) {
     mob.dizzy!--;
@@ -190,7 +197,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
         spend(mob, TICK);
         return;
       }
-      if (enemyInFov && ctx.rng.int(distance(mob.pos, enemy.pos) + heroStealth(enemy)) === 0) {
+      if (enemyInFov && ctx.rng.int(distance(mob.pos, enemy.pos) + heroStealth(enemy)) === 0 && mineMayWake(ctx, mob, enemy)) {
         notice(ctx, mob, enemy, 'hunting');
         // Swarm intelligence: waking, it calls every other monster on the level to where it saw the hero.
         if (isChallenged(ctx.world, SWARM_INTELLIGENCE)) {
@@ -213,7 +220,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
       if (mob.target !== -1 && getCloser(ctx, mob, mob.target, fov)) {
         spend(mob, 1 / MOBS[mob.kind].speed);
       } else {
-        mob.target = GHOST_FOE_KINDS.has(mob.kind) ? closerDestination(ctx, mob) : randomDestination(ctx.rng, ctx.level);
+        mob.target = mineWanderTarget(ctx, mob) ?? (GHOST_FOE_KINDS.has(mob.kind) ? closerDestination(ctx, mob) : randomDestination(ctx.rng, ctx.level));
         spend(mob, TICK);
       }
       return;
@@ -427,7 +434,7 @@ function dm300Steps(ctx: Ctx, mob: Mob, to: number): void {
   if (struck && struck !== mob) struck.paralysed = Math.max(struck.paralysed ?? 0, 2);
 }
 
-function notice(ctx: Ctx, mob: Mob, enemy: Hero, state: MobState): void {
+export function notice(ctx: Ctx, mob: Mob, enemy: Hero, state: MobState): void {
   mob.enemySeen = true;
   mob.state = state;
   mob.target = enemy.pos;
@@ -438,6 +445,9 @@ function notice(ctx: Ctx, mob: Mob, enemy: Hero, state: MobState): void {
 }
 
 function canAttack(ctx: Ctx, mob: Mob, enemy: Hero): boolean {
+  const mine = mineCanAttack(ctx, mob, enemy);
+  if (mine !== undefined) return mine;
+  if (mob.kind === 'newbornElemental') return newbornCanAttack(ctx, mob, enemy);
   // Shamans cast lightning, warlocks shadow bolts, the burning fist fire, and Tengu throws shuriken
   // at anyone in a clear line.
   if (mob.kind === 'shaman' || mob.kind === 'warlock' || mob.kind === 'tengu' || mob.kind === 'burningFist') {
@@ -580,6 +590,11 @@ function tenguJump(ctx: Ctx, mob: Mob): void {
 }
 
 function doAttack(ctx: Ctx, mob: Mob, enemy: Hero): void {
+  if (mineDoAttack(ctx, mob, enemy)) return;
+  if (mob.kind === 'newbornElemental') {
+    newbornDoAttack(ctx, mob, enemy);
+    return;
+  }
   if (mob.kind === 'shaman' && !adjacent(mob.pos, enemy.pos)) {
     zapLightning(ctx, mob, enemy);
     return;
@@ -780,6 +795,8 @@ function moveMob(ctx: Ctx, mob: Mob, to: number, press = true): void {
     if (!isAlive(mob)) return;
   }
   if (mob.kind === 'dm300') dm300Steps(ctx, mob, to);
+  // A crystal guardian breaks the crystal it steps into, and is slow where it is cramped (minemobs.ts).
+  mineMoved(ctx, mob);
 }
 
 /**
@@ -801,6 +818,7 @@ function findStep(ctx: Ctx, from: number, to: number, fov: boolean[], mob?: Mob)
  * chasms (Level.avoid); for a piranha only the water of its pool.
  */
 function canStand(ctx: Ctx, mob: Mob | undefined, cell: number, avoid = false): boolean {
+  if (mob && mineCanStand(ctx, mob, cell)) return true;
   if (mob?.kind === 'piranha') return isPassable(ctx.level, cell) && isWater(ctx.level.map[cell]!);
   return isPassable(ctx.level, cell) || (avoid && cell >= 0 && cell < LENGTH && hasFlag(ctx.level.map[cell]!, F.AVOID));
 }
@@ -994,6 +1012,7 @@ export function reinforce(world: World, level: Level, floor: Floor, rng: Rng, pa
 
 /** Level.respawner: tops the depth up with a wandering monster now and then. */
 export function respawn(ctx: Ctx): void {
+  if (mineRespawn(ctx)) return;
   const { world, depth, level, floor, rng } = ctx;
   if (floor.mobs.length < mobCount(nMobs(rng, depth), partySize(world))) {
     // Bestiary.mutable: now and then a rare variant.

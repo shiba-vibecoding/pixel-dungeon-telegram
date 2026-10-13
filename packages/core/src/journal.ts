@@ -1,5 +1,6 @@
 import type { Hero, MobKind } from './actors';
 import { heroView } from './floor';
+import { questCompleted, rewardsAvailable } from './blacksmith';
 import { Feeling } from './level/gen/dungeon';
 import { cellX, cellY } from './level/geometry';
 import { RoomType } from './level/room';
@@ -108,9 +109,10 @@ function stillUseful(world: World, { landmark, depth }: Note): boolean {
     case 'shop': return has('shopkeeper') || has('impShopkeeper');
     // Ghost.Quest.complete, Wandmaker's and the Imp's quests done, the Blacksmith's rewards all given.
     case 'ghost': return !world.quest?.done;
-    case 'wandmaker': return !world.wandQuest?.done;
+    case 'wandmaker': return !(world.wandQuest?.spawned && !world.wandQuest.wand1);
     case 'imp': return !world.impQuest?.done;
-    case 'troll': return !world.smithQuest?.done;
+    // Blacksmith.landmark: until the errand is over and nothing is left to have of him.
+    case 'troll': return !world.smithQuest || !questCompleted(world.smithQuest) || rewardsAvailable(world.smithQuest);
     case 'beaconLocation':
       return world.heroes.some((hero) => hero.items.some((item) => item.kind === 'beacon' && item.returnTo?.depth === depth));
     default:

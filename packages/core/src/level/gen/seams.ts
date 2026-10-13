@@ -29,7 +29,23 @@ export type SeamItem =
   /** SEAM(mobs): Honeypot.ShatteredPot, the broken pot a golden bee guards; nothing stands in. */
   | 'shatteredPot'
   /** SEAM(alchemy): the alchemize spell the shops sell; nothing stands in. */
-  | 'alchemize';
+  | 'alchemize'
+  /**
+   * SEAM(alchemy): the other runestones the vault's loot holds, and SEAM(plants) the seeds Pixel Dungeon has
+   * not; the nearest scroll, potion, bomb or seed stands in.
+   */
+  | 'stoneOfFlock'
+  | 'stoneOfShock'
+  | 'stoneOfFear'
+  | 'stoneOfDeepSleep'
+  | 'stoneOfClairvoyance'
+  | 'stoneOfAggression'
+  | 'stoneOfBlast'
+  | 'mageroyalSeed'
+  | 'stormvineSeed'
+  | 'blindweedSeed'
+  | 'swiftthistleSeed'
+  | 'starflowerSeed';
 
 export function seamItem(name: SeamItem): Item | null {
   switch (name) {
@@ -51,6 +67,26 @@ export function seamItem(name: SeamItem): Item | null {
       return createItem('scroll.enchantment');
     case 'scrollOfRetribution':
       return createItem('scroll.psionicBlast');
+    case 'stoneOfFlock':
+    case 'stoneOfDeepSleep':
+      return createItem('scroll.lullaby');
+    case 'stoneOfShock':
+    case 'stoneOfBlast':
+      return createItem('bomb');
+    case 'stoneOfFear':
+      return createItem('scroll.terror');
+    case 'stoneOfClairvoyance':
+      return createItem('scroll.mapping');
+    case 'stoneOfAggression':
+      return createItem('scroll.challenge');
+    case 'mageroyalSeed':
+    case 'starflowerSeed':
+      return createItem('seed.sungrass');
+    case 'stormvineSeed':
+    case 'blindweedSeed':
+      return createItem('seed.dreamweed');
+    case 'swiftthistleSeed':
+      return createItem('seed.fadeleaf');
     case 'energyCrystal':
     case 'trinketCatalyst':
     case 'alchemyPage':

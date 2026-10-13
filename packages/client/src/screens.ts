@@ -848,68 +848,6 @@ export function showInfo(title: string, lines: readonly string[], onClose: () =>
   show(box, onClose);
 }
 
-/* The blacksmith */
-
-export interface ReforgeOptions {
-  world: World;
-  hero: Hero;
-  text: string;
-  onReforge(first: ItemRef, second: ItemRef): void;
-  onClose(): void;
-}
-
-/**
- * WndBlacksmith: two items of one kind become one, a level better. Rather
- * than picking two items one after the other, each possible pair is offered
- * at once: the better item, and what would be melted down with it.
- */
-export function showReforge(options: ReforgeOptions): void {
-  const { world, hero } = options;
-  const owned: Array<{ ref: ItemRef; item: Item }> = [
-    ...(hero.weapon ? [{ ref: 'weapon' as ItemRef, item: hero.weapon }] : []),
-    { ref: 'armor' as ItemRef, item: hero.armor },
-    ...hero.items.map((item, index) => ({ ref: index as ItemRef, item })),
-  ].filter(({ item }) => {
-    const category = itemDef(item.kind).category;
-    // Blacksmith.verify: he works only with what is identified.
-    return (category === 'weapon' || category === 'armor' || category === 'wand' || category === 'ring') &&
-      isIdentified(world, item) && item.level >= 0 && item.kind !== 'weapon.pickaxe';
-  });
-  const pairs: Array<{ first: ItemRef; second: ItemRef; better: Item; worse: Item }> = [];
-  owned.forEach((a, i) => {
-    for (const b of owned.slice(i + 1)) {
-      if (a.item.kind !== b.item.kind) continue;
-      // What is melted down comes from the pack.
-      const [keep, melt] = typeof b.ref !== 'number' || (typeof a.ref === 'number' && a.item.level < b.item.level) ? [b, a] : [a, b];
-      if (typeof melt.ref !== 'number') continue;
-      const better = keep.item.level >= melt.item.level ? keep.item : melt.item;
-      pairs.push({ first: keep.ref, second: melt.ref, better, worse: better === keep.item ? melt.item : keep.item });
-    }
-  });
-  const card = (pair: (typeof pairs)[number]): HTMLElement =>
-    el(
-      'div',
-      { className: 'pd-reward' },
-      el('div', { className: 'pd-reforge' }, slot(world, pair.better, { hero }), el('span', { className: 'pd-reforge-arrow' }), slot(world, pair.worse, { hero })),
-      el('div', { className: 'pd-reward-name', textContent: capitalize(itemName(world, pair.better)) }),
-      el('div', { className: 'pd-reward-desc', textContent: t.reforgePair(itemName(world, pair.better), itemName(world, pair.worse)) }),
-      button(t.reforge, () => {
-        options.onReforge(pair.first, pair.second);
-        options.onClose();
-      }, pairs.length === 1 ? 'primary small' : 'small'),
-    );
-  show(
-    windowOf(
-      { title: capitalize(t.mobs.blacksmith), icon: portrait('blacksmith'), onClose: options.onClose },
-      info(options.text, 'pd-speech'),
-      pairs.length === 0
-        ? info(t.nothingToReforge, 'pd-note')
-        : el('div', { className: 'pd-scroll' }, el('div', { className: 'pd-rewards pd-reforges' }, ...pairs.map(card))),
-    ),
-    options.onClose,
-  );
-}
-
 /* Small windows */
 
 /** The tip on a level's sign (Sign.read): no cross, a tap anywhere closes it. */
@@ -1370,7 +1308,7 @@ function dragAndDrop(box: HTMLElement, options: BackpackOptions): void {
     if (category === 'scroll' && isKnown(world, item) && (TARGETED_SCROLLS as readonly string[]).includes(item.kind)) {
       for (const ref of scrollTargets(world, hero, item.kind)) drops.set(String(ref), { type: 'use', item: index, on: ref });
     }
-    drops.set('away', { type: 'drop', item: index });
+    if (item.kind !== 'quest.dust') drops.set('away', { type: 'drop', item: index });
     return drops;
   };
   const end = (): void => {
@@ -1615,7 +1553,6 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     if (category === 'food' || item.kind === 'quest.fish') use(t.eat, () => act({ type: 'use', item: index }));
     if (category === 'torch') use(t.light, () => act({ type: 'use', item: index }));
     if (category === 'tome') use(t.readTome, () => showWays(options, index, act));
-    if (item.kind === 'weapon.pickaxe') use(t.mine, () => act({ type: 'mine' }));
     if (item.kind === 'quest.amulet') {
       use(t.amuletEndGame, () => {
         openBag = null;
@@ -1674,7 +1611,8 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     if (category === 'potion') use(t.throwItem, () => aimWith('throw', index));
     if (category === 'honeypot') use(t.shatterPot, () => act({ type: 'use', item: index }));
     // Item.AC_THROW: anything in the pack can be thrown where the player taps (a bag would scatter what it holds).
-    if (!['bag', 'missile', 'bomb', 'honeypot', 'potion', 'seed'].includes(category)) use(t.throwItem, () => aimWith('throw', index));
+    // (CorpseDust has no actions at all: not even throwing or dropping it.)
+    if (!['bag', 'missile', 'bomb', 'honeypot', 'potion', 'seed'].includes(category) && item.kind !== 'quest.dust') use(t.throwItem, () => aimWith('throw', index));
     // QuickSlot: any item with a use can be kept one tap away: into the first free slot (or one whose item
     // ran out), else the first. Holding a slot on the toolbar chooses for that slot (Toolbar's quickslot_assign).
     if (quickUse(item.kind) && !isQuickslotted(item.kind)) {
@@ -1687,7 +1625,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         refreshBackpack(world, hero);
       }));
     }
-    danger.push(button(t.dropItem, () => stay({ type: 'drop', item: index }), 'danger'));
+    if (item.kind !== 'quest.dust') danger.push(button(t.dropItem, () => stay({ type: 'drop', item: index }), 'danger'));
   } else if (options.ring !== undefined) {
     const ring = options.ring;
     use(t.takeOff, () => stay({ type: 'remove', ring }));

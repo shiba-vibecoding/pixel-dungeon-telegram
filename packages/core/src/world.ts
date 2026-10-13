@@ -24,9 +24,14 @@ import { evolveGas } from './gas';
 import { levelSpan, partySize, regrowBoss, scaleMob } from './party';
 import { scorchPack } from './cooking';
 import { altarMarksHero } from './altar';
-import { type ImpQuest, impRewardProblem, ringFromImp, spawnImp, talkToImp } from './imp';
-import { type ItemRef, reforge, reforgeProblem, type SmithQuest, spawnBlacksmith, talkToSmith } from './smith';
-import { spawnWandmaker, talkToWandmaker, type WandQuest, wandFromWandmaker, wandRewardProblem } from './wandmaker';
+import { type ImpQuest, talkToImp } from './imp';
+import {
+  spawnVaultFloor, talkToVaultNpc, VAULT_NPCS, type VaultAction, vaultAction, vaultActionProblem, vaultStep, vaultTurn, vaultTurnAt,
+} from './vault';
+import { type SkeletonKeyAction, skeletonKeyProblem, useSkeletonKey } from './skeletonkey';
+import { type BlacksmithAction, blacksmithProblem, type BlacksmithQuest, blacksmithService, talkToBlacksmith } from './blacksmith';
+import { mineInteract } from './minemobs';
+import { talkToWandmaker, type WandQuest, wandFromWandmaker, wandRewardProblem } from './wandmaker';
 import { isBossDepth } from './level/builder';
 import { skeletonKeyLocks } from './skeletonkey';
 import { generateLevel, type Level } from './level/generate';
@@ -34,6 +39,9 @@ import { adjacent, cellX, cellY, distance, HEIGHT, LENGTH, NEIGHBOURS8, WIDTH } 
 import { breakStairsRoom } from './level/halls-boss';
 import { RoomType } from './level/room';
 import { spawnLevelPlants } from './levelspawn';
+import { spawnLevelBlobs } from './roomblobs';
+import { isTallGrass, trample } from './highgrass';
+import { nextPitAt, openPits } from './trap-effects';
 import { BRANCH_GATES } from './branchgates';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { deriveSeed, Rng, seedRng, Stream } from './rng';
@@ -67,12 +75,14 @@ export type Action =
   | { type: 'search' }
   /** The sad ghost's reward, for its rose. */
   | { type: 'reward'; choice: 'weapon' | 'armor' }
-  /** The ambitious imp's reward, for the tokens. */
-  | { type: 'impReward' }
-  /** The troll blacksmith's service: two items of a kind reforged into one, better. */
-  | { type: 'reforge'; first: ItemRef; second: ItemRef }
-  /** The old wandmaker's reward: a battle wand or a useful one. */
-  | { type: 'wandReward'; choice: 'battle' | 'utility' }
+  /** The dwarven vault (vault.ts): the mirror's item, the strange door, a vault beacon, the escape crystal. */
+  | VaultAction
+  /** The skeleton key used on a cell (skeletonkey.ts). */
+  | SkeletonKeyAction
+  /** The troll blacksmith's services (WndBlacksmith): his pickaxe back, reforge, harden, upgrade, smith and choose, cash out. */
+  | BlacksmithAction
+  /** The old wandmaker's reward: the first of his two wands or the second (WndWandmaker). */
+  | { type: 'wandReward'; choice: 1 | 2 }
   /** The Amulet of Yendor's «Let's call it a day»: the party wins here. */
   | { type: 'endGame' }
   /** Live turns: what the hero is to do from now on, a turn at a time (an empty plan stops them). */
@@ -127,12 +137,12 @@ export interface World {
   known: ItemKind[];
   /** The sad ghost's quest, once the ghost has appeared. */
   quest: GhostQuest | null;
-  /** The old wandmaker's errand, once he has appeared. */
+  /** The old wandmaker's quest (wandmaker.ts), once a level has his quest room. */
   wandQuest: WandQuest | null;
   /** The ambitious imp's errand, once he has appeared (absent in older saves). */
   impQuest?: ImpQuest | null;
-  /** The troll blacksmith's errand, once his forge is found (absent in older saves). */
-  smithQuest?: SmithQuest | null;
+  /** The troll blacksmith's errand (Blacksmith.Quest), once his smithy is made (absent in older saves). */
+  smithQuest?: BlacksmithQuest | null;
   /** What kind of run this is: the arena of waves (arena.ts); absent, the dungeon. */
   mode?: 'arena';
   /** The arena of waves' state, in an arena run. */
@@ -156,15 +166,12 @@ export type GameMode = 'dungeon' | 'arena';
 /** The Amulet's hall (LastLevel), the bottom of the dungeon: no chasm opens onto it, and nothing lies below. */
 export const DEEPEST_AVAILABLE = 26;
 const TIME_TO_REST = 1;
-/** Blacksmith.upgrade: the hero waits while the troll works. */
-const TIME_TO_REFORGE = 2;
 /** LloydsBeacon.TIME_TO_USE: setting it takes a moment; returning, none. */
 const TIME_TO_USE_BEACON = 1;
 /** Sub-stream of a depth's monster stream for the sad ghost. */
 const GHOST_STREAM = 1;
-const WANDMAKER_STREAM = 2;
-const IMP_STREAM = 3;
-const BLACKSMITH_STREAM = 4;
+// (2 was Pixel Dungeon's wandmaker's: Shattered's comes with his level, wandmaker.ts.)
+// (3 was Pixel Dungeon's imp's: Shattered's comes with his room, imp.ts.)
 const BONES_STREAM = 5;
 /** The stream that lays out what fell from the depth above as the depth was made. */
 const CHASM_STREAM = 6;
@@ -219,11 +226,6 @@ function makeDepth(world: World, d: number, branch: number): void {
   // A side level's streams are its own.
   const stream = (s: number, ...more: number[]): bigint => deriveSeed(world.run.seed, s, d, ...(branch ? [1000 * branch, ...more] : more));
   const mobs = populate(world, level, Rng.seeded(stream(Stream.MOBS)));
-  if (!branch) {
-    spawnWandmaker(world, level, mobs, Rng.seeded(stream(Stream.MOBS, WANDMAKER_STREAM)));
-    spawnImp(world, level, mobs, Rng.seeded(stream(Stream.MOBS, IMP_STREAM)));
-    spawnBlacksmith(world, level, mobs, Rng.seeded(stream(Stream.MOBS, BLACKSMITH_STREAM)));
-  }
   world.floors[d] = {
     mobs,
     rng: seedRng(stream(Stream.PLAY)),
@@ -231,7 +233,8 @@ function makeDepth(world: World, d: number, branch: number): void {
     plants: [...(level.plants ?? [])],
     ...(level.altar ? { altar: { ...level.altar } } : {}),
     // Boss levels, the side levels and the Amulet's hall never fill up again, and hold only what their layout asks for.
-    respawn: quietDepth(d) || branch ? -1 : TIME_TO_RESPAWN,
+    // (The blacksmith's mine does, a third as often: minemobs.ts.)
+    respawn: quietDepth(d) || (branch && !level.mine) ? -1 : TIME_TO_RESPAWN,
     heaps: level.spawn
       // Shattered's levels are made with their items (RegularLevel.createItems and the rooms'), which come
       // to lie on the floor through Level.drop: what the challenges forbid is gold instead.
@@ -242,7 +245,10 @@ function makeDepth(world: World, d: number, branch: number): void {
       ),
   };
   if (level.spawn) {
+    // The vault's flame vents and final room (vault.ts), before the blobs are laid.
+    spawnVaultFloor(level, world.floors[d]!);
     spawnLevelPlants(level, world.floors[d]!);
+    spawnLevelBlobs(level, world.floors[d]!);
     level.spawn.heaps = [];
     // Dungeon.dropToChasm while the level was made: for the depth below.
     if (level.spawn.fallen?.length) {
@@ -271,12 +277,18 @@ function makeDepth(world: World, d: number, branch: number): void {
 /**
  * A hero takes a branch transition (LevelTransition BRANCH_EXIT or BRANCH_ENTRANCE): from a depth down to
  * its side level, or back. Only one of the two is in play at a time: the other is laid aside
- * (world.parked) as it was, and its clock stands still, as a level the hero has left does.
+ * (world.parked) as it was, and its clock stands still, as a level the hero has left does; the
+ * companions on the depth come along.
  */
 function changeBranch(ctx: Ctx, hero: Hero, toBranch: number): void {
   const { world } = ctx;
   const d = hero.depth;
-  leaveCell(world, ctx.level, d, hero.pos);
+  // What the quest does as its way is taken (Blacksmith.Quest.start, complete).
+  BRANCH_GATES.taken(ctx, hero, toBranch);
+  // Only one of a depth's two levels is in play: the whole party on the depth goes along, the hero who
+  // took the way first, the others after (a companion who comes down later arrives where they are).
+  const party = [hero, ...world.heroes.filter((h) => h !== hero && h.depth === d && isAlive(h))];
+  for (const h of party) leaveCell(world, ctx.level, d, h.pos);
   const current = { level: world.levels[d]!, floor: world.floors[d]!, explored: world.explored[d] ?? [] };
   const parked = world.parked?.[d];
   if (parked && (parked.level.branch ?? 0) === toBranch) {
@@ -292,8 +304,10 @@ function changeBranch(ctx: Ctx, hero: Hero, toBranch: number): void {
   const arrival = toBranch
     ? level.transitions?.find((t) => t.type === 'branchEntrance')?.cell ?? level.entrance
     : level.transitions?.find((t) => t.type === 'branchExit')?.cell ?? level.entrance;
-  place(world, hero, level, arrival);
-  ctx.effects.push({ type: 'branched', hero: hero.id, depth: d, branch: toBranch });
+  for (const h of party) {
+    place(world, h, level, arrival);
+    ctx.effects.push({ type: 'branched', hero: h.id, depth: d, branch: toBranch });
+  }
 }
 
 /** Depths that hold nothing but their layout and never fill up with monsters again: the bosses' levels and the Amulet's hall. */
@@ -445,10 +459,12 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       return rewardProblem(world, hero, action.choice);
     case 'wandReward':
       return wandRewardProblem(world, hero, action.choice);
-    case 'impReward':
-      return impRewardProblem(world, hero);
-    case 'reforge':
-      return reforgeProblem(world, hero, action.first, action.second);
+    case 'vault':
+      return vaultActionProblem(world, hero, action);
+    case 'skeletonKey':
+      return skeletonKeyProblem(world, hero, action);
+    case 'blacksmith':
+      return blacksmithProblem(world, hero, action);
     case 'descend':
       return hero.pos === level.exit ? null : 'not on the stairs';
     case 'branch': {
@@ -622,6 +638,8 @@ function turnTime(world: World, floor: Floor, turn: Turn): number {
     case 'respawn': return floor.respawn;
     case 'arena': return world.arena!.tick;
     case 'gas': return floor.gasAt!;
+    case 'pit': return turn.at;
+    case 'vault': return floor.vault!.at;
   }
 }
 
@@ -744,7 +762,7 @@ function stepTowards(world: World, hero: Hero, to: number): number | null {
   return path && path.length > 0 ? path[0]! : null;
 }
 
-type Turn = { kind: 'hero'; hero: Hero } | { kind: 'mob'; mob: Mob } | { kind: 'respawn' } | { kind: 'gas' } | { kind: 'arena' };
+type Turn = { kind: 'hero'; hero: Hero } | { kind: 'mob'; mob: Mob } | { kind: 'respawn' } | { kind: 'gas' } | { kind: 'arena' } | { kind: 'pit'; at: number } | { kind: 'vault' };
 
 /** Who is due next on a depth; nothing happens on a depth without living heroes. */
 function nextTurn(world: World, depth: number): Turn | undefined {
@@ -765,7 +783,13 @@ function nextTurn(world: World, depth: number): Turn | undefined {
   const arena = world.arena;
   if (arena?.phase === 'fight' && arena.depth === depth && arena.tick < time) [turn, time] = [{ kind: 'arena' }, arena.tick];
   // Clouds of gas spread a turn at a time (Blob.act).
-  if (floor.gasAt !== undefined && floor.gasAt < time) turn = { kind: 'gas' };
+  if (floor.gasAt !== undefined && floor.gasAt < time) [turn, time] = [{ kind: 'gas' }, floor.gasAt];
+  // PitfallTrap.DelayedPit: the floor gives way when its turn comes.
+  const pit = nextPitAt({ level: levelAt(world, depth) });
+  if (pit !== undefined && pit < time) [turn, time] = [{ kind: 'pit', at: pit }, pit];
+  // The dwarven vault's flame vents and the greater elemental's spells, a turn at a time (vault.ts).
+  const vaultAt = vaultTurnAt(floor);
+  if (vaultAt !== undefined && vaultAt < time) turn = { kind: 'vault' };
   return turn;
 }
 
@@ -876,6 +900,16 @@ function playTurn(ctx: Ctx, turn: Exclude<Turn, { kind: 'hero' }>): void {
       floor.now = Math.max(floor.now, floor.gasAt!);
       floor.gasAt! += 1;
       evolveGas(ctx);
+      return;
+    case 'pit':
+      floor.now = Math.max(floor.now, turn.at);
+      // Whoever stood there falls to the depth below (Chasm.heroFall), and what lay there too.
+      for (const hero of openPits(ctx)) fall(ctx, hero, hero.pos);
+      if (floor.falling) itemsFall(world, ctx.depth);
+      return;
+    case 'vault':
+      floor.now = Math.max(floor.now, floor.vault!.at);
+      vaultTurn(ctx);
   }
 }
 
@@ -1002,7 +1036,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
     case 'move': {
       if (action.to === hero.pos) {
         // Hero.actMove: moving in place tramples the grass or sets off the plant underfoot (Level.pressCell).
-        if (level.map[hero.pos] === T.HIGH_GRASS) trample(ctx, hero.pos, hero);
+        if (isTallGrass(level.map[hero.pos])) trample(ctx, hero.pos, hero);
         stepOnPlant(ctx, hero, hero.pos);
         spend(ctx, hero, 1 / heroSpeed(hero));
         break;
@@ -1053,26 +1087,35 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
       if (!floating && trapAt(level, hero.pos)) triggerTrap(ctx, hero, hero.pos);
       if (!floating && level.map[hero.pos] === T.WELL) drinkFromWell(ctx, hero);
       if (!floating) stepOnPlant(ctx, hero, hero.pos);
-      if (!floating && level.map[hero.pos] === T.HIGH_GRASS) trample(ctx, hero.pos, hero);
+      if (!floating && isTallGrass(level.map[hero.pos])) trample(ctx, hero.pos, hero);
       if (level.arenaDoor !== undefined) {
         if (hero.depth === 15) enterLair(ctx, hero);
         else if (hero.depth === 20) enterThroneHall(ctx, hero);
         else if (hero.depth === 25) awakenYog(ctx, hero);
         else enterArena(ctx, hero);
       }
+      // VaultLevel.occupyCell: the vault's final room watches the hero's steps.
+      vaultStep(ctx, hero);
       search(ctx, hero, false);
       break;
     }
 
     case 'attack': {
       const mob = mobById(world, hero.depth, action.target)!;
+      // CrystalSpire and GnollGeomancer.interact: the pickaxe on the spire, or on the geomancer's rock armour.
+      const mined = mineInteract(ctx, hero, mob);
+      if (mined !== null) {
+        if (mined > 0) spend(ctx, hero, mined);
+        break;
+      }
       if (mob.state === 'passive') {
         // Not a fight: a word with the sad ghost, or business with the
         // shopkeeper; it takes no time.
         if (isShopkeeper(mob)) ctx.effects.push({ type: 'shop', hero: hero.id });
         else if (mob.kind === 'wandmaker') talkToWandmaker(ctx, hero);
         else if (mob.kind === 'imp') talkToImp(ctx, hero);
-        else if (mob.kind === 'blacksmith') talkToSmith(ctx, hero);
+        else if (VAULT_NPCS.has(mob.kind)) talkToVaultNpc(ctx, hero, mob);
+        else if (mob.kind === 'blacksmith') talkToBlacksmith(ctx, hero);
         else if (mob.kind === 'sheep') ctx.effects.push({ type: 'baa', depth: hero.depth, mob: mob.id });
         else if (mob.kind === 'ratKing') {
           // RatKing.interact: woken, he says he was not sleeping; awake, he has no time for this.
@@ -1118,13 +1161,21 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
       wandFromWandmaker(ctx, hero, action.choice);
       break;
 
-    case 'impReward':
-      ringFromImp(ctx, hero);
+    case 'vault': {
+      // The escape crystal leads out of the vault, up to the imp's room.
+      const time = vaultAction(ctx, hero, action);
+      if (time === 'leave') changeBranch(ctx, hero, 0);
+      else spend(ctx, hero, time);
+      break;
+    }
+
+    case 'skeletonKey':
+      spend(ctx, hero, useSkeletonKey(ctx, hero, action));
       break;
 
-    case 'reforge':
-      reforge(ctx, hero, action.first, action.second);
-      spend(ctx, hero, TIME_TO_REFORGE);
+    // WndBlacksmith: his services take no time.
+    case 'blacksmith':
+      blacksmithService(ctx, hero, action);
       break;
 
     case 'descend':
@@ -1350,50 +1401,13 @@ function awakenYog(ctx: Ctx, hero: Hero): void {
 }
 
 /**
- * HighGrass.trample: walked through, tall grass is flattened and sometimes sheds a seed or a dewdrop.
- * The huntress travels through it without trampling it: it only furrows (FURROWED_GRASS, which still
- * stands and hides, but sheds nothing more and is flattened by anyone else).
- */
-function trample(ctx: Ctx, pos: number, hero?: Hero): void {
-  const level = ctx.level;
-  const furrowed = isFurrowed(level, pos);
-  if (hero?.heroClass === 'huntress') {
-    if (furrowed) return;
-    furrow(level, pos);
-  } else {
-    ctx.level.map[pos] = T.GRASS;
-    if (furrowed) {
-      unfurrow(level, pos);
-      return;
-    }
-  }
-  // A warden draws bark from the grass.
-  if (hero?.subclass === 'warden') hero.barkskin = Math.max(hero.barkskin, Math.trunc(hero.ht / 3));
-  // A ring of herbalism makes both more likely (HighGrass.trample).
-  const herbalism = hero ? ringBonus(hero, 'ring.herbalism') : 0;
-  // Barren land: the grass sheds nothing at all.
-  if (herbalism < 0 || isChallenged(ctx.world, NO_HERBALISM)) return;
-  if (ctx.rng.int(18) <= ctx.rng.int(herbalism + 1)) dropItem(ctx.floor, pos, new ItemGenerator(ctx.rng, ctx.depth).of('seed'));
-  if (ctx.rng.int(6) <= ctx.rng.int(herbalism + 1)) dropItem(ctx.floor, pos, createItem('dew'));
-}
-
-/** Terrain.FURROWED_GRASS, kept beside the map until the levels stream brings the terrain (Level.furrowed). */
-const isFurrowed = (level: Level, pos: number): boolean => level.map[pos] === T.HIGH_GRASS && (level.furrowed ?? []).includes(pos);
-function furrow(level: Level, pos: number): void {
-  (level.furrowed ??= []).push(pos);
-}
-function unfurrow(level: Level, pos: number): void {
-  level.furrowed = (level.furrowed ?? []).filter((cell) => cell !== pos);
-}
-
-/**
  * Hero.canSelfTrample: standing in tall grass (not furrowed grass for the huntress, who would not
  * flatten it) or on a plant, and not rooted or floating, the hero may trample it where they stand.
  */
 export function canSelfTrample(world: World, hero: Hero): boolean {
   if (hero.rooted > 0 || (hero.levitating ?? 0) > 0) return false;
   const level = levelAt(world, hero.depth);
-  const grass = level.map[hero.pos] === T.HIGH_GRASS && !(hero.heroClass === 'huntress' && isFurrowed(level, hero.pos));
+  const grass = level.map[hero.pos] === T.HIGH_GRASS || (level.map[hero.pos] === T.FURROWED_GRASS && hero.heroClass !== 'huntress');
   return grass || (floorAt(world, hero.depth).plants ?? []).some((plant) => plant.pos === hero.pos);
 }
 
@@ -1481,8 +1495,12 @@ function fall(ctx: Ctx, hero: Hero, into: number): void {
   hero.pos = landingCell(world, depth, rng, weakFloor);
   hero.time = floor.now;
   enterCell(below, hero.pos);
+  // Chasm.heroLand: crippled, and the lower the hero's health, the more bleeding and the less
+  // upfront damage (half of what is left at least).
   hero.crippled = Math.max(hero.crippled, CRIPPLE_TURNS);
-  const damage = rng.intRange(Math.trunc(hero.ht / 3), Math.trunc(hero.ht / 2));
+  const bleed = Math.round(hero.ht / Math.fround(6 + Math.fround(6 * Math.fround(hero.hp / hero.ht))));
+  hero.bleeding = Math.max(hero.bleeding ?? 0, bleed);
+  const damage = Math.max(Math.trunc(hero.hp / 2), rng.normalIntRange(Math.trunc(hero.hp / 2), Math.trunc(hero.ht / 4)));
   effects.push({ type: 'hurt', depth, who: hero.id, damage });
   hurt({ world, depth, level: below, floor, rng, effects }, hero, damage, 'fall');
   if (!isAlive(hero)) return;

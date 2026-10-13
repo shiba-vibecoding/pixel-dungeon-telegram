@@ -27,8 +27,13 @@ export * as TileVisuals from './level/tilevisuals';
 export { PLANT_KINDS, type PlantInfo, type PlantKind, SEED_PLANTS } from './plants';
 export { charAt, type Effect, type Floor, heroesOn, heroSight, isWater, swapsWithHero } from './floor';
 
-export { ORE_WANTED, type SmithLine, type SmithQuest } from './smith';
+export {
+  type BlacksmithAction, type BlacksmithLine, type BlacksmithQuest, type BlacksmithService, type BlacksmithType, canHarden, canReforge, canUpgrade,
+  hardenCost, hasPickaxe, isMine, pickaxeCost, questCompleted, reforgeCost, rewardsAvailable, SMITH_COST, upgradeCost,
+} from './blacksmith';
+export { hasSapper, type MineEventKind } from './minemobs';
 export { type GhostLine, type GhostQuest, type GhostType, GHOST_FOES } from './quest';
+export { type WandmakerLine, type WandmakerQuest, type WandmakerType, WANDMAKER_WANTS } from './wandmaker';
 export {
   canTarget, isEnchantable, isItemRef, isUnidentified, isUpgradable, itemAt, type ItemRef, scrollTargets, type TargetedScroll,
 } from './scrolls';

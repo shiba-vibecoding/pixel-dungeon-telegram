@@ -4,6 +4,7 @@ import {
   sealShield, WATERSKIN_VOLUME, type World,
 } from '@pd/core';
 import { t } from './i18n';
+import { lt, plain } from './levelnames';
 
 /*
  * How items are called and described, given what the party knows: the kinds
@@ -83,7 +84,9 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
       known ? t.weaponInfo(stats.min, stats.max, stats.str) : t.weaponTypicalInfo(stats.min, stats.max, stats.str),
       ...(item.enchant ? [t.enchantInfo[item.enchant]] : []),
       ...(item.imbue ? [t.imbueInfo[item.imbue]] : []),
-      ...(item.kind === 'weapon.pickaxe' ? [t.pickaxeInfo(!!item.bloody)] : []),
+      // Pickaxe: Shattered's own description, and how it mines.
+      ...(item.kind === 'weapon.pickaxe' ? [plain(lt('items.quest.pickaxe.desc')), t.mineHint] : []),
+      ...(item.hardened ? [t.hardened] : []),
       ...(visiblyCursed(item) ? [t.cursedInfo] : []),
       ...(stats.str > hero.str ? [known ? t.tooHeavy : t.probablyTooHeavy] : []),
     ];
@@ -93,7 +96,7 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
     const stats = armorStats(known ? item : typical(item));
     return [
       known ? t.armorInfo(stats.dr, stats.str) : t.armorTypicalInfo(stats.dr, stats.str),
-      ...(item.glyph ? [t.glyphInfo[item.glyph]] : []), ...(visiblyCursed(item) ? [t.cursedInfo] : []),
+      ...(item.glyph ? [t.glyphInfo[item.glyph]] : []), ...(item.hardened ? [t.hardened] : []), ...(visiblyCursed(item) ? [t.cursedInfo] : []),
       ...(CLASS_ARMOR.includes(item.kind) ? [t.classArmorInfo[CLASS_OF[item.kind]!], t.specialCost] : []),
       ...(stats.str > hero.str ? [known ? t.tooHeavy : t.probablyTooHeavy] : []),
       // Armor.info: the warrior's seal on it, and the shield it gives.

@@ -1,4 +1,5 @@
 import { beckon, createMob, type Hero, isAlive, type Mob, type MobKind, mobStats, MOBS, rollMob } from './actors';
+import { freezeEternalFire } from './roomblobs';
 import { randomRespawnCell } from './ai';
 import { isChallenged } from './challenges';
 import { charArmor, type Hazard, hurt } from './combat';
@@ -17,6 +18,7 @@ import { stepOnPlant } from './plants';
 import { isUpgradable } from './scrolls';
 import { S } from './spd-sprites';
 import { type Burst, burst, immuneTo, mobFall, mobPress, springTrap, trapAt, triggerTrap } from './traps';
+import { frostHurtsElemental } from './wandmaker-mobs';
 
 /*
  * What each of Shattered's traps does when it goes off (Trap.activate, levels/traps/*). The power
@@ -58,10 +60,10 @@ const TRAP_HAZARD: Hazard = 'gripping';
 
 /* Char.Property, for the kinds pd-ts has (SEAM(mobs): Shattered's own monsters bring theirs). */
 const BOSS: ReadonlySet<MobKind> = new Set<MobKind>(['goo', 'tengu', 'dm300', 'king', 'yog', 'rottingFist', 'burningFist']);
-const MINIBOSS: ReadonlySet<MobKind> = new Set<MobKind>(['fetidRat', 'curse']);
-const IMMOVABLE: ReadonlySet<MobKind> = new Set<MobKind>(['shopkeeper', 'impShopkeeper', 'imp', 'wandmaker', 'blacksmith', 'king', 'yog']);
+const MINIBOSS: ReadonlySet<MobKind> = new Set<MobKind>(['fetidRat', 'curse', 'rotHeart', 'rotLasher', 'newbornElemental']);
+const IMMOVABLE: ReadonlySet<MobKind> = new Set<MobKind>(['shopkeeper', 'impShopkeeper', 'imp', 'wandmaker', 'blacksmith', 'king', 'yog', 'rotHeart', 'rotLasher']);
 const LARGE: ReadonlySet<MobKind> = new Set<MobKind>(['golem', 'dm300', 'ghost']);
-const FIERY: ReadonlySet<MobKind> = new Set<MobKind>(['elemental', 'burningFist']);
+const FIERY: ReadonlySet<MobKind> = new Set<MobKind>(['elemental', 'burningFist', 'newbornElemental']);
 const hasProp = (ch: Char, prop: ReadonlySet<MobKind>): boolean => !isHero(ch) && prop.has(ch.kind);
 const largeKind = (kind: MobKind): boolean => LARGE.has(kind);
 
@@ -394,7 +396,7 @@ function aim(ctx: Ctx, pos: number, canTarget: (ch: Char) => boolean = () => tru
  * `amount` turns (5 on the blazing trap's dry cells, 1 on water and chasms, 2 for the burning trap) and
  * spreads turn by turn, catching whoever comes into it later.
  */
-function seedFire(ctx: Ctx, cells: number[]): void {
+export function seedFire(ctx: Ctx, cells: number[]): void {
   ctx.effects.push({ type: 'blob', depth: ctx.depth, blob: 'fire', cells });
   const lit = new Set(cells);
   const queue = [...cells];
@@ -426,9 +428,11 @@ function seedFire(ctx: Ctx, cells: number[]): void {
  */
 function seedFreezing(ctx: Ctx, cells: number[]): void {
   ctx.effects.push({ type: 'blob', depth: ctx.depth, blob: 'freezing', cells });
+  // EternalFire: frost on or beside it puts the whole of it out.
+  freezeEternalFire(ctx, cells);
   for (const cell of cells) {
     const ch = charOn(ctx, cell);
-    if (ch && !immuneTo(ch, 'frost')) {
+    if (ch && !frostHurtsElemental(ctx, ch) && !immuneTo(ch, 'frost')) {
       ch.slowed = Math.max(ch.slowed ?? 0, water(ctx, cell) ? 5 : 3);
       ch.burning = 0;
     }
@@ -674,6 +678,9 @@ export function activate(ctx: Ctx, trap: TrapInfo, victim: Char | null): void {
       return;
     case 'wornDart':
       dart(ctx, pos, S.DART, null);
+      return;
+    case 'toxicVent':
+      // ToxicGasRoom.ToxicVent.activate: nothing; it is only decoration.
       return;
     case 'rockfall':
       rockfall(ctx, pos);

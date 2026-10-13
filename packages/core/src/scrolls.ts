@@ -45,14 +45,14 @@ export function heldRefs(hero: Hero): ItemRef[] {
 }
 
 /**
- * Item.isUpgradable: melee weapons, armour, wands, rings and the boomerang —
- * but not other thrown weapons (MissileWeapon), the blacksmith's pickaxe,
+ * Item.isUpgradable: melee weapons (the blacksmith's pickaxe among them), armour,
+ * wands, rings and the boomerang — but not other thrown weapons (MissileWeapon),
  * class armour, or the rings of haggler and thorns.
  */
 export function isUpgradable(item: Item): boolean {
   switch (itemDef(item.kind).category) {
     case 'weapon':
-      return item.kind !== 'weapon.pickaxe';
+      return true;
     case 'armor':
       return !CLASS_ARMOR.includes(item.kind);
     case 'wand':
@@ -72,7 +72,7 @@ export function isUpgradable(item: Item): boolean {
 /** WndBag.Mode.ENCHANTABLE: a melee weapon, the boomerang or any armour (class armour too). */
 export function isEnchantable(item: Item): boolean {
   const category = itemDef(item.kind).category;
-  return (category === 'weapon' && item.kind !== 'weapon.pickaxe') || category === 'armor' || item.kind === 'missile.boomerang';
+  return category === 'weapon' || category === 'armor' || item.kind === 'missile.boomerang';
 }
 
 /**
@@ -149,8 +149,13 @@ export function upgradeItem(ctx: Ctx, hero: Hero, item: Item): void {
     ctx.effects.push({ type: 'mended', hero: hero.id, item });
     return;
   }
-  // Weapon.upgrade(false) / Armor.upgrade(false): Random.Int(level()) > 0 drives the magic out.
-  if ((item.enchant || item.glyph) && item.level > 0 && ctx.rng.int(item.level) > 0) {
+  // Weapon.upgrade(false) / Armor.upgrade(false): Random.Int(level()) > 0 drives the magic out; a hardened one
+  // (the troll blacksmith's work) stays, though the hardening may give from +6 (10/20/40/80/100%).
+  if ((item.enchant || item.glyph) && item.hardened) {
+    let chance = 1;
+    for (let i = 6; i < item.level && chance < 10; i++) chance *= 2;
+    if (item.level >= 6 && ctx.rng.floatMax(10) < chance) delete item.hardened;
+  } else if ((item.enchant || item.glyph) && item.level > 0 && ctx.rng.int(item.level) > 0) {
     delete item.enchant;
     delete item.glyph;
     ctx.effects.push({ type: 'disenchanted', hero: hero.id, item });

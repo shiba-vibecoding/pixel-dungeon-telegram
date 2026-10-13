@@ -38,10 +38,11 @@ export type Synth =
  * Shattered's sounds (Assets.Sounds) the levels stream plays that have no file of their own here yet:
  * each plays the nearest existing one until the audio stream brings Shattered's files.
  */
-export type LevelSound = 'gas' | 'ray' | 'mine' | 'trample' | 'tomb' | 'sheep' | 'grass' | 'chains' | 'chime' | 'scan' | 'mimic' | 'boulder';
+export type LevelSound =
+  | 'gas' | 'ray' | 'mine' | 'trample' | 'tomb' | 'sheep' | 'grass' | 'chains' | 'chime' | 'scan' | 'mimic' | 'boulder' | 'chargeup' | 'hit_parry';
 const LEVEL_SOUNDS: Readonly<Record<LevelSound, Sample | Synth>> = {
   gas: 'puff', ray: 'zap', mine: 'rocks', trample: 'rustle', tomb: 'bones', sheep: 'puff', grass: 'stepGrass', chains: 'clank',
-  chime: 'sparkle', scan: 'zap', mimic: 'bones', boulder: 'rocks',
+  chime: 'sparkle', scan: 'zap', mimic: 'bones', boulder: 'rocks', chargeup: 'evoke', hit_parry: 'clank',
 };
 
 export type Sound = Sample | Synth | LevelSound;

@@ -17,6 +17,7 @@ import { armorProc, TERROR_TURNS, weaponProc } from './enchant';
 import { earthrootAbsorbs } from './plants';
 import { impQuestKill } from './imp';
 import { addQuestScore, ghostFoeSlain } from './quest';
+import { mineAttackProc, mineBeforeAttack, mineDamage, mineDefense, mineMobDied } from './minemobs';
 import { seedGas } from './gas';
 import { looseItems } from './bags';
 import { sacrifice } from './altar';
@@ -25,6 +26,7 @@ import { mobPress } from './traps';
 import { isBossDepth } from './level/builder';
 import { underChallenges } from './challenges';
 import { arenaKill } from './arena';
+import { burnsAway, lasherCripples, rotHeartStruck, wandmakerAttack, wandmakerMobDied } from './wandmaker-mobs';
 
 /*
  * Melee combat as in Char.attack: an accuracy roll against an evasion roll,
@@ -37,6 +39,9 @@ function attackSkill(char: Char): number {
 
 function defenseSkill(char: Char, attacker?: Char): number {
   if (isHero(char)) return heroDefenseSkill(char);
+  // CrystalGuardian.defenseSkill: knocked down, it cannot dodge.
+  const mine = mineDefense(char);
+  if (mine !== undefined) return mine;
   // GreatCrab.defenseSkill: it parries every blow from the one it is watching, awake and free to move.
   if (char.kind === 'greatCrab' && attacker && char.enemySeen && char.state !== 'sleeping' && (char.paralysed ?? 0) <= 0 &&
     char.enemy === attacker.id && (!isHero(attacker) || attacker.invisible <= 0)) {
@@ -69,6 +74,10 @@ export interface AttackOverride {
 export function attack(ctx: Ctx, attacker: Char, defender: Char, override: AttackOverride = {}): boolean {
   // Striking gives an invisible hero away.
   if (isHero(attacker)) attacker.invisible = 0;
+  // RotLasher.attack, DustWraith.attack: what going for the hero costs the wandmaker's quest.
+  if (!isHero(attacker)) wandmakerAttack(ctx, attacker, defender);
+  // The blacksmith's mine: an invulnerable gnoll geomancer or downed guardian; a guardian's blow costing the quest's score.
+  if (mineBeforeAttack(ctx, attacker, defender)) return false;
   const skill = override.attack ?? attackSkill(attacker);
   const evasion = defenseSkill(defender, attacker);
   const hit = evasion !== Number.POSITIVE_INFINITY && ctx.rng.floatMax(skill) >= ctx.rng.floatMax(evasion);
@@ -94,9 +103,13 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   }
   // Char.attackProc and defenseProc: what a blow does besides the damage.
   if (!isHero(attacker)) {
+    // A fungal sentry's poison, a gnoll guard's warning (minemobs.ts).
+    mineAttackProc(ctx, attacker, defender, damage);
     // The vampire bat drinks what it draws.
     if (attacker.kind === 'bat') attacker.hp += Math.min(damage, attacker.ht - attacker.hp);
     if (baseKind(attacker.kind) === 'thief' && !attacker.item && isHero(defender)) steal(ctx, attacker, defender);
+    // RotLasher.attackProc: its lash cripples.
+    if (attacker.kind === 'rotLasher') lasherCripples(ctx, defender);
     // Elemental.attackProc: half its blows set their target alight.
     if (attacker.kind === 'elemental' && ctx.rng.int(2) === 0 && !isWater(ctx.level.map[defender.pos]!)) {
       defender.burning = Math.max(defender.burning ?? 0, ELEMENTAL_BURNING);
@@ -188,6 +201,8 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     if (!isAlive(defender) || ctx.effects.slice(mark).some((e) => e.type === 'resurrected')) return true;
   }
   if (!isHero(defender) && defender.kind === 'swarm') split(ctx, defender, damage);
+  // RotHeart.defenseProc: struck, it lets out toxic gas.
+  if (!isHero(defender) && defender.kind === 'rotHeart') rotHeartStruck(ctx, defender);
   // FetidRat.defenseProc: struck, it lets out a puff of paralytic gas.
   if (!isHero(defender) && defender.kind === 'fetidRat') seedGas(ctx, defender.pos, 'paralytic', 20);
   // Acidic.defenseProc: striking it splashes acid back on the striker.
@@ -202,10 +217,6 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   if (!isHero(defender) && defender.kind === 'yog') spawnLarva(ctx, defender);
   ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage });
   hurt(ctx, defender, damage, attacker);
-  // Pickaxe.proc: a vampire bat slain with the pickaxe leaves its blood on it, as the blacksmith wants.
-  if (isHero(attacker) && attacker.weapon?.kind === 'weapon.pickaxe' && !thrown && !isHero(defender) && defender.kind === 'bat' && !isAlive(defender)) {
-    attacker.weapon.bloody = true;
-  }
   // Hero.defenseProc: a ring of thorns turns some of the blow back on the attacker.
   if (isHero(defender) && !isHero(attacker) && isAlive(attacker) && defender.rings.some((r) => r.kind === 'ring.thorns')) {
     const back = ctx.rng.intRange(0, damage);
@@ -324,7 +335,7 @@ function split(ctx: Ctx, swarm: Mob, damage: number): void {
 }
 
 /** What hurts without being a character. */
-export type Hazard = 'poison' | 'burning' | 'ooze' | 'lightning' | 'gripping' | 'hunger' | 'bones' | 'gas' | 'fall' | 'deferred' | 'bleeding' | 'dry' | 'multiplicity' | 'bomb';
+export type Hazard = 'poison' | 'burning' | 'ooze' | 'lightning' | 'gripping' | 'hunger' | 'bones' | 'gas' | 'fall' | 'deferred' | 'bleeding' | 'dry' | 'multiplicity' | 'bomb' | 'frost';
 
 export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Hazard): void {
   if (!isAlive(victim)) return;
@@ -332,6 +343,13 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   if (!isHero(victim) && victim.state === 'passive' && victim.kind !== 'bee') {
     if (isShopkeeper(victim)) shopkeeperFlees(ctx, victim);
     return;
+  }
+  // RotHeart.damage, RotLasher.damage: fire takes them away at once.
+  if (!isHero(victim) && source === 'burning' && burnsAway(ctx, victim)) return;
+  // The blacksmith's mine: a downed guardian mends instead of dying, the geomancer's armour and thirds, a guard armoured by its sapper.
+  if (!isHero(victim)) {
+    damage = mineDamage(ctx, victim, damage, source);
+    if (damage < 0) return;
   }
   const by = typeof source === 'string' ? null : source;
   if (!isHero(victim)) {
@@ -392,7 +410,21 @@ const ELEMENTAL_BURNING = 8;
 /** Crab.lootChance. */
 const CRAB_MEAT_CHANCE = 0.167;
 
-function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
+/**
+ * Chasm.mobFall's Mob.die(Chasm): what a monster carried and would drop goes with it, through the
+ * chasm to the depth below (Level.drop on a chasm cell).
+ */
+export function chasmLoot(ctx: Ctx, mob: Mob): void {
+  const stats = mobStats(mob);
+  if (mob.item) landItem(ctx, mob.pos, mob.item);
+  for (const item of mob.loot ?? []) landItem(ctx, mob.pos, item);
+  if (heroesOn(ctx.world, ctx.depth).some((h) => h.lvl <= stats.maxLvl + 2)) {
+    const loot = dropLoot(ctx, mob);
+    if (loot) landItem(ctx, mob.pos, loot);
+  }
+}
+
+export function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   mob.hp = 0;
   ctx.floor.mobs.splice(ctx.floor.mobs.indexOf(mob), 1);
   leaveCell(ctx.world, ctx.level, ctx.depth, mob.pos);
@@ -409,6 +441,7 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   }
 
   ghostFoeSlain(ctx, mob, by);
+  mineMobDied(ctx, mob);
   impQuestKill(ctx, mob);
 
   // A thief's stolen goods fall where it dies, and a mimic's treasure (Level.drop: as the challenges allow;
@@ -421,7 +454,8 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
     const loot = dropLoot(ctx, mob);
     if (loot) landItem(ctx, mob.pos, loot);
   }
-
+  // RotHeart.die, NewbornFireElemental.die: what the old wandmaker is after.
+  wandmakerMobDied(ctx, mob);
 
   if (mob.kind === 'skeleton') explode(ctx, mob);
 
@@ -482,6 +516,12 @@ function dropLoot(ctx: Ctx, mob: Mob): Item | null {
     // DemonSpawner: always a potion of healing.
     case 'demonSpawner':
       return createItem('potion.healing');
+    // RotLasher: a seed, three times in four.
+    case 'rotLasher':
+      return rng.float() < 0.75 ? generator().of('seed') : null;
+    // FireElemental (the newborn's kind): a potion of liquid flame, one time in eight.
+    case 'newbornElemental':
+      return rng.float() < 0.125 ? createItem('potion.liquidFlame') : null;
     // GreatCrab: always two pieces of mystery meat.
     case 'greatCrab':
       return createItem('food.meat', 2);

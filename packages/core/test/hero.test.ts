@@ -348,8 +348,7 @@ describe('small things (Hero.handle)', () => {
       const result = act(world, 'p', { type: 'move', to: i % 2 === 0 ? grass : home });
       if (result.ok) effects.push(...result.effects);
     }
-    expect(level.map[grass]).toBe(T.HIGH_GRASS);
-    expect(level.furrowed).toEqual([grass]);
+    expect(level.map[grass]).toBe(T.FURROWED_GRASS);
     // Anyone else flattens furrowed grass, without loot.
     hero.heroClass = 'mage';
     act(world, 'p', { type: 'move', to: grass });

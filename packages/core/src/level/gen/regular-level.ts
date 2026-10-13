@@ -17,7 +17,7 @@ import { createSecretRoom, secretsForFloor } from './rooms/secret/secret';
 import { createSpecialRoom, initSpecialsForFloor, isSpecial, SPECIAL_ROOMS } from './rooms/special/special';
 import { createEntranceRoom, createExitRoom, createStandardRoom } from './rooms/standard/registry';
 import { isStandard, type StandardRoom } from './rooms/standard/standard';
-import { QuestHooks } from './quests';
+import { type MobChoice, QuestHooks } from './quests';
 import { lootCount, mobCount, partyRooms } from '../../party';
 
 /*
@@ -58,6 +58,11 @@ export class RegularLevel {
       return new LoopBuilder().setLoopShape(2, Random.Float(0, 0.65), Random.Float(0, 0.5));
     }
     return new FigureEightBuilder().setLoopShape(2, Random.Float(0.3, 0.8), 0);
+  }
+
+  /** Level.createMob, as RegularLevel.createMobs asks for one: a monster of the depth (the mine has its own). */
+  protected levelMob(): MobChoice {
+    return QuestHooks.createMob();
   }
 
   /** RegularLevel.nTraps. */
@@ -167,7 +172,7 @@ export class RegularLevel {
     const near = distanceMap(level, entrance, walkable, 8);
 
     let index = 0;
-    const tryPlace = (kind: ReturnType<typeof QuestHooks.createMob>, roomToSpawn: Room): number => {
+    const tryPlace = (kind: MobChoice, roomToSpawn: Room): number => {
       let tries = 30;
       let pos: number;
       do {
@@ -181,24 +186,24 @@ export class RegularLevel {
       return tries >= 0 ? pos : -1;
     };
 
-    let pending: ReturnType<typeof QuestHooks.createMob> | null = null;
+    let pending: MobChoice | null = null;
     let guard = 0;
     while (mobsToSpawn > 0 && guard++ < 10_000) {
-      pending ??= QuestHooks.createMob();
+      pending ??= this.levelMob();
       if (index >= stdRooms.length) index = 0;
       const roomToSpawn = stdRooms[index++]!;
       const pos = tryPlace(pending, roomToSpawn);
       if (pos >= 0) {
         mobsToSpawn--;
-        level.mobs.push({ kind: pending.kind, pos, state: 'sleeping' });
+        level.mobs.push({ ...pending.extra, kind: pending.kind, pos, state: 'sleeping' });
         pending = null;
         // A chance of a second one in the room, but on the first floor.
         if (Dungeon.depth > 1 && mobsToSpawn > 0 && Random.Int(4) === 0) {
-          pending = QuestHooks.createMob();
+          pending = this.levelMob();
           const pos2 = tryPlace(pending, roomToSpawn);
           if (pos2 >= 0) {
             mobsToSpawn--;
-            level.mobs.push({ kind: pending.kind, pos: pos2, state: 'sleeping' });
+            level.mobs.push({ ...pending.extra, kind: pending.kind, pos: pos2, state: 'sleeping' });
             pending = null;
           }
         }

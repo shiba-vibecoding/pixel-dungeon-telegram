@@ -3,10 +3,11 @@ import { act, addHero, canEnter, charAt, createMob, createWorld, findPath, floor
 import { pacify } from './helpers';
 
 function twoHeroes(seed = 2026): World {
-  const world = pacify(createWorld(seed));
+  const world = createWorld(seed);
   addHero(world, { id: 'a', name: 'Alice', heroClass: 'warrior' });
   addHero(world, { id: 'b', name: 'Bob', heroClass: 'mage' });
-  return world;
+  // After both have joined: a second hero brings the depths more monsters (party.ts).
+  return pacify(world);
 }
 
 /** Walks a hero along a path to `to`, one validated step per turn. */

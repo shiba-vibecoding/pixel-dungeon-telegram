@@ -81,7 +81,7 @@ describe('challenges', () => {
     expect(wares.some((item) => item.kind === 'gold')).toBe(true);
   });
 
-  it('barren land: tall grass sheds neither seeds nor dew, and no seed pouch is sold', () => {
+  it('barren land: tall grass sheds no dew, and no seed pouch is sold', () => {
     const items = floorItems(NO_HERBALISM, 7);
     expect(items.some((item) => item.kind === 'bag.seeds')).toBe(false);
     expect(floorItems(0, 7).some((item) => item.kind === 'bag.seeds')).toBe(true);
@@ -96,7 +96,8 @@ describe('challenges', () => {
       expect(level.map[grass]).toBe(T.GRASS);
       act(world, 'p', { type: 'move', to: home });
     }
-    expect(floorAt(world, 1).heaps.some((heap) => heap.pos === grass)).toBe(false);
+    // Challenges.isItemBlocked: only the dew (Shattered's grass still sheds seeds; they just will not grow).
+    expect(floorAt(world, 1).heaps.some((heap) => heap.pos === grass && heap.items.some((i) => i.kind === 'dew'))).toBe(false);
   });
 
   it('forbidden runes: of all scrolls only upgrade can be found; no scroll holder either', () => {

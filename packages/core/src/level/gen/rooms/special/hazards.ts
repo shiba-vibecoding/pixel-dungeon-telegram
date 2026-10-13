@@ -339,9 +339,8 @@ export class ToxicGasRoom extends SpecialRoom {
       do {
         cell = level.pointToCell(this.random(2));
       } while (level.map[cell] !== T.EMPTY);
-      // ToxicVent: a revealed trap that never goes off (decoration). SEAM(traps): no trap kind for it
-      // yet, so the vent is kept as a blob on its cell, beside the gas seed it feeds.
-      level.seedBlob(cell, 1, 'ToxicVent');
+      // ToxicVent: a revealed trap that never goes off (decoration), over the gas seed it feeds.
+      level.setTrap('toxicVent', cell, true).active = false;
       level.seedBlob(cell, 12, 'ToxicGasSeed');
       Painter.set(level, cell, T.INACTIVE_TRAP);
     }

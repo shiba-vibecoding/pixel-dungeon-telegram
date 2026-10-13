@@ -90,6 +90,8 @@ export interface Level {
   shopkeeper?: number;
   /** Where the troll blacksmith keeps his forge. */
   blacksmith?: number;
+  /** MagicalFireRoom's eternal fire: cells nothing passes through until frost, water or purity puts it out (roomblobs.ts). */
+  eternalFire?: number[];
   /** Where the sacrificial fire of an altar room burns, and how much it hungers for. */
   altar?: { pos: number; volume: number; prize?: Item };
   /** Where the Rat King holds court, beside Goo's lair. */
@@ -191,6 +193,7 @@ export function toLevel(level: GenLevel, depth: number, branch: number): Level {
   return {
     depth,
     ...(branch !== 0 ? { branch } : {}),
+    ...(level.mine ? { mine: level.mine } : {}),
     feeling: level.feeling,
     map: level.map,
     width: level.contentWidth || level.width,

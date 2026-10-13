@@ -16,9 +16,16 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'use', item: 2, on: 'ring1' })).toEqual({ type: 'use', item: 2, on: 'ring1' });
     expect(sanitizeAction({ type: 'use', item: 2, on: 'boots' })).toBeNull();
     expect(sanitizeAction({ type: 'open', cell: 300, junk: 1 })).toEqual({ type: 'open', cell: 300 });
-    expect(sanitizeAction({ type: 'reforge', first: 'ring0', second: 3 })).toEqual({ type: 'reforge', first: 'ring0', second: 3 });
+    // The troll blacksmith's services, and mining on his mine.
+    expect(sanitizeAction({ type: 'blacksmith', service: 'reforge', first: 'ring0', second: 3, item: 1 })).toEqual({ type: 'blacksmith', service: 'reforge', first: 'ring0', second: 3 });
+    expect(sanitizeAction({ type: 'blacksmith', service: 'harden', item: 'armor', choice: 2 })).toEqual({ type: 'blacksmith', service: 'harden', item: 'armor' });
+    expect(sanitizeAction({ type: 'blacksmith', service: 'upgrade', item: 4 })).toEqual({ type: 'blacksmith', service: 'upgrade', item: 4 });
+    expect(sanitizeAction({ type: 'blacksmith', service: 'pick', choice: 3, item: 2 })).toEqual({ type: 'blacksmith', service: 'pick', choice: 3 });
+    expect(sanitizeAction({ type: 'blacksmith', service: 'cashout', first: 1 })).toEqual({ type: 'blacksmith', service: 'cashout' });
+    expect(sanitizeAction({ type: 'blacksmith', service: 'pickaxe' })).toEqual({ type: 'blacksmith', service: 'pickaxe' });
+    expect(sanitizeAction({ type: 'blacksmith', service: 'smith' })).toEqual({ type: 'blacksmith', service: 'smith' });
+    expect(sanitizeAction({ type: 'mine', cell: 130, x: 1 })).toEqual({ type: 'mine', cell: 130 });
     expect(sanitizeAction({ type: 'throw', item: 0, target: 100 })).toEqual({ type: 'throw', item: 0, target: 100 });
-    expect(sanitizeAction({ type: 'reforge', first: 'weapon', second: 3 })).toEqual({ type: 'reforge', first: 'weapon', second: 3 });
     expect(sanitizeAction({ type: 'master', item: 1, subclass: 'warden' })).toEqual({ type: 'master', item: 1, subclass: 'warden' });
     expect(sanitizeAction({ type: 'balance', item: 1, imbue: 'speed' })).toEqual({ type: 'balance', item: 1, imbue: 'speed' });
     expect(sanitizeAction({ type: 'balance', item: 1, weapon: 4, imbue: 'accuracy' })).toEqual({ type: 'balance', item: 1, weapon: 4, imbue: 'accuracy' });
@@ -31,7 +38,8 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'affix', from: 2, to: 'armor' })).toEqual({ type: 'affix', from: 2, to: 'armor' });
     expect(sanitizeAction({ type: 'detach', armor: 'armor' })).toEqual({ type: 'detach', armor: 'armor' });
     expect(sanitizeAction({ type: 'detach', armor: 4 })).toEqual({ type: 'detach', armor: 4 });
-    expect(sanitizeAction({ type: 'wandReward', choice: 'utility' })).toEqual({ type: 'wandReward', choice: 'utility' });
+    expect(sanitizeAction({ type: 'wandReward', choice: 2 })).toEqual({ type: 'wandReward', choice: 2 });
+    expect(sanitizeAction({ type: 'wandReward', choice: 1, extra: 'x' })).toEqual({ type: 'wandReward', choice: 1 });
     // The arena of waves: ready for the next wave, and one of three rewards.
     expect(sanitizeAction({ type: 'arenaReady', wave: 99 })).toEqual({ type: 'arenaReady' });
     expect(sanitizeAction({ type: 'arenaReady', cancel: true })).toEqual({ type: 'arenaReady', cancel: true });
@@ -45,11 +53,15 @@ describe('client messages', () => {
       { type: 'move' }, { type: 'move', to: -1 }, { type: 'move', to: LENGTH }, { type: 'move', to: 1.5 }, { type: 'move', to: '7' },
       { type: 'attack', target: 5 }, { type: 'attack', target: '' }, { type: 'attack', target: 'x'.repeat(65) },
       { type: 'use', item: 1, target: 'ring' }, { type: 'drop', item: 1000 }, { type: 'reward', choice: 'gold' },
-      { type: 'reforge', first: 'helmet', second: 1 }, { type: 'master', item: 1, subclass: 'pirate' },
+      { type: 'blacksmith', service: 'reforge', first: 'helmet', second: 1 }, { type: 'blacksmith', service: 'reforge', first: 1 },
+      { type: 'blacksmith', service: 'bribe' }, { type: 'blacksmith' }, { type: 'blacksmith', service: 'harden' },
+      { type: 'blacksmith', service: 'pick', choice: 4 }, { type: 'blacksmith', service: 'pick' }, { type: 'reforge', first: 1, second: 2 },
+      { type: 'mine' }, { type: 'mine', cell: -1 }, { type: 'mine', cell: LENGTH }, { type: 'master', item: 1, subclass: 'pirate' },
       { type: 'balance', item: 1, imbue: 'luck' }, { type: 'special', target: null }, { type: 'beacon', item: 1, mode: 'go' },
       { type: 'affix', from: 'weapon', to: 1 }, { type: 'affix', from: 1 }, { type: 'affix', from: 1, to: 1000 }, { type: 'detach' },
       { type: 'detach', armor: 'ring0' }, { type: 'detach', armor: -1 },
       { type: 'arenaPick' }, { type: 'arenaPick', choice: 3 }, { type: 'arenaPick', choice: -1 }, { type: 'arenaPick', choice: '1' },
+      { type: 'wandReward' }, { type: 'wandReward', choice: 0 }, { type: 'wandReward', choice: 3 }, { type: 'wandReward', choice: 'battle' },
     ]) {
       expect(sanitizeAction(bad), JSON.stringify(bad)).toBeNull();
     }

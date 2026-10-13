@@ -193,11 +193,21 @@ export const ITEMS = {
   'quest.skull': { category: 'quest', sprite: S.RAT_SKULL },
   /** Dark gold, mined from the veins of the caves for the troll blacksmith. */
   'quest.ore': { category: 'quest', sprite: S.ORE },
-  /** Left by the monks or golems the ambitious imp wants gone. */
+  /** DwarfToken: what the dwarven vault's guards and treasures hold; ten open the vault's strange door. */
   'quest.token': { category: 'quest', sprite: S.TOKEN },
+  /** EscapeCrystal: the imp's way out of the vault, holding the hero's belongings meanwhile (vault.ts). */
+  'quest.escapeCrystal': { category: 'quest', sprite: S.ESCAPE },
+  /** ImpStatue: the obsidian statuette the imp wants from the vault's treasury. */
+  'quest.impStatue': { category: 'quest', sprite: S.STATUE },
+  /** VaultBeacon: back to the vault's entry room, once. */
+  'quest.vaultBeacon': { category: 'quest', sprite: S.RETURN_BEACON },
   /** What the old wandmaker is after: corpse dust, or a phantom fish (which can be eaten, for a moment unseen). */
   'quest.dust': { category: 'quest', sprite: S.DUST },
   'quest.fish': { category: 'quest', sprite: S.PHANTOM_MEAT },
+  /** Embers: what a newborn fire elemental leaves, for the old wandmaker. */
+  'quest.embers': { category: 'quest', sprite: S.EMBER },
+  /** CeremonialCandle: four of them round the ritual site's marker summon a newborn fire elemental. */
+  'quest.candle': { category: 'quest', sprite: S.CANDLE },
   /** Tengu's legacy: reading it, a hero masters one of two ways. */
   'tome.mastery': { category: 'tome', sprite: S.MASTERY },
   /** Lit, it lets one see further in the dark halls for a while. */
@@ -223,6 +233,10 @@ export interface Item {
   /** Wands: charges left, and time spent towards the next one. */
   charges?: number;
   recharge?: number;
+  /** Artifacts (Artifact.charge, partialCharge, exp): the skeleton key's charge and its use towards the next level (SEAM(artifacts)). */
+  charge?: number;
+  partialCharge?: number;
+  exp?: number;
   /** Keys: the depth whose door they open. */
   depth?: number;
   /** Rings: turns worn so far; after a while one knows what they are. */
@@ -233,6 +247,8 @@ export interface Item {
   glyph?: Glyph;
   /** The blacksmith's pickaxe: stained with a vampire bat's blood. */
   bloody?: boolean;
+  /** The troll blacksmith hardened its enchantment or glyph (Weapon.enchantHardened, Armor.glyphHardened): upgrades keep it. */
+  hardened?: boolean;
   /** Worse than plain, and cursed: once worn, it will not come off until the curse is lifted. */
   cursed?: boolean;
   /** Class armour: the armour it was made from, whose protection it keeps. */
@@ -243,6 +259,8 @@ export interface Item {
   seal?: { level: number };
   /** Lloyd's beacon: where it was set, if it was. */
   returnTo?: { depth: number; pos: number };
+  /** Item.unique, where the kind does not say: the vault mirror's class items (their stand-ins), never taken out of the vault. */
+  unique?: boolean;
   /** Melee weapons: balanced with a weightstone, for speed or for accuracy (Weapon.imbue). */
   imbue?: 'speed' | 'accuracy';
   /** Uses left before an upgraded item breaks (Item.durability); absent while whole. See wear.ts. */
@@ -308,7 +326,8 @@ export const itemDef = (kind: ItemKind): ItemDef => ITEMS[kind];
 export const isStackable = (kind: ItemKind): boolean => {
   const category = itemDef(kind).category;
   return category === 'potion' || category === 'scroll' || category === 'gold' || category === 'food' || category === 'torch' ||
-    category === 'seed' || category === 'bomb' || category === 'honeypot' || category === 'wipeout' || category === 'weightstone' || (category === 'missile' && kind !== 'missile.boomerang') || kind === 'quest.token' || kind === 'quest.ore';
+    category === 'seed' || category === 'bomb' || category === 'honeypot' || category === 'wipeout' || category === 'weightstone' || (category === 'missile' && kind !== 'missile.boomerang') || kind === 'quest.token' || kind === 'quest.ore' || kind === 'quest.candle' ||
+    kind === 'quest.impStatue' || kind === 'quest.vaultBeacon';
 };
 
 export function createItem(kind: ItemKind, qty = 1, level = 0): Item {
@@ -454,8 +473,12 @@ export interface WeaponStats {
 }
 
 export function weaponStats(item: Item): WeaponStats {
-  // Pickaxe: fixed numbers, never upgraded.
-  if (item.kind === 'weapon.pickaxe') return { min: 3, max: 12, str: 14, accuracy: 1, delay: 1 };
+  // Pickaxe: a tier 2 weapon (Shattered's MeleeWeapon numbers) that wants a tier 3's strength (STRReq + 2).
+  if (item.kind === 'weapon.pickaxe') {
+    const level = effectiveLevel(item);
+    const lvl = Math.max(0, item.level);
+    return { min: 2 + level, max: 15 + 3 * level, str: 14 - Math.trunc((Math.sqrt(8 * lvl + 1) - 1) / 2), accuracy: 1, delay: 1 };
+  }
   const def = itemDef(item.kind);
   const tier = def.tier!;
   const accuracy = def.accuracy!;

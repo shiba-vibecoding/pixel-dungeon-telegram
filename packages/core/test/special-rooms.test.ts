@@ -118,9 +118,13 @@ describe('special rooms painted alone', () => {
     expect(sentry.level.map[sentry.level.mobs[0]!.pos]).toBe(T.PEDESTAL);
 
     const gas = paintRoomAlone(() => SPECIAL_ROOMS.get('ToxicGasRoom')!(), 7, ['left']);
-    const vents = gas.level.blobs.filter((b) => b.kind === 'ToxicVent');
+    const vents = [...gas.level.traps.values()].filter((t) => t.kind === 'toxicVent');
     expect(vents.length).toBe(Math.min(gas.room.width() - 2, gas.room.height() - 2));
-    for (const v of vents) expect(gas.level.map[v.cell]).toBe(T.INACTIVE_TRAP);
+    for (const v of vents) {
+      expect(gas.level.map[v.pos]).toBe(T.INACTIVE_TRAP);
+      expect(v.active).toBe(false);
+      expect(gas.level.blobs.some((b) => b.kind === 'ToxicGasSeed' && b.cell === v.pos && b.amount === 12)).toBe(true);
+    }
     expect(gas.level.blobs.some((b) => b.kind === 'ToxicGas' && b.amount === 30)).toBe(true);
 
     const fire = paintRoomAlone(() => SPECIAL_ROOMS.get('MagicalFireRoom')!(), 7, ['top']).level;

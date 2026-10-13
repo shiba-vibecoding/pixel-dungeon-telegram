@@ -69,6 +69,16 @@ describe('traps', () => {
     expect(hero.hp).toBeLessThan(hp);
   });
 
+  it('a pitfall trap gives way a turn later: the hero still on it falls to the depth below', () => {
+    const { world, cell } = besideTrap('pitfall');
+    const hero = heroById(world, 'p')!;
+    const result = act(world, 'p', { type: 'move', to: cell });
+    expect(result.ok && result.effects).toContainEqual(expect.objectContaining({ type: 'pitfall', stage: 'warn' }));
+    const after = act(world, 'p', { type: 'search' });
+    expect(after.ok && after.effects).toContainEqual(expect.objectContaining({ type: 'pitfall', stage: 'open' }));
+    expect(hero.depth).toBe(2);
+  });
+
   it('walking paths step around visible traps', () => {
     const world = pacify(createWorld(6));
     addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });

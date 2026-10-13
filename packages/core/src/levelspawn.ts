@@ -3,6 +3,7 @@ import type { Floor } from './floor';
 import type { Level } from './level/generate';
 import type { MobSpawn } from './level/gen/genlevel';
 import { scaleMob } from './party';
+import { linkMineMobs } from './minemobs';
 import type { World } from './world';
 
 /*
@@ -41,6 +42,8 @@ export function mobFromSpawn(world: World, level: Level, spec: MobSpawn): Mob {
 /** The level's own characters, made into Mobs; the spawn list is then dropped from the level. */
 export function spawnLevelMobs(world: World, level: Level): Mob[] {
   const mobs = (level.spawn?.mobs ?? []).map((spec) => mobFromSpawn(world, level, spec));
+  // GnollSapper.linkPartner: the blacksmith's mine's sappers and their guards.
+  linkMineMobs(mobs);
   if (level.spawn) level.spawn.mobs = [];
   return mobs;
 }

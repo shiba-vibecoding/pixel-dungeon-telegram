@@ -7,6 +7,7 @@ import { cellX, cellY, HEIGHT, WIDTH } from './level/geometry';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { TRAPS } from './level/trapdefs';
 import { sealShieldTick } from './seal';
+import { dustSpawnerTurn } from './wandmaker';
 import type { World } from './world';
 
 /*
@@ -230,6 +231,8 @@ export function heroTurns(ctx: Ctx, hero: Hero, from: number, to: number): void 
     lockedFloorTurn(ctx, hero);
     hungerTurn(ctx, hero);
     sealShieldTick(ctx, hero);
+    // CorpseDust.DustGhostSpawner: the dust's curse raising wraiths.
+    dustSpawnerTurn(ctx, hero);
   }
 }
 

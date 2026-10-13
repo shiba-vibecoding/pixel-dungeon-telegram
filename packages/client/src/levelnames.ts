@@ -1,4 +1,4 @@
-import { type Level, T, type TrapKind } from '@pd/core';
+import { isBossDepth, type Level, T, type TrapKind, type World } from '@pd/core';
 import { LEVELS_EN, LEVELS_RU } from './i18n-levels';
 import { lang } from './i18n';
 
@@ -171,7 +171,8 @@ export function terrainText(level: Level, tile: number): { name: string; desc: s
 }
 
 /** Shattered's class name of each trap, as its texts are keyed (levels.traps.<name>.*). */
-export const trapKey = (kind: TrapKind): string => `levels.traps.${kind.toLowerCase()}trap`;
+export const trapKey = (kind: TrapKind): string =>
+  kind === 'toxicVent' ? 'levels.rooms.special.toxicgasroom$toxicvent' : `levels.traps.${kind.toLowerCase()}trap`;
 
 /** Trap.name and Trap.desc. */
 export function trapText(kind: TrapKind): { name: string; desc: string } {
@@ -182,4 +183,29 @@ export function trapText(kind: TrapKind): { name: string; desc: string } {
 export function feelingText(feeling: string): { title: string; desc: string } {
   const key = feeling.toLowerCase();
   return { title: lt(`levels.level$feeling.${key}_title`), desc: lt(`levels.level$feeling.${key}_desc`) };
+}
+
+/** Level.Feeling in the order of the core's Feeling (NONE first), as its texts are keyed. */
+const FEELINGS = ['', 'chasm', 'water', 'grass', 'dark', 'large', 'traps', 'secrets'] as const;
+
+/** GameScene on arriving: GLog.w(Dungeon.level.feeling.desc()), or '' for a level without a feeling. */
+export function feelingLine(level: Level): string {
+  const feeling = FEELINGS[level.feeling] ?? '';
+  return feeling ? plain(feelingText(feeling).desc) : '';
+}
+
+/**
+ * GameScene on reaching a new deepest floor (to depth 25): demon spawners still alive on the floors above
+ * (Statistics.spawnersAlive, less this floor's own) are felt: «a source of demonic energy above you», or on the
+ * boss's floor «radiating here from the previous floors». '' when there are none.
+ */
+export function spawnerWarning(world: World, depth: number): string {
+  if (depth > 25) return '';
+  let above = 0;
+  for (const [d, floor] of Object.entries(world.floors)) {
+    if (Number(d) === depth) continue;
+    above += floor.mobs.filter((m) => m.kind === 'demonSpawner' && m.hp > 0).length;
+  }
+  if (above === 0) return '';
+  return plain(lt(isBossDepth(depth) ? 'scenes.gamescene.spawner_warn_final' : 'scenes.gamescene.spawner_warn'));
 }

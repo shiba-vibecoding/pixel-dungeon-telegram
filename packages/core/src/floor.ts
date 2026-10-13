@@ -9,9 +9,11 @@ import type { MeatOutcome } from './inventory';
 import type { PlantInfo, PlantKind } from './plants';
 import type { GhostLine, GhostType } from './quest';
 import type { Burst, TrapKind } from './traps';
-import type { WandmakerLine } from './wandmaker';
+import type { WandmakerEffect } from './wandmaker';
 import type { ImpLine } from './imp';
-import type { SmithLine } from './smith';
+import type { VaultEffect, VaultFloor } from './vault-types';
+import type { BlacksmithLine, BlacksmithService } from './blacksmith';
+import type { MineEventKind } from './minemobs';
 import type { Bolt } from './wands';
 import type { GasKind } from './gas';
 import type { Level } from './level/generate';
@@ -52,6 +54,14 @@ export interface Floor {
   altar?: { pos: number; volume: number; prize?: Item; bonusSpawns?: number };
   /** What this depth gave every hero (strength, upgrades): a hero who joins later gets theirs too (party.ts). */
   perHero?: ItemKind[];
+  /** ToxicGasRoom's vents (ToxicGasSeed): [cell, gas let out a turn] (roomblobs.ts). */
+  vents?: Array<[number, number]>;
+  /** GardenRoom's foliage: the cells in its light (Foliage). */
+  foliage?: number[];
+  /** The dwarven vault: its flame vents, the final room and the greater elemental's spells, with their own turn (vault.ts). */
+  vault?: VaultFloor;
+  /** SkeletonKey.KeyWall: the key's temporary walls, the terrain under each and the turns left (skeletonkey.ts). */
+  keyWalls?: Array<{ cell: number; terrain: number; left: number }>;
 }
 
 /**
@@ -228,11 +238,21 @@ export type Effect =
   | { type: 'well'; hero: string; water: WellWater }
   /** Something dropped into a well of transmutation came out as something else. */
   | { type: 'transmuted'; hero: string; from: Item; to: Item }
-  | { type: 'wandmaker'; hero: string; line: WandmakerLine }
+  /** The old wandmaker's words and his quest's doings (wandmaker.ts). */
+  | WandmakerEffect
+  /** The ambitious imp (imp.ts): his errand, his waiting, his thanks; «psst» and «see you». */
   | { type: 'imp'; hero: string; line: ImpLine }
-  | { type: 'smith'; hero: string; line: SmithLine }
-  /** A piece of dark gold ore mined out of a vein. */
-  | { type: 'mined'; depth: number; pos: number; hero: string }
+  /** The dwarven vault and the skeleton key (vault.ts, skeletonkey.ts). */
+  | VaultEffect
+  /** The troll blacksmith (blacksmith.ts): his errand, a reminder, his services on offer or done, «get lost». */
+  | { type: 'blacksmith'; hero: string; line: BlacksmithLine; questType: number; service?: BlacksmithService; item?: Item }
+  /**
+   * HeroAction.Mine on the blacksmith's mine: a wall, a vein of dark gold (`ore`: how much the hero now holds),
+   * a crystal or a boulder broken, and the crystals around it shattered.
+   */
+  | { type: 'mined'; depth: number; pos: number; hero: string; terrain: 'gold' | 'wall' | 'crystal' | 'boulder'; shattered?: number[]; ore?: number }
+  /** What the mine's monsters do (minemobs.ts: MineEventKind). */
+  | { type: 'mineEvent'; depth: number; what: MineEventKind; mob?: string; hero?: string; cells?: number[]; from?: number; to?: number; amount?: number }
   /** Something eaten; mystery meat may disagree with the eater. */
   | { type: 'ate'; hero: string; kind: ItemKind; outcome: MeatOutcome | null }
   | { type: 'hunger'; hero: string; state: 'hungry' | 'starving' }
@@ -312,8 +332,8 @@ export function charAt(world: World, depth: number, cell: number): Char | undefi
   );
 }
 
-/** Who a hero swaps places with: the quest givers and harmless wanderers, never a shopkeeper. */
-const SWAPPERS: ReadonlySet<string> = new Set(['ghost', 'sheep', 'wandmaker', 'imp', 'blacksmith', 'ratKing']);
+/** Who a hero swaps places with: the quest givers and harmless wanderers, never a shopkeeper nor the troll blacksmith (IMMOVABLE). */
+const SWAPPERS: ReadonlySet<string> = new Set(['ghost', 'sheep', 'wandmaker', 'imp', 'ratKing']);
 
 /**
  * Harmless folk a hero swaps places with rather than being stopped by (as in
@@ -362,12 +382,14 @@ export function canEnter(level: Level, pos: number): boolean {
   const x = pos % WIDTH;
   if (pos < WIDTH || pos >= LENGTH - WIDTH || x === 0 || x === WIDTH - 1) return false;
   const terrain = level.map[pos]!;
+  // MagicalFireRoom.EternalFire: nothing passes through it.
+  if (level.eternalFire?.includes(pos)) return false;
   return hasFlag(terrain, F.PASSABLE) || (hasFlag(terrain, F.AVOID) && !hasFlag(terrain, F.PIT));
 }
 
 /** Ground monsters walk on: they step around traps. */
 export function isPassable(level: Level, pos: number): boolean {
-  return pos >= 0 && pos < LENGTH && hasFlag(level.map[pos]!, F.PASSABLE);
+  return pos >= 0 && pos < LENGTH && hasFlag(level.map[pos]!, F.PASSABLE) && !level.eternalFire?.includes(pos);
 }
 
 /* A door is open while someone stands in it, so it no longer blocks sight. */

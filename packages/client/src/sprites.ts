@@ -103,6 +103,75 @@ const SPD_MOBS: Partial<Record<MobKind, MobSheet>> = {
     w: 16, h: 16, spd: 'crab',
     anims: basic(anim(5, [32, 33, 32, 34], true), anim(10, [35, 36, 37, 38], true), anim(12, [39, 40, 41]), anim(12, [42, 43, 44, 45])),
   },
+  // WandmakerSprite: idle, now and then a glance about; still otherwise (he burns away when he leaves).
+  wandmaker: {
+    w: 12, h: 14, spd: 'wandmaker',
+    anims: basic(anim(10, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 3, 3, 3, 3, 3, 2, 1], true), anim(20, [0], true), anim(20, [0]), anim(20, [0])),
+  },
+  // RotHeartSprite: one still frame; it withers away when it dies.
+  rotHeart: {
+    w: 16, h: 16, spd: 'rot_heart',
+    anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(8, [1, 2, 3, 4, 5, 6, 7, 7, 7])),
+  },
+  // RotLasherSprite: still until it lashes out.
+  rotLasher: {
+    w: 12, h: 16, spd: 'rot_lasher',
+    anims: basic(anim(1, [0], true), anim(1, [0], true), anim(24, [0, 1, 2, 2, 1]), anim(12, [3, 4, 5, 6])),
+  },
+  // The troll blacksmith (BlacksmithSprite): at his anvil.
+  blacksmith: {
+    w: 13, h: 16, spd: 'blacksmith',
+    anims: basic(anim(15, [0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 3], true), anim(20, [0], true), anim(20, [0]), anim(20, [0])),
+  },
+  // The blacksmith's mine (minesprites.ts gives the crystal ones their colour, the guardian its crumpling, the
+  // spire its cracks, the geomancer its rock armour). CrystalWispSprite.Blue.
+  crystalWisp: {
+    w: 12, h: 14, spd: 'crystal_wisp',
+    anims: basic(anim(1, [0], true), anim(12, [0, 0, 0, 1], true), anim(16, [2, 3, 4, 5]), anim(15, [6, 7, 8, 9, 10, 11, 12, 11])),
+  },
+  // CrystalGuardianSprite.Blue.
+  crystalGuardian: {
+    w: 12, h: 15, spd: 'crystal_guardian',
+    anims: basic(anim(2, [0, 0, 0, 0, 0, 1, 1], true), anim(15, [2, 3, 4, 5, 6, 7], true), anim(12, [8, 9, 10]), anim(5, [11, 12, 13, 14, 15, 15])),
+  },
+  // CrystalSpireSprite.Blue: one still frame, more cracked as it is hurt.
+  crystalSpire: {
+    w: 29, h: 40, spd: 'crystal_spire',
+    anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(1, [4])),
+  },
+  // GnollGuardSprite.
+  gnollGuard: {
+    w: 12, h: 16, spd: 'gnoll_guard',
+    anims: basic(anim(2, [0, 0, 0, 1, 0, 0, 1, 1], true), anim(12, [4, 5, 6, 7], true), anim(12, [2, 3, 0]), anim(12, [8, 9, 10])),
+  },
+  // GnollSapperSprite.
+  gnollSapper: {
+    w: 12, h: 15, spd: 'gnoll_sapper',
+    anims: basic(anim(2, [0, 0, 0, 1, 0, 0, 1, 1], true), anim(12, [4, 5, 6, 7], true), anim(12, [2, 3, 0]), anim(12, [8, 9, 10])),
+  },
+  // GnollGeomancerSprite, out of its rock armour (in it: from frame 21).
+  gnollGeomancer: {
+    w: 12, h: 16, spd: 'gnoll_geomancer',
+    anims: basic(anim(2, [0, 0, 0, 1, 0, 0, 1, 1], true), anim(12, [4, 5, 6, 7], true), anim(12, [2, 3, 0]), anim(12, [8, 9, 10])),
+  },
+  // FungalSentrySprite, FungalSpinnerSprite, FungalCoreSprite.
+  fungalSentry: {
+    w: 18, h: 18, spd: 'fungal_sentry',
+    anims: basic(anim(1, [0], true), anim(1, [0], true), anim(24, [0]), anim(12, [0])),
+  },
+  fungalSpinner: {
+    w: 16, h: 16, spd: 'fungal_spinner',
+    anims: basic(anim(10, [0, 0, 0, 0, 0, 1, 0, 1], true), anim(15, [0, 2, 0, 3], true), anim(12, [0, 4, 5, 0]), anim(12, [6, 7, 8, 9])),
+  },
+  fungalCore: {
+    w: 27, h: 27, spd: 'fungal_core',
+    anims: basic(anim(1, [0], true), anim(1, [0], true), anim(24, [0]), anim(12, [0])),
+  },
+  // ElementalSprite.NewbornFire: the elemental sheet from frame 14.
+  newbornElemental: {
+    w: 12, h: 14, spd: 'elemental',
+    anims: basic(anim(10, [14, 15, 16], true), anim(12, [14, 15, 17], true), anim(15, [18, 19, 20]), anim(15, [21, 22, 23, 24, 25, 26, 27, 26])),
+  },
 };
 
 const MOB_SPRITES: Partial<Record<MobKind, MobSheet>> = {

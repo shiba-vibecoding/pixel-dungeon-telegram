@@ -5,6 +5,7 @@ import { FALL_MS, type Puppet, TILE, type View } from './view';
 import { bossCard, depthCard, floatNumber, levelCard, nameplate, slainCard, waveCard } from './cards';
 
 import { fx } from './fx';
+import { levelFx } from './levelfx';
 import { CHEST_ANIMS, type HeapLook } from './motion';
 import { drawFrame, frameAt as sheetFrame, lookIndex, regionIndex, sheet, tintedImage } from './worldsheets';
 import { quality } from './quality';
@@ -166,6 +167,10 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
       const left = puppet.removeAt - now;
       ctx.globalAlpha = Math.max(0, Math.min(1, left / 700));
     }
+  }
+  // Teleported in, or a wraith rising (ScrollOfTeleportation.appear, Wraith.spawnAt): it fades in.
+  if (puppet.appearStart !== undefined && now - puppet.appearStart < (puppet.appearMs ?? 400)) {
+    ctx.globalAlpha *= Math.max(0, (now - puppet.appearStart) / (puppet.appearMs ?? 400));
   }
   if (puppet.flip) {
     ctx.translate(dx + sheet.w, dy);
@@ -336,6 +341,10 @@ export function render(
     ctx.fillRect((flash.cell % WIDTH) * TILE, Math.trunc(flash.cell / WIDTH) * TILE, TILE, TILE);
   }
 
+  const seen = (x: number, y: number): boolean => visible[Math.trunc(y / TILE) * WIDTH + Math.trunc(x / TILE)] === true;
+  // Shattered's floor emitter (GameScene.floorEmitter): the pitfall's crumbling ground (levelfx.ts).
+  levelFx.drawFloor(ctx, now, seen);
+
   // Spinners' webs where they can be seen (Web, a WebParticle in the original): a pale cobweb over
   // the cell, fading as it wears away.
   for (const strand of scene.webs ?? []) {
@@ -377,8 +386,6 @@ export function render(
     }
     ctx.globalAlpha = 1;
   }
-
-  const seen = (x: number, y: number): boolean => visible[Math.trunc(y / TILE) * WIDTH + Math.trunc(x / TILE)] === true;
 
   // Characters, back to front. Monsters only show where the party can see.
   const shown = [...view.puppets.values()]
@@ -474,6 +481,8 @@ export function render(
   }
 
   fx.draw(ctx, now, seen);
+  // Shattered's effects on the levels: specks, its particles, death rays, wounds (levelfx.ts).
+  levelFx.draw(ctx, now, seen);
 
   // Floating numbers and words, drawn at screen resolution so text stays crisp.
   ctx.setTransform(1, 0, 0, 1, 0, 0);

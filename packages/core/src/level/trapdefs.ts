@@ -7,7 +7,7 @@ export type TrapKind =
   | 'alarm' | 'blazing' | 'burning' | 'chilling' | 'confusion' | 'corrosion' | 'cursing' | 'disarming' | 'disintegration'
   | 'distortion' | 'explosive' | 'flashing' | 'flock' | 'frost' | 'gateway' | 'geyser' | 'gnollRockfall' | 'grim' | 'gripping'
   | 'guardian' | 'ooze' | 'pitfall' | 'poisonDart' | 'rockfall' | 'shocking' | 'storm' | 'summoning' | 'teleportation'
-  | 'tenguDart' | 'toxic' | 'warping' | 'weakening' | 'wornDart';
+  | 'tenguDart' | 'toxic' | 'toxicVent' | 'vaultFlame' | 'warping' | 'weakening' | 'wornDart';
 
 /** Trap colours (Trap.RED ... Trap.BLACK): the column in terrain_features.png. */
 export const TRAP_COLOR = { RED: 0, ORANGE: 1, YELLOW: 2, GREEN: 3, TEAL: 4, VIOLET: 5, WHITE: 6, GREY: 7, BLACK: 8 } as const;
@@ -27,7 +27,7 @@ export interface TrapDef {
   disarmedByActivation: boolean;
 }
 
-const { RED, ORANGE, YELLOW, GREEN, TEAL, VIOLET, WHITE, GREY } = TRAP_COLOR;
+const { RED, ORANGE, YELLOW, GREEN, TEAL, VIOLET, WHITE, GREY, BLACK } = TRAP_COLOR;
 const { DOTS, WAVES, GRILL, STARS, DIAMOND, CROSSHAIR, LARGE_DOT } = TRAP_SHAPE;
 
 const def = (color: number, shape: number, extra: Partial<TrapDef> = {}): TrapDef => ({
@@ -68,6 +68,10 @@ export const TRAPS: Readonly<Record<TrapKind, TrapDef>> = {
   // TenguDartTrap extends PoisonDartTrap, but hides, and no search finds it.
   tenguDart: def(GREEN, CROSSHAIR, { avoidsClosedSpaces: true, canBeSearched: false }),
   toxic: def(GREEN, GRILL),
+  // ToxicGasRoom.ToxicVent: always in sight and never set off; it only feeds the room's gas.
+  toxicVent: def(BLACK, GRILL, { canBeHidden: false }),
+  // VaultLevel.VaultFlameTrap: a vent of the vault's flame traps, always in sight and always inactive (vault.ts fires them).
+  vaultFlame: def(BLACK, DOTS, { canBeHidden: false }),
   warping: def(TEAL, STARS),
   weakening: def(GREEN, WAVES),
   wornDart: def(GREY, CROSSHAIR, inSight),

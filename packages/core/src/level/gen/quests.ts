@@ -1,6 +1,7 @@
 import { type MobKind, rollMob } from '../../actors';
 import { Dungeon } from './dungeon';
 import { Random } from './random';
+import type { MobSpawn } from './genlevel';
 import type { Room } from './room';
 import type { RegularLevel } from './regular-level';
 
@@ -14,6 +15,8 @@ export interface MobChoice {
   kind: MobKind;
   /** Char.Property.LARGE: needs open space. */
   large?: boolean;
+  /** What else the monster is made with (rolled as it is made: a crystal wisp's colour). */
+  extra?: Partial<MobSpawn>;
 }
 
 export const QuestHooks = {

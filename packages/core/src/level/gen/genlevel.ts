@@ -94,6 +94,8 @@ export class GenLevel {
   /** Level.locked: a boss's level, sealed for the fight. */
   locked = false;
   rooms: Room[] = [];
+  /** The blacksmith's mine (MiningLevel): the kind of its quest, which shapes its look. */
+  mine?: 'crystal' | 'gnoll' | 'fungi';
   /** The level's own size, once it has been fitted into the world's grid (fitToGrid). */
   contentWidth = 0;
   contentHeight = 0;

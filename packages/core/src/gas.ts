@@ -4,6 +4,8 @@ import { type Char, type Ctx, type Floor, heroesOn } from './floor';
 import { distance, HEIGHT, LENGTH, WIDTH } from './level/geometry';
 import { F, hasFlag } from './level/terrain';
 import { immuneTo } from './traps';
+import type { Level } from './level/generate';
+import { evolveRoomBlobs, roomBlobsActive } from './roomblobs';
 
 /*
  * Clouds of gas (Blob, ToxicGas, ParalyticGas). A cloud is so much gas per
@@ -25,7 +27,8 @@ const AIRBORNE: readonly GasKind[] = ['toxic', 'paralytic'];
 /** How long paralytic gas holds whoever breathes it, after the last breath. */
 const PARALYSIS_TURNS = 5;
 
-export const hasGas = (floor: Floor): boolean => GAS_KINDS.some((kind) => (floor.gas?.[kind]?.length ?? 0) > 0);
+export const hasGas = (floor: Floor, level?: Level): boolean =>
+  GAS_KINDS.some((kind) => (floor.gas?.[kind]?.length ?? 0) > 0) || roomBlobsActive(level, floor);
 
 /**
  * Blob.seed: so much gas let out at a cell. Let out in a closed doorway (which
@@ -64,13 +67,15 @@ export function clearGas(ctx: Ctx, pos: number, radius: number): boolean {
     if (left.length !== cloud.length) cleared = true;
     ctx.floor.gas![kind] = left;
   }
-  tidy(ctx.floor);
+  tidy(ctx.floor, ctx.level);
   return cleared;
 }
 
 /** One turn of every cloud on the depth: it spreads and thins (Blob.evolve), then acts on whoever is in it. */
 export function evolveGas(ctx: Ctx): void {
   const { level, floor } = ctx;
+  // The rooms' lasting blobs first: the vents feed the cloud, the eternal fire burns (roomblobs.ts).
+  evolveRoomBlobs(ctx);
   const open = level.map.map((terrain) => !hasFlag(terrain, F.SOLID));
   for (const kind of GAS_KINDS) {
     const cloud = floor.gas?.[kind];
@@ -104,7 +109,7 @@ export function evolveGas(ctx: Ctx): void {
       breathe(ctx, char, kind);
     }
   }
-  tidy(floor);
+  tidy(floor, level);
 }
 
 /**
@@ -138,6 +143,8 @@ function breathe(ctx: Ctx, char: Char, kind: GasKind): void {
     char.paralysed = Math.max(char.paralysed ?? 0, PARALYSIS_TURNS);
     return;
   }
+  // RotHeart, RotLasher: immunities.add(ToxicGas).
+  if ('kind' in char && (char.kind === 'rotHeart' || char.kind === 'rotLasher')) return;
   // ToxicGas.evolve: the deeper, the deadlier.
   const strength = 5 + ctx.depth * 5;
   let damage = Math.trunc((char.ht + strength) / 40);
@@ -148,11 +155,8 @@ function breathe(ctx: Ctx, char: Char, kind: GasKind): void {
 }
 
 /** Drops empty clouds, and the gas clock with the last of them. */
-function tidy(floor: Floor): void {
-  if (!floor.gas) return;
-  for (const kind of GAS_KINDS) if (floor.gas[kind]?.length === 0) delete floor.gas[kind];
-  if (!hasGas(floor)) {
-    delete floor.gas;
-    delete floor.gasAt;
-  }
+function tidy(floor: Floor, level: Level): void {
+  if (floor.gas) for (const kind of GAS_KINDS) if (floor.gas[kind]?.length === 0) delete floor.gas[kind];
+  if (floor.gas && Object.keys(floor.gas).length === 0) delete floor.gas;
+  if (!hasGas(floor, level)) delete floor.gasAt;
 }
