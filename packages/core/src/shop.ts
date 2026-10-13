@@ -6,6 +6,7 @@
  */
 
 import type { HeroClass } from './actors';
+import { startingKit } from './heroclass';
 
 export type OfferKind = 'skin' | 'effect' | 'frame' | 'camp' | 'patron' | 'tip';
 export type SkinVariant = 'ash' | 'royal' | 'shadow';
@@ -33,7 +34,19 @@ export interface Offer {
   camp?: CampId;
 }
 
-const HEROES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
+/** The classes the home screen and the shop know of, in the sheets' order: Shattered's six. */
+export const CLASS_ORDER: readonly string[] = ['warrior', 'mage', 'rogue', 'huntress', 'duelist', 'cleric'];
+
+/** Whether the rules have a class yet (core's kits): the Duelist and the Cleric arrive with the classes stream, and their looks and camp slot with them. */
+export function classOffered(name: string): boolean {
+  try {
+    return Boolean(startingKit(name as HeroClass));
+  } catch {
+    return false;
+  }
+}
+
+const HEROES = CLASS_ORDER.filter(classOffered) as HeroClass[];
 
 /** Thirty days, the length of a Telegram Stars subscription. */
 export const SUBSCRIPTION_SECONDS = 2_592_000;

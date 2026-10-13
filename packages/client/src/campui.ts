@@ -15,6 +15,9 @@ import { rankIcon, trophyKind } from './trophyicons';
  * states, the profile, the boards, the shop, the settings, the challenges.
  */
 
+/** The order of a look in avatars-skins.png. */
+const SKIN_STEPS: readonly string[] = ['ash', 'royal', 'shadow'];
+
 /** The quests icon is drawn and wired, and kept out of sight until quests come in a later update. */
 const QUESTS_ICON = false;
 
@@ -142,9 +145,17 @@ export function showCamp(options: CampScreenOptions): CampScreen {
   const first = Math.max(0, classes.indexOf(options.heroClass));
   const avatar = (name: string): number => Math.max(0, CAMP_ORDER.indexOf(name));
 
+  /** The portrait: the class's avatar, or (the Duelist and the Cleric in a Pixel-Mart look) the look's own. */
+  const portrait = (name: string): { avatar: number; skinAvatar?: boolean } => {
+    const index = avatar(name);
+    const skin = options.skinOf(name);
+    const step = skin ? SKIN_STEPS.indexOf(skin) : -1;
+    return index >= 4 && step >= 0 ? { avatar: (index - 4) * 3 + step, skinAvatar: true } : { avatar: index };
+  };
+
   const card = (): HTMLElement =>
     profileCard({
-      name: options.name, avatar: avatar(camp.heroClass), ...(options.frame ? { frame: options.frame } : {}), profile: options.profile, fallback: options.fallback, onOpen: options.onRankings,
+      name: options.name, ...portrait(camp.heroClass), ...(options.frame ? { frame: options.frame } : {}), profile: options.profile, fallback: options.fallback, onOpen: options.onRankings,
     });
   const top = el('div', { className: 'pd-camp-top' });
 

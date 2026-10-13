@@ -21,7 +21,7 @@ const BOARD_ICON: Partial<Record<string, RankIcon>> = { daily: 'gold', week: 'we
 
 const number = (n: number): string => n.toLocaleString(locale);
 
-/** What a board's places win once it closes: the day's top 3 a cup (gold, silver, bronze), the week's top 10 a medal. */
+/** What a board's places win once it closes: the day's top 3 a cup (gold, silver, bronze), the week's top 10 a medal (design v19: under the place's number). */
 export interface Prize {
   board: 'daily' | 'week';
   places: number;
@@ -30,11 +30,11 @@ export interface Prize {
 const PRIZES: Record<'daily' | 'week', Prize> = { daily: { board: 'daily', places: 3 }, week: { board: 'week', places: 10 } };
 const prizeOf = (tab: Tab): Prize | null => (tab === 'daily' || tab === 'week' ? PRIZES[tab] : null);
 
-/** The prize's small icon beside a rewarded place, saying what it is. */
+/** The prize's small icon under a rewarded place's number, saying what it is. */
 function prizeIcon(prize: Prize, place: number): HTMLElement {
   const icon = rankIcon(prize.board === 'daily' ? trophyKind('daily', place) : 'week', { x1: true });
-  icon.classList.add('pd-prize-ico');
-  icon.title = t.prizes.place(prize.board === 'daily' ? t.prizes.daily[place - 1] ?? '' : t.prizes.week);
+  icon.removeAttribute('aria-hidden');
+  icon.setAttribute('aria-label', t.prizes.prize[prize.board === 'daily' ? 0 : 1] ?? '');
   return icon;
 }
 
@@ -43,34 +43,33 @@ export function boardCloses(tab: 'daily' | 'week', now: number): number {
   return tab === 'daily' ? Math.floor(now / 86_400_000 + 1) * 86_400_000 : weekEnd(now);
 }
 
-/** «2 d 5 h», «5 h 12 min», «9 min»; the last minute is «any moment». */
+/** «2 дн 7 ч», «5 ч 12 мин», «9 мин»; the last minute is «a moment». */
 export function countdown(ms: number): string {
-  const minutes = Math.ceil(ms / 60_000);
-  if (minutes < 1) return t.prizes.closesSoon;
+  const minutes = Math.max(0, Math.ceil(ms / 60_000));
   const u = t.prizes.units;
   const days = Math.floor(minutes / 1440);
   const hours = Math.floor((minutes % 1440) / 60);
-  const text = days > 0 ? `${days} ${u.d} ${hours} ${u.h}` : hours > 0 ? `${hours} ${u.h} ${minutes % 60} ${u.m}` : `${minutes} ${u.m}`;
-  return t.prizes.closesIn(text);
+  if (minutes < 1) return t.prizes.closesSoon;
+  return days > 0 ? `${days} ${u.d} ${hours} ${u.h}` : hours > 0 ? `${hours} ${u.h} ${minutes % 60} ${u.m}` : `${minutes} ${u.m}`;
 }
 
-/** Under the note: the prizes with their icons, and the time to the board's close, kept up to date while the window stands. */
-function prizeStrip(tab: Tab): HTMLElement | null {
+/** Under the board's note: the hourglass and the time to the board's close, kept up to date while the window stands. */
+function boardTimer(tab: Tab): HTMLElement | null {
   const prize = prizeOf(tab);
   if (!prize) return null;
-  const daily = prize.board === 'daily';
-  const wins = el('span', { className: 'pd-prize-wins' }, ...(daily ? [1, 2, 3].map((place) => prizeIcon(prize, place)) : [prizeIcon(prize, 1)]), daily ? t.prizes.dailyLine : t.prizes.weekLine);
-  const left = el('span', { className: 'pd-prize-left' });
-  const strip = el('div', { className: 'pd-board-prize' }, wins, left);
+  const [before = '', after = ''] = prize.board === 'daily' ? t.prizes.timerDaily : t.prizes.timerWeek;
+  const left = el('b');
+  const timer = el('p', { className: 'pd-board-timer' }, el('i'), before, left, after);
+  let started = false;
   const tick = (): void => {
     left.textContent = countdown(boardCloses(prize.board, Date.now()) - Date.now());
-    if (strip.isConnected || !left.dataset.shown) {
-      left.dataset.shown = '1';
+    if (!started || timer.isConnected) {
+      started = true;
       window.setTimeout(tick, 30_000);
     }
   };
   tick();
-  return strip;
+  return timer;
 }
 
 interface RowEntry {
@@ -82,15 +81,16 @@ interface RowEntry {
 
 /** One row of a board: place (none on the player's own list), face, name with a patron's mark, score, and what the run came to. */
 function row(place: number | null, entry: RowEntry, detail: Array<string | Node>, me: boolean, prize: Prize | null = null): HTMLElement {
+  const prized = prize !== null && place !== null && place <= prize.places;
   const face = el('i', { className: 'pd-rank-face' });
   face.style.setProperty('--av', String(AVATAR[entry.heroClass]));
   const medal = place !== null && place <= 3 ? ` pd-medal-${place}` : '';
   return el(
     'div',
-    { className: `pd-rank${me ? ' me' : ''}${medal}` },
-    place !== null ? el('span', { className: 'pd-rank-n', textContent: String(place) }) : null,
+    { className: `pd-rank${me ? ' me' : ''}${medal}${prized ? ' prize' : ''}` },
+    place !== null ? el('span', { className: 'pd-rank-n' }, String(place), prized ? prizeIcon(prize, place) : null) : null,
     face,
-    el('span', { className: 'pd-rank-name' }, prize && place !== null && place <= prize.places ? prizeIcon(prize, place) : null, entry.patron ? el('i', { className: 'pd-patron-mark' }) : null, entry.name),
+    el('span', { className: 'pd-rank-name' }, entry.patron ? el('i', { className: 'pd-patron-mark' }) : null, entry.name),
     el('span', { className: 'pd-rank-score', textContent: number(entry.score) }),
     el('small', { className: 'pd-rank-detail' }, ...detail),
   );
@@ -106,7 +106,11 @@ function detail(heroClass: BoardEntry['heroClass'], level: number, depth: number
 export function boardRows(board: BoardView | null, arena: boolean, count = 50, prize: Prize | null = null): HTMLElement[] {
   if (!board) return [info(t.boardOffline, 'pd-note center')];
   const list = el('div', { className: 'pd-ranks' });
-  board.top.slice(0, count).forEach((entry, i) => list.append(row(i + 1, entry, detail(entry.heroClass, entry.level, entry.depth, arena, entry.won), i + 1 === board.rank, prize)));
+  board.top.slice(0, count).forEach((entry, i) => {
+    list.append(row(i + 1, entry, detail(entry.heroClass, entry.level, entry.depth, arena, entry.won), i + 1 === board.rank, prize));
+    // After the tenth place of the week: where the medals stop.
+    if (prize?.board === 'week' && i === 9 && board.top.length > 10) list.append(el('div', { className: 'pd-ranks-cut', textContent: t.prizes.cut }));
+  });
   const nodes: HTMLElement[] = [board.top.length === 0 ? info(t.noResults, 'pd-note center') : list];
   if (board.rank !== null) {
     const below = board.rank > count && board.you;
@@ -180,7 +184,7 @@ export function showBoards(options: BoardsOptions): void {
     for (const node of tabs.children) node.setAttribute('aria-selected', String((node as HTMLElement).dataset.tab === tab));
     const icon = BOARD_ICON[tab];
     note.replaceChildren(...(icon ? [rankIcon(icon)] : []), options.api ? t.ranked.tabInfo[tab] ?? '' : t.ranked.telegramOnly);
-    prizes.replaceChildren(...(options.api ? [prizeStrip(tab)] : []).filter((node): node is HTMLElement => node !== null));
+    prizes.replaceChildren(...(options.api ? [boardTimer(tab)] : []).filter((node): node is HTMLElement => node !== null));
     if (tab === 'device' || !options.api) {
       body.replaceChildren(...mineRows(options.device.filter((record) => record.mode !== 'arena'), (options.trophies ?? []).filter((trophy) => !trophy.board.startsWith('arena:'))));
       sprites(body);
@@ -220,8 +224,9 @@ export interface CardFallback {
 export interface CardOptions {
   /** The name shown. */
   name: string;
-  /** The hero on the scene, in avatars.png. */
+  /** The hero on the scene, in avatars.png; or, in the new classes' looks, a cell of avatars-skins.png. */
   avatar: number;
+  skinAvatar?: boolean;
   /** The portrait frame worn (Pixel-Mart). */
   frame?: string;
   profile: Profile | null;
@@ -236,7 +241,7 @@ export interface CardOptions {
 export function profileCard(options: CardOptions): HTMLElement {
   const { profile } = options;
   const streak = profile?.streak.count ?? 0;
-  const face = el('i');
+  const face = el('i', { className: options.skinAvatar ? 'skin' : '' });
   face.style.setProperty('--av', String(options.avatar));
   const portrait = el('span', { className: `pd-profile-face${options.frame ? ` frame-${options.frame}` : ''}` }, face);
   const facts: Node[] = [];

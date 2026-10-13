@@ -19,7 +19,7 @@ import { verifyInitData, WEEK_SECONDS } from './telegram-auth';
  *               { initData, rules, op: 'get', slot }                         the run as the server has it
  *   POST /me    { initData }                     the profile: records, streak, trophies, mail, places now
  *               { initData, coachDone: true }    the step tutorial is done (kept with the profile, for every device)
- *   POST /mail  { initData, op: 'readAll' | 'claim' | 'claimAll', id }   the mailbox (mail.ts): its letters and trophies after
+ *   POST /mail  { initData, op: 'readAll' | 'claim' | 'claimAll', letter }   the mailbox (mail.ts): its letters and trophies after
  *   POST /board { initData?, kind }              a board's best, and my place on it
  *
  * Each player's runs and profile live in their own Durable Object (Player), so a player's
@@ -91,7 +91,7 @@ export async function mailRoute(request: Request, env: Env): Promise<Response> {
   if (!player) return json({ error: 'unauthorized' }, 401);
   const op = body.op === 'readAll' || body.op === 'claim' || body.op === 'claimAll' ? body.op : null;
   if (!op) return json({ error: 'bad op' }, 400);
-  const id = typeof body.id === 'string' ? body.id.slice(0, 64) : '';
+  const id = typeof body.letter === 'string' ? body.letter.slice(0, 64) : '';
   const response = await playerStub(env, player.key).fetch('https://player/mail', { method: 'POST', body: JSON.stringify({ player, op, id }) });
   return new Response(response.body, { status: response.status, headers: { 'Content-Type': 'application/json', ...CORS } });
 }

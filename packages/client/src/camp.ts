@@ -1,4 +1,4 @@
-import { type EffectId, type HeroClass, type SkinVariant, startingKit } from '@pd/core';
+import { CLASS_ORDER, classOffered, type EffectId, type SkinVariant } from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
 import { quality } from './quality';
@@ -18,20 +18,11 @@ import { quality } from './quality';
 export type CampScene = 'outdoor' | 'cave' | 'prison' | 'hall';
 export type Season = 'summer' | 'autumn' | 'winter';
 
-/** The heroes in camp-heroes.png, in its rows: Shattered's six; the last two arrive with the classes stream. */
-export const CAMP_ORDER: readonly string[] = ['warrior', 'mage', 'rogue', 'huntress', 'duelist', 'cleric'];
-
-/** Whether the game's rules have a class (the classes stream adds the duelist and the cleric to core's kits). */
-function hasClass(name: string): boolean {
-  try {
-    return Boolean(startingKit(name as HeroClass));
-  } catch {
-    return false;
-  }
-}
+/** The heroes in camp-heroes.png, in its rows: Shattered's six; the last two show once the classes stream gives core their kits. */
+export const CAMP_ORDER: readonly string[] = CLASS_ORDER;
 
 /** The classes the camp offers: those that exist in core, in the sheet's order. */
-export const campClasses = (): string[] => CAMP_ORDER.filter(hasClass);
+export const campClasses = (): string[] => CAMP_ORDER.filter(classOffered);
 
 /** The season the camp opens in: December to February winter, September to November autumn, else summer. */
 export function seasonOf(date: Date): Season {
@@ -68,7 +59,10 @@ const PLACES: Record<CampScene, Place> = {
 };
 
 /** camp-heroes.png rows for the looks it has: [class index]-[look] → row. The others are cut from the look's own sheet. */
-const CAMP_SKIN_ROWS: Readonly<Record<string, number>> = { '0-royal': 6, '1-shadow': 7, '2-ash': 8, '3-royal': 9 };
+const CAMP_SKIN_ROWS: Readonly<Record<string, number>> = {
+  '0-royal': 6, '1-shadow': 7, '2-ash': 8, '3-royal': 9,
+  '4-ash': 10, '4-royal': 11, '4-shadow': 12, '5-ash': 13, '5-royal': 14, '5-shadow': 15,
+};
 /** The armour tier the camp shows (the sheets' row 1: the first armour). */
 const TIER_ROW = 1;
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addLetter, boardEnd, boardsToCheck, claimAll, claimLetter, collectMail, type Lookup, MAIL_KEPT_MS, type MailProfile, noteEntered, pruneMail,
-  readLetter,
+  readAll, readLetter,
 } from '../src/mail';
 import { fromEntries, toEntries } from '../src/run-store';
 import { emptyProfile } from '../src/runs';
@@ -142,6 +142,10 @@ describe('mail', () => {
     addLetter(p, 'daily:2026-10-12', { rank: 2 });
     expect(readLetter(p, 'daily:2026-10-12')).toBe(true);
     expect(readLetter(p, 'daily:2026-10-12')).toBe(false);
+    addLetter(p, 'daily:2026-10-11', { rank: 3 });
+    expect(readAll(p)).toBe(true);
+    expect(p.mail.every((letter) => letter.read)).toBe(true);
+    expect(readAll(p)).toBe(false);
     expect(addLetter(p, 'arena:2026-W41', { rank: 1 })).toBeNull();
     noteEntered(p, 'arena:2026-W41');
     noteEntered(p, 'all');

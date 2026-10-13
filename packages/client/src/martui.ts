@@ -144,7 +144,7 @@ function smallArt(offer: Offer, heroClass: HeroClass): HTMLElement {
 function campPreview(scene: CampScene, heroClass: HeroClass, size: 'small' | 'big'): HTMLElement {
   const host = el('div', { className: 'pd-camp-preview' });
   const big = size === 'big';
-  const crop = big ? ([0, 56, 94, 80] as const) : ([10, 82, 74, 46] as const);
+  const crop = big ? ([4, 70, 86, 56] as const) : ([10, 82, 74, 46] as const);
   const scale = big ? 3 : 2;
   host.style.width = `${crop[2] * scale}px`;
   host.style.height = `${crop[3] * scale}px`;
@@ -211,7 +211,7 @@ function card(offer: Offer, heroClass: HeroClass, refresh: () => void, reopen: (
   }
   const node = el(
     'article',
-    { className: `pd-offer${worn ? ' worn' : owned ? ' owned' : byBadge ? ' badge' : !inside ? ' offseason' : ''}` },
+    { className: `pd-offer${worn ? ' worn' : owned ? ' owned' : byBadge ? ' badge' : !inside ? ' offseason' : ''}${offer.kind === 'camp' ? ' camp' : ''}` },
     art,
     el('h3', { className: 'pd-offer-name', textContent: offerName(offer) }),
     meta,
@@ -243,7 +243,7 @@ function plainCamp(heroClass: HeroClass, refresh: () => void): HTMLElement {
     ? button(t.takeOffLook, () => undefined, 'small quiet')
     : button(t.wear, () => { mart.wearCamp(undefined); refresh(); }, 'small');
   (action as HTMLButtonElement).disabled = worn;
-  return el('article', { className: `pd-offer${worn ? ' worn' : ' owned'}` }, art, el('h3', { className: 'pd-offer-name', textContent: t.campPlain }), meta, action);
+  return el('article', { className: `pd-offer camp${worn ? ' worn' : ' owned'}` }, art, el('h3', { className: 'pd-offer-name', textContent: t.campPlain }), meta, action);
 }
 
 type Shelf = 'skin' | 'effect' | 'frame' | 'camp' | 'patron';
@@ -282,7 +282,8 @@ export function showMart(options: MartOptions): void {
     sprites(body);
   };
   for (const id of ['skin', 'effect', 'frame', 'camp', 'patron'] as const) {
-    const tab = el('button', { className: 'pd-tab' }, id === 'patron' ? el('i', { className: 'pd-icon', style: 'background-image: var(--spr-patron)' } as never) : null, t.martTabs[id]);
+    const tab = el('button', { className: `pd-tab${id === 'patron' ? ' patron' : ''}` }, id === 'patron' ? el('i', { className: 'pd-icon', style: 'background-image: var(--spr-patron)' } as never) : null, el('span', { className: 'pd-tab-text', textContent: t.martTabs[id] }));
+    tab.ariaLabel = t.martTabs[id];
     tab.dataset.shelf = id;
     tab.setAttribute('role', 'tab');
     tab.onclick = () => {

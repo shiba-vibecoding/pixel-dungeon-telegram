@@ -167,7 +167,7 @@ export function runApi(server: string, identity: () => Identity, development: bo
       post('/run', { op: 'sync', slot: meta.slot, run: meta.id, from: meta.seq, actions, hash }, keepalive),
     get: (slot) => post('/run', { op: 'get', slot }),
     me: () => quiet('/me', {}),
-    mail: (op, id) => quiet('/mail', { op, ...(id ? { id } : {}) }),
+    mail: (op, id) => quiet('/mail', { op, ...(id ? { letter: id } : {}) }),
     coachDone: async () => (await quiet<{ coachDone: boolean }>('/me', { coachDone: true }))?.coachDone === true,
     card: async (png) => {
       try {

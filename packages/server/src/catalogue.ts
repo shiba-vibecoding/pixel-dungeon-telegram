@@ -1,4 +1,4 @@
-import type { HeroClass, Offer } from '@pd/core';
+import type { Offer } from '@pd/core';
 
 /*
  * What an invoice says an offer is, in the buyer's language. Written on the
@@ -13,7 +13,7 @@ export interface InvoiceText {
 }
 
 interface Words {
-  look: Record<HeroClass, string>;
+  look: Record<string, string>;
   skin: Record<string, [name: string, info: string]>;
   effect: Record<string, [name: string, info: string]>;
   frame: Record<string, string>;
@@ -27,7 +27,7 @@ interface Words {
 }
 
 const EN: Words = {
-  look: { warrior: 'Warrior look', mage: 'Mage look', rogue: 'Rogue look', huntress: 'Huntress look' },
+  look: { warrior: 'Warrior look', mage: 'Mage look', rogue: 'Rogue look', huntress: 'Huntress look', duelist: 'Duelist look', cleric: 'Cleric look' },
   skin: {
     ash: ['Ashen', 'Armour gone grey with ash, the hair too.'],
     royal: ['Royal', 'Gold for metal and light cloth, purple for the rest.'],
@@ -53,7 +53,7 @@ const EN: Words = {
 };
 
 const RU: Words = {
-  look: { warrior: 'Облик воина', mage: 'Облик мага', rogue: 'Облик разбойника', huntress: 'Облик охотницы' },
+  look: { warrior: 'Облик воина', mage: 'Облик мага', rogue: 'Облик разбойника', huntress: 'Облик охотницы', duelist: 'Облик дуэлянтки', cleric: 'Облик клирика' },
   skin: {
     ash: ['Пепельный', 'Броня, посеревшая от пепла, и пепельные волосы.'],
     royal: ['Королевский', 'Металл и светлая ткань в золото, цветное в пурпур.'],
@@ -88,7 +88,7 @@ export function invoiceText(offer: Offer, language?: string): InvoiceText {
   switch (offer.kind) {
     case 'skin': {
       const [name, info] = w.skin[offer.skin!] ?? [offer.sku, ''];
-      return fit({ title: `${w.look[offer.heroClass!]}: ${name}`, description: info || name });
+      return fit({ title: `${w.look[offer.heroClass!] ?? offer.heroClass}: ${name}`, description: info || name });
     }
     case 'effect': {
       const [name, info] = w.effect[offer.effect!] ?? [offer.sku, ''];

@@ -252,16 +252,19 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 .pd-camp-preview { position: relative; overflow: hidden; background: var(--void); flex: none; }
 .pd-offer-art .pd-camp-preview { max-width: 100%; }
 .pd-offer-hero .pd-camp-preview { max-width: 100%; }
-/* The prizes of a board and the time to its close, under the board's note. */
-.pd-prize-slot:empty { display: none; }
-.pd-board-prize { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 2px 10px; padding: 4px 8px; background: var(--stone-800); font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
-.pd-prize-wins { display: inline-flex; align-items: center; gap: 2px; min-width: 0; }
-.pd-prize-wins .pd-tro { --u: 1px; margin-right: 2px; }
-.pd-prize-wins .pd-tro:last-of-type { margin-right: 6px; }
-.pd-prize-left { color: var(--gold); white-space: nowrap; }
-.pd-rank-name .pd-prize-ico { --u: 1px; margin: -3px 4px 0 0; vertical-align: middle; }
+/* The board's timer slot adds no box of its own. */
+.pd-prize-slot { display: contents; }
 @media (prefers-reduced-motion: reduce) { .pd-camp-arrow { transition: none; } }
 /* The strip between the card and the sheet lets taps through to the hero; only its icons take them. */
 .pd-camp-ui > .pd-camp-edges { pointer-events: none; }
 .pd-camp-edges > .pd-camp-edge { pointer-events: none; }
 .pd-camp-edge > .pd-camp-icon { pointer-events: auto; }
+/* A letter's gift that does not fit beside «Claim» in a narrow window sends the button to its own row (v18's layout), rather than under it. */
+.pd-letter-act { flex-wrap: wrap; }
+.pd-letter-gifts { flex: 1 1 auto; min-width: min-content; }
+/* Five shelves in the Pixel-Mart: on a narrow screen the patron's tab keeps its star and gives up its word (it stays in its label). */
+@media (max-width: 420px) { .pd-tab.patron .pd-tab-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } }
+/* A camp's name may take two lines: they are long. */
+.pd-offer.camp .pd-offer-name { white-space: normal; line-height: 18px; min-height: 36px; }
+/* With no streak, the card's line is a sentence: it may take two lines. */
+.pd-profile-streak.off { white-space: normal; font: var(--text-caption, 400 15px/20px var(--font-small)); }
