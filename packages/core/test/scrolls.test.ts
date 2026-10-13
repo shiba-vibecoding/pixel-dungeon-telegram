@@ -27,7 +27,7 @@ describe('a scroll of upgrade, on the item chosen (WndBag)', () => {
     expect(hero.weapon!.level).toBe(0);
   });
 
-  it('upgrades a worn ring, a ring in the pack, the boomerang and armour in the pack', () => {
+  it('upgrades a worn ring, a ring in the pack, a set of thrown weapons and armour in the pack', () => {
     let { world, hero } = reader('rogue', 'scroll.upgrade');
     expect(act(world, 'p', { type: 'use', item: 0, on: 'ring0' }).ok).toBe(true);
     expect(hero.rings[0]).toMatchObject({ kind: 'ring.shadows', level: 2 });
@@ -37,10 +37,10 @@ describe('a scroll of upgrade, on the item chosen (WndBag)', () => {
     expect(hero.items[slot(hero, 'ring.haste')]).toMatchObject({ level: 0 });
     expect(hero.items[slot(hero, 'ring.haste')]!.cursed).toBeUndefined();
 
-    ({ world, hero } = reader('huntress', 'scroll.upgrade'));
+    ({ world, hero } = reader('warrior', 'scroll.upgrade'));
     hero.items.push(createItem('armor.leather'));
-    expect(act(world, 'p', { type: 'use', item: 0, on: slot(hero, 'missile.boomerang') }).ok).toBe(true);
-    expect(hero.items[slot(hero, 'missile.boomerang')]!.level).toBe(1);
+    expect(act(world, 'p', { type: 'use', item: 0, on: slot(hero, 'missile.throwingStone') }).ok).toBe(true);
+    expect(hero.items[slot(hero, 'missile.throwingStone')]).toMatchObject({ level: 1, qty: 3 });
     expect(act(world, 'p', { type: 'use', item: 0, on: slot(hero, 'armor.leather') }).ok).toBe(true);
     expect(hero.items[slot(hero, 'armor.leather')]!.level).toBe(1);
     expect(hero.armor.level).toBe(0);
@@ -57,7 +57,7 @@ describe('a scroll of upgrade, on the item chosen (WndBag)', () => {
 
   it('refuses what cannot be upgraded before the scroll is used up', () => {
     const { world, hero } = reader('warrior', 'scroll.upgrade');
-    hero.items.push(createItem('potion.healing'), createItem('ring.thorns', 1, 1));
+    hero.items.push(createItem('potion.healing'), createItem('ring.thorns', 1, 1), createItem('missile.dart', 4));
     const fails = (on: unknown, reason: string): void => {
       expect(act(world, 'p', { type: 'use', item: 0, on } as never)).toEqual({ ok: false, reason });
     };
@@ -121,8 +121,9 @@ describe('scrollTargets', () => {
   it('lists what a scroll can be read on, worn items first', () => {
     const { world, hero } = reader('rogue', 'scroll.upgrade');
     hero.items.push(createItem('potion.healing'), createItem('wand.slowness'));
-    expect(scrollTargets(world, hero, 'scroll.upgrade')).toEqual(['weapon', 'armor', 'ring0', slot(hero, 'wand.slowness')]);
-    expect(scrollTargets(world, hero, 'scroll.enchantment')).toEqual(['weapon', 'armor']);
+    const knives = slot(hero, 'missile.throwingKnife');
+    expect(scrollTargets(world, hero, 'scroll.upgrade')).toEqual(['weapon', 'armor', 'ring0', knives, slot(hero, 'wand.slowness')]);
+    expect(scrollTargets(world, hero, 'scroll.enchantment')).toEqual(['weapon', 'armor', knives]);
     expect(scrollTargets(world, hero, 'scroll.mapping')).toEqual([]);
   });
 });

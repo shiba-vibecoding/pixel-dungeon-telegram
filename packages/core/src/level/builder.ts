@@ -46,7 +46,12 @@ export type ItemSpec =
   /** One of the Rat King's chests: mostly a few coins, now and then worn gear. */
   | { roll: 'kingsPrize' }
   /** One particular item, such as the wares of a shop. */
-  | { roll: 'kind'; kind: ItemKind };
+  | { roll: 'kind'; kind: ItemKind }
+  /** A shop's melee weapon and set of thrown weapons of a tier, plain and known (ShopRoom.generateItems). */
+  | { roll: 'shopWeapon'; tier: number }
+  | { roll: 'shopMissile'; tier: number }
+  /** Two darts tipped with a random seed (TippedDart.randomTipped(2)). */
+  | { roll: 'tippedDarts' };
 
 export type WellWater = 'health' | 'awareness' | 'transmutation';
 

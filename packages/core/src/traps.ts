@@ -1,4 +1,5 @@
 import { beckon, createMob, type Hero, heroArmor, isAlive, type Mob, type MobKind, MOBS, mobStats, rollMob } from './actors';
+import { mobGearTick } from './throwing';
 import { CRIPPLE_TURNS, earnExp, hurt } from './combat';
 import { charAt, type Char, type Ctx, enterCell, exploredCells, heroesOn, isHero, isPassable, isWater, leaveCell } from './floor';
 import { distance, NEIGHBOURS8 } from './level/geometry';
@@ -43,7 +44,8 @@ export type Burst = 'toxic' | 'paralytic' | 'fire' | 'frost' | 'purity';
  * burning fist; piranhas in their pool fear neither gas, fire nor frost.
  */
 export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost'): boolean {
-  if (isHero(char)) return harm === 'gas' && (char.gasImmune ?? 0) > 0;
+  // Armour of brimstone keeps fire off its wearer (Char.isImmune: Burning).
+  if (isHero(char)) return (harm === 'gas' && (char.gasImmune ?? 0) > 0) || (harm === 'burning' && char.armor.glyph === 'brimstone');
   if (char.kind === 'piranha') return true;
   // DM-300 breathes its own fumes unharmed.
   if (harm === 'gas' && char.kind === 'dm300') return true;
@@ -208,6 +210,8 @@ export function mobFall(ctx: Ctx, mob: Mob): void {
 
 /** Hurt a monster's turn by the conditions traps leave behind; true if it loses the turn. */
 export function mobConditions(ctx: Ctx, mob: Mob): boolean {
+  // What gear left on it: chill, ooze, corruption's wasting (throwing.ts).
+  if (mobGearTick(ctx, mob)) return true;
   // IMMUNITIES: the fetid rat breathes its own paralytic cloud unharmed, and nothing holds the curse.
   if (mob.kind === 'fetidRat' || mob.kind === 'curse') mob.paralysed = 0;
   if (mob.kind === 'curse') mob.rooted = 0;

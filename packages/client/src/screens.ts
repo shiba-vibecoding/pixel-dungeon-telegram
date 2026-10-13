@@ -1,13 +1,14 @@
 import {
-  type Action, BACKPACK_SIZE, scrollTargets, isBroken, isIdentified, type Hero, inBag, type HeroClass, type Item, itemDef, itemPrice, type ItemRef,
-  itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, visiblyCursed, type World, CLASS_ARMOR_OF,
+  type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass,
+  type Item, itemAt, itemDef, itemPrice, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS, visiblyCursed,
+  type World, CLASS_ARMOR_OF,
 } from '@pd/core';
 import { audio } from './audio';
 import { chooseQuickslot, quickIndex, quickUse } from './quickslot';
 import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
 import { BUFF_ICONS, type BuffName } from './hud';
-import { capitalize, locale, t } from './i18n';
-import { chargesOf, isKnown, itemInfo, itemName, plainName, strengthOf, wearOf } from './itemtext';
+import { capitalize, fmt, locale, t } from './i18n';
+import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
 import { mart } from './mart';
 import { rankIcon, trophyKind } from './trophyicons';
 import { countChallenges } from './meta';
@@ -284,10 +285,17 @@ export function slot(world: World, item: Item | undefined, options: SlotOptions 
     markWear(node);
   }
   // ItemSlot's top right: the strength it wants, or the typical one with a «?» while its level is unknown.
-  const strength = strengthOf(item);
+  const strength = strengthOf(item, options.hero);
   if (strength && !options.equipped) {
     const { str, known } = strength;
     node.append(el('span', { className: `pd-tag${options.hero && options.hero.str < str ? ' bad' : ''}`, textContent: known ? String(str) : `${str}?` }));
+  }
+  // ShMarks: the enchantment's spark (a weapon) or the glyph's shield-rune (armour), in its colour; red for a curse.
+  const magic = magicOf(item);
+  if (magic) {
+    const mark = el('i', { className: `pd-mark ${magic.glyph ? 'glyph' : 'ench'}${magic.fresh ? ' new' : ''}` });
+    mark.style.setProperty('--ench', magic.color);
+    node.append(mark);
   }
   if (cursed) node.append(el('span', { className: 'pd-mark curse' }));
   if (options.hero && inQuickslot(options.hero, item)) node.append(el('span', { className: 'pd-mark quick' }));
@@ -326,7 +334,16 @@ export function markWear(node: HTMLElement): void {
 /** An item's description, its curse and weight set apart as warnings, and how worn it is under its numbers. */
 function describedItem(world: World, hero: Hero, item: Item): HTMLElement[] {
   const nodes = described(itemInfo(world, hero, item));
-  const wear = wearOf(world, item);
+  // ShMarks' .pd-ench-line: the enchantment or glyph, named in its colour, and what it does (and it is seen now).
+  const magic = magicOf(item);
+  if (magic) {
+    const line = el('div', { className: `pd-ench-line${magic.curse ? ' curse' : ''}` },
+      el('i', { className: `pd-mark ${magic.glyph ? 'glyph' : 'ench'}` }), el('span', {}, el('b', { textContent: magic.name }), magic.desc));
+    line.style.setProperty('--ench', magic.color);
+    nodes.splice(Math.min(2, nodes.length), 0, line);
+    markSeen(magic.id);
+  }
+  const wear = itemDef(item.kind).category === 'missile' ? null : wearOf(world, item);
   if (!wear) return nodes;
   const line = el('div', { className: `pd-durability${wear.left > 0 && wear.left / wear.max <= 0.25 ? ' low' : ''}` },
     info(t.durability(wear.left, wear.max)), durabilityBar(wear.left, wear.max, true));
@@ -1136,7 +1153,7 @@ export interface BackpackOptions {
   hero: Hero;
   onAction(action: Action): void;
   /** Throw or zap the item at a cell the player picks next. */
-  onAim(index: number, kind: 'throw' | 'zap' | 'special'): void;
+  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special'): void;
   onClose(): void;
   /**
    * WndBag's selector: the backpack with only what a scroll can be read on to tap (worn
@@ -1592,7 +1609,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     options.onAction(action);
     refreshBackpack(options.world, options.hero);
   };
-  const aimWith = (kind: 'throw' | 'zap' | 'special', at: number): void => {
+  const aimWith = (kind: 'throw' | 'zap' | 'shoot' | 'special', at: number): void => {
     openBag = null;
     options.onClose();
     options.onAim(at, kind);
@@ -1645,12 +1662,26 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       if (item.returnTo) use(t.beaconReturn, () => act({ type: 'beacon', item: index, mode: 'return' }));
       use(t.beaconSet, () => act({ type: 'beacon', item: index, mode: 'set' }));
     }
-    if (category === 'weightstone' && hero.weapon) {
-      // Weightstone.WndBalance: the weapon in hand, balanced the way it is not yet.
-      for (const imbue of ['speed', 'accuracy'] as const) {
-        if (hero.weapon.imbue !== imbue) use(t.balanceFor[imbue], () => stay({ type: 'balance', item: index, imbue }, { worn: 'weapon' }));
+    if (category === 'weightstone') {
+      // StoneOfAugmentation: a weapon or armour to augment, from the whole pack and what is worn (WndBag's selector).
+      const targets = augmentTargets(hero);
+      if (targets.length > 0) {
+        use(t.augment, () =>
+          showBackpack({
+            ...options,
+            pick: {
+              title: t.gear.augmentTitle,
+              targets,
+              onPick: (on) => showAugment(options, index, on, act),
+              onCancel: () => showBackpack(options, { index }),
+            },
+          }));
       }
     }
+    // SpiritBow.AC_SHOOT; Dart.AC_TIP; TippedDart.AC_CLEAN.
+    if (category === 'bow') use(actionLabel(t.gear.shoot), () => aimWith('shoot', index));
+    if (item.kind === 'missile.dart' && tippingSeeds(hero).length > 0) use(actionLabel(t.gear.tip), () => showTip(options, index, act));
+    if (isTippedDart(item.kind)) use(actionLabel(t.gear.clean), () => showClean(options, index, act));
     if (category === 'wipeout') use(t.read, () => act({ type: 'use', item: index }));
     if (category === 'vial' && item.volume) use(t.drink, () => act({ type: 'use', item: index }));
     if (category === 'missile' || category === 'wand' || category === 'bomb' || category === 'honeypot') {
@@ -1686,6 +1717,93 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     use(t.specials[hero.heroClass], () => (aimed ? aimWith('special', -1) : act({ type: 'special' })));
   }
   return { main, more, danger };
+}
+
+/** Shattered's action names are in capitals (AC_SHOOT: «SHOOT»): as a button says them. */
+const actionLabel = (label: string): string => capitalize(label.toLowerCase());
+
+/** What a stone of augmentation can be used on (ScrollOfEnchantment.enchantable), worn first. */
+function augmentTargets(hero: Hero): ItemRef[] {
+  const refs: ItemRef[] = [...(hero.weapon ? ['weapon' as const] : []), 'armor', ...hero.items.map((_, i) => i)];
+  return refs.filter((ref) => {
+    const item = itemAt(hero, ref);
+    return item !== undefined && isEnchantable(item);
+  });
+}
+
+/** StoneOfAugmentation.WndAugment: what to enhance, at the cost of what; or to take the augment away. */
+function showAugment(options: ItemOptions, stone: number, on: ItemRef, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const item = itemAt(hero, on)!;
+  const back = (): void => showBackpack(options, { index: stone });
+  const armour = itemDef(item.kind).category === 'armor';
+  const choices: Array<Augment | 'none'> = armour ? ['evasion', 'defense', 'none'] : ['speed', 'damage', 'none'];
+  const labels: Record<Augment | 'none', string> = {
+    speed: t.gear.augmentSpeed, damage: t.gear.augmentDamage, evasion: t.gear.augmentEvasion, defense: t.gear.augmentDefense, none: t.gear.augmentNone,
+  };
+  const current = item.augment ?? 'none';
+  show(
+    windowOf(
+      { title: capitalize(itemName(world, item)), icon: slot(world, item, { hero }), onClose: back },
+      info(item.augment ? `${t.gear.augmentChoice}\n\n${t.gear.augmentAlready}` : t.gear.augmentChoice),
+      actions(
+        [],
+        choices.filter((c) => c !== current).map((c) => button(labels[c], () => act({ type: 'augment', item: stone, on, augment: c }))),
+      ),
+    ),
+    back,
+  );
+}
+
+/** Seeds in the pack that darts can be tipped with (TippedDart.types). */
+const tippingSeeds = (hero: Hero): number[] =>
+  hero.items.flatMap((item, i) => (itemDef(item.kind).category === 'seed' && TIPPED_DARTS[item.kind] ? [i] : []));
+
+/** Dart.AC_TIP: a seed, and how many darts it tips (two, or as many as the seeds will). */
+function showTip(options: ItemOptions, index: number, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const darts = hero.items[index]!;
+  const back = (): void => showBackpack(options, { index });
+  const rows = tippingSeeds(hero).map((seedIndex) => {
+    const seed = hero.items[seedIndex]!;
+    const tipped = { kind: TIPPED_DARTS[seed.kind]!, qty: 1, level: 0 };
+    const maxToTip = Math.min(darts.qty, seed.qty * 2);
+    const choices = [
+      button(darts.qty === 1 ? t.gear.tipOne : t.gear.tipTwo, () => act({ type: 'tip', item: index, seed: seedIndex }), 'small'),
+      ...(darts.qty > 2 && maxToTip > 2
+        ? [button(fmt(t.gear.tipAll, maxToTip, Math.trunc((maxToTip + 1) / 2)), () => act({ type: 'tip', item: index, seed: seedIndex, all: true }), 'small')]
+        : []),
+    ];
+    return el(
+      'div',
+      { className: 'pd-choice' },
+      el('div', { className: 'pd-pick-head' }, slot(world, seed, { hero }), el('span', { className: 'pd-choice-name', textContent: capitalize(itemName(world, tipped)) })),
+      el('p', { className: 'pd-choice-desc', textContent: t.itemInfo[tipped.kind] ?? '' }),
+      ...choices,
+    );
+  });
+  show(
+    windowOf({ title: t.gear.tipTitle, icon: slot(world, darts, { hero }), onClose: back }, info(t.gear.tipDesc), el('div', { className: 'pd-choices' }, ...rows)),
+    back,
+  );
+}
+
+/** TippedDart.AC_CLEAN: one, or the whole stack, back to plain darts. */
+function showClean(options: ItemOptions, index: number, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const darts = hero.items[index]!;
+  const back = (): void => showBackpack(options, { index });
+  show(
+    windowOf(
+      { title: t.gear.cleanTitle, icon: slot(world, darts, { hero }), onClose: back },
+      info(t.gear.cleanDesc),
+      actions(
+        [button(t.gear.cleanOne, () => act({ type: 'clean', item: index }), 'primary')],
+        darts.qty > 1 ? [button(t.gear.cleanAll, () => act({ type: 'clean', item: index, all: true }))] : [],
+      ),
+    ),
+    back,
+  );
 }
 
 /** TomeOfMastery: the two ways of the hero's class, as equal cards; the choice can wait. */

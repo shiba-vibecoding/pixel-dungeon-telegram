@@ -11,8 +11,9 @@ import type { World } from './world';
  * weapon, being struck in armour, zapping a wand or wearing a ring long enough
  * tells the rest; a scroll of identify, a well of awareness and the end of the
  * run tell everything. Potions, scrolls, wands and rings also hide their kind,
- * which the party learns together (World.known). Thrown weapons, class armour
- * and everything else hide nothing (MissileWeapon, ClassArmor: levelKnown).
+ * which the party learns together (World.known). Thrown weapons hide their
+ * level and curse as melee weapons do (known after ten hits); darts, class
+ * armour and everything else hide nothing (Dart, ClassArmor: levelKnown).
  *
  * Kept on the item as what is not known yet, absent once known; so an item
  * from before this was kept is known, and an item handed over keeps what its
@@ -58,6 +59,7 @@ export function identify(world: World, item: Item): boolean {
   delete item.curseUnknown;
   delete item.chargesUnknown;
   delete item.familiarity;
+  delete item.idAvailable;
   const category = itemDef(item.kind).category;
   const hides = category === 'potion' || category === 'scroll' || category === 'wand' || category === 'ring';
   return hides && learn(world, item.kind);
@@ -66,7 +68,7 @@ export function identify(world: World, item: Item): boolean {
 /** As the Generator makes them (a new Item: levelKnown and cursedKnown false): a melee weapon, armour, ring or wand tells nothing yet. */
 export function unidentified(item: Item): Item {
   const category = itemDef(item.kind).category;
-  if (category !== 'weapon' && category !== 'armor' && category !== 'ring' && category !== 'wand') return item;
+  if (category !== 'weapon' && category !== 'armor' && category !== 'missile' && category !== 'ring' && category !== 'wand') return item;
   item.levelUnknown = true;
   item.curseUnknown = true;
   if (category === 'wand') item.chargesUnknown = true;
@@ -76,15 +78,36 @@ export function unidentified(item: Item): Item {
 /**
  * Weapon.proc and Armor.proc: every blow struck with a weapon, or taken in
  * armour, makes its bearer more familiar with it, and after `hitsToKnow` of
- * them its level is known.
+ * them it is known through and through. Only half of that can be had at a
+ * time: the rest comes back with experience (availableUsesToID; see gainExp).
  */
 export function familiarise(ctx: Ctx, hero: Hero, item: Item, hitsToKnow: number): void {
   if (levelKnown(item)) return;
-  item.familiarity = (item.familiarity ?? 0) + 1;
+  const available = item.idAvailable ?? hitsToKnow / 2;
+  const uses = Math.min(available, 1);
+  if (uses <= 0) return;
+  item.idAvailable = available - uses;
+  item.familiarity = (item.familiarity ?? 0) + uses;
   if (item.familiarity < hitsToKnow) return;
   delete item.levelUnknown;
+  delete item.curseUnknown;
   delete item.familiarity;
+  delete item.idAvailable;
   ctx.effects.push({ type: 'familiar', hero: hero.id, item, learned: false });
+}
+
+/**
+ * Weapon.onHeroGainExp and Armor's: experience gained lets the hero get used to the weapon in hand (and thrown weapons
+ * carried) and the armour worn again, up to half of what knowing them takes over half a level.
+ */
+export function gainExp(hero: Hero, levelPercent: number): void {
+  const refill = (item: Item, uses: number): void => {
+    if (levelKnown(item) || (item.idAvailable ?? uses / 2) > uses / 2) return;
+    item.idAvailable = Math.min(uses / 2, (item.idAvailable ?? uses / 2) + levelPercent * uses);
+  };
+  if (hero.weapon) refill(hero.weapon, WEAPON_HITS_TO_KNOW);
+  refill(hero.armor, ARMOR_HITS_TO_KNOW);
+  for (const item of hero.items) if (itemDef(item.kind).category === 'missile') refill(item, 10);
 }
 
 /** Belongings.identify: everything a hero carries and wears is known (Dungeon.win, Hero.die). */

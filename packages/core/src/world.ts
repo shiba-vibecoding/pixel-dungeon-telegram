@@ -2,9 +2,11 @@ import { wear } from './wear';
 import { identify, identifyBelongings, isIdentified, observeBelongings } from './ident';
 import { mobAct, populate, reinforce, respawn, TIME_TO_RESPAWN } from './ai';
 import {
-  awareness, createHero, createMob, type Hero, heroAttackDelay, type HeroClass, heroSpeed, hungerGrowth, hungerStep, HUNGRY, isAlive,
-  isShopkeeper, isStarving, type Mob, type PlayerInfo, ringBonus, STARVING,
+  awareness, createHero, createMob, type Footing, type Hero, heroAttackDelay, type HeroClass, heroReach, heroSpeed, hungerGrowth, hungerStep,
+  HUNGRY, isAlive, isShopkeeper, isStarving, type Mob, type PlayerInfo, ringBonus, STARVING,
 } from './actors';
+import { camouflage, isEnemy } from './enchant';
+import { canReach, gearTick } from './throwing';
 import { attack, CRIPPLE_TURNS, hurt } from './combat';
 import {
   canEnter, type Char, charAt, type Ctx, dropItem, type Effect, enterCell, exploredCells, type Floor, freeCellNear, heroesOn,
@@ -376,7 +378,9 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       if (!mob) return 'no such enemy';
       // Charmed, the hero cannot bring themselves to strike the charmer.
       if (hero.charmed > 0 && hero.charmedBy === mob.id) return 'you are charmed';
-      return adjacent(hero.pos, mob.pos) ? null : 'too far away';
+      // Hero.canAttack: next to it, or within the weapon's reach (KindOfWeapon.canReach); a word only face to face.
+      if (adjacent(hero.pos, mob.pos)) return null;
+      return mob.state !== 'passive' && canReach(world, level, hero, mob.pos, heroReach(hero)) ? null : 'too far away';
     }
     case 'reward':
       return rewardProblem(world, hero, action.choice);
@@ -829,6 +833,8 @@ function spend(ctx: Ctx, hero: Hero, time: number): void {
   }
   starve(ctx, hero, time);
   wearRings(ctx, hero, time);
+  // The hero's gear as time passes: shields fade, boomerangs come back, crystal mends (throwing.ts).
+  if (hero.depth === ctx.depth) gearTick(ctx, hero, time);
   // Caustic ooze burns every turn until washed off in water.
   if (hero.ooze >= 0) {
     hero.ooze += time;
@@ -874,14 +880,12 @@ function spend(ctx: Ctx, hero: Hero, time: number): void {
       hurt(ctx, hero, damage, 'poison');
     }
   }
-  // Armour of viscosity: blows held back are taken now, a point a turn (DeferedDamage).
-  if ((hero.deferred ?? 0) > 0) {
-    const damage = ticks(hero.deferred!);
-    hero.deferred = Math.max(0, hero.deferred! - time);
-    if (damage > 0 && isAlive(hero)) {
-      ctx.effects.push({ type: 'hurt', depth: hero.depth, who: hero.id, damage });
-      hurt(ctx, hero, damage, 'deferred');
-    }
+  // Armour of viscosity: blows held back are taken now, a tenth (a point at least) every turn (Viscosity.DeferedDamage).
+  for (let i = Math.floor(hero.time) - Math.floor(hero.time - time); i > 0 && (hero.deferred ?? 0) > 0 && isAlive(hero); i--) {
+    const damage = Math.min(hero.deferred!, Math.max(1, Math.trunc(hero.deferred! * 0.1)));
+    hero.deferred! -= damage;
+    ctx.effects.push({ type: 'hurt', depth: hero.depth, who: hero.id, damage });
+    hurt(ctx, hero, damage, 'deferred');
   }
   if (hero.blind) hero.blind = Math.max(0, hero.blind - time);
   // Bleeding: every turn it hurts, and eases, until it stops (Bleeding.act).
@@ -894,7 +898,8 @@ function spend(ctx: Ctx, hero: Hero, time: number): void {
   if (hero.levitating) hero.levitating = Math.max(0, hero.levitating - time);
   if (hero.gasImmune) hero.gasImmune = Math.max(0, hero.gasImmune - time);
   if (hero.burning > 0) {
-    if (isWater(ctx.level.map[hero.pos]!)) {
+    // Armour of brimstone: fire does not take (Char.isImmune: Burning).
+    if (isWater(ctx.level.map[hero.pos]!) || hero.armor.glyph === 'brimstone') {
       hero.burning = 0;
     } else {
       for (let i = ticks(hero.burning); i > 0 && isAlive(hero); i--) {
@@ -1000,7 +1005,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
         wanderer.pos = from;
         enterCell(level, from);
       }
-      spend(ctx, hero, 1 / heroSpeed(hero));
+      spend(ctx, hero, 1 / heroSpeed(hero, footing(ctx, hero)));
       if (hero.pos === from) break;
       // The step is done, then the trap goes off; floating, the hero touches nothing (Char.move).
       const floating = (hero.levitating ?? 0) > 0;
@@ -1033,13 +1038,13 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
           ctx.effects.push({ type: 'ratKing', hero: hero.id, line: mob.awake ? 'busy' : 'notSleeping' });
           mob.awake = true;
         }
-        else if (mob.kind === 'mirror' || mob.kind === 'bee') {
+        else if (mob.kind === 'mirror' || mob.kind === 'bee' || mob.corrupted) {
           // MirrorImage.interact and Bee.interact: the hero and the ally swap places.
           const from = hero.pos;
           hero.pos = mob.pos;
           mob.pos = from;
           enterCell(level, hero.pos);
-          spend(ctx, hero, 1 / heroSpeed(hero));
+          spend(ctx, hero, 1 / heroSpeed(hero, footing(ctx, hero)));
         }
         else talkToGhost(ctx, hero);
         break;
@@ -1133,6 +1138,34 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
     }
   }
   if (isAlive(hero)) observe(world, hero);
+}
+
+/**
+ * What a hero's speed depends on besides the hero (Swiftness: an enemy within three steps of open ground, Flow:
+ * water underfoot, Bulk: a doorway).
+ */
+function footing(ctx: Ctx, hero: Hero): Footing {
+  const { level } = ctx;
+  let enemyNear = false;
+  if (hero.armor.glyph === 'swiftness') {
+    const reach = new Map<number, number>([[hero.pos, 0]]);
+    const queue = [hero.pos];
+    for (let head = 0; head < queue.length && !enemyNear; head++) {
+      const cell = queue[head]!;
+      const d = reach.get(cell)!;
+      const there = charAt(ctx.world, ctx.depth, cell);
+      if (there && isEnemy(there)) enemyNear = true;
+      if (d >= 3) continue;
+      for (const n of NEIGHBOURS8) {
+        const next = cell + n;
+        if (next >= 0 && next < LENGTH && !reach.has(next) && adjacent(cell, next) && isPassable(level, next)) {
+          reach.set(next, d + 1);
+          queue.push(next);
+        }
+      }
+    }
+  }
+  return { terrain: level.map[hero.pos]!, enemyNear };
 }
 
 /** Whether a hero carries the Amulet of Yendor. */
@@ -1303,6 +1336,8 @@ function awakenYog(ctx: Ctx, hero: Hero): void {
 /** HighGrass.trample: walked through, tall grass is flattened and sometimes sheds a seed or a dewdrop. */
 function trample(ctx: Ctx, pos: number, hero?: Hero): void {
   ctx.level.map[pos] = T.GRASS;
+  // Armour of camouflage: trampling tall grass, its wearer melts into it.
+  if (hero) camouflage(hero);
   // A warden draws bark from the grass.
   if (hero?.subclass === 'warden') hero.barkskin = Math.max(hero.barkskin, Math.trunc(hero.ht / 3));
   // A ring of herbalism makes both more likely (HighGrass.trample).

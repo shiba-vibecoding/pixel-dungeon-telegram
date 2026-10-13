@@ -1,24 +1,27 @@
-import { mend, wear } from './wear';
+import { wear } from './wear';
 import { chargesKnown, identify, isIdentified, learn, WAND_USAGES_TO_KNOW } from './ident';
 import {
-  BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, heroRangedSkill, isAlive, maxExp, type Mob, mobStats, STARVING, type SubClass,
+  BACKPACK_SIZE, beckon, createMob, isShopkeeper, statsOf, type Hero, isAlive, maxExp, type Mob, mobStats, STARVING, type SubClass,
   SUBCLASSES,
 } from './actors';
 import { ballistica, randomRespawnCell } from './ai';
-import { attack, charArmor, CRIPPLE_TURNS, earnExp, hurt } from './combat';
+import { charArmor, earnExp, hurt } from './combat';
 import { fearless, TERROR_TURNS } from './enchant';
 import { conjureImages } from './allies';
 import {
   canEnter, charAt, type Ctx, dropItem, enterCell, exploredCells, heroView, isHero, isPassable, isWater, landItem, leaveCell,
 } from './floor';
 import {
-  buyPrice, createItem, type Heap, isStackable, type Item, itemDef, ItemGenerator, type ItemKind, itemPrice,
-  magicMissileDamage, missileStats, wandMaxCharges,
+  type Augment, buyPrice, createItem, type Heap, isCurseEnchant, isCurseGlyph, isStackable, type Item, itemDef, ItemGenerator, type ItemKind,
+  itemPrice, stacksWith, wandMaxCharges,
 } from './items';
+import { isTippedDart, mergeMissiles, TIPPED_DARTS } from './missiles';
+import { outdatedCopy } from './gear';
+import { shootBow, throwMissile } from './throwing';
 import { discoverable } from './level/flags';
 import { adjacent, distance, LENGTH, NEIGHBOURS4, NEIGHBOURS8, NEIGHBOURS9 } from './level/geometry';
 import { discover, F, hasFlag, T } from './level/terrain';
-import { type Burst, burst, immuneTo, trapAt, triggerTrap } from './traps';
+import { type Burst, burst, trapAt, triggerTrap } from './traps';
 import { plant, SEED_PLANTS, stepOnPlant } from './plants';
 import { zapWand } from './wands';
 import { mine, mineProblem, TIME_TO_MINE } from './smith';
@@ -31,7 +34,8 @@ import type { World } from './world';
 import { scaleMob } from './party';
 import { underChallenges } from './challenges';
 import {
-  canTarget, defaultTarget, enchantItem, isItemRef, isTargetedScroll, itemAt, type ItemRef, TARGET_PROBLEMS, type TargetedScroll, upgradeItem,
+  canTarget, defaultTarget, enchantItem, isEnchantable, isItemRef, isTargetedScroll, itemAt, type ItemRef, TARGET_PROBLEMS, type TargetedScroll,
+  upgradeItem,
 } from './scrolls';
 
 /*
@@ -72,11 +76,21 @@ export type InventoryAction =
   | { type: 'mine' }
   /** The special ability of the class armour worn: a cell for the warrior's leap and the rogue's smoke bomb. */
   | { type: 'special'; target?: number }
-  /** Balance a melee weapon with a weightstone, for speed or accuracy: the one in the pack at weapon, or the one in hand. */
-  | { type: 'balance'; item: number; weapon?: number; imbue: 'speed' | 'accuracy' };
+  /**
+   * StoneOfAugmentation.apply: the stone (`item`) augments a weapon (speed, damage) or armour (evasion, defense) held
+   * (`on`), or takes its augment away ('none').
+   */
+  | { type: 'augment'; item: number; on: ItemRef; augment: Augment | 'none' }
+  /** SpiritBow.AC_SHOOT: an arrow of spirit at a cell. */
+  | { type: 'shoot'; item: number; target: number }
+  /** Dart.AC_TIP: darts (`item`) tipped with a seed (`seed`): two for the seed, or (`all`) as many as the seeds will tip. */
+  | { type: 'tip'; item: number; seed: number; all?: boolean }
+  /** TippedDart.AC_CLEAN: one tipped dart, or (`all`) the whole stack, wiped back to plain darts. */
+  | { type: 'clean'; item: number; all?: boolean };
 
 const INVENTORY_ACTIONS: ReadonlySet<string> = new Set([
-  'pickup', 'open', 'use', 'equip', 'drop', 'throw', 'zap', 'buy', 'sell', 'remove', 'unequip', 'master', 'mine', 'special', 'balance',
+  'pickup', 'open', 'use', 'equip', 'drop', 'throw', 'zap', 'buy', 'sell', 'remove', 'unequip', 'master', 'mine', 'special', 'augment', 'shoot',
+  'tip', 'clean',
 ]);
 
 export function isInventoryAction(action: { type: string }): action is InventoryAction {
@@ -97,8 +111,9 @@ const TIME_TO_ZAP = 1;
 const TIME_TO_EAT = 3;
 /** PhantomFish.TIME_TO_EAT. */
 const TIME_TO_EAT_FISH = 2;
-/** Weightstone.TIME_TO_APPLY. */
-const TIME_TO_BALANCE = 2;
+/** InventoryStone.useAnimation: a stone takes a turn; tipping or cleaning darts a turn. */
+const TIME_TO_AUGMENT = 1;
+const TIME_TO_TIP = 1;
 /** TomeOfMastery.TIME_TO_READ. */
 const TIME_TO_READ_TOME = 10;
 /** Light.DURATION. */
@@ -176,13 +191,28 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     }
     case 'drop':
       return null;
-    case 'balance': {
-      if (category !== 'weightstone') return 'that is no weightstone';
-      if (action.imbue !== 'speed' && action.imbue !== 'accuracy') return 'bad choice';
-      const weapon = action.weapon === undefined ? hero.weapon : Number.isInteger(action.weapon) ? hero.items[action.weapon] : undefined;
-      if (!weapon || itemDef(weapon.kind).category !== 'weapon') return 'choose a melee weapon';
-      return weapon.imbue === action.imbue ? 'it is balanced that way already' : null;
+    case 'augment': {
+      if (category !== 'weightstone') return 'that is no stone of augmentation';
+      if (!isItemRef(action.on)) return 'bad target';
+      const on = itemAt(hero, action.on);
+      if (!on || !isEnchantable(on)) return 'that cannot be augmented';
+      const armour = itemDef(on.kind).category === 'armor';
+      const choices = armour ? ['evasion', 'defense', 'none'] : ['speed', 'damage', 'none'];
+      if (!choices.includes(action.augment)) return 'bad choice';
+      return (on.augment ?? 'none') === action.augment ? 'it is augmented that way already' : null;
     }
+    case 'shoot':
+      if (category !== 'bow') return 'that is no bow';
+      if (!Number.isInteger(action.target) || action.target < 0 || action.target >= LENGTH || action.target === hero.pos) return 'bad target';
+      return null;
+    case 'tip': {
+      if (item.kind !== 'missile.dart') return 'those are no darts';
+      const seed = Number.isInteger(action.seed) ? hero.items[action.seed] : undefined;
+      if (!seed || itemDef(seed.kind).category !== 'seed') return 'choose a seed';
+      return TIPPED_DARTS[seed.kind] ? null : 'darts cannot be tipped with that';
+    }
+    case 'clean':
+      return isTippedDart(item.kind) ? null : 'that is no tipped dart';
     case 'master':
       if (item.kind !== 'tome.mastery') return 'that is no tome';
       if (hero.subclass) return 'you have already mastered a way';
@@ -218,16 +248,34 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       return TIME_TO_MINE;
     case 'special':
       return classSpecial(ctx, hero, action.target);
-    case 'balance': {
-      // Weightstone.apply: the stone is used up, and the weapon balanced the chosen way.
-      const weapon = action.weapon === undefined ? hero.weapon! : hero.items[action.weapon]!;
+    case 'augment': {
+      // StoneOfAugmentation.apply: the stone is used up, and the item augmented the chosen way.
+      const on = itemAt(hero, action.on)!;
       const stone = hero.items[action.item]!;
-      weapon.imbue = action.imbue;
-      // Weightstone.apply: the weapon comes out mended, too.
-      mend(weapon);
-      if (--stone.qty <= 0) hero.items.splice(action.item, 1);
-      ctx.effects.push({ type: 'balanced', hero: hero.id, item: weapon });
-      return TIME_TO_BALANCE;
+      if (action.augment === 'none') delete on.augment;
+      else on.augment = action.augment;
+      if (--stone.qty <= 0) hero.items.splice(hero.items.indexOf(stone), 1);
+      ctx.effects.push({ type: 'augmented', hero: hero.id, item: on });
+      return TIME_TO_AUGMENT;
+    }
+    case 'shoot':
+      return shootBow(ctx, hero, action.item, action.target);
+    case 'tip':
+      tipDarts(ctx, hero, action.item, action.seed, action.all === true);
+      return TIME_TO_TIP;
+    case 'clean': {
+      // TippedDart.AC_CLEAN: wiped back into plain darts, the whole stack or one of it (the rest whole again).
+      const tipped = hero.items[action.item]!;
+      const qty = action.all ? tipped.qty : 1;
+      if (qty >= tipped.qty) hero.items.splice(action.item, 1);
+      else {
+        tipped.qty -= qty;
+        delete tipped.durability;
+      }
+      const darts = createItem('missile.dart', qty);
+      if (!collect(hero, darts)) dropItem(ctx.floor, hero.pos, darts);
+      ctx.effects.push({ type: 'cleaned', hero: hero.id, qty });
+      return TIME_TO_TIP;
     }
     case 'use':
       if (itemDef(hero.items[action.item]!.kind).category === 'food') {
@@ -358,13 +406,11 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       if (ctx.level.map[hero.pos] === T.ALCHEMY) brew(ctx, hero.pos, hero);
       return TIME_TO_DROP;
     }
-    case 'throw': {
-      // Shuriken fly twice as fast as anything else (Shuriken.DLY).
-      const thrown = hero.items[action.item]!;
-      const delay = itemDef(thrown.kind).category === 'missile' ? missileStats(thrown).delay : 1;
+    case 'throw':
+      // MissileWeapon.castDelay: a thrown weapon at someone takes its delay (throwing.ts).
+      if (itemDef(hero.items[action.item]!.kind).category === 'missile') return throwMissile(ctx, hero, action.item, action.target);
       throwItem(ctx, hero, action.item, action.target);
-      return TIME_TO_THROW * delay;
-    }
+      return TIME_TO_THROW;
     case 'zap':
       zap(ctx, hero, action.item, action.target);
       return TIME_TO_ZAP;
@@ -450,76 +496,16 @@ function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
     landItem(ctx, end, flying);
     return;
   }
-  const boomerang = item.kind === 'missile.boomerang';
-  let thrown = item;
-  if (!boomerang) {
-    if (item.qty > 1) {
-      item.qty--;
-      thrown = { kind: item.kind, qty: 1, level: item.level };
-    } else {
-      hero.items.splice(index, 1);
-    }
-  }
-  const trace = ballistica(ctx, hero.pos, target);
-  const end = trace.at(-1)!;
-  ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: item.kind });
-  const victim = charAt(ctx.world, ctx.depth, end);
-  let hit = false;
-  if (victim && !isHero(victim)) {
-    const stats = missileStats(thrown);
-    hit = attack(ctx, hero, victim, {
-      attack: heroRangedSkill(hero, thrown, adjacent(hero.pos, end)),
-      damage: [stats.min, stats.max],
-      weapon: thrown,
-    });
-
-    if (hit && isAlive(victim)) missileProc(ctx, thrown, victim);
-    // The boomerang wears with every hit, as a melee weapon does.
-    if (hit && boomerang) wear(ctx, hero, item);
-  }
-  // IncendiaryDart.onThrow: missing, it sets whatever can burn where it lands alight, and burns up with it.
-  if (!hit && thrown.kind === 'missile.incendiary' && hasFlag(ctx.level.map[end]!, F.FLAMABLE)) {
-    burst(ctx, end, 'fire', 0);
-    return;
-  }
-  if (!boomerang && !hit) {
-    landItem(ctx, end, thrown);
-    pressUnderItem(ctx, end);
-  }
 }
 
 /**
  * Level.drop's press(cell, null): an item landing on a trap sets it off, and on a plant sets it
  * off too (the old trick of clearing a trap with a thrown dart). Not on a chasm: it falls through.
  */
-function pressUnderItem(ctx: Ctx, pos: number): void {
+export function pressUnderItem(ctx: Ctx, pos: number): void {
   if (hasFlag(ctx.level.map[pos]!, F.PIT)) return;
   if (trapAt(ctx.level.map[pos]!)) triggerTrap(ctx, null, pos);
   stepOnPlant(ctx, null, pos);
-}
-
-/** MissileWeapon.proc: what each kind of thrown weapon does besides its damage. */
-function missileProc(ctx: Ctx, thrown: Item, victim: Mob): void {
-  switch (thrown.kind) {
-    case 'missile.curare':
-      // CurareDart: the poison paralyses for a moment.
-      victim.paralysed = Math.max(victim.paralysed ?? 0, 3);
-      break;
-    case 'missile.incendiary':
-      if (!isWater(ctx.level.map[victim.pos]!) && !immuneTo(victim, 'burning')) victim.burning = Math.max(victim.burning ?? 0, 8);
-      break;
-    case 'missile.javelin':
-      // Javelin: a crippling wound.
-      victim.crippled = Math.max(victim.crippled ?? 0, CRIPPLE_TURNS);
-      break;
-    case 'missile.tomahawk': {
-      // Tamahawk: it bleeds as hard as it was struck.
-      const blow = [...ctx.effects].reverse().find((e) => e.type === 'attack' && e.target === victim.id);
-      const damage = blow?.type === 'attack' ? blow.damage : 0;
-      if (damage > 0) victim.bleeding = Math.max(victim.bleeding ?? 0, damage);
-      break;
-    }
-  }
 }
 
 /**
@@ -528,7 +514,7 @@ function missileProc(ctx: Ctx, thrown: Item, victim: Mob): void {
  * burning down whatever can burn there.
  */
 function throwBomb(ctx: Ctx, hero: Hero, index: number, target: number): void {
-  const { world, depth, level, rng } = ctx;
+  const { depth, level } = ctx;
   const bomb = hero.items[index]!;
   if (--bomb.qty <= 0) hero.items.splice(index, 1);
   const end = ballistica(ctx, hero.pos, target).at(-1)!;
@@ -537,6 +523,12 @@ function throwBomb(ctx: Ctx, hero: Hero, index: number, target: number): void {
     landItem(ctx, end, createItem('bomb'));
     return;
   }
+  explodeBomb(ctx, end, hero);
+}
+
+/** Bomb.explode: everyone next to it hurt and stunned, whatever can burn there burnt down (`by`: who lit it). */
+export function explodeBomb(ctx: Ctx, end: number, by: Hero | null): void {
+  const { world, depth, level, rng } = ctx;
   ctx.effects.push({ type: 'exploded', depth, pos: end });
   for (const n of NEIGHBOURS9) {
     const cell = end + n;
@@ -550,7 +542,7 @@ function throwBomb(ctx: Ctx, hero: Hero, index: number, target: number): void {
     const damage = rng.intRange(1 + depth, 10 + depth * 2) - rng.intRange(0, charArmor(char));
     if (damage <= 0) continue;
     ctx.effects.push({ type: 'hurt', depth, who: char.id, damage });
-    hurt(ctx, char, damage, isHero(char) ? 'bomb' : hero);
+    hurt(ctx, char, damage, isHero(char) || !by ? 'bomb' : by);
     if (isAlive(char)) char.paralysed = Math.max(char.paralysed ?? 0, 2);
   }
 }
@@ -609,6 +601,25 @@ function zap(ctx: Ctx, hero: Hero, index: number, target: number): void {
   wear(ctx, hero, wand);
 }
 
+/**
+ * Dart.AC_TIP: darts tipped with a seed into tipped darts: two for one seed (one, if only one dart is left), or as
+ * many as there are seeds for, two to a seed.
+ */
+function tipDarts(ctx: Ctx, hero: Hero, index: number, seedIndex: number, all: boolean): void {
+  const darts = hero.items[index]!;
+  const seed = hero.items[seedIndex]!;
+  const kind = TIPPED_DARTS[seed.kind]!;
+  const maxToTip = Math.min(darts.qty, seed.qty * 2);
+  const tipping = all && darts.qty > 2 && maxToTip > 2 ? maxToTip : Math.min(darts.qty, 2);
+  const seeds = Math.trunc((tipping + 1) / 2);
+  seed.qty -= seeds;
+  darts.qty -= tipping;
+  hero.items = hero.items.filter((item) => item.qty > 0 || (item !== seed && item !== darts));
+  const tipped = createItem(kind, tipping);
+  if (!collect(hero, tipped)) dropItem(ctx.floor, hero.pos, tipped);
+  ctx.effects.push({ type: 'tipped', hero: hero.id, kind, qty: tipping });
+}
+
 /** Adds an item to the backpack, stacking where possible; false if there is no room. */
 export function collect(hero: Hero, item: Item): boolean {
   if (item.kind === 'gold') {
@@ -617,9 +628,11 @@ export function collect(hero: Hero, item: Item): boolean {
     return true;
   }
   if (isStackable(item.kind)) {
-    const stack = hero.items.find((other) => other.kind === item.kind);
+    const stack = hero.items.find((other) => stacksWith(other, item));
     if (stack) {
-      stack.qty += item.qty;
+      // MissileWeapon.merge: a thrown weapon back on its stack.
+      if (itemDef(item.kind).category === 'missile') mergeMissiles(stack, item);
+      else stack.qty += item.qty;
       return true;
     }
   }
@@ -649,6 +662,9 @@ function pickUp(ctx: Ctx, hero: Hero): void {
   for (const item of heap.items) {
     if (item.kind === 'dew') {
       drinkDew(ctx, hero, item);
+    } else if (outdatedCopy(hero, item)) {
+      // MissileWeapon.doPickUp: a copy of a set upgraded since crumbles to dust.
+      ctx.effects.push({ type: 'dust', hero: hero.id, item });
     } else if (collect(hero, item)) {
       ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
       if (item.kind === 'seed.rotberry') rotberryRoar(ctx, hero);
@@ -1022,12 +1038,25 @@ function use(ctx: Ctx, hero: Hero, index: number, target: Item | undefined): voi
       break;
 
     case 'scroll.removeCurse': {
-      // ScrollOfRemoveCurse: every curse on what the reader wears or carries is lifted, and weakness with them.
+      // ScrollOfRemoveCurse.uncurse: every curse on what the reader wears or carries is known and lifted, curse
+      // enchantments and glyphs with them; and weakness.
       let count = 0;
       for (const item of [...hero.items, hero.weapon, hero.armor, ...hero.rings]) {
-        if (!item?.cursed) continue;
+        if (!item) continue;
+        delete item.curseUnknown;
+        let lifted = !!item.cursed;
         delete item.cursed;
-        count++;
+        if (isCurseEnchant(item.enchant)) {
+          delete item.enchant;
+          delete item.infused;
+          lifted = true;
+        }
+        if (isCurseGlyph(item.glyph)) {
+          delete item.glyph;
+          delete item.infused;
+          lifted = true;
+        }
+        if (lifted) count++;
       }
       hero.weakened = 0;
       ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'removeCurse', count });

@@ -3,6 +3,7 @@ import { type BurstOptions, fx, type Piece } from './fx';
 import { type Puppet, STEP_MS, TILE, type View } from './view';
 import { audio } from './audio';
 import { duration, levelRegion } from './sprites';
+import { magicColor } from './itemtext';
 
 /*
  * What the dungeon's events look like beyond the sprites: blood and sparks on
@@ -442,8 +443,11 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
     case 'enchanted': {
       if (!here(effect.depth)) return;
       const at = cellCentre(effect.pos);
-      fx.burst(at.x, at.y, now, { count: 12, colors: effect.enchant === 'fire' ? FIRE : effect.enchant === 'shock' ? BOLT_GLOW.lightning! : SPARK, glow: true, speed: [20, 60], life: [250, 550], size: [1, 1] });
-      if (effect.enchant === 'death') fx.flash('40, 0, 40', 0.4, 300, now);
+      // Each enchantment's own: Blazing's flames, Chilling's splash, Shocking's sparks, Venomous's poison, Grim's shadow...
+      const colors = effect.enchant === 'blazing' ? FIRE : effect.enchant === 'shocking' ? BOLT_GLOW.lightning! : effect.enchant === 'chilling' ? FROST
+        : effect.enchant === 'grim' || effect.enchant === 'eldritch' ? VOID : effect.enchant === 'venomous' ? ICHOR : [magicColor(effect.enchant), '#ffffff'];
+      fx.burst(at.x, at.y, now, { count: 12, colors, glow: true, speed: [20, 60], life: [250, 550], size: [1, 1] });
+      if (effect.enchant === 'grim') fx.flash('40, 0, 40', 0.4, 300, now);
       return;
     }
     case 'enraged':

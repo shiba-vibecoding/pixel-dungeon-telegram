@@ -63,7 +63,7 @@ describe('rings', () => {
     hero.items = [createItem('ring.accuracy', 1, 2), createItem('ring.haste', 1, 1), createItem('ring.mending', 1, 1)];
     const before = heroAttackSkill(hero);
     act(world, 'p', { type: 'equip', item: 0 });
-    expect(heroAttackSkill(hero)).toBe(Math.trunc(before * Math.fround(1.4 ** 2)));
+    expect(heroAttackSkill(hero)).toBe(Math.round(before * Math.fround(1.4 ** 2)));
     act(world, 'p', { type: 'equip', item: 0 });
     act(world, 'p', { type: 'equip', item: 0 });
     expect(hero.rings.map((r) => r.kind)).toEqual(['ring.haste', 'ring.mending']);

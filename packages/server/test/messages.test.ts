@@ -18,8 +18,13 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'throw', item: 0, target: 100 })).toEqual({ type: 'throw', item: 0, target: 100 });
     expect(sanitizeAction({ type: 'reforge', first: 'weapon', second: 3 })).toEqual({ type: 'reforge', first: 'weapon', second: 3 });
     expect(sanitizeAction({ type: 'master', item: 1, subclass: 'warden' })).toEqual({ type: 'master', item: 1, subclass: 'warden' });
-    expect(sanitizeAction({ type: 'balance', item: 1, imbue: 'speed' })).toEqual({ type: 'balance', item: 1, imbue: 'speed' });
-    expect(sanitizeAction({ type: 'balance', item: 1, weapon: 4, imbue: 'accuracy' })).toEqual({ type: 'balance', item: 1, weapon: 4, imbue: 'accuracy' });
+    expect(sanitizeAction({ type: 'augment', item: 1, on: 'weapon', augment: 'speed' })).toEqual({ type: 'augment', item: 1, on: 'weapon', augment: 'speed' });
+    expect(sanitizeAction({ type: 'augment', item: 1, on: 3, augment: 'none', x: 1 })).toEqual({ type: 'augment', item: 1, on: 3, augment: 'none' });
+    expect(sanitizeAction({ type: 'shoot', item: 0, target: 40 })).toEqual({ type: 'shoot', item: 0, target: 40 });
+    expect(sanitizeAction({ type: 'tip', item: 2, seed: 5, all: true })).toEqual({ type: 'tip', item: 2, seed: 5, all: true });
+    expect(sanitizeAction({ type: 'tip', item: 2, seed: 5, all: 'yes' })).toEqual({ type: 'tip', item: 2, seed: 5 });
+    expect(sanitizeAction({ type: 'clean', item: 2 })).toEqual({ type: 'clean', item: 2 });
+    expect(sanitizeAction({ type: 'clean', item: 2, all: true })).toEqual({ type: 'clean', item: 2, all: true });
     expect(sanitizeAction({ type: 'special' })).toEqual({ type: 'special' });
     expect(sanitizeAction({ type: 'special', target: 7 })).toEqual({ type: 'special', target: 7 });
     expect(sanitizeAction({ type: 'beacon', item: 5, mode: 'return' })).toEqual({ type: 'beacon', item: 5, mode: 'return' });
@@ -39,7 +44,8 @@ describe('client messages', () => {
       { type: 'attack', target: 5 }, { type: 'attack', target: '' }, { type: 'attack', target: 'x'.repeat(65) },
       { type: 'use', item: 1, target: 'ring' }, { type: 'drop', item: 1000 }, { type: 'reward', choice: 'gold' },
       { type: 'reforge', first: 'helmet', second: 1 }, { type: 'master', item: 1, subclass: 'pirate' },
-      { type: 'balance', item: 1, imbue: 'luck' }, { type: 'special', target: null }, { type: 'beacon', item: 1, mode: 'go' },
+      { type: 'augment', item: 1, on: 'weapon', augment: 'luck' }, { type: 'augment', item: 1, on: 'ring9', augment: 'speed' },
+      { type: 'shoot', item: 1 }, { type: 'tip', item: 1 }, { type: 'clean', item: -1 }, { type: 'balance', item: 1, imbue: 'speed' }, { type: 'special', target: null }, { type: 'beacon', item: 1, mode: 'go' },
       { type: 'arenaPick' }, { type: 'arenaPick', choice: 3 }, { type: 'arenaPick', choice: -1 }, { type: 'arenaPick', choice: '1' },
     ]) {
       expect(sanitizeAction(bad), JSON.stringify(bad)).toBeNull();

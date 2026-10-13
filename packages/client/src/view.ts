@@ -1,11 +1,11 @@
 import {
-  adjacent, cellX, cellY, type Effect, F, terrainFlags, type Enchantment, heroById, isAlive, itemDef, type ItemKind, itemSprite, LENGTH, type MobKind,
+  adjacent, cellX, cellY, type Effect, F, terrainFlags, type Enchantment, heroById, isAlive, isTippedDart, itemDef, type ItemKind, itemSprite, LENGTH, type MobKind,
   visibleCells, WIDTH, type World,
   type Look,
 } from '@pd/core';
 import { audio } from './audio';
 import { capitalize, t } from './i18n';
-import { itemName, plainName } from './itemtext';
+import { itemName, magicColor, plainName } from './itemtext';
 import { type AnimName, type Assets, type CharSprite, duration, heroSprite } from './sprites';
 import { haptic } from './telegram';
 import { DEPTH_CARD_MS } from './cards';
@@ -40,10 +40,10 @@ const BURST_COLORS = {
   toxic: '90, 200, 60', paralytic: '230, 220, 70', fire: '255, 120, 30', frost: '170, 220, 255', purity: '240, 250, 255',
 } as const;
 
-/** ItemSprite.Glowing: the colour each enchantment shines with. */
-const ENCHANT_COLORS: Record<Enchantment, string> = {
-  fire: '255, 68, 0', poison: '68, 0, 170', death: '40, 40, 40', paralysis: '255, 255, 68', leech: '170, 0, 40', slow: '0, 68, 255',
-  shock: '255, 255, 255', instability: '255, 255, 255', horror: '90, 90, 90', luck: '0, 255, 0', tempering: '204, 136, 136',
+/** ItemSprite.Glowing: the colour each enchantment shines with (as the item's mark shows it), as «r, g, b». */
+const enchantColor = (enchant: Enchantment): string => {
+  const hex = magicColor(enchant).replace('#', '');
+  return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ');
 };
 export const TILE = 16;
 
@@ -722,6 +722,15 @@ export class View {
         case 'worn':
           // Item.use: the bearer hears of it, if they know the item's level; breaking is loud.
           if (effect.hero !== myId) break;
+          if (itemDef(effect.item.kind).category === 'missile') {
+            // MissileWeapon.decrementDurability (TippedDart's own words).
+            const tipped = isTippedDart(effect.item.kind);
+            const warning = effect.state === 'warning';
+            this.say(warning ? (tipped ? t.gear.tipAboutToBreak : t.gear.aboutToBreak) : tipped ? t.gear.tipHasBroken : t.gear.hasBroken,
+              warning ? COLORS.warning : COLORS.negative, now);
+            if (!warning) audio.play('degrade');
+            break;
+          }
           if (effect.state === 'warning') {
             this.say(t.goingToBreak(itemName(world, { ...effect.item, durability: undefined })), COLORS.warning, now);
           } else {
@@ -757,7 +766,7 @@ export class View {
         case 'enchanted':
           // The weapon's glow flares up on whoever it struck.
           if (effect.depth === this.depth) {
-            this.flashes.push({ cell: effect.pos, start: now, color: ENCHANT_COLORS[effect.enchant], duration: 500 });
+            this.flashes.push({ cell: effect.pos, start: now, color: enchantColor(effect.enchant), duration: 500 });
           }
           break;
         case 'glyph':
@@ -1101,9 +1110,46 @@ export class View {
           audio.play(effect.mode === 'set' ? 'beacon' : 'teleport');
           if (effect.hero === myId && effect.mode === 'set') this.say(t.beaconDone, COLORS.default, now);
           break;
-        case 'balanced':
-          audio.play('miss');
-          if (effect.hero === myId && effect.item.imbue) this.say(t.balanced[effect.item.imbue], COLORS.positive, now);
+        case 'dust':
+          if (effect.hero === myId) this.say(t.gear.dust, COLORS.warning, now);
+          break;
+        case 'crystal':
+          if (effect.hero !== myId) break;
+          this.say(
+            { flawed: t.gear.crystalFlawed, cracked: t.gear.crystalCracked, shattered: t.gear.crystalShattered, fixed: t.gear.crystalFixed }[effect.state],
+            effect.state === 'fixed' ? COLORS.positive : effect.state === 'flawed' ? COLORS.warning : COLORS.negative, now);
+          if (effect.state === 'shattered') audio.play('shatter');
+          break;
+        case 'explosive':
+          if (effect.hero !== myId) break;
+          this.float(effect.hero, effect.state === 'warm' ? t.gear.explosiveWarm : t.gear.explosiveHot, COLORS.warning, now);
+          this.say(effect.state === 'warm' ? t.gear.explosiveDescWarm : t.gear.explosiveDescHot, effect.state === 'warm' ? COLORS.warning : COLORS.negative, now);
+          break;
+        case 'annoying':
+          // Annoying.proc: one of its lines, and the level comes running.
+          if (effect.hero === myId) this.say(t.gear.annoying[effect.line - 1] ?? '', COLORS.negative, now);
+          audio.play('cursed');
+          break;
+        case 'shielded':
+          this.float(effect.hero, `+${effect.amount}`, COLORS.highlight, now);
+          break;
+        case 'corrupted':
+          if (effect.depth === this.depth) this.say(t.corrupted(t.mobs[mobKind(effect.depth, effect.mob, 'rat')]), COLORS.highlight, now);
+          break;
+        case 'tipped':
+          if (effect.hero === myId) this.say(t.tipped(effect.qty, itemName(world, { kind: effect.kind, qty: effect.qty, level: 0 })), COLORS.default, now);
+          break;
+        case 'blinked':
+          // ScrollOfTeleportation.appear: there at once, in a flash of light.
+          if (effect.depth !== this.depth) break;
+          this.puppets.delete(effect.who);
+          this.flashes.push({ cell: effect.from, start: now, color: '255, 255, 255', duration: 400 });
+          this.flashes.push({ cell: effect.to, start: now, color: '255, 255, 255', duration: 400 });
+          audio.play('teleport');
+          break;
+        case 'augmented':
+          audio.play('evoke');
+          if (effect.hero === myId) this.say(t.augmented(itemName(world, effect.item)), COLORS.positive, now);
           break;
         case 'interrupted': {
           // Only the reasons worth telling: a refused move into a wall says nothing.

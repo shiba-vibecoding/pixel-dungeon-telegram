@@ -40,3 +40,12 @@ export * from './verify';
 export * from './badges';
 export * from './daily';
 export * from './spd-sprites';
+export * from './weapons';
+export * from './armor';
+export {
+  defaultQuantity, durabilityLeft, durabilityPerUse, isDart, isMissile, isTippedDart, MAX_DURABILITY, missileStats, type MissileStats,
+  missileUpgradable, TIPPED_DARTS, usesLeft,
+} from './missiles';
+export { gearUpgradable, MISSILE_TIERS, WEAPON_TIERS } from './gear';
+export { canReach } from './throwing';
+export { isAlly, isEnemy } from './enchant';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, canEnter, charAt, createItem, createMob, createWorld, F, floorAt, hasFlag, heroAttackDelay, heroAttackSkill, heroById,
+  act, addHero, canEnter, charAt, createItem, createMob, createWorld, F, floorAt, hasFlag, heroAttackDelay, heroById, heroDefenseSkill,
   levelAt, type Mob, T, WIDTH, type World,
 } from '../src/index';
 import { pacify } from './helpers';
@@ -89,19 +89,24 @@ describe('bombs', () => {
   });
 });
 
-describe('the weightstone', () => {
-  it('balances a melee weapon for speed or for accuracy, and is used up', () => {
+describe('the stone of augmentation', () => {
+  it('augments a weapon for speed or damage, armour for evasion or defence, and is used up', () => {
     const { world } = line();
     const hero = heroById(world, 'p')!;
-    hero.items = [createItem('weightstone', 2)];
+    hero.items = [createItem('weightstone', 3)];
     const delay = heroAttackDelay(hero);
-    const skill = heroAttackSkill(hero);
-    expect(act(world, 'p', { type: 'balance', item: 0, imbue: 'speed' }).ok).toBe(true);
-    expect(hero.weapon!.imbue).toBe('speed');
-    expect(heroAttackDelay(hero)).toBeCloseTo(delay * 0.6);
-    expect(act(world, 'p', { type: 'balance', item: 0, imbue: 'speed' })).toEqual({ ok: false, reason: 'it is balanced that way already' });
-    expect(act(world, 'p', { type: 'balance', item: 0, imbue: 'accuracy' }).ok).toBe(true);
-    expect(heroAttackSkill(hero)).toBeGreaterThan(skill);
+    expect(act(world, 'p', { type: 'augment', item: 0, on: 'weapon', augment: 'speed' }).ok).toBe(true);
+    expect(hero.weapon!.augment).toBe('speed');
+    // Weapon.Augment.SPEED: two thirds of the delay.
+    expect(heroAttackDelay(hero)).toBeCloseTo(delay * (2 / 3));
+    expect(act(world, 'p', { type: 'augment', item: 0, on: 'weapon', augment: 'speed' })).toEqual({ ok: false, reason: 'it is augmented that way already' });
+    expect(act(world, 'p', { type: 'augment', item: 0, on: 'weapon', augment: 'evasion' })).toEqual({ ok: false, reason: 'bad choice' });
+    const evasion = heroDefenseSkill(hero);
+    expect(act(world, 'p', { type: 'augment', item: 0, on: 'armor', augment: 'evasion' }).ok).toBe(true);
+    // Armor.Augment.EVASION: two more evasion a level step.
+    expect(heroDefenseSkill(hero)).toBe(evasion + 4);
+    expect(act(world, 'p', { type: 'augment', item: 0, on: 'weapon', augment: 'none' }).ok).toBe(true);
+    expect(hero.weapon!.augment).toBeUndefined();
     expect(hero.items).toEqual([]);
   });
 });

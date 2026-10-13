@@ -124,7 +124,7 @@ export function checkBadges(progress: BadgeProgress, world: World, me: Hero, eff
   let grimAt = -1;
   for (const effect of effects) {
     if (effect.type === 'combo' && effect.hero === me.id) earn('combo', effect.count >= 7);
-    if (effect.type === 'enchanted' && effect.enchant === 'death') grimAt = effect.pos;
+    if (effect.type === 'enchanted' && effect.enchant === 'grim') grimAt = effect.pos;
     if (effect.type === 'died' && effect.by === me.id) {
       if (effect.pos === grimAt) earn('grim');
       if (effect.kind && RARE_KINDS.includes(effect.kind)) remember(progress.rare, effect.kind);

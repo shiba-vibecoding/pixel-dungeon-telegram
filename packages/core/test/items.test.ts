@@ -89,7 +89,7 @@ describe('the backpack', () => {
     hero.items.push(createItem('weapon.sword'), createItem('scroll.upgrade'));
     expect(act(world, 'p', { type: 'equip', item: 0 }).ok).toBe(true);
     expect(hero.weapon!.kind).toBe('weapon.sword');
-    expect(hero.items[0]!.kind).toBe('weapon.shortSword');
+    expect(hero.items[0]!.kind).toBe('weapon.wornShortsword');
     expect(act(world, 'p', { type: 'use', item: 1, target: 'weapon' }).ok).toBe(true);
     expect(hero.weapon!.level).toBe(1);
     expect(weaponStats(hero.weapon!)).toMatchObject({ min: 4, str: 13 });

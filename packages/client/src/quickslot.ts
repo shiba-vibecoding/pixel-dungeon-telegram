@@ -36,9 +36,11 @@ export function chooseQuickslot(kind: ItemKind, slot = 0): void {
 export const isQuickslotted = (kind: ItemKind): boolean => chosen.includes(kind);
 
 /** What a quickslot tap does with an item: aim a throw or a zap, or use it at once. */
-export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'use' | null {
+export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'shoot' | 'use' | null {
   const category = itemDef(kind).category;
   if (category === 'wand') return 'zap';
+  // SpiritBow.defaultAction: AC_SHOOT.
+  if (category === 'bow') return 'shoot';
   if (category === 'missile' || category === 'bomb' || category === 'honeypot' || category === 'seed') return 'throw';
   if (['potion', 'scroll', 'food', 'torch', 'vial', 'wipeout'].includes(category) || kind === 'quest.fish') return 'use';
   return null;
@@ -56,6 +58,6 @@ export function quickIndex(hero: Hero, slot = 0): number {
   const other = chosen[1] ? hero.items.findIndex((item) => item.kind === chosen[1]) : -1;
   return hero.items.findIndex((item, i) => {
     const category = itemDef(item.kind).category;
-    return i !== other && (category === 'missile' || category === 'wand');
+    return i !== other && (category === 'missile' || category === 'wand' || category === 'bow');
   });
 }

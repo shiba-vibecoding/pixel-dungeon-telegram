@@ -18,6 +18,12 @@ export interface RunState {
   blacksmithSpawned?: boolean;
   /** The dew vial has been laid out in the sewers (absent in older runs). */
   dewVialSpawned?: boolean;
+  /**
+   * Generator's decks for weapons and thrown weapons by tier (Generator.Category.probs, as gear.ts deals them),
+   * and how many each has dealt (Category.dropped); absent until the first is dealt.
+   */
+  decks?: Record<string, number[]>;
+  deckDrops?: Record<string, number>;
 }
 
 export function createRun(seed: number): RunState {

@@ -53,38 +53,49 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
     }
   });
 
-  it('a weapon tells its level after twenty blows that land (Weapon.proc)', () => {
+  it('a weapon is known after twenty blows that land, half of them before more experience is had (Weapon.proc)', () => {
     const { world, rat } = sparring();
     const hero = heroById(world, 'p')!;
     hero.weapon = unknown(createItem('weapon.sword', 1, 2));
     const effects: Effect[] = [];
-    while (landed(effects, 'p') < 19) {
+    while (landed(effects, 'p') < 14) {
       const result = act(world, 'p', { type: 'attack', target: rat });
       if (result.ok) effects.push(...result.effects);
     }
+    // Weapon.availableUsesToID: ten uses at a time, then no more until experience is gained.
+    expect(hero.weapon.familiarity).toBe(10);
     expect(hero.weapon.levelUnknown).toBe(true);
-    expect(effects.some((e) => e.type === 'familiar')).toBe(false);
-    while (landed(effects, 'p') < 20) {
+    hero.items = [createItem('potion.experience')];
+    act(world, 'p', { type: 'use', item: 0 });
+    const before = landed(effects, 'p');
+    while (landed(effects, 'p') < before + 10) {
       const result = act(world, 'p', { type: 'attack', target: rat });
       if (result.ok) effects.push(...result.effects);
     }
     expect(hero.weapon.levelUnknown).toBeUndefined();
-    // Only the level: whether it is cursed is not learned by fighting.
-    expect(hero.weapon.curseUnknown).toBe(true);
+    // Weapon.identify: known through and through, its curse too.
+    expect(hero.weapon.curseUnknown).toBeUndefined();
     expect(effects.filter((e) => e.type === 'familiar')).toEqual([{ type: 'familiar', hero: 'p', item: hero.weapon, learned: false }]);
   });
 
-  it('armour tells its level after ten blows taken (Armor.proc)', () => {
+  it('armour is known after ten blows taken, half before more experience (Armor.proc)', () => {
     const { world, rat } = sparring();
     const hero = heroById(world, 'p')!;
-    hero.armor = unknown(createItem('armor.leather', 1, -1));
+    hero.armor = unknown(createItem('armor.leather', 1, 1));
     const effects: Effect[] = [];
+    for (let turn = 0; turn < 2000 && landed(effects, rat) < 8; turn++) {
+      hero.hp = hero.ht;
+      const result = act(world, 'p', { type: 'wait' });
+      if (result.ok) effects.push(...result.effects);
+    }
+    expect(hero.armor.familiarity).toBe(5);
+    hero.items = [createItem('potion.experience')];
+    act(world, 'p', { type: 'use', item: 0 });
     for (let turn = 0; turn < 2000 && !effects.some((e) => e.type === 'familiar'); turn++) {
       hero.hp = hero.ht;
       const result = act(world, 'p', { type: 'wait' });
       if (result.ok) effects.push(...result.effects);
     }
-    expect(landed(effects, rat)).toBe(10);
     expect(hero.armor.levelUnknown).toBeUndefined();
   });
 
@@ -158,11 +169,12 @@ describe('identification (Item.levelKnown, cursedKnown)', () => {
 
   it('the price takes in only what is known (Item.considerState)', () => {
     const sword = createItem('weapon.sword', 1, 2);
-    expect(itemPrice(sword, true)).toBe(80 * 3);
-    expect(itemPrice(unknown(sword), true)).toBe(80);
-    const cursed = { ...createItem('weapon.sword', 1, -1), cursed: true };
-    expect(itemPrice(cursed, true)).toBe(20);
-    expect(itemPrice(unknown(cursed), true)).toBe(80);
+    // MeleeWeapon.value: 20 a tier, times the level and one once known, halved cursed once known.
+    expect(itemPrice(sword, true)).toBe(60 * 3);
+    expect(itemPrice(unknown(sword), true)).toBe(60);
+    const cursed = { ...createItem('weapon.sword', 1, 0), cursed: true, enchant: 'wayward' as const };
+    expect(itemPrice(cursed, true)).toBe(30);
+    expect(itemPrice(unknown(cursed), true)).toBe(60);
   });
 
   it('a well of awareness drunk from: what is worn is known through and through, and the curses of the rest', () => {

@@ -21,6 +21,7 @@ import type { Rng } from './rng';
 import type { World } from './world';
 import { S } from './spd-sprites';
 import { mobCount, partySize, respawnTime, scaleMob } from './party';
+import { mobTimeScale } from './throwing';
 
 /*
  * Monster behaviour, ported from Mob: sleeping monsters may notice a hero in
@@ -44,8 +45,8 @@ function mobSight(mob: Mob, depth: number): number {
 }
 
 function spend(mob: Mob, time: number): void {
-  // Slowed, everything takes twice as long.
-  mob.time += (mob.slowed ?? 0) > 0 ? time * 2 : time;
+  // Slowed, everything takes twice as long; chilled, longer the more chill is left; with adrenaline, half as long.
+  mob.time += ((mob.slowed ?? 0) > 0 ? time * 2 : time) / mobTimeScale(mob);
 }
 
 function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Hero | undefined {
@@ -122,6 +123,11 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
   // Poisoned or paralysed by a trap's gas.
   if (mobConditions(ctx, mob)) {
     spend(mob, TICK);
+    return;
+  }
+  // Corrupted, it fights for the heroes (Corruption: Char.Alignment.ALLY).
+  if (mob.corrupted) {
+    allyAct(ctx, mob);
     return;
   }
   // Dizzy, it staggers about instead of doing anything useful.
@@ -331,6 +337,38 @@ function beeAct(ctx: Ctx, mob: Mob): void {
       if (!nearest || distance(mob.pos, hero.pos) < distance(mob.pos, nearest.pos)) nearest = hero;
     }
     if (nearest && !adjacent(nearest.pos, mob.pos)) goal = nearest.pos;
+  }
+  if (goal !== -1 && getCloser(ctx, mob, goal, fov)) spend(mob, 1 / MOBS[mob.kind].speed);
+  else spend(mob, TICK);
+}
+
+/**
+ * A corrupted monster (Mob with the Corruption ally buff): it goes for the nearest foe in sight, which turns on it
+ * (Mob.aggro); with none, it follows the nearest hero.
+ */
+function allyAct(ctx: Ctx, mob: Mob): void {
+  const fov = castShadow(mob.pos, terrainBlocksSight(ctx.level.map), mobSight(mob, ctx.depth));
+  const hostile = (other: Mob): boolean => other !== mob && other.state !== 'passive' && !other.corrupted && isAlive(other);
+  let foe = ctx.floor.mobs.find((other) => other.id === mob.enemy && hostile(other) && fov[other.pos]);
+  if (!foe) {
+    for (const other of ctx.floor.mobs) {
+      if (hostile(other) && fov[other.pos] && (!foe || distance(mob.pos, other.pos) < distance(mob.pos, foe.pos))) foe = other;
+    }
+    mob.enemy = foe?.id ?? null;
+  }
+  if (foe && adjacent(mob.pos, foe.pos)) {
+    attack(ctx, mob, foe);
+    if (isAlive(foe)) foe.beeFoe = mob.id;
+    spend(mob, mobStats(mob).attackDelay ?? TICK);
+    return;
+  }
+  let goal = foe?.pos ?? -1;
+  if (goal === -1) {
+    let nearest: Hero | undefined;
+    for (const hero of heroesOn(ctx.world, ctx.depth)) {
+      if (!nearest || distance(mob.pos, hero.pos) < distance(mob.pos, nearest.pos)) nearest = hero;
+    }
+    if (nearest && distance(nearest.pos, mob.pos) > 2) goal = nearest.pos;
   }
   if (goal !== -1 && getCloser(ctx, mob, goal, fov)) spend(mob, 1 / MOBS[mob.kind].speed);
   else spend(mob, TICK);

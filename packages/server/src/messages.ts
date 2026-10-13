@@ -99,6 +99,7 @@ export function sanitizeAction(raw: unknown): Action | null {
       return item === null ? null : { type: a.type, item };
     }
     case 'throw':
+    case 'shoot':
     case 'zap': {
       const item = slot(a.item);
       const target = cell(a.target);
@@ -120,13 +121,24 @@ export function sanitizeAction(raw: unknown): Action | null {
       const target = cell(a.target);
       return target === null ? null : { type: 'special', target };
     }
-    case 'balance': {
+    case 'augment': {
+      // StoneOfAugmentation: the stone, what it is used on, and how.
       const item = slot(a.item);
-      const imbue = oneOf(a.imbue, ['speed', 'accuracy'] as const);
-      if (item === null || !imbue) return null;
-      if (a.weapon === undefined) return { type: 'balance', item, imbue };
-      const weapon = slot(a.weapon);
-      return weapon === null ? null : { type: 'balance', item, weapon, imbue };
+      const on = itemRef(a.on);
+      const augment = oneOf(a.augment, ['speed', 'damage', 'evasion', 'defense', 'none'] as const);
+      return item === null || on === null || !augment ? null : { type: 'augment', item, on, augment };
+    }
+    case 'tip': {
+      // Dart.AC_TIP: the darts, the seed, and whether as many as it will.
+      const item = slot(a.item);
+      const seed = slot(a.seed);
+      if (item === null || seed === null) return null;
+      return a.all === true ? { type: 'tip', item, seed, all: true } : { type: 'tip', item, seed };
+    }
+    case 'clean': {
+      const item = slot(a.item);
+      if (item === null) return null;
+      return a.all === true ? { type: 'clean', item, all: true } : { type: 'clean', item };
     }
     case 'plan': {
       // Live turns: a standing order of a few steps, each a plain action or one that lasts.

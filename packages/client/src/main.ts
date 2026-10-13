@@ -5,7 +5,7 @@ import {
   type Bones, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
   visibleCells, chargesKnown, WIDTH,
-  type World, charAt, swapsWithHero,
+  type World, charAt, swapsWithHero, canReach, heroReach,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
@@ -242,7 +242,7 @@ const mapControlsActions = {
     const target = world && me ? attackTarget(world, me) : null;
     if (!world || !me || !target || session!.busy) return;
     walk.reset();
-    if (adjacent(me.pos, target.pos)) send({ type: 'attack', target: target.id }, performance.now());
+    if (inReach(world, me, target.pos)) send({ type: 'attack', target: target.id }, performance.now());
     else walk.chase = target.id;
   },
   resume: () => {
@@ -727,7 +727,7 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
   (world.floors[depth]?.heaps ?? []).some((heap) => heap.pos === pos && heap.kind !== 'hidden');
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
-let aim: { index: number; kind: 'throw' | 'zap' | 'special' } | null = null;
+let aim: { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' } | null = null;
 
 function toggleQuickslot(slot = 0): void {
   const world = session?.world;
@@ -749,6 +749,11 @@ function toggleQuickslot(slot = 0): void {
   const use = quickUse(item.kind);
   if (use === 'use') send({ type: 'use', item: index }, performance.now());
   else if (use) aim = { index, kind: use };
+}
+
+/** Hero.canAttack: next to it, or within the weapon's reach (a spear, a glaive, a whip). */
+function inReach(world: World, me: Hero, pos: number): boolean {
+  return adjacent(me.pos, pos) || canReach(world, levelAt(world, me.depth), me, pos, heroReach(me));
 }
 
 /** Awake monsters the party could see last frame; a new one interrupts walking. */
@@ -878,7 +883,7 @@ function step(world: World, now: number, visible: readonly boolean[]): void {
     const mob = mobById(world, me.depth, walk.chase);
     if (!mob || !visible[mob.pos]) {
       walk.chase = null;
-    } else if (adjacent(me.pos, mob.pos)) {
+    } else if (inReach(world, me, mob.pos) && (adjacent(me.pos, mob.pos) || mob.state !== 'passive')) {
       walk.chase = null;
       send({ type: 'attack', target: mob.id }, now);
       return;

@@ -1,6 +1,14 @@
 import { effectiveLevel } from './wear';
-import { armorStats, createItem, type Item, type ItemKind, missileStats, type WeaponStats, weaponStats } from './items';
+import { createItem, type Item, itemDef, type ItemKind } from './items';
+import { armorDrMax, armorDrMin, armorEvasionBonus, armorStr } from './armor';
+import {
+  augmentDamage, augmentDelay, bowLevel, bowMax, bowMin, bowStr, crossbowDartMax, crossbowDartMin, gearLevel, jround, meleeMax, meleeMin,
+  meleeStr, surpriseShare, weaponAcc, weaponDefense, weaponDly, weaponRch, type WeaponStats, weaponStats,
+} from './weapons';
+import { isDart, missileMax, missileMin, missileStr, missileSurprise } from './missiles';
 import type { Rng } from './rng';
+import { adjacent } from './level/geometry';
+import { T } from './level/terrain';
 import type { Action, PlanStep } from './world';
 
 /*
@@ -33,12 +41,17 @@ interface ClassKit {
   stealth: number;
 }
 
+/**
+ * HeroClass.initWarrior/initMage/initRogue/initHuntress, as to weapons (Shattered's): the warrior's worn shortsword
+ * and three throwing stones, the rogue's dagger and three throwing knives, the huntress's studded gloves and spirit
+ * bow. Seam: the mage's staff is the wands stream's (the studded gloves stand in), the rest of the kits the classes'.
+ */
 export const HERO_CLASSES: Readonly<Record<HeroClass, ClassKit>> = {
-  warrior: { ht: 20, str: 11, weapon: 'weapon.shortSword', items: [['missile.dart', 8]], stealth: 0 },
-  mage: { ht: 20, str: 10, weapon: 'weapon.knuckles', items: [['wand.magicMissile', 1]], stealth: 0 },
+  warrior: { ht: 20, str: 11, weapon: 'weapon.wornShortsword', items: [['missile.throwingStone', 3]], stealth: 0 },
+  mage: { ht: 20, str: 10, weapon: 'weapon.gloves', items: [['wand.magicMissile', 1]], stealth: 0 },
   // The rogue sets out wearing a ring of shadows +1.
-  rogue: { ht: 20, str: 10, weapon: 'weapon.dagger', items: [['missile.dart', 8]], ring: ['ring.shadows', 1], stealth: 0 },
-  huntress: { ht: 15, str: 10, weapon: 'weapon.dagger', items: [['missile.boomerang', 1]], stealth: 0 },
+  rogue: { ht: 20, str: 10, weapon: 'weapon.dagger', items: [['missile.throwingKnife', 3]], ring: ['ring.shadows', 1], stealth: 0 },
+  huntress: { ht: 15, str: 10, weapon: 'weapon.gloves', items: [['spiritBow', 1]], stealth: 0 },
 };
 
 /** Backpack slots, equipment aside. */
@@ -127,6 +140,28 @@ export interface Hero {
   /** For the end of the run: monsters slain, and what dealt the killing blow. */
   kills: number;
   killedBy: string | null;
+  /** Thrown sets upgraded since some of them were thrown: the level a copy must have to be picked up (MissileWeapon.UpgradedSetTracker). */
+  upgradedSets?: Record<number, number>;
+  /** Heavy boomerangs on their way back (HeavyBoomerang.CircleBack). */
+  circling?: CircleBack[];
+  /** Turns left before a shuriken flies instantly again (Shuriken.ShurikenInstantTracker). */
+  shuriken?: number;
+  /** A blocking weapon's shield (Blocking.BlockBuff): how much it holds, and the turns it lasts. */
+  blocking?: { shield: number; left: number };
+  /** Damage a kinetic weapon kept from a blow that overkilled (Kinetic.ConservedDamage). */
+  kinetic?: number;
+  /** Turns left of a wayward weapon's poor aim (Wayward.WaywardBuff). */
+  wayward?: number;
+}
+
+/** HeavyBoomerang.CircleBack: a boomerang flying back to where it was thrown from, in `left` turns. */
+export interface CircleBack {
+  item: Item;
+  /** Where it fell, and where it returns to, on which depth. */
+  from: number;
+  to: number;
+  depth: number;
+  left: number;
 }
 
 export interface RunStats {
@@ -217,75 +252,169 @@ export const isStarving = (hero: Hero): boolean => hero.hunger >= STARVING;
 export const FURY_LEVEL = 0.4;
 export const isHungry = (hero: Hero): boolean => hero.hunger >= HUNGRY;
 
-/** The numbers of the weapon in hand, or of bare fists (Hero.damageRoll without a weapon: 1 to STR-9). */
+/** The numbers of the weapon in hand, or of bare fists (RingOfForce.damageRoll without the ring: 1 to STR-8). */
 export function heroWeapon(hero: Hero): WeaponStats {
-  return hero.weapon ? weaponStats(hero.weapon) : { min: 1, max: Math.max(1, heroStr(hero) - 9), str: 0, accuracy: 1, delay: 1 };
+  return hero.weapon ? weaponStats(hero.weapon) : { min: 1, max: Math.max(1, heroStr(hero) - 8), str: 0, accuracy: 1, delay: 1, reach: 1 };
 }
 
-export function heroAttackSkill(hero: Hero): number {
-  const weapon = heroWeapon(hero);
-  const encumbrance = weapon.str - heroStr(hero);
-  const factor = encumbrance > 0 ? f32(weapon.accuracy / 1.5 ** encumbrance) : f32(weapon.accuracy);
-  // RingOfAccuracy: 1.4 times as accurate a level.
-  const bonus = ringBonus(hero, 'ring.accuracy');
-  const accuracy = bonus === 0 ? 1 : f32(1.4 ** bonus);
-  return Math.trunc(f32(f32(hero.attackSkill * accuracy) * factor));
-}
+/** What a hero strikes with: the weapon in hand, or a thrown weapon (or the spirit bow, for its arrow) in flight. */
+export type Strike = Item | null;
 
-export function heroDefenseSkill(hero: Hero): number {
-  // RingOfEvasion: 1.2 times as evasive a level.
-  const bonus = ringBonus(hero, 'ring.evasion');
-  const defense = Math.trunc(f32(hero.defenseSkill * (bonus === 0 ? 1 : f32(1.2 ** bonus))));
-  const encumbrance = armorStats(hero.armor).str - heroStr(hero);
-  if (encumbrance > 0) {
-    return Math.trunc(defense / 1.5 ** encumbrance);
-  }
-  // Rogues turn spare strength into evasion; a freerunner on the move is twice as hard to hit.
-  if (hero.heroClass !== 'rogue') return defense;
-  return (defense - encumbrance) * (hero.subclass === 'freerunner' && !isStarving(hero) ? 2 : 1);
+/** The strength a weapon wants: a melee weapon's, a thrown one's, the spirit bow's (at its bearer's level). */
+export function strikeStr(hero: Hero, weapon: Item): number {
+  const category = itemDef(weapon.kind).category;
+  if (category === 'bow') return bowStr(hero.lvl, weapon);
+  return category === 'missile' ? missileStr(weapon) : meleeStr(weapon);
 }
 
 /**
- * Accuracy with a thrown weapon (Hero.attackSkill with a ranged weapon):
- * warriors are clumsy with them, huntresses deft, and nobody throws well
- * point-blank.
+ * Weapon.accuracyFactor (and MissileWeapon's): its accuracy, worse the heavier it is for the hero (1.5× a point of
+ * strength short); a wayward weapon aims at a fifth while its curse holds; thrown, half as accurate point-blank and
+ * half as accurate again from afar (adjacentAccFactor).
  */
-export function heroRangedSkill(hero: Hero, item: Item, pointBlank: boolean): number {
-  let encumbrance = missileStats(item).str - heroStr(hero);
-  if (hero.heroClass === 'warrior') encumbrance += 3;
-  if (hero.heroClass === 'huntress') encumbrance -= 2;
-  let factor = encumbrance > 0 ? f32(1 / 1.5 ** encumbrance) : 1;
-  if (pointBlank) factor = f32(factor * 0.5);
-  return Math.trunc(f32(hero.attackSkill * factor));
-}
-
-/** Heavy armour slows its wearer down (Hero.speed). */
-export function heroSpeed(hero: Hero): number {
-  const encumbrance = armorStats(hero.armor).str - heroStr(hero);
-  // Char.speed: crippled, half as fast; a freerunner who is not starving nor weighed down, much faster.
-  const crippled = hero.crippled > 0 ? 0.5 : 1;
-  const running = hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0 ? 1.6 : 1;
-  return (encumbrance > 0 ? 1.3 ** -encumbrance : 1) * crippled * running;
-}
-
-export function heroDamageRoll(hero: Hero, rng: Rng): number {
-  const weapon = heroWeapon(hero);
-  let damage = hero.weapon ? rng.normalIntRange(weapon.min, weapon.max) : rng.intRange(weapon.min, weapon.max);
-  // Fury: a berserker badly hurt hits half as hard again.
-  if (hero.subclass === 'berserker' && hero.hp > 0 && hero.hp <= hero.ht * FURY_LEVEL) damage = Math.trunc(damage * 1.5);
-  if (hero.heroClass !== 'huntress' && hero.weapon) {
-    const excess = heroStr(hero) - weapon.str;
-    if (excess > 0) {
-      damage += rng.intRange(0, excess);
-    }
+function accuracyFactor(hero: Hero, weapon: Item, targetPos?: number): number {
+  const category = itemDef(weapon.kind).category;
+  let acc = category === 'weapon' ? weaponAcc(weapon.kind) : 1;
+  if ((hero.wayward ?? 0) > 0 && weapon.enchant === 'wayward') acc = f32(acc / 5);
+  const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
+  let factor = encumbrance > 0 ? f32(acc / 1.5 ** encumbrance) : acc;
+  if ((category === 'missile' || category === 'bow') && targetPos !== undefined) {
+    // Seam: the point blank talent (talents stream) adds a quarter a point.
+    factor = f32(factor * (adjacent(hero.pos, targetPos) ? 0.5 : 1.5));
   }
-  return damage;
+  return factor;
 }
 
-export function heroAttackDelay(hero: Hero): number {
-  const weapon = heroWeapon(hero);
-  const encumbrance = weapon.str - heroStr(hero);
-  return encumbrance > 0 ? f32(weapon.delay * 1.2 ** encumbrance) : weapon.delay;
+/** Hero.attackSkill: with a weapon, times its accuracy factor; a ring of accuracy helps either way. */
+export function heroAttackSkill(hero: Hero, targetPos?: number, weapon: Strike = hero.weapon): number {
+  // RingOfAccuracy: 1.4 times as accurate a level.
+  const bonus = ringBonus(hero, 'ring.accuracy');
+  const accuracy = bonus === 0 ? 1 : f32(1.4 ** bonus);
+  if (!weapon) return Math.max(1, jround(f32(hero.attackSkill * accuracy)));
+  return Math.max(1, jround(f32(f32(hero.attackSkill * accuracy) * accuracyFactor(hero, weapon, targetPos))));
+}
+
+/**
+ * Hero.defenseSkill: a ring of evasion helps, paralysis halves it; then the armour (Armor.evasionFactor): 1.5× worse
+ * a point of strength short, and its augment's evasion added. Armour of stone is never dodged.
+ */
+export function heroDefenseSkill(hero: Hero): number {
+  // RingOfEvasion: 1.2 times as evasive a level.
+  const bonus = ringBonus(hero, 'ring.evasion');
+  let evasion = f32(hero.defenseSkill * (bonus === 0 ? 1 : f32(1.2 ** bonus)));
+  if (hero.paralysed > 0) evasion = f32(evasion / 2);
+  if (hero.armor.glyph === 'stone') return 0;
+  const encumbrance = armorStr(hero.armor) - heroStr(hero);
+  if (encumbrance > 0) evasion = f32(evasion / 1.5 ** encumbrance);
+  // Seam (talents stream): Momentum's evasion. Here the 1.9 freerunner still doubles it, unburdened and fed.
+  if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) evasion = f32(evasion * 2);
+  evasion = f32(evasion + armorEvasionBonus(hero.armor));
+  return Math.max(1, jround(evasion));
+}
+
+/**
+ * Hero.drRoll: a roll of the armour's protection, two less a point of strength short; a roll of the weapon's
+ * parrying (0 to its defence factor), the same way; and a warden's bark (Barkskin).
+ */
+export function heroDrRoll(hero: Hero, rng: Rng): number {
+  let dr = 0;
+  const str = heroStr(hero);
+  let armor = rng.normalIntRange(armorDrMin(hero.armor), armorDrMax(hero.armor));
+  if (str < armorStr(hero.armor)) armor -= 2 * (armorStr(hero.armor) - str);
+  if (armor > 0) dr += armor;
+  if (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon') {
+    let parry = rng.normalIntRange(0, weaponDefense(hero.weapon));
+    if (str < meleeStr(hero.weapon)) parry -= 2 * (meleeStr(hero.weapon) - str);
+    if (parry > 0) dr += parry;
+  }
+  const bark = Math.ceil(hero.barkskin ?? 0);
+  if (bark > 0) dr += rng.normalIntRange(0, bark);
+  return dr;
+}
+
+/**
+ * Hero.damageRoll: the weapon's roll (NormalIntRange of its min and max, augmented), plus up to the strength to spare
+ * (heroDamageIntRange(0, excess)); a dagger, dirk, assassin's blade, throwing knife or kunai rolls from nearer its
+ * most on a surprise attack. Bare-handed: 1 to STR-8. Darts thrown with a crossbow in hand take its numbers; a spirit
+ * arrow the bow's. Seam: the thirteen-leaf clover (a trinket) would alter the hero's rolls.
+ */
+export function heroDamageRoll(hero: Hero, rng: Rng, surprised = false, weapon: Strike = hero.weapon): number {
+  let damage: number;
+  if (!weapon) {
+    damage = rng.normalIntRange(1, Math.max(heroStr(hero) - 8, 1));
+  } else {
+    const category = itemDef(weapon.kind).category;
+    let min: number;
+    let max: number;
+    let share = 0;
+    if (category === 'bow') {
+      min = bowMin(hero.lvl, weapon);
+      max = bowMax(hero.lvl, weapon);
+    } else if (category === 'missile') {
+      const crossbow = hero.weapon?.kind === 'weapon.crossbow' && isDart(weapon.kind) ? hero.weapon : null;
+      min = crossbow ? crossbowDartMin(crossbow) : missileMin(weapon);
+      max = crossbow ? crossbowDartMax(crossbow) : missileMax(weapon);
+      share = missileSurprise(weapon.kind);
+    } else {
+      min = meleeMin(weapon);
+      max = meleeMax(weapon);
+      share = surpriseShare(weapon.kind);
+    }
+    damage = surprised && share > 0
+      ? augmentDamage(weapon, rng.normalIntRange(min + jround((max - min) * share), max))
+      : augmentDamage(weapon, rng.normalIntRange(min, max));
+    const excess = heroStr(hero) - strikeStr(hero, weapon);
+    if (excess > 0) damage += rng.normalIntRange(0, excess);
+  }
+  // Fury: a berserker badly hurt hits half as hard again (seam: Shattered's Berserk is the talents stream's).
+  if (hero.subclass === 'berserker' && hero.hp > 0 && hero.hp <= hero.ht * FURY_LEVEL) damage = Math.trunc(damage * 1.5);
+  return Math.max(0, damage);
+}
+
+/** Hero.attackDelay: the weapon's delay (Weapon.delayFactor: augmented, 1.2× slower a point of strength short); bare hands, a turn. */
+export function heroAttackDelay(hero: Hero, weapon: Strike = hero.weapon): number {
+  if (!weapon) return 1;
+  const category = itemDef(weapon.kind).category;
+  let delay = augmentDelay(weapon, category === 'weapon' ? weaponDly(weapon.kind) : 1);
+  const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
+  if (encumbrance > 0) delay = f32(delay * 1.2 ** encumbrance);
+  // Seam: the ring of furor and the scimitar's sword dance (rings, classes) would speed it up.
+  return delay;
+}
+
+/** Weapon.reachFactor: how far the weapon in hand strikes (a projecting one a cell further). */
+export function heroReach(hero: Hero): number {
+  if (!hero.weapon || itemDef(hero.weapon.kind).category !== 'weapon') return 1;
+  const reach = weaponRch(hero.weapon.kind);
+  return hero.weapon.enchant === 'projecting' ? reach + 1 : reach;
+}
+
+/** A weapon's level as its enchantment counts it (Weapon.buffedLvl): the spirit bow grows with its bearer. */
+export const enchantLevel = (hero: Hero, weapon: Item): number =>
+  itemDef(weapon.kind).category === 'bow' ? bowLevel(hero.lvl, weapon) : gearLevel(weapon);
+
+/** What a hero's speed depends on besides the hero: the ground underfoot, and whether an enemy is near (Swiftness). */
+export interface Footing {
+  terrain: number;
+  enemyNear: boolean;
+}
+
+/**
+ * Hero.speed: crippled, half as fast (Char.speed); a freerunner unburdened and fed, faster (the 1.9 subclass, a seam
+ * for the talents stream's Momentum); armour 1.2× slower a point of strength short (Armor.speedFactor); armour of
+ * swiftness quicker with no enemy near, of flow in water, of bulk slow in doorways.
+ */
+export function heroSpeed(hero: Hero, footing?: Footing): number {
+  const encumbrance = armorStr(hero.armor) - heroStr(hero);
+  let speed = hero.crippled > 0 ? 0.5 : 1;
+  if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) speed *= 1.6;
+  if (encumbrance > 0) speed = f32(speed / 1.2 ** encumbrance);
+  const glyph = hero.armor.glyph;
+  const level = gearLevel(hero.armor);
+  if (footing && glyph === 'swiftness' && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));
+  if (footing && glyph === 'flow' && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
+  if (footing && glyph === 'bulk' && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
+  return speed;
 }
 
 /** Chance to notice a hidden door or trap next to the hero, as Hero.updateAwareness. */
@@ -294,8 +423,14 @@ export function awareness(hero: Hero): number {
 }
 
 /** Hero.dr: the armour's, and a warden's bark. */
-export const heroArmor = (hero: Hero): number => armorStats(hero.armor).dr + Math.max(0, Math.ceil(hero.barkskin ?? 0));
-export const heroStealth = (hero: Hero): number => HERO_CLASSES[hero.heroClass].stealth + ringBonus(hero, 'ring.shadows');
+/** A hero's armour at its most (Armor.DRMax, with the weapon's parrying and the bark at theirs), for what wants one figure. */
+export const heroArmor = (hero: Hero): number =>
+  armorDrMax(hero.armor) + (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon' ? weaponDefense(hero.weapon) : 0) +
+  Math.max(0, Math.ceil(hero.barkskin ?? 0));
+/** Hero.stealth: armour of obfuscation adds 1 and a third a level (Obfuscation.stealthBoost). */
+export const heroStealth = (hero: Hero): number =>
+  HERO_CLASSES[hero.heroClass].stealth + ringBonus(hero, 'ring.shadows') +
+  (hero.armor.glyph === 'obfuscation' ? Math.fround(1 + gearLevel(hero.armor) / 3) : 0);
 export const maxExp = (hero: Hero): number => 5 + hero.lvl * 5;
 
 /* Monsters */
@@ -499,6 +634,21 @@ export interface Mob {
   bleeding?: number;
   /** A mirror image: whose twin it is, and the skill and strength it took from them. */
   image?: { owner: string; attack: number; damage: number };
+  /** Thrown weapons stuck in it, dropped where it dies (PinCushion). */
+  pinned?: Item[];
+  /** Turns left of being chilled (Chill): the more it has left, the slower it acts. */
+  chilled?: number;
+  /** Corrupted by a weapon (Corruption): it fights for the heroes now, and wastes away a hundredth a turn. */
+  corrupted?: boolean;
+  corruptDamage?: number;
+  /** Turns left of acting twice as fast (Adrenaline). */
+  adrenaline?: number;
+  /** A lucky blow landed (Lucky.LuckProc): should it die before it acts again, it drops something (at this ring level). */
+  luck?: number;
+  /** Turns left of acidic ooze from armour of corrosion (Ooze). */
+  ooze?: number;
+  /** Turns left of being blessed (Bless, from a holy dart). */
+  blessed?: number;
 }
 
 /** Mob.beckon: called towards a spot. Statue.beckon: an animated statue does not stir for it. */
