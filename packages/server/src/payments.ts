@@ -281,7 +281,8 @@ async function runAdminCommand(command: AdminCommand, chat: number, api: BotApi,
 }
 
 function playButton(text: BotText, appLink: string): Record<string, unknown> {
-  return appLink ? { reply_markup: { inline_keyboard: [[{ text: text.play, url: appLink }]] } } : {};
+  // Opened over the whole screen (Bot API 8.0 direct links' mode).
+  return appLink ? { reply_markup: { inline_keyboard: [[{ text: text.play, url: `${appLink}?mode=fullscreen` }]] } } : {};
 }
 
 /** The Bot API over HTTPS. */

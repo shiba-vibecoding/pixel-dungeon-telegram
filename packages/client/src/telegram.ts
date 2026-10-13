@@ -71,6 +71,18 @@ export function initTelegram(background: string): void {
     webApp.setBackgroundColor?.(background);
   }
   if (at('7.10')) webApp.setBottomBarColor?.(background);
+  // Bot API 8.0: on a phone the game takes the whole screen however it was opened (BotFather's full-screen
+  // setting reaches only the profile's «Open» button), unless the player turned that off in the settings.
+  if (at('8.0') && /^(ios|android)/.test(webApp.platform) && wantsFullscreen()) webApp.requestFullscreen?.();
+}
+
+/** The player's choice about the whole screen, kept on this device: on unless turned off. */
+function wantsFullscreen(): boolean {
+  try {
+    return localStorage.getItem('pd-fullscreen') !== 'off';
+  } catch {
+    return true;
+  }
 }
 
 let onBack: (() => void) | null = null;
@@ -105,6 +117,11 @@ export function isFullscreen(): boolean {
 
 /** Over the whole screen, or back. */
 export function setFullscreen(on: boolean): void {
+  try {
+    localStorage.setItem('pd-fullscreen', on ? 'on' : 'off');
+  } catch {
+    // For this session only.
+  }
   if (inTelegram) {
     if (on) webApp!.requestFullscreen?.();
     else webApp!.exitFullscreen?.();
@@ -159,7 +176,7 @@ async function share(
   startParam: string, query: Record<string, string>, text: string,
 ): Promise<'shared' | 'copied' | 'failed'> {
   if (inTelegram && webApp!.openTelegramLink) {
-    const link = `${APP_LINK}?startapp=${encodeURIComponent(startParam)}`;
+    const link = `${APP_LINK}?startapp=${encodeURIComponent(startParam)}&mode=fullscreen`;
     webApp!.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`);
     return 'shared';
   }
@@ -250,7 +267,7 @@ export function openLink(url: string): void {
 const at = (version: string): boolean => inTelegram && (webApp?.isVersionAtLeast?.(version) ?? false);
 
 /** The game's t.me link, opening at `start` (daily, arena) or at the title. */
-export const appLink = (start?: string): string => (start ? `${APP_LINK}?startapp=${encodeURIComponent(start)}` : APP_LINK);
+export const appLink = (start?: string): string => `${APP_LINK}?${start ? `startapp=${encodeURIComponent(start)}&` : ''}mode=fullscreen`;
 
 /** Whether this Telegram can post a story from the game. */
 export const canShareStory = (): boolean => at('7.8') && typeof webApp?.shareToStory === 'function';
