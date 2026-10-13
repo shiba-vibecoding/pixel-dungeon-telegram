@@ -1,0 +1,21 @@
+<!-- @dsCard group="Привал" height=812 width=1173 page subtitle="Облики Пиксель-Марта для Дуэлянтки и Клирика — пепельный, королевский, теневой, как у остальных классов: лист героя и аватар. На привале: Дуэлянтка «Королевская» во дворе тюрьмы, Клирик «Теневой» зимой, Дуэлянтка «Пепельная» осенью" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Облики новых классов</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .phone { position: relative; width: 375px; height: 812px; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get("lang") || "ru", en = L === "en";
+  function phone() { var p = document.createElement("div"); p.className = "phone pd-phone"; document.getElementById("row").appendChild(p); return p; }
+  PD.demo.campScreen(phone(), { lang: L, scene: "prison", hero: 4, skin: "royal", frame: "gold", demo: "tap" });
+  PD.demo.campScreen(phone(), { lang: L, season: "winter", hero: 5, skin: "shadow", frame: "shadow", effect: "snow" });
+  PD.demo.campScreen(phone(), { lang: L, season: "autumn", hero: 4, skin: "ash", frame: "bronze" });
+  PD.sprite(document.body);
+</script>
+</body>
+</html>

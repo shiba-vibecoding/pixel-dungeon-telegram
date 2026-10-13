@@ -208,7 +208,7 @@ export function populateBoss(world: World, level: Level, rng: Rng, nextId: () =>
 export function bossFloorCreated(level: Level, floor: Floor, rng: Rng): void {
   if (level.depth !== 20 || !level.boss?.impShop) return;
   const generator = new ItemGenerator(rng, level.depth);
-  bossFloor(floor).impWares = IMP_WARES(rng).map((spec) => rollSpec(spec, generator, rng, level.depth));
+  bossFloor(floor).impWares = IMP_WARES(rng).map((spec) => rollSpec(spec, generator, rng, level.depth)).filter((item) => item !== null);
 }
 
 /**

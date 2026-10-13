@@ -1,0 +1,26 @@
+<!-- @dsCard group="Привал" height=620 width=1100 page subtitle="Герой на привале, ×4: покой (дыхание кадрами 0/1 и моргание раз в 4,3 с), касание (взмах кадрами удара 13–15, искры, облачко с фразой класса), частые касания (4 за 2,5 с — отворачивается, знак обиды, 3 с не отвечает), свайп (уходит в тень, из тени выходит другой класс), облик из Пиксель-Марта и эффекты: искры, светлячки, снег" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Герой на привале</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .grid { width: 1100px; box-sizing: border-box; padding: 16px 20px; display: grid; grid-template-columns: repeat(4, 256px); gap: 16px 12px; justify-content: space-between; }
+  .tile { display: flex; flex-direction: column; gap: 6px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .tile b { font: var(--text-label, 400 18px/20px var(--font-ui)); color: var(--gold); font-weight: 400; }
+  .box { position: relative; width: 256px; height: 216px; overflow: hidden; clip-path: var(--notch); }
+  .box .pd-camp-canvas, .box .pd-camp-layer { left: 0; transform: none; }
+</style></head>
+<body>
+<div class="pd-root grid" id="g"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get("lang") || "ru", en = L === "en";
+  var T = en ? [['Idle', 'breathing on frames 0/1, a blink every 4.3 s'], ['Tap', 'a swing (attack frames 13–15), sparks, a line of the class'], ['Tapped too often', '4 taps in 2.5 s: turns away, sulks for 3 s'], ['Swipe', 'steps into the shadow, another class steps out'], ['A Pixel-Mart look', 'the «Royal» warrior; the sheet is swapped'], ['Effect: sparks', 'gold twinkles around the hero'], ['Effect: fireflies', 'four lights circle the hero'], ['Effect: snow', 'a little snowfall over the hero']]
+    : [['Покой', 'дыхание кадрами 0/1, моргание раз в 4,3 с'], ['Касание', 'взмах (кадры удара 13–15), искры, фраза класса'], ['Частые касания', '4 касания за 2,5 с — отворачивается, обижен 3 с'], ['Свайп', 'уходит в тень, из тени выходит другой класс'], ['Облик из Пиксель-Марта', '«Королевский» воин: меняется лист героя'], ['Эффект «Искры»', 'золотые искорки вокруг героя'], ['Эффект «Светлячки»', 'четыре огонька кружат у героя'], ['Эффект «Снег»', 'маленький снегопад над героем']];
+  var O = [{ demo: 'blink', hero: 0 }, { demo: 'tap', hero: 4 }, { demo: 'sulk', hero: 3 }, { demo: 'swipe', hero: 1 }, { hero: 0, skin: 'royal' }, { hero: 2, effect: 'sparks', season: 'autumn' }, { hero: 5, effect: 'fireflies' }, { hero: 1, effect: 'snow', season: 'winter' }];
+  O.forEach(function (o, i) {
+    var t = document.createElement('div'); t.className = 'tile'; t.innerHTML = '<b>' + T[i][0] + '</b>'; var box = document.createElement('div'); box.className = 'box'; t.appendChild(box); t.insertAdjacentHTML('beforeend', '<span>' + T[i][1] + '</span>'); document.getElementById('g').appendChild(t);
+    o.lang = L; o.crop = [14, 76, 64, 54]; o.label = i === 3; PD.camp(box, o);
+  });
+</script>
+</body>
+</html>

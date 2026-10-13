@@ -98,7 +98,7 @@ const EN: BotText = {
   passedOn: 'Thank you, your message has been passed on. The developer will answer here within two days.',
   writeDirectly: `Please write to ${CONTACT} about it: they answer within two days.`,
   terms:
-    'Pixel-Mart sells looks for Telegram Stars: hero recolours, effects and portrait frames, and a monthly ' +
+    'Pixel-Mart sells looks for Telegram Stars: hero recolours, effects, portrait frames, camps for the home screen, and a monthly ' +
     'patronage. They change nothing in the game. Purchases are kept by your Telegram account; a patronage renews ' +
     'monthly until cancelled in Telegram. Refunds through /paysupport.',
   fullTerms: 'The full terms:',
@@ -115,7 +115,7 @@ const RU: BotText = {
   passedOn: 'Спасибо, ваше сообщение передано. Разработчик ответит здесь в течение двух дней.',
   writeDirectly: `Пожалуйста, напишите об этом ${CONTACT}: ответ — в течение двух дней.`,
   terms:
-    'В Пиксель-Марте за звёзды Telegram продаётся облик: перекраски героев, эффекты, рамки портрета и подписка ' +
+    'В Пиксель-Марте за звёзды Telegram продаётся облик: перекраски героев, эффекты, рамки портрета, привалы для главного экрана и подписка ' +
     '«Покровитель» на месяц. На игру они не влияют. Покупки привязаны к вашему аккаунту Telegram; подписка ' +
     'продлевается каждый месяц, пока вы не отмените её в Telegram. Возврат — через /paysupport.',
   fullTerms: 'Полные условия:',

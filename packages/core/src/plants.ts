@@ -1,18 +1,23 @@
 import { type Hero, isAlive, MOBS } from './actors';
 import { randomRespawnCell } from './ai';
-import { charAt, type Char, type Ctx, dropItem, enterCell, heroesOn, isHero, leaveCell } from './floor';
+import { charAt, type Char, type Ctx, dropItem, enterCell, type Floor, heroesOn, isHero, leaveCell } from './floor';
 import { createItem, ItemGenerator, type ItemKind } from './items';
 import { distance, LENGTH } from './level/geometry';
 import { T } from './level/terrain';
 import { burst } from './traps';
 import { chillPack, freezeHeaps } from './cooking';
+import { seedPreservation } from './allies';
+import { dewcatcher, seedpod } from './regrowth';
 
 /*
  * Plants (Plant and its kinds): a seed thrown somewhere takes root there, and
  * whoever steps on the plant sets it off, using it up.
  */
 
-export type PlantKind = 'firebloom' | 'icecap' | 'sorrowmoss' | 'dreamweed' | 'sungrass' | 'earthroot' | 'fadeleaf' | 'rotberry';
+export type PlantKind =
+  | 'firebloom' | 'icecap' | 'sorrowmoss' | 'dreamweed' | 'sungrass' | 'earthroot' | 'fadeleaf' | 'rotberry'
+  /** The wand of regrowth's (WandOfRegrowth.Dewcatcher and Seedpod), which grow from no seed one can carry. */
+  | 'dewcatcher' | 'seedpod';
 
 export interface PlantInfo {
   pos: number;
@@ -31,8 +36,13 @@ export const SEED_PLANTS: Readonly<Partial<Record<ItemKind, PlantKind>>> = {
   'seed.fadeleaf': 'fadeleaf',
 };
 export const PLANT_KINDS: readonly PlantKind[] = [
-  'firebloom', 'icecap', 'sorrowmoss', 'dreamweed', 'sungrass', 'earthroot', 'fadeleaf', 'rotberry',
+  'firebloom', 'icecap', 'sorrowmoss', 'dreamweed', 'sungrass', 'earthroot', 'fadeleaf', 'rotberry', 'dewcatcher', 'seedpod',
 ];
+
+/** The seed each plant grows from. */
+const PLANT_SEEDS: Readonly<Partial<Record<PlantKind, ItemKind>>> = Object.fromEntries(
+  Object.entries(SEED_PLANTS).map(([seed, kind]) => [kind, seed]),
+) as Partial<Record<PlantKind, ItemKind>>;
 
 /** Frost.DURATION and Vertigo.DURATION. */
 const FROZEN_TURNS = 5;
@@ -48,17 +58,25 @@ export function plant(ctx: Ctx, pos: number, kind: PlantKind): void {
   ctx.effects.push({ type: 'planted', depth: ctx.depth, pos, kind });
 }
 
+/** Level.uproot: the plant on a cell is gone, unused. */
+export function uproot(floor: Floor, pos: number): void {
+  floor.plants = (floor.plants ?? []).filter((p) => p.pos !== pos);
+}
+
 const near = (ctx: Ctx, pos: number, radius: number): Char[] => [
   ...heroesOn(ctx.world, ctx.depth).filter((h) => distance(h.pos, pos) <= radius),
   ...ctx.floor.mobs.filter((m) => m.state !== 'passive' && distance(m.pos, pos) <= radius),
 ];
 
-/** Level.press / mobPress: whoever steps on a plant sets it off; so does an item landing on it (`who` null). */
-export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number): void {
+/**
+ * Level.press / mobPress: whoever steps on a plant sets it off; so does an item landing on it (`who` null).
+ * `activate`: set off on whoever is there, flier or not (Plant.activate, as the sandals of nature do it).
+ */
+export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number, activate = false): void {
   const found = ctx.floor.plants?.find((p) => p.pos === pos);
   if (!found) return;
   // Flying creatures pass over plants without touching them.
-  if (who && !isHero(who) && MOBS[who.kind].flying) return;
+  if (who && !isHero(who) && MOBS[who.kind].flying && !activate) return;
   ctx.floor.plants = ctx.floor.plants!.filter((p) => p !== found);
   ctx.effects.push({ type: 'plantTriggered', depth: ctx.depth, pos, kind: found.kind, who: who?.id ?? '' });
   const { world, depth, level, rng } = ctx;
@@ -67,6 +85,12 @@ export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number): void {
     who.barkskin = Math.max(who.barkskin, Math.trunc(who.ht / 3));
     if (rng.int(5) === 0) dropItem(ctx.floor, pos, new ItemGenerator(rng, depth).of('seed'));
     if (rng.int(5) === 0) dropItem(ctx.floor, pos, createItem('dew'));
+  }
+  // Plant.wither: within a lotus's reach, the plant may leave its seed behind (never a rotberry's).
+  const preserved = seedPreservation(ctx, pos);
+  if (preserved > 0 && rng.float() < preserved) {
+    const seed = PLANT_SEEDS[found.kind];
+    if (seed && found.kind !== 'rotberry') dropItem(ctx.floor, pos, createItem(seed));
   }
   switch (found.kind) {
     case 'firebloom':
@@ -110,6 +134,12 @@ export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number): void {
       else ctx.effects.push({ type: 'jumped', depth, mob: who.id, from, to });
       break;
     }
+    case 'dewcatcher':
+      dewcatcher(ctx, pos);
+      break;
+    case 'seedpod':
+      seedpod(ctx, pos);
+      break;
     case 'rotberry':
       // Its berries taste like sweet, sweet death: a cloud of toxic gas, roots for whoever stepped on it, and its seed.
       burst(ctx, pos, 'toxic', 2, false, 100);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, type Action, addHero, adjacent, canEnter, charAt, createItem, createMob, createWorld, type Effect, findPath,
-  floorAt, heroById, isAlive, levelAt, type Mob, type MobKind, NEIGHBOURS8, RoomType, T, WIDTH, type World,
+  act, isIdentified, type Action, addHero, adjacent, canEnter, charAt, createItem, createMob, createWorld, type Effect, findPath,
+  floorAt, heroById, isAlive, itemDef, levelAt, type Mob, type MobKind, NEIGHBOURS8, RoomType, T, WIDTH, type World,
 } from '../src/index';
 import { botAction, checkInvariants, pacify, skeletonKey } from './helpers';
 
@@ -128,7 +128,7 @@ describe('the prison', () => {
     const world = at(9);
     const hero = heroById(world, 'p')!;
     Object.assign(hero, { attackSkill: 1000, ht: 1000, hp: 1000, defenseSkill: 0 });
-    hero.weapon = createItem('weapon.knuckles');
+    hero.weapon = createItem('weapon.gloves');
     const brute = besides(world, 'brute');
     brute.hp = 11;
     let enraged = false;
@@ -209,7 +209,8 @@ describe('the old wandmaker', () => {
       expect(wand.ok && wand.effects.at(-1)).toEqual({ type: 'wandmaker', hero: 'p', line: 'farewell' });
       expect(hero.items.some((i) => i.kind === quest.battle.kind)).toBe(true);
       expect(hero.items.some((i) => i.kind === 'quest.dust')).toBe(false);
-      expect(world.known).toContain(quest.battle.kind);
+      // WndWandmaker: the wand given is known through and through.
+      expect(isIdentified(world, hero.items.find((i) => i.kind === quest.battle.kind)!)).toBe(true);
       expect(floor.mobs.some((m) => m.kind === 'wandmaker')).toBe(false);
     }
     expect(met).toBeGreaterThan(15);
@@ -233,9 +234,14 @@ describe('the shop on depth 6', () => {
       const world = createWorld(seed);
       for (let d = 1; d <= 6; d++) levelAt(world, d);
       const wares = floorAt(world, 6).heaps.filter((h) => h.kind === 'forSale');
-      expect(wares.length, `seed ${seed}`).toBe(15);
+      // ShopRoom.generateItems: a weapon, a thrown set, leather armour, tipped darts, a stone of augmentation, a bag and
+      // the rest (as many as the room holds).
+      expect(wares.length, `seed ${seed}`).toBeGreaterThanOrEqual(15);
+      for (const kind of ['armor.leather', 'stone.augmentation'] as const) expect(wares.some((h) => h.items[0]!.kind === kind), `${kind} ${seed}`).toBe(true);
+      expect(wares.some((h) => itemDef(h.items[0]!.kind).category === 'weapon' && itemDef(h.items[0]!.kind).tier === 2), `seed ${seed}`).toBe(true);
+      expect(wares.some((h) => itemDef(h.items[0]!.kind).category === 'missile' && h.items[0]!.qty === 3), `seed ${seed}`).toBe(true);
       expect(wares.some((h) => h.items[0]!.kind === 'bag.seeds'), `seed ${seed}`).toBe(true);
-      expect(wares.some((h) => h.items[0]!.kind === 'weightstone'), `seed ${seed}`).toBe(true);
+      expect(wares.some((h) => h.items[0]!.kind === 'stone.augmentation'), `seed ${seed}`).toBe(true);
       expect(wares.some((h) => h.items[0]!.kind === 'ankh'), `seed ${seed}`).toBe(true);
       expect(floorAt(world, 6).mobs.filter((m) => m.kind === 'shopkeeper'), `seed ${seed}`).toHaveLength(1);
     }
@@ -262,9 +268,9 @@ describe('the shop on depth 6', () => {
     hero.pos = NEIGHBOURS8.map((n) => keeper.pos + n).find((c) => canEnter(level, c) && !charAt(world, 6, c))!;
     const gold = hero.gold;
     const sale = act(world, 'p', { type: 'sell', item: 0 });
-    // A tier 3 sword +1: 80 gold, twice over.
-    expect(sale.ok && sale.effects.find((e) => e.type === 'sold')).toMatchObject({ price: 160 });
-    expect(hero.gold).toBe(gold + 160);
+    // A tier 3 sword +1 (MeleeWeapon.value): 60 gold, twice over.
+    expect(sale.ok && sale.effects.find((e) => e.type === 'sold')).toMatchObject({ price: 120 });
+    expect(hero.gold).toBe(gold + 120);
     expect(hero.items).toHaveLength(0);
     // Talking to him opens his trade.
     const talk = act(world, 'p', { type: 'attack', target: keeper.id });

@@ -1,3 +1,4 @@
+import { ooze } from '../status';
 import { type Hero, isAlive, type Mob } from '../actors';
 import { attack } from '../combat';
 import { ballistica, IGNORE_SOFT_SOLID, STOP_SOLID, STOP_TARGET } from '../ballistica';
@@ -30,7 +31,11 @@ const enraged = (mob: Mob): boolean => mob.hp * 2 <= mob.ht;
 
 /** Ooze.set on a hero: caustic ooze that eats at them until washed off in water. */
 export function applyOoze(ctx: Ctx, char: Char): void {
-  if (!isHero(char)) return;
+  // On a monster (one of the heroes' allies), the wands stream's Ooze (status.ts).
+  if (!isHero(char)) {
+    ooze(char, OOZE_TURNS);
+    return;
+  }
   if (char.ooze < 0) ctx.effects.push({ type: 'oozed', hero: char.id });
   char.ooze = 0;
   char.oozeLeft = OOZE_TURNS;

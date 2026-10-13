@@ -20,7 +20,7 @@ function atBoss(depth: number, seed = 3): World {
   for (let d = 1; d < depth; d++) floorAt(world, d).mobs = [];
   const hero = heroById(world, 'p')!;
   Object.assign(hero, { depth, pos: levelAt(world, depth).entrance, time: floorAt(world, depth).now, lvl: 20, ht: 5000, hp: 5000, attackSkill: 1e6, defenseSkill: 1e6 });
-  hero.weapon = createItem('weapon.shortSword', 1, 0);
+  hero.weapon = createItem('weapon.shortsword', 1, 0);
   return world;
 }
 
@@ -277,7 +277,7 @@ describe("DM-300's caves (CavesBossLevel)", () => {
 describe("the Dwarf King's throne room (CityBossLevel)", () => {
   function inThroneRoom(seed = 3, impDone = false): World {
     const world = atBoss(20, seed);
-    if (impDone) world.impQuest = { depth: 18, given: true, done: true, prey: 'monk', reward: createItem('ring.mending') };
+    if (impDone) world.impQuest = { depth: 18, given: true, done: true, prey: 'monk', reward: createItem('ring.haste') };
     hero(world).pos = BOTTOM_DOOR;
     play(world, { type: 'move', to: BOTTOM_DOOR - WIDTH });
     return world;

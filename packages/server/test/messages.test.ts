@@ -11,18 +11,44 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'use', item: 2 })).toEqual({ type: 'use', item: 2 });
     // A scroll read on an item the player picked (scrolls.ts): a slot, the weapon, the armour or a worn ring.
     expect(sanitizeAction({ type: 'use', item: 2, on: 5 })).toEqual({ type: 'use', item: 2, on: 5 });
-    expect(sanitizeAction({ type: 'use', item: 2, on: 'ring1' })).toEqual({ type: 'use', item: 2, on: 'ring1' });
+    expect(sanitizeAction({ type: 'use', item: 2, on: 'misc' })).toEqual({ type: 'use', item: 2, on: 'misc' });
+    expect(sanitizeAction({ type: 'use', item: 2, on: 'ring1' })).toBeNull();
     expect(sanitizeAction({ type: 'use', item: 2, on: 'boots' })).toBeNull();
     expect(sanitizeAction({ type: 'open', cell: 300, junk: 1 })).toEqual({ type: 'open', cell: 300 });
-    expect(sanitizeAction({ type: 'reforge', first: 'ring0', second: 3 })).toEqual({ type: 'reforge', first: 'ring0', second: 3 });
+    expect(sanitizeAction({ type: 'reforge', first: 'ring', second: 3 })).toEqual({ type: 'reforge', first: 'ring', second: 3 });
     expect(sanitizeAction({ type: 'throw', item: 0, target: 100 })).toEqual({ type: 'throw', item: 0, target: 100 });
+    // Shattered's wands: zapping a wand or the mage's staff, imbuing a wand into the staff, dismissing a ward.
+    expect(sanitizeAction({ type: 'zap', item: 3, target: 100, x: 1 })).toEqual({ type: 'zap', item: 3, target: 100 });
+    expect(sanitizeAction({ type: 'zap', item: 'weapon', target: 100 })).toEqual({ type: 'zap', item: 'weapon', target: 100 });
+    expect(sanitizeAction({ type: 'imbue', staff: 'weapon', wand: 2 })).toEqual({ type: 'imbue', staff: 'weapon', wand: 2 });
+    expect(sanitizeAction({ type: 'imbue', staff: 4, wand: 2, junk: true })).toEqual({ type: 'imbue', staff: 4, wand: 2 });
+    expect(sanitizeAction({ type: 'dismiss', target: '#12' })).toEqual({ type: 'dismiss', target: '#12' });
     expect(sanitizeAction({ type: 'reforge', first: 'weapon', second: 3 })).toEqual({ type: 'reforge', first: 'weapon', second: 3 });
     expect(sanitizeAction({ type: 'master', item: 1, subclass: 'warden' })).toEqual({ type: 'master', item: 1, subclass: 'warden' });
-    expect(sanitizeAction({ type: 'balance', item: 1, imbue: 'speed' })).toEqual({ type: 'balance', item: 1, imbue: 'speed' });
-    expect(sanitizeAction({ type: 'balance', item: 1, weapon: 4, imbue: 'accuracy' })).toEqual({ type: 'balance', item: 1, weapon: 4, imbue: 'accuracy' });
+    // Alchemy: an item's cell and choice; the pot's ingredients and recipe; turning an item into energy.
+    expect(sanitizeAction({ type: 'use', item: 1, on: 'weapon', choice: 2, junk: 1 })).toEqual({ type: 'use', item: 1, on: 'weapon', choice: 2 });
+    expect(sanitizeAction({ type: 'use', item: 1, cell: 300 })).toEqual({ type: 'use', item: 1, cell: 300 });
+    expect(sanitizeAction({ type: 'alchemy', inputs: [3, 3, 0], recipe: 1, x: 1 })).toEqual({ type: 'alchemy', inputs: [3, 3, 0], recipe: 1 });
+    expect(sanitizeAction({ type: 'alchemy', inputs: [4] })).toEqual({ type: 'alchemy', inputs: [4] });
+    expect(sanitizeAction({ type: 'energize', item: 2, all: true })).toEqual({ type: 'energize', item: 2, all: true });
+    expect(sanitizeAction({ type: 'energize', item: 2, all: 'yes' })).toEqual({ type: 'energize', item: 2 });
+    expect(sanitizeAction({ type: 'augment', item: 1, on: 'weapon', augment: 'speed' })).toEqual({ type: 'augment', item: 1, on: 'weapon', augment: 'speed' });
+    expect(sanitizeAction({ type: 'augment', item: 1, on: 3, augment: 'none', x: 1 })).toEqual({ type: 'augment', item: 1, on: 3, augment: 'none' });
+    expect(sanitizeAction({ type: 'shoot', item: 0, target: 40 })).toEqual({ type: 'shoot', item: 0, target: 40 });
+    expect(sanitizeAction({ type: 'tip', item: 2, seed: 5, all: true })).toEqual({ type: 'tip', item: 2, seed: 5, all: true });
+    expect(sanitizeAction({ type: 'tip', item: 2, seed: 5, all: 'yes' })).toEqual({ type: 'tip', item: 2, seed: 5 });
+    expect(sanitizeAction({ type: 'clean', item: 2 })).toEqual({ type: 'clean', item: 2 });
+    expect(sanitizeAction({ type: 'clean', item: 2, all: true })).toEqual({ type: 'clean', item: 2, all: true });
     expect(sanitizeAction({ type: 'special' })).toEqual({ type: 'special' });
     expect(sanitizeAction({ type: 'special', target: 7 })).toEqual({ type: 'special', target: 7 });
-    expect(sanitizeAction({ type: 'beacon', item: 5, mode: 'return' })).toEqual({ type: 'beacon', item: 5, mode: 'return' });
+    // Artifacts (the core's ArtifactAction): worn by slot or carried by index, a use, and what it aims at or takes.
+    expect(sanitizeAction({ type: 'artifact', item: 5, use: 'return', mode: 'x' })).toEqual({ type: 'artifact', item: 5, use: 'return' });
+    expect(sanitizeAction({ type: 'artifact', item: 'artifact', use: 'cast', cell: 300 })).toEqual({ type: 'artifact', item: 'artifact', use: 'cast', cell: 300 });
+    expect(sanitizeAction({ type: 'artifact', item: 'misc', use: 'store', with: 3 })).toEqual({ type: 'artifact', item: 'misc', use: 'store', with: 3 });
+    expect(sanitizeAction({ type: 'artifact', item: 'artifact', use: 'resolve', choice: 1, on: 'weapon' }))
+      .toEqual({ type: 'artifact', item: 'artifact', use: 'resolve', choice: 1, on: 'weapon' });
+    expect(sanitizeAction({ type: 'equip', item: 2, replace: 'misc' })).toEqual({ type: 'equip', item: 2, replace: 'misc' });
+    expect(sanitizeAction({ type: 'remove', slot: 'ring', ring: 0 })).toEqual({ type: 'remove', slot: 'ring' });
     expect(sanitizeAction({ type: 'reward', choice: 'weapon' })).toEqual({ type: 'reward', choice: 'weapon' });
     // The warrior's broken seal: onto an armour, off one.
     expect(sanitizeAction({ type: 'affix', from: 'armor', to: 3, x: 1 })).toEqual({ type: 'affix', from: 'armor', to: 3 });
@@ -44,10 +70,19 @@ describe('client messages', () => {
       { type: 'attack', target: 5 }, { type: 'attack', target: '' }, { type: 'attack', target: 'x'.repeat(65) },
       { type: 'use', item: 1, target: 'ring' }, { type: 'drop', item: 1000 }, { type: 'reward', choice: 'gold' },
       { type: 'reforge', first: 'helmet', second: 1 }, { type: 'master', item: 1, subclass: 'pirate' },
-      { type: 'balance', item: 1, imbue: 'luck' }, { type: 'special', target: null }, { type: 'beacon', item: 1, mode: 'go' },
+      { type: 'use', item: 1, choice: 64 }, { type: 'use', item: 1, cell: -1 }, { type: 'use', item: 1, choice: 0.5 },
+      { type: 'alchemy', inputs: [] }, { type: 'alchemy', inputs: [1, 2, 3, 4] }, { type: 'alchemy', inputs: [1, 'a'] },
+      { type: 'alchemy', inputs: 1 }, { type: 'alchemy', inputs: [1], recipe: -1 }, { type: 'energize', item: -1 },
+      { type: 'augment', item: 1, on: 'weapon', augment: 'luck' }, { type: 'augment', item: 1, on: 'ring9', augment: 'speed' },
+      { type: 'shoot', item: 1 }, { type: 'tip', item: 1 }, { type: 'clean', item: -1 }, { type: 'balance', item: 1, imbue: 'speed' }, { type: 'special', target: null },
+      { type: 'artifact', item: 1, use: 'fly' }, { type: 'artifact', item: 'cape', use: 'zap' },
+      { type: 'artifact', item: 1, use: 'zap', cell: -1 }, { type: 'artifact', item: 1, use: 'resolve', choice: 99 },
+      { type: 'equip', item: 1, replace: 'belt' }, { type: 'remove', ring: 0 },
       { type: 'affix', from: 'weapon', to: 1 }, { type: 'affix', from: 1 }, { type: 'affix', from: 1, to: 1000 }, { type: 'detach' },
       { type: 'detach', armor: 'ring0' }, { type: 'detach', armor: -1 },
       { type: 'arenaPick' }, { type: 'arenaPick', choice: 3 }, { type: 'arenaPick', choice: -1 }, { type: 'arenaPick', choice: '1' },
+      { type: 'zap', item: 'armor', target: 5 }, { type: 'zap', item: 1, target: LENGTH }, { type: 'imbue', staff: 'ring0', wand: 1 },
+      { type: 'imbue', staff: 'weapon' }, { type: 'dismiss', target: 4 }, { type: 'dismiss' },
     ]) {
       expect(sanitizeAction(bad), JSON.stringify(bad)).toBeNull();
     }

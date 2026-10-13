@@ -23,13 +23,13 @@ export interface BossRules {
   /** Mob.act: true when its whole turn was taken here; false to go on to an ordinary monster's turn. */
   act?(ctx: Ctx, mob: Mob): boolean;
   /** Mob.canAttack. */
-  canAttack?(ctx: Ctx, mob: Mob, enemy: Hero): boolean;
+  canAttack?(ctx: Ctx, mob: Mob, enemy: Char): boolean;
   /** Mob.doAttack: its attack, and the time it takes. */
-  doAttack?(ctx: Ctx, mob: Mob, enemy: Hero): void;
+  doAttack?(ctx: Ctx, mob: Mob, enemy: Char): void;
   /** Mob.getCloser: true if it moved (or did what stands for it); undefined for the ordinary way. */
   getCloser?(ctx: Ctx, mob: Mob, target: number, fov: boolean[]): boolean | undefined;
-  /** Mob.notice: it has seen the hero. */
-  notice?(ctx: Ctx, mob: Mob, hero: Hero): void;
+  /** Mob.notice: it has seen its enemy (a hero, or one of the heroes' allies). */
+  notice?(ctx: Ctx, mob: Mob, hero?: Hero): void;
   /**
    * Char.damage, before health is lost: the damage that gets through (after shields and the like),
    * or null when none does, or it was all turned into something else (bleeding, deferred damage).

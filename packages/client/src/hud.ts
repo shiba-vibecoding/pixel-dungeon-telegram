@@ -1,4 +1,6 @@
-import { FURY_LEVEL, type Hero, isAlive, isHungry, isStarving, type Look, maxExp, type MobKind, shielding, STARVING } from '@pd/core';
+import {
+  FURY_LEVEL, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, type MobKind, shielding, STARVING, stealthCloak,
+} from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
 import { AVATAR, durabilityBar, markWear, sprites } from './screens';
@@ -24,8 +26,18 @@ export const BUFF_ICONS = {
   mindVision: 0, fire: 2, poison: 3, paralysis: 4, hunger: 5, starvation: 6, slow: 7, ooze: 8, roots: 11, invisible: 12,
   weakness: 14, combo: 17, fury: 18, healing: 19, bark: 20, charm: 21, light: 22, cripple: 23, barkskin: 24, dizzy: 29,
   levitation: 1, blindness: 16, immunity: 25, deferred: 28, bleeding: 26, sacrifice: 31,
+  // Shattered's own (BuffIndicator), from its sheet (assets/spd/buffs.png): 1000 and its index.
+  chill: 1015, frozen: 1015, corrosion: 1003, shield: 1020, rockArmor: 1020, magicCharge: 1050, lightningCharge: 1055,
+  recharging: 1034, hexed: 1047, vulnerable: 1046, invulnerable: 1037, disguise: 1071, stasis: 1007, herbal: 1019,
   // From 1000: Shattered's buffs.png (assets/spd/buffs.png), BuffIndicator.SEAL_SHIELD and LOCKED_FLOOR.
   sealShield: 1084, lockedFloor: 1035, bless: 1037,
+  // Alchemy's buffs (core buffs.ts), BuffIndicator's icons in the same sheet (tints are the designer's to draw).
+  haste: 1041, stamina: 1041, magicalSight: 1000, magicImmune: 1017, foresight: 1032, fireImbue: 1055,
+  frostImbue: 1055, toxicImbue: 1055, featherFall: 1001, cleanse: 1025, drowsy: 1029, magicalSleep: 1030,
+  potionHealing: 1044, arcaneArmor: 1020, aquaHealing: 1044, htBoost: 1044, wellFed: 1043,
+  prismaticGuard: 1020, challengeArena: 1054,
+  // The artifacts': the cloak's stealth (INVISIBLE, dimmed), the hourglass's time freeze and stasis (TIME), the cape's THORNS, the talisman's FORESIGHT.
+  stealth: 1012, timeFreeze: 1007, thorns: 1031,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 
@@ -57,13 +69,79 @@ export function heroBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
     ...(me.subclass === 'gladiator' && me.combo >= 3 && me.time <= me.comboUntil ? [{ name: 'combo' as const }] : []),
     ...(me.subclass === 'berserker' && me.hp > 0 && me.hp <= me.ht * FURY_LEVEL ? [{ name: 'fury' as const }] : []),
     ...(me.barkskin > 0 ? [{ name: 'barkskin' as const, turns: turns(me.barkskin) }] : []),
+    // Shattered's wands' conditions (core status.ts).
+    ...((me.chill ?? 0) > 0 ? [{ name: 'chill' as const, turns: turns(me.chill!) }] : []),
+    ...((me.frozen ?? 0) > 0 ? [{ name: 'frozen' as const, turns: turns(me.frozen!) }] : []),
+    ...(me.corrosion ? [{ name: 'corrosion' as const, turns: turns(me.corrosion.left) }] : []),
+    ...((me.shield ?? 0) > 0 ? [{ name: 'shield' as const, turns: me.shield! }] : []),
+    ...(me.rockArmor ? [{ name: 'rockArmor' as const, turns: me.rockArmor.armor }] : []),
+    ...(me.magicCharge ? [{ name: 'magicCharge' as const, turns: turns(me.magicCharge.turns) }] : []),
+    ...((me.lightningCharge ?? 0) > 0 ? [{ name: 'lightningCharge' as const, turns: turns(me.lightningCharge!) }] : []),
+    ...((me.recharging ?? 0) > 0 ? [{ name: 'recharging' as const, turns: turns(me.recharging!) }] : []),
+    ...((me.hexed ?? 0) > 0 ? [{ name: 'hexed' as const, turns: turns(me.hexed!) }] : []),
+    ...((me.vulnerable ?? 0) > 0 ? [{ name: 'vulnerable' as const, turns: turns(me.vulnerable!) }] : []),
+    ...((me.invulnerable ?? 0) > 0 ? [{ name: 'invulnerable' as const, turns: turns(me.invulnerable!) }] : []),
+    ...(me.disguise ? [{ name: 'disguise' as const, turns: turns(me.disguise.turns) }] : []),
+    ...((me.stasis ?? 0) > 0 ? [{ name: 'stasis' as const, turns: turns(me.stasis!) }] : []),
+    ...(me.herbal ? [{ name: 'herbal' as const, turns: me.herbal.level }] : []),
     ...(isStarving(me) ? [{ name: 'starvation' as const }] : isHungry(me) ? [{ name: 'hunger' as const }] : []),
     // WarriorShield.icon: while shielded or cooling down; the shield left, else the cooldown.
     ...(me.sealShield && (me.sealShield.shield > 0 || me.sealShield.cooldown !== 0)
       ? [{ name: 'sealShield' as const, turns: me.sealShield.shield > 0 ? me.sealShield.shield : me.sealShield.cooldown }] : []),
     ...(me.lockedFloor !== undefined ? [{ name: 'lockedFloor' as const }] : []),
     ...((me.blessed ?? 0) > 0 ? [{ name: 'bless' as const, turns: Math.ceil(me.blessed!) }] : []),
+    ...alchemyBuffs(me),
+    ...artifactBuffs(me),
   ];
+}
+
+/**
+ * The artifacts' buffs (their BuffIndicator icons): the cloak's stealth (turns until it costs a charge), the
+ * hourglass's time freeze (turns of the charge being spent; its stasis is TimeStasis, above), the cape radiating thorns, the
+ * talisman's unease near a hidden trap.
+ */
+function artifactBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
+  const buffs: Array<{ name: BuffName; turns?: number }> = [];
+  const cloak = stealthCloak(me);
+  if (cloak?.stealth) buffs.push({ name: 'stealth', turns: Math.max(0, cloak.stealth.turnsToCost) });
+  const frozen = frozenBy(me);
+  if (frozen?.freeze) buffs.push({ name: 'timeFreeze', turns: Math.trunc(frozen.freeze.turnsToCost + 0.001) });
+  for (const item of heroArtifacts(me)) {
+    if (item.kind === 'artifact.cape' && (item.cooldown ?? 0) > 0) buffs.push({ name: 'thorns', turns: item.cooldown! });
+    if (item.kind === 'artifact.talisman' && item.warn) buffs.push({ name: 'foresight' });
+  }
+  return buffs;
+}
+
+/** Alchemy's buffs on a hero (core buffs.ts), with their turns or amounts as BuffIndicator shows them. */
+function alchemyBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
+  const b = me.buffs;
+  if (!b) return [];
+  const list: Array<{ name: BuffName; turns?: number }> = [];
+  const timed = (name: BuffName, left: number | undefined): void => {
+    if ((left ?? 0) > 0) list.push({ name, turns: Math.ceil(left!) });
+  };
+  timed('haste', b.haste);
+  timed('stamina', b.stamina);
+  timed('magicalSight', b.magicalSight);
+  timed('magicImmune', b.magicImmune);
+  timed('foresight', b.foresight);
+  timed('fireImbue', b.fireImbue);
+  timed('frostImbue', b.frostImbue);
+  timed('toxicImbue', b.toxicImbue);
+  timed('featherFall', b.featherFall);
+  timed('cleanse', b.cleanse);
+  timed('drowsy', b.drowsy);
+  if (b.magicalSleep) list.push({ name: 'magicalSleep' });
+  if (b.healing && b.healing.left > 0) list.push({ name: 'potionHealing', turns: Math.ceil(b.healing.left) });
+  if (b.arcaneArmor && b.arcaneArmor.level > 0) list.push({ name: 'arcaneArmor', turns: b.arcaneArmor.level });
+  if (b.barkskin && b.barkskin.level > 0) list.push({ name: 'barkskin', turns: b.barkskin.level });
+  timed('aquaHealing', b.aquaHealing);
+  timed('htBoost', b.htBoost);
+  timed('wellFed', b.wellFed);
+  timed('prismaticGuard', b.prismaticGuard);
+  if (b.challenge && b.challenge.left > 0) list.push({ name: 'challengeArena', turns: Math.ceil(b.challenge.left) });
+  return list;
 }
 
 export interface HudHandlers {
@@ -165,6 +243,8 @@ export interface QuickState {
   aiming: boolean;
   /** QuickSlot.isPlaceholder: none of it left; drawn greyed until more is picked up. */
   placeholder?: boolean;
+  /** An artifact's charge: the strip at the bottom of its icon (ShArtifact's .pd-charge). */
+  charge?: { share: number; full: boolean } | null;
   wear?: { left: number; max: number } | null;
 }
 
@@ -580,6 +660,7 @@ export class Hud {
         ...state.buffs.map((buff) => {
           const glyphNode = el('i');
           glyphNode.dataset.b = String(BUFF_ICONS[buff.name]);
+          glyphNode.dataset.buff = buff.name;
           const node = el('button', `pd-buff${buff.turns !== undefined && buff.turns <= 3 ? ' fading' : ''}`, glyphNode);
           node.ariaLabel = t.buffs[buff.name];
           node.onclick = () => this.handlers.buff(buff.name, buff.turns);
@@ -719,7 +800,8 @@ export class Hud {
   /** A quick slot's button: the item, its count or charges, its wear; the key on a wide screen. */
 
   private drawQuick(key: string, button: HTMLButtonElement, quick: QuickState | null): void {
-    if (!this.changed(key, quick ? `${quick.sprite}:${quick.label}:${quick.aiming}:${quick.wear?.left ?? ''}:${quick.placeholder ?? ''}` : '')) return;
+    const charge = quick?.charge ? `${Math.round(quick.charge.share * 100)}${quick.charge.full ? 'f' : ''}` : '';
+    if (!this.changed(key, quick ? `${quick.sprite}:${quick.label}:${quick.aiming}:${quick.wear?.left ?? ''}:${quick.placeholder ?? ''}:${charge}` : '')) return;
     button.classList.toggle('empty', !quick);
     button.classList.toggle('placeholder', Boolean(quick?.placeholder));
     button.classList.toggle('targeting', Boolean(quick?.aiming));
@@ -734,6 +816,11 @@ export class Hud {
         markWear(button);
       } else {
         button.classList.remove('has-dur', 'broken');
+      }
+      if (quick.charge) {
+        const strip = el('span', `pd-charge${quick.charge.full ? ' full' : ''}`);
+        strip.style.setProperty('--v', String(quick.charge.share));
+        button.append(strip);
       }
       sprites(button);
     } else {

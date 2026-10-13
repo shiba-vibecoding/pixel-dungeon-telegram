@@ -39,8 +39,10 @@ export interface Assets {
   bossTiles: Record<'sewer_boss' | 'prison_exit' | 'caves_boss' | 'city_boss' | 'halls_sp', HTMLImageElement>;
   icons: HTMLImageElement;
   items: HTMLImageElement;
-  /** 16x16 plants, in the order of PLANT_KINDS. */
+  /** 16x16 plants, in the order of PLANT_KINDS (the wand of regrowth's two after Pixel Dungeon's eight). */
   plants: HTMLImageElement;
+  /** Shattered's effects.png (Effects.get): the chains among them. */
+  effects: HTMLImageElement;
 }
 
 const anim = (fps: number, frames: number[], loop = false): Animation => ({ fps, frames, loop });
@@ -118,6 +120,12 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; file?: string; anims:
     w: 16,
     h: 16,
     anims: basic(anim(5, [0, 1, 0, 2], true), anim(15, [3, 4, 5, 6], true), anim(12, [7, 8, 9]), anim(12, [10, 11, 12, 13])),
+  },
+  // GhostSprite, Shattered's sheet (spd/ghost.png): it strikes and fades away as the sad ghost does not.
+  ghostHero: {
+    w: 14,
+    h: 15,
+    anims: basic(anim(5, [0, 1], true), anim(10, [0, 1], true), anim(10, [0, 2, 3]), anim(8, [0, 4, 5, 6, 7])),
   },
   ghost: {
     w: 14,
@@ -322,6 +330,8 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; file?: string; anims:
     anims: basic(anim(12, [14, 14, 14, 14, 14, 14, 14, 14, 15, 16, 15, 16, 15, 16], true), anim(4, [19, 20], true), anim(15, [14, 17, 18]), anim(12, [14, 21, 22, 23, 24])),
   },
   mirror: { w: 12, h: 15, anims: HERO_ANIMS },
+  // A prismatic image (PrismaticImage) is drawn with its hero's sheet too, until it has a sprite of its own.
+  prismatic: { w: 12, h: 15, anims: HERO_ANIMS },
   blacksmith: {
     w: 13,
     h: 16,
@@ -342,6 +352,14 @@ const MOB_SPRITES: Record<MobKind, { w: number; h: number; file?: string; anims:
     h: 16,
     anims: basic(anim(8, [0, 1, 2, 1], true), anim(20, [0, 1, 2, 1], true), anim(20, [3, 4, 5, 6, 7, 8, 9, 10, 11]), anim(4, [12, 13, 14])),
   },
+  // Shattered's (assets/spd): WardSprite, one tier a row (see View.sync), EarthGuardianSprite and LotusSprite.
+  ward: { w: 16, h: 16, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(1, [0])) },
+  guardian: {
+    w: 12,
+    h: 15,
+    anims: basic(anim(2, [0, 0, 0, 0, 0, 1, 1], true), anim(15, [2, 3, 4, 5, 6, 7], true), anim(12, [8, 9, 10]), anim(5, [11, 12, 13, 14, 15, 15])),
+  },
+  lotus: { w: 19, h: 16, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(1, [0])) },
   // TenguSprite.
   tengu: {
     w: 14,
@@ -426,8 +444,8 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     'tiles0', 'water0', 'tiles1', 'water1', 'tiles2', 'water2', 'spinner', 'tiles3', 'water3',
     'elemental', 'monk', 'warlock', 'golem', 'undead', 'tiles4', 'water4',
     'succubus', 'eye', 'scorpio', 'mimic', 'statue', 'piranha', 'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'bee', 'warrior', 'mage', 'rogue', 'ranger', 'rat', 'gnoll', 'crab', 'ghost',
-    'skeleton', 'thief', 'swarm', 'shaman', 'bat', 'brute', 'shopkeeper', 'wandmaker',
-    'icons', 'items', 'plants',
+    'skeleton', 'thief', 'swarm', 'shaman', 'bat', 'brute', 'shopkeeper', 'wandmaker', 'spd/ghost', 'spd/effects',
+    'icons', 'items', 'plants', 'spd/wards', 'spd/guardian', 'spd/lotus',
     // Shattered's bosses and their levels' custom tiles.
     'spd/goo', 'spd/tengu', 'spd/dm300', 'spd/pylon', 'spd/king', 'spd/ghoul', 'spd/yog', 'spd/yog_fists', 'spd/larva',
     'spd/sewer_boss', 'spd/prison_exit', 'spd/caves_boss', 'spd/city_boss', 'spd/halls_special',
@@ -447,7 +465,9 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
   const mob = (kind: MobKind): CharSprite => {
     const spec = MOB_SPRITES[kind];
     // A mirror image is drawn with its hero's own sheet (see View.sync); the warrior's stands in here.
-    const image = spec.file ?? (kind === 'mirror' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp' : baseKind(kind));
+    const image = spec.file ?? (kind === 'mirror' || kind === 'prismatic' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp'
+      : kind === 'ward' ? 'spd/wards' : kind === 'guardian' ? 'spd/guardian' : kind === 'lotus' ? 'spd/lotus' : kind === 'ghostHero' ? 'spd/ghost'
+      : baseKind(kind));
     return { sheet: sheet(images[image as (typeof names)[number]], spec.w, spec.h), anims: spec.anims };
   };
   const variant = (name: SpriteVariant): CharSprite => {
@@ -472,6 +492,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     icons: images.icons,
     items: images.items,
     plants: images.plants,
+    effects: images['spd/effects'],
   };
 }
 

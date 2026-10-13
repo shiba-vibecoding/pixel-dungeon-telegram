@@ -7,7 +7,27 @@ import { fx } from './fx';
 import { CHEST_ANIMS, type HeapLook } from './motion';
 import { drawFrame, frameAt as sheetFrame, lookIndex, regionIndex, sheet, tintedImage } from './worldsheets';
 import { quality } from './quality';
+import { tintSprite, wandFx } from './wandfx';
 import { t } from './i18n';
+import { flightAngle, glowStrength } from './gearfx';
+
+/** An item's sprite in one colour, kept once made (for ItemSprite.Glowing). */
+const tintedItems = new Map<string, HTMLCanvasElement>();
+function tintedItem(items: CanvasImageSource, sprite: number, color: string): HTMLCanvasElement {
+  const key = `${sprite}|${color}`;
+  let canvas = tintedItems.get(key);
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 16;
+    const c = canvas.getContext('2d')!;
+    c.drawImage(items, (sprite % 16) * 16, Math.floor(sprite / 16) * 16, 16, 16, 0, 0, 16, 16);
+    c.globalCompositeOperation = 'source-atop';
+    c.fillStyle = color;
+    c.fillRect(0, 0, 16, 16);
+    tintedItems.set(key, canvas);
+  }
+  return canvas;
+}
 
 /* Canvas renderer for the world, using the original 16px tiles and sprites. */
 
@@ -155,10 +175,10 @@ function puffImage(color: string): HTMLCanvasElement {
   return image;
 }
 
-function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y: number, now: number): void {
+function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y: number, now: number, frozen = false): void {
   const { sheet, anims } = puppet.sprite;
   const anim = puppet.anim === 'idle' && puppet.pumped ? 'pump' : puppet.anim;
-  const frame = frameAt(anims[anim], now - puppet.animStart);
+  const frame = frameAt(anims[anim], frozen && !puppet.isHero ? 0 : now - puppet.animStart);
   const sx = (frame % sheet.cols) * sheet.w;
   const sy = (Math.floor(frame / sheet.cols) + puppet.row) * sheet.h;
   // A melee lunge: forward and back again in a blink.
@@ -166,7 +186,9 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   const knock = knockback(puppet, now);
   const dx = snap(x + (TILE - sheet.w) / 2 + lunge * (puppet.lungeX ?? 0)) + knock * (puppet.knockX ?? 0);
   // Floating: a few pixels up, bobbing slowly, with its shadow left on the floor.
-  const hover = puppet.levitating && puppet.alive ? 4 + Math.round(Math.sin(now / 320)) : 0;
+  const hover = (puppet.levitating && puppet.alive ? 4 + Math.round(Math.sin(now / 320)) : 0)
+    // WardSprite.update: a sentry rises and sinks a pixel, slowly (sin of the time in seconds).
+    + (puppet.bob && puppet.alive ? Math.round(Math.sin(now / 1000)) : 0);
   const dy = snap(y + TILE - sheet.h + lunge * (puppet.lungeY ?? 0)) + knock * (puppet.knockY ?? 0) - hover;
   if (hover) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
@@ -176,6 +198,10 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
 
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
+  // GhostSprite.draw: the rose's ghost glows (Blending.setLightMode).
+  if (puppet.kind === 'ghostHero') ctx.globalCompositeOperation = 'lighter';
+  // timeFreeze.fx: while the hero freezes time, everything else stands still and grey (State.PARALYSED).
+  if (frozen && !puppet.isHero) ctx.filter = 'grayscale(1) brightness(0.8)';
   if (puppet.fallStart !== undefined) {
     // MobSprite.fall: into a chasm, spinning (720 degrees a second, one way or the other) and
     // shrinking away to nothing about the middle of its feet' cell, fading as it goes.
@@ -203,6 +229,23 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.translate(dx, dy);
   }
   ctx.drawImage(sheet.image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+  if (puppet.alive) {
+    // IceBlock: tinted (0.83, 1.17, 1.33) at 0.6. DarkBlock: brightness 0.4. WardSprite.resetColor: a ward dims as it shoots.
+    if (puppet.frozen) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, 'rgb(212, 255, 255)', 0.6);
+    else if (puppet.darkened) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#000000', 0.6);
+    else if (puppet.dim !== undefined && puppet.dim < 1) tintSprite(ctx, sheet.image, sx, sy, sheet.w, sheet.h, '#000000', 1 - puppet.dim);
+    if (puppet.shielded) {
+      // ShieldHalo: a soft glow of 0xBBAACC about the sprite, as wide as its diagonal.
+      const r = Math.hypot(sheet.w / 2, sheet.h / 2);
+      const halo = ctx.createRadialGradient(sheet.w / 2, sheet.h / 2, 0, sheet.w / 2, sheet.h / 2, r);
+      halo.addColorStop(0, 'rgba(187, 170, 204, 0.4)');
+      halo.addColorStop(1, 'rgba(187, 170, 204, 0)');
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = halo;
+      ctx.fillRect(sheet.w / 2 - r, sheet.h / 2 - r, r * 2, r * 2);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  }
   if (now < puppet.flashUntil) {
     // Hit flash: adding the sprite onto itself brightens only its own pixels.
     ctx.globalCompositeOperation = 'lighter';
@@ -253,7 +296,7 @@ export interface Scene {
   visible: readonly boolean[];
   explored: readonly boolean[];
   /** Items lying around, with their sprite index in items.png, and the colour of their glow, if magic. */
-  heaps: ReadonlyArray<{ pos: number; sprite: number; aura?: string }>;
+  heaps: ReadonlyArray<{ pos: number; sprite: number; aura?: string; glow?: { color: string; period: number } }>;
   /** Plants growing here, with their index in plants.png. */
   plants?: ReadonlyArray<{ pos: number; index: number }>;
   /** Clouds of gas: how much is in each cell, and its colour. */
@@ -360,6 +403,12 @@ export function render(
     const first = closed ? chests?.anims[closed]?.[0] : undefined;
     if (chests && first) ctx.drawImage(chests.image, first.x, first.y, 16, 16, -8, -16, 16, 16);
     else ctx.drawImage(assets.items, (heap.sprite % 16) * 16, Math.floor(heap.sprite / 16) * 16, 16, 16, -8, -16, 16, 16);
+    // ItemSprite.Glowing: the sprite swells towards its glow's colour and back.
+    if (heap.glow && visible[heap.pos]) {
+      ctx.globalAlpha = quality.reducedMotion ? 0.3 : glowStrength(now, heap.glow.period);
+      ctx.drawImage(tintedItem(assets.items, heap.sprite, heap.glow.color), -8, -16);
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
   }
   scene.over?.(ctx);
@@ -482,7 +531,7 @@ export function render(
       return { puppet, x: Math.round(at.x * camera.zoom) / camera.zoom, y: Math.round(at.y * camera.zoom) / camera.zoom };
     })
     .sort((a, b) => Number(a.puppet.alive) - Number(b.puppet.alive) || a.y - b.y);
-  for (const { puppet, x, y } of shown) drawPuppet(ctx, puppet, x, y, now);
+  for (const { puppet, x, y } of shown) drawPuppet(ctx, puppet, x, y, now, view.timeFrozen);
   scene.top?.(ctx);
 
   for (const { puppet, x, y } of shown) {
@@ -501,28 +550,66 @@ export function render(
     const k = Math.min(1, (now - p.start) / p.duration);
     const x = ((p.from % WIDTH) + ((p.to % WIDTH) - (p.from % WIDTH)) * k) * TILE + TILE / 2;
     const y = (Math.trunc(p.from / WIDTH) + (Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)) * k) * TILE + TILE / 2;
-    if (p.sprite === null) {
+    if (p.sprite === null && p.trail) {
+      // MagicMissile: no body of its own, only the particles it pours (wandfx.ts) about a bright point.
+      ctx.fillStyle = `rgba(${p.color ?? '255, 255, 255'}, 0.6)`;
+      ctx.fillRect(Math.round(x) - 2, Math.round(y) - 2, 4, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
+    } else if (p.sprite === null) {
       ctx.fillStyle = `rgba(${p.color ?? '120, 180, 255'}, 0.5)`;
       ctx.fillRect(Math.round(x) - 3, Math.round(y) - 3, 6, 6);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
     } else {
-      // A thrown thing flies in an arc, higher the farther it goes, its shadow running along the floor.
+      // A thrown thing flies in an arc, higher the farther it goes, its shadow running along the floor; a thrown weapon
+      // straight, spinning or pointing along its way (MissileSprite).
       const cells = Math.max(Math.abs((p.to % WIDTH) - (p.from % WIDTH)), Math.abs(Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)));
-      const height = Math.sin(k * Math.PI) * Math.min(14, 2 + cells * 2.5);
+      const height = p.flight?.straight ? 0 : Math.sin(k * Math.PI) * Math.min(14, 2 + cells * 2.5);
       ctx.fillStyle = `rgba(0, 0, 0, ${0.28 - height * 0.01})`;
       ctx.beginPath();
       ctx.ellipse(x, y + 6, 4 - height * 0.12, 1.3, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.save();
       ctx.translate(snap(x), snap(y - height));
-      ctx.rotate(k * Math.PI * 4);
+      if (p.flight) {
+        const dx = (p.to % WIDTH) - (p.from % WIDTH);
+        const dy = Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH);
+        const { angle, flip } = flightAngle(dx, dy);
+        const spun = quality.reducedMotion ? 0 : (p.flight.spin * (flip ? -1 : 1) * (now - p.start)) / 1000;
+        ctx.rotate(angle + (spun * Math.PI) / 180);
+        if (flip) ctx.scale(-1, 1);
+      } else {
+        ctx.rotate(k * Math.PI * 4);
+      }
       ctx.drawImage(assets.items, (p.sprite % 16) * 16, Math.floor(p.sprite / 16) * 16, 16, 16, -8, -8, 16, 16);
       ctx.restore();
     }
   }
 
+  // Chains.update: the ethereal chain's links spread out from the hero to where it was thrown, then vanish.
+  view.chains = view.chains.filter((c) => now - c.start < c.duration);
+  for (const c of view.chains) {
+    const k = Math.min(1, (now - c.start) / c.duration);
+    const fx0 = (c.from % WIDTH) * TILE + TILE / 2;
+    const fy0 = Math.trunc(c.from / WIDTH) * TILE + TILE / 2;
+    const dx = ((c.to % WIDTH) * TILE + TILE / 2) - fx0;
+    const dy = (Math.trunc(c.to / WIDTH) * TILE + TILE / 2) - fy0;
+    const links = Math.round(Math.hypot(dx, dy) / 6) + 1;
+    const angle = Math.atan2(dy, dx) + Math.PI / 2;
+    for (let i = 0; i < links; i++) {
+      ctx.save();
+      ctx.translate(snap(fx0 + dx * (i / links) * k), snap(fy0 + dy * (i / links) * k));
+      ctx.rotate(angle);
+      // Effects.Type.ETHEREAL_CHAIN: (11, 16) to (16, 22) in effects.png.
+      ctx.drawImage(assets.effects, 11, 16, 5, 6, -2.5, -3, 5, 6);
+      ctx.restore();
+    }
+  }
+
   fx.draw(ctx, now, seen);
+  // Beams, lightning's arcs, the blast wave's ripple.
+  wandFx.draw(ctx, now);
 
   // Floating numbers and words, drawn at screen resolution so text stays crisp.
   ctx.setTransform(1, 0, 0, 1, 0, 0);

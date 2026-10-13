@@ -5,6 +5,8 @@ import type { Level } from './level/generate';
 import { NEIGHBOURS8 } from './level/geometry';
 import { F, hasFlag } from './level/terrain';
 import type { Rng } from './rng';
+import type { RunState } from './run';
+import { artifactValue, removeArtifact } from './artifacts';
 
 /*
  * Bones (Bones.java): a fallen hero leaves one thing behind — the weapon, the
@@ -24,16 +26,30 @@ export interface Bones {
   placed?: boolean;
 }
 
-/** Bones.leave: what a hero who has just fallen leaves, chosen with `roll` (0-3, Random.Int(4)) and `share` (0-1, of the gold). */
+/** How many ways Bones.pickItem chooses between (`roll` below): the weapon, the armour, the artifact, misc and ring slots. */
+export const BONES_ROLLS = 5;
+
+/**
+ * Bones.leave: what a hero who has just fallen leaves, chosen with `roll` (0 to BONES_ROLLS-1) and `share` (0-1, of
+ * the gold). The cloak of shadows is never left behind (Item.bones false).
+ */
 export function leaveBones(hero: Hero, roll: number, share: number): Bones {
-  const worn = [hero.weapon, hero.armor, hero.rings[0], hero.rings[1]][roll];
+  const picked = [hero.weapon, hero.armor, hero.artifact, hero.misc, hero.ring][roll];
+  const worn = picked && picked.kind !== 'artifact.cloak' ? picked : null;
   const item = worn ? (JSON.parse(JSON.stringify(worn)) as Item) : createItem('gold', hero.gold > 0 ? 1 + Math.floor(share * hero.gold) : 1);
   return { depth: hero.depth, item };
 }
 
-/** Bones.get: the item as it is found — cursed, worn down to the depth, its level unknown. */
-function asFound(item: Item, depth: number): Item {
+/**
+ * Bones.get: the item as it is found — cursed, worn down to the depth, its level unknown. An artifact the run has
+ * not dealt yet comes back as a new one of its kind, +0 and cursed; one dealt already, as its worth in gold.
+ */
+function asFound(item: Item, depth: number, run: RunState): Item {
   if (item.kind === 'gold') return item;
+  if (itemDef(item.kind).category === 'artifact') {
+    if (!removeArtifact(run, item.kind)) return createItem('gold', Math.max(1, artifactValue(item)));
+    return { ...createItem(item.kind), cursed: true };
+  }
   const found: Item = { ...item, cursed: true };
   delete found.curseUnknown;
   // Armor.reset: armour can be kept in bones between runs, the warrior's seal cannot.
@@ -52,7 +68,7 @@ function asFound(item: Item, depth: number): Item {
 }
 
 /** Lays the bones of the last hero who fell here on a newly made depth, in a skeleton (RegularLevel.createItems). */
-export function layBones(bones: Bones, level: Level, floor: Floor, rng: Rng): void {
+export function layBones(bones: Bones, level: Level, floor: Floor, rng: Rng, run: RunState): void {
   let pos = randomDropCell(rng, level);
   // Levels without standard rooms (the bosses', the last shop's): beside the way in, as their createItems do.
   if (pos < 0) {
@@ -60,5 +76,5 @@ export function layBones(bones: Bones, level: Level, floor: Floor, rng: Rng): vo
   }
   bones.placed = true;
   if (pos < 0 || floor.heaps.some((h) => h.pos === pos)) return;
-  floor.heaps.push({ pos, kind: 'skeleton', items: [asFound(bones.item, level.depth)] });
+  floor.heaps.push({ pos, kind: 'skeleton', items: [asFound(bones.item, level.depth, run)] });
 }

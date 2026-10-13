@@ -1,0 +1,177 @@
+[
+ [
+  "haste",
+  "Ускорение",
+  "Haste",
+  41,
+  [
+   0.13,
+   0.95
+  ]
+ ],
+ [
+  "stamina",
+  "Выносливость",
+  "Stamina",
+  41,
+  [
+   0.33,
+   0.8
+  ]
+ ],
+ [
+  "fireImbue",
+  "Огненная пропитка",
+  "Fire imbue",
+  55,
+  [
+   2,
+   0.75,
+   0
+  ]
+ ],
+ [
+  "toxicImbue",
+  "Ядовитая пропитка",
+  "Toxic imbue",
+  55,
+  [
+   1,
+   1.5,
+   0
+  ]
+ ],
+ [
+  "frostImbue",
+  "Ледяная пропитка",
+  "Frost imbue",
+  55,
+  [
+   0,
+   1.6,
+   2.6
+  ]
+ ],
+ [
+  "barrier",
+  "Барьер",
+  "Barrier",
+  20,
+  [
+   0.53,
+   0.85
+  ]
+ ],
+ [
+  "arcaneArmor",
+  "Тайная броня",
+  "Arcane armor",
+  20,
+  [
+   0.78,
+   0.7
+  ]
+ ],
+ [
+  "prismatic",
+  "Призматический щит",
+  "Prismatic guard",
+  20,
+  [
+   0.6,
+   0.28
+  ]
+ ],
+ [
+  "prismaticFull",
+  "Призматический щит, усилен",
+  "Prismatic guard, empowered",
+  20,
+  [
+   1.6,
+   1.5,
+   0.9
+  ]
+ ],
+ [
+  "healing",
+  "Лечение",
+  "Healing",
+  44,
+  null
+ ],
+ [
+  "aquaHealing",
+  "Водное лечение",
+  "Aquatic healing",
+  44,
+  [
+   0.5,
+   0.85
+  ]
+ ],
+ [
+  "might",
+  "Рост здоровья",
+  "Health boost",
+  44,
+  [
+   0.08,
+   0.95
+  ]
+ ],
+ [
+  "cloak",
+  "Плащ теней",
+  "Cloak of shadows",
+  12,
+  [
+   0.77,
+   0.6
+  ]
+ ],
+ [
+  "invisible",
+  "Невидимость (зелье)",
+  "Invisibility (potion)",
+  12,
+  null
+ ],
+ [
+  "hourglass",
+  "Песочные часы: стазис",
+  "Hourglass: stasis",
+  7,
+  [
+   0.08,
+   0.9
+  ]
+ ],
+ [
+  "slow",
+  "Замедление",
+  "Slowed",
+  7,
+  null
+ ],
+ [
+  "capeThorns",
+  "Плащ шипов",
+  "Cape of thorns",
+  31,
+  [
+   0.08,
+   0.6
+  ]
+ ],
+ [
+  "talisman",
+  "Талисман предвидения",
+  "Talisman of foresight",
+  32,
+  [
+   0.5,
+   0.65
+  ]
+ ]
+]

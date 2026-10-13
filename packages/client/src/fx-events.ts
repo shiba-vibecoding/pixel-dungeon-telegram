@@ -1,9 +1,11 @@
-import { type Effect, HEIGHT, type Level, type MobKind, T, visibleCells, WIDTH, type World } from '@pd/core';
+import { type Effect, HEIGHT, type ItemKind, labelOf, type Level, type MobKind, POTION_COLORS, T, visibleCells, WIDTH, type World } from '@pd/core';
 import { type BurstOptions, fx, type Piece } from './fx';
 import { type Puppet, STEP_MS, TILE, type View } from './view';
 import { audio } from './audio';
+import { wandFx } from './wandfx';
 import { duration, levelRegion } from './sprites';
 import { bossParticles } from './bossfx';
+import { magicColor } from './itemtext';
 
 /*
  * What the dungeon's events look like beyond the sprites: blood and sparks on
@@ -177,9 +179,13 @@ const burst = (at: { x: number; y: number } | null, now: number, o: BurstOptions
 
 /** Bolt colours (as in view.ts) for the light a spell leaves where it strikes. */
 const BOLT_GLOW: Readonly<Record<string, readonly string[]>> = {
-  fire: FIRE, lightning: ['#ffffff', '#fffcc0', '#c0e8ff'], poison: ICHOR, magic: ['#90c8ff', '#ffffff', '#5090ff'],
-  slow: ['#f0e890', '#ffffff'], teleport: ECTO, blink: ['#ffffff'], beam: VOID, rocks: DUST, shadow: VOID, amok: ['#ff60a0', '#ffffff'],
-  reach: ['#e8e8e8', '#ffffff'], flock: ['#ffffff'], regrowth: HEAL,
+  fire: FIRE, lightning: ['#ffffff', '#fffcc0', '#c0e8ff'], poison: ICHOR, magic: ['#ffffff', '#d0e8ff'], beam: VOID, shadow: VOID,
+  // Shattered's wands (MagicMissile's particles).
+  frost: ['#88ccff', '#ffffff', '#b8e0ff'], corrosion: ['#aaaaaa', '#ff8800'], force: DUST, earth: ['#805500', '#332500', '#fff568'],
+  ward: ['#8822ff', '#c080ff'], corruption: VOID, rainbow: ['#ff4040', '#ffd040', '#40ff60', '#40c0ff', '#c060ff'], foliage: HEAL,
+  death: VOID, light: ['#ffffff', '#fff8c0'], blood: ['#cc0000', '#ff4040'],
+  // WildEnergy's chaotic bolt, TelekineticGrab's (MagicMissile.WARD and BEACON).
+  wild: ['#d080ff', '#ffffff', '#80ffff'], grab: ['#ffffff', '#e0e0ff'],
 };
 
 /** The look of one effect; called after the view has taken it in. */
@@ -387,13 +393,38 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
       fx.flash('255, 200, 120', 0.4, 220, now);
       fx.shake(7, 450, now);
       fx.hitStop(90);
+      // An enhanced bomb's own blast over Bomb's (FrostBomb, Firebomb, WoollyBomb...).
+      const extra = effect.bomb ? BOMB_FX[effect.bomb] : undefined;
+      if (extra) fx.burst(at.x, at.y, now + 40, extra);
+      if (effect.bomb === 'bomb.flashbang') fx.flash('255, 255, 255', 0.8, 500, now);
+      if (effect.bomb === 'bomb.holy') fx.flash('255, 250, 200', 0.5, 600, now);
+      if (effect.bomb === 'bomb.noisemaker') fx.ring(at.x, at.y, now, ['#ffffff', '#ffe080'], 24);
       return;
     }
+    case 'stasis':
+    case 'timeFreeze':
+      // TimekeepersHourglass: GameScene.flash(0x80FFFFFF) as the sand runs.
+      if (effect.hero === myId && effect.on) fx.flash('255, 255, 255', 0.5, 320, now);
+      return;
+    case 'ghostSummoned':
+      // ShaftParticle and Speck.LIGHT: the ghost comes down in a shaft of pale light.
+      if (!here(effect.depth)) return;
+      burst(cellCentre(effect.pos), now, { count: 18, colors: ['#ffffff', '#fffde0', '#e8f0ff'], glow: true, speed: [6, 30], life: [400, 900], drag: 0.3, size: [1, 2], angle: -Math.PI / 2, cone: Math.PI / 3 });
+      return;
+    case 'stealth':
+      // CloakOfShadows: a puff of shadow as the hero vanishes or shows again.
+      burst(centreOf(view, effect.hero, now), now, { count: 10, colors: ['#202030', '#404050'], speed: [8, 30], life: [250, 500], drag: 0.2, size: [1, 2] });
+      return;
     case 'zapped': {
       if (!here(effect.depth)) return;
       const at = cellCentre(effect.to);
       const colors = BOLT_GLOW[effect.bolt ?? 'magic'] ?? BOLT_GLOW.magic!;
-      fx.burst(at.x, at.y, now, { count: 16, colors, glow: true, speed: [20, 80], life: [250, 600], drag: 0.2, size: [1, 2] });
+      // A wand's missile bursts where it lands, when it gets there; beams and lightning strike at once.
+      const bolt = effect.bolt ?? 'magic';
+      const flies = WAND_MISSILES.has(bolt);
+      wandFx.later(flies ? wandFx.flight(cellCentre(effect.from), at) : 0, now, (t) => {
+        fx.burst(at.x, at.y, t, { count: 16, colors, glow: true, speed: [20, 80], life: [250, 600], drag: 0.2, size: [1, 2] });
+      });
       if (effect.bolt === 'lightning') {
         fx.flash('230, 240, 255', 0.35, 160, now);
         fx.shake(3, 220, now);
@@ -455,8 +486,104 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
     case 'enchanted': {
       if (!here(effect.depth)) return;
       const at = cellCentre(effect.pos);
-      fx.burst(at.x, at.y, now, { count: 12, colors: effect.enchant === 'fire' ? FIRE : effect.enchant === 'shock' ? BOLT_GLOW.lightning! : SPARK, glow: true, speed: [20, 60], life: [250, 550], size: [1, 1] });
-      if (effect.enchant === 'death') fx.flash('40, 0, 40', 0.4, 300, now);
+      // Each enchantment's own: Blazing's flames, Chilling's splash, Shocking's sparks, Venomous's poison, Grim's shadow...
+      const colors = effect.enchant === 'blazing' ? FIRE : effect.enchant === 'shocking' ? BOLT_GLOW.lightning! : effect.enchant === 'chilling' ? FROST
+        : effect.enchant === 'grim' ? VOID : effect.enchant === 'eldritch' ? ['#ff0000', '#ff6060'] : effect.enchant === 'venomous' ? ['#8a50e0', '#4400aa']
+        : effect.enchant === 'vorpal' || effect.enchant === 'vampiric' ? BLOOD : [magicColor(effect.enchant), '#ffffff'];
+      fx.burst(at.x, at.y, now, { count: 12, colors, glow: true, speed: [20, 60], life: [250, 550], size: [1, 1] });
+      if (effect.enchant === 'grim') fx.flash('40, 0, 40', 0.4, 300, now);
+      return;
+    }
+    case 'glyph': {
+      // Each glyph's own (Affection's hearts, Entanglement's earth and a shake, Potential's energy, the curses' shadows).
+      const at = centreOf(view, effect.hero, now);
+      const look: Partial<Record<string, readonly string[]>> = {
+        affection: ['#ff6fa8', '#ffb0d0'], entanglement: DUST, potential: ['#ffffff', '#c8f0ff'], viscosity: ['#a77ae0', '#d0b0ff'],
+        thorns: BLOOD, repulsion: ['#ffffff', '#e8e2c8'], antiEntropy: FIRE, corrosion: ['#303030', '#101010'], metabolism: HEAL,
+        stench: ICHOR, overgrowth: ['#4cc24c', '#2f8f1f'], multiplicity: VOID, displacement: ECTO,
+      };
+      burst(at, now, { count: 12, colors: look[effect.glyph] ?? [magicColor(effect.glyph), '#ffffff'], glow: true, speed: [15, 50], life: [300, 700], rise: 8 });
+      if (effect.glyph === 'entanglement') fx.shake(1, 400, now);
+      if (effect.glyph === 'antiEntropy' && at) burst(at, now, { count: 24, colors: FROST, speed: [30, 80], life: [300, 600], spread: 10 });
+      return;
+    }
+    case 'geyser': {
+      // GeyserTrap.activate: a splash of water upwards, and the gas's hiss.
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      fx.burst(at.x, at.y, now, { count: 40, colors: ['#5bc1e3', '#9fe0f5', '#ffffff'], speed: [40, 110], life: [300, 700], gravity: 260, angle: -Math.PI / 2, cone: Math.PI / 2 });
+      audio.play('gas', 0.75);
+      return;
+    }
+    case 'bloomed':
+      // Blooming.plantGrass: leaves burst from every tuft that springs up.
+      if (!here(effect.depth)) return;
+      for (const cell of effect.cells) {
+        const at = cellCentre(cell);
+        fx.burst(at.x, at.y, now, { count: 4, colors: ['#4cc24c', '#2f8f1f', '#a6e86a'], speed: [10, 40], life: [400, 800], gravity: 60 });
+      }
+      return;
+    case 'dazzled':
+      // Dazzling.proc: a white flash (GameScene.flash) and a blast.
+      if (!here(effect.depth)) return;
+      fx.flash('255, 255, 255', 0.5, 300, now);
+      audio.play('blast');
+      return;
+    case 'wondrous': {
+      // Wondrous.proc: a rainbow burst (RainbowParticle.BURST).
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      fx.burst(at.x, at.y, now, { count: 25, colors: ['#ff4040', '#ffb040', '#ffff40', '#40ff40', '#40c0ff', '#a040ff'], glow: true, speed: [20, 70], life: [400, 900] });
+      return;
+    }
+    case 'corrupted': {
+      // Corruption: it rises again darkened.
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      // (Its sound comes with the 'ally' effect beside this one.)
+      fx.burst(at.x, at.y, now, { count: 20, colors: ['#440066', '#b878e8', '#200030'], glow: true, speed: [10, 40], life: [500, 1000], rise: 14 });
+      return;
+    }
+    case 'lucky': {
+      // RingOfWealth.showFlareForBonusDrop: a green flare where the prize falls.
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      fx.burst(at.x, at.y, now, { count: 18, colors: ['#66ff66', '#ffffff', '#c8ffc8'], glow: true, speed: [20, 60], life: [400, 800], rise: 10 });
+      audio.play('gold', 1.2, 0.7);
+      return;
+    }
+    case 'shielded': {
+      // Blocking.proc: light specks on the wielder.
+      burst(centreOf(view, effect.hero, now), now, { count: 5, colors: ['#ffffff', '#c8d8ff'], glow: true, speed: [10, 30], life: [300, 600] });
+      return;
+    }
+    case 'blinked': {
+      // ScrollOfTeleportation.appear: light where it was, light where it is.
+      if (!here(effect.depth)) return;
+      for (const cell of [effect.from, effect.to]) {
+        const at = cellCentre(cell);
+        fx.burst(at.x, at.y, now, { count: 10, colors: ECTO, glow: true, speed: [10, 40], life: [300, 600], rise: 10 });
+      }
+      return;
+    }
+    case 'explosive': {
+      // Explosive.proc: smoke when it warms, sparks when it is hot.
+      const at = centreOf(view, effect.hero, now);
+      burst(at, now, effect.state === 'warm'
+        ? { count: 4, colors: SMOKE, speed: [5, 20], life: [500, 900], rise: 12 }
+        : { count: 5, colors: FIRE, glow: true, speed: [20, 50], life: [200, 400] });
+      return;
+    }
+    case 'annoying': {
+      // Annoying.proc: it screams (Speck.SCREAM).
+      burst(centreOf(view, effect.hero, now), now, { count: 6, colors: ['#ffffff', '#ffe0e0'], speed: [30, 60], life: [400, 700], rise: 20 });
+      return;
+    }
+    case 'pushed': {
+      // WandOfBlastWave.throwChar: dust where it is flung from.
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.from);
+      fx.burst(at.x, at.y + 5, now, { count: 8, colors: DUST, speed: [10, 40], life: [250, 500], gravity: 120 });
       return;
     }
     case 'enraged':
@@ -524,8 +651,288 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
       fx.burst(at.x, at.y, now, { count: 8, colors: FIRE, glow: true, speed: [5, 25], life: [500, 1000], rise: 25, drag: 0.4, spread: 6 });
       return;
     }
+    /* Shattered's alchemy (effects/*.java, as particles): splashes, breath, geysers, bombs, runestones, spells. */
+    case 'splash': {
+      // Splash.at: droplets of the potion's colour, thrown up and falling back, and a stain where they land.
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      const colors = splashColors(world, effect.kind);
+      fx.burst(at.x, at.y, now, { count: 22, colors, speed: [30, 90], life: [300, 600], gravity: 300, drag: 0.2, size: [1, 2], angle: -Math.PI / 2, cone: Math.PI * 1.4 });
+      fx.splat(at.x, at.y - 4, now, colors, 8, 7);
+      return;
+    }
+    case 'breath': {
+      // PotionOfDragonsBreath: a cone of flame (FlameParticle along the ConeAOE's cells), and a kick of heat.
+      if (!here(effect.depth)) return;
+      const from = cellCentre(effect.from);
+      for (const cell of effect.cells) {
+        const at = cellCentre(cell);
+        const delay = Math.hypot(at.x - from.x, at.y - from.y) * 4;
+        fx.burst(at.x, at.y, now + delay, { count: 6, colors: FIRE, glow: true, speed: [5, 30], life: [350, 700], rise: 30, drag: 0.4, spread: 6, size: [1, 2] });
+      }
+      fx.shake(2, 250, now);
+      return;
+    }
+    case 'geyser': {
+      // AquaBrew / the geyser trap: water shot up (Splash with the water's colour, Speck.STEAM).
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      fx.burst(at.x, at.y, now, { count: 40, colors: WATER, speed: [40, 130], life: [400, 900], gravity: 320, drag: 0.15, size: [1, 2], angle: -Math.PI / 2, cone: 1.1 });
+      fx.burst(at.x, at.y, now, { count: 12, colors: ['#ffffff', '#d8f0ff'], speed: [5, 20], life: [600, 1100], rise: 18, drag: 0.5, size: [2, 3], spread: 6 });
+      return;
+    }
+    case 'grown': {
+      // Regrowth, a storm cloud's rain: leaves (LeafParticle) rising from the ground that changed.
+      if (!here(effect.depth) || !visibleCells(world, view.depth)[effect.pos]) return;
+      const at = cellCentre(effect.pos);
+      fx.burst(at.x, at.y + 4, now, { count: 3, colors: LEAVES, speed: [4, 14], life: [500, 900], rise: 12, drag: 0.5, size: [1, 2], spread: 5 });
+      return;
+    }
+    case 'stone': {
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      switch (effect.kind) {
+        case 'stone.aggression':
+          // StoneOfAggression: Speck.SCREAM red over the cell.
+          fx.burst(at.x, at.y, now, { count: 14, colors: ['#ff3030', '#ff8080'], glow: true, speed: [20, 50], life: [300, 600], rise: 10 });
+          break;
+        case 'stone.fear':
+          // StoneOfFear: Speck.SCREAM in red, scattering.
+          fx.burst(at.x, at.y, now, { count: 16, colors: ['#ff4444', '#880000', '#ffffff'], glow: true, speed: [30, 70], life: [300, 600] });
+          break;
+        case 'stone.deepSleep':
+          // StoneOfDeepSleep: Speck.NOTE, notes drifting up.
+          fx.burst(at.x, at.y, now, { count: 10, colors: ['#a0c8ff', '#ffffff'], glow: true, speed: [5, 20], life: [800, 1400], rise: 20, drag: 0.5, size: [2, 2], spread: 10 });
+          break;
+        case 'stone.blink':
+          fx.burst(at.x, at.y, now, { count: 20, colors: ECTO, glow: true, speed: [10, 50], life: [400, 800], rise: 10, spread: 5 });
+          break;
+        case 'stone.clairvoyance':
+          // StoneOfClairvoyance: CheckedCell over the cells it shows; a wide ring of light here.
+          fx.burst(at.x, at.y, now, { count: 30, colors: ['#ffffff', '#c0e0ff'], glow: true, speed: [60, 120], life: [400, 700], drag: 0.1, size: [1, 1] });
+          break;
+        case 'stone.flock':
+          // StoneOfFlock: CellEmitter's Speck.WOOL where each sheep appears.
+          fx.burst(at.x, at.y, now, { count: 26, colors: WOOL, speed: [10, 50], life: [400, 800], rise: 12, drag: 0.4, size: [2, 3], spread: 12 });
+          break;
+        default:
+          fx.burst(at.x, at.y, now, { count: 10, colors: ['#ffffff', '#d0d0ff'], glow: true, speed: [10, 40], life: [300, 600] });
+      }
+      return;
+    }
+    case 'shock': {
+      // StoneOfShock: Lightning arcs out to whoever it struck, and SparkParticle at the stone.
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      fx.burst(at.x, at.y, now, { count: 30, colors: BOLT_GLOW.lightning!, glow: true, speed: [60, 160], life: [150, 350], drag: 0.1, size: [1, 1] });
+      fx.flash('230, 240, 255', 0.25, 160, now);
+      return;
+    }
+    case 'enthralled': {
+      // ScrollOfSirensSong: Speck.HEART rising from the enthralled.
+      if (!here(effect.depth)) return;
+      burst(centreOf(view, effect.mob, now), now, { count: 8, colors: ['#ff6080', '#ff9fb0', '#ffffff'], glow: true, speed: [4, 14], life: [800, 1300], rise: 22, drag: 0.5, size: [2, 2], spread: 4 });
+      return;
+    }
+    case 'summoned': {
+      // SummonElemental: the elemental bursts out of nothing (the spell's MagicMissile and a puff of its element).
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      fx.burst(at.x, at.y, now, { count: 26, colors: FIRE, glow: true, speed: [10, 50], life: [400, 800], rise: 20, drag: 0.4, spread: 4 });
+      return;
+    }
+    case 'censer': {
+      // ChaoticCenser: a puff of the gas where it lands (its Speck), the censer's smoke at the hero.
+      if (!here(effect.depth)) return;
+      const to = cellCentre(effect.to);
+      fx.burst(to.x, to.y, now, { count: 20, colors: GAS_PUFF[effect.gas] ?? SMOKE, speed: [5, 25], life: [700, 1300], drag: 0.5, size: [2, 3], spread: 8 });
+      burst(centreOf(view, effect.hero, now), now, { count: 6, colors: SMOKE, speed: [3, 10], life: [600, 1000], rise: 15, drag: 0.5, size: [2, 2] });
+      return;
+    }
+    case 'energized': {
+      // AlchemyScene.energizeItem: SparkParticle, energy-blue, off the hero who made it.
+      burst(centreOf(view, effect.hero, now), now, { count: 14, colors: ENERGY, glow: true, speed: [20, 60], life: [200, 450], drag: 0.2, size: [1, 1] });
+      return;
+    }
+    case 'crafted':
+    case 'catalyst':
+      // AlchemyScene.craftItem: Speck.WOOL off the hero, the pot's smoke.
+      burst(centreOf(view, effect.hero, now), now, { count: 10, colors: WOOL, speed: [5, 25], life: [400, 800], rise: 14, drag: 0.4, size: [2, 3], spread: 4 });
+      return;
+    case 'used': {
+      // Each potion's and scroll's own effect on the hero (Potion.apply, Scroll.doRead).
+      const look = USE_FX[effect.kind];
+      if (look) burst(centreOf(view, effect.hero, now), now, look);
+      if (effect.kind === 'scroll.retribution' || effect.kind === 'scroll.psionicBlast') {
+        fx.flash('255, 255, 255', 0.6, 400, now);
+        fx.shake(4, 300, now);
+      }
+      if (effect.kind === 'scroll.rage' || effect.kind === 'scroll.challenge') fx.flash('255, 0, 0', 0.25, 400, now);
+      return;
+    }
+    case 'healing':
+      // Healing.act: Speck.HEALING rising off the healed for a while.
+      burst(centreOf(view, effect.hero, now), now, { count: 12, colors: HEAL, glow: true, speed: [3, 10], life: [700, 1200], rise: 20, drag: 0.4, size: [1, 2], spread: 5 });
+      return;
+    case 'masteryPotion':
+    case 'inspired':
+      burst(centreOf(view, effect.hero, now), now, { count: 30, colors: GOLD, glow: true, speed: [20, 60], life: [600, 1200], rise: 30, drag: 0.4, size: [1, 2] });
+      return;
+    case 'augmented': case 'curseInfused': case 'detected': case 'guessed': {
+      const colors = effect.type === 'curseInfused' ? VOID : effect.type === 'augmented' ? SPARK : ['#ffffff', '#c0d8ff'];
+      burst(centreOf(view, effect.hero, now), now, { count: 14, colors, glow: true, speed: [10, 40], life: [400, 800], rise: 12, size: [1, 1] });
+      if (effect.type === 'curseInfused') fx.flash('60, 0, 80', 0.3, 400, now);
+      return;
+    }
+    case 'frozenPotion':
+      burst(centreOf(view, effect.hero, now), now, { count: 14, colors: FROST, speed: [30, 80], life: [200, 450], gravity: 260, size: [1, 1] });
+      return;
+    case 'noise': {
+      // Noisemaker: Speck.SCREAM rings around it.
+      if (!here(effect.depth)) return;
+      const at = cellCentre(effect.pos);
+      fx.ring(at.x, at.y, now, ['#ffffff', '#ffe080'], 16);
+      return;
+    }
+    case 'snuffed':
+      burst(centreOf(view, effect.hero, now), now, { count: 6, colors: SMOKE, speed: [3, 12], life: [500, 900], rise: 14, drag: 0.5, size: [1, 2] });
+      return;
     default:
       return;
+  }
+}
+
+/* Shattered's alchemy */
+
+const WATER = ['#9ad4ff', '#d8f0ff', '#5aa8e8'];
+const LEAVES = ['#5fbf3f', '#8fdf5f', '#3f8f2f'];
+const WOOL = ['#ffffff', '#ececec', '#d8d8d8'];
+const ENERGY = ['#44ccff', '#a8ecff', '#ffffff'];
+
+/** Potion.splashColor: each colour's flask (Shattered's ItemSpriteSheet potions), by the run's label. */
+const FLASK: Readonly<Record<string, readonly string[]>> = {
+  turquoise: ['#40e0d0', '#a0fff4'], crimson: ['#dc143c', '#ff6070'], azure: ['#3070ff', '#90b8ff'], jade: ['#20a060', '#70e0a0'],
+  golden: ['#ffd030', '#fff0a0'], magenta: ['#e040e0', '#ff9cff'], charcoal: ['#404040', '#707070'], ivory: ['#fffff0', '#e8e4d0'],
+  amber: ['#ffbf00', '#ffe080'], bistre: ['#6a4a2a', '#9a7a5a'], indigo: ['#5a30c0', '#9a80ff'], silver: ['#c0c0c0', '#f0f0f0'],
+};
+/** Brews and elixirs keep one colour of their own (their sprites). */
+const BREW_SPLASH: Partial<Record<ItemKind, readonly string[]>> = {
+  'brew.infernal': FIRE, 'brew.blizzard': FROST, 'brew.shocking': ['#ffffff', '#fffcc0', '#c0e8ff'], 'brew.caustic': ['#4a6a20', '#8aaa40'],
+  'brew.aqua': WATER, 'brew.unstable': ['#ff60ff', '#60ffff', '#ffff60'], 'elixir.honeyedHealing': GOLD,
+};
+
+function splashColors(world: World, kind: ItemKind): readonly string[] {
+  const own = BREW_SPLASH[kind];
+  if (own) return own;
+  const color = POTION_COLORS[labelOf(kind, world.run.labels)];
+  return FLASK[color ?? ''] ?? WATER;
+}
+
+/** A gas's puff (Speck.TOXIC, CONFUSION, CORROSION... their hardlight colours). */
+const GAS_PUFF: Readonly<Record<string, readonly string[]>> = {
+  toxic: ['#50ff60', '#80ff90'], paralytic: ['#ffff66', '#ffffaa'], confusion: ['#ff60a0', '#60a0ff', '#a0ff60', '#ffa060'],
+  corrosive: ['#aaaaaa', '#c8b48a'], smoke: ['#202020', '#404040'], storm: ['#8ad8d8', '#c0f0f0'], stench: ['#003300', '#1a4a1a'],
+  regrowth: LEAVES, inferno: ['#ee7722', '#ffaa44'], blizzard: ['#ffffff', '#d8f0ff'], fire: FIRE, freezing: FROST,
+  electricity: ['#ffffff', '#fffcc0'],
+};
+
+/** What each potion drunk and scroll read looks like on its hero (the Speck or emitter its class shows). */
+const USE_FX: Partial<Record<ItemKind, BurstOptions>> = {
+  'potion.haste': { count: 16, colors: ['#ffff80', '#ffffff'], glow: true, speed: [20, 60], life: [300, 600], drag: 0.2, size: [1, 1] },
+  'potion.invisibility': { count: 20, colors: ['#ffffff', '#d8e8ff'], glow: true, speed: [5, 20], life: [500, 900], rise: 10, drag: 0.4 },
+  'potion.mindVision': { count: 14, colors: ['#ffffff', '#c0e0ff'], glow: true, speed: [30, 80], life: [300, 600], size: [1, 1] },
+  'potion.magicalSight': { count: 18, colors: ['#ffffff', '#c0e0ff'], glow: true, speed: [40, 100], life: [300, 600], size: [1, 1] },
+  'potion.shielding': { count: 20, colors: ['#ffffff', '#a0c8ff'], glow: true, speed: [10, 30], life: [500, 900], spread: 6, size: [1, 1] },
+  'potion.earthenArmor': { count: 16, colors: ['#8a6a3a', '#b08a50', '#5fbf3f'], speed: [10, 30], life: [500, 900], gravity: 80, size: [1, 2] },
+  'potion.cleansing': { count: 18, colors: ['#ffffff', '#e8f4ff'], glow: true, speed: [10, 30], life: [500, 900], rise: 12, size: [1, 1] },
+  'potion.stamina': { count: 14, colors: ['#80ff80', '#ffffff'], glow: true, speed: [20, 50], life: [300, 600], size: [1, 1] },
+  'potion.strength': { count: 30, colors: ['#ff6040', '#ffd080', '#ffffff'], glow: true, speed: [20, 60], life: [500, 1000], rise: 20 },
+  'potion.experience': { count: 30, colors: GOLD, glow: true, speed: [20, 60], life: [500, 1000], rise: 20 },
+  'elixir.might': { count: 30, colors: ['#ff6040', '#ffd080', '#ffffff'], glow: true, speed: [20, 60], life: [500, 1000], rise: 20 },
+  'elixir.featherFall': { count: 14, colors: WOOL, speed: [5, 15], life: [700, 1200], gravity: 20, drag: 0.5, size: [1, 2], spread: 6 },
+  'elixir.aquaticRejuvenation': { count: 14, colors: WATER, speed: [5, 20], life: [600, 1000], rise: 15, drag: 0.4, size: [1, 2] },
+  'elixir.arcaneArmor': { count: 16, colors: VOID, glow: true, speed: [10, 30], life: [500, 900], spread: 6, size: [1, 1] },
+  'elixir.dragonsBlood': { count: 18, colors: FIRE, glow: true, speed: [10, 30], life: [500, 900], rise: 20, size: [1, 2] },
+  'elixir.icyTouch': { count: 18, colors: FROST, glow: true, speed: [10, 30], life: [500, 900], size: [1, 1] },
+  'elixir.toxicEssence': { count: 18, colors: ['#50ff60', '#80ff90'], speed: [5, 20], life: [600, 1000], drag: 0.5, size: [2, 2] },
+  'scroll.recharging': { count: 20, colors: ['#ffffff', '#c8e8ff', '#80c0ff'], glow: true, speed: [20, 60], life: [300, 600], size: [1, 1] },
+  'scroll.mysticalEnergy': { count: 24, colors: ['#ffffff', '#c8e8ff', '#80c0ff'], glow: true, speed: [20, 70], life: [300, 700], size: [1, 1] },
+  'scroll.lullaby': { count: 10, colors: ['#a0c8ff', '#ffffff'], glow: true, speed: [10, 30], life: [800, 1400], rise: 20, size: [2, 2] },
+  'scroll.sirensSong': { count: 10, colors: ['#ff9fb0', '#ffffff'], glow: true, speed: [10, 30], life: [800, 1400], rise: 20, size: [2, 2] },
+  'scroll.rage': { count: 20, colors: ['#ff3030', '#ff8080'], glow: true, speed: [30, 80], life: [300, 600] },
+  'scroll.challenge': { count: 20, colors: ['#ff3030', '#ff8080'], glow: true, speed: [30, 80], life: [300, 600] },
+  'scroll.terror': { count: 20, colors: ['#ff4444', '#880000'], glow: true, speed: [40, 90], life: [300, 600] },
+  'scroll.dread': { count: 24, colors: ['#ff4444', '#440000'], glow: true, speed: [40, 90], life: [300, 600] },
+  'scroll.retribution': { count: 40, colors: ['#ffffff', '#ffffc0'], glow: true, speed: [60, 160], life: [250, 500], size: [1, 2] },
+  'scroll.psionicBlast': { count: 40, colors: ['#ffffff', '#ffc0ff'], glow: true, speed: [60, 160], life: [250, 500], size: [1, 2] },
+  'scroll.foresight': { count: 14, colors: ['#ffffff', '#c0e0ff'], glow: true, speed: [20, 60], life: [300, 600], size: [1, 1] },
+  'scroll.antiMagic': { count: 18, colors: ['#8080ff', '#ffffff'], glow: true, speed: [10, 40], life: [400, 800], size: [1, 1] },
+  'scroll.divination': { count: 18, colors: GOLD, glow: true, speed: [10, 40], life: [400, 800], rise: 12, size: [1, 1] },
+  'scroll.metamorphosis': { count: 18, colors: GOLD, glow: true, speed: [10, 40], life: [400, 800], rise: 12, size: [1, 1] },
+  'scroll.transmutation': { count: 18, colors: ['#ffffff', '#c0ffc0'], glow: true, speed: [10, 40], life: [400, 800], size: [1, 1] },
+  'scroll.prismaticImage': { count: 20, colors: ['#ff8080', '#80ff80', '#8080ff', '#ffff80'], glow: true, speed: [10, 40], life: [400, 800] },
+  'brew.unstable': { count: 16, colors: ['#ff60ff', '#60ffff', '#ffff60'], glow: true, speed: [10, 40], life: [400, 800] },
+};
+
+/** Extra look of each enhanced bomb's blast (their explode()s over Bomb's): frost, fire, wool, smoke, light... */
+const BOMB_FX: Partial<Record<ItemKind, BurstOptions>> = {
+  'bomb.frost': { count: 60, colors: FROST, glow: true, speed: [30, 120], life: [500, 1000], drag: 0.2, spread: 16, size: [1, 2] },
+  'bomb.fire': { count: 60, colors: FIRE, glow: true, speed: [10, 60], life: [600, 1100], rise: 30, drag: 0.4, spread: 18, size: [1, 2] },
+  'bomb.woolly': { count: 60, colors: WOOL, speed: [20, 70], life: [500, 900], rise: 10, drag: 0.4, spread: 18, size: [2, 3] },
+  'bomb.smoke': { count: 70, colors: GAS_PUFF.smoke!, speed: [10, 50], life: [900, 1600], drag: 0.5, spread: 18, size: [2, 4] },
+  'bomb.regrowth': { count: 50, colors: [...LEAVES, ...HEAL], glow: false, speed: [20, 70], life: [500, 1000], rise: 10, drag: 0.4, spread: 18, size: [1, 2] },
+  'bomb.holy': { count: 60, colors: ['#ffffff', '#fffcc0', '#ffe070'], glow: true, speed: [40, 140], life: [400, 800], drag: 0.2, size: [1, 2] },
+  'bomb.arcane': { count: 60, colors: VOID, glow: true, speed: [30, 120], life: [500, 900], drag: 0.2, spread: 12, size: [1, 2] },
+  'bomb.shrapnel': { count: 70, colors: ['#c0c0c0', '#ffffff', '#808080'], glow: false, speed: [100, 240], life: [200, 450], drag: 0.05, size: [1, 1] },
+  'bomb.flashbang': { count: 40, colors: ['#ffffff', '#fffcc0'], glow: true, speed: [60, 160], life: [200, 400], size: [1, 2] },
+  'bomb.noisemaker': { count: 20, colors: ['#ffffff', '#ffe080'], glow: true, speed: [40, 100], life: [300, 600], size: [1, 1] },
+};
+
+/** Fire, frost, sparks and leaves over the blobs that are more than a cloud (Fire, Freezing, Electricity, Regrowth, Inferno, Blizzard). */
+export function blobFx(gas: Partial<Record<string, ReadonlyArray<readonly [number, number]>>>, visible: readonly boolean[], now: number, dt: number): void {
+  const chance = (perSecond: number): boolean => Math.random() < (perSecond * dt) / 1000;
+  for (const [cell, volume] of gas.fire ?? []) {
+    if (!visible[cell] || volume <= 0 || !chance(14)) continue;
+    // FlameParticle: rising and fading.
+    const x = (cell % WIDTH) * TILE + 2 + Math.random() * 12;
+    const y = Math.trunc(cell / WIDTH) * TILE + 6 + Math.random() * 8;
+    fx.burst(x, y, now, { count: 1, colors: FIRE, glow: true, speed: [2, 8], life: [400, 800], rise: 26, drag: 0.5, size: [1, 2], spread: 0 });
+  }
+  for (const [cell, volume] of gas.inferno ?? []) {
+    if (!visible[cell] || volume <= 0 || !chance(10)) continue;
+    const x = (cell % WIDTH) * TILE + Math.random() * TILE;
+    const y = Math.trunc(cell / WIDTH) * TILE + Math.random() * TILE;
+    fx.burst(x, y, now, { count: 1, colors: FIRE, glow: true, speed: [10, 30], life: [300, 600], rise: 14, drag: 0.4, size: [1, 2], spread: 0 });
+  }
+  for (const kind of ['freezing', 'blizzard'] as const) {
+    for (const [cell, volume] of gas[kind] ?? []) {
+      if (!visible[cell] || volume <= 0 || !chance(kind === 'blizzard' ? 12 : 8)) continue;
+      // SnowParticle: drifting down.
+      const x = (cell % WIDTH) * TILE + Math.random() * TILE;
+      const y = Math.trunc(cell / WIDTH) * TILE + Math.random() * 6;
+      fx.burst(x, y, now, { count: 1, colors: FROST, glow: true, speed: [2, 8], life: [600, 1000], gravity: 20, drag: 0.5, size: [1, 1], spread: 0 });
+    }
+  }
+  for (const [cell, volume] of gas.electricity ?? []) {
+    if (!visible[cell] || volume <= 0 || !chance(16)) continue;
+    // SparkParticle: quick white flecks.
+    const x = (cell % WIDTH) * TILE + Math.random() * TILE;
+    const y = Math.trunc(cell / WIDTH) * TILE + Math.random() * TILE;
+    fx.burst(x, y, now, { count: 2, colors: BOLT_GLOW.lightning!, glow: true, speed: [20, 60], life: [80, 200], size: [1, 1], spread: 0 });
+  }
+  for (const [cell, volume] of gas.regrowth ?? []) {
+    if (!visible[cell] || volume <= 0 || !chance(3)) continue;
+    // LeafParticle.LEVEL_SPECIFIC: leaves falling.
+    const x = (cell % WIDTH) * TILE + Math.random() * TILE;
+    const y = Math.trunc(cell / WIDTH) * TILE + Math.random() * 4;
+    fx.burst(x, y, now, { count: 1, colors: LEAVES, speed: [2, 6], life: [800, 1200], gravity: 25, drag: 0.5, size: [1, 1], spread: 0 });
+  }
+  for (const [cell, volume] of gas.storm ?? []) {
+    if (!visible[cell] || volume <= 0 || !chance(6)) continue;
+    // StormCloud: rain out of the cloud.
+    const x = (cell % WIDTH) * TILE + Math.random() * TILE;
+    const y = Math.trunc(cell / WIDTH) * TILE;
+    fx.burst(x, y, now, { count: 1, colors: WATER, speed: [0, 2], life: [250, 400], gravity: 260, size: [1, 1], spread: 0 });
   }
 }
 
@@ -595,6 +1002,9 @@ export function lightsFor(level: Level, visible: readonly boolean[], view: View,
   return lights;
 }
 
+/** The wands' bolts that fly as missiles (MagicMissile), not beams or arcs. */
+const WAND_MISSILES = new Set(['magic', 'fire', 'frost', 'corrosion', 'force', 'earth', 'ward', 'corruption', 'rainbow', 'foliage']);
+
 /** Every frame: embers off whoever burns, bubbles off the poisoned, sparkles behind bolts in flight. */
 /** Pixel-Mart effects' colours. */
 const SPARKS = ['#fff3b0', '#ffcc66', '#ffeba4', '#ffffff'];
@@ -628,8 +1038,10 @@ export function ambientFx(view: View, now: number, dt: number): void {
       fx.burst(x - 8 + Math.random() * 32, y - 14, now, { count: 1, colors: SNOW, speed: [2, 6], life: [900, 1400], gravity: 18, drag: 0.6, size: [1, 1], spread: 0 });
     }
   }
+  // The wands' missiles pour their particles; snow about the chilled, leaves about a lotus (wandfx.ts).
+  wandFx.emit(view.projectiles, view.puppets.values(), (cell) => ({ x: (cell % WIDTH) * TILE + TILE / 2, y: Math.trunc(cell / WIDTH) * TILE + TILE / 2 }), now);
   for (const p of view.projectiles) {
-    if (p.sprite !== null || !chance(90)) continue;
+    if (p.sprite !== null || p.trail || !chance(90)) continue;
     const k = Math.min(1, (now - p.start) / p.duration);
     const x = ((p.from % WIDTH) + ((p.to % WIDTH) - (p.from % WIDTH)) * k) * TILE + TILE / 2;
     const y = (Math.trunc(p.from / WIDTH) + (Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)) * k) * TILE + TILE / 2;

@@ -349,7 +349,7 @@ const nearYog = (fist: Mob): boolean => distance(fist.pos, YOG_POS) <= 4;
 const canRangedInMelee = (fist: Mob): boolean => fist.kind !== 'brightFist' && fist.kind !== 'darkFist';
 
 /** YogFist.zap for each fist. */
-function zap(ctx: Ctx, fist: Mob, enemy: Hero): void {
+function zap(ctx: Ctx, fist: Mob, enemy: Char): void {
   spendMob(fist, 1);
   show(ctx, 'bolt', { mob: fist.id, pos: fist.pos, to: enemy.pos, value: FIST_ORDER.indexOf(fist.kind) });
   switch (fist.kind) {
@@ -358,7 +358,7 @@ function zap(ctx: Ctx, fist: Mob, enemy: Hero): void {
         setTerrain(ctx.level.map, enemy.pos, T.EMPTY);
         show(ctx, 'steam', { cells: [enemy.pos] });
       } else {
-        enemy.burning = Math.max(enemy.burning, 8);
+        enemy.burning = Math.max(enemy.burning ?? 0, 8);
       }
       // Fire round the target. SEAM(wands): Shattered's Fire blob; a burst of flame stands in.
       for (const n of N9) {
@@ -368,7 +368,7 @@ function zap(ctx: Ctx, fist: Mob, enemy: Hero): void {
       return;
     }
     case 'soiledFist': {
-      if (magicHit(ctx, fist, enemy)) enemy.rooted = Math.max(enemy.rooted, 3);
+      if (magicHit(ctx, fist, enemy)) enemy.rooted = Math.max(enemy.rooted ?? 0, 3);
       else ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: fist.id, target: enemy.id, hit: false, damage: 0 });
       const grass: number[] = [];
       for (const n of N9) {
@@ -385,7 +385,7 @@ function zap(ctx: Ctx, fist: Mob, enemy: Hero): void {
       seedGas(ctx, enemy.pos, 'toxic', 100);
       return;
     case 'rustedFist':
-      enemy.crippled = Math.max(enemy.crippled, 4);
+      enemy.crippled = Math.max(enemy.crippled ?? 0, 4);
       return;
     case 'brightFist':
     case 'darkFist': {
@@ -399,7 +399,7 @@ function zap(ctx: Ctx, fist: Mob, enemy: Hero): void {
       if (!isAlive(enemy)) return;
       // The light beam blinds a while; the dark bolt eats away a torch's light (Light.weaken(50)).
       if (fist.kind === 'brightFist') enemy.blind = Math.max(enemy.blind ?? 0, 5);
-      else enemy.light = Math.max(0, enemy.light - 50);
+      else if (isHero(enemy)) enemy.light = Math.max(0, enemy.light - 50);
       return;
     }
   }

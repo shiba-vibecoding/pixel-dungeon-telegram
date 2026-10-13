@@ -24,7 +24,7 @@ export { charAt, type Effect, type Floor, heroesOn, heroSight, isWater, swapsWit
 
 export { ORE_WANTED, type SmithLine, type SmithQuest } from './smith';
 export {
-  canTarget, isEnchantable, isItemRef, isUnidentified, isUpgradable, itemAt, type ItemRef, scrollTargets, type TargetedScroll,
+  canTarget, isEnchantable, isItemRef, isTargetedScroll, isUnidentified, isUpgradable, itemAt, type ItemRef, scrollTargets, type TargetedScroll,
 } from './scrolls';
 export { type ImpQuest, TOKENS_WANTED } from './imp';
 export { CLASS_ARMOR, CLASS_ARMOR_OF } from './classArmor';
@@ -59,3 +59,38 @@ export { GATE_CELLS, PYLON_POSITIONS } from './level/caves-boss';
 export { BOTTOM_DOOR, PEDESTALS, THRONE, TOP_DOOR } from './level/city-boss';
 export { AMULET_POS, HALLS_EXIT, YOG_POS } from './level/halls-boss';
 export { TENGU_CELL_DOOR } from './level/prison-boss';
+// Shattered's alchemy: the pot and its recipes, buffs, potions, scrolls, runestones, spells, bombs, trinkets.
+export {
+  atPot, availableEnergy, BOMB_RECIPES, brewProblem, energizeProblem, goesInWhole, type Ingredient, type RecipeId, type RecipeOffer,
+  recipesFor, SCROLL_STONES, SEED_POTIONS, SIMPLE_RECIPES, type Simple, toolkit, usableInRecipe,
+} from './alchemy';
+export { type Buffs, buffsOf, chillFactor, isMagicImmune, mightBoost } from './buffs';
+export { CAN_THROW, drinkProblem, MUST_THROW } from './potions';
+export { enchantable, enchantOptions, readProblem, transmutable } from './reading';
+export { ARMOR_AUGMENTS, augmentsFor, INVENTORY_STONES, intuitionChoices, WEAPON_AUGMENTS } from './stones';
+export { ALCHEMIZE_CHOICES, spellProblem, TARGETED_SPELLS } from './spells';
+export { FUSE_TURNS, isBomb } from './bombs';
+export * from './trinkets';
+export { type GasKind, GAS_KINDS, gasAt, smokeCells } from './gas';
+export { TARGETED, TARGET_PROBLEMS, defaultTarget, uncursable } from './scrolls';
+export { circleCells } from './fov';
+export * from './weapons';
+export * from './armor';
+export {
+  defaultQuantity, durabilityLeft, durabilityPerUse, isDart, isMissile, isTippedDart, MAX_DURABILITY, missileStats, type MissileStats,
+  missileUpgradable, TIPPED_DARTS, usesLeft,
+} from './missiles';
+export { gearUpgradable, MISSILE_TIERS, WEAPON_TIERS } from './gear';
+export { canReach } from './throwing';
+export { isAlly } from './enchant';
+export * from './artifacts';
+export { BONES_ROLLS } from './bones';
+export { miscChoices, haggles } from './inventory';
+export * from './rings';
+export {
+  type Bolt, buffedLevel, chargesPerCast, heldWands, maxCharges, staffReach, wandAt, wandDamage, type WandNote, zapProblem,
+} from './wands';
+export { chargeLimit } from './regrowth';
+export type { CursedEffect } from './cursed';
+export { friendly } from './allies';
+export { type Property, propertiesOf } from './props';

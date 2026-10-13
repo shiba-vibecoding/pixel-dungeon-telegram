@@ -1,0 +1,19 @@
+<!-- @dsCard group="Рейтинги" height=812 width=798 page subtitle="Окно «Рейтинг» v19: под номером призового места — его награда (кубок дня за 1–3, медаль недели за 1–10), под строкой пояснения — таймер до закрытия доски; после 10 места недели — черта «Медали недели — места 1–10». Вкладка «Арена» убрана вместе с ареной" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Награды и таймер</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; }
+  .phone { position: relative; width: 375px; height: 812px; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get("lang") || "ru";
+  function phone() { var p = document.createElement("div"); p.className = "phone pd-phone"; document.getElementById("row").appendChild(p); return p; }
+  [["daily", 2, 8], ["week", 37, 12]].forEach(function (c) { var p = phone(); PD.demo.campScreen(p, { lang: L, hero: 0, frame: "gold" }); PD.demo.overlay(p, PD.demo.win.boards(L, { tab: c[0], me: c[1], rows: c[2] })); });
+  PD.sprite(document.body);
+</script>
+</body>
+</html>

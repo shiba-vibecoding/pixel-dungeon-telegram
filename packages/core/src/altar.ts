@@ -67,7 +67,7 @@ export function sacrifice(ctx: Ctx, char: Char): void {
 }
 
 /** Bestiary.isBoss: whom the scroll of wipe out spares. */
-const BOSSES = new Set(['goo', 'tengu', 'dm300', 'king', 'yog', 'burningFist', 'rottingFist']);
+const BOSSES = new Set(['goo', 'tengu', 'dm300', 'king', 'yog', 'burningFist', 'rottingFist', 'soiledFist', 'rustedFist', 'brightFist', 'darkFist', 'pylon']);
 
 /**
  * ScrollOfWipeOut: the wrath of the dungeon's spirits kills every monster on
@@ -86,7 +86,7 @@ export function wipeOut(ctx: Ctx, hero: Hero): void {
       ctx.effects.push({ type: 'died', depth: ctx.depth, who: mob.id, pos: mob.pos });
       continue;
     }
-    if (mob.state === 'passive') continue;
+    if (mob.state === 'passive' || mob.kind === 'ghostHero') continue;
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage: mob.hp });
     hurt(ctx, mob, mob.hp, hero);
   }

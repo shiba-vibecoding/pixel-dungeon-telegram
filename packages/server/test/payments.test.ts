@@ -113,6 +113,42 @@ describe('Pixel-Mart payments', () => {
     expect(wallets.store.get(7)!.owned).toEqual([]);
   });
 
+  it('sells the three camps at a hundred Stars, grants one to the wallet once, and takes it back with a refund', async () => {
+    const { api, calls } = fakeApi();
+    const wallets = memoryWallets();
+    for (const sku of ['camp.cave', 'camp.prison', 'camp.hall']) {
+      expect(await createInvoice(api, 7, sku, 'ru', NOW)).toEqual({ link: 'https://t.me/$invoice' });
+    }
+    expect(calls.map((c) => (c.params.prices as Array<{ amount: number }>)[0]!.amount)).toEqual([100, 100, 100]);
+    expect(calls[0]!.params).toMatchObject({ title: 'Привал: Пещера с кристаллами', payload: JSON.stringify({ u: 7, s: 'camp.cave' }) });
+    for (const call of calls) expect(String(call.params.title).length).toBeLessThanOrEqual(32);
+    await createInvoice(api, 7, 'camp.hall', 'en', NOW);
+    expect(calls.at(-1)!.params).toMatchObject({ title: 'Camp: Dwarven hall' });
+
+    // The checkout is confirmed at the price only.
+    calls.length = 0;
+    const checkout = (amount: number) => handleUpdate({
+      pre_checkout_query: { id: 'q', from: { id: 7 }, currency: 'XTR', total_amount: amount, invoice_payload: JSON.stringify({ u: 7, s: 'camp.cave' }) },
+    }, api, wallets, config(), NOW);
+    await checkout(99);
+    await checkout(100);
+    expect(calls.map((c) => c.params.ok)).toEqual([false, true]);
+
+    const pay = (sku: string, charge: string, amount: number) => handleUpdate(payment(7, sku, charge, amount), api, wallets, config(), NOW);
+    await pay('camp.cave', 'k1', 100);
+    await pay('camp.cave', 'k1', 100);
+    expect(wallets.store.get(7)!.owned).toEqual(['camp.cave']);
+    await pay('camp.prison', 'k2', 100);
+    expect(wallets.store.get(7)!.owned).toEqual(['camp.cave', 'camp.prison']);
+    await handleUpdate({
+      message: { ...private_(7), refunded_payment: { invoice_payload: JSON.stringify({ u: 7, s: 'camp.cave' }), telegram_payment_charge_id: 'k1' } },
+    }, api, wallets, config(), NOW);
+    expect(wallets.store.get(7)!.owned).toEqual(['camp.prison']);
+    // Delivered again after its refund, the camp does not come back.
+    await pay('camp.cave', 'k1', 100);
+    expect(wallets.store.get(7)!.owned).toEqual(['camp.prison']);
+  });
+
   it('answers /paysupport, /terms and other commands with the play button', async () => {
     const { api, calls } = fakeApi();
     const wallets = memoryWallets();

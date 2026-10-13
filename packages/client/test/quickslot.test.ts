@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addHero, createWorld } from '@pd/core';
 import {
-  chooseQuickslot, isPlaceholder, QUICKSLOTS, quickIndex, quickKind, syncQuickslots, visibleQuickslots,
+  chooseQuickslot, isPlaceholder, QUICKSLOTS, quickIndex, quickItem, quickKind, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
 } from '../src/quickslot';
 
 describe("quick slots (Shattered's QuickSlot)", () => {
@@ -9,8 +9,11 @@ describe("quick slots (Shattered's QuickSlot)", () => {
     const world = createWorld(3);
     const hero = addHero(world, { id: 'p', name: 'P', heroClass: 'mage' });
     syncQuickslots(world, hero);
-    expect(quickKind(0)).toBe('wand.magicMissile');
-    expect(quickIndex(hero, 0)).toBe(hero.items.findIndex((i) => i.kind === 'wand.magicMissile'));
+    // The mage's staff, zapped from the hand (WEAPON_SLOT).
+    expect(quickKind(0)).toBe('weapon.magesStaff');
+    expect(quickIndex(hero, 0)).toBe(WEAPON_SLOT);
+    expect(quickItem(hero, 0)).toBe(hero.weapon);
+    expect(isPlaceholder(hero, 0)).toBe(false);
     chooseQuickslot('food.ration', 3);
     syncQuickslots(world, hero);
     expect(quickKind(3)).toBe('food.ration');
@@ -21,7 +24,7 @@ describe("quick slots (Shattered's QuickSlot)", () => {
     const next = createWorld(4);
     const warrior = addHero(next, { id: 'p', name: 'P', heroClass: 'warrior' });
     syncQuickslots(next, warrior);
-    expect(quickKind(0)).toBe('missile.dart');
+    expect(quickKind(0)).toBe('missile.throwingStone');
     expect(quickKind(5)).toBeNull();
   });
 

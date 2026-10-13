@@ -97,7 +97,14 @@ Yendor on depth 26:
   the week, the arena's week and all time, trophies for the best of a finished
   day or week, a daily streak with frosts; the original's rankings (the eleven
   best runs on the device) and badges (59 of them, earned by the server too).
-- The original art, sounds and music; Russian (names from the original's Russian
+- The original art; Shattered Pixel Dungeon's sounds (each weapon's own hit, the
+  hero's wounds ringing a warning) and soundtrack: the title's themes, each
+  region's three tracks in turn, its tense track during its quest, on the way
+  up with the Amulet and (beyond Shattered) while enemies hunt the hero, the
+  region's list going on where it left off, the bosses' tracks and their finales, the dungeon's finale;
+  fetched only when wanted and crossfaded (where Ogg cannot be decoded, the
+  original's two tunes and region tunes played in the browser take their place);
+  each region's ambience; Russian (names from the original's Russian
   localisation) and English.
 - Game feel beyond the original: blows spray blood, ichor, bone dust or sparks
   and leave splats on the floor; attackers lunge; heavy blows, kills, explosions
@@ -114,6 +121,8 @@ Yendor on depth 26:
   line for aiming, examining and waiting; a backpack with the equipment row and
   wear bars; tabbed help. `packages/client/scripts/build-ui-css.mjs` regenerates
   `src/ui.css` from the design system's tokens and components.
+
+The home screen is a camp, «Привал»: a live scene at the dungeon's gate (the season's colours, a campfire, torches, the hero breathing and blinking) where a tap makes the hero swing and answer in his class's words, four quick taps make him sulk, and a swipe or the arrows walk him into the shadow and bring the next class out for a new game; the player's card, the mail, rankings, Pixel-Mart and settings at its edges, the day's dungeon and the ways in below. The first run is taught in four steps (an enemy, the stairs, the backpack, the quick slot), shown as each comes up; the tutorial's end is kept with the profile on the server too. When a day or week closes and the player placed in its top 3 or 10, a letter comes to the mail (kept 30 days from the close, however long they were away); claiming it puts the trophy on the shelf, once. The boards show what each place wins and the time to their close. Pixel-Mart also sells three more camps (the crystal cave, the prison yard, the dwarven hall) at 100 Stars.
 
 Fire burns scrolls, lying about or in a burning hero's pack.
 
@@ -212,4 +221,19 @@ Shattered Pixel Dungeon by Evan Debenham (https://shatteredpixel.com), GPL-3.0:
 the item graphics (`packages/client/public/assets/items.png`, `item_icons.png`)
 and the sprite constants generated from its `ItemSpriteSheet.java`
 (`packages/core/src/spd-sprites.ts`) come from Shattered Pixel Dungeon v4.0.2,
-whose content the game is moving to.
+whose content the game is moving to. Its sounds and music are Shattered's
+too (`packages/client/public/audio/spd/`): the soundtrack by Lumine Haaristo
+(https://www.youtube.com/@LumineThomasHaaristo), the sound effects by Celesti
+(https://celesti-whispers.itch.io), with samples from freesound.org —
+under the Creative Commons Attribution License: *SFX ATTACK SWORD 001.wav* by
+JoelAudio, *Pack: Slingshots and Longbows* by saturdaysoundguy,
+*Cracking/Crunching, A.wav* by InspectorJ, *Extracting a sword.mp3* by Taira
+Komori, *Pack: Uni Sound Library* by timmy h123; under the Creative Commons Zero
+License: *Pack: Movie Foley: Swords* by Black Snow, *machine gun shot 2.flac* and
+*m240h machine gun burst 4.flac* by qubodup, *Pack: Onomatopoeia* by Adam N,
+*Pack: Watermelon* by lolamadeus, *metal chain* by Mediapaja2009, *Pack: Sword
+Clashes Pack* by JohnBuhr, *Pack: Metal Clangs and Pings* by wilhellboy, *Pack:
+Stabbing Stomachs & Crushing Skulls* by TheFilmLook, *Sheep bleating* by zachrau,
+*Lemon,Juicy,Squeeze,Fruit.wav* and *Lemon,Squeeze,Squishy,Fruit.wav* by Filipe
+Chagas. The original's music (`theme.mp3`, `game.mp3`, kept for devices that
+cannot play Shattered's) is by Cube_Code.

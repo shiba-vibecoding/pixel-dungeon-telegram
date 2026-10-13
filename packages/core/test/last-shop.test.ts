@@ -19,7 +19,7 @@ function toLastShop(seed: number, impDone: boolean, party = 1): World {
   for (let i = 0; i < party; i++) addHero(world, { id: `p${i}`, name: `P${i}`, heroClass: 'warrior' });
   for (let d = 1; d < LAST_SHOP_DEPTH; d++) levelAt(world, d);
   if (impDone) {
-    world.impQuest = { depth: 18, given: true, done: true, prey: 'monk', reward: createItem('ring.mending') };
+    world.impQuest = { depth: 18, given: true, done: true, prey: 'monk', reward: createItem('ring.energy') };
   }
   levelAt(world, LAST_SHOP_DEPTH);
   return world;

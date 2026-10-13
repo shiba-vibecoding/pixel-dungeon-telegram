@@ -5,6 +5,7 @@ import { LENGTH, WIDTH } from '../level/geometry';
 import { F, hasFlag } from '../level/terrain';
 import type { Rng } from '../rng';
 import type { BossFloor, BossMob, Timed } from './state';
+import { ghostSeesBoss } from '../artifacts/rose';
 
 /*
  * What every boss fight shares: Level.seal and unseal, the boss health bar,
@@ -108,6 +109,8 @@ export function bleed(ctx: Ctx, mob: Mob, on: boolean): void {
 /** The signal the client's music and screens follow: a boss fight starts, changes phase, reaches its finale, ends. */
 export function fight(ctx: Ctx, mob: Mob, state: 'start' | 'phase' | 'finale' | 'end', phase?: number): void {
   ctx.effects.push({ type: 'bossFight', depth: ctx.depth, mob: mob.id, kind: mob.kind, state, ...(phase !== undefined ? { phase } : {}) });
+  // Goo.notice, Tengu.notice...: the rose's ghost has its word on the boss (GhostHero.sayBoss).
+  if (state === 'start') ghostSeesBoss(ctx);
 }
 
 /* What the bosses say and show */
@@ -195,6 +198,7 @@ export function deferredOn(ctx: Ctx, mob: Mob): number {
 
 /** ShieldBuff.setShield as a Barrier on a monster: never lowered by it. */
 export function setBarrier(ctx: Ctx, mob: Mob, shield: number, holds = false): void {
+  mob.boss ??= {};
   if ((mob.shield ?? 0) <= shield) mob.shield = shield;
   const entry = timedOf(ctx, 'barrier').find((b) => b.mob === mob.id);
   if (entry) {

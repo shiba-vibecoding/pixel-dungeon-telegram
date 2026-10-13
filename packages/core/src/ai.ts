@@ -1,10 +1,12 @@
 import {
-  baseKind, beckon, createMob, type Hero, heroDefenseSkill, heroStealth, isAlive, isShopkeeper, type Mob, type MobState, MOBS, mobStats, rollMob,
+  baseKind, beckon, createMob, type Hero, heroStealth, isAlive, isShopkeeper, type Mob, type MobState, MOBS, mobStats, rollMob,
 } from './actors';
 import { bossRules, populateBoss } from './bosses/index';
-import { attack, hurt } from './combat';
+import { attack, defenseOf, hurt } from './combat';
+import { dissolveGuardian, lotusAct, wardCanAttack, wardZap } from './allies';
+import { hasProp } from './props';
 import { castShadow, LIGHT_DISTANCE, terrainBlocksSight, viewDistance } from './fov';
-import { canEnter, charAt, type Ctx, enterCell, type Floor, heroesOn, heroSight, heroView, isPassable, isWater, leaveCell } from './floor';
+import { canEnter, type Char, charAt, type Ctx, enterCell, type Floor, heroesOn, heroSight, heroView, isHero, isPassable, isWater, leaveCell } from './floor';
 import { isChallenged, SWARM_INTELLIGENCE } from './challenges';
 import { altarCallsMob } from './altar';
 import { type Item, itemDef, ItemGenerator, randomEnchantment } from './items';
@@ -15,12 +17,17 @@ import { adjacent, cellX, cellY, distance, LENGTH, NEIGHBOURS8, WIDTH } from './
 import { RoomType } from './level/room';
 import { F, hasFlag, T } from './level/terrain';
 import { burst, mobConditions, mobPress } from './traps';
+import { buffsOf, buffSpeed, chillFactor, magicDamage } from './buffs';
+import { smokeCells } from './gas';
+import { sundialMultiplier } from './trinkets';
 import { seedGas, seedWeb } from './gas';
 import { staggerTarget } from './plants';
 import type { Rng } from './rng';
 import type { World } from './world';
 import { S } from './spd-sprites';
 import { mobCount, partySize, respawnTime, scaleMob } from './party';
+import { mobTimeScale } from './throwing';
+import { ghostAct, ghostSeesBoss, isInvisible } from './artifacts';
 
 /*
  * Monster behaviour, ported from Mob: sleeping monsters may notice a hero in
@@ -38,57 +45,107 @@ export const TIME_TO_RESPAWN = 50;
  * Never the DARKNESS challenge's: in the original only the hero's sight follows the level's.
  */
 
-function mobSight(mob: Mob, depth: number): number {
+export function mobSight(mob: Mob, depth: number): number {
   const own = bossRules(mob)?.sight;
   if (own !== undefined) return own;
   const demon = mob.kind === 'succubus' || mob.kind === 'eye' || baseKind(mob.kind) === 'scorpio';
   return demon ? Math.max(viewDistance(depth), LIGHT_DISTANCE) : viewDistance(depth);
 }
 
-function spend(mob: Mob, time: number): void {
-  // Slowed, everything takes twice as long.
-  mob.time += (mob.slowed ?? 0) > 0 ? time * 2 : time;
+export function spend(mob: Mob, time: number): void {
+  // Char.spend: slowed, everything takes twice as long; chilled, a little longer the colder; with adrenaline, half as long.
+  mob.time += time / mobTimeScale(mob);
 }
 
 /** Char.spend for a monster, for the bosses' own turns. */
 export const spendMob = spend;
 
-/** Char.speed: a monster's steps a turn (a boss's own, if it has one: DM-300 supercharged). */
+/**
+ * Char.speed: a monster's steps a turn (a boss's own, if it has one: DM-300 supercharged), hastened or slowed by its
+ * buffs (dread makes it run twice as fast).
+ */
 export function speedOf(mob: Mob): number {
-  return bossRules(mob)?.speed?.(mob) ?? MOBS[mob.kind].speed;
+  return (bossRules(mob)?.speed?.(mob) ?? MOBS[mob.kind].speed) * buffSpeed(mob);
 }
+const mobSpeed = speedOf;
 
-/** Level.updateFieldOfView for a monster, `distance` far (its own sight by default). */
+/** Level.updateFieldOfView for a monster, `distance` far (its own sight by default); blinded, it sees nothing. */
 export function mobFov(ctx: Ctx, mob: Mob, distance?: number): boolean[] {
   if ((mob.blind ?? 0) > 0) return new Array<boolean>(LENGTH).fill(false);
-  return castShadow(mob.pos, terrainBlocksSight(ctx.level.map), distance ?? mobSight(mob, ctx.depth));
+  return castShadow(mob.pos, sightBlockers(ctx), distance ?? mobSight(mob, ctx.depth));
 }
 
 /** Mob.doAttack, an ordinary blow: the attack, and the time it takes. */
-export function meleeAttack(ctx: Ctx, mob: Mob, enemy: Hero): void {
+export function meleeAttack(ctx: Ctx, mob: Mob, enemy: Char): void {
   attack(ctx, mob, enemy);
   spend(mob, mobStats(mob).attackDelay ?? TICK);
 }
 
-function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Hero | undefined {
-  // Invisible heroes cannot be picked out.
-  const heroes = heroesOn(ctx.world, ctx.depth).filter((hero) => hero.invisible <= 0);
-  const current = heroes.find((hero) => hero.id === mob.enemy);
-  if (current && fov[current.pos]) return current;
+/** What blocks a monster's sight: walls and the like, and smoke screens (SmokeScreen: losBlocking). */
+export function sightBlockers(ctx: Ctx): (cell: number) => boolean {
+  const terrain = terrainBlocksSight(ctx.level.map);
+  const smoke = smokeCells(ctx.floor);
+  return smoke.size === 0 ? terrain : (cell) => terrain(cell) || smoke.has(cell);
+}
 
-  let chosen: Hero | undefined;
+/** Char.stealth: a hero's; a monster has none. */
+const stealthOf = (char: Char): number => (isHero(char) ? heroStealth(char) : 0);
+
+/**
+ * Mob.chooseEnemy. A monster keeps after its foe while it sees it (unless it only wanders); otherwise
+ * it goes for the nearest in sight of those it is against, a hero before an ally as near. An ally
+ * (Char.Alignment.ALLY) is against the monsters (not the harmless; the earth guardian, an intelligent
+ * ally, only those already up and fighting); a monster against the heroes and their allies.
+ */
+function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Char | undefined {
+  if (mob.ally) return chooseFoe(ctx, mob, fov);
+  // Invisible heroes cannot be picked out.
+  const heroes = heroesOn(ctx.world, ctx.depth).filter((hero) => !isInvisible(hero));
+  const allies = ctx.floor.mobs.filter((other) => other.ally && other !== mob && isAlive(other));
+  const current: Char | undefined = heroes.find((hero) => hero.id === mob.enemy) ?? allies.find((ally) => ally.id === mob.enemy);
+  if (current && fov[current.pos] && (mob.state !== 'wandering' || isHero(current))) return current;
+
+  let chosen: Char | undefined;
   for (const hero of heroes) {
     if (fov[hero.pos] && (!chosen || distance(mob.pos, hero.pos) < distance(mob.pos, chosen.pos))) {
       chosen = hero;
     }
   }
-  chosen ??= current;
+  for (const ally of allies) {
+    if (fov[ally.pos] && (!chosen || distance(mob.pos, ally.pos) < distance(mob.pos, chosen.pos))) chosen = ally;
+  }
+  if (chosen && !isHero(chosen)) {
+    mob.enemy = chosen.id;
+    return chosen;
+  }
+  chosen ??= current && isHero(current) ? current : undefined;
   if (!chosen) {
     for (const hero of heroes) {
       if (!chosen || distance(mob.pos, hero.pos) < distance(mob.pos, chosen.pos)) chosen = hero;
     }
   }
   mob.enemy = chosen?.id ?? null;
+  return chosen;
+}
+
+/** Mob.chooseEnemy for an ally: the nearest monster in sight it can fight, the one it fights if it still sees it. */
+function chooseFoe(ctx: Ctx, mob: Mob, fov: boolean[]): Mob | undefined {
+  const intelligent = mob.kind === 'guardian';
+  const hostile = (other: Mob): boolean =>
+    other !== mob && !other.ally && isAlive(other) && other.state !== 'passive' && other.kind !== 'lotus' &&
+    (!intelligent || (other.state !== 'sleeping' && other.state !== 'wandering'));
+  const current = ctx.floor.mobs.find((other) => other.id === (mob.foe ?? mob.enemy) && hostile(other));
+  if (current && fov[current.pos] && mob.state !== 'wandering') return current;
+  let chosen: Mob | undefined;
+  for (const other of ctx.floor.mobs) {
+    if (!hostile(other) || !fov[other.pos]) continue;
+    // Those it can strike come first, then the nearest.
+    if (!chosen) chosen = other;
+    else if (canAttack(ctx, mob, chosen) && !canAttack(ctx, mob, other)) continue;
+    else if ((canAttack(ctx, mob, other) && !canAttack(ctx, mob, chosen)) || distance(mob.pos, other.pos) < distance(mob.pos, chosen.pos)) chosen = other;
+  }
+  mob.enemy = chosen?.id ?? null;
+  delete mob.foe;
   return chosen;
 }
 
@@ -99,12 +156,29 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     rules!.act!(ctx, mob);
     return;
   }
+  // Alchemy's allies (those that follow a hero: an enthralled monster, a prismatic image, a summoned elemental); the
+  // wands' allies go the monsters' way, against the monsters (chooseFoe).
+  if (mob.ally && mob.owner !== undefined && mob.kind !== 'mirror' && mob.kind !== 'bee') {
+    allyAct(ctx, mob);
+    return;
+  }
   if (mob.kind === 'mirror') {
     imageAct(ctx, mob);
     return;
   }
   if (mob.kind === 'bee') {
     beeAct(ctx, mob);
+    return;
+  }
+  // The rose's ghost: an ally, with its own ways (DirectableAlly).
+  if (mob.kind === 'ghostHero') {
+    if (!mobConditions(ctx, mob)) ghostAct(ctx, mob);
+    else spend(mob, TICK);
+    return;
+  }
+  // WandOfRegrowth.Lotus: it only withers.
+  if (mob.kind === 'lotus') {
+    lotusAct(ctx, mob);
     return;
   }
   // A magic sheep just stands there, until it fades away.
@@ -131,9 +205,9 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     return;
   }
   if (mob.state === 'passive') {
-    const fov = castShadow(mob.pos, terrainBlocksSight(ctx.level.map), mobSight(mob, ctx.depth));
+    const fov = castShadow(mob.pos, sightBlockers(ctx), mobSight(mob, ctx.depth));
     if (mob.target !== -1 && mob.target !== mob.pos && getCloser(ctx, mob, mob.target, fov)) {
-      spend(mob, 1 / speedOf(mob));
+      spend(mob, 1 / mobSpeed(mob));
     } else {
       mob.target = randomDestination(ctx.rng, ctx.level);
       spend(mob, TICK);
@@ -152,6 +226,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     spend(mob, TICK);
     return;
   }
+
   // Dizzy, it staggers about instead of doing anything useful.
   if ((mob.dizzy ?? 0) > 0) {
     mob.dizzy!--;
@@ -173,15 +248,26 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
   if ((mob.terror ?? 0) > 0) {
     mob.terror!--;
     const from = heroesOn(ctx.world, ctx.depth).find((hero) => hero.id === mob.terrorOf);
-    if (from && getFurther(ctx, mob, from.pos) === 'moved') spend(mob, 1 / speedOf(mob));
+    if (from && getFurther(ctx, mob, from.pos) === 'moved') spend(mob, 1 / mobSpeed(mob));
+    else spend(mob, TICK);
+    return;
+  }
+  // Dread.act: it runs from whoever filled it with dread (and, far enough, is gone for good: buffs.ts).
+  if ((mob.buffs?.dread ?? 0) > 0) {
+    const from = heroesOn(ctx.world, ctx.depth).find((hero) => hero.id === mob.buffs!.dreadOf) ?? heroesOn(ctx.world, ctx.depth)[0];
+    if (from && getFurther(ctx, mob, from.pos) === 'moved') spend(mob, 1 / mobSpeed(mob));
     else spend(mob, TICK);
     return;
   }
   // CursePersonification.act: the curse mends itself, a point a turn.
   if (mob.kind === 'curse' && mob.hp < mob.ht) mob.hp++;
-  // Blinded (a rogue's smoke bomb), it sees no one.
-  const fov = mobFov(ctx, mob);
-  // Mob.aggro: bitten by a golden bee, it turns on the bee while the bee lives and is in sight.
+  // Blinded (a rogue's smoke bomb), it sees no one; a ward sees four cells, and one more a tier.
+  const sight = mob.kind === 'ward' ? Math.min(3 + (mob.ward?.tier ?? 1), mobSight(mob, ctx.depth)) : mobSight(mob, ctx.depth);
+  const fov = mobFov(ctx, mob, sight);
+  // StoneOfAggression.Aggression: a monster in sight marked by the stone draws every other's anger.
+  const marked = ctx.floor.mobs.find((other) => other !== mob && (other.buffs?.aggression ?? 0) > 0 && fov[other.pos] && isAlive(other));
+  if (marked && !mob.beeFoe) mob.beeFoe = marked.id;
+  // Mob.aggro: bitten by a golden bee (or struck by an ally), it turns on it while it lives and is in sight.
   if (mob.beeFoe && beeFight(ctx, mob, fov)) return;
   const justAlerted = mob.alerted;
   mob.alerted = false;
@@ -195,7 +281,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
         spend(mob, TICK);
         return;
       }
-      if (enemyInFov && ctx.rng.int(distance(mob.pos, enemy.pos) + heroStealth(enemy)) === 0) {
+      if (enemyInFov && ctx.rng.int(distance(mob.pos, enemy.pos) + stealthOf(enemy)) === 0) {
         notice(ctx, mob, enemy, 'hunting');
         // Swarm intelligence: waking, it calls every other monster on the level to where it saw the hero.
         if (isChallenged(ctx.world, SWARM_INTELLIGENCE)) {
@@ -209,14 +295,19 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
       return;
 
     case 'wandering':
-      if (enemyInFov && (justAlerted || ctx.rng.int(Math.trunc(distance(mob.pos, enemy.pos) / 2) + heroStealth(enemy)) === 0)) {
+      if (enemyInFov && (justAlerted || ctx.rng.int(Math.trunc(distance(mob.pos, enemy.pos) / 2) + stealthOf(enemy)) === 0)) {
         // Spotting someone costs no time: it starts hunting on this very turn.
         notice(ctx, mob, enemy, 'hunting');
         return;
       }
+      // EarthGuardian.Wandering: with no foe in sight, it crumbles back into the hero's armour.
+      if (mob.kind === 'guardian' && !enemyInFov) {
+        dissolveGuardian(ctx, mob);
+        return;
+      }
       mob.enemySeen = false;
       if (mob.target !== -1 && getCloser(ctx, mob, mob.target, fov)) {
-        spend(mob, 1 / speedOf(mob));
+        spend(mob, 1 / mobSpeed(mob));
       } else {
         mob.target = randomDestination(ctx.rng, ctx.level);
         spend(mob, TICK);
@@ -236,7 +327,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
       }
       if (enemyInFov) mob.target = enemy.pos;
       if (mob.target !== -1 && getCloser(ctx, mob, mob.target, fov)) {
-        spend(mob, 1 / speedOf(mob));
+        spend(mob, 1 / mobSpeed(mob));
       } else {
         // Lost the trail.
         spend(mob, TICK);
@@ -251,7 +342,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
       if (enemyInFov) mob.target = enemy.pos;
       const fled = mob.target === -1 ? 'cornered' : getFurther(ctx, mob, mob.target);
       if (fled === 'moved') {
-        spend(mob, 1 / speedOf(mob));
+        spend(mob, 1 / mobSpeed(mob));
       } else {
         spend(mob, TICK);
         if (fled === 'cornered') {
@@ -261,7 +352,7 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
         }
       }
       // Spinner.act: a spinner comes back once its venom has worn off.
-      if (mob.kind === 'spinner' && mob.state === 'fleeing' && enemyInFov && enemy.poison <= 0) mob.state = 'hunting';
+      if (mob.kind === 'spinner' && mob.state === 'fleeing' && enemyInFov && (enemy.poison ?? 0) <= 0) mob.state = 'hunting';
       return;
     }
   }
@@ -274,10 +365,10 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
  */
 function imageAct(ctx: Ctx, mob: Mob): void {
   const image = mob.image!;
-  const fov = castShadow(mob.pos, terrainBlocksSight(ctx.level.map), viewDistance(ctx.depth));
+  const fov = castShadow(mob.pos, sightBlockers(ctx), viewDistance(ctx.depth));
   let foe: Mob | undefined;
   for (const other of ctx.floor.mobs) {
-    if (other === mob || other.state === 'passive' || !fov[other.pos] || !isAlive(other)) continue;
+    if (other === mob || other.state === 'passive' || other.ally || !fov[other.pos] || !isAlive(other)) continue;
     if (!foe || distance(mob.pos, other.pos) < distance(mob.pos, foe.pos)) foe = other;
   }
   if (foe && adjacent(mob.pos, foe.pos)) {
@@ -289,7 +380,7 @@ function imageAct(ctx: Ctx, mob: Mob): void {
   }
   const owner = heroesOn(ctx.world, ctx.depth).find((hero) => hero.id === image.owner);
   const goal = foe?.pos ?? (owner && distance(owner.pos, mob.pos) > 2 ? owner.pos : -1);
-  if (goal !== -1 && getCloser(ctx, mob, goal, fov)) spend(mob, 1 / speedOf(mob));
+  if (goal !== -1 && getCloser(ctx, mob, goal, fov)) spend(mob, 1 / mobSpeed(mob));
   else spend(mob, TICK);
 }
 
@@ -307,7 +398,7 @@ function beeFight(ctx: Ctx, mob: Mob, fov: boolean[]): boolean {
     return true;
   }
   if (!getCloser(ctx, mob, bee.pos, fov)) return false;
-  spend(mob, 1 / speedOf(mob));
+  spend(mob, 1 / mobSpeed(mob));
   return true;
 }
 
@@ -326,8 +417,8 @@ function beeAct(ctx: Ctx, mob: Mob): void {
     ctx.effects.push({ type: 'faded', depth: ctx.depth, mob: mob.id, pos: mob.pos });
     return;
   }
-  const fov = castShadow(mob.pos, terrainBlocksSight(ctx.level.map), BEE_SIGHT);
-  const hostile = (other: Mob): boolean => other !== mob && other.state !== 'passive' && isAlive(other);
+  const fov = castShadow(mob.pos, sightBlockers(ctx), BEE_SIGHT);
+  const hostile = (other: Mob): boolean => other !== mob && other.state !== 'passive' && !other.ally && isAlive(other);
   let foe = ctx.floor.mobs.find((other) => other.id === mob.enemy && hostile(other));
   if (!foe) {
     foe = ctx.rng.element(ctx.floor.mobs.filter((other) => hostile(other) && fov[other.pos]));
@@ -348,13 +439,56 @@ function beeAct(ctx: Ctx, mob: Mob): void {
     }
     if (nearest && !adjacent(nearest.pos, mob.pos)) goal = nearest.pos;
   }
-  if (goal !== -1 && getCloser(ctx, mob, goal, fov)) spend(mob, 1 / speedOf(mob));
+  if (goal !== -1 && getCloser(ctx, mob, goal, fov)) spend(mob, 1 / mobSpeed(mob));
+  else spend(mob, TICK);
+}
+
+/**
+ * An ally's turn (Mob with Alignment.ALLY: an enthralled monster, a prismatic image, a summoned elemental): it goes
+ * for the nearest monster in sight that is not a friend, and the monster it strikes turns on it (Mob.aggro); with
+ * nobody to fight it keeps near its hero; a prismatic image steps back into its hero's guard.
+ */
+function allyAct(ctx: Ctx, mob: Mob): void {
+  if (mobConditions(ctx, mob)) {
+    spend(mob, TICK);
+    return;
+  }
+  const owner = heroesOn(ctx.world, ctx.depth).find((hero) => hero.id === mob.owner);
+  if (mob.kind === 'prismatic' && owner) mob.level = owner.lvl;
+  const fov = (mob.blind ?? 0) > 0 ? new Array<boolean>(LENGTH).fill(false) : castShadow(mob.pos, sightBlockers(ctx), mobSight(mob, ctx.depth));
+  const hostile = (other: Mob): boolean => other !== mob && !other.ally && other.state !== 'passive' && isAlive(other) && fov[other.pos]!;
+  let foe = ctx.floor.mobs.find((other) => other.id === mob.enemy && hostile(other));
+  if (!foe) {
+    for (const other of ctx.floor.mobs) {
+      if (hostile(other) && (!foe || distance(mob.pos, other.pos) < distance(mob.pos, foe.pos))) foe = other;
+    }
+    mob.enemy = foe?.id ?? null;
+  }
+  if (foe && adjacent(mob.pos, foe.pos)) {
+    attack(ctx, mob, foe);
+    if (isAlive(foe)) foe.beeFoe = mob.id;
+    spend(mob, mobStats(mob).attackDelay ?? TICK);
+    return;
+  }
+  if (foe && getCloser(ctx, mob, foe.pos, fov)) {
+    spend(mob, 1 / mobSpeed(mob));
+    return;
+  }
+  // PrismaticImage.Wandering: nobody to fight, it goes back into its hero's guard.
+  if (mob.kind === 'prismatic' && owner && !foe) {
+    buffsOf(owner).prismaticGuard = mob.hp;
+    ctx.floor.mobs.splice(ctx.floor.mobs.indexOf(mob), 1);
+    leaveCell(ctx.world, ctx.level, ctx.depth, mob.pos);
+    ctx.effects.push({ type: 'faded', depth: ctx.depth, mob: mob.id, pos: mob.pos });
+    return;
+  }
+  if (owner && distance(owner.pos, mob.pos) > 2 && getCloser(ctx, mob, owner.pos, fov)) spend(mob, 1 / mobSpeed(mob));
   else spend(mob, TICK);
 }
 
 /** Amok: it falls upon whoever is nearest in sight, monster or hero. */
 function runAmok(ctx: Ctx, mob: Mob): void {
-  const fov = castShadow(mob.pos, terrainBlocksSight(ctx.level.map), mobSight(mob, ctx.depth));
+  const fov = castShadow(mob.pos, sightBlockers(ctx), mobSight(mob, ctx.depth));
   const others: Array<Hero | Mob> = [
     ...heroesOn(ctx.world, ctx.depth),
     ...ctx.floor.mobs.filter((other) => other !== mob && other.state !== 'passive'),
@@ -367,7 +501,7 @@ function runAmok(ctx: Ctx, mob: Mob): void {
     attack(ctx, mob, nearest);
     spend(mob, mobStats(mob).attackDelay ?? TICK);
   } else if (nearest && getCloser(ctx, mob, nearest.pos, fov)) {
-    spend(mob, 1 / speedOf(mob));
+    spend(mob, 1 / mobSpeed(mob));
   } else {
     spend(mob, TICK);
   }
@@ -410,16 +544,19 @@ function getFurther(ctx: Ctx, mob: Mob, threat: number): 'moved' | 'safe' | 'cor
   return 'moved';
 }
 
-function notice(ctx: Ctx, mob: Mob, enemy: Hero, state: MobState): void {
+function notice(ctx: Ctx, mob: Mob, enemy: Char, state: MobState): void {
   mob.enemySeen = true;
   mob.state = state;
   mob.target = enemy.pos;
   ctx.effects.push({ type: 'noticed', depth: ctx.depth, mob: mob.id });
   // Goo.notice, DM300.notice...: the boss health bar, and its yell.
-  bossRules(mob)?.notice?.(ctx, mob, enemy);
+  bossRules(mob)?.notice?.(ctx, mob, isHero(enemy) ? enemy : undefined);
 }
 
-function canAttack(ctx: Ctx, mob: Mob, enemy: Hero): boolean {
+function canAttack(ctx: Ctx, mob: Mob, enemy: Char): boolean {
+  // Ward.canAttack: a clear bolt; the lotus never.
+  if (mob.kind === 'ward') return wardCanAttack(ctx, mob, enemy);
+  if (mob.kind === 'lotus') return false;
   const own = bossRules(mob)?.canAttack;
   if (own) return own(ctx, mob, enemy);
   // Shamans cast lightning, warlocks shadow bolts, the burning fist fire, and Tengu throws shuriken
@@ -434,16 +571,17 @@ function canAttack(ctx: Ctx, mob: Mob, enemy: Hero): boolean {
 }
 
 /** Shaman.doAttack from afar: a bolt of lightning, worse for someone standing in water. */
-function zapLightning(ctx: Ctx, mob: Mob, enemy: Hero): void {
+function zapLightning(ctx: Ctx, mob: Mob, enemy: Char): void {
   spend(mob, TIME_TO_ZAP);
   ctx.effects.push({ type: 'zapped', depth: ctx.depth, from: mob.pos, to: enemy.pos, bolt: 'lightning' });
   // A magic attack: accuracy counts double.
-  const hit = ctx.rng.floatMax(MOBS.shaman.attack) * 2 >= ctx.rng.floatMax(heroDefenseSkill(enemy));
+  const hit = ctx.rng.floatMax(MOBS.shaman.attack) * 2 >= ctx.rng.floatMax(defenseOf(ctx, enemy));
   let damage = 0;
   if (hit) {
     damage = ctx.rng.intBetween(2, 12);
     if (isWater(ctx.level.map[enemy.pos]!)) damage = Math.trunc(damage * 1.5);
   }
+  if (hit) damage = magicDamage(ctx, enemy, damage);
   ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: mob.id, target: enemy.id, hit, damage });
   if (hit) hurt(ctx, enemy, damage, mob);
 }
@@ -452,33 +590,33 @@ const TIME_TO_ZAP = 2;
 const SUCCUBUS_BLINK_DELAY = 5;
 
 /** Eye.attack: the deathgaze strikes everyone along it, the eye's friends included. */
-function deathGaze(ctx: Ctx, eye: Mob, enemy: Hero): void {
+function deathGaze(ctx: Ctx, eye: Mob, enemy: Char): void {
   spend(eye, MOBS.eye.attackDelay!);
   const trace = ballistica(ctx, eye.pos, enemy.pos, false);
   ctx.effects.push({ type: 'zapped', depth: ctx.depth, from: eye.pos, to: trace.at(-1)!, bolt: 'beam' });
   for (const cell of trace.slice(1)) {
     const victim = charAt(ctx.world, ctx.depth, cell);
     if (!victim || !isAlive(victim) || victim === eye) continue;
-    const defense = 'heroClass' in victim ? heroDefenseSkill(victim) : MOBS[victim.kind].defense;
+    const defense = 'heroClass' in victim ? defenseOf(ctx, victim) : MOBS[victim.kind].defense;
     const hit = ctx.rng.floatMax(MOBS.eye.attack) * 2 >= ctx.rng.floatMax(defense);
-    const damage = hit ? ctx.rng.normalIntRange(...MOBS.eye.damage) : 0;
+    const damage = hit ? magicDamage(ctx, victim, ctx.rng.normalIntRange(...MOBS.eye.damage)) : 0;
     ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: eye.id, target: victim.id, hit, damage });
     if (hit) hurt(ctx, victim, damage, eye);
   }
 }
 
 /** Warlock.zap: a shadow bolt that hurts, and half the time leaves the hero weakened. */
-function shadowBolt(ctx: Ctx, mob: Mob, enemy: Hero): void {
+function shadowBolt(ctx: Ctx, mob: Mob, enemy: Char): void {
   spend(mob, TICK);
   ctx.effects.push({ type: 'zapped', depth: ctx.depth, from: mob.pos, to: enemy.pos, bolt: 'shadow' });
-  const hit = ctx.rng.floatMax(MOBS.warlock.attack) * 2 >= ctx.rng.floatMax(heroDefenseSkill(enemy));
+  const hit = ctx.rng.floatMax(MOBS.warlock.attack) * 2 >= ctx.rng.floatMax(defenseOf(ctx, enemy));
   let damage = 0;
   if (hit) {
-    if (ctx.rng.int(2) === 0) {
+    if (ctx.rng.int(2) === 0 && isHero(enemy)) {
       if (enemy.weakened <= 0) ctx.effects.push({ type: 'weakened', hero: enemy.id });
       enemy.weakened = Math.max(enemy.weakened, WEAKNESS_TURNS);
     }
-    damage = ctx.rng.intBetween(12, 18);
+    damage = magicDamage(ctx, enemy, ctx.rng.intBetween(12, 18));
   }
   ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: mob.id, target: enemy.id, hit, damage });
   if (hit) hurt(ctx, enemy, damage, mob);
@@ -487,10 +625,15 @@ function shadowBolt(ctx: Ctx, mob: Mob, enemy: Hero): void {
 /** Weakness.DURATION. */
 const WEAKNESS_TURNS = 40;
 
-function doAttack(ctx: Ctx, mob: Mob, enemy: Hero): void {
+function doAttack(ctx: Ctx, mob: Mob, enemy: Char): void {
   const own = bossRules(mob)?.doAttack;
   if (own) {
     own(ctx, mob, enemy);
+    return;
+  }
+  // Ward.doAttack: its bolt.
+  if (mob.kind === 'ward') {
+    wardZap(ctx, mob, enemy);
     return;
   }
   if (mob.kind === 'shaman' && !adjacent(mob.pos, enemy.pos)) {
@@ -557,9 +700,9 @@ export function ballistica(ctx: Ctx, from: number, to: number, hitChars = true, 
   return trace;
 }
 
-function getCloser(ctx: Ctx, mob: Mob, target: number, fov: boolean[]): boolean {
-  // Rooted, it cannot move a step.
-  if ((mob.rooted ?? 0) > 0) return false;
+export function getCloser(ctx: Ctx, mob: Mob, target: number, fov: boolean[]): boolean {
+  // Rooted, it cannot move a step; what is immovable never does (Ward.getCloser).
+  if ((mob.rooted ?? 0) > 0 || hasProp(mob, 'immovable')) return false;
   const own = bossRules(mob)?.getCloser?.(ctx, mob, target, fov);
   if (own !== undefined) return own;
   // Scorpio.getCloser: a hunting scorpio keeps its distance, to sting from afar.
@@ -578,13 +721,14 @@ function getCloser(ctx: Ctx, mob: Mob, target: number, fov: boolean[]): boolean 
       moveMob(ctx, mob, cell, false);
       ctx.effects.push({ type: 'jumped', depth: ctx.depth, mob: mob.id, from, to: cell });
       mob.jumpIn = SUCCUBUS_BLINK_DELAY;
-      mob.time -= 1 / speedOf(mob);
+      mob.time -= 1 / mobSpeed(mob);
       return true;
     }
   }
   if (mob.kind === 'succubus') mob.jumpIn = (mob.jumpIn ?? 0) - 1;
   const step = findStep(ctx, mob.pos, target, fov, mob);
-  if (step === -1) return false;
+  // (Someone it could not see stands there: it bumps into them, and stays put.)
+  if (step === -1 || charAt(ctx.world, ctx.depth, step)) return false;
   moveMob(ctx, mob, step);
   return true;
 }
@@ -596,7 +740,7 @@ function getCloser(ctx: Ctx, mob: Mob, target: number, fov: boolean[]): boolean 
  */
 function moveMob(ctx: Ctx, mob: Mob, to: number, press = true): void {
   // Crippled, every step takes twice as long.
-  if ((mob.crippled ?? 0) > 0) mob.time += 1 / speedOf(mob);
+  if ((mob.crippled ?? 0) > 0) mob.time += 1 / mobSpeed(mob);
   const from = mob.pos;
   if (mob.kind === 'spinner' && mob.state === 'fleeing') seedWeb(ctx, from, ctx.rng.intBetween(5, 7));
   mob.pos = to;
@@ -687,6 +831,9 @@ function randomDestination(rng: Rng, level: Level): number {
   }
   return randomCell(rng, (cell) => isPassable(level, cell));
 }
+
+/** Level.randomDestination, for a depth being played. */
+export const randomDestinationFor = (ctx: Ctx): number => randomDestination(ctx.rng, ctx.level);
 
 /** Uniformly random cell satisfying `ok`, by reservoir sampling as in Level. */
 function randomCell(rng: Rng, ok: (cell: number) => boolean): number {
@@ -796,7 +943,8 @@ export function reinforce(world: World, level: Level, floor: Floor, rng: Rng, pa
 /** Level.respawner: tops the depth up with a wandering monster now and then. */
 export function respawn(ctx: Ctx): void {
   const { world, depth, level, floor, rng } = ctx;
-  if (floor.mobs.length < mobCount(nMobs(rng, depth), partySize(world))) {
+  // Level.mobCount: allies do not count.
+  if (floor.mobs.filter((mob) => !mob.ally).length < mobCount(nMobs(rng, depth), partySize(world))) {
     // Bestiary.mutable: now and then a rare variant.
     const kind = rollMob(rng, depth);
 
@@ -806,5 +954,6 @@ export function respawn(ctx: Ctx): void {
       floor.mobs.push(scaleMob(world, createMob(nextMobId(world), kind, pos, 'wandering', floor.now)));
     }
   }
-  floor.respawn += respawnTime(TIME_TO_RESPAWN, partySize(world));
+  // DimensionalSundial: monsters come back more slowly by day, faster by night (Level.respawnCooldown).
+  floor.respawn += respawnTime(TIME_TO_RESPAWN, partySize(world)) / sundialMultiplier(world);
 }

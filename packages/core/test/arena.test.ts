@@ -148,7 +148,7 @@ describe('a wave', () => {
   it('puts a reward on the dais when the pack is full', () => {
     const world = arenaWorld(5);
     const hero = heroById(world, 'p')!;
-    world.arena!.offers.p = [createItem('weapon.sword'), createItem('armor.mail'), createItem('wand.firebolt')];
+    world.arena!.offers.p = [createItem('weapon.sword'), createItem('armor.mail'), createItem('wand.fireblast')];
     world.arena!.wave = 1;
     while (hero.items.length < 20) hero.items.push(createItem('weapon.mace'));
     expect(act(world, 'p', { type: 'arenaPick', choice: 0 })).toMatchObject({ ok: true });
@@ -251,8 +251,8 @@ describe('a wave', () => {
   it('refuses the beacon\'s return, and its own actions outside the arena', () => {
     const world = arenaWorld(71);
     const hero = heroById(world, 'p')!;
-    hero.items.push({ ...createItem('beacon'), returnTo: { depth: 1, pos: ARENA_CENTRE } });
-    expect(act(world, 'p', { type: 'beacon', item: hero.items.length - 1, mode: 'return' })).toMatchObject({ ok: false });
+    hero.items.push({ ...createItem('artifact.beacon'), returnTo: { depth: 1, pos: ARENA_CENTRE } });
+    expect(act(world, 'p', { type: 'artifact', item: hero.items.length - 1, use: 'return' })).toMatchObject({ ok: false });
     const dungeon = createWorld(5);
     addHero(dungeon, { id: 'p', name: 'P', heroClass: 'mage' });
     expect(act(dungeon, 'p', { type: 'arenaReady' })).toMatchObject({ ok: false });

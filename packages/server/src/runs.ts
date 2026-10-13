@@ -1,7 +1,8 @@
 import {
   act, type Action, addHero, applyBoon, type BadgeId, type BadgeProgress, type Bones, checkBadges, countGame, createWorld, dailyRules, dailySeed, deriveSeed,
-  emptyBadgeProgress, fingerprint, giveBones, type HeroClass, heroById, leaveBones, Rng, type RunOutcome, runOutcome, type World,
+  BONES_ROLLS, emptyBadgeProgress, fingerprint, giveBones, type HeroClass, heroById, leaveBones, Rng, type RunOutcome, runOutcome, type World,
 } from '@pd/core';
+import type { Letter } from './mail';
 
 /*
  * A player's checked runs and what they add up to. The device plays a run at once, with no
@@ -89,6 +90,12 @@ export interface Profile {
   trophies: Trophy[];
   /** Boards already looked at for trophies (their names). */
   claimed: string[];
+  /** The boards of a day or week this player's runs went onto (mail.ts makes their letters once they close). */
+  entered: string[];
+  /** The letters of the mailbox (mail.ts). */
+  mail: Letter[];
+  /** The step tutorial has been seen through or skipped, on any device. */
+  coachDone: boolean;
 }
 
 export const MAX_FREEZES = 2;
@@ -97,7 +104,7 @@ const HISTORY = 20;
 export function emptyProfile(name = 'Hero'): Profile {
   return {
     name, games: 0, wins: 0, deepest: 0, best: 0, bestByClass: {}, arenaWaves: 0, arenaBest: 0,
-    streak: { last: null, count: 0, best: 0, freezes: 0 }, dailyDate: null, badges: emptyBadgeProgress(), bones: null, history: [], trophies: [], claimed: [],
+    streak: { last: null, count: 0, best: 0, freezes: 0 }, dailyDate: null, badges: emptyBadgeProgress(), bones: null, history: [], trophies: [], claimed: [], entered: [], mail: [], coachDone: false,
   };
 }
 
@@ -274,7 +281,7 @@ export class PlayerLogic {
     if (run.slot === 'dungeon' && !outcome.won) {
       // Bones.leave, with its dice from the run's own seed.
       const rng = Rng.seeded(deriveSeed(run.seed, 0xb0e5));
-      p.bones = leaveBones(me, rng.int(4), rng.float());
+      p.bones = leaveBones(me, rng.int(BONES_ROLLS), rng.float());
     }
     p.history = [summary, ...p.history].slice(0, HISTORY);
     run.record = record;

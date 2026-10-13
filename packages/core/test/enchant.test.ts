@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, armorStats, canEnter, charAt, createItem, createMob, createWorld, distance, type Effect, F, floorAt, hasFlag,
-  heroById, heroView, ItemGenerator, levelAt, type Mob, type MobKind, NEIGHBOURS8, Rng, T, type World,
+  act, addHero, canEnter, charAt, createItem, createMob, createWorld, distance, type Effect, F, floorAt, hasFlag,
+  heroById, heroView, isCurseEnchant, isCurseGlyph, ItemGenerator, levelAt, type Mob, type MobKind, NEIGHBOURS8, Rng, T, type World,
 } from '../src/index';
 import { pacify } from './helpers';
 
@@ -34,43 +34,51 @@ function strike(world: World, mob: Mob, times = 1): Effect[] {
 }
 
 describe('enchantments and glyphs', () => {
-  it('turn up now and then on weapons and armour', () => {
+  it('turn up now and then on weapons and armour, and three in ten are cursed', () => {
     const generator = new ItemGenerator(Rng.seeded(5), 3);
     let weapons = 0;
     let enchanted = 0;
+    let cursed = 0;
     let armours = 0;
     let inscribed = 0;
     for (let i = 0; i < 4000; i++) {
       const item = generator.of(i % 2 === 0 ? 'weapon' : 'armor');
       if (item.kind.startsWith('weapon.')) {
         weapons++;
-        if (item.enchant) enchanted++;
+        if (item.enchant && !isCurseEnchant(item.enchant)) enchanted++;
+        // Weapon.random: a cursed weapon carries a curse enchantment.
+        if (item.cursed) {
+          cursed++;
+          expect(isCurseEnchant(item.enchant)).toBe(true);
+        }
       } else if (item.kind.startsWith('armor.')) {
         armours++;
-        if (item.glyph) inscribed++;
+        if (item.glyph && !isCurseGlyph(item.glyph)) inscribed++;
       }
     }
-    expect(enchanted / weapons).toBeGreaterThan(0.05);
-    expect(enchanted / weapons).toBeLessThan(0.16);
-    expect(inscribed / armours).toBeGreaterThan(0.06);
-    expect(inscribed / armours).toBeLessThan(0.14);
+    expect(enchanted / weapons).toBeGreaterThan(0.07);
+    expect(enchanted / weapons).toBeLessThan(0.13);
+    expect(cursed / weapons).toBeGreaterThan(0.26);
+    expect(cursed / weapons).toBeLessThan(0.34);
+    expect(inscribed / armours).toBeGreaterThan(0.12);
+    expect(inscribed / armours).toBeLessThan(0.18);
   });
 
   it('a grim weapon may slay outright; a vampiric one heals its wielder', () => {
     let world = solo();
     let hero = heroById(world, 'p')!;
     Object.assign(hero, { attackSkill: 1000 });
-    hero.weapon = { ...createItem('weapon.dagger', 1, 2000), enchant: 'death' };
-    const rat = ratBeside(world, 100000);
-    const effects = strike(world, rat);
-    expect(effects.some((e) => e.type === 'enchanted' && e.enchant === 'death')).toBe(true);
+    hero.weapon = { ...createItem('weapon.dagger', 1, 2000), enchant: 'grim' };
+    const rat = ratBeside(world, 6000);
+    const effects = strike(world, rat, 5);
+    expect(effects.some((e) => e.type === 'enchanted' && e.enchant === 'grim')).toBe(true);
     expect(rat.hp).toBeLessThanOrEqual(0);
 
     world = solo();
     hero = heroById(world, 'p')!;
-    Object.assign(hero, { attackSkill: 1000, hp: 1 });
-    hero.weapon = { ...createItem('weapon.sword', 1, 5), enchant: 'leech' };
-    strike(world, ratBeside(world), 5);
+    Object.assign(hero, { attackSkill: 1000, defenseSkill: 100000, hp: 1 });
+    hero.weapon = { ...createItem('weapon.sword', 1, 5), enchant: 'vampiric' };
+    strike(world, ratBeside(world), 8);
     expect(hero.hp).toBeGreaterThan(1);
   });
 
@@ -78,22 +86,23 @@ describe('enchantments and glyphs', () => {
     const world = solo();
     const hero = heroById(world, 'p')!;
     Object.assign(hero, { attackSkill: 100000 });
-    hero.weapon = { ...createItem('weapon.dagger', 1, 2000), enchant: 'death' };
+    hero.weapon = { ...createItem('weapon.dagger', 1, 2000), enchant: 'grim' };
     const yog = ratBeside(world, 100000, 'yog');
     strike(world, yog, 3);
     expect(yog.hp).toBeGreaterThan(90000);
   });
 
-  it('an eldritch weapon sends its victim fleeing', () => {
+  it('an eldritch weapon sends whoever else sees the blow fleeing', () => {
     const world = solo();
     const hero = heroById(world, 'p')!;
     Object.assign(hero, { attackSkill: 1000 });
-    hero.weapon = { ...createItem('weapon.dagger', 1, 100), enchant: 'horror' };
+    hero.weapon = { ...createItem('weapon.dagger', 1, 100), enchant: 'eldritch' };
     const rat = ratBeside(world);
+    const other = ratBeside(world);
     strike(world, rat);
-    expect(rat.terror).toBeGreaterThan(0);
-    for (let i = 0; i < 4; i++) act(world, 'p', { type: 'wait' });
-    expect(distance(rat.pos, hero.pos)).toBeGreaterThan(1);
+    // Eldritch.proc: the struck one is not among those it terrifies.
+    expect(other.terror).toBeGreaterThan(0);
+    expect(rat.terror ?? 0).toBe(0);
   });
 
   it('armour of viscosity takes a blow a point at a time', () => {
@@ -115,16 +124,16 @@ describe('enchantments and glyphs', () => {
     expect(hero.hp).toBeLessThan(before + 3);
   });
 
-  it('a glyph adds to the armour; a scroll of enchantment gives one, or an enchantment', () => {
+  it('a scroll of enchantment gives armour a glyph, a weapon an enchantment, never a curse', () => {
     const world = solo();
     const hero = heroById(world, 'p')!;
-    const plain = armorStats(hero.armor).dr;
     hero.items = [createItem('scroll.enchantment', 2)];
-    act(world, 'p', { type: 'use', item: 0, target: 'armor' });
+    act(world, 'p', { type: 'use', item: 0, target: 'armor', choice: 0 });
     expect(hero.armor.glyph).toBeDefined();
-    expect(armorStats(hero.armor).dr).toBeGreaterThan(plain);
-    const result = act(world, 'p', { type: 'use', item: 0, target: 'weapon' });
+    expect(isCurseGlyph(hero.armor.glyph)).toBe(false);
+    const result = act(world, 'p', { type: 'use', item: 0, target: 'weapon', choice: 2 });
     expect(hero.weapon!.enchant).toBeDefined();
+    expect(isCurseEnchant(hero.weapon!.enchant)).toBe(false);
     expect(result.ok && result.effects.some((e) => e.type === 'imbued')).toBe(true);
   });
 });
@@ -133,8 +142,12 @@ describe('curses', () => {
   it('worse-than-plain gear is cursed, and once worn will not come off until the curse is lifted', () => {
     const generator = new ItemGenerator(Rng.seeded(11), 4);
     const items = Array.from({ length: 300 }, () => generator.of('armor'));
-    expect(items.some((item) => item.level < 0)).toBe(true);
-    for (const item of items) expect(!!item.cursed).toBe(item.level < 0);
+    // Armor.random: never worse than plain; a cursed one carries a curse glyph.
+    expect(items.some((item) => item.cursed)).toBe(true);
+    for (const item of items) {
+      expect(item.level).toBeGreaterThanOrEqual(0);
+      expect(!!item.cursed).toBe(isCurseGlyph(item.glyph));
+    }
 
     const world = solo();
     const hero = heroById(world, 'p')!;
@@ -143,8 +156,11 @@ describe('curses', () => {
     expect(put.ok && put.effects.some((e) => e.type === 'cursedEquip')).toBe(true);
     const leather = hero.items.findIndex((i) => i.kind === 'armor.leather');
     expect(act(world, 'p', { type: 'equip', item: leather })).toEqual({ ok: false, reason: 'it is cursed: you cannot take it off' });
+    hero.armor.glyph = 'bulk';
     act(world, 'p', { type: 'use', item: hero.items.findIndex((i) => i.kind === 'scroll.removeCurse') });
     expect(hero.armor.cursed).toBeUndefined();
+    // ScrollOfRemoveCurse.uncurse: the curse glyph goes with it.
+    expect(hero.armor.glyph).toBeUndefined();
     expect(act(world, 'p', { type: 'equip', item: hero.items.findIndex((i) => i.kind === 'armor.leather') }).ok).toBe(true);
   });
 
@@ -153,8 +169,8 @@ describe('curses', () => {
     const hero = heroById(world, 'p')!;
     hero.items = [{ ...createItem('ring.haste', 1, -1), cursed: true }, createItem('scroll.upgrade')];
     act(world, 'p', { type: 'equip', item: 0 });
-    const ring = hero.rings.findIndex((r) => r.kind === 'ring.haste');
-    expect(act(world, 'p', { type: 'remove', ring })).toEqual({ ok: false, reason: 'it is cursed: you cannot take it off' });
+    expect(hero.ring?.kind).toBe('ring.haste');
+    expect(act(world, 'p', { type: 'remove', slot: 'ring' })).toEqual({ ok: false, reason: 'it is cursed: you cannot take it off' });
     hero.weapon = { ...createItem('weapon.sword', 1, -1), cursed: true };
     act(world, 'p', { type: 'use', item: hero.items.findIndex((i) => i.kind === 'scroll.upgrade'), target: 'weapon' });
     expect(hero.weapon.cursed).toBeUndefined();
@@ -240,7 +256,11 @@ describe('the remaining scrolls and potions', () => {
     rat.pos = far;
     hero.items = [createItem('potion.frost')];
     act(world, 'p', { type: 'throw', item: 0, target: far });
-    expect(rat.paralysed).toBeGreaterThan(0);
+    // Freezing: the rat is chilled at once, and frozen solid once fully chilled (or thawed if it got out).
+    expect(rat.chill).toBeGreaterThan(0);
+    rat.paralysed = 0;
+    for (let i = 0; i < 4; i++) act(world, 'p', { type: 'wait' });
+    expect(rat.frozen || rat.chill).toBeGreaterThan(0);
     expect(hero.paralysed).toBe(0);
   });
 
