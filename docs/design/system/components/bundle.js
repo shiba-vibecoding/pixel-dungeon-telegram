@@ -16,6 +16,13 @@
       var b = +el.getAttribute('data-b');
       el.style.setProperty("--bx", b % 18); el.style.setProperty("--by", Math.floor(b / 18));
     });
+    /* спрайты Shattered: data-t — talent_icons.png (32 в ряд), data-h — hero_icons.png (8 в ряд), data-s — items.png Shattered (16 в ряд) */
+    [['t', 32], ['h', 8], ['s', 16]].forEach(function (k) {
+      root.querySelectorAll('[data-' + k[0] + ']').forEach(function (el) {
+        var i = +el.getAttribute('data-' + k[0]);
+        el.style.setProperty('--ix', i % k[1]); el.style.setProperty('--iy', Math.floor(i / k[1]));
+      });
+    });
   };
 
   /* Прочность: el — .pd-dur; cur/max — остаток и максимум. Ставит --v ступенями по 2px (21 ступень на ячейку 52px),
@@ -477,7 +484,7 @@
       '<canvas class="pd-map" style="position:absolute;inset:0;width:100%;height:100%"></canvas>' +
       '<header class="pd-hud">' +
         '<div class="pd-hud-main">' +
-          '<div class="pd-avatar-wrap"><button class="pd-avatar" aria-label="Герой"><i style="--av:0"></i></button><span class="pd-hero-lvl">' + (o.lvl || 3) + '</span></div>' +
+          '<div class="pd-avatar-wrap' + (o.talent ? ' talent' : '') + '"><button class="pd-avatar" aria-label="Герой' + (o.talent ? ': есть очки талантов' : '') + '"><i style="--av:' + (o.av || 0) + '"></i></button><span class="pd-hero-lvl">' + (o.lvl || 3) + '</span>' + (o.talent ? '<i class="pd-talent-badge"></i>' : '') + '</div>' +
           '<div class="pd-hud-bars">' +
             '<div class="pd-bar' + (o.low ? ' low' : '') + '" style="--v:' + (o.hp == null ? .75 : o.hp) + '"><span class="pd-bar-text">' + (o.hpText || '18/24') + '</span></div>' +
             '<div class="pd-bars-small">' +
@@ -495,7 +502,7 @@
       '<button class="pd-log" aria-label="История сообщений">' + lines + '<span class="pd-log-more">История</span></button>' +
       '<nav class="pd-toolbar" aria-label="Действия">' +
         tool('wait', 12, 12, 'Ждать') + tool('search', 12, 12, 'Искать') + tool('info', 8, 12, 'Осмотреть') +
-        '<button class="pd-tool quick" aria-label="Быстрый слот"><i class="pd-item" data-i="31"></i><span class="pd-qty">8</span></button>' +
+        (o.quick || '<button class="pd-tool quick" aria-label="Быстрый слот"><i class="pd-item" data-i="31"></i><span class="pd-qty">8</span></button>') +
         tool('backpack', 14, 15, 'Рюкзак') +
       '</nav>';
     PD.sprite(el);
@@ -906,7 +913,11 @@
   /* титул одиночной игры. o: { lang, daily: 'open' | 'done', streak, frost, trophies, place } */
   PD.demo.titleRanked = function (el, o) {
     o = o || {}; var lang = o.lang || 'ru', L = RT[lang], en = lang === 'en', done = o.daily === 'done';
-    var cls = L.cls.map(function (c, i) { return '<button class="pd-class' + (i ? '' : ' selected') + '" role="radio" aria-checked="' + !i + '" aria-label="' + c + '"><i class="pd-class-face" style="--av:' + i + '"></i></button>'; }).join('');
+    var six = !!o.six, sel = o.sel || 0, C6 = en ? { cls: ['Warrior', 'Mage', 'Rogue', 'Huntress', 'Duelist', 'Cleric'], about: ['Tough and strong. Starts with a short sword; food heals him.', 'Weak in a fight, strong with wands. Starts with a staff that takes on a wand’s magic.', 'Sneaky and quick. Starts with a dagger and a cloak of shadows.', 'Sharp-eyed, deadly from afar. Starts with a spirit bow.', 'A weapons master: every weapon has its own special move. Starts with a rapier.', 'Casts holy spells from a tome that recharges on the way. Starts with a cudgel.'], nu: 'new' }
+      : { cls: ['Воин', 'Маг', 'Разбойник', 'Охотница', 'Дуэлянтка', 'Клирик'], about: ['Крепкий и сильный. Начинает с коротким мечом; еда его подлечивает.', 'Слаб в драке, силён жезлами. Начинает с посохом, который берёт магию жезла.', 'Тихий и быстрый. Начинает с кинжалом и плащом теней.', 'Зоркая и меткая. Начинает с луком духов.', 'Мастер оружия: у каждого оружия свой особый приём. Начинает с рапирой.', 'Читает святые заклинания из тома, который заряжается в пути. Начинает с дубинкой.'], nu: 'новый' };
+    var names = six ? C6.cls : L.cls;
+    var cls = names.map(function (c, i) { return '<button class="pd-class' + (i === sel ? ' selected' : '') + (six && i > 3 ? ' new' : '') + '" role="radio" aria-checked="' + (i === sel) + '" aria-label="' + c + '"><i class="pd-class-face" style="--av:' + i + '"></i></button>'; }).join('');
+    var info = six ? '<div class="pd-class-info"><span class="pd-class-name">' + C6.cls[sel] + (sel > 3 ? '<span class="pd-chip done">' + C6.nu + '</span>' : '') + '</span><p class="pd-note">' + C6.about[sel] + '</p></div>' : '';
     var daily = '<div class="pd-daily' + (done ? ' done' : '') + '"><div class="pd-daily-head"><i class="pd-icon" style="background-image:var(--spr-stairs)"></i><h3>' + L.daily + '</h3><span class="pd-chip ' + (done ? 'done' : '') + '">' + (done ? L.done : L.open) + '</span></div>' +
       (done ? '<div class="pd-daily-place">' + (o.place <= 3 ? '<i class="pd-tro ' + ['gold', 'silver', 'bronze'][o.place - 1] + '"></i>' : '') + '<b>#' + o.place + '</b><span>' + L.of(o.place, 214) + '</span></div><p class="pd-note">' + L.dailyDone + '</p><div class="pd-row"><button class="pd-button">' + L.train + '</button><button class="pd-button">' + L.board + '</button></div>'
         : '<p class="pd-note">' + L.dailyOpen + '</p><div class="pd-row"><button class="pd-button">' + L.descend + '</button><button class="pd-button">' + L.board + '</button></div>') + '</div>';
@@ -914,11 +925,11 @@
       '<div class="pd-corner"><button class="pd-iconbtn prefs" aria-label="' + (en ? 'Settings' : 'Настройки') + '"></button></div>' +
       '<main class="pd-title-screen ranked" style="background:none"><div class="pd-logo"><img alt="Pixel Dungeon" src="' + SRC.logo + '"></div>' +
       PD.demo.profile(lang, { streak: o.streak, frost: o.frost, trophies: o.trophies, place: done ? o.place : 0, fresh: o.fresh }) +
-      '<section class="pd-window"><div class="pd-classes" role="radiogroup">' + cls + '</div>' +
+      '<section class="pd-window"><div class="pd-classes' + (six ? ' six' : '') + '" role="radiogroup">' + cls + '</div>' + info +
       '<div class="pd-field"><input class="pd-input" value="QA" maxlength="16" aria-label="' + (en ? "Hero's name" : 'Имя героя') + '"></div>' + daily +
       '<div class="pd-actions"><button class="pd-button primary big stacked">' + L.play + '<span class="pd-btn-sub">' + L.playMeta + '</span></button>' +
       '<div class="pd-row"><button class="pd-button">' + L.newGame + '</button><button class="pd-button"><i class="pd-icon" style="width:24px;height:24px;background-image:var(--spr-challenge-off)"></i>' + L.challenges + '</button></div>' +
-      '<button class="pd-button pd-mode-btn"><i class="pd-mode-ico"></i><span class="pd-mode-text">' + L.arena + '<small>' + L.arenaSub + '</small></span></button>' +
+      (o.arena === false ? '' : '<button class="pd-button pd-mode-btn"><i class="pd-mode-ico"></i><span class="pd-mode-text">' + L.arena + '<small>' + L.arenaSub + '</small></span></button>') +
       '<div class="pd-row"><button class="pd-button"><i class="pd-tro x1 gold"></i>' + L.rating + '</button><button class="pd-button">' + L.mart + '</button></div></div></section></main>';
     PD.demo.map(el.querySelector('canvas'), { fy: 0.3, names: false });
   };
@@ -950,6 +961,156 @@
     return '<div class="pd-ranking"><p class="pd-checked">' + L.checked + '</p><p class="pd-new-record">' + L.record + '</p><div class="pd-places">' + L.places.map(function (p) { return '<span class="pd-place' + (p[3] ? ' top' : '') + '">' + (p[2] ? '<i class="pd-tro ' + p[2] + '"></i>' : '') + '<b>' + p[0] + '</b>' + p[1] + '</span>'; }).join('') + '</div></div>';
   };
   PD.demo.rankedT = RT;
+
+  /* ---------- Обновление «Shattered»: таланты, выбор пути и способности, алхимия, артефакты, 6 классов, зачарования ---------- */
+  var SH = {
+    ru: { hero: 'Герой', talents: 'Таланты', title: 'Гладиатор', titleSub: 'Воин · ур. 14', tier: 'Ярус', free: 'свободно', of: 'из', spent: function (a, b) { return a + '/' + b; },
+      tiers: [['ур. 2–6'], ['ур. 7–12'], ['Гладиатор'], ['ур. 21–30']],
+      lock4: 'С 20 уровня: наденьте корону короля гномов и выберите способность брони.', lock3: 'С 12 уровня: прочтите книгу мастерства и выберите путь.',
+      foot: 'Касание по таланту — описание', random: 'Наугад',
+      t: { 0: 'Сытный обед', 1: 'Чутьё ветерана', 2: 'Ответная ярость', 3: 'Железная воля', 4: 'Железный желудок', 5: 'Жидкая воля', 6: 'Перенос рун', 7: 'Смертельный разгон', 8: 'Подручные снаряды', 9: 'Стойкость', 10: 'Силач', 14: 'Рассечение', 15: 'Смертельная защита', 16: 'Мощное комбо', 17: 'Удар телом', 18: 'Волна удара', 19: 'Двойной прыжок', 20: 'Широкая волна', 21: 'Разящая волна', 22: 'Сила удара', 23: 'Затяжное возмездие', 24: 'Пропустить мимо', 25: 'Уравнять шансы', 26: 'Героическая энергия', 11: 'Бесконечная ярость', 12: 'Бессмертная ярость', 13: 'Катализатор ярости' },
+      card: { name: 'Рассечение', sub: 'Ярус 3 · Гладиатор', lv: ['После убийства комбо держится <em>30 ходов</em> вместо 15.', 'После убийства комбо держится <em>45 ходов</em> вместо 15.', 'После убийства комбо держится <em>60 ходов</em> вместо 15.'], cost: 'Свободно очков яруса 3: <b>1</b>', up: 'Улучшить', max: 'Талант изучен полностью', of: '1 из 3' },
+      toast: 'Новый талант! Откройте героя.',
+      sub: { intro: 'Маска Тенгу ложится на лицо, и перед глазами встают два пути. Выбор один раз и навсегда.', head: 'Путь мастерства', pick: 'Выбрать', more: 'Подробнее', later: 'Решу позже', t3: 'откроет ярус 3',
+        list: [{ n: 'Гладиатор', i: 1, d: 'Точные удары копят <em>комбо</em>. На 2, 4, 6, 8 и 10 очках открываются приёмы, которые всегда попадают.', t: [14, 15, 16], g: '#ffcc66' },
+               { n: 'Берсерк', i: 0, d: 'Полученный урон копит <em>ярость</em>: она усиливает удары, а на 100% даёт щит.', t: [11, 12, 13], g: '#ff6a4a' }] },
+      abil: { intro: 'Корона короля гномов раскаляется на голове, и броня отвечает ей жаром. Какую силу дать броне?', head: 'Способность брони', pick: 'Выбрать', later: 'Решу позже', note: 'Тратит заряд брони · таланты яруса 4', t4: 'ярус 4',
+        list: [{ n: 'Героический прыжок', i: 16, d: 'Прыжок в выбранную клетку <em>над врагами и ловушками</em>.', t: [17, 18, 19], g: '#ffcc66' },
+               { n: 'Ударная волна', i: 17, d: 'Удар о землю пускает <em>волну конусом</em>: урон и хромота всем в ней.', t: [20, 21, 22], g: '#ff9933' },
+               { n: 'Выдержка', i: 18, d: 'Воин стоит пару ходов, <em>почти не получая урона</em>, а потом бьёт сильнее на вытерпленное.', t: [23, 24, 25], g: '#ff6a4a' }] },
+      alch: { title: 'Алхимия', sub: 'Котёл', energy: 'энергия', hint: 'До трёх ингредиентов из рюкзака', random: 'Случайное зелье', randomNote: 'Одинаковые семена — вернее их зелье', cost: 'Без энергии', brew: 'Сварить', energize: 'Превратить в энергию', guide: 'Рецепты', clear: 'Очистить',
+        exo: 'Особое зелье исцеления', exoCost: 'Энергия: 4', exoShort: 'Нужно 4, есть 2',
+        eTitle: 'В энергию', eHint: 'Выберите, что расщепить. Вещи пропадут, энергия останется в котле.', eSum: 'Получите', eBtn: 'Расщепить', eBack: 'Назад',
+        gTitle: 'Учебник алхимии', pages: ['Зелья', 'Камни', 'Энергия и еда', 'Особые зелья', 'Особые свитки', 'Бомбы', 'Метательное', 'Экстракты', 'Заклинания'],
+        rec: [['3 семени → зелье', 'Сварить <b>случайное зелье</b>; одинаковые семена тянут к своему'], ['Зелье + 4 → особое', '<b>Особое зелье</b> того же цвета'], ['Мясо + 1 → тушёное', '<b>Тушёное мясо</b>: сытно и безопасно'], ['Свиток → 2 камня', '<b>Рунные камни</b> того же свитка'], ['Бомба + зелье огня + 1', '<b>Огненная бомба</b>'], ['Свиток телепортации + 10', '<b>Сдвиг фаз</b> ×6']], use: 'В котёл' } },
+    en: { hero: 'Hero', talents: 'Talents', title: 'Gladiator', titleSub: 'Warrior · lv 14', tier: 'Tier', free: 'free', of: 'of', spent: function (a, b) { return a + '/' + b; },
+      tiers: [['lv 2–6'], ['lv 7–12'], ['Gladiator'], ['lv 21–30']],
+      lock4: 'From level 20: wear the dwarf king’s crown and pick an armour ability.', lock3: 'From level 12: read the tome of mastery and pick a path.',
+      foot: 'Tap a talent to read it', random: 'Random',
+      t: { 0: 'Hearty meal', 1: 'Veteran’s intuition', 2: 'Provoked anger', 3: 'Iron will', 4: 'Iron stomach', 5: 'Liquid willpower', 6: 'Runic transference', 7: 'Lethal momentum', 8: 'Improvised projectiles', 9: 'Hold fast', 10: 'Strongman', 14: 'Cleave', 15: 'Lethal defense', 16: 'Enhanced combo', 17: 'Body slam', 18: 'Impact wave', 19: 'Double jump', 20: 'Expanding wave', 21: 'Striking wave', 22: 'Shock force', 23: 'Sustained retribution', 24: 'Shrug it off', 25: 'Even the odds', 26: 'Heroic energy', 11: 'Endless rage', 12: 'Deathless fury', 13: 'Enraged catalyst' },
+      card: { name: 'Cleave', sub: 'Tier 3 · Gladiator', lv: ['After a kill, combo lasts <em>30 turns</em> instead of 15.', 'After a kill, combo lasts <em>45 turns</em> instead of 15.', 'After a kill, combo lasts <em>60 turns</em> instead of 15.'], cost: 'Free tier 3 points: <b>1</b>', up: 'Upgrade', max: 'Talent fully learned', of: '1 of 3' },
+      toast: 'New talent! Open your hero.',
+      sub: { intro: 'Tengu’s mask fits over your face, and two paths rise before your eyes. You choose once, for good.', head: 'Path of mastery', pick: 'Choose', more: 'Details', later: 'I’ll decide later', t3: 'opens tier 3',
+        list: [{ n: 'Gladiator', i: 1, d: 'Hits build <em>combo</em>. At 2, 4, 6, 8 and 10 he unlocks moves that never miss.', t: [14, 15, 16], g: '#ffcc66' },
+               { n: 'Berserker', i: 0, d: 'Damage taken builds <em>rage</em>: it powers his blows, and at 100% grants a shield.', t: [11, 12, 13], g: '#ff6a4a' }] },
+      abil: { intro: 'The dwarf king’s crown glows on your head, and your armour answers with heat. Which power will you give it?', head: 'Armour ability', pick: 'Choose', later: 'I’ll decide later', note: 'Uses armour charge · tier 4 talents', t4: 'tier 4',
+        list: [{ n: 'Heroic leap', i: 16, d: 'Leap to a chosen cell, <em>over enemies and traps</em>.', t: [17, 18, 19], g: '#ffcc66' },
+               { n: 'Shockwave', i: 17, d: 'Slam the ground to send a <em>cone-shaped wave</em> that damages and cripples.', t: [20, 21, 22], g: '#ff9933' },
+               { n: 'Endure', i: 18, d: 'Stand still for a few turns <em>barely hurt</em>, then strike back with what you endured.', t: [23, 24, 25], g: '#ff6a4a' }] },
+      alch: { title: 'Alchemy', sub: 'Alchemy pot', energy: 'energy', hint: 'Up to three ingredients from your pack', random: 'Random potion', randomNote: 'Matching seeds steer it to their potion', cost: 'No energy', brew: 'Brew', energize: 'Turn into energy', guide: 'Recipes', clear: 'Clear',
+        exo: 'Exotic potion of healing', exoCost: 'Energy: 4', exoShort: 'Needs 4, you have 2',
+        eTitle: 'Into energy', eHint: 'Pick what to break down. The items are gone, the energy stays in the pot.', eSum: 'You get', eBtn: 'Break down', eBack: 'Back',
+        gTitle: 'Alchemy guide', pages: ['Potions', 'Stones', 'Energy & food', 'Exotic potions', 'Exotic scrolls', 'Bombs', 'Thrown weapons', 'Brews', 'Spells'],
+        rec: [['3 seeds → potion', 'Brew a <b>random potion</b>; matching seeds steer it'], ['Potion + 4 → exotic', 'An <b>exotic potion</b> of the same colour'], ['Meat + 1 → stewed', '<b>Stewed meat</b>: filling and safe'], ['Scroll → 2 stones', '<b>Runestones</b> of the same scroll'], ['Bomb + liquid flame + 1', 'A <b>fire bomb</b>'], ['Teleportation + 10', '<b>Phase shift</b> ×6']], use: 'To the pot' } }
+  };
+  /* Таланты воина-гладиатора 14 уровня: [кадр talent_icons.png, вложено, максимум] */
+  var TAL = [[[0, 2, 2], [1, 1, 2], [2, 1, 2], [3, 1, 2]], [[4, 1, 2], [5, 0, 2], [6, 2, 2], [7, 1, 2], [8, 0, 2]], [[9, 0, 3], [10, 0, 3], [14, 1, 3], [15, 0, 3], [16, 0, 3]], [[20, 0, 3], [21, 0, 3], [22, 0, 3], [26, 0, 3]]];
+  var TPTS = [5, 6, 2, 0];
+  function pips(n, max) { var s = ''; for (var i = 0; i < max; i++) s += '<i' + (i < n ? ' class="on"' : '') + '></i>'; return '<span class="pd-pips" aria-hidden="true">' + s + '</span>'; }
+  PD.demo.win = PD.demo.win || {};
+  /* окно героя на вкладке «Таланты». o: { lang, sel: кадр выбранного, t4: true — ярус 4 открыт (способность «Ударная волна») } */
+  PD.demo.win.talents = function (lang, o) {
+    o = o || {}; var L = SH[lang || 'ru'], tiers = '';
+    TAL.forEach(function (row, ti) {
+      var spent = row.reduce(function (a, t) { return a + t[1]; }, 0), pts = ti === 3 && o.t4 ? 1 : TPTS[ti], free = pts - spent;
+      var locked = ti === 3 && !o.t4;
+      var head = '<header class="pd-tier-head"><h3>' + L.tier + ' ' + (ti + 1) + '</h3>' + '' + '<span class="pd-tier-sub">' + (ti === 3 && o.t4 ? (lang === 'en' ? 'Shockwave · lv 21–30' : 'Ударная волна · ур. 21–30') : L.tiers[ti][0]) + '</span>' +
+        (locked ? '' : free > 0 ? '<span class="pd-tier-points free">' + L.free + ' <b>' + free + '</b></span>' : '<span class="pd-tier-points"><b>' + spent + '</b>/' + pts + '</span>') + '</header>';
+      var body = locked ? '<div class="pd-talent-ghosts" aria-hidden="true"><i></i><i></i><i></i><i></i></div><p class="pd-tier-lock">' + L.lock4 + '</p>'
+        : '<div class="pd-talent-row">' + row.map(function (t) {
+            var cls = 'pd-talent' + (t[1] === 0 ? ' zero' : '') + (t[1] === t[2] ? ' max' : '') + '' + (o.sel === t[0] ? ' selected' : '');
+            return '<button class="' + cls + '" aria-label="' + L.t[t[0]] + ', ' + t[1] + ' ' + L.of + ' ' + t[2] + '"><i class="pd-ticon" data-t="' + t[0] + '"></i>' + pips(t[1], t[2]) + '</button>';
+          }).join('') + '</div>';
+      tiers += '<section class="pd-tier' + (locked ? ' locked' : '') + '">' + head + body + '</section>';
+    });
+    return '<section class="pd-window pd-hero-window" role="dialog" aria-label="' + L.hero + '"><header class="pd-window-head"><div class="pd-slot" style="overflow:hidden"><i class="pd-class-face" style="display:block;width:48px;height:48px;margin:auto;background:var(--atlas-avatars) no-repeat;background-size:288px 64px;image-rendering:pixelated"></i></div><div class="pd-titles"><h2 class="pd-heading">' + L.title + '</h2><span class="pd-sub">' + L.titleSub + '</span></div><button class="pd-close" aria-label="×"></button></header>' +
+      '<div class="pd-tabs compact" role="tablist"><button class="pd-tab" role="tab" aria-selected="false">' + L.hero + '</button><button class="pd-tab" role="tab" aria-selected="true">' + L.talents + '<i class="pd-tab-plus" aria-label="+"></i></button></div>' +
+      '<div class="pd-scroll"><div class="pd-talents">' + tiers + '</div></div>' +
+      '<div class="pd-talents-foot"><span>' + L.foot + '</span><button class="pd-button quiet small">' + L.random + '</button></div></section>';
+  };
+  /* карточка таланта (WndInfoTalent): «Рассечение» 1 из 3 */
+  PD.demo.win.talentCard = function (lang) {
+    var L = SH[lang || 'ru'], C = L.card;
+    return '<section class="pd-window pd-talent-card narrow" role="dialog" aria-label="' + C.name + '"><header class="pd-window-head"><div class="pd-slot"><i class="pd-ticon" data-t="14"></i></div><div class="pd-titles"><h2 class="pd-heading">' + C.name + '</h2><span class="pd-sub">' + C.sub + '</span></div><button class="pd-close" aria-label="×"></button></header>' +
+      '<div class="pd-talent-progress">' + pips(1, 3) + '<span>' + C.of + '</span></div>' +
+      '<ol class="pd-talent-levels">' + C.lv.map(function (t, i) { return '<li class="' + (i === 0 ? 'done' : i === 1 ? 'next' : '') + '"><b>+' + (i + 1) + '</b><span>' + t + '</span></li>'; }).join('') + '</ol>' +
+      '<div class="pd-actions"><button class="pd-button primary">' + C.up + '</button><p class="pd-talent-cost">' + C.cost + '</p></div></section>';
+  };
+  /* выбор пути мастерства (2 карточки) и способности брони (3 карточки) */
+  PD.demo.win.pickSub = function (lang) {
+    var L = SH[lang || 'ru'].sub;
+    return '<section class="pd-window" role="dialog" aria-label="' + L.head + '"><header class="pd-window-head"><div class="pd-slot"><i class="pd-sitem" data-s="59"></i></div><div class="pd-titles"><h2 class="pd-heading">' + L.head + '</h2></div></header><p class="pd-pick-intro">' + L.intro + '</p>' +
+      '<div class="pd-picks two">' + L.list.map(function (c, k) { return '<div class="pd-pick" style="--glow:' + c.g + '"><div class="pd-pick-art"><i class="pd-pick-avatar" style="--av:0"></i><i class="pd-hicon" data-h="' + c.i + '"></i></div><span class="pd-pick-name">' + c.n + '</span><p class="pd-pick-desc">' + c.d + '</p><div class="pd-pick-tal"><span class="pd-pick-talents">' + c.t.map(function (t) { return '<i class="pd-ticon" data-t="' + t + '"></i>'; }).join('') + '</span>' + L.t3 + '</div><div class="pd-pick-act"><button class="pd-button">' + L.pick + '</button><button class="pd-button quiet">' + L.more + '</button></div></div>'; }).join('') + '</div>' +
+      '<button class="pd-button quiet">' + L.later + '</button></section>';
+  };
+  PD.demo.win.pickAbility = function (lang) {
+    var L = SH[lang || 'ru'].abil;
+    return '<section class="pd-window" role="dialog" aria-label="' + L.head + '"><header class="pd-window-head"><div class="pd-slot"><i class="pd-sitem" data-s="60"></i></div><div class="pd-titles"><h2 class="pd-heading">' + L.head + '</h2></div></header><p class="pd-pick-intro">' + L.intro + '</p>' +
+      '<div class="pd-picks">' + L.list.map(function (c) { return '<div class="pd-pick" style="--glow:' + c.g + '"><div class="pd-pick-art"><i class="pd-hicon" data-h="' + c.i + '"></i></div><span class="pd-pick-name">' + c.n + '</span><p class="pd-pick-desc">' + c.d + '</p><div class="pd-pick-act"><button class="pd-button">' + L.pick + '</button><span class="pd-pick-talents">' + c.t.map(function (t) { return '<i class="pd-ticon" data-t="' + t + '"></i>'; }).join('') + '</span></div></div>'; }).join('') + '</div>' +
+      '<button class="pd-button quiet">' + L.later + '</button></section>';
+  };
+  /* окно котла. o: { lang, state: 'seeds' | 'exotic' | 'short' } */
+  PD.demo.win.alchemy = function (lang, o) {
+    o = o || {}; var L = SH[lang || 'ru'].alch, st = o.state || 'seeds', en = st === 'short' ? 2 : 12;
+    var slot = function (s, q) { return s == null ? '<button class="pd-slot add" aria-label="+"></button>' : '<button class="pd-slot"><i class="pd-sitem" data-s="' + s + '"></i>' + (q ? '<span class="pd-qty">' + q + '</span>' : '') + '</button>'; };
+    var ins = st === 'seeds' ? slot(387) + slot(387) + slot(392) : slot(352) + slot(null) + slot(null);
+    var out = st === 'seeds' ? '<div class="pd-slot out unknown"><i class="pd-sitem" data-s="352"></i></div>' : '<div class="pd-slot out"><i class="pd-sitem" data-s="368"></i></div>';
+    var name = st === 'seeds' ? '<span class="pd-alch-name">' + L.random + '</span><span class="pd-alch-cost">' + L.cost + ' · ' + L.randomNote + '</span>'
+      : '<span class="pd-alch-name">' + L.exo + '</span><span class="pd-alch-cost' + (st === 'short' ? ' short' : '') + '"><i class="pd-energy-ico x1"></i>' + (st === 'short' ? L.exoShort : L.exoCost) + '</span>';
+    return '<section class="pd-window pd-alch-window" role="dialog" aria-label="' + L.title + '"><header class="pd-window-head"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-alchemy)"></i><div class="pd-titles"><h2 class="pd-heading">' + L.title + '</h2></div><span class="pd-energy" aria-label="' + L.energy + ' ' + en + '"><i class="pd-sitem" data-s="19"></i>' + en + '</span><button class="pd-close" aria-label="×"></button></header>' +
+      '<div class="pd-alch">' + ins + '<i class="pd-alch-arrow' + (st === 'short' ? '' : ' ready') + '"></i>' + out + '</div>' +
+      '<div class="pd-alch-out">' + name + '</div>' +
+      '<div class="pd-actions"><button class="pd-button primary"' + (st === 'short' ? ' disabled' : '') + '>' + L.brew + '</button><div class="pd-row"><button class="pd-button"><i class="pd-energy-ico"></i>' + L.energize + '</button></div><div class="pd-row"><button class="pd-button quiet"><i class="pd-icon" style="width:20px;height:20px;background-image:var(--spr-book)"></i>' + L.guide + '</button><button class="pd-button quiet">' + L.clear + '</button></div></div>' +
+      '<p class="pd-note center">' + L.hint + '</p></section>';
+  };
+  /* расщепление в энергию: выбор из рюкзака с ценой каждой вещи */
+  PD.demo.win.energize = function (lang) {
+    var L = SH[lang || 'ru'].alch;
+    var items = [[352, 6, 1, 1], [304, 6, 0, 1], [337, 3, 1, 2], [384, 2, 0, 3], [432, 1, 0, 1], [353, 6, 0, 2], [389, 2, 0, 2], [344, 3, 0, 1], [82, 0, 0, 1], [0, 0, 0, 0]];
+    return '<section class="pd-window pd-alch-window" role="dialog" aria-label="' + L.eTitle + '"><header class="pd-window-head"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-alchemy)"></i><div class="pd-titles"><h2 class="pd-heading">' + L.eTitle + '</h2></div><span class="pd-energy"><i class="pd-sitem" data-s="19"></i>12</span><button class="pd-close" aria-label="×"></button></header>' +
+      '<p class="pd-note">' + L.eHint + '</p>' +
+      '<div class="pd-alch-pick">' + items.map(function (t) { return t[3] ? '<button class="pd-slot' + (t[2] ? ' picked' : '') + (t[1] ? '' : ' disabled') + '"><i class="pd-sitem" data-s="' + t[0] + '"></i>' + (t[3] > 1 ? '<span class="pd-tag">' + t[3] + '</span>' : '') + (t[1] ? '<span class="pd-qty energy">+' + t[1] + '</span>' : '') + '</button>' : '<div class="pd-slot empty"></div>'; }).join('') + '</div>' +
+      '<div class="pd-energize-sum"><span>' + L.eSum + '</span><b><i class="pd-energy-ico"></i> +9</b></div>' +
+      '<div class="pd-row"><button class="pd-button">' + L.eBack + '</button><button class="pd-button primary">' + L.eBtn + '</button></div></section>';
+  };
+  /* учебник рецептов */
+  PD.demo.win.recipes = function (lang) {
+    var L = SH[lang || 'ru'].alch, A = function (n) { return '<i class="pd-sitem" data-s="' + n + '"></i>'; }, E = function (n) { return '<span class="en"><i class="pd-energy-ico"></i>' + n + '</span>'; }, P = '<span class="op">+</span>', R = '<i class="pd-alch-arrow"></i>';
+    var lines = [A(387) + A(387) + A(392) + R + A(352), A(352) + P + E(4) + R + A(368), A(432) + P + E(1) + R + A(434), A(304) + R + A(337) + '<span class="n">×2</span>', A(80) + P + A(353) + P + E(1) + R + A(82), A(305) + P + E(10) + R + A(417) + '<span class="n">×6</span>'];
+    return '<section class="pd-window" role="dialog" aria-label="' + L.gTitle + '"><header class="pd-window-head"><div class="pd-slot"><i class="pd-sitem" data-s="497"></i></div><div class="pd-titles"><h2 class="pd-heading">' + L.gTitle + '</h2></div><button class="pd-close" aria-label="×"></button></header>' +
+      '<div class="pd-guide-pages" role="tablist">' + L.pages.map(function (p, i) { return '<button role="tab" aria-pressed="' + (i === 0) + '"' + (i > 5 ? ' class="lost"' : '') + '>' + p + '</button>'; }).join('') + '</div>' +
+      '<div class="pd-scroll"><div class="pd-recipes">' + L.rec.map(function (r, i) { return '<div class="pd-recipe"><span class="pd-recipe-line" aria-label="' + r[0] + '">' + lines[i] + '</span>' + (i === 0 ? '<button class="pd-button">' + L.use + '</button>' : '') + '<span class="pd-recipe-name">' + r[1] + '</span></div>'; }).join('') + '</div></div></section>';
+  };
+  PD.demo.shT = SH;
+  /* артефакт: «Рог изобилия» (заряд копится) и «Плащ теней» (заряд полон). which: 'horn' | 'cloak' */
+  var ARTF = {
+    ru: { art: 'Артефакт', level: 'Уровень', charge: 'Заряд',
+      horn: { n: 'Рог изобилия', s: 251, lv: 2, p: .6, c: 7, m: 10, st: 'Наполняется едой, пока вы получаете опыт.', d: 'Можно съесть кусок, а можно наесться досыта. Положите в рог еду — он вырастет.', a: ['Съесть кусок', 'Наесться', 'Положить'] },
+      cloak: { n: 'Плащ теней', s: 240, lv: 3, p: .3, c: 8, m: 8, full: 1, st: 'Заряжен полностью', d: 'Укрывшись, вы невидимы, пока хватает заряда. Чем чаще укрываться, тем сильнее плащ.', a: ['Укрыться плащом', 'Снять'] } },
+    en: { art: 'Artifact', level: 'Level', charge: 'Charge',
+      horn: { n: 'Horn of plenty', s: 251, lv: 2, p: .6, c: 7, m: 10, st: 'Fills with food as you gain experience.', d: 'Eat a bite or eat your fill. Store food in the horn and it grows.', a: ['Eat a bite', 'Eat your fill', 'Store food'] },
+      cloak: { n: 'Cloak of shadows', s: 240, lv: 3, p: .3, c: 8, m: 8, full: 1, st: 'Fully charged', d: 'While hidden you are invisible as long as the charge lasts. The more you hide, the stronger it gets.', a: ['Hide in the cloak', 'Take off'] } }
+  };
+  PD.demo.win.artifact = function (lang, which) {
+    var T = ARTF[lang || 'ru'], A = T[which || 'horn'], steps = '';
+    for (var i = 0; i < 10; i++) steps += '<i class="' + (i < A.lv ? 'on' : i === A.lv ? 'part' : '') + '"' + (i === A.lv ? ' style="--p:' + A.p + '"' : '') + '></i>';
+    return '<section class="pd-window" role="dialog" aria-label="' + A.n + '"><header class="pd-window-head"><div class="pd-slot"><i class="pd-sitem" data-s="' + A.s + '"></i><span class="pd-lvl up">+' + A.lv + '</span></div><div class="pd-titles"><h2 class="pd-heading">' + A.n + ' <span class="pd-good">+' + A.lv + '</span></h2><span class="pd-sub" style="font:var(--text-caption,400 15px/20px var(--font-small))">' + T.art + '</span></div><button class="pd-close" aria-label="×"></button></header>' +
+      '<div class="pd-art-level"><span>' + T.level + '</span><span class="pd-steps" style="--max:10">' + steps + '</span><span><b>' + A.lv + '</b>/10</span></div>' +
+      '<div class="pd-art-charge"><span>' + T.charge + '</span><div class="pd-charge-bar seg' + (A.full ? ' full' : '') + '" style="--v:' + (A.c / A.m) + ';--n:' + A.m + '"></div><span><b>' + A.c + '</b>/' + A.m + '</span></div>' +
+      '<p class="pd-art-state' + (A.full ? ' on' : '') + '">' + A.st + '</p><p class="pd-info">' + A.d + '</p>' +
+      '<div class="pd-actions"><button class="pd-button primary">' + A.a[0] + '</button>' + (A.a.length > 2 ? '<div class="pd-row"><button class="pd-button">' + A.a[1] + '</button><button class="pd-button">' + A.a[2] + '</button></div>' : '<button class="pd-button">' + A.a[1] + '</button>') + '</div></section>';
+  };
+  PD.demo.quickArt = function (s, v, full) { return '<button class="pd-tool quick" aria-label="Быстрый слот"><i class="pd-sitem" data-s="' + s + '"></i><span class="pd-charge' + (full ? ' full' : '') + '" style="--v:' + v + '"></span></button>'; };
+  PD.demo.artT = ARTF;
+
+  /* зачарования и глифы Shattered: [ключ, ru, en, цвет]. Цвет — свечение предмета в Shattered, поднятое до читаемого на stone-800 */
+  PD.demo.ench = {
+    weapon: [['blazing', 'пламени', 'blazing', '#ff6a33'], ['blocking', 'обороны', 'blocking', '#7c96ff'], ['blooming', 'цветения', 'blooming', '#4cc24c'], ['chilling', 'холода', 'chilling', '#66f0ff'], ['corrupting', 'подчинения', 'corrupting', '#b878e8'], ['crystal', 'кристаллизации', 'crystal', '#4aa8ff'], ['elastic', 'упругости', 'elastic', '#ff66ff'], ['eldritch', 'ужаса', 'eldritch', '#a9a3bf'], ['grim', 'погибели', 'grim', '#d8cfb8'], ['kinetic', 'инерции', 'kinetic', '#ffee55'], ['lucky', 'удачи', 'lucky', '#66ff66'], ['projecting', 'проекции', 'projecting', '#a77ae0'], ['shocking', 'молний', 'shocking', '#ffffff'], ['unstable', 'хаоса', 'unstable', '#bbbbbb'], ['vampiric', 'вампиризма', 'vampiric', '#e8506e'], ['venomous', 'отравы', 'venomous', '#9a7cff'], ['vorpal', 'рассечения', 'vorpal', '#d89090']],
+    armor: [['affection', 'очарования', 'affection', '#ff6fa8'], ['antimagic', 'антимагии', 'anti-magic', '#88eeff'], ['brimstone', 'жара', 'brimstone', '#ff6a33'], ['camouflage', 'маскировки', 'camouflage', '#7cc24a'], ['entanglement', 'опутывания', 'entanglement', '#c08a4a'], ['flow', 'амфибии', 'flow', '#7c96ff'], ['obfuscation', 'темноты', 'obfuscation', '#a8a8a8'], ['potential', 'напряжения', 'potential', '#ffffff'], ['repulsion', 'отталкивания', 'repulsion', '#e8e2c8'], ['stone', 'гранита', 'stone', '#a8a090'], ['swiftness', 'скорости', 'swiftness', '#ffee55'], ['thorns', 'шипов', 'thorns', '#e8506e'], ['viscosity', 'вязкости', 'viscosity', '#a77ae0']],
+    wcurse: [['annoying', 'болтливости', 'annoying'], ['dazzling', 'ослепления', 'dazzling'], ['displacing', 'телепортации', 'displacing'], ['explosive', 'подрыва', 'explosive'], ['friendly', 'дружелюбия', 'friendly'], ['polarized', 'поляризации', 'polarized'], ['pressurized', 'давления', 'pressurized'], ['sacrificial', 'страданий', 'sacrificial'], ['wayward', 'упрямства', 'wayward'], ['wondrous', 'чудотворства', 'wondrous']],
+    acurse: [['antientropy', 'антиэнтропии', 'anti-entropy'], ['bulk', 'неповоротливости', 'bulk'], ['corrosion', 'коррозии', 'corrosion'], ['displacement', 'телепортации', 'displacement'], ['metabolism', 'метаболизма', 'metabolism'], ['multiplicity', 'копирования', 'multiplicity'], ['overgrowth', 'разрастания', 'overgrowth'], ['stench', 'зловония', 'stench']]
+  };
+
 
   /* окно поверх экрана макета: box — .phone; html — строка окна */
   PD.demo.overlay = function (box, html) { var o = document.createElement('div'); o.className = 'pd-overlay static'; o.innerHTML = html; box.appendChild(o); PD.sprite(o); return o; };

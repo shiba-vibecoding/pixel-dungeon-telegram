@@ -1,0 +1,23 @@
+<!-- @dsCard group="Shattered" height=812 width=1572 page subtitle="Котёл: три ячейки ингредиентов, стрелка, результат, «Сварить»; счётчик энергии в шапке, «Превратить в энергию», учебник рецептов. Состояния: три семени → случайное зелье; зелье + энергия → особое, энергии не хватает; выбор вещей для расщепления; учебник со страницами" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Алхимия</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; }
+  .phone { position: relative; width: 375px; height: 812px; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+  .dim .pd-overlay:first-of-type { filter: brightness(.55); }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get("lang") || "ru", en = L === "en";
+  function phone() { var p = document.createElement("div"); p.className = "phone pd-phone"; document.getElementById("row").appendChild(p); return p; }
+  var a = phone(); PD.demo.game(a, { mates: false }); PD.demo.overlay(a, PD.demo.win.alchemy(L, { state: "seeds" }));
+  var b = phone(); PD.demo.game(b, { mates: false }); PD.demo.overlay(b, PD.demo.win.alchemy(L, { state: "short" }));
+  var c = phone(); PD.demo.game(c, { mates: false }); PD.demo.overlay(c, PD.demo.win.energize(L));
+  var d = phone(); PD.demo.game(d, { mates: false }); PD.demo.overlay(d, PD.demo.win.recipes(L));
+  PD.sprite(document.body);
+</script>
+</body>
+</html>

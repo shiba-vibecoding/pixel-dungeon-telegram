@@ -194,3 +194,5 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 .pd-item.silhouette {
   -webkit-mask-size: calc(256 * var(--u)) calc(512 * var(--u)); mask-size: calc(256 * var(--u)) calc(512 * var(--u));
 }
+/* Six classes (design system v17): the narrow title's faces come from the 144-wide avatars too. */
+@media (max-height: 700px) { .pd-class .pd-class-face { background-size: 216px 48px; } }

@@ -1,0 +1,4 @@
+Some sprites in assets/Shattered come from Shattered Pixel Dungeon v4.0.2
+(c) 2014-2026 Evan Debenham, https://github.com/00-Evan/shattered-pixel-dungeon
+They are distributed under the GNU General Public License v3.0, as are Pixel Dungeon and this port.
+Files: talent_icons.png, hero_icons.png, items-shpd.png, duelist.png, cleric.png, avatars.png (cells 4-5), heroes6.png (cells 4-5), icon-alchemy.png, icon-energy.png, energy16.png, icon-talent.png.
