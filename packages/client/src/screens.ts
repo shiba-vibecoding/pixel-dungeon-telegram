@@ -15,8 +15,6 @@ import { BUFF_ICONS, type BuffEntry, type BuffName } from './hud';
 import { capitalize, fill, fmt, locale, t } from './i18n';
 import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
 import { mart } from './mart';
-import { rankIcon, trophyKind } from './trophyicons';
-import { countChallenges } from './meta';
 import type { RunRecord } from './rankings';
 import { type Assets, heroSprite } from './sprites';
 import type { LogLine } from './view';
@@ -28,7 +26,6 @@ import type { LogLine } from './view';
  */
 
 const root = document.getElementById('overlay')!;
-const HERO_CLASSES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
 /** Heroes in avatars.png and in the heroes strip, in this order. */
 export const AVATAR: Readonly<Record<HeroClass, number>> = { warrior: 0, mage: 1, rogue: 2, huntress: 3 };
 
@@ -392,187 +389,6 @@ const inQuickslot = (hero: Hero, item: Item): boolean =>
   (itemDef(item.kind).category === 'artifact' && (hero.artifact?.kind === item.kind || hero.misc?.kind === item.kind)
     ? item === hero.artifact || item === hero.misc
     : hero.items.find((other) => other.kind === item.kind) === item || (item === hero.weapon && item.kind === 'weapon.magesStaff'));
-
-/* Title */
-
-export interface TitleOptions {
-  heroClass: HeroClass;
-  /** The solo run that can be continued, if any. */
-  save: { heroClass: HeroClass; lvl: number; depth: number } | null;
-  /** Shown outside Telegram, where the name is not known. */
-  askName: string | null;
-  onClass(heroClass: HeroClass): void;
-  onName(name: string): void;
-  onContinue(): void;
-  onSolo(): void;
-  onDaily(): void;
-  /** Shows today's board; absent without checked runs. */
-  onDailyBoard?: () => void;
-  /**
-   * The daily dungeon today, as the server knows it: its attempt open, under way, or played (with
-   * the place it took of how many); absent without checked runs.
-   */
-  dailyState?: { state: 'open' | 'going' | 'done'; place: number | null; total: number };
-  /** Practice in today's dungeon, once its attempt is played. */
-  onPractice?: () => void;
-  /** Today's rules of the daily dungeon, as a line. */
-  dailyRules?: string;
-  /** The player's card (rankui.ts profileCard), once the server has told who they are. */
-  profile?: HTMLElement;
-  onRankings(): void;
-  onMart(): void;
-  onSettings(): void;
-  /** Challenges switched on for the next new game (a bit mask). */
-  challenges: number;
-  onChallenges(): void;
-  /** The arena of waves' entry, under «Play with friends» (arenaui.ts). */
-  arena?: HTMLElement;
-}
-
-/** «Rankings» with its cup. */
-function rankingsButton(onClick: () => void): HTMLButtonElement {
-  const node = button(t.ranked.title, onClick);
-  node.prepend(rankIcon('gold', { x1: true }));
-  return node;
-}
-
-export function showTitle(options: TitleOptions): void {
-  let selected = options.heroClass;
-  const name = el('span', { className: 'pd-class-name', textContent: t.classes[selected] });
-  const about = info(t.classInfo[selected], 'pd-note');
-  const classes = el('div', { className: 'pd-classes' });
-  classes.setAttribute('role', 'radiogroup');
-  const renderClasses = (): void => {
-    classes.replaceChildren(
-      ...HERO_CLASSES.map((heroClass) => {
-        const face = el('i', { className: 'pd-class-face' });
-        face.style.setProperty('--av', String(AVATAR[heroClass]));
-        const node = el(
-          'button',
-          {
-            className: `pd-class${heroClass === selected ? ' selected' : ''}`,
-            ariaLabel: t.classes[heroClass],
-            onclick: () => {
-              audio.play('click');
-              selected = heroClass;
-              name.textContent = t.classes[heroClass];
-              about.textContent = t.classInfo[heroClass];
-              options.onClass(heroClass);
-              renderClasses();
-            },
-          },
-          face,
-        );
-        node.setAttribute('role', 'radio');
-        node.setAttribute('aria-checked', String(heroClass === selected));
-        return node;
-      }),
-    );
-  };
-  renderClasses();
-
-  const field =
-    options.askName !== null &&
-    el(
-      'div',
-      { className: 'pd-field' },
-      el('label', { htmlFor: 'pd-name', textContent: t.heroName }),
-      el('input', {
-        id: 'pd-name',
-        className: 'pd-input',
-        value: options.askName,
-        maxLength: 20,
-        placeholder: t.yourName,
-        oninput: (event: Event) => options.onName((event.target as HTMLInputElement).value),
-      }),
-    );
-
-  const { save } = options;
-  const main: HTMLElement[] = [];
-  const rest: HTMLElement[] = [];
-  if (save) {
-    const resume = button(t.continueRun, options.onContinue, `${main.length ? '' : 'primary big '}stacked`);
-    resume.append(el('span', { className: 'pd-btn-sub', textContent: t.continueMeta(t.classes[save.heroClass], save.lvl, save.depth) }));
-    (main.length ? rest : main).push(resume);
-  }
-  const fresh = button(save ? t.newRun : t.solo, options.onSolo, main.length ? '' : 'primary big');
-  // The challenges go with a new game: beside it, the cup lit when some are on.
-  const on = countChallenges(options.challenges);
-  const challenges = button(t.meta.challenges, options.onChallenges);
-  const cup = el('i', { className: 'pd-icon' });
-  cup.style.cssText = `width:24px;height:24px;background-image:var(--spr-challenge-${on ? 'on' : 'off'})`;
-  challenges.prepend(cup);
-  if (on) challenges.append(el('b', { className: 'pd-ch-n', textContent: String(on) }));
-  if (main.length) rest.push(el('div', { className: 'pd-row' }, fresh, challenges));
-  else main.push(fresh, challenges);
-
-  // The daily dungeon: its attempt open (or under way), or played, with the place it took (a cup for 1–3).
-  const day = options.dailyState;
-  const done = day?.state === 'done';
-  const chip = day && el('span', { className: `pd-chip${done ? ' done' : ''}`, textContent: done ? t.ranked.dailyChipDone : day.state === 'going' ? t.ranked.dailyChipGoing : t.ranked.dailyChipOpen });
-  const place = done && day.place !== null
-    ? el(
-      'div',
-      { className: 'pd-daily-place' },
-      day.place <= 3 ? rankIcon(trophyKind('daily', day.place)) : null,
-      el('b', { textContent: `#${day.place}` }),
-      el('span', { textContent: t.ranked.ofTotal(Math.max(day.total, day.place)) }),
-    )
-    : null;
-  const daily = el(
-    'div',
-    { className: `pd-daily${done ? ' done' : ''}` },
-    el('div', { className: 'pd-daily-head' }, picture('stairs'), el('h3', { textContent: t.daily }), chip),
-    place,
-    options.dailyRules ? el('p', { className: 'pd-daily-rules', textContent: options.dailyRules }) : null,
-    info(done ? t.ranked.dailyDone : day ? t.ranked.dailyOpenNote : t.dailyInfo, 'pd-note'),
-    el(
-      'div',
-      { className: 'pd-row' },
-      done && options.onPractice ? button(t.ranked.practice2, options.onPractice) : button(t.descendDaily, options.onDaily),
-      options.onDailyBoard && button(t.dailyBoard, options.onDailyBoard),
-    ),
-  );
-
-  const logo = el(
-    'div',
-    { className: 'pd-logo' },
-    el('img', { src: 'assets/banner-title.png', alt: 'Pixel Dungeon' }),
-    el('span', { className: 'pd-logo-sub', textContent: t.subtitle }),
-  );
-
-  show(
-    el(
-      'main',
-      { className: `pd-title-screen${options.profile ? ' ranked' : ''}` },
-      el(
-        'div',
-        { className: 'pd-corner' },
-        el('button', { className: 'pd-iconbtn prefs', ariaLabel: t.meta.settings, onclick: () => (audio.play('click'), options.onSettings()) }),
-      ),
-      logo,
-      options.profile,
-      el(
-        'section',
-        { className: 'pd-window' },
-        classes,
-        el('div', { className: 'pd-class-info' }, name, about),
-        field,
-        el(
-          'div',
-          { className: 'pd-actions' },
-          daily,
-          ...main,
-          ...rest,
-          options.arena,
-          el('div', { className: 'pd-row' }, rankingsButton(options.onRankings), button(t.mart, options.onMart)),
-        ),
-      ),
-    ),
-    null,
-    true,
-  );
-}
 
 /* Menu */
 

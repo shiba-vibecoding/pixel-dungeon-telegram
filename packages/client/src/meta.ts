@@ -148,6 +148,8 @@ export interface SettingsOptions {
   onReset(): void;
   /** The bot's reminders (in Telegram): on now, and the switch; absent elsewhere. */
   reminders?: { on: boolean; set(on: boolean): void };
+  /** The hero's name, asked for where Telegram does not tell it (the camp has no field for it); absent in Telegram. */
+  name?: { value: string; set(name: string): void };
 }
 
 /** The settings, from the title's corner or the menu in a run. */
@@ -214,6 +216,13 @@ export function showSettings(options: SettingsOptions): void {
     ),
   );
   const reopen = (): void => showSettings(options);
+  const nameGroup = options.name && group(
+    t.heroName,
+    el('input', {
+      className: 'pd-input', value: options.name.value, maxLength: 20, placeholder: t.yourName,
+      oninput: (event: Event) => options.name!.set((event.target as HTMLInputElement).value),
+    }),
+  );
   const more = group(
     t.meta.more,
     linkRow(t.meta.about, () => showAbout(reopen)),
@@ -231,7 +240,7 @@ export function showSettings(options: SettingsOptions): void {
       el(
         'div',
         { className: 'pd-scroll pd-settings' },
-        el('div', { className: 'pd-col' }, sound, game, learning),
+        el('div', { className: 'pd-col' }, nameGroup, sound, game, learning),
         el('div', { className: 'pd-col' }, more, reset),
       ),
     ),
