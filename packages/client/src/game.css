@@ -242,8 +242,8 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 
 /* ---------- Talents: the action indicator (ActionIndicator) ---------- */
 .pd-actionind {
-  position: absolute; right: calc(var(--safe-r, 0px) + 8px); top: calc(var(--safe-t, 0px) + 156px); z-index: var(--z-hud, 10);
-  display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+  position: absolute; left: calc(var(--safe-l, 0px) + 8px); top: 42%; z-index: var(--z-hud, 10);
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
 }
 .pd-actionind[hidden] { display: none; }
 .pd-actionbtn {
@@ -261,3 +261,4 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
   .pd-actionbtn { animation: pd-blink 1.6s steps(1) infinite; }
 }
 .pd-choice.dim { opacity: .55; }
+#ui .pd-actionind .pd-actionbtn { pointer-events: auto; }

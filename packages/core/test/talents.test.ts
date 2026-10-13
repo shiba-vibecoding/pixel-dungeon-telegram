@@ -150,15 +150,13 @@ describe("the warrior's talents", () => {
     const { world, hero } = ground('warrior', 3);
     give(hero, 'provoked_anger', 2);
     hero.shield = 1;
-    const mob = addMob(world, 'rat', hero.pos + 1, 1000);
-    mob.attack = 0;
-    // A monster's blow takes the shield down.
-    hero.tal = { ...(hero.tal ?? {}) };
-    hero.hp = 100;
-    const rat = addMob(world, 'brute', hero.pos - 1, 1000);
-    rat.time = floorAt(world, 1).now;
-    wait(world, 2);
-    expect(hero.tal?.provoked !== undefined || (hero.shield ?? 0) > 0).toBe(true);
+    addMob(world, 'brute', hero.pos + 1, 1000);
+    for (let i = 0; i < 4 && hero.tal?.provoked === undefined; i++) wait(world);
+    expect(hero.tal?.provoked).toBeGreaterThanOrEqual(0);
+    expect(hero.shield ?? 0).toBe(0);
+    const target = floorAt(world, 1).mobs[0]!;
+    act(world, 'p', { type: 'attack', target: target.id });
+    expect(hero.tal?.provoked).toBeUndefined();
   });
 
   it('iron will makes the seal stronger; another class gets a shield of its own', () => {

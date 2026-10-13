@@ -72,12 +72,21 @@ export function throwPos(ctx: Ctx, hero: Hero, weapon: Item, target: number): nu
 }
 
 /**
+ * MissileWeapon.durabilityPerUse and TippedDart.durabilityPerUse: what a hit takes off a stack (the rings and durable
+ * projectiles lengthen it); a tipped dart lasts a use more a point of durable tips.
+ */
+function usePerHit(hero: Hero, item: Item): number {
+  const use = durabilityPerUse(item, gearLevel(item), sharpshootingDurability(hero));
+  return isTippedDart(item.kind) ? use / (1 + pointsInTalent(hero, 'durable_tips')) : use;
+}
+
+/**
  * MissileWeapon.decrementDurability: the stack in the pack wears by a use; should it have had none left, the one
  * thrown breaks instead and the stack is whole again. The last of a stack wears itself.
  */
 function decrementDurability(ctx: Ctx, hero: Hero, thrown: Item): void {
   if (parent) {
-    const perUse = durabilityPerUse(parent, gearLevel(parent), sharpshootingDurability(hero));
+    const perUse = usePerHit(hero, parent);
     if (durabilityLeft(parent) <= perUse) {
       thrown.durability = 0;
       delete parent.durability;
@@ -90,7 +99,7 @@ function decrementDurability(ctx: Ctx, hero: Hero, thrown: Item): void {
     parent = null;
     return;
   }
-  const perUse = durabilityPerUse(thrown, gearLevel(thrown), sharpshootingDurability(hero));
+  const perUse = usePerHit(hero, thrown);
   thrown.durability = durabilityLeft(thrown) - perUse;
   if (thrown.durability > 0 && thrown.durability <= perUse) ctx.effects.push({ type: 'worn', hero: hero.id, item: thrown, state: 'warning' });
   else if (perUse < 100 && thrown.durability <= 0) ctx.effects.push({ type: 'worn', hero: hero.id, item: thrown, state: 'broken' });
@@ -254,7 +263,7 @@ export function missileProc(ctx: Ctx, hero: Hero, mob: Mob, damage: number, thro
     stack.usesLeftToID = Math.min(stack.usesLeftToID ?? 10, 0);
     stack.availableUsesToID = 0;
   }
-  const last = !parent && durabilityLeft(thrown) <= durabilityPerUse(thrown, gearLevel(thrown), sharpshootingDurability(hero));
+  const last = !parent && durabilityLeft(thrown) <= usePerHit(hero, thrown);
   if (!last) {
     familiarise(ctx, hero, stack);
     if (!stack.levelUnknown) delete thrown.levelUnknown;

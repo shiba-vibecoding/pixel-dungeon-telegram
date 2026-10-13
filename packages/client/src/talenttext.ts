@@ -1,4 +1,4 @@
-import type { SubClass, TalentId } from '@pd/core';
+import { berserkOf, comboOf, type Hero, momentumOf, pointsInTalent, type SubClass, type TalentId } from '@pd/core';
 import { fill, lang } from './i18n';
 import { TAL_EN, TAL_RU } from './i18n-talents';
 
@@ -74,4 +74,46 @@ export function talentMessage(key: string, ...args: Array<string | number>): str
 /** A refusal that is one of Shattered's lines («tal:combo.bad_target»), or ''. */
 export function talentReason(reason: string): string {
   return reason.startsWith('tal:') ? tal(`actors.buffs.${reason.slice(4)}`) : '';
+}
+
+/** The longer text of a talent's or subclass's buff (its Shattered description), for the window a tap on its icon opens; '' for the rest. */
+export function talentBuffInfo(hero: Hero, name: string, turns?: number): string {
+  const rage = berserkOf(hero);
+  const combo = comboOf(hero);
+  const momentum = momentumOf(hero);
+  const points = (id: TalentId): number => pointsInTalent(hero, id);
+  switch (name) {
+    case 'berserk':
+      return rage ? tal('actors.buffs.berserk.angered_desc', Math.floor(rage.power * 100), Math.floor(Math.min(0.5, rage.power / 2) * 100),
+        Math.round((8 + 2 * (hero.armor.level ?? 0)) * (1 + 2 * (1 - hero.hp / hero.ht) ** 3))) : '';
+    case 'berserking':
+      return tal('actors.buffs.berserk.berserk_desc', rage?.shield ?? 0);
+    case 'exhausted':
+      return rage ? `${tal('actors.buffs.berserk.recovering_desc')}\n\n${rage.levelRecovery > 0
+        ? tal('actors.buffs.berserk.recovering_desc_levels', rage.levelRecovery.toFixed(2)) : tal('actors.buffs.berserk.recovering_desc_turns', rage.turnRecovery)}` : '';
+    case 'comboChain':
+      return combo ? tal('actors.buffs.combo.desc', combo.count, Math.ceil(combo.time)) : '';
+    case 'momentum':
+      return momentum ? (momentum.freerunCooldown > 0 && momentum.stacks === 0 ? tal('actors.buffs.momentum.resting_desc', momentum.freerunCooldown)
+        : tal('actors.buffs.momentum.momentum_desc', momentum.stacks)) : '';
+    case 'freerunning':
+      return tal('actors.buffs.momentum.running_desc', momentum?.freerunTurns ?? 0);
+    case 'preparation':
+      return tal('actors.buffs.preparation.desc') + `\n\n${tal('actors.buffs.preparation.desc_invis_time', hero.tal?.prep ?? 0)}`;
+    case 'sniperMark':
+      return tal('actors.buffs.snipersmark.desc', turns ?? 0);
+    case 'holdFast':
+      return tal('actors.buffs.holdfast.desc', points('hold_fast'), 2 * points('hold_fast'), 25 + 25 * points('hold_fast'));
+    case 'wandEmpower':
+      return hero.tal?.wandEmpower ? tal('actors.buffs.wandempower.desc', hero.tal.wandEmpower.boost, hero.tal.wandEmpower.left)
+        : tal('actors.buffs.scrollempower.desc', 2, hero.tal?.scrollEmpower ?? 0);
+    case 'trackerBlow':
+      return tal('actors.hero.talent$provokedangertracker.desc', turns ?? 0);
+    case 'followup':
+      return tal('actors.hero.talent$followupstriketracker.desc', turns ?? 0);
+    case 'cooldown':
+      return tal('actors.hero.talent$improvisedprojectilecooldown.desc', turns ?? 0);
+    default:
+      return '';
+  }
 }

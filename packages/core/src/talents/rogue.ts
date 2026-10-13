@@ -189,7 +189,8 @@ function blinkCell(ctx: Ctx, hero: Hero, mob: Mob): number {
       queue.push(next);
     }
   }
-  const trueDistance = (a: number, b: number): number => Math.hypot((a % WIDTH) - (b % WIDTH), Math.trunc(a / WIDTH) - Math.trunc(b / WIDTH));
+  // Level.trueDistance, compared by its square (no floating square root in the rules).
+  const trueDistance = (a: number, b: number): number => ((a % WIDTH) - (b % WIDTH)) ** 2 + (Math.trunc(a / WIDTH) - Math.trunc(b / WIDTH)) ** 2;
   let dest = -1;
   for (const n of NEIGHBOURS8) {
     const cell = mob.pos + n;

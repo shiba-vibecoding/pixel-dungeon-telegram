@@ -94,7 +94,7 @@ export {
 } from './talents/data';
 export { type TalentBuffs, type BerserkBuff, type ComboBuff, type MomentumBuff, tbOf } from './talents/state';
 export { COMBO_MOVES, COMBO_REQ, type ComboMove, canUseMove, comboOf, highestMove, canStrike } from './talents/combo';
-export { berserkOf, canBerserk, currentShieldBoost, maxPower, maxShieldBoost } from './talents/berserk';
+export { berserkDamageFactor, berserkOf, canBerserk, currentShieldBoost, maxPower, maxShieldBoost } from './talents/berserk';
 export { ambushRange, blinkDistance, freerunning, koThreshold, momentumOf, prepBonus, prepLevel, prepTurns } from './talents/rogue';
 export { bowOf, markedMob, MARK_TURNS } from './talents/huntress';
 export { holdFastDecay } from './talents/hold-fast';

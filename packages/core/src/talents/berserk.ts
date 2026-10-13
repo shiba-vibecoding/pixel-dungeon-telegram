@@ -67,7 +67,8 @@ export function berserkProblem(hero: Hero): string | null {
 /** Berserk.currentShieldBoost: 8 and two a level of armour, up to three times that when low on health, more with surplus rage. */
 export function currentShieldBoost(hero: Hero, berserk: BerserkBuff): number {
   // Base multiplier scales at 1/1.5/2/2.5/3x at 100/37/20/9/0% health.
-  let multiplier = f32(1 + f32(2 * f32((1 - hero.hp / hero.ht) ** 3)));
+  const missing = f32(1 - hero.hp / hero.ht);
+  let multiplier = f32(1 + f32(2 * f32(f32(missing * missing) * missing)));
   // Endless rage effect on shield and cooldown.
   if (berserk.power > 1) {
     multiplier = f32(multiplier * berserk.power);
@@ -175,7 +176,7 @@ export function berserkTurn(ctx: Ctx, hero: Hero, holdFastFactor: number): boole
     if (berserk.buffer > 0) {
       berserk.buffer--;
     } else {
-      berserk.power = f32(berserk.power - f32(f32(Math.min(1, Math.max(0.1, berserk.power)) * f32(0.05)) * f32((hero.hp / hero.ht) ** 2)));
+      berserk.power = f32(berserk.power - f32(f32(Math.min(1, Math.max(0.1, berserk.power)) * f32(0.05)) * f32(f32(hero.hp / hero.ht) * f32(hero.hp / hero.ht))));
       if (berserk.power <= 0) delete tbOf(hero).berserk;
     }
   } else if (berserk.state === 'recovering' && berserk.levelRecovery === 0 && regenOn(ctx.world, hero)) {

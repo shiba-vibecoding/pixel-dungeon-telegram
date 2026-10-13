@@ -75,7 +75,7 @@ import { startReporting } from './report';
 import { alchemyOpen, refreshAlchemy, showAlchemy } from './alchemyui';
 import { ActionIndicator, type ActionKind } from './actionind';
 import { hasFreePoints, refreshHeroWindow, showComboWindow } from './talentui';
-import { tal as talentLine, talentReason } from './talenttext';
+import { tal as talentLine, talentBuffInfo, talentReason } from './talenttext';
 import { STEP_MS, TILE, View } from './view';
 
 /*
@@ -1553,7 +1553,9 @@ function showBuff(name: BuffName, turns?: number): void {
           : name === 'stealth' ? artText('cloakofshadows$cloakstealth.desc', [turns ?? 0])
           : name === 'timeFreeze' ? artText('timekeepershourglass$timefreeze.desc', [turns ?? 0])
           : name === 'thorns' ? artText('capeofthorns$thorns.desc', [turns ?? 0])
-          : name === 'foresight' ? artText('talismanofforesight$foresight.desc') || null : null;
+          : name === 'foresight' ? artText('talismanofforesight$foresight.desc') || null
+          // The talents' and subclasses': Shattered's descriptions.
+          : (me && talentBuffInfo(me, name, turns)) || null;
   if (long) {
     walk.reset();
     showInfo(t.buffs[name], long.split('\n\n'), hideOverlay);
