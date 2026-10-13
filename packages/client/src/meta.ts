@@ -443,6 +443,14 @@ const MARK2: Readonly<Record<string, number>> = {
   chasmFloor: 7, waterFloor: 8, grassFloor: 9, darkFloor: 10, largeFloor: 11, trapsFloor: 12, secretsFloor: 13,
 };
 
+/** Names for notes whose keys the core does not make yet (journal2.json's): a note with one of them reads right at once. */
+const MARK2_NAMES: Readonly<Record<string, { ru: string; en: string }>> = {
+  lostPack: { ru: 'потерянный рюкзак', en: 'lost backpack' }, distantWell: { ru: 'дальний колодец', en: 'distant well' },
+  demonSpawner: { ru: 'логово демонов', en: 'demon spawner' }, darkFloor: { ru: 'этаж: тьма', en: 'floor: dark' },
+  largeFloor: { ru: 'этаж: большой', en: 'floor: large' }, trapsFloor: { ru: 'этаж: ловушки', en: 'floor: traps' },
+  secretsFloor: { ru: 'этаж: тайники', en: 'floor: secrets' },
+};
+
 function noteIcon(landmark: string, depth: number): HTMLElement {
   const mark = MARK2[landmark === 'shop' && depth === 20 ? 'impShop' : landmark];
   if (mark !== undefined) {
@@ -512,7 +520,7 @@ function notesView(world: World, hero: Hero): HTMLElement {
         'div',
         { className: `pd-jrow${depth === hero.depth ? ' here' : ''}` },
         noteIcon(note.landmark, depth),
-        el('span', { className: 'pd-jname', textContent: capitalize((t.hero.landmarks as Record<string, string>)[note.landmark] ?? note.landmark) }),
+        el('span', { className: 'pd-jname', textContent: capitalize((t.hero.landmarks as Record<string, string>)[note.landmark] ?? MARK2_NAMES[note.landmark]?.[lang] ?? note.landmark) }),
       ));
     }
     for (const key of keys.filter((k) => k.depth === depth)) {

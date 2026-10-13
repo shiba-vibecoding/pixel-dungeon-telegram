@@ -305,7 +305,7 @@ function drawTrinkets(world: World, hero: Hero): void {
   mountSprite(pulse, 'catalyst', 6, 120);
   const box = windowOf(
     { title: capitalize(t.items['trinket.catalyst']), sub: t.alch.chooseTrinket, icon: el('div', { className: 'pd-slot' }, pulse), className: 'pd-alch-sub' },
-    cards,
+    el('div', { className: 'pd-scroll' }, cards),
     button(t.alchUi.decideLater, back, 'quiet'),
   );
   box.setAttribute('role', 'dialog');

@@ -3,6 +3,7 @@ import { audio } from './audio';
 import { t } from './i18n';
 import { AVATAR, durabilityBar, markWear, sprites } from './screens';
 import { QUICKSLOTS } from './quickslot';
+import { BUFF_TINTS } from './shfx';
 import type { LogLine } from './view';
 
 /*
@@ -46,16 +47,6 @@ export interface BuffEntry {
   /** An index of buffs-tints.png (design v19): the buffs that share one Shattered icon each have a sheet colour of their own. */
   tint?: number;
 }
-
-/**
- * buffs-tints.png / buffs-tints-large.png (assets/shattered/buffs-tints.json): the 18 buffs whose icon Shattered tints.
- * The sheets are drawn already tinted, so nothing is coloured in code. The talisman's foresight (17) and the prismatic
- * guard at full strength (8) are chosen where those buffs are listed.
- */
-export const BUFF_TINTS: Partial<Record<BuffName, number>> = {
-  haste: 0, stamina: 1, fireImbue: 2, toxicImbue: 3, frostImbue: 4, shield: 5, arcaneArmor: 6, prismaticGuard: 7,
-  potionHealing: 9, aquaHealing: 10, htBoost: 11, stealth: 12, invisible: 13, timeFreeze: 14, stasis: 14, slow: 15, thorns: 16,
-};
 
 /** Puts a buff's sheet colour on it, if it has one. */
 const tinted = (buff: BuffEntry): BuffEntry => (buff.tint === undefined && BUFF_TINTS[buff.name] !== undefined ? { ...buff, tint: BUFF_TINTS[buff.name]! } : buff);

@@ -25,6 +25,16 @@ export function shImage(name: string): HTMLImageElement {
 /** Whether a sheet has come (a broken one never does). */
 export const loaded = (image: HTMLImageElement): boolean => image.complete && image.naturalWidth > 0;
 
+/**
+ * buffs-tints.png / buffs-tints-large.png (assets/shattered/buffs-tints.json): the 18 buffs whose icon Shattered tints,
+ * by the hud's buff names. The sheets are drawn already tinted, so nothing is coloured in code. Two are chosen where
+ * the buffs are listed instead: the talisman's foresight (17) and the prismatic guard at full strength (8).
+ */
+export const BUFF_TINTS: Readonly<Record<string, number>> = {
+  haste: 0, stamina: 1, fireImbue: 2, toxicImbue: 3, frostImbue: 4, shield: 5, arcaneArmor: 6, prismaticGuard: 7,
+  potionHealing: 9, aquaHealing: 10, htBoost: 11, stealth: 12, invisible: 13, timeFreeze: 14, stasis: 14, slow: 15, thorns: 16,
+};
+
 /** Loads the sheets the map's effects use, ahead of the first one. */
 export function preloadMapFx(): void {
   for (const name of ['wand-bolts', 'prismatic', 'ally-heart', 'chain-link', 'chain-hook']) shImage(name);

@@ -255,3 +255,20 @@ html.pd-paused *, html.pd-paused *::before, html.pd-paused *::after { animation-
 .pd-offer.camp .pd-offer-name { white-space: normal; line-height: 18px; min-height: 36px; }
 /* With no streak, the card's line is a sentence: it may take two lines. */
 .pd-profile-streak.off { white-space: normal; font: var(--text-caption, 400 15px/20px var(--font-small)); }
+/* A narrow phone (360): the pot's row of five (ui.css) is two pixels too wide, so the slots give up a few. */
+@media (max-width: 380px) {
+  .pd-alch { grid-template-columns: repeat(3, 46px) 64px 54px; gap: 4px; padding: 10px 4px; }
+  .pd-alch .pd-slot { --slot: 46px; width: 46px; height: 46px; }
+  .pd-alch .pd-slot.out { --slot: 54px; width: 54px; height: 54px; }
+  .pd-alch .pd-slot .pd-sitem { --u: 2px; }
+  .pd-alch .pd-slot.out .pd-sitem { --u: 2px; }
+  .pd-catalyst, .pd-energy-pile { width: 32px; height: 32px; }
+}
+/* The trinket window (alchemyui.ts): an effect takes at most three lines; on a narrow phone «Take» goes under the text. */
+.pd-trinket-desc { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+@media (max-width: 420px) {
+  .pd-trinket { grid-template-columns: 52px minmax(0, 1fr); grid-template-areas: "art name" "art desc" "btn btn"; row-gap: 4px; }
+  .pd-trinket > .pd-button { justify-self: stretch; min-height: 32px; }
+}
+/* The stone of augmentation's rows on a narrow phone: the label gives up some width so the note beside the number fits. */
+@media (max-width: 380px) { .pd-aug-row { grid-template-columns: 52px auto minmax(0, 1fr); gap: 6px; } }
