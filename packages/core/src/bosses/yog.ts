@@ -7,7 +7,8 @@ import { setTerrain } from '../level/flags';
 import { F, hasFlag, T } from '../level/terrain';
 import { HALLS_EXIT, YOG_POS } from '../level/halls-boss';
 import { bossHurt } from '../hero';
-import { getStep, meleeAttack, spendMob } from '../ai';
+import { meleeAttack, spendMob } from '../ai';
+import { getStep } from '../pathfinder';
 import { applyOoze } from './goo';
 import { burst } from '../traps';
 import { seedGas } from '../gas';
@@ -33,10 +34,14 @@ import type { BossRules } from './rules';
 
 /** YogDzewa.getPairedFist. */
 const PAIRS: ReadonlyArray<readonly [MobKind, MobKind]> = [['burningFist', 'soiledFist'], ['rottingFist', 'rustedFist'], ['brightFist', 'darkFist']];
-/** Yog's minions (YogDzewa.die kills them with it). SEAM(mobs): ripper demons, Yog's eyes and scorpios with the demon spawners. */
-const MINION_KINDS: ReadonlySet<MobKind> = new Set<MobKind>(['larva']);
-/** Statistics.spawnersAlive: the demon spawners of the halls left alive. SEAM(levels): there are none here yet. */
-export const spawnersAlive = (_ctx: Ctx): number => 0;
+/** Yog's minions (YogDzewa.die kills them with it): larvae, and ripper demons for the demon spawners left alive. */
+const MINION_KINDS: ReadonlySet<MobKind> = new Set<MobKind>(['larva', 'ripper']);
+/** Statistics.spawnersAlive: the demon spawners of the halls (depths 21-24) left alive. */
+export const spawnersAlive = (ctx: Ctx): number => {
+  let alive = 0;
+  for (let depth = 21; depth < 25; depth++) alive += ctx.world.floors[depth]?.mobs.filter((m) => m.kind === 'spawner' && isAlive(m)).length ?? 0;
+  return alive;
+};
 
 const MIN_ABILITY_CD = 10;
 const MAX_ABILITY_CD = 15;
@@ -91,7 +96,9 @@ function newYog(ctx: Ctx): NonNullable<Mob['boss']> {
   const fists: MobKind[] = PAIRS.map(([a, b]) => (rng.int(2) === 0 ? a : b));
   rng.shuffle(fists);
   const regular: MobKind[] = [];
-  for (let i = 0; i < 4; i++) regular.push(i >= spawnersAlive(ctx) ? 'larva' : 'larva');
+  // YogDzewa: a ripper demon (YogRipper) for each demon spawner left alive, up to four; larvae for the rest.
+  const spawners = spawnersAlive(ctx);
+  for (let i = 0; i < 4; i++) regular.push(i >= spawners ? 'larva' : 'ripper');
   ctx.rng.shuffle(regular);
   return { phase: 0, abilityCooldown: 0, summonCooldown: 0, fistSummons: fists, regularSummons: regular, targetedCells: [] };
 }
@@ -185,7 +192,7 @@ function yogAct(ctx: Ctx, yog: Mob): void {
     }
     if (spawn === -1) break;
     const minion = scaleMob(ctx.world, createMob(`#${++ctx.world.nextId}`, kind, spawn, 'wandering', ctx.floor.now + 1));
-    minion.minion = true;
+    minion.bossMinion = true;
     minion.target = hero?.pos ?? spawn;
     ctx.floor.mobs.push(minion);
     ctx.effects.push({ type: 'pushed', depth: ctx.depth, mob: minion.id, from: yog.pos, to: spawn });
@@ -209,7 +216,7 @@ function fireBeams(ctx: Ctx, yog: Mob, targets: number[]): void {
     ends.push(beam.collisionPos);
     for (const p of beam.path) {
       const ch = charAt(ctx.world, ctx.depth, p);
-      if (ch && ch !== yog && (isHero(ch) || !ch.minion || ch.kind === 'bee') && !affected.includes(ch)) affected.push(ch);
+      if (ch && ch !== yog && (isHero(ch) || !ch.bossMinion || ch.kind === 'bee') && !affected.includes(ch)) affected.push(ch);
       if (hasFlag(ctx.level.map[p]!, F.FLAMABLE)) {
         ctx.level.map[p] = T.EMBERS;
         ctx.effects.push({ type: 'burnt', depth: ctx.depth, pos: p });
@@ -316,7 +323,7 @@ export const YOG: BossRules = {
     // YogDzewa.aggro: its minions nearby turn on whoever hurt it.
     if (typeof source !== 'string') {
       for (const m of ctx.floor.mobs) {
-        if (m.minion && MINION_KINDS.has(m.kind) && distance(yog.pos, m.pos) <= 4) {
+        if (m.bossMinion && MINION_KINDS.has(m.kind) && distance(yog.pos, m.pos) <= 4) {
           m.state = 'hunting';
           m.enemy = source.id;
           m.target = source.pos;
@@ -328,7 +335,7 @@ export const YOG: BossRules = {
   },
   die(ctx, yog) {
     for (const m of [...ctx.floor.mobs]) {
-      if (m.minion && MINION_KINDS.has(m.kind)) {
+      if (m.bossMinion && MINION_KINDS.has(m.kind)) {
         m.hp = 0;
         killMob(ctx, m);
       }

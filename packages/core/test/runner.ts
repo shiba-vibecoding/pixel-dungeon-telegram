@@ -141,7 +141,7 @@ function bossPlan(world: World, id: string): Action | null {
       }
       const king = floor.mobs.find((m) => m.kind === 'king');
       if (king?.boss?.phase === 2) {
-        const subjects = floor.mobs.filter((m) => m.minion).sort((a, b) => distance(a.pos, hero.pos) - distance(b.pos, hero.pos));
+        const subjects = floor.mobs.filter((m) => m.bossMinion).sort((a, b) => distance(a.pos, hero.pos) - distance(b.pos, hero.pos));
         if (subjects[0]) return hunt(subjects[0]);
         return { type: 'wait' };
       }
@@ -163,7 +163,11 @@ function bossPlan(world: World, id: string): Action | null {
         for (let c = 0; c < level.map.length; c++) {
           if (canEnter(level, c) && distance(c, YOG_POS) >= 9 && (far === -1 || distance(c, hero.pos) < distance(far, hero.pos))) far = c;
         }
-        return far === -1 ? null : toward(world, far, id);
+        const away = far === -1 ? null : toward(world, far, id);
+        if (away) return away;
+        // Hemmed in (Yog's rippers and larvae all round): cut a way out, never at Yog while it cannot be hurt.
+        const foe = floor.mobs.find((m) => adjacent(m.pos, hero.pos) && !invulnerable(world, m));
+        return foe ? { type: 'attack', target: foe.id } : { type: 'wait' };
       }
       const yog = floor.mobs.find((m) => m.kind === 'yog');
       if (yog) {

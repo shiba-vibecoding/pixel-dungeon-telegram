@@ -4,12 +4,11 @@ import type { ItemKind } from './items';
 
 /*
  * Char.Property: what kind of creature a character is, as Shattered tells
- * them apart — bosses, the undead, demons, things of stone or metal, the
- * fiery, the icy, the acidic, the electric, the large, the immovable — and
+ * them apart — bosses and minibosses, the undead, demons, things of stone or
+ * metal, the fiery, the icy, the acidic, the electric, the large (who cannot
+ * squeeze through a doorway or a corridor), the immovable, the static — and
  * the harm each kind resists (half of it) or ignores.
- *
- * Seam for the mobs stream: the table below gives Shattered's properties to
- * the monsters there are now; Shattered's roster fills it with its own.
+ * The monsters' as Shattered gives them; a champion giant is large too.
  */
 
 export type Property =
@@ -26,30 +25,49 @@ const PROPERTIES: Partial<Record<MobKind, readonly Property[]>> = {
   rottingFist: ['boss', 'demonic', 'acidic'],
   burningFist: ['boss', 'demonic', 'fiery'],
   larva: ['demonic', 'bossMinion'],
-  // Shattered's bosses' own (YogFist's four others, Pylon, DwarfKing's Ghoul).
+  // Shattered's bosses' own (YogFist's four others, Pylon).
   soiledFist: ['boss', 'demonic'],
   rustedFist: ['boss', 'demonic', 'large', 'inorganic'],
   brightFist: ['boss', 'demonic', 'electric'],
   darkFist: ['boss', 'demonic'],
   pylon: ['miniboss', 'bossMinion', 'inorganic', 'electric', 'immovable', 'static'],
-  ghoul: ['undead'],
   fetidRat: ['miniboss', 'demonic'],
+  gnollTrickster: ['miniboss'],
+  greatCrab: ['miniboss'],
   curse: ['miniboss', 'undead'],
+  causticSlime: ['acidic'],
   skeleton: ['undead', 'inorganic'],
+  necroSkeleton: ['undead', 'inorganic'],
   thief: ['undead'],
   bandit: ['undead'],
+  dm100: ['electric', 'inorganic'],
+  guard: ['undead'],
+  necromancer: ['undead'],
+  spectralNecromancer: ['undead'],
+  dm200: ['inorganic', 'large'],
+  dm201: ['inorganic', 'large', 'immovable'],
+  ghoul: ['undead'],
+  elemental: ['fiery'],
+  frostElemental: ['icy'],
+  shockElemental: ['electric'],
   monk: ['undead'],
   senior: ['undead'],
   warlock: ['undead'],
-  wraith: ['undead', 'inorganic'],
   golem: ['inorganic', 'large'],
-  statue: ['inorganic'],
-  elemental: ['fiery'],
   succubus: ['demonic'],
   eye: ['demonic'],
   scorpio: ['demonic'],
   acidic: ['demonic', 'acidic'],
+  ripper: ['demonic', 'undead'],
+  spawner: ['immovable', 'miniboss', 'demonic', 'static'],
+  wraith: ['undead', 'inorganic'],
+  tormentedSpirit: ['undead', 'inorganic'],
   mimic: ['demonic'],
+  goldenMimic: ['demonic'],
+  crystalMimic: ['demonic'],
+  ebonyMimic: ['demonic'],
+  statue: ['inorganic'],
+  armoredStatue: ['inorganic'],
   shopkeeper: ['immovable'],
   impShopkeeper: ['immovable'],
   imp: ['immovable'],
@@ -61,13 +79,15 @@ const PROPERTIES: Partial<Record<MobKind, readonly Property[]>> = {
   lotus: ['immovable', 'static'],
 };
 
-/** Char.properties; a hero has none. */
+/** Char.properties; a hero has none; a giant champion is large (Char.properties with ChampionEnemy.Giant). */
 export function propertiesOf(char: Char): readonly Property[] {
   if (!('kind' in char)) return [];
   const own = PROPERTIES[char.kind] ?? [];
-  // A boss's summons (the King's court, Yog's larvae: Property.BOSS_MINION), and the King on his throne (IMMOVABLE in phase two).
+  // A giant champion is large; a boss's summons (the King's court, Yog's larvae: Property.BOSS_MINION); the King on
+  // his throne (IMMOVABLE in phase two).
   const extra: Property[] = [];
-  if (char.minion && !own.includes('bossMinion')) extra.push('bossMinion');
+  if (char.champion === 'giant' && !own.includes('large')) extra.push('large');
+  if (char.bossMinion && !own.includes('bossMinion')) extra.push('bossMinion');
   if (char.kind === 'king' && char.boss?.phase === 2) extra.push('immovable');
   return extra.length > 0 ? [...own, ...extra] : own;
 }
@@ -110,6 +130,8 @@ export function isImmune(char: Char, harm: Harm): boolean {
     }
   }
   if (!('kind' in char)) return false;
+  // ChampionEnemy.Blazing: immune to Burning.
+  if (char.champion === 'blazing' && harm === 'burning') return true;
   switch (char.kind) {
     // The earth guardian and the wards are immune to the ally buffs (AllyBuff); wards know no sleep, fear or vertigo.
     case 'guardian':
@@ -119,7 +141,9 @@ export function isImmune(char: Char, harm: Harm): boolean {
     case 'lotus':
       return harm === 'doom';
     case 'piranha':
-      return harm === 'burning';
+    case 'phantomPiranha':
+      // Piranha: the blobs but electricity and freezing (BlobImmunity), and burning.
+      return harm === 'burning' || harm === 'toxic' || harm === 'corrosion';
     case 'succubus':
       return harm === 'charm';
     case 'tengu':

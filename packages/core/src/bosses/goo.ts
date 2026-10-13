@@ -131,7 +131,7 @@ export const GOO: BossRules = {
     if ((mob.boss?.pumpedUp ?? 0) > 0) attack *= 2;
     return attack;
   },
-  defenseSkill(_ctx, mob) {
+  defenseSkill(mob) {
     return Math.trunc(8 * (enraged(mob) ? 1.5 : 1));
   },
   damageRoll(ctx, mob) {

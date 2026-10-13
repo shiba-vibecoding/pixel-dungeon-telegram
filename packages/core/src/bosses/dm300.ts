@@ -9,7 +9,8 @@ import { F, hasFlag, T } from '../level/terrain';
 import { DIGGABLE_AREA, GATE, GATE_CELLS, MAIN_ARENA, PYLON_POSITIONS } from '../level/caves-boss';
 import { rectInside } from '../level/spainter';
 import { bossHurt } from '../hero';
-import { getStep, mobFov, spendMob } from '../ai';
+import { mobFov, spendMob } from '../ai';
+import { getStep } from '../pathfinder';
 import { seedGas } from '../gas';
 import { scaleMob } from '../party';
 import {
@@ -436,9 +437,6 @@ export const DM300: BossRules = {
       }
     }
     return false;
-  },
-  speed(mob) {
-    return mob.boss?.supercharged ? 2 : 1;
   },
   getCloser(ctx, dm, target, fov) {
     const step = findStep(ctx, dm, target, fov);

@@ -84,11 +84,13 @@ describe('the demon halls', () => {
         Object.assign(eye, { enemy: 'p', target: hero.pos, enemySeen: true });
         floorAt(world, 23).mobs.push(eye, between);
         const effects: Effect[] = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 10; i++) {
           const result = act(world, 'p', { type: 'search' });
           if (result.ok) effects.push(...result.effects);
         }
-        const gazes = effects.filter((e) => e.type === 'zapped' && e.bolt === 'beam');
+        // Eye.doAttack: it charges its beam first, then lets the deathgaze go.
+        const gazes = effects.filter((e) => e.type === 'mobZap' && e.bolt === 'deathGaze');
+        if (gazes.length > 0) expect(effects.some((e) => e.type === 'charging' && e.mob === '#eye')).toBe(true);
         if (gazes.length === 0) continue;
         expect(effects.some((e) => e.type === 'attack' && e.attacker === '#eye' && e.target === '#rat')).toBe(true);
         return;
@@ -98,3 +100,21 @@ describe('the demon halls', () => {
   });
 });
 
+// Yog-Dzewa's fight and the Amulet: bosses.test.ts.
+describe('the demon halls, played through', () => {
+  it('a simple bot can play through the halls without breaking anything', { timeout: 60000 }, () => {
+    for (const seed of [41, 42]) {
+      const world = at(21, seed);
+      const hero = heroById(world, 'p')!;
+      // Demons sting and gaze from afar, and this simple bot would rest forever: it is kept healthy.
+      Object.assign(hero, { attackSkill: 600, defenseSkill: 100, ht: 50000, hp: 50000, light: 100000 });
+      for (let i = 0; i < 8000 && isAlive(hero) && hero.depth < 25; i++) {
+        hero.hp = hero.ht;
+        const result = act(world, 'p', botAction(world, 'p', 25));
+        if (!result.ok) act(world, 'p', { type: 'wait' });
+        checkInvariants(world);
+      }
+      expect(hero.depth, `seed ${seed}`).toBe(25);
+    }
+  });
+});

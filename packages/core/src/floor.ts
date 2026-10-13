@@ -1,4 +1,5 @@
-import { type Hero, isAlive, type Mob, type MobKind, type SubClass } from './actors';
+import { type ChampionKind, type Hero, isAlive, type Mob, type MobKind, type SubClass } from './actors';
+import type { DownedGhoul, MobBolt } from './mobskills';
 import { DARKNESS, isChallenged, underChallenges } from './challenges';
 
 import { castShadow, circleCells, LIGHT_DISTANCE, terrainBlocksSight, viewDistance } from './fov';
@@ -63,6 +64,8 @@ export interface Floor {
   perHero?: ItemKind[];
   /** A boss's level: the fight's state (sealed, the health bar, its phases, buffs and blobs): bosses/state.ts. */
   boss?: BossFloor;
+  /** Ghouls lying crumpled, held up by another (GhoulLifeLink, mobskills.ts): they rise again in time. */
+  downed?: DownedGhoul[];
 }
 
 /**
@@ -401,7 +404,30 @@ export type Effect =
   /** A ward the hero bumped into: dismiss it? (WndOptions) */
   | { type: 'ward'; hero: string; mob: string }
   /** A queued action that became impossible before the hero's turn came. */
-  | { type: 'interrupted'; hero: string; reason: string };
+  | { type: 'interrupted'; hero: string; reason: string }
+  /*
+   * Shattered's monsters (mobskills.ts): a spell or missile of theirs, a word or a sound of theirs, a curse on a
+   * hero, health regained, lightning arcing, a summoning begun (or given up: pos -1) and done, a ghoul crumpled, a
+   * teleport, a golem gathering itself, an eye charging, a ripper about to leap, a thief or a crystal mimic gone,
+   * a champion come (champions.ts).
+   */
+  | { type: 'mobZap'; depth: number; mob: string; from: number; to: number; bolt: MobBolt }
+  | { type: 'mobSays'; depth: number; mob: string; line: MobLine }
+  | { type: 'afflicted'; hero: string; by: 'weakness' | 'vulnerable' | 'hex' | 'degrade' | 'blindness' }
+  | { type: 'mobHealed'; depth: number; mob: string; amount: number }
+  | { type: 'arcs'; depth: number; from: number; cells: number[] }
+  | { type: 'summoning'; depth: number; mob: string; pos: number }
+  | { type: 'summoned'; depth: number; mob: string; minion: string; pos: number }
+  | { type: 'crumpled'; depth: number; mob: string; pos: number }
+  | { type: 'mobTeleported'; depth: number; mob: string; from: number; to: number }
+  | { type: 'gathering'; depth: number; mob: string }
+  | { type: 'charging'; depth: number; mob: string; pos: number }
+  | { type: 'leapReady'; depth: number; mob: string; pos: number }
+  | { type: 'escaped'; depth: number; mob: string; kind: MobKind; item?: Item }
+  | { type: 'champion'; depth: number; mob: string; champion: ChampionKind };
+
+/** What a monster says or shows in words (its Messages): a parry, a guard's call, a vent, a gnoll exile's mood, a piranha gone. */
+export type MobLine = 'parried' | 'scorpion' | 'vent' | 'seenPassive' | 'seenAggro' | 'teleportAway' | 'blocked' | 'thankYou' | 'spawnerDied';
 
 /** Everything the rules need while simulating one depth. */
 export interface Ctx {
@@ -487,9 +513,15 @@ export function exploredCells(world: World, depth: number): boolean[] {
 /** Adds what a hero sees to the party's shared map. */
 export function observe(world: World, hero: Hero): void {
   const explored = exploredCells(world, hero.depth);
-  heroView(world, hero).forEach((seen, i) => {
+  const view = heroView(world, hero);
+  view.forEach((seen, i) => {
     if (seen) explored[i] = true;
   });
+  // Bestiary.setSeen: every monster the party has set eyes on.
+  for (const mob of world.floors[hero.depth]?.mobs ?? []) {
+    if (!view[mob.pos] || mob.ally || world.bestiary?.[mob.kind]?.seen) continue;
+    ((world.bestiary ??= {})[mob.kind] ??= { seen: true, slain: 0 }).seen = true;
+  }
 }
 
 /** Cells a hero may step on: open ground, doors and visible traps. */

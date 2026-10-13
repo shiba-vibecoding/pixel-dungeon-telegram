@@ -38,7 +38,7 @@ describe('the dwarven city', () => {
     }
   });
 
-  it("a warlock's shadow bolt may weaken: two points of strength less", () => {
+  it("a warlock's dark bolt may degrade the hero's gear for thirty turns", () => {
     for (let seed = 1; seed <= 40; seed++) {
       const world = at(17, seed);
       const hero = heroById(world, 'p')!;
@@ -51,16 +51,23 @@ describe('the dwarven city', () => {
       const warlock = createMob('#warlock', 'warlock', far, 'hunting', floorAt(world, 17).now);
       Object.assign(warlock, { enemy: 'p', target: hero.pos, enemySeen: true });
       floorAt(world, 17).mobs.push(warlock);
-      for (let i = 0; i < 20 && hero.weakened <= 0; i++) act(world, 'p', { type: 'search' });
-      if (hero.weakened <= 0) continue;
-      expect(heroStr(hero)).toBe(hero.str - 2);
+      const effects: Effect[] = [];
+      for (let i = 0; i < 20 && !(hero.degraded ?? 0); i++) {
+        const result = act(world, 'p', { type: 'search' });
+        if (result.ok) effects.push(...result.effects);
+      }
+      if (!(hero.degraded ?? 0)) continue;
+      // Warlock.zap: a bolt from afar (a dark one), and Degrade for thirty turns, which wears off.
+      expect(effects.some((e) => e.type === 'mobZap' && e.mob === '#warlock' && e.bolt === 'shadow')).toBe(true);
+      expect(effects.some((e) => e.type === 'afflicted' && e.by === 'degrade')).toBe(true);
+      expect(hero.degraded).toBeLessThanOrEqual(30);
+      expect(heroStr(hero)).toBe(hero.str);
       floorAt(world, 17).mobs = [];
-      hero.items = [createItem('potion.healing')];
-      act(world, 'p', { type: 'use', item: 0 });
-      expect(hero.weakened).toBe(0);
+      for (let i = 0; i < 31; i++) act(world, 'p', { type: 'wait' });
+      expect(hero.degraded).toBe(0);
       return;
     }
-    throw new Error('the warlock never weakened anyone');
+    throw new Error('the warlock never degraded anyone');
   });
 
   it('a fire elemental feeds on fire and sets its foes alight', () => {

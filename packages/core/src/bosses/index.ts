@@ -11,7 +11,7 @@ import { BOSS_KINDS, bossFloor, isFist, nextTimed, removeTimed, schedule } from 
 import { GOO } from './goo';
 import { bombTurn, fireTurn, prisonOccupy, shockerTurn, TENGU, tenguBlobsTurn, tenguDartTrap, tenguTimed } from './tengu';
 import { cavesOccupy, cavesPylons, DM300, energyTurn, PYLON, rocksTurn, rollPylonArcs, ventTurn } from './dm300';
-import { cityOccupy, GHOUL, KING, linking, shareLinkedDamage, subjectDied, summoningTurn } from './king';
+import { cityOccupy, KING, linking, shareLinkedDamage, subjectDied, summoningTurn } from './king';
 import { FISTS, hallsOccupy, LARVA, YOG } from './yog';
 import type { BossRules } from './rules';
 import type { Timed } from './state';
@@ -34,7 +34,6 @@ const RULES: Partial<Record<MobKind, BossRules>> = {
   dm300: DM300,
   pylon: PYLON,
   king: KING,
-  ghoul: GHOUL,
   yog: YOG,
   larva: LARVA,
   ...FISTS,
@@ -240,7 +239,7 @@ function IMP_WARES(rng: Rng): ItemSpec[] {
 export const heedsBeckon = (mob: Mob): boolean => RULES[mob.kind]?.beckon !== false;
 
 /** A summoned minion of a boss (Property.BOSS_MINION): no experience, no loot. */
-export const isMinion = (mob: Mob): boolean => mob.minion === true || isFist(mob);
+export const isMinion = (mob: Mob): boolean => mob.bossMinion === true || isFist(mob);
 
 export type { Item };
 void schedule;

@@ -1,0 +1,24 @@
+<!-- @dsCard group="Релиз" height=812 width=1572 page subtitle="Вход — строка в настройках и кнопка на экране ошибки. Окно: поле «Что случилось» (можно не писать), отметка «Приложить журнал забега» с пояснением, «Отправить» (во время отправки — точки), затем «Отправлено, спасибо» и значок «Охотник за багами» — за подтверждённую ошибку" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Сообщить о проблеме</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .phone { position: relative; width: 375px; height: 812px; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+  .tag { position: absolute; left: 8px; top: 150px; z-index: 40; padding: 2px 8px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--gold); background: rgba(11,11,9,.8); clip-path: var(--notch); }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get('lang') || 'ru', en = L === 'en';
+  function phone() { var p = document.createElement('div'); p.className = 'phone pd-phone'; document.getElementById('row').appendChild(p); return p; }
+  function tag(p, t) { var s = document.createElement('span'); s.className = 'tag'; s.textContent = t; p.appendChild(s); return s; }
+  var a = phone(); PD.demo.campScreen(a, { lang: L, hero: 0, frame: 'gold' }); PD.demo.overlay(a, PD.demo.win.settings(L));
+  var b = phone(); PD.demo.game(b, { mates: false, names: false }); b.insertAdjacentHTML('beforeend', '<div class="pd-overlay static open" style="z-index:60;background:var(--void)"><section class="pd-window narrow" role="alertdialog"><div class="pd-error-icon" aria-hidden="true"></div><h2 class="pd-heading center">' + (en ? 'Something went wrong' : 'Что-то пошло не так') + '</h2><p class="pd-info center">' + (en ? 'The game stopped. The run is saved up to the last move.' : 'Игра остановилась. Забег сохранён до последнего хода.') + '</p><div class="pd-actions"><button class="pd-button primary">' + (en ? 'Restart' : 'Перезапустить') + '</button><button class="pd-button"><i class="pd-icon" style="width:24px;height:24px;background-image:var(--spr-report)"></i>' + (en ? 'Report a problem' : 'Сообщить о проблеме') + '</button></div><p class="pd-note center">' + (en ? 'Error 0x2F · version 2.4' : 'Ошибка 0x2F · версия 2.4') + '</p></section></div>');
+  var c = phone(); PD.demo.game(c, { mates: false, names: false }); PD.demo.overlay(c, PD.demo.win.report(L));
+  var d = phone(); PD.demo.game(d, { mates: false, names: false }); PD.demo.overlay(d, PD.demo.win.report(L, 'sent'));
+  PD.sprite(document.body);
+</script>
+</body>
+</html>

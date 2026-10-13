@@ -11,7 +11,7 @@ export interface BossRules {
   /** Char.attackSkill against a target. */
   attackSkill?(ctx: Ctx, mob: Mob, target: Char): number;
   /** Mob.defenseSkill, while it has seen its enemy (a monster caught unawares has none). */
-  defenseSkill?(ctx: Ctx, mob: Mob): number;
+  defenseSkill?(mob: Mob): number;
   /** Char.damageRoll. */
   damageRoll?(ctx: Ctx, mob: Mob): number;
   /** Char.drRoll: what its armour takes off a blow. */
@@ -43,8 +43,6 @@ export interface BossRules {
   die?(ctx: Ctx, mob: Mob, by?: string): void;
   /** Mob.viewDistance, if not the level's. */
   sight?: number;
-  /** Char.speed: how many steps a turn (DM-300 supercharged runs twice as fast). */
-  speed?(mob: Mob): number;
   /** Mob.beckon: false when it does not heed (pylons, Yog). */
   beckon?: false;
   /** Immune to a condition (Char.immunities). */

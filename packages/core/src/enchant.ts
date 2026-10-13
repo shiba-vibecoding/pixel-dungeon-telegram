@@ -1,6 +1,7 @@
+import { rollMob } from './spawner';
 import {
   baseKind, beckon, createMob, enchantLevel, type Hero, heroAttackDelay, heroDefenseSkill, isAlive, isShopkeeper, isStarving, type Mob, type MobKind,
-  MOBS, mobStats, rollMob, STARVING,
+  MOBS, mobStats, STARVING,
 } from './actors';
 import { conjureImages } from './allies';
 import { hurt } from './combat';
@@ -69,7 +70,7 @@ export const bleedImmune = (mob: Mob): boolean => INORGANIC.has(mob.kind);
 const corruptImmune = (mob: Mob): boolean => BOSSES.has(mob.kind) || MINIBOSSES.has(mob.kind) || mob.kind === 'mimic' || mob.kind === 'statue';
 
 /** Who fights alongside the heroes (Char.Alignment.ALLY): mirror images, golden bees, wards, the guardian, the corrupted. */
-export const isAlly = (char: Char): boolean => isHero(char) || char.ally === true || char.kind === 'mirror' || char.kind === 'bee';
+export const isAlly = (char: Char): boolean => isHero(char) || char.ally === true || char.kind === 'mirror';
 /** Who fights the heroes (Char.Alignment.ENEMY): any monster not passive, and not an ally. */
 export const isEnemy = (char: Char): boolean => !isHero(char) && enemyMob(char);
 

@@ -18,12 +18,13 @@ import {
   type Enchantment, type Glyph, type Item, itemDef, type ItemKind, ITEMS, knownIn, randomEnchantment, randomGlyph, REGULAR_OF,
 } from './items';
 import { discoverable } from './level/flags';
-import { cellX, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
+import { adjacent, cellX, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { RoomType } from './level/room';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { deriveSeed, Rng } from './rng';
 import { mend } from './wear';
 import { enchantItem, upgradeItem } from './scrolls';
+import { cleanseSpirit } from './mobskills';
 import { transmuteItem } from './transmute';
 import type { World } from './world';
 import { moveToDepth } from './world';
@@ -78,7 +79,14 @@ export function readScroll(ctx: Ctx, hero: Hero, kind: ItemKind, target: Item | 
         ctx.effects.push({ type: 'revealed', hero: hero.id, item: target });
       }
       return;
-    case 'scroll.removeCurse':
+    case 'scroll.removeCurse': {
+      // ScrollOfRemoveCurse.doRead: beside a tormented spirit, the scroll lifts its curse instead; Degrade goes either way.
+      hero.degraded = 0;
+      const spirit = ctx.floor.mobs.find((mob) => mob.kind === 'tormentedSpirit' && isAlive(mob) && adjacent(mob.pos, hero.pos));
+      if (spirit) {
+        cleanseSpirit(ctx, spirit);
+        return;
+      }
       // ScrollOfRemoveCurse.uncurse: the curse is known, and lifted, a curse enchantment or glyph (and a curse
       // infusion's strength) with it.
       if (target) {
@@ -97,6 +105,7 @@ export function readScroll(ctx: Ctx, hero: Hero, kind: ItemKind, target: Item | 
         ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'removeCurse', count: lifted ? 1 : 0 });
       }
       return;
+    }
     case 'scroll.transmutation':
       if (target) transmuteHeld(ctx, hero, target);
       return;

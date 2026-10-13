@@ -293,7 +293,7 @@ describe("the Dwarf King's throne room (CityBossLevel)", () => {
     const all: Effect[] = [];
     for (let i = 0; i < 30; i++) all.push(...play(world, { type: 'wait' }));
     expect(fx(all, 'summon')).toBe(true);
-    expect(floorOf(world).mobs.some((m) => m.minion && m.kind === 'ghoul')).toBe(true);
+    expect(floorOf(world).mobs.some((m) => m.bossMinion && m.kind === 'ghoul')).toBe(true);
   });
 
   it('at fifty health he takes his throne behind a shield his slain subjects break; then he rages, his wounds deferred', () => {
@@ -309,13 +309,23 @@ describe("the Dwarf King's throne room (CityBossLevel)", () => {
     expect(king.hp).toBe(50);
     for (let i = 0; i < 15; i++) all.push(...play(world, { type: 'wait' }));
     expect(yelled(all, 'wave_1')).toBe(true);
-    const subject = floorOf(world).mobs.find((m) => m.minion && m.boss?.kingDamager)!;
+    const subject = floorOf(world).mobs.find((m) => m.bossMinion && m.boss?.kingDamager)!;
     expect(subject).toBeDefined();
     king.shield = 25;
-    subject.hp = 1;
-    for (let i = 0; i < 10 && isAlive(subject); i++) all.push(...strike(world, subject));
+    // (A ghoul struck down beside another only crumples, to rise again: GhoulLifeLink. Its court is struck down to the last.)
+    for (let i = 0; i < 80 && king.boss?.phase === 2; i++) {
+      const next = floorOf(world).mobs.find((m) => m.bossMinion && isAlive(m));
+      if (!next) {
+        all.push(...play(world, { type: 'wait' }));
+        continue;
+      }
+      next.hp = 1;
+      all.push(...strike(world, next));
+    }
     expect(king.boss?.phase).toBe(3);
     expect(yelled(all, 'enraged')).toBe(true);
+    // (What his court's blows passed on to him is deferred too: set aside here, to see a blow of the hero's deferred.)
+    floorOf(world).boss!.timed = floorOf(world).boss!.timed.filter((t) => t.kind !== 'deferred');
     const before = king.hp;
     strike(world, king);
     expect(king.hp).toBe(before);
@@ -327,7 +337,7 @@ describe("the Dwarf King's throne room (CityBossLevel)", () => {
     expect(level.map[TOP_DOOR]).toBe(T.DOOR);
     expect(level.map[BOTTOM_DOOR]).toBe(T.DOOR);
     expect(floorOf(world).heaps.some((h) => h.items.some((i) => i.kind === 'crown.king'))).toBe(true);
-    expect(floorOf(world).mobs.some((m) => m.minion)).toBe(false);
+    expect(floorOf(world).mobs.some((m) => m.bossMinion)).toBe(false);
     // The imp's errand was done: his shop opens below.
     expect(mob(world, 'impShopkeeper')).toBeDefined();
     expect(floorOf(world).heaps.filter((h) => h.kind === 'forSale').length).toBeGreaterThan(5);
@@ -383,7 +393,7 @@ describe("Yog-Dzewa's hall (HallsBossLevel)", () => {
     expect(yog.boss?.phase).toBe(5);
     expect(yelled(all, 'hope')).toBe(true);
     for (let i = 0; i < 300 && isAlive(yog); i++) {
-      for (const m of floorOf(world).mobs.filter((x) => x.minion)) m.hp = 1;
+      for (const m of floorOf(world).mobs.filter((x) => x.bossMinion)) m.hp = 1;
       all.push(...strike(world, yog));
     }
     expect(isAlive(yog)).toBe(false);

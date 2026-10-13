@@ -37,7 +37,7 @@ const NONE = 0;
 const LINK = 1;
 const TELE = 2;
 
-const subjects = (ctx: Ctx): Mob[] => ctx.floor.mobs.filter((m) => m.minion && SUBJECT_KINDS.has(m.kind) && isAlive(m));
+const subjects = (ctx: Ctx): Mob[] => ctx.floor.mobs.filter((m) => m.bossMinion && SUBJECT_KINDS.has(m.kind) && isAlive(m));
 
 /* The throne room (CityBossLevel.occupyCell, seal, unseal) */
 
@@ -181,7 +181,9 @@ export function summoningTurn(ctx: Ctx, s: Extract<Timed, { kind: 'summoning' }>
   const phase = king.boss?.phase ?? 1;
   if (!occupant) {
     const minion = scaleMob(ctx.world, createMob(`#${++ctx.world.nextId}`, s.summon, pos, 'hunting', ctx.floor.now + 1));
-    minion.minion = true;
+    minion.bossMinion = true;
+    // DwarfKing.DKGhoul: no partner of its own (partnerID -2); it may still rise again by another ghoul (mobskills.ts).
+    if (minion.kind === 'ghoul') minion.partner = '';
     minion.enemy = king.enemy;
     minion.target = theHero(ctx)?.pos ?? pos;
     minion.enemySeen = true;
@@ -476,10 +478,3 @@ export const KING: BossRules = {
   },
 };
 
-/** DKGhoul (a Ghoul of his court): Ghoul's numbers. SEAM(mobs): Ghoul's reviving by a ghoul beside it. */
-export const GHOUL: BossRules = {
-  attackSkill: () => 24,
-  defenseSkill: () => 20,
-  damageRoll: (ctx) => ctx.rng.normalIntRange(16, 22),
-  drRoll: (ctx) => ctx.rng.normalIntRange(0, 4),
-};

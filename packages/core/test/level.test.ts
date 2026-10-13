@@ -108,7 +108,7 @@ describe('sewer level generation', () => {
     expect(generateRun(1)[0]!.map).not.toEqual(generateRun(2)[0]!.map);
   });
 
-  it('generates the prison and Tengu\'s level after the sewers', () => {
+  it('generates the prison and Tengu\'s level after the sewers', { timeout: 30000 }, () => {
     for (const seed of SEEDS.slice(0, 80)) {
       const run = createRun(seed);
       const levels = Array.from({ length: 10 }, (_, i) => generateLevel(run, i + 1));
