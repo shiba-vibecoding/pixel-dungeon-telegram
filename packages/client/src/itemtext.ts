@@ -125,8 +125,8 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
   return [isKnown(world, item) ? (t.itemInfo[item.kind] ?? '') : t.unknownInfo];
 }
 
-/** Top-left corner of an item's sprite in items.png. */
+/** Top-left corner of an item's sprite in items.png (Shattered's, 16 a row). */
 export function spriteOffset(world: World, item: Item): [number, number] {
   const index = itemSprite(item, world.run.labels);
-  return [(index % 8) * 16, Math.floor(index / 8) * 16];
+  return [(index % 16) * 16, Math.floor(index / 16) * 16];
 }

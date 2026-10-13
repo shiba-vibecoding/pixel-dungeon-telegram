@@ -352,7 +352,7 @@ export function render(
     const closed = CHEST_ANIMS.get(heap.sprite);
     const first = closed ? chests?.anims[closed]?.[0] : undefined;
     if (chests && first) ctx.drawImage(chests.image, first.x, first.y, 16, 16, -8, -16, 16, 16);
-    else ctx.drawImage(assets.items, (heap.sprite % 8) * 16, Math.floor(heap.sprite / 8) * 16, 16, 16, -8, -16, 16, 16);
+    else ctx.drawImage(assets.items, (heap.sprite % 16) * 16, Math.floor(heap.sprite / 16) * 16, 16, 16, -8, -16, 16, 16);
     ctx.restore();
   }
   scene.over?.(ctx);
@@ -509,7 +509,7 @@ export function render(
       ctx.save();
       ctx.translate(snap(x), snap(y - height));
       ctx.rotate(k * Math.PI * 4);
-      ctx.drawImage(assets.items, (p.sprite % 8) * 16, Math.floor(p.sprite / 8) * 16, 16, 16, -8, -8, 16, 16);
+      ctx.drawImage(assets.items, (p.sprite % 16) * 16, Math.floor(p.sprite / 16) * 16, 16, 16, -8, -8, 16, 16);
       ctx.restore();
     }
   }

@@ -1,6 +1,6 @@
 import {
   type Action, BACKPACK_SIZE, scrollTargets, isBroken, isIdentified, type Hero, inBag, type HeroClass, type Item, itemDef, itemPrice, type ItemRef,
-  itemSprite, levelKnown, maxExp, type MobKind, SUBCLASSES, visiblyCursed, type World, CLASS_ARMOR_OF,
+  itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, visiblyCursed, type World, CLASS_ARMOR_OF,
 } from '@pd/core';
 import { audio } from './audio';
 import { chooseQuickslot, quickIndex, quickUse } from './quickslot';
@@ -117,7 +117,7 @@ export function closeOverlay(): boolean {
   return true;
 }
 
-/** Sets --ix/--iy (items.png, badges.png: 8 a row) and --bx/--by (buffs.png: 18 a row) from data-i and data-b. */
+/** Sets --ix/--iy (items.png: 16 a row, Shattered's; badges.png: 8 a row) and --bx/--by (buffs.png: 18 a row) from data-i and data-b. */
 export function sprites(scope: ParentNode): void {
   scope.querySelectorAll<HTMLElement>('[data-i]').forEach((node) => {
     let i = Number(node.dataset.i);
@@ -125,8 +125,9 @@ export function sprites(scope: ParentNode): void {
     const arena = node.classList.contains('pd-badge') && i >= ARENA_BADGES;
     node.classList.toggle('arena', arena);
     if (arena) i -= ARENA_BADGES;
-    node.style.setProperty('--ix', String(i % 8));
-    node.style.setProperty('--iy', String(Math.floor(i / 8)));
+    const perRow = node.classList.contains('pd-item') ? 16 : 8;
+    node.style.setProperty('--ix', String(i % perRow));
+    node.style.setProperty('--iy', String(Math.floor(i / perRow)));
   });
   scope.querySelectorAll<HTMLElement>('[data-b]').forEach((node) => {
     const b = Number(node.dataset.b);
@@ -246,7 +247,7 @@ interface SlotOptions {
   /** Worn: the equipment row. */
   equipped?: boolean;
   hero?: Hero;
-  /** An empty equipment place: the silhouette of what goes there (items.png 5, 6, 7). */
+  /** An empty equipment place: the silhouette of what goes there (Shattered's holders in items.png). */
   placeholder?: number;
 }
 
@@ -940,7 +941,7 @@ export function showConfirm(title: string, text: string, yes: string, no: string
 const CONTROLS: ReadonlyArray<{ sprite?: string; item?: number; w: number; h: number; line?: number }> = [
   { sprite: 'target', w: 16, h: 16, line: 0 },
   { sprite: 'tool-backpack', w: 14, h: 15, line: 1 },
-  { item: 31, w: 16, h: 16, line: 3 },
+  { item: S.DART, w: 16, h: 16, line: 3 },
   { sprite: 'tool-search', w: 12, h: 12, line: 4 },
   { sprite: 'tool-wait', w: 12, h: 12, line: 5 },
   { sprite: 'tool-info', w: 8, h: 12, line: 6 },
@@ -1275,9 +1276,9 @@ export function showBackpack(options: BackpackOptions, choice: BagChoice | null 
     'div',
     { className: 'pd-bag-equip' },
     // Bare-handed after a monk's blow: the weapon's silhouette.
-    worn(hero.weapon ?? undefined, 5, 'weapon', { worn: 'weapon' }),
-    worn(hero.armor, 6, 'armor', { worn: 'armor' }),
-    ...[0, 1].map((i) => worn(hero.rings[i], 7, i === 0 ? 'ring0' : 'ring1', { ring: i })),
+    worn(hero.weapon ?? undefined, S.WEAPON_HOLDER, 'weapon', { worn: 'weapon' }),
+    worn(hero.armor, S.ARMOR_HOLDER, 'armor', { worn: 'armor' }),
+    ...[0, 1].map((i) => worn(hero.rings[i], S.RING_HOLDER, i === 0 ? 'ring0' : 'ring1', { ring: i })),
     keyring,
   );
   const item = chosenItem(hero, choice);
@@ -1292,7 +1293,7 @@ export function showBackpack(options: BackpackOptions, choice: BagChoice | null 
         el(
           'div',
           { className: 'pd-hold-hint' },
-          el('span', { className: 'pd-hold-demo' }, el('span', { className: 'pd-hold-label', textContent: t.drink }), el('span', { className: 'pd-slot holding' }, itemIconAt(57))),
+          el('span', { className: 'pd-hold-demo' }, el('span', { className: 'pd-hold-label', textContent: t.drink }), el('span', { className: 'pd-slot holding' }, itemIconAt(S.POTION_CRIMSON))),
           el('span', {}, el('b', { textContent: t.holdTitle }), ` ${t.holdText}`),
         ),
       );

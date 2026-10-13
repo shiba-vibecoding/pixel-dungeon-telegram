@@ -8,6 +8,7 @@ import { F, hasFlag } from './level/terrain';
 import { deriveSeed, Rng } from './rng';
 import type { RunState } from './run';
 import { lootCount } from './party';
+import { S } from './spd-sprites';
 
 /*
  * Items, as data: every item family of the original вЂ” gold, potions,
@@ -23,7 +24,7 @@ export type ItemCategory =
 
 export interface ItemDef {
   category: ItemCategory;
-  /** Fixed sprite in items.png; potions and scrolls take theirs from the run's labels. */
+  /** Fixed sprite in items.png (Shattered's atlas, `S` in spd-sprites.ts); potions and scrolls take theirs from the run's labels. */
   sprite?: number;
   /** Melee weapons (MeleeWeapon): tier, accuracy and delay factors, strength if not the usual. */
   tier?: number;
@@ -40,7 +41,7 @@ const weapon = (tier: number, sprite: number, accuracy = 1, delay = 1, str?: num
 const armor = (tier: number, sprite: number): ItemDef => ({ category: 'armor', sprite, tier });
 
 export const ITEMS = {
-  gold: { category: 'gold', sprite: 14 },
+  gold: { category: 'gold', sprite: S.GOLD },
 
   'potion.healing': { category: 'potion' },
   'potion.experience': { category: 'potion' },
@@ -71,43 +72,43 @@ export const ITEMS = {
   'scroll.mirrorImage': { category: 'scroll' },
   'scroll.removeCurse': { category: 'scroll' },
 
-  'weapon.knuckles': weapon(1, 16, 1, 0.5),
-  'weapon.dagger': weapon(1, 19, 1.2),
-  'weapon.shortSword': weapon(1, 2, 1, 1, 11),
-  'weapon.quarterstaff': weapon(2, 17),
-  'weapon.spear': weapon(2, 29, 1, 1.5),
-  'weapon.mace': weapon(3, 18, 1, 0.8),
-  'weapon.sword': weapon(3, 20),
-  'weapon.longsword': weapon(4, 21),
-  'weapon.battleAxe': weapon(4, 22, 1.2),
-  'weapon.warHammer': weapon(5, 23, 1.2),
-  'weapon.glaive': weapon(5, 30),
+  'weapon.knuckles': weapon(1, S.GLOVES, 1, 0.5),
+  'weapon.dagger': weapon(1, S.DAGGER, 1.2),
+  'weapon.shortSword': weapon(1, S.SHORTSWORD, 1, 1, 11),
+  'weapon.quarterstaff': weapon(2, S.QUARTERSTAFF),
+  'weapon.spear': weapon(2, S.SPEAR, 1, 1.5),
+  'weapon.mace': weapon(3, S.MACE, 1, 0.8),
+  'weapon.sword': weapon(3, S.SWORD),
+  'weapon.longsword': weapon(4, S.LONGSWORD),
+  'weapon.battleAxe': weapon(4, S.BATTLE_AXE, 1.2),
+  'weapon.warHammer': weapon(5, S.WAR_HAMMER, 1.2),
+  'weapon.glaive': weapon(5, S.GLAIVE),
   /** The troll blacksmith's, lent for his errand (Pickaxe): a tool first, a weapon at a pinch. */
-  'weapon.pickaxe': weapon(2, 101, 1, 1, 14),
+  'weapon.pickaxe': weapon(2, S.PICKAXE, 1, 1, 14),
 
-  'armor.cloth': armor(1, 24),
-  'armor.leather': armor(2, 25),
-  'armor.mail': armor(3, 26),
-  'armor.scale': armor(4, 27),
-  'armor.plate': armor(5, 28),
+  'armor.cloth': armor(1, S.ARMOR_CLOTH),
+  'armor.leather': armor(2, S.ARMOR_LEATHER),
+  'armor.mail': armor(3, S.ARMOR_MAIL),
+  'armor.scale': armor(4, S.ARMOR_SCALE),
+  'armor.plate': armor(5, S.ARMOR_PLATE),
   // Class armour (ClassArmor), made with the armour kit out of whatever armour the hero wore:
   // as good as that armour, and with a special ability of its class.
-  'armor.warrior': armor(6, 97),
-  'armor.mage': armor(6, 98),
-  'armor.rogue': armor(6, 96),
-  'armor.huntress': armor(6, 99),
+  'armor.warrior': armor(6, S.ARMOR_WARRIOR),
+  'armor.mage': armor(6, S.ARMOR_MAGE),
+  'armor.rogue': armor(6, S.ARMOR_ROGUE),
+  'armor.huntress': armor(6, S.ARMOR_HUNTRESS),
 
   // Thrown: darts are lost when they hit and fall to the floor when they
   // miss; the boomerang always comes back.
-  'missile.dart': { category: 'missile', sprite: 31 },
+  'missile.dart': { category: 'missile', sprite: S.DART },
   // The other thrown weapons (MissileWeapon): each does something more when it hits.
-  'missile.curare': { category: 'missile', sprite: 109 },
-  'missile.incendiary': { category: 'missile', sprite: 108 },
-  'missile.javelin': { category: 'missile', sprite: 110 },
-  'missile.shuriken': { category: 'missile', sprite: 15 },
-  'missile.tomahawk': { category: 'missile', sprite: 107 },
-  'missile.boomerang': { category: 'missile', sprite: 106 },
-  'wand.magicMissile': { category: 'wand', sprite: 3 },
+  'missile.curare': { category: 'missile', sprite: S.PARALYTIC_DART },
+  'missile.incendiary': { category: 'missile', sprite: S.INCENDIARY_DART },
+  'missile.javelin': { category: 'missile', sprite: S.JAVELIN },
+  'missile.shuriken': { category: 'missile', sprite: S.SHURIKEN },
+  'missile.tomahawk': { category: 'missile', sprite: S.TOMAHAWK },
+  'missile.boomerang': { category: 'missile', sprite: S.BOOMERANG },
+  'wand.magicMissile': { category: 'wand', sprite: S.WAND_MAGIC_MISSILE },
   // The other wands go by the wood they are made of until used.
   'wand.firebolt': { category: 'wand' },
   'wand.lightning': { category: 'wand' },
@@ -135,70 +136,70 @@ export const ITEMS = {
   'ring.haggler': { category: 'ring' },
   'ring.herbalism': { category: 'ring' },
   // Seeds, thrown where a plant should grow.
-  'seed.firebloom': { category: 'seed', sprite: 88 },
-  'seed.icecap': { category: 'seed', sprite: 89 },
-  'seed.sorrowmoss': { category: 'seed', sprite: 90 },
-  'seed.dreamweed': { category: 'seed', sprite: 91 },
-  'seed.sungrass': { category: 'seed', sprite: 92 },
-  'seed.earthroot': { category: 'seed', sprite: 93 },
-  'seed.fadeleaf': { category: 'seed', sprite: 94 },
+  'seed.firebloom': { category: 'seed', sprite: S.SEED_FIREBLOOM },
+  'seed.icecap': { category: 'seed', sprite: S.SEED_ICECAP },
+  'seed.sorrowmoss': { category: 'seed', sprite: S.SEED_SORROWMOSS },
+  'seed.dreamweed': { category: 'seed', sprite: S.SEED_STORMVINE },
+  'seed.sungrass': { category: 'seed', sprite: S.SEED_SUNGRASS },
+  'seed.earthroot': { category: 'seed', sprite: S.SEED_EARTHROOT },
+  'seed.fadeleaf': { category: 'seed', sprite: S.SEED_FADELEAF },
   /** Only from the shrub the old wandmaker is after; it brews strength. */
-  'seed.rotberry': { category: 'seed', sprite: 95 },
+  'seed.rotberry': { category: 'seed', sprite: S.SEED_ROTBERRY },
   // Food (Food, Pasty, MysteryMeat): a ration staves off hunger for a while,
   // a pasty completely; mystery meat from crabs is a gamble.
-  'food.ration': { category: 'food', sprite: 4, energy: 260 },
-  'food.pasty': { category: 'food', sprite: 112, energy: 360 },
-  'food.meat': { category: 'food', sprite: 113, energy: 100 },
+  'food.ration': { category: 'food', sprite: S.RATION, energy: 260 },
+  'food.pasty': { category: 'food', sprite: S.PASTY, energy: 360 },
+  'food.meat': { category: 'food', sprite: S.MEAT, energy: 100 },
   // Mystery meat cooked by fire or frozen by frost (ChargrilledMeat, FrozenCarpaccio), and the
   // shops' smaller, dearer ration (OverpricedRation).
-  'food.steak': { category: 'food', sprite: 114, energy: 100 },
-  'food.carpaccio': { category: 'food', sprite: 116, energy: 100 },
-  'food.overpriced': { category: 'food', sprite: 115, energy: 100 },
+  'food.steak': { category: 'food', sprite: S.STEAK, energy: 100 },
+  'food.carpaccio': { category: 'food', sprite: S.CARPACCIO, energy: 100 },
+  'food.overpriced': { category: 'food', sprite: S.OVERPRICED, energy: 100 },
   /** Shattered, it lets out a golden bee that fights for whoever broke it, for a while (Honeypot). */
-  honeypot: { category: 'honeypot', sprite: 125 },
+  honeypot: { category: 'honeypot', sprite: S.HONEYPOT },
   /** The sacrificial fire's reward: read, it kills every monster on the level but its boss (ScrollOfWipeOut). */
-  wipeOut: { category: 'wipeout', sprite: 117 },
+  wipeOut: { category: 'wipeout', sprite: S.HALLS_PAGE },
   /** Thrown, it blows up where it lands (Bomb). */
-  bomb: { category: 'bomb', sprite: 124 },
+  bomb: { category: 'bomb', sprite: S.BOMB },
   /** Goo's legacy now and then: takes its bearer back to a place set beforehand (LloydsBeacon). */
-  beacon: { category: 'beacon', sprite: 85 },
+  beacon: { category: 'beacon', sprite: S.BEACON },
   /** Balances a melee weapon for speed or for accuracy (Weightstone). */
-  weightstone: { category: 'weightstone', sprite: 123 },
+  weightstone: { category: 'weightstone', sprite: S.STONE_AUGMENTATION },
   /** Bags (SeedPouch, ScrollHolder, WandHolster), sold in the shops: what they hold takes no room in the backpack. */
-  'bag.seeds': { category: 'bag', sprite: 83 },
-  'bag.scrolls': { category: 'bag', sprite: 104 },
-  'bag.wands': { category: 'bag', sprite: 111 },
+  'bag.seeds': { category: 'bag', sprite: S.POUCH },
+  'bag.scrolls': { category: 'bag', sprite: S.HOLDER },
+  'bag.wands': { category: 'bag', sprite: S.HOLSTER },
   /** Keeps spare dew for later; full, it saves its bearer from death once (DewVial). */
-  vial: { category: 'vial', sprite: 120 },
+  vial: { category: 'vial', sprite: S.VIAL },
   /** Shaken from tall grass; heals whoever picks it up. */
-  dew: { category: 'dew', sprite: 81 },
+  dew: { category: 'dew', sprite: S.DEWDROP },
   /** Opens the locked room of the level it was found on. */
-  'key.iron': { category: 'key', sprite: 9 },
+  'key.iron': { category: 'key', sprite: S.IRON_KEY },
   /** Opens a locked or crystal chest of the level it was found on. */
-  'key.golden': { category: 'key', sprite: 10 },
+  'key.golden': { category: 'key', sprite: S.GOLDEN_KEY },
   /** SkeletonKey: dropped by a boss, it opens the locked way down from its level. */
-  'key.skeleton': { category: 'key', sprite: 8 },
+  'key.skeleton': { category: 'key', sprite: S.WORN_KEY },
   /** The sad ghost's dried rose. */
-  'quest.rose': { category: 'quest', sprite: 100 },
+  'quest.rose': { category: 'quest', sprite: S.ARTIFACT_ROSE1 },
   /** The fetid rat's, for the sad ghost. */
-  'quest.skull': { category: 'quest', sprite: 103 },
+  'quest.skull': { category: 'quest', sprite: S.RAT_SKULL },
   /** Dark gold, mined from the veins of the caves for the troll blacksmith. */
-  'quest.ore': { category: 'quest', sprite: 102 },
+  'quest.ore': { category: 'quest', sprite: S.ORE },
   /** Left by the monks or golems the ambitious imp wants gone. */
-  'quest.token': { category: 'quest', sprite: 122 },
+  'quest.token': { category: 'quest', sprite: S.TOKEN },
   /** What the old wandmaker is after: corpse dust, or a phantom fish (which can be eaten, for a moment unseen). */
-  'quest.dust': { category: 'quest', sprite: 121 },
-  'quest.fish': { category: 'quest', sprite: 118 },
+  'quest.dust': { category: 'quest', sprite: S.DUST },
+  'quest.fish': { category: 'quest', sprite: S.PHANTOM_MEAT },
   /** Tengu's legacy: reading it, a hero masters one of two ways. */
-  'tome.mastery': { category: 'tome', sprite: 82 },
+  'tome.mastery': { category: 'tome', sprite: S.MASTERY },
   /** Lit, it lets one see further in the dark halls for a while. */
-  torch: { category: 'torch', sprite: 84 },
+  torch: { category: 'torch', sprite: S.TORCH },
   /** The King of Dwarves' legacy: it turns the armour worn into the hero's class armour. */
-  'kit.armor': { category: 'kit', sprite: 86 },
+  'kit.armor': { category: 'kit', sprite: S.KIT },
   /** Brings its bearer back to life once, at a price: everything else in the pack, and all gold. */
-  ankh: { category: 'ankh', sprite: 1 },
+  ankh: { category: 'ankh', sprite: S.ANKH },
   /** The Amulet of Yendor, at the very bottom of the dungeon. */
-  'quest.amulet': { category: 'quest', sprite: 87 },
+  'quest.amulet': { category: 'quest', sprite: S.AMULET },
 } as const satisfies Record<string, ItemDef>;
 
 export type ItemKind = keyof typeof ITEMS;
@@ -463,12 +464,23 @@ export const POTION_COLORS = [
 export const SCROLL_RUNES = [
   'KAUNAN', 'SOWILO', 'LAGUZ', 'YNGVI', 'GYFU', 'RAIDO', 'ISAZ', 'MANNAZ', 'NAUDIZ', 'BERKANAN', 'ODAL', 'TIWAZ',
 ] as const;
-const POTION_SPRITE = 56;
-const SCROLL_SPRITES = [40, 41, 42, 43, 44, 45, 46, 47, 76, 77, 78, 79];
-/** Holly, yew, ebony, cherry, teak, rowan, willow, mahogany, bamboo, purpleheart, oak, birch. */
-const WAND_SPRITES = [48, 49, 50, 51, 52, 53, 54, 55, 68, 69, 70, 71];
+/** Shattered's potion flask of each colour, in POTION_COLORS order. */
+const POTION_SPRITES = POTION_COLORS.map((color) => S[`POTION_${color.toUpperCase() as Uppercase<typeof color>}`]);
+/** Shattered's scroll with each rune, in SCROLL_RUNES order. */
+const SCROLL_SPRITES = SCROLL_RUNES.map((rune) => S[`SCROLL_${rune}`]);
+/**
+ * Holly, yew, ebony, cherry, teak, rowan, willow, mahogany, bamboo, purpleheart, oak, birch: Shattered draws every
+ * wand by its kind, so each wood borrows one of its wand sprites (all but magic missile's, which is known from the start).
+ */
+const WAND_SPRITES = [
+  S.WAND_FIREBOLT, S.WAND_FROST, S.WAND_LIGHTNING, S.WAND_DISINTEGRATION, S.WAND_PRISMATIC_LIGHT, S.WAND_CORROSION,
+  S.WAND_LIVING_EARTH, S.WAND_BLAST_WAVE, S.WAND_CORRUPTION, S.WAND_WARDING, S.WAND_REGROWTH, S.WAND_TRANSFUSION,
+];
 /** Diamond, opal, garnet, ruby, amethyst, topaz, onyx, tourmaline, emerald, sapphire, quartz, agate. */
-const RING_SPRITES = [32, 33, 34, 35, 36, 37, 38, 39, 72, 73, 74, 75];
+const RING_SPRITES = [
+  S.RING_DIAMOND, S.RING_OPAL, S.RING_GARNET, S.RING_RUBY, S.RING_AMETHYST, S.RING_TOPAZ, S.RING_ONYX, S.RING_TOURMALINE,
+  S.RING_EMERALD, S.RING_SAPPHIRE, S.RING_QUARTZ, S.RING_AGATE,
+];
 
 /** Kind → index into POTION_COLORS or SCROLL_RUNES, fixed for a run. */
 export type Labels = Partial<Record<ItemKind, number>>;
@@ -497,7 +509,7 @@ export function itemSprite(item: Item, labels: Labels): number {
   const label = labels[item.kind] ?? 0;
   if (def.category === 'wand') return WAND_SPRITES[label]!;
   if (def.category === 'ring') return RING_SPRITES[label]!;
-  return def.category === 'potion' ? POTION_SPRITE + label : SCROLL_SPRITES[label]!;
+  return def.category === 'potion' ? POTION_SPRITES[label]! : SCROLL_SPRITES[label]!;
 }
 
 /* Generator */
@@ -634,7 +646,8 @@ export interface Heap {
 /** Sprites of closed containers in items.png. */
 /** A mimic looks just like a chest. */
 export const HEAP_SPRITES: Readonly<Record<Exclude<HeapKind, 'heap' | 'forSale'>, number>> = {
-  chest: 11, skeleton: 0, tomb: 13, mimic: 11, lockedChest: 12, crystalChest: 105, hidden: 119,
+  chest: S.CHEST, skeleton: S.BONES, tomb: S.TOMB, mimic: S.CHEST, lockedChest: S.LOCKED_CHEST, crystalChest: S.CRYSTAL_CHEST,
+  hidden: S.SOMETHING, // never drawn
 };
 
 /** Dungeon.posNeeded / souNeeded: guaranteed strength and upgrades, spread over the floors. */

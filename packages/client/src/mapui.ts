@@ -116,8 +116,8 @@ export class Finds {
     node.dataset.key = key;
     const icon = document.createElement('i');
     icon.className = 'pd-item';
-    icon.style.setProperty('--ix', String(sprite % 8));
-    icon.style.setProperty('--iy', String(Math.floor(sprite / 8)));
+    icon.style.setProperty('--ix', String(sprite % 16));
+    icon.style.setProperty('--iy', String(Math.floor(sprite / 16)));
     const label = document.createElement('span');
     label.textContent = name;
     node.append(icon, label);

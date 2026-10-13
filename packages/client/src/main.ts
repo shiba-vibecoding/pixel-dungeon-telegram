@@ -1545,8 +1545,8 @@ const BOSS_DEPTHS: ReadonlySet<number> = new Set([5, 10, 15, 20, 25]);
 const itemPicture = (sprite: number) => (): HTMLElement => {
   const icon = document.createElement('i');
   icon.className = 'pd-item';
-  icon.style.setProperty('--ix', String(sprite % 8));
-  icon.style.setProperty('--iy', String(Math.floor(sprite / 8)));
+  icon.style.setProperty('--ix', String(sprite % 16));
+  icon.style.setProperty('--iy', String(Math.floor(sprite / 16)));
   return icon;
 };
 
@@ -1936,8 +1936,8 @@ function flyToBag(launch: Launch): void {
   const target = bag.getBoundingClientRect();
   const icon = document.createElement('i');
   icon.className = 'pd-item pd-flying';
-  icon.style.setProperty('--ix', String(launch.sprite % 8));
-  icon.style.setProperty('--iy', String(Math.floor(launch.sprite / 8)));
+  icon.style.setProperty('--ix', String(launch.sprite % 16));
+  icon.style.setProperty('--iy', String(Math.floor(launch.sprite / 16)));
   icon.style.left = `${x - 16}px`;
   icon.style.top = `${y - 16}px`;
   document.body.append(icon);

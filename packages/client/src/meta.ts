@@ -1,4 +1,4 @@
-import { challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, RoomType, T, type World } from '@pd/core';
+import { challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, RoomType, S, T, type World } from '@pd/core';
 import { audio } from './audio';
 import { fx } from './fx';
 import { lang, locale, t } from './i18n';
@@ -15,6 +15,7 @@ import { hints } from './hints';
 
 const SOURCE_URL = 'https://github.com/shiba-vibecoding/pixel-dungeon-telegram';
 const ORIGIN_URL = 'http://pixeldungeon.watabou.ru';
+const SHATTERED_URL = 'https://shatteredpixel.com';
 /** A page served beside the game (privacy.html, terms.html), as a full address for Telegram's browser. */
 const page = (name: string): string => new URL(name, document.baseURI).href;
 
@@ -296,6 +297,7 @@ export function showAbout(onClose: () => void): void {
           {},
           linkRow(t.meta.source, () => openExternal(SOURCE_URL), true, SOURCE_URL.replace('https://', '')),
           linkRow(t.meta.origin, () => openExternal(ORIGIN_URL), true, ORIGIN_URL.replace('http://', '')),
+          linkRow(t.meta.shattered, () => openExternal(SHATTERED_URL), true, SHATTERED_URL.replace('https://', '')),
         ),
         el('p', { className: 'pd-legal', textContent: t.meta.legal }),
       ),
@@ -432,10 +434,10 @@ function roomSeen(room: { left: number; top: number; right: number; bottom: numb
 
 /** What the catalog lists, by tab, and the silhouette an unknown one shows (items.png). */
 const CATALOG: ReadonlyArray<{ category: 'potion' | 'scroll' | 'ring' | 'wand'; silhouette: number }> = [
-  { category: 'potion', silhouette: 56 },
-  { category: 'scroll', silhouette: 40 },
-  { category: 'ring', silhouette: 72 },
-  { category: 'wand', silhouette: 68 },
+  { category: 'potion', silhouette: S.POTION_TURQUOISE },
+  { category: 'scroll', silhouette: S.SCROLL_KAUNAN },
+  { category: 'ring', silhouette: S.RING_EMERALD },
+  { category: 'wand', silhouette: S.WAND_CORRUPTION },
 ];
 
 export interface JournalOptions {

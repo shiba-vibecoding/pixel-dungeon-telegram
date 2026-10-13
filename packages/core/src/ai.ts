@@ -19,6 +19,7 @@ import { seedGas, seedWeb } from './gas';
 import { staggerTarget } from './plants';
 import type { Rng } from './rng';
 import type { World } from './world';
+import { S } from './spd-sprites';
 import { mobCount, partySize, respawnTime, scaleMob } from './party';
 
 /*
@@ -535,7 +536,7 @@ function summonUndead(ctx: Ctx, king: Mob): void {
 /** Tengu jumps away after this many blows at close quarters. */
 const TENGU_JUMP_DELAY = 5;
 /** ItemSpriteSheet.SHURIKEN. */
-const SHURIKEN_SPRITE = 15;
+const SHURIKEN_SPRITE = S.SHURIKEN;
 
 /**
  * Tengu.jump: spent traps around flare up as poison traps, and Tengu lands

@@ -7,6 +7,7 @@ import { identify } from './ident';
 import { NEIGHBOURS8 } from './level/geometry';
 import { immuneTo, trapAt, triggerTrap } from './traps';
 import type { World } from './world';
+import { S } from './spd-sprites';
 
 /*
  * The armour kit and class armour (ArmorKit, ClassArmor and its four kinds).
@@ -121,7 +122,7 @@ export function classSpecial(ctx: Ctx, hero: Hero, target: number | undefined): 
       pay();
       ctx.effects.push({ type: 'special', hero: hero.id, ability: 'blades', from: hero.pos, to: hero.pos });
       for (const mob of targets) {
-        ctx.effects.push({ type: 'missile', depth, from: hero.pos, to: mob.pos, sprite: 15 });
+        ctx.effects.push({ type: 'missile', depth, from: hero.pos, to: mob.pos, sprite: S.SHURIKEN });
         if (isAlive(mob)) attack(ctx, hero, mob);
       }
       return heroAttackDelay(hero);

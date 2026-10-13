@@ -595,8 +595,8 @@ export class Motion {
     for (const g of this.ghosts) {
       const t = now - g.start;
       const { x, y } = at(g.pos);
-      const sx = (g.sprite % 8) * 16;
-      const sy = Math.floor(g.sprite / 8) * 16;
+      const sx = (g.sprite % 16) * 16;
+      const sy = Math.floor(g.sprite / 16) * 16;
       ctx.save();
       const chestKey = g.kind === 'chest' ? CHEST_ANIMS.get(g.sprite) : undefined;
       const chests = chestKey ? sheet('chests') : null;

@@ -39,3 +39,4 @@ export * from './shop';
 export * from './verify';
 export * from './badges';
 export * from './daily';
+export * from './spd-sprites';
