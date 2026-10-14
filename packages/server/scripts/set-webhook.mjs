@@ -114,8 +114,8 @@ for (const [language, commands] of [
 // What the bot says about itself: the profile's text, the line in the share card and the chat list,
 // and the button beside the message field that opens the game.
 for (const [language, description, short] of [
-  ['', 'Pixel Dungeon: the classic roguelike, in Telegram. Go down 26 depths for the Amulet of Yendor, take on the daily dungeon (the same for everyone, one attempt counts) and climb the weekly rankings. Every run is checked by the server. Tap «Play».', 'The classic roguelike in Telegram: daily dungeon, weekly rankings, trophies.'],
-  ['ru', 'Pixel Dungeon — классический рогалик прямо в Telegram. Спуститесь на 26 глубин за Амулетом Йендора, сразитесь в подземелье дня (у всех одно, засчитывается одна попытка) и поднимайтесь в недельном рейтинге. Каждый забег проверяет сервер. Нажмите «Играть».', 'Классический рогалик в Telegram: подземелье дня, рейтинги, трофеи.'],
+  ['', 'Pixel Dungeon, grown into Shattered Pixel Dungeon 4.0.2, right in Telegram. Six classes with talents and subclasses, alchemy, five bosses and every quest across 26 depths. Take on the daily dungeon: the same for everyone, a new challenge every day, one attempt counts. Climb the daily, weekly and all-time boards; every run is checked by the server. Tap «Play».', 'Shattered Pixel Dungeon in Telegram: six classes, a daily dungeon, fair rankings.'],
+  ['ru', 'Pixel Dungeon, выросший до Shattered Pixel Dungeon 4.0.2, — прямо в Telegram. Шесть классов с талантами и подклассами, алхимия, пять боссов и все квесты на 26 глубинах. Подземелье дня: одно на всех, каждый день новое испытание, засчитывается одна попытка. Поднимайтесь на досках дня, недели и всех времён — каждый забег проверяет сервер. Нажмите «Играть».', 'Shattered Pixel Dungeon в Telegram: шесть классов, подземелье дня, честный рейтинг.'],
 ]) {
   const lang = language ? { language_code: language } : {};
   await call('setMyDescription', { description, ...lang });
