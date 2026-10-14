@@ -1,5 +1,5 @@
 import {
-  deriveSeed, discoverable, HEIGHT, LENGTH, type Level, PLANT_KINDS, type PlantInfo, Rng, T, TileVisuals, trapVisual, WIDTH,
+  deriveSeed, discoverable, HEIGHT, LENGTH, type Level, PLANT_KINDS, type PlantInfo, Rng, T, TileSheet, TileVisuals, trapVisual, WIDTH,
 } from '@pd/core';
 
 /*
@@ -151,6 +151,11 @@ export class LevelTiles {
     drawTile(g, this.sheets.features, TileVisuals.featuresVisual(ctx, i, this.traps[i]!, this.plants[i]!), x, y);
     drawTile(u, this.sheets.raised, TileVisuals.raisedVisual(ctx, i), x, y);
     drawTile(u, this.sheet, TileVisuals.wallsVisual(ctx, i, inside), x, y);
+  }
+
+  /** The cell's own floor tile (FLOOR or an alternate by its variance), at (x, y): what lies under tall grass swaying or pressed down. */
+  drawFloor(ctx: CanvasRenderingContext2D, cell: number, x: number, y: number): void {
+    drawTile(ctx, this.sheet, TileVisuals.getVisualWithAlts(this.context(), TileSheet.FLOOR, cell), x, y);
   }
 
   /** The custom tilemaps (CustomTilemap): on the ground layer, or the upper one for walls; only where `cells` asks, if it does. */

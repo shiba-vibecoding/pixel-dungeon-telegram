@@ -1,9 +1,10 @@
-import { type Effect, HEAP_SPRITES, heroById, type Level, LENGTH, S, T, WIDTH, type World } from '@pd/core';
+import { type Effect, HEAP_SPRITES, heroById, type Level, LENGTH, S, T, TileSheet, TileVisuals, WIDTH, type World } from '@pd/core';
 import { audio } from './audio';
 import { between, dropSound } from './sfx';
 import { fx } from './fx';
 import { quality } from './quality';
 import { type Assets, levelRegion } from './sprites';
+import type { LevelTiles } from './tiles';
 import { TILE, type View } from './view';
 import { drawFrame, type Frame, frameAt, length, lookIndex, sheet, type SheetName } from './worldsheets';
 
@@ -64,11 +65,17 @@ interface Coin {
   start: number;
 }
 
-/** Which chest animation (chests.png) plays for a heap's sprite. */
+/**
+ * Which chest animation (chests.png) plays for a heap's sprite. No mimic here: it shares the chest's sprite,
+ * so it would be keyed over the chest's own; a sprung mimic plays MIMIC_ANIM instead (the `mimic` effect).
+ */
 export const CHEST_ANIMS = new Map<number, string>(
-  ([['chest', 'chest'], ['lockedChest', 'locked_chest'], ['crystalChest', 'crystal_chest'], ['tomb', 'tomb'], ['mimic', 'mimic'], ['skeleton', 'bones']] as const)
+  ([['chest', 'chest'], ['lockedChest', 'locked_chest'], ['crystalChest', 'crystal_chest'], ['tomb', 'tomb'], ['skeleton', 'bones']] as const)
     .map(([kind, key]) => [HEAP_SPRITES[kind], key]),
 );
+
+/** The animation of a chest that turned out to be a mimic. */
+const MIMIC_ANIM = 'mimic';
 
 /** The wind's round of tall grass frames, and a pass's (bent away from whoever passes). */
 const WIND = [2, 1, 0, 1, 2, 3, 4, 3] as const;
@@ -92,6 +99,8 @@ interface Ghost {
   sprite: number;
   start: number;
   kind: 'lift' | 'chest' | 'fade';
+  /** The chests.png animation a chest plays, where it is not the one its sprite gives (a mimic's jaws). */
+  anim?: string;
   /** Where it flies to (a companion who took it), world pixels. */
   toward?: { x: number; y: number };
   /** How long it is drawn. */
@@ -240,12 +249,14 @@ export class Motion {
       map[cell] = is;
       if (!visible[cell]) continue;
       const r = levelRegion(level);
+      // Doors.png is drawn from the front; a door in a side wall (DOOR_SIDEWAYS) has no frames and just changes.
+      const sideways = (door: number): boolean => TileVisuals.getRaisedDoorTile(door, level.map[cell - WIDTH] ?? -1) === TileSheet.RAISED_DOOR_SIDEWAYS;
       if (was === T.DOOR && is === T.OPEN_DOOR) {
-        this.tiles.push({ cell, from: was, to: is, start: now, kind: 'open', ms: this.animMs(`doors${r}`, 'door', DOOR_OPEN_MS) });
+        if (!sideways(is)) this.tiles.push({ cell, from: was, to: is, start: now, kind: 'open', ms: this.animMs(`doors${r}`, 'door', DOOR_OPEN_MS) });
         // The original's own door sound, nothing laid over it.
         audio.play('door_open', 1, 0.6, centre(cell));
       } else if (was === T.OPEN_DOOR && is === T.DOOR) {
-        this.tiles.push({ cell, from: was, to: is, start: now, kind: 'close', ms: this.animMs(`doors${r}`, 'door', DOOR_CLOSE_MS, true) });
+        if (!sideways(is)) this.tiles.push({ cell, from: was, to: is, start: now, kind: 'close', ms: this.animMs(`doors${r}`, 'door', DOOR_CLOSE_MS, true) });
         // Shutting behind whoever left: only a soft knock of wood as it meets the frame.
         audio.later(DOOR_CLOSE_MS * 0.7, 'knock', 0.75, 0.22, centre(cell));
       } else if (was === T.HIGH_GRASS && is === T.GRASS) {
@@ -259,7 +270,7 @@ export class Motion {
         });
       } else if (was === T.LOCKED_DOOR) {
         // The key turns: the lock clicks and the door stands open.
-        this.tiles.push({ cell, from: was, to: is, start: now, kind: 'locked', ms: this.animMs(`doors${r}`, 'locked', FADE_MS) });
+        if (!sideways(was)) this.tiles.push({ cell, from: was, to: is, start: now, kind: 'locked', ms: this.animMs(`doors${r}`, 'locked', FADE_MS) });
       } else if (was === T.BARRICADE) {
         this.tiles.push({ cell, from: was, to: is, start: now, kind: 'barricade', ms: this.animMs(`doors${r}`, 'barricade', FADE_MS) });
       } else {
@@ -275,7 +286,7 @@ export class Motion {
       if (still === sprite) continue;
       const chest = this.opened.has(pos) || this.sprung.has(pos);
       if (this.sprung.has(pos)) {
-        this.ghosts.push({ pos, sprite, start: now, kind: 'chest', life: this.chestLife(sprite) });
+        this.ghosts.push({ pos, sprite, start: now, kind: 'chest', anim: MIMIC_ANIM, life: this.chestLife(sprite, MIMIC_ANIM) });
       } else if (chest) {
         this.ghosts.push({ pos, sprite, start: now, kind: 'chest', life: this.chestLife(sprite) });
         this.chestBurst(pos, now + CHEST_SHAKE_MS);
@@ -433,8 +444,8 @@ export class Motion {
   }
 
   /** How long an opened chest is drawn: its frames, then a moment empty, fading. */
-  private chestLife(sprite: number): number {
-    const key = CHEST_ANIMS.get(sprite);
+  private chestLife(sprite: number, anim?: string): number {
+    const key = anim ?? CHEST_ANIMS.get(sprite);
     const frames = key ? sheet('chests')?.anims[key] : undefined;
     return frames ? CHEST_SHAKE_MS + length(frames) + 520 : CHEST_MS;
   }
@@ -469,7 +480,7 @@ export class Motion {
   }
 
   /** Under the heaps, over the floor: animated tiles, grass in the wind, rings on water, heaps on their way out. */
-  draw(ctx: CanvasRenderingContext2D, level: Level, visible: readonly boolean[], explored: readonly boolean[], now: number): void {
+  draw(ctx: CanvasRenderingContext2D, level: Level, visible: readonly boolean[], explored: readonly boolean[], now: number, levelTiles?: LevelTiles): void {
     const region = levelRegion(level);
     const grass = sheet(`grass${region}`);
     const doors = sheet(`doors${region}`);
@@ -480,6 +491,11 @@ export class Motion {
       void cell;
     };
     const at = (cell: number): { x: number; y: number } => ({ x: (cell % WIDTH) * TILE, y: Math.trunc(cell / WIDTH) * TILE });
+    // The floor under grass is the cell's own (FLOOR or one of its alternates by variance), not always the plain one.
+    const floor = (cell: number): void => {
+      if (levelTiles) levelTiles.drawFloor(ctx, cell, 0, 0);
+      else tile(T.EMPTY, cell);
+    };
 
     // Tall grass: always a breath of draught, and bent by whoever passes.
     const wind = !quality.light && !quality.reducedMotion;
@@ -497,7 +513,7 @@ export class Motion {
         const { x, y } = at(cell);
         ctx.save();
         ctx.translate(x, y);
-        tile(T.EMPTY, cell);
+        floor(cell);
         ctx.restore();
         drawFrame(ctx, grass, frame, x, y);
       }
@@ -534,7 +550,7 @@ export class Motion {
         if (a.kind === 'trample') {
           ctx.save();
           ctx.translate(x, y);
-          tile(T.EMPTY, a.cell);
+          floor(a.cell);
           ctx.restore();
         }
         // A door shuts by its opening frames backwards.
@@ -603,7 +619,7 @@ export class Motion {
       const sx = (g.sprite % 16) * 16;
       const sy = Math.floor(g.sprite / 16) * 16;
       ctx.save();
-      const chestKey = g.kind === 'chest' ? CHEST_ANIMS.get(g.sprite) : undefined;
+      const chestKey = g.kind === 'chest' ? g.anim ?? CHEST_ANIMS.get(g.sprite) : undefined;
       const chests = chestKey ? sheet('chests') : null;
       const chestFrames = chestKey ? chests?.anims[chestKey] : undefined;
       if (chests && chestFrames) {

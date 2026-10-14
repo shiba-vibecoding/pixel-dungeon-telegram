@@ -36,9 +36,8 @@ export interface CharSprite {
 export type SpriteVariant = 'dm300.charged' | 'pylon.active';
 
 export interface Assets {
-  /** Tiles and water of each region: the sewers, the prison, the caves, the city, the halls. */
+  /** Tiles of each region (the water is in env): the sewers, the prison, the caves, the city, the halls. */
   tiles: HTMLImageElement[];
-  water: HTMLImageElement[];
   heroes: Record<HeroClass, CharSprite>;
   mobs: Record<MobKind, CharSprite>;
   variants: Record<SpriteVariant, CharSprite>;
@@ -46,14 +45,10 @@ export interface Assets {
   bossTiles: Record<'sewer_boss' | 'prison_exit' | 'caves_boss' | 'city_boss' | 'halls_sp', HTMLImageElement>;
   icons: HTMLImageElement;
   items: HTMLImageElement;
-  /** 16x16 plants, in the order of PLANT_KINDS (the wand of regrowth's two after Pixel Dungeon's eight). */
-  plants: HTMLImageElement;
   /** Shattered's environment: tiles, water, terrain features, raised terrain, occlusion shadows, custom tiles (tiles.ts). */
   env: TileSheets;
   /** Shattered's monster sheets, by file (an armoured statue's tier is cut from the statue's when drawn). */
   spd: Record<SpdSheet, HTMLImageElement>;
-  /** Shattered's effects.png (Effects.get): the chains among them. */
-  effects: HTMLImageElement;
 }
 
 const anim = (fps: number, frames: number[], loop = false): Animation => ({ fps, frames, loop });
@@ -437,11 +432,11 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
   assetBase = base;
   // Pixel Dungeon's sheets still in use: the bosses and their minions, the folk, the curse; the monsters are Shattered's.
   const names = [
-    'tiles0', 'water0', 'tiles1', 'water1', 'tiles2', 'water2', 'tiles3', 'water3',
-    'undead', 'tiles4', 'water4',
-    'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'warrior', 'mage', 'rogue', 'ranger', 'duelist', 'cleric', 'ghost',
-    'shopkeeper', 'wandmaker', 'spd/ghost', 'spd/effects',
-    'icons', 'items', 'plants', 'spd/wards', 'spd/guardian', 'spd/lotus', 'spd/spirit_hawk', 'spd/ninja_log',
+    'tiles0', 'tiles1', 'tiles2', 'tiles3',
+    'undead', 'tiles4',
+    'imp', 'sheep', 'wraith', 'ratKing', 'warrior', 'mage', 'rogue', 'ranger', 'duelist', 'cleric', 'ghost',
+    'shopkeeper', 'spd/ghost',
+    'icons', 'items', 'spd/wards', 'spd/guardian', 'spd/lotus', 'spd/spirit_hawk', 'spd/ninja_log',
     // Shattered's bosses and their levels' custom tiles.
     'spd/goo', 'spd/tengu', 'spd/dm300', 'spd/pylon', 'spd/king', 'spd/yog', 'spd/yog_fists', 'spd/larva',
     'spd/sewer_boss', 'spd/prison_exit', 'spd/caves_boss', 'spd/city_boss', 'spd/halls_special',
@@ -508,7 +503,6 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
       features: features!, raised: raised!, occlusion: occlusion!, custom,
     },
     tiles: [images.tiles0, images.tiles1, images.tiles2, images.tiles3, images.tiles4],
-    water: [images.water0, images.water1, images.water2, images.water3, images.water4],
     heroes: {
       warrior: hero(images.warrior),
       mage: hero(images.mage),
@@ -526,8 +520,6 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     spd,
     icons: images.icons,
     items: images.items,
-    plants: images.plants,
-    effects: images['spd/effects'],
   };
 }
 

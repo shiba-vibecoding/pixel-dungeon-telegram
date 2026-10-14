@@ -218,7 +218,7 @@ original's rules and reuses its art; it is distributed under
 GPL-3.0-or-later (see LICENSE).
 
 Shattered Pixel Dungeon by Evan Debenham (https://shatteredpixel.com), GPL-3.0:
-the item graphics (`packages/client/public/assets/items.png`, `item_icons.png`)
+the item graphics (`packages/client/public/assets/items.png`)
 and the sprite constants generated from its `ItemSpriteSheet.java`
 (`packages/core/src/spd-sprites.ts`) come from Shattered Pixel Dungeon v4.0.2,
 whose content the game is moving to. Its sounds and music are Shattered's

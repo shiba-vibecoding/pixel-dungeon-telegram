@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const css = readFileSync(new URL('../src/ui.css', import.meta.url), 'utf8');
+const css = readFileSync(new URL('../src/game.css', import.meta.url), 'utf8');
 const hud = readFileSync(new URL('../src/hud.ts', import.meta.url), 'utf8');
 const hints = readFileSync(new URL('../src/hints.ts', import.meta.url), 'utf8');
 

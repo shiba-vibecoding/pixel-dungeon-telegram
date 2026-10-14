@@ -3570,7 +3570,7 @@ function tick(now: number): void {
     heapLook: (pos: number, at: number) => motion.heapLook(pos, at),
     under: (c: CanvasRenderingContext2D) => {
       scenery.draw(c, level, visible, explored, vnow);
-      motion.draw(c, level, visible, explored, vnow);
+      motion.draw(c, level, visible, explored, vnow, tiles!);
       if (world.arena) arenaView.draw(c, level, explored, vnow, world.arena.phase === 'rest');
     },
     over: (c: CanvasRenderingContext2D) => {
@@ -4024,5 +4024,5 @@ if (import.meta.env.DEV) {
     }
   };
   Object.assign(window, { __release: { news: () => showNews({ release: CURRENT, onClose: () => toTitle(false) }), report: () => api && showReport({ api, run: runFacts, onClose: () => toTitle(false) }), crash: showCrash } });
-  Object.assign(window, { __pd: { get session() { return session; }, openAlchemy, openBackpack, camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
+  Object.assign(window, { __pd: { get session() { return session; }, openAlchemy, openBackpack, openHero, openJournal, openMenu, badges: () => showBadges(hideOverlay, profile?.honors ?? []), camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
 }
