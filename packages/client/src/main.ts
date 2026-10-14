@@ -17,7 +17,7 @@ import { causeName, causeNote, packLine } from './deathcopy';
 import { clearMemo, loadMemo, type Memo, memoValid, saveMemo } from './windowmemo';
 import { reloadForUpdate } from './update';
 import { preloadMapFx } from './shfx';
-import { preloadMobFx } from './mobfx';
+import { preloadMobFx, resetMobFx } from './mobfx';
 import './game.css';
 import { showChampion, showFallenGhoul, showHiddenMimic } from './mobwin';
 import { burningCells, confirmDanger, firstDanger } from './mistap';
@@ -53,8 +53,8 @@ import {
   aheadOf, DangerMeter, fadeFor, type FightSeen, MUSIC_BOSSES, placeTune, sameTune, TITLE, VICTORY, withDanger,
 } from './soundtrack';
 import { type ArenaHud, type BuffName, CLERIC_BUFFS, COMBO_FRAMES, heroBuffs, Hud, type HudStatus, MOB_BUFFS, type QuickState, TALENT_BUFFS } from './hud';
-import { arenaBest, recordArena, showArenaEnd, showArenaReward } from './arenaui';
-import { ArenaView } from './arenaview';
+import type { ArenaView } from './arenaview';
+import { idle, lazy, load } from './lazy';
 import { levelRegion } from './sprites';
 import { capitalize, fill, lang, t } from './i18n';
 import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
@@ -75,7 +75,8 @@ import { type DailyRulesView, showCamp } from './campui';
 import { showMail, unclaimed } from './mailui';
 import { coachDone, markCoachDone, type Rect, type StepId, Tutorial, veteranSkips } from './coach';
 import { mart } from './mart';
-import { challengeBrief, challengeIcon, eraseDevice, showChallenges, showGuide, showJournal, showSettings } from './meta';
+import { challengeBrief, challengeIcon, eraseDevice } from './challenge-info';
+import type { ChallengesOptions, JournalOptions, SettingsOptions } from './meta';
 import { netlog, sendNetlog } from './netlog';
 import { watchErrors } from './diag';
 import { markSeenHere, newsDue, seenHere } from './news';
@@ -85,6 +86,8 @@ import { CURRENT } from './releases';
 import { type RunFacts, showErrorScreen, showReport } from './reportui';
 import { looksRows, setBadgeImages, showMart, showTreat } from './martui';
 import { quality } from './quality';
+import { Pace } from './pace';
+import { forgetSight, seenCells, seenEnemies } from './sight';
 import { type Launch, Motion } from './motion';
 import { Scenery } from './scenery';
 import { Feedback } from './feedback';
@@ -97,7 +100,7 @@ import { rankings, recordRun } from './rankings';
 import { type CheckOptions, forgetSolo, loadCheck, loadSolo, type Session, soloSession, staleSolo } from './session';
 import { type BoardKind, type Profile, type RunMeta, type RunSlot, runApi, type SyncAnswer } from './checked';
 import { loadAssets } from './sprites';
-import { CoopMarks } from './coop-marks';
+import type { CoopFrame, CoopMarks } from './coop-marks';
 import {
   backButton, guardRun, haptic, initData, initTelegram, inTelegram, launchedForDaily, onLayoutChange, platform,
   shareArena, shareDaily, telegramName, appLink, canShareMessage, canShareStory, shareMessage, shareStory, requestWriteAccess,
@@ -109,7 +112,8 @@ import { ActionIndicator, type ActionKind } from './actionind';
 import { hasFreePoints, refreshHeroWindow, showComboWindow } from './talentui';
 import { tal as talentLine, talentBuffInfo, talentReason } from './talenttext';
 import { STEP_MS, TILE, View } from './view';
-import { bossBar, cellMarks, drawBossGround, drawBossTop } from './bossfx';
+import { fadingWalls, resetXray } from './xray';
+import { bossBar, cellMarks, drawBossGround, drawBossTop, resetBossFx } from './bossfx';
 
 /*
  * Pixel Dungeon client: title screen, then a solo run (kept in local storage),
@@ -247,15 +251,30 @@ const hud = new Hud({
   },
 });
 /** The arena of waves dressed: sand, banners, gates, braziers, the crowd (arenaview.ts). */
-const arenaView = new ArenaView();
+let arenaView: ArenaView | null = null;
+const arenaViewMod = lazy(() => import('./arenaview'));
+const arenaUi = lazy(() => import('./arenaui'));
+/** The settings, challenges, journal and guide windows (meta.ts): a chunk fetched at the first of them, or in the idle time after the first screen. */
+const metaMod = lazy(() => import('./meta'));
+const windowFailed = (): void => toast(t.rel.offline.strip);
+const showSettings = (options: SettingsOptions): void => load(metaMod, (m) => m.showSettings(options), windowFailed);
+const showChallenges = (options: ChallengesOptions): void => load(metaMod, (m) => m.showChallenges(options), windowFailed);
+const showJournal = (options: JournalOptions, tab?: 'notes' | 'catalog' | 'guide', category?: number, entry?: string): void =>
+  load(metaMod, (m) => m.showJournal(options, tab, category, entry), windowFailed);
+const showGuide = (onClose: () => void, entry?: string): void => load(metaMod, (m) => m.showGuide(onClose, entry), windowFailed);
+/** The arena's dressing (a mode that is not shown now: its code is fetched only if a run of it ever draws). */
+function arenaViewNow(): ArenaView | null {
+  if (!arenaView) load(arenaViewMod, (m) => void (arenaView ??= new m.ArenaView()));
+  return arenaView;
+}
 /** The arena's reward window is up (it closes by itself if the wave starts meanwhile). */
 let rewardOpen = false;
 /**
  * The middle of where a level actually lies, world pixels: the grid is bigger than a level for
  * one hero (core geometry.ts), and the rest of it is solid rock.
  */
-const middles = new WeakMap<Level, { x: number; y: number }>();
-function levelMiddle(level: Level): { x: number; y: number } {
+const middles = new WeakMap<Level, { x: number; y: number; left: number; right: number; top: number; bottom: number }>();
+function levelMiddle(level: Level): { x: number; y: number; left: number; right: number; top: number; bottom: number } {
   let middle = middles.get(level);
   if (!middle) {
     let left = WIDTH;
@@ -270,7 +289,7 @@ function levelMiddle(level: Level): { x: number; y: number } {
       top = Math.min(top, Math.trunc(i / WIDTH));
       bottom = Math.max(bottom, Math.trunc(i / WIDTH));
     }
-    middle = { x: ((left + right + 1) / 2) * TILE, y: ((top + bottom + 1) / 2) * TILE };
+    middle = { x: ((left + right + 1) / 2) * TILE, y: ((top + bottom + 1) / 2) * TILE, left: left * TILE, right: (right + 1) * TILE, top: top * TILE, bottom: (bottom + 1) * TILE };
     middles.set(level, middle);
   }
   return middle;
@@ -290,11 +309,10 @@ const mapControlsActions = {
       pan.x = middle.x - (cellX(me.pos) * TILE + TILE / 2);
       pan.y = middle.y - (cellY(me.pos) * TILE + TILE / 2);
       pan.home = false;
+      pan.loose = true;
     }
   },
-  home: () => {
-    pan.home = true;
-  },
+  home: () => recentre(160),
   attack: () => {
     const world = session?.world;
     const me = world && heroById(world, session!.myId);
@@ -329,8 +347,10 @@ function coachMove(me: Hero): void {
   }
   const x = (cellX(me.pos) * TILE + TILE / 2 - camera.x) * camera.zoom / (canvas.width / canvas.clientWidth);
   const y = (cellY(me.pos) * TILE - camera.y) * camera.zoom / (canvas.height / canvas.clientHeight);
-  coach.style.left = `${Math.round(x / hud.scale)}px`;
-  coach.style.top = `${Math.round(y / hud.scale)}px`;
+  const left = `${Math.round(x / hud.scale)}px`;
+  const top = `${Math.round(y / hud.scale)}px`;
+  if (coach.style.left !== left) coach.style.left = left;
+  if (coach.style.top !== top) coach.style.top = top;
 }
 
 /**
@@ -338,7 +358,7 @@ function coachMove(me: Hero): void {
  * one, else the nearest asleep (a sneak attack); never a passive one (a shopkeeper, the ghost).
  */
 function attackTarget(world: World, me: Hero): Mob | null {
-  const visible = visibleCells(world, me.depth);
+  const visible = seenCells(world, me.depth);
   const foes = (world.floors[me.depth]?.mobs ?? []).filter((m) => m.state !== 'passive' && !m.ally && visible[m.pos] && m.hp > 0 && !m.image);
   // The enemy picked with the danger indicator comes first (AttackIndicator.target).
   const rank = (m: Mob): number => (m.id === dangerTarget ? -1 : m.enemy === me.id && m.state === 'hunting' ? 0 : m.state === 'sleeping' ? 2 : 1) * 1000 + distance(m.pos, me.pos);
@@ -395,7 +415,7 @@ const tutorialHost = {
       }
       case 'stairs': {
         const exit = levelAt(world, me.depth).exit;
-        return visibleCells(world, me.depth)[exit] ? cellRect(exit, 4) : null;
+        return seenCells(world, me.depth)[exit] ? cellRect(exit, 4) : null;
       }
       case 'backpack':
         return buttonRect('.pd-tool.bag');
@@ -411,7 +431,7 @@ const tutorialHost = {
       case 'enemy':
         return attackTarget(world, me) !== null;
       case 'stairs':
-        return me.depth < 26 && Boolean(visibleCells(world, me.depth)[levelAt(world, me.depth).exit]);
+        return me.depth < 26 && Boolean(seenCells(world, me.depth)[levelAt(world, me.depth).exit]);
       case 'backpack':
         return newLoot || world.turn > 200;
       case 'quick':
@@ -1196,6 +1216,7 @@ function nextDanger(): void {
   pan.x = (cellX(mob.pos) - cellX(me.pos)) * TILE;
   pan.y = (cellY(mob.pos) - cellY(me.pos)) * TILE;
   pan.home = false;
+  pan.loose = true;
   feedback.aim(mob.pos, true, fx.now, mob.id);
   feedback.danger(mob.id, mob.pos, fx.now);
 }
@@ -1262,6 +1283,9 @@ function companionOnTheMove(world: World, me: Hero, cell: number): boolean {
   const other = world.heroes.find((h) => h !== me && h.depth === me.depth && h.pos === cell && isAlive(h));
   return !!other && view.stepLeft(other.id, fx.now) > -250;
 }
+
+/** A step taken between frames is shown as if it began this long (ms) before the frame that shows it, at most: about a frame. */
+const MAX_LEAD_MS = 20;
 
 /** How early (ms) the next step of a walk is sent before the last one ends on screen: about a frame. */
 const FRAME_AHEAD_MS = 17;
@@ -2390,8 +2414,34 @@ try {
 } catch {
   // The default zoom, then.
 }
-/** How far the view has been dragged away from the hero, world pixels; it glides back when the hero moves. */
-const pan = { x: 0, y: 0, home: false };
+/** How far the view has been dragged away from the hero, world pixels: it keeps that offset while the hero walks (see tick). */
+const pan = {
+  x: 0,
+  y: 0,
+  /** Easing back to the hero, with this much lag (ms). */
+  home: false,
+  ease: 160,
+  /** The view was sent to look somewhere on purpose (the danger badge): it stays there, not held to the hero's neighbourhood. */
+  loose: false,
+  /** The offset is moving (back to the hero, or off the view's edge): the picture has to be drawn at full pace. */
+  easing: false,
+};
+
+/** Brings the view back to the hero, easing (the centre button, a double tap on the hero, a new enemy in sight). */
+function recentre(lagMs = 160): void {
+  if (pan.x === 0 && pan.y === 0) return;
+  pan.home = true;
+  pan.ease = lagMs;
+  pan.loose = false;
+}
+
+/** The hero keeps at least this far (tiles) from the edges of what the view shows once it has been dragged about. */
+const EDGE_TILES = 2;
+/** How fast the view eases back off an edge (ms). */
+const EDGE_EASE_MS = 140;
+/** A double tap on the hero: within this long (ms) of the first. */
+const DOUBLE_TAP_MS = 350;
+let heroTapAt = 0;
 /** Where a zoom is centred, device pixels: the fingers, the cursor, or the hero. */
 let zoomAnchor: { x: number; y: number } | null = null;
 
@@ -2487,6 +2537,7 @@ canvas.addEventListener('pointermove', (event) => {
       pan.x = gesture.panX - dx / camera.zoom;
       pan.y = gesture.panY - dy / camera.zoom;
       pan.home = false;
+      pan.loose = false;
     }
   } else if (gesture.kind === 'pinch' && fingers.size >= 2) {
     const { dist, mid } = spread();
@@ -2522,7 +2573,14 @@ canvas.addEventListener('pointerup', lift);
 canvas.addEventListener('pointercancel', lift);
 
 /* Co-op signals (coop-marks.ts): a long press on the map pings that cell for the party. */
-const coop = new CoopMarks(hud.root);
+let coop: CoopMarks | null = null;
+const coopMod = lazy(() => import('./coop-marks'));
+/** Co-op's marks over the map: only an online session has any, so the code is fetched when one first draws. */
+function coopFrame(ctx: CanvasRenderingContext2D, frame: CoopFrame): void {
+  if (frame.session.mode !== 'online') return;
+  if (!coop) load(coopMod, (m) => void (coop ??= new m.CoopMarks(hud.root)));
+  coop?.frame(ctx, frame);
+}
 const LONG_PRESS_MS = 450;
 let pressTimer = 0;
 
@@ -2539,7 +2597,7 @@ function armPing(): void {
     if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) return;
     // The touch is spent: lifting the finger walks nowhere.
     gesture = { kind: 'done' };
-    if (coop.ping(session, view.depth, x + y * WIDTH)) haptic('hit');
+    if (coop?.ping(session, view.depth, x + y * WIDTH)) haptic('hit');
   }, LONG_PRESS_MS);
 }
 
@@ -2729,6 +2787,17 @@ function tapAt(px: number, py: number): void {
     examineCell(x + y * WIDTH);
     return;
   }
+  // A double tap on the hero brings the view back to them (the second tap does nothing else).
+  const hero = session.world && heroById(session.world, session.myId);
+  if (hero && x + y * WIDTH === hero.pos && !aim) {
+    const nowMs = performance.now();
+    const again = nowMs - heroTapAt < DOUBLE_TAP_MS;
+    heroTapAt = again ? 0 : nowMs;
+    if (again) {
+      recentre(160);
+      return;
+    }
+  } else heroTapAt = 0;
   tapCell(x + y * WIDTH);
 }
 
@@ -2943,6 +3012,12 @@ addEventListener('keydown', (event) => {
 
 /* Layout */
 
+/** When the map is drawn: at full pace while something moves, a few times a second while it only breathes (pace.ts). */
+const drawPace = new Pace();
+for (const type of ['pointerdown', 'pointermove', 'pointerup', 'keydown', 'wheel', 'touchstart'] as const) {
+  addEventListener(type, () => drawPace.touch(performance.now()), { passive: true, capture: true });
+}
+
 function resize(): void {
   // Light effects draw a coarser canvas: pixel art stays crisp, there are just fewer pixels to fill.
   const dpr = Math.min(devicePixelRatio || 1, quality.light ? 1.5 : 3);
@@ -2978,6 +3053,7 @@ function resize(): void {
   zoom.max = Math.max(zoom.base + 2, zoom.base * 2);
   zoom.target = clampZoom(zoom.base + zoom.delta);
   camera.zoom = zoom.target;
+  drawPace.force();
 }
 
 /** Toasts appear just under the HUD, however tall it has grown (buffs, companions, a notice). */
@@ -3086,7 +3162,9 @@ let around = new Map<number, number>();
 /** The soft camera: where it looks, eased after the hero (see tick). */
 const follow = { x: 0, y: 0, depth: 0, ready: false };
 /** How far behind the camera trails: the time it takes to close two thirds of the gap. */
-const CAMERA_LAG_MS = 85;
+const CAMERA_LAG_MS = 60;
+/** The same when it has far to go (a teleport, a fall). */
+const CAMERA_CATCH_UP_MS = 45;
 
 /** When the last game frame was drawn, for telling a phone that struggles. */
 let lastFrame = 0;
@@ -3124,7 +3202,17 @@ function placeVignette(on: boolean, x = 0, y = 0): void {
   vignette.style.setProperty('--outer', `${outer}px`);
 }
 
+/** How often the HUD is brought up to date while the map only breathes (pace.ts), ms. */
+const HUD_CALM_MS = 100;
+let lastHudAt = -Infinity;
+
+/** The backdrop behind the title (and a connecting run) drifts so slowly that 15 frames a second show it all. */
+const BACKDROP_MS = 66;
+let lastBackdrop = -Infinity;
+
 function drawBackdrop(now: number): void {
+  if (now - lastBackdrop >= 0 && now - lastBackdrop < BACKDROP_MS) return;
+  lastBackdrop = now;
   placeVignette(false);
   const { level, all } = backdrop;
   const middle = levelMiddle(level);
@@ -3184,6 +3272,7 @@ function restoreAfterPause(): void {
   lastUnderWindow = 0;
   frames.prev = 0;
   frames.since = 0;
+  drawPace.force();
   bakedKey = '';
   bakedFor = '';
   vignetteState = '';
@@ -3267,8 +3356,72 @@ onWindow((closable) => {
   if (!session) backButton(closable ? () => void closeOverlay() : null);
 });
 
+/**
+ * What the last turn did, shown: the view takes the effects in, then the sounds, particles, windows and notices that
+ * follow from them. Called once a frame for what came out of the world since the last, and again right after a step
+ * is sent (see tick), so a step is on screen the frame it is taken.
+ */
+/** A monster's blow that answers mine in the same turn is shown this long (ms) after it: about a swing. */
+const ANSWER_GAP_MS = 150;
+let answers: { at: number; effects: readonly Effect[]; generation: number; world: World } | null = null;
+
+/** Shows the blows held back once their time has come (or at once, with `force`). */
+function flushAnswers(world: World, me: Hero, now: number, vnow: number, force = false): void {
+  const held = answers;
+  if (!held || (!force && now < held.at)) return;
+  answers = null;
+  if (held.generation !== session?.generation || held.world !== world) return;
+  takeEffects(held.effects, world, me, now, vnow);
+}
+
+function takeEffects(effects: readonly Effect[], world: World, me: Hero, now: number, vnow: number): void {
+  if (effects.length === 0) return;
+  // What was held back to follow an earlier blow comes first, so the order of events never turns round.
+  flushAnswers(world, me, now, vnow, true);
+  // A monster's blow in the same turn as mine answers it a beat later, as the original's actors wait for each other's
+  // swing to end (Actor.process waits on the sprite): two hits that land at once read as one muddle of sound and flash.
+  const mineAt = effects.findIndex((e) => e.type === 'attack' && e.attacker === session!.myId && e.depth === view.depth);
+  const answerAt = mineAt < 0 ? -1 : effects.findIndex((e, i) => i > mineAt && e.type === 'attack' && e.attacker !== session!.myId && e.depth === view.depth);
+  if (answerAt > 0 && !quality.reducedMotion) {
+    answers = { at: now + ANSWER_GAP_MS, effects: effects.slice(answerAt), generation: session!.generation, world };
+    drawPace.effect(now);
+    effects = effects.slice(0, answerAt);
+  }
+  drawPace.effect(now);
+  view.apply(effects, world, session!.myId, vnow);
+  // The backpack, if open, shows the pack as it is now (an item put on, dropped, picked up).
+  const mine = session!.myId;
+  if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
+  // The hero window, if open, shows the talents as they are now (a point spent, a level gained, a way chosen).
+  if (effects.some((e) => ('hero' in e && e.hero === mine) && (e.type === 'talent' || e.type === 'levelUp' || e.type === 'mastered' || e.type === 'metamorphed'))) refreshHeroWindow(world, me);
+  // The pot's window, if open, shows the pack and the energy as they are now.
+  for (const e of effects) if (e.type === 'crafted' && e.hero === mine && alchemyOpen()) noteCrafted(e.item);
+  if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
+  for (const effect of effects) effectFx(effect, view, world, session!.myId, vnow);
+  motion.effects(effects, world, me.depth, (e) => itemSprite(e.item, world.run.labels));
+  scenery.effects(effects, me.depth, vnow);
+  handleMyEffects(effects, session!.myId);
+  if (world.arena) handleArenaEffects(effects, world, me, vnow);
+  // An unblessed ankh got the hero up elsewhere: say where the rest of their things are (ankh.ts; deathcopy.ts).
+  if (effects.some((e) => e.type === 'resurrected' && e.hero === mine && e.blessed === false)) view.say(t.forum.death.packLeft, '#ff8800');
+}
+
+/** My hero has stepped from `from` to where they stand: the sound of the ground, the dust or splash left behind, the view coming home. */
+function footfall(level: Level, me: Hero, from: number, vnow: number): void {
+  feedback.stepped(me.pos, vnow);
+  const terrain = level.map[me.pos]!;
+  // Hero.move: each surface underfoot sounds its own (water, the sturdy floor of special rooms, grass,
+  // high grass trampled on the way in, stone), and hot embers hiss a little.
+  const step = stepSound(terrain, around.get(me.pos) === T.HIGH_GRASS && terrain !== T.HIGH_GRASS);
+  audio.play(step.sound, step.rate, 0.6);
+  if (terrain === T.EMBERS) audio.play('sizzle', 1.3, 0.12);
+  // And what the step stirs where it left: dust, a splash, a few blades of grass.
+  stepFx(level.map[from] ?? terrain, from, vnow);
+}
+
 function tick(now: number): void {
   if (!session) {
+    forgetSight();
     // The camp covers a phone's whole screen; behind a wide screen's column the dungeon is still shown.
     if (activeCamp?.canvas.isConnected) activeCamp.frame(now);
     else activeCamp = null;
@@ -3325,10 +3478,15 @@ function tick(now: number): void {
     seenGeneration = session.generation;
     view.reset(me.depth);
     fx.reset();
+    resetXray();
+    resetMobFx();
+    resetBossFx();
     follow.ready = false;
     pan.x = 0;
     pan.y = 0;
     pan.home = false;
+    pan.loose = false;
+    pan.easing = false;
     walk.reset();
     bakedKey = '';
     threats = new Set();
@@ -3345,10 +3503,12 @@ function tick(now: number): void {
       if (justFell) audio.play('falling');
       if (me.depth > lastPlace.depth && me.depth >= (world.reached ?? me.depth)) audio.play('descend');
       // A new depth comes up out of the dark.
-      fx.flash('0, 0, 0', 1, 650, vnow);
+      fx.flash('0, 0, 0', 1, 520, vnow);
       // GameScene's greetings: the depth, a new region, and the level's feeling (the arena, sinking, has its own: handleArenaEffects).
       if (!world.arena) {
         view.say(justFell ? t.fell(me.depth) : me.depth > lastPlace.depth ? t.descended(me.depth) : t.ascended(me.depth));
+        // The depth, quietly over the middle of the view (a new region's first floor shows its card instead, just below).
+        view.floorTitle = { text: t.depthTitle(me.depth), start: vnow };
         // Down into a new region: its card.
         if (me.depth > lastPlace.depth && me.depth % 5 === 1) view.enterRegion(me.depth, vnow);
         if (me.depth === 6 && lastPlace.depth === 5) view.say(t.enterPrison, '#ffff44');
@@ -3365,17 +3525,7 @@ function tick(now: number): void {
       }
       justFell = false;
     } else if (me.pos !== lastPlace.pos) {
-      feedback.stepped(me.pos, vnow);
-      // The view comes home to the walking hero.
-      if (pan.x !== 0 || pan.y !== 0) pan.home = true;
-      const terrain = level.map[me.pos]!;
-      // Hero.move: each surface underfoot sounds its own (water, the sturdy floor of special rooms, grass,
-      // high grass trampled on the way in, stone), and hot embers hiss a little.
-      const step = stepSound(terrain, around.get(me.pos) === T.HIGH_GRASS && terrain !== T.HIGH_GRASS);
-      audio.play(step.sound, step.rate, 0.6);
-      if (terrain === T.EMBERS) audio.play('sizzle', 1.3, 0.12);
-      // And what the step stirs where it left: dust, a splash, a few blades of grass.
-      stepFx(level.map[lastPlace.pos] ?? terrain, lastPlace.pos, vnow);
+      footfall(level, me, lastPlace.pos, vnow);
     }
   }
   // Setting out: the sewers' card.
@@ -3400,6 +3550,7 @@ function tick(now: number): void {
     }
     visible = visibleCells(world, me.depth);
     bakedKey = key;
+    drawPace.force();
 
     learnFromSight(world, me, level, visible);
     // Hero.checkVisibleMobs: a newly seen enemy (asleep or not), or one that wakes, stops a walk.
@@ -3408,6 +3559,8 @@ function tick(now: number): void {
     if (enemies.some((m) => !enemiesInSight.includes(m.id)) || [...awake].some((id) => !threats.has(id))) {
       // Hero.checkVisibleMobs -> interrupt(): a new enemy in view stops walking, resting and a key held down.
       interruptHero();
+      // And the view, if it was dragged off, comes softly back to the hero: the fight is theirs.
+      if (gesture?.kind !== 'pan' && gesture?.kind !== 'pinch' && enemies.some((m) => !enemiesInSight.includes(m.id))) recentre(300);
     }
     threats = awake;
     enemiesInSight = enemies.map((m) => m.id);
@@ -3418,25 +3571,12 @@ function tick(now: number): void {
     }
   }
 
-  const effects = session.drain();
-  if (effects.length > 0) {
-    view.apply(effects, world, session.myId, vnow);
-    // The backpack, if open, shows the pack as it is now (an item put on, dropped, picked up).
-    const mine = session.myId;
-    if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
-    // The hero window, if open, shows the talents as they are now (a point spent, a level gained, a way chosen).
-    if (effects.some((e) => ('hero' in e && e.hero === mine) && (e.type === 'talent' || e.type === 'levelUp' || e.type === 'mastered' || e.type === 'metamorphed'))) refreshHeroWindow(world, me);
-    // The pot's window, if open, shows the pack and the energy as they are now.
-    for (const e of effects) if (e.type === 'crafted' && e.hero === mine && alchemyOpen()) noteCrafted(e.item);
-    if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
-    for (const effect of effects) effectFx(effect, view, world, session.myId, vnow);
-    motion.effects(effects, world, me.depth, (e) => itemSprite(e.item, world.run.labels));
-    scenery.effects(effects, me.depth, vnow);
-    handleMyEffects(effects, session.myId);
-    if (world.arena) handleArenaEffects(effects, world, me, vnow);
-    // An unblessed ankh got the hero up elsewhere: say where the rest of their things are (ankh.ts; deathcopy.ts).
-    if (effects.some((e) => e.type === 'resurrected' && e.hero === mine && e.blessed === false)) view.say(t.forum.death.packLeft, '#ff8800');
+  // Blows held back to follow mine, when their moment has come.
+  if (answers) {
+    drawPace.effect(now);
+    flushAnswers(world, me, now, vnow);
   }
+  takeEffects(session.drain(), world, me, now, vnow);
   // An online session learns my class with its first snapshot: wear the look for it.
   if (!session.looks[session.myId] && session.mode === 'solo') putOnLook();
   view.looks = session.looks;
@@ -3456,7 +3596,25 @@ function tick(now: number): void {
       audio.play('health_warn');
     }
   } else lastStarveRemind = -Infinity;
+  const turnBefore = world.turn;
   step(world, now, visible);
+  // A step (or a blow) just sent is shown on this very frame, not the next: the world has already answered, so its effects are
+  // taken in and the puppets moved on at once. Walkers set off a frame early, as a finger lifted between frames has already
+  // spent part of one (see View.lead). Left for the next frame: a new floor (the view starts over there) or a new run.
+  if (session.generation === seenGeneration && session.world === world && me.depth === view.depth && isAlive(me)) {
+    const sent = session.drain();
+    if (sent.length > 0 || world.turn !== turnBefore) {
+      takeEffects(sent, world, me, now, vnow);
+      view.lead = Math.min(dt, MAX_LEAD_MS);
+      view.sync(world, vnow, session.myId);
+      view.lead = 0;
+      if (me.depth === lastPlace.depth && me.pos !== lastPlace.pos) {
+        footfall(level, me, lastPlace.pos, vnow);
+        lastPlace = { generation: session.generation, depth: me.depth, pos: me.pos };
+        around = new Map(NEIGHBOURS8.map((d) => [me.pos + d, level.map[me.pos + d] ?? -1]));
+      }
+    }
+  }
   fx.update(vnow, dt);
   ambientFx(view, vnow, dt);
   mobAmbient(view, vnow, dt);
@@ -3482,7 +3640,7 @@ function tick(now: number): void {
     dangerOf = { session, generation: session.generation };
     danger.reset();
   }
-  const hunted = isAlive(me) && visibleEnemies(world, me).some((mob) => mob.state === 'hunting');
+  const hunted = isAlive(me) && seenEnemies(world, me).some((mob) => mob.state === 'hunting');
   const wasTense = danger.on;
   const inDanger = danger.update(now, hunted, struckByMonster && isAlive(me));
   struckByMonster = false;
@@ -3518,34 +3676,66 @@ function tick(now: number): void {
     applyZoom(z, zoomAnchor ?? { x: canvas.width / 2, y: middle });
     if (z === zoom.target) zoomAnchor = null;
   }
-  // A step brings the view home from wherever it was dragged.
+  // A view dragged off keeps its offset from the hero while they walk (looking ahead along the way). It comes back only when
+  // asked to (the centre button, a double tap on the hero, a new enemy in sight), when the hero would be within two tiles of its
+  // edge, and on a new floor: always eased, never at once.
+  const dragging = gesture?.kind === 'pan' || gesture?.kind === 'pinch';
+  const heroX = at.x + TILE / 2;
+  const heroY = at.y + TILE / 2;
+  pan.easing = false;
   if (pan.home) {
-    const back = Math.exp(-Math.max(0, dt) / 110);
+    const back = Math.exp(-Math.max(0, dt) / pan.ease);
     pan.x *= back;
     pan.y *= back;
+    pan.easing = true;
     if (Math.hypot(pan.x, pan.y) < 0.05) {
       pan.x = 0;
       pan.y = 0;
       pan.home = false;
+      pan.easing = false;
+    }
+  } else if (!dragging && !pan.loose && (pan.x !== 0 || pan.y !== 0)) {
+    // Keeps the hero clear of the edges of the band the HUD leaves free: eased back just far enough.
+    const ratio = canvas.height / (canvas.clientHeight || 1);
+    const z = camera.zoom;
+    const m = EDGE_TILES * TILE;
+    const half = canvas.width / z / 2;
+    const bandTop = (free.top * ratio) / z;
+    const bandBottom = (free.bottom * ratio) / z;
+    const span = (lo: number, hi: number): [number, number] => (lo > hi ? [(lo + hi) / 2, (lo + hi) / 2] : [lo, hi]);
+    const [loX, hiX] = span(-(half - m), half - m);
+    const [loY, hiY] = span(middle / z - (bandBottom - m), middle / z - (bandTop + m));
+    const wantX = Math.max(loX, Math.min(hiX, pan.x));
+    const wantY = Math.max(loY, Math.min(hiY, pan.y));
+    if (wantX !== pan.x || wantY !== pan.y) {
+      const give = 1 - Math.exp(-Math.max(0, dt) / EDGE_EASE_MS);
+      pan.x += (wantX - pan.x) * give;
+      pan.y += (wantY - pan.y) * give;
+      if (Math.abs(wantX - pan.x) < 0.05 && Math.abs(wantY - pan.y) < 0.05) {
+        pan.x = wantX;
+        pan.y = wantY;
+      } else {
+        pan.easing = true;
+      }
     }
   }
-  // Not so far that the level leaves the screen.
-  const reach = (WIDTH * TILE) / 2;
-  pan.x = Math.max(-reach, Math.min(reach, pan.x));
-  pan.y = Math.max(-reach, Math.min(reach, pan.y));
-  const targetX = at.x + TILE / 2 - canvas.width / camera.zoom / 2 + pan.x;
-  const targetY = at.y + TILE / 2 - middle / camera.zoom + pan.y;
-  const dragging = gesture?.kind === 'pan' || gesture?.kind === 'pinch';
-  const far = !dragging && Math.hypot(targetX - follow.x, targetY - follow.y) > TILE * 4 && !pan.home;
+  // Not so far that the level leaves the screen: the point looked at stays within where the level lies (a tile's slack).
+  const bounds = levelMiddle(level);
+  pan.x = Math.max(bounds.left - TILE - heroX, Math.min(bounds.right + TILE - heroX, pan.x));
+  pan.y = Math.max(bounds.top - TILE - heroY, Math.min(bounds.bottom + TILE - heroY, pan.y));
+  const targetX = heroX - canvas.width / camera.zoom / 2 + pan.x;
+  const targetY = heroY - middle / camera.zoom + pan.y;
+  // A jump of more than a few cells (a teleport, a fall) is caught up with quicker, still eased; a new floor is cut to.
+  const far = !dragging && Math.hypot(targetX - follow.x, targetY - follow.y) > TILE * 4;
   if (dragging && follow.ready && follow.depth === me.depth) {
     // Under the finger the map moves with it, not after it.
     follow.x = targetX;
     follow.y = targetY;
-  } else if (!follow.ready || far || follow.depth !== me.depth) {
+  } else if (!follow.ready || follow.depth !== me.depth) {
     follow.x = targetX;
     follow.y = targetY;
   } else {
-    const ease = 1 - Math.exp(-Math.max(0, dt) / CAMERA_LAG_MS);
+    const ease = 1 - Math.exp(-Math.max(0, dt) / (far ? CAMERA_CATCH_UP_MS : CAMERA_LAG_MS));
     follow.x += (targetX - follow.x) * ease;
     follow.y += (targetY - follow.y) * ease;
   }
@@ -3570,54 +3760,59 @@ function tick(now: number): void {
     flyToBag(launch);
     return false;
   });
-  const plants = (world.floors[me.depth]?.plants ?? []).map((p) => ({ pos: p.pos, index: PLANT_KINDS.indexOf(p.kind) }));
-  // Clouds of gas: green toxic, yellow paralytic, and Shattered's (their Speck's hardlight colour; the
-  // confusion gas's changes from cell to cell, as its specks do).
-  const clouds = world.floors[me.depth]?.gas ?? {};
-  const gas = Object.entries(GAS_TINTS).flatMap(([kind, tint]) =>
-    (clouds[kind as keyof typeof clouds] ?? []).map(([pos, volume]) => ({
-      pos,
-      // Fire is thick for the few turns it burns.
-      volume: kind === 'fire' ? 30 + volume * 10 : volume,
-      color: Array.isArray(tint) ? tint[pos % tint.length]! : tint as string,
-    })));
-  const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
-  const explored = exploredCells(world, me.depth);
-  const scene = {
-    level, tiles: tiles!, visible, explored, heaps, gas, webs, seeAll: me.mindVision > 0,
-      ...((world.floors[me.depth]?.altar?.volume ?? 0) > 0 ? { altar: world.floors[me.depth]!.altar!.pos } : {}),
-    focus: { x: at.x + TILE / 2, y: at.y + TILE / 2 },
-    lights: world.arena ? [...lightsFor(level, visible, view, vnow), ...arenaView.lights(level, visible, vnow)] : lightsFor(level, visible, view, vnow),
-    heapLook: (pos: number, at: number) => motion.heapLook(pos, at),
-    under: (c: CanvasRenderingContext2D) => {
-      scenery.draw(c, level, visible, explored, vnow);
-      motion.draw(c, level, visible, explored, vnow, tiles!);
-      if (world.arena) arenaView.draw(c, level, explored, vnow, world.arena.phase === 'rest');
-    },
-    over: (c: CanvasRenderingContext2D) => {
-      motion.drawOver(c, vnow);
-      feedback.draw(
+  // The map is drawn at full pace while something moves, and a few times a second when it only breathes (pace.ts).
+  const settling = Math.abs(targetX - follow.x) * camera.zoom > 0.25 || Math.abs(targetY - follow.y) * camera.zoom > 0.25
+    || camera.zoom !== zoom.target || pan.home || pan.easing || (gesture !== null && gesture.kind !== 'done');
+  const moving = settling || walk.queue.length > 0 || walk.chase !== null || session.busy
+    || view.moving(vnow) || fx.moving(vnow) || motion.moving() || fadingWalls();
+  if (drawPace.due(now, moving, quality.light)) {
+    const plants = (world.floors[me.depth]?.plants ?? []).map((p) => ({ pos: p.pos, index: PLANT_KINDS.indexOf(p.kind) }));
+    // Clouds of gas: green toxic, yellow paralytic, and Shattered's (their Speck's hardlight colour; the
+    // confusion gas's changes from cell to cell, as its specks do).
+    const clouds = world.floors[me.depth]?.gas ?? {};
+    const gas = Object.entries(GAS_TINTS).flatMap(([kind, tint]) =>
+      (clouds[kind as keyof typeof clouds] ?? []).map(([pos, volume]) => ({
+        pos,
+        // Fire is thick for the few turns it burns.
+        volume: kind === 'fire' ? 30 + volume * 10 : volume,
+        color: Array.isArray(tint) ? tint[pos % tint.length]! : tint as string,
+      })));
+    const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
+    const explored = exploredCells(world, me.depth);
+    const scene = {
+      level, tiles: tiles!, visible, explored, heaps, gas, webs, seeAll: me.mindVision > 0,
+        ...((world.floors[me.depth]?.altar?.volume ?? 0) > 0 ? { altar: world.floors[me.depth]!.altar!.pos } : {}),
+      focus: { x: at.x + TILE / 2, y: at.y + TILE / 2 },
+      lights: world.arena ? [...lightsFor(level, visible, view, vnow), ...(arenaViewNow()?.lights(level, visible, vnow) ?? [])] : lightsFor(level, visible, view, vnow),
+      heapLook: (pos: number, at: number) => motion.heapLook(pos, at),
+      under: (c: CanvasRenderingContext2D) => {
+        scenery.draw(c, level, visible, explored, vnow);
+        motion.draw(c, level, visible, explored, vnow, tiles!);
+        if (world.arena) arenaViewNow()?.draw(c, level, explored, vnow, world.arena.phase === 'rest');
+      },
+      over: (c: CanvasRenderingContext2D) => motion.drawOver(c, vnow),
+      front: (c: CanvasRenderingContext2D) => feedback.draw(
         c, walk.queue, (id) => mobById(world, me.depth, id)?.pos,
         walk.queue.length === 0 && !walk.chase && !session!.busy, vnow,
-      );
-    },
-    mourning: isAlive(me) ? 0 : Math.min(1, (vnow - (fallenAt ||= vnow)) / 1200),
-    // The boss levels' art, and what their fights leave about (bossfx.ts).
-    ground: (c: CanvasRenderingContext2D) => drawBossGround(c, world, level, assets, explored, visible, vnow),
-    top: (c: CanvasRenderingContext2D) => drawBossTop(c, world, level, assets, explored, visible, vnow),
-    marks: cellMarks(vnow),
-    middle,
-    // The cards sit above the hero, not on them: a third of the way down the free band.
-    cardY: (free.top + (free.bottom - free.top) * 0.3) * (canvas.height / (canvas.clientHeight || 1)),
-  };
-  // The arena's wall and stands stand in the light of the crowd's own torches, whatever the party sees.
-  render(ctx, world.arena ? { ...scene, visible: arenaView.shown(level, visible) } : scene, view, session.myId, assets, camera, vnow);
-  coop.frame(ctx, { session, world, view, camera, free, now: vnow });
-  placeVignette(!quality.light, (scene.focus.x - camera.x) * camera.zoom, (scene.focus.y - camera.y) * camera.zoom);
-  mapControls.update(
-    Math.round(zoom.target) < zoom.max, Math.round(zoom.target) > zoom.min, Math.hypot(pan.x, pan.y) > TILE * 1.5 && !pan.home,
-    document.querySelector<HTMLElement>('#ui .pd-log')?.offsetHeight ?? 120,
-  );
+      ),
+      mourning: isAlive(me) ? 0 : Math.min(1, (vnow - (fallenAt ||= vnow)) / 1200),
+      // The boss levels' art, and what their fights leave about (bossfx.ts).
+      ground: (c: CanvasRenderingContext2D) => drawBossGround(c, world, level, assets, explored, visible, vnow),
+      top: (c: CanvasRenderingContext2D) => drawBossTop(c, world, level, assets, explored, visible, vnow),
+      marks: cellMarks(vnow),
+      middle,
+      // The cards sit above the hero, not on them: a third of the way down the free band.
+      cardY: (free.top + (free.bottom - free.top) * 0.3) * (canvas.height / (canvas.clientHeight || 1)),
+    };
+    // The arena's wall and stands stand in the light of the crowd's own torches, whatever the party sees.
+    render(ctx, world.arena ? { ...scene, visible: arenaViewNow()?.shown(level, visible) ?? visible } : scene, view, session.myId, assets, camera, vnow);
+    coopFrame(ctx, { session, world, view, camera, free, now: vnow });
+    placeVignette(!quality.light, (scene.focus.x - camera.x) * camera.zoom, (scene.focus.y - camera.y) * camera.zoom);
+    mapControls.update(
+      Math.round(zoom.target) < zoom.max, Math.round(zoom.target) > zoom.min, Math.hypot(pan.x, pan.y) > TILE * 1.5 && !pan.home,
+      document.querySelector<HTMLElement>('#ui .pd-log')?.offsetHeight ?? 120,
+    );
+  }
   // The attack indicator and «go on», right there on the map's column.
   if (walk.goal === me.pos) walk.goal = null;
   const foe = isAlive(me) ? attackTarget(world, me) : null;
@@ -3673,78 +3868,85 @@ function tick(now: number): void {
   }
   // QuickSlot: this run's slots (a new run starts with its class's), as many as the screen shows; a slot whose
   // item is used up shows it greyed (a placeholder).
-  syncQuickslots(world, me);
-  const quickState = (slot: number): QuickState | null => {
-    const kind = quickKind(slot);
-    if (!kind) return null;
-    // An artifact may be worn: Shattered's quick slots hold it all the same; the mage's staff is zapped from the hand (quickItem).
-    const item = quickArtifact(me, slot)?.item ?? quickClassArmor(me, slot) ?? quickItem(me, slot);
-    if (!item || isPlaceholder(me, slot)) {
-      return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };
-    }
-    return {
-      sprite: itemSprite(item, world.run.labels),
-      label: isClassArmor(item) ? armorStatus(item) : chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
-      aiming: aim !== null && (aim.kind === 'artifact' ? itemAt(me, aim.action.item) === item : aim.index === quickIndex(me, slot)),
-      charge: itemDef(item.kind).category === 'artifact' ? chargeOf(world, me, item) : isClassArmor(item) ? { share: Math.min(1, (item.charge ?? 0) / 100), full: (item.charge ?? 0) >= 100 } : null,
-      wear: wearOf(world, item),
+  // The HUD (quick slots, notice, bars) is brought up to date on every frame while anything moves, and ten times a second while the
+  // picture only breathes: what it shows changes with a turn, a touch or an effect, none of which waits for a frame in between.
+  if (!drawPace.isCalm(now, moving) || now - lastHudAt >= HUD_CALM_MS || now < lastHudAt) {
+    lastHudAt = now;
+    syncQuickslots(world, me);
+    const quickState = (slot: number): QuickState | null => {
+      const kind = quickKind(slot);
+      if (!kind) return null;
+      // An artifact may be worn: Shattered's quick slots hold it all the same; the mage's staff is zapped from the hand (quickItem).
+      const item = quickArtifact(me, slot)?.item ?? quickClassArmor(me, slot) ?? quickItem(me, slot);
+      if (!item || isPlaceholder(me, slot)) {
+        return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };
+      }
+      return {
+        sprite: itemSprite(item, world.run.labels),
+        label: isClassArmor(item) ? armorStatus(item) : chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
+        aiming: aim !== null && (aim.kind === 'artifact' ? itemAt(me, aim.action.item) === item : aim.index === quickIndex(me, slot)),
+        charge: itemDef(item.kind).category === 'artifact' ? chargeOf(world, me, item) : isClassArmor(item) ? { share: Math.min(1, (item.charge ?? 0) / 100), full: (item.charge ?? 0) >= 100 } : null,
+        wear: wearOf(world, item),
+      };
     };
-  };
-  const quick = Array.from({ length: visibleQuickslots(hud.wide) }, (_, slot) => quickState(slot));
-  const cancelChoice = (): void => {
-    aim = null;
-    examining = false;
-  };
-  // One state at a time, the most pressing: the connection, death, a target to choose, examining, companions.
-  const aimed = aim && aim.kind === 'artifact' ? itemAt(me, aim.action.item)
-    : aim && aim.index >= 0 ? me.items[aim.index] : aim?.index === WEAPON_SLOT ? me.weapon ?? undefined : undefined;
-  const status: HudStatus | null =
-    session.status ? { kind: session.status === t.reconnecting ? 'reconnecting' : 'connecting', text: session.status }
-    : !isAlive(me) && !world.over ? { kind: 'dead', text: `${t.youDied}. ${world.arena ? t.arena.fallenCoop : t.youDiedCoop}` }
-    : aim ? { kind: 'target', text: t.chooseTarget, cancel: { label: t.cancel, onClick: cancelChoice }, ...(aimed ? { item: itemSprite(aimed, world.run.labels) } : {}) }
-    : examining ? { kind: 'examine', text: t.examinePrompt, cancel: { label: t.cancel, onClick: cancelChoice } }
-    : waitingFor.length > 0 ? { kind: 'waiting', text: t.waitingShort, names: waitingFor }
-    : holdingFelt ? { kind: 'waiting', text: t.partyWaitsForYou }
-    : null;
-  actionInd.update(world, me, aim && aim.kind === 'class' ? aim.from : undefined);
-  hud.update(
-    {
-      me,
-      party: session.mode === 'online' ? world.heroes.filter((h) => h.id !== me.id) : [],
-      online: session.online,
-      status,
-      log: view.log,
-      buffs: heroBuffs(me, world),
-      examining,
-      newLoot,
-      looks: session.looks,
-      keys: me.items.filter((i) => (i.kind === 'key.iron' || i.kind === 'key.skeleton') && i.depth === me.depth).length,
-      moreKeys: {
-        golden: me.items.filter((i) => i.kind === 'key.golden' && i.depth === me.depth).length,
-        crystal: me.items.filter((i) => i.kind === 'key.crystal' && i.depth === me.depth).length,
+    const quick = Array.from({ length: visibleQuickslots(hud.wide) }, (_, slot) => quickState(slot));
+    const cancelChoice = (): void => {
+      aim = null;
+      examining = false;
+    };
+    // One state at a time, the most pressing: the connection, death, a target to choose, examining, companions.
+    const aimed = aim && aim.kind === 'artifact' ? itemAt(me, aim.action.item)
+      : aim && aim.index >= 0 ? me.items[aim.index] : aim?.index === WEAPON_SLOT ? me.weapon ?? undefined : undefined;
+    const status: HudStatus | null =
+      session.status ? { kind: session.status === t.reconnecting ? 'reconnecting' : 'connecting', text: session.status }
+      : !isAlive(me) && !world.over ? { kind: 'dead', text: `${t.youDied}. ${world.arena ? t.arena.fallenCoop : t.youDiedCoop}` }
+      : aim ? { kind: 'target', text: t.chooseTarget, cancel: { label: t.cancel, onClick: cancelChoice }, ...(aimed ? { item: itemSprite(aimed, world.run.labels) } : {}) }
+      : examining ? { kind: 'examine', text: t.examinePrompt, cancel: { label: t.cancel, onClick: cancelChoice } }
+      : waitingFor.length > 0 ? { kind: 'waiting', text: t.waitingShort, names: waitingFor }
+      : holdingFelt ? { kind: 'waiting', text: t.partyWaitsForYou }
+      : null;
+    actionInd.update(world, me, aim && aim.kind === 'class' ? aim.from : undefined);
+    hud.update(
+      {
+        me,
+        party: session.mode === 'online' ? world.heroes.filter((h) => h.id !== me.id) : [],
+        online: session.online,
+        status,
+        log: view.log,
+        buffs: heroBuffs(me, world),
+        examining,
+        newLoot,
+        looks: session.looks,
+        keys: me.items.filter((i) => (i.kind === 'key.iron' || i.kind === 'key.skeleton') && i.depth === me.depth).length,
+        moreKeys: {
+          golden: me.items.filter((i) => i.kind === 'key.golden' && i.depth === me.depth).length,
+          crystal: me.items.filter((i) => i.kind === 'key.crystal' && i.depth === me.depth).length,
+        },
+        quick,
+        danger: isAlive(me) ? enemiesInSight.length : 0,
+        waitingFor: session.mode === 'online' ? holders.filter((id) => id !== me.id) : [],
+        arena: arenaHud(world, me, session.mode === 'online'),
+        boss: bossBar(world, me.depth),
       },
-      quick,
-      danger: isAlive(me) ? enemiesInSight.length : 0,
-      waitingFor: session.mode === 'online' ? holders.filter((id) => id !== me.id) : [],
-      arena: arenaHud(world, me, session.mode === 'online'),
-      boss: bossBar(world, me.depth),
-    },
-    walk.resting,
-  );
-  placeToasts();
+      walk.resting,
+    );
+    placeToasts();
+  }
   // The arena's reward: up as soon as nothing else is, gone if the wave began meanwhile (a companion's «To battle!»).
   if (world.arena && !world.over) {
     const offer = world.arena.offers[me.id];
     if (offer && isAlive(me) && !overlayOpen() && world.arena.phase === 'rest') {
       rewardOpen = true;
       walk.reset();
-      showArenaReward({
-        world, hero: me, wave: world.arena.wave, items: offer, coop: session.mode === 'online',
+      const wave = world.arena.wave;
+      const online = session.mode === 'online';
+      load(arenaUi, (ui) => ui.showArenaReward({
+        world, hero: me, wave, items: offer, coop: online,
         onTake: (index) => {
           rewardOpen = false;
           send({ type: 'arenaPick', choice: index }, performance.now());
         },
-      });
+      }));
     } else if (!offer && rewardOpen) {
       rewardOpen = false;
       hideOverlay();
@@ -3758,7 +3960,7 @@ function tick(now: number): void {
   }
   if (world.over && deathShown !== session.generation && world.arena) {
     deathShown = session.generation;
-    showArenaRunEnd(world, me, session.mode === 'solo');
+    void showArenaRunEnd(world, me, session.mode === 'solo');
   }
   if (world.over && deathShown !== session.generation) {
     deathShown = session.generation;
@@ -3878,13 +4080,13 @@ function handleArenaEffects(effects: readonly Effect[], world: World, me: Hero, 
         if (effect.depth === me.depth && effect.cells.length > 0) {
           // The nearest gate is the one heard.
           const near = effect.cells.reduce((best, cell) => (distance(cell, me.pos) < distance(best, me.pos) ? cell : best));
-          arenaView.gatesMoved(effect.open, near);
+          arenaViewNow()?.gatesMoved(effect.open, near);
         }
         break;
       case 'arenaCleared':
         view.say(t.arena.beaten(effect.wave), '#44ff44');
         view.say(t.arena.crowd, '#ffff44');
-        arenaView.cheer(now);
+        arenaViewNow()?.cheer(now);
         haptic('success');
         break;
       case 'arenaSinks': {
@@ -3910,13 +4112,14 @@ function handleArenaEffects(effects: readonly Effect[], world: World, me: Hero, 
 }
 
 /** The end of an arena run: the record, the numbers, everyone's share in co-op; into the rankings. */
-function showArenaRunEnd(world: World, me: Hero, solo: boolean): void {
+async function showArenaRunEnd(world: World, me: Hero, solo: boolean): Promise<void> {
+  const ui = await arenaUi.get();
   const arena = world.arena!;
   const answer = session?.checked ? session.checked.finished() : null;
   const cleared = core.wavesCleared(arena);
   const score = core.arenaScore(world, me.id);
-  const best = arenaBest();
-  const newRecord = recordArena(cleared);
+  const best = ui.arenaBest();
+  const newRecord = ui.recordArena(cleared);
   const name = me.name || playerName || telegramName() || t.heroLabel;
   const cause = me.killedBy && (t.causes[me.killedBy] ?? t.mobs[me.killedBy as MobKind] ?? t.classes[me.killedBy as HeroClass] ?? me.killedBy);
   recordRun({
@@ -3936,7 +4139,7 @@ function showArenaRunEnd(world: World, me: Hero, solo: boolean): void {
   window.setTimeout(() => {
     if (!session?.world?.over) return;
     haptic('error');
-    showArenaEnd({
+    ui.showArenaEnd({
       solo,
       wave: arena.wave,
       cleared,
@@ -4026,6 +4229,8 @@ if (launchedForDaily()) {
 
 
 // Badges and the rankings from the player's other devices: on the title at once, once they come.
+// The windows the title opens are fetched in the spare time after the first screen.
+idle(() => load(metaMod, () => undefined));
 void pullCloud().then(() => {
   reloadBadges();
   if (!session && document.querySelector('.pd-camp')) toTitle(false);
@@ -4049,5 +4254,5 @@ if (import.meta.env.DEV) {
     }
   };
   Object.assign(window, { __release: { news: () => showNews({ release: CURRENT, onClose: () => toTitle(false) }), report: () => api && showReport({ api, run: runFacts, onClose: () => toTitle(false) }), crash: showCrash } });
-  Object.assign(window, { __pd: { get session() { return session; }, openAlchemy, openBackpack, openHero, openJournal, openMenu, badges: () => showBadges(hideOverlay, profile?.honors ?? []), camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
+  Object.assign(window, { __pd: { pace: drawPace, get session() { return session; }, openAlchemy, openBackpack, openHero, openJournal, openMenu, badges: () => showBadges(hideOverlay, profile?.honors ?? []), camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
 }

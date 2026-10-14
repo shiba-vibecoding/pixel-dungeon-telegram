@@ -1,8 +1,6 @@
 import { berserkOf, comboOf, type Hero, momentumOf, pointsInTalent, type SubClass, type TalentId, TALENTS } from '@pd/core';
 import { talentLevels as armorTalentLevels, talentTitle as armorTalentTitle } from './abilitytext';
-import { fill, lang } from './i18n';
-import { TAL_EN, TAL_RU } from './i18n-talents';
-import { CLS_EN, CLS_RU } from './i18n-classes';
+import { fill, tables } from './i18n';
 import { CLERIC_BUFF_KEYS, TALENT_BUFF_KEYS } from './i18n-v22';
 
 /*
@@ -11,7 +9,7 @@ import { CLERIC_BUFF_KEYS, TALENT_BUFF_KEYS } from './i18n-v22';
  */
 
 // (The Duelist's and the Cleric's talents and subclasses are the classes stream's texts: i18n-classes.ts.)
-const table: Record<string, string> = lang === 'ru' ? { ...CLS_RU, ...TAL_RU } : { ...CLS_EN, ...TAL_EN };
+const table: Record<string, string> = { ...tables.cls, ...tables.tal };
 
 /** A text by its key in Shattered's message files; '' when there is none. */
 export function tal(key: string, ...args: Array<string | number>): string {

@@ -276,23 +276,40 @@ export const haptics = {
   },
 };
 
-export function haptic(kind: 'hit' | 'hurt' | 'success' | 'error'): void {
+/**
+ * What the phone's motor is asked to do (Telegram's HapticFeedback), weakest to strongest:
+ *  - 'tick': a blow of mine that lands, a soft tap;
+ *  - 'hit': a light impact (a hit taken, a ping, a wave of the arena);
+ *  - 'hurt': a medium one (a trap, a curse, a mimic's jaws);
+ *  - 'slam': a heavy one (a crushing blow taken, a boss's slam);
+ *  - 'success' and 'error': the notification buzzes (a level-up, a boss slain; a death, a broken weapon).
+ */
+export type HapticKind = 'tick' | 'hit' | 'hurt' | 'slam' | 'success' | 'error';
+
+const IMPACT: Partial<Record<HapticKind, 'soft' | 'light' | 'medium' | 'heavy'>> = { tick: 'soft', hit: 'light', hurt: 'medium', slam: 'heavy' };
+const STRENGTH: Record<HapticKind, number> = { tick: 0, hit: 1, hurt: 2, slam: 3, success: 4, error: 5 };
+/** After a request the motor is left alone this long (ms): only a stronger one goes through meanwhile. */
+const HAPTIC_HOLD_MS = 140;
+let hapticAt = -Infinity;
+let hapticKind: HapticKind = 'tick';
+
+/** Whether a request for `kind` at `now` goes through, noting it if it does (the rate limit: a flurry of blows is one buzz, not a drone). */
+export function hapticAllowed(kind: HapticKind, now: number): boolean {
+  const since = now - hapticAt;
+  // A clock that went back (a virtual one in tests) starts the count over.
+  if (since >= 0 && since < HAPTIC_HOLD_MS && STRENGTH[kind] <= STRENGTH[hapticKind]) return false;
+  hapticAt = now;
+  hapticKind = kind;
+  return true;
+}
+
+export function haptic(kind: HapticKind): void {
   const feedback = webApp?.HapticFeedback;
   if (!feedback || !inTelegram || !haptics.on || !(webApp!.isVersionAtLeast?.('6.1') ?? false)) return;
-  switch (kind) {
-    case 'hit':
-      feedback.impactOccurred('light');
-      break;
-    case 'hurt':
-      feedback.impactOccurred('heavy');
-      break;
-    case 'success':
-      feedback.notificationOccurred('success');
-      break;
-    case 'error':
-      feedback.notificationOccurred('error');
-      break;
-  }
+  if (!hapticAllowed(kind, performance.now())) return;
+  const impact = IMPACT[kind];
+  if (impact) feedback.impactOccurred(impact);
+  else feedback.notificationOccurred(kind === 'success' ? 'success' : 'error');
 }
 
 /**

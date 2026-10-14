@@ -10,6 +10,7 @@
 import { F, HEIGHT, terrainFlags, WIDTH } from '@pd/core';
 import { FLOOR, type Gib, gibTurned, stepGib, type Surface, SWALLOW, WALL } from './gibs';
 import { quality } from './quality';
+import { haptic } from './telegram';
 
 const TILE = 16;
 
@@ -95,6 +96,14 @@ interface Corpse {
   at: number;
   life: number;
   pool: { cx: number; cy: number; start: number; radius: number; color: string; edge: string } | null;
+}
+
+/** The part of the world on screen, in world pixels. */
+export interface View {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
 }
 
 /** A splat, a drop or a chunk left on the floor. */
@@ -219,6 +228,8 @@ class Fx {
 
   /** Hit-stop: the next `ms` of real time pass at a crawl. */
   hitStop(ms: number): void {
+    // Reduced motion: time is never slowed for a blow.
+    if (quality.reducedMotion) return;
     const until = this.lastReal + ms;
     if (until > this.stopUntil) this.stopUntil = until;
   }
@@ -226,8 +237,10 @@ class Fx {
   shake(power: number, ms: number, now: number): void {
     // Reduced motion (the system setting): the view never shakes.
     if (quality.reducedMotion || quality.shake <= 0) return;
+    // A hard shake (a boss's slam, a heavy blow taken, a quake) is felt in the hand as well.
+    if (power >= 5) haptic('slam');
     // As hard as the player likes it (the settings' shake, 0 to 1; 0.6 is the old strength).
-    power *= quality.shake / 0.6;
+    power *= (quality.shake / 0.6) * (quality.light ? 0.6 : 1);
     // A stronger or longer shake takes over; a weaker one does not cut a strong one short.
     const left = Math.max(0, this.shakeUntil - now);
     if (power >= this.shakePower * (left / Math.max(1, this.shakeUntil - this.shakeStart)) || now >= this.shakeUntil) {
@@ -251,8 +264,8 @@ class Fx {
 
   burst(x: number, y: number, now: number, o: BurstOptions): void {
     // Light effects: a third of the particles, and fewer at once.
-    const room = (quality.light ? MAX_PARTICLES / 4 : MAX_PARTICLES) - this.particles.length;
-    const count = Math.min(quality.light ? Math.ceil(o.count / 3) : o.count, Math.max(0, room));
+    const room = (quality.lean ? MAX_PARTICLES / 4 : MAX_PARTICLES) - this.particles.length;
+    const count = Math.min(quality.lean ? Math.ceil(o.count / 3) : o.count, Math.max(0, room));
     for (let i = 0; i < count; i++) {
       const angle = o.angle === undefined ? Math.random() * Math.PI * 2 : o.angle + (Math.random() - 0.5) * (o.cone ?? Math.PI / 2);
       const speed = o.speed[0] + Math.random() * (o.speed[1] - o.speed[0]);
@@ -279,7 +292,7 @@ class Fx {
    * flat (squashed, as the floor is seen from above) and settling at once.
    */
   ring(x: number, y: number, now: number, colors: readonly string[], count: number): void {
-    const n = quality.light ? Math.ceil(count / 2) : count;
+    const n = quality.lean ? Math.ceil(count / 2) : count;
     const room = MAX_PARTICLES - this.particles.length;
     for (let i = 0; i < Math.min(n, room); i++) {
       const angle = (i / n) * Math.PI * 2 + Math.random() * 0.3;
@@ -293,7 +306,7 @@ class Fx {
 
   /** Chunks thrown off a body, from a point on the floor (x, y) and a height over it (z). */
   gib(x: number, y: number, z: number, now: number, o: GibOptions): void {
-    const count = Math.min(quality.light ? Math.max(2, Math.ceil(o.count / 2)) : o.count, Math.max(0, MAX_GIBS - this.gibs.length));
+    const count = Math.min(quality.lean ? Math.max(2, Math.ceil(o.count / 2)) : o.count, Math.max(0, MAX_GIBS - this.gibs.length));
     const size = o.size ?? [2, 4];
     for (let i = 0; i < count; i++) {
       // Most fly on the way the blow went; a few anywhere.
@@ -369,7 +382,7 @@ class Fx {
   };
 
   /** Pools, stains and bodies, under the characters (world space). */
-  drawDecals(ctx: CanvasRenderingContext2D, now: number, visible: (x: number, y: number) => boolean): void {
+  drawDecals(ctx: CanvasRenderingContext2D, now: number, visible: (x: number, y: number) => boolean, view?: View): void {
     this.expire(now);
     for (const c of this.corpses) {
       if (!c.pool || now < c.pool.start || !visible(c.pool.cx, c.pool.cy)) continue;
@@ -383,20 +396,23 @@ class Fx {
       pixelEllipse(ctx, c.pool.cx, c.pool.cy, r - 1, (r - 1) * 0.45 - 0.5);
     }
     // Flat spatter first, then the bodies over it, then the chunks (which may have landed on a body).
-    this.drawStains(ctx, now, visible, false);
+    this.drawStains(ctx, now, visible, false, view);
     for (const c of this.corpses) {
       if (now < c.at || !visible(c.x + c.image.width / 2, c.y + c.image.height - 2)) continue;
       ctx.globalAlpha = this.corpseFade(c, now);
       ctx.drawImage(c.image, c.x, c.y);
     }
-    this.drawStains(ctx, now, visible, true);
+    this.drawStains(ctx, now, visible, true, view);
     ctx.globalAlpha = 1;
   }
 
-  private drawStains(ctx: CanvasRenderingContext2D, now: number, visible: (x: number, y: number) => boolean, chunks: boolean): void {
+  private drawStains(ctx: CanvasRenderingContext2D, now: number, visible: (x: number, y: number) => boolean, chunks: boolean, view?: View): void {
     let alpha = -1;
     for (const d of this.decals) {
-      if ((d.shade !== null) !== chunks || !visible(d.x, d.y)) continue;
+      if ((d.shade !== null) !== chunks) continue;
+      // Only what is on screen is drawn (a long visit leaves hundreds of stains over the whole floor).
+      if (view && (d.x > view.right || d.y > view.bottom || d.x + d.w < view.left || d.y + d.h < view.top)) continue;
+      if (!visible(d.x, d.y)) continue;
       const age = now - d.born;
       const a = age < REMAINS_MS ? d.alpha : d.alpha * Math.max(0, 1 - (age - REMAINS_MS) / REMAINS_FADE_MS);
       if (a !== alpha) ctx.globalAlpha = alpha = a;
@@ -426,6 +442,11 @@ class Fx {
     let n = 0;
     for (const c of this.corpses) if (now < c.at + c.life) this.corpses[n++] = c;
     this.corpses.length = n;
+  }
+
+  /** Whether the screen is shaking, flashing or slashed at (pace.ts); particles and chunks are covered by the effects that threw them. */
+  moving(now: number): boolean {
+    return now < this.shakeUntil || this.flashes.length > 0 || this.slashes.length > 0;
   }
 
   /** Moves every particle and chunk on to `now`, and lets the spent ones go. */

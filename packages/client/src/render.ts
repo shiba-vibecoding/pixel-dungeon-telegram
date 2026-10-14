@@ -1,11 +1,11 @@
-import { drawWater, type LevelTiles } from './tiles';
+import { drawWater, type LevelTiles, patternOf } from './tiles';
 import { drawSpell } from './spellfx';
 import { FOG_BLACK, fogHalves } from './fog';
 import { drawAura, drawBeams, drawCharge, drawEbony, drawFallen, drawStateIcons, mobImage } from './mobfx';
 import { HEIGHT, type Level, LENGTH, S, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
 import { CHAIN_MS, FALL_MS, type Puppet, TILE, type View } from './view';
-import { bossCard, depthCard, floatNumber, levelCard, nameplate, slainCard, waveCard } from './cards';
+import { bossCard, depthCard, floatNumber, floorTitle, levelCard, nameplate, slainCard, waveCard } from './cards';
 
 import { fx } from './fx';
 import { levelFx } from './levelfx';
@@ -16,6 +16,7 @@ import { BOLT_FRAME_MS, HEART_MS, loaded, PRISM_PHASE_MS, shImage, WAND_BOLT_ROW
 import { tintSprite, wandFx } from './wandfx';
 import { t } from './i18n';
 import { flightAngle, glowStrength } from './gearfx';
+import { drawXray, fadeWalls, type Placed, wallCellsOver, type XrayTint } from './xray';
 
 /** An item's sprite in one colour, kept once made (for ItemSprite.Glowing). */
 const tintedItems = new Map<string, HTMLCanvasElement>();
@@ -66,6 +67,13 @@ let fogTime = 0;
 const FOG_REVEAL_MS = 70;
 const FOG_FORGET_MS = 260;
 
+/** What the fog textures were last made for: the same level, sight and map mean the same target, so nothing is made again. */
+let fogFor: { level: Level; visible: readonly boolean[]; explored: readonly boolean[] } | null = null;
+/** Every cell has eased all the way to its target: the textures are final until the target changes. */
+let fogSettled = false;
+let fogImage: ImageData | null = null;
+let fogHardImage: ImageData | null = null;
+
 function drawFog(ctx: CanvasRenderingContext2D, level: Level, visible: readonly boolean[], explored: readonly boolean[], now: number): void {
   if (!fogCanvas || !fogHardCanvas) return;
   const fresh = fogLevel !== level || !fogDark;
@@ -75,29 +83,49 @@ function drawFog(ctx: CanvasRenderingContext2D, level: Level, visible: readonly 
     fogDark = new Float32Array(LENGTH * 2).fill(1);
     fogTarget = new Float32Array(LENGTH * 2);
     fogLevel = level;
+    fogFor = null;
+    fogImage = fogCanvas.getContext('2d')!.createImageData(WIDTH * 2, HEIGHT);
+    fogHardImage = fogHardCanvas.getContext('2d')!.createImageData(WIDTH * 2, HEIGHT);
   }
-  const dt = fresh ? 0 : Math.min(100, Math.max(0, now - fogTime));
+  // A step is a frame's worth of easing: after a long wait (frames not drawn while the picture only breathed) it must not be a big jump.
+  const dt = fresh ? 0 : Math.min(50, Math.max(0, now - fogTime));
   fogTime = now;
-  const target = fogHalves(level.map, visible, explored, fogTarget!);
-  const fog = fogCanvas.getContext('2d')!;
-  const hard = fogHardCanvas.getContext('2d')!;
-  const data = fog.createImageData(WIDTH * 2, HEIGHT);
-  const black = hard.createImageData(WIDTH * 2, HEIGHT);
-  const reveal = 1 - Math.exp(-dt / FOG_REVEAL_MS);
-  const forget = 1 - Math.exp(-dt / FOG_FORGET_MS);
-  for (let i = 0; i < LENGTH * 2; i++) {
-    const to = target[i]!;
-    const dark = fogDark![i]!;
-    const eased = fresh ? to : dark + (to - dark) * (to < dark ? reveal : forget);
-    fogDark![i] = eased;
-    // The texel's place in the 2-wide image: cell (i >> 1), half (i & 1).
-    const cell = i >> 1;
-    const at = ((Math.trunc(cell / WIDTH)) * WIDTH * 2 + (cell % WIDTH) * 2 + (i & 1)) * 4 + 3;
-    data.data[at] = Math.round(eased * 255);
-    if (to >= FOG_BLACK) black.data[at] = 255;
+  const same = fogFor !== null && fogFor.level === level && fogFor.visible === visible && fogFor.explored === explored;
+  // The world only changes when an action is done, and then sight is made anew (a new array): until then the target stands, and once
+  // every cell has reached it the fog's two textures are done and are drawn as they are.
+  if (!same) {
+    // (The map's walls and doors only change with an action as well.)
+    fogHalves(level.map, visible, explored, fogTarget!);
+    fogFor = { level, visible, explored };
+    fogSettled = false;
   }
-  fog.putImageData(data, 0, 0);
-  hard.putImageData(black, 0, 0);
+  if (!fogSettled) {
+    const target = fogTarget!;
+    const fog = fogCanvas.getContext('2d')!;
+    const hard = fogHardCanvas.getContext('2d')!;
+    const data = fogImage!;
+    const black = fogHardImage!;
+    const reveal = 1 - Math.exp(-dt / FOG_REVEAL_MS);
+    const forget = 1 - Math.exp(-dt / FOG_FORGET_MS);
+    let moving = false;
+    for (let i = 0; i < LENGTH * 2; i++) {
+      const to = target[i]!;
+      const dark = fogDark![i]!;
+      let eased = fresh ? to : dark + (to - dark) * (to < dark ? reveal : forget);
+      // Close enough that the byte it makes is the target's: done (without this the easing never quite ends).
+      if (Math.abs(to - eased) < 1 / 512) eased = to;
+      else moving = true;
+      fogDark![i] = eased;
+      // The texel's place in the 2-wide image: cell (i >> 1), half (i & 1).
+      const cell = i >> 1;
+      const at = ((Math.trunc(cell / WIDTH)) * WIDTH * 2 + (cell % WIDTH) * 2 + (i & 1)) * 4 + 3;
+      data.data[at] = Math.round(eased * 255);
+      black.data[at] = to >= FOG_BLACK ? 255 : 0;
+    }
+    fog.putImageData(data, 0, 0);
+    hard.putImageData(black, 0, 0);
+    fogSettled = !moving;
+  }
   // Drawn up with smoothing, so the darkness fades from half cell to half cell into what is seen; then what has
   // never been seen is laid over it hard, so the fade never lights a room beyond a wall.
   ctx.save();
@@ -216,7 +244,8 @@ function drawLightHalo(ctx: CanvasRenderingContext2D, w: number, h: number, now:
   ctx.restore();
 }
 
-function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y: number, now: number, frozen = false): void {
+/** Draws a character; says where its sprite went, for the x-ray over the walls (undefined where it is no plain sprite). */
+function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y: number, now: number, frozen = false): Placed | undefined {
   const { sheet, anims } = puppet.sprite;
   const anim = puppet.anim === 'idle' && puppet.pumped ? 'pump' : puppet.anim;
   const frame = frameAt(anims[anim], frozen && !puppet.isHero ? 0 : now - puppet.animStart);
@@ -244,7 +273,7 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
 
   drawAura(ctx, puppet, x, y, now);
   // A hidden ebony mimic is a faint chest of its own (design v21), and shows a plain one for a blink when it is found out.
-  if (drawEbony(ctx, puppet, x, y, now)) return;
+  if (drawEbony(ctx, puppet, x, y, now)) return undefined;
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
   if (puppet.alpha !== undefined) ctx.globalAlpha = puppet.alpha;
@@ -281,6 +310,8 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   if (puppet.appearStart !== undefined && now - puppet.appearStart < (puppet.appearMs ?? 400)) {
     ctx.globalAlpha *= Math.max(0, (now - puppet.appearStart) / (puppet.appearMs ?? 400));
   }
+  const placed: Placed | undefined = puppet.alive && puppet.fallStart === undefined && !puppet.invisible && !puppet.light && !glass && !puppet.frozen
+    ? { image, sx, sy, w: sheet.w, h: sheet.h, dx, dy, flip: puppet.flip === true } : undefined;
   if (puppet.flip) {
     ctx.translate(dx + sheet.w, dy);
     ctx.scale(-1, 1);
@@ -339,6 +370,7 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.drawImage(image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
   }
   ctx.restore();
+  return placed;
 }
 
 const LUNGE_MS = 150;
@@ -395,6 +427,8 @@ export interface Scene {
   lights?: ReadonlyArray<{ x: number; y: number; radius: number; color: string; strength: number }>;
   /** The hero has fallen: how far the world has drained of colour, 0 to 1. */
   mourning?: number;
+  /** Drawn over the walls: the tap's frame, the path, the danger ring (feedback.ts). */
+  front?: (ctx: CanvasRenderingContext2D) => void;
   /** The middle of the band the HUD and toolbar leave free, in device pixels. */
   middle?: number;
   /** Where the cards (a new region, a boss) go, in device pixels: above the hero, in the band's upper part. */
@@ -412,6 +446,9 @@ export interface Scene {
   /** Words over cells at screen scale (a bomb's «3...»): world pixels, the text, its age (ms). */
   marks?: ReadonlyArray<{ x: number; y: number; text: string; age: number }>;
 }
+
+/** What the camera shows, in world pixels, for drawing only what is on screen. */
+const onScreen = { left: 0, top: 0, right: 0, bottom: 0 };
 
 export function render(
   ctx: CanvasRenderingContext2D,
@@ -439,8 +476,13 @@ export function render(
 
   // What fights left on the floor (blood, chunks, bodies), under what lies there: remembered
   // where the party has been, and dimmed with the rest of it by the fog.
-  fx.drawDecals(ctx, now, (x, y) => explored[Math.trunc(y / TILE) * WIDTH + Math.trunc(x / TILE)] === true);
+  onScreen.left = camera.x;
+  onScreen.top = camera.y;
+  onScreen.right = camera.x + canvas.width / camera.zoom;
+  onScreen.bottom = camera.y + canvas.height / camera.zoom;
+  fx.drawDecals(ctx, now, (x, y) => explored[Math.trunc(y / TILE) * WIDTH + Math.trunc(x / TILE)] === true, onScreen);
   scene.under?.(ctx);
+  const itemsAt: Placed[] = [];
   for (const heap of scene.heaps) {
     if (!explored[heap.pos]) continue;
     const look = visible[heap.pos] ? scene.heapLook?.(heap.pos, now) : undefined;
@@ -469,6 +511,14 @@ export function render(
     const chests = sheet('chests');
     const closed = CHEST_ANIMS.get(heap.sprite);
     const first = closed ? chests?.anims[closed]?.[0] : undefined;
+    // Where the item is drawn, for the x-ray: what a wall's overhang covers of it is drawn again over the wall.
+    if (visible[heap.pos]) {
+      const dx = snap(x + TILE / 2 + (look?.dx ?? 0)) - 8;
+      const dy = snap(y + TILE - 1 - lift) - 16;
+      const energy = heap.sprite === S.ENERGY && loaded(shImage('energy-pile'));
+      const box = chests && first ? { image: chests.image, sx: first.x, sy: first.y } : { image: assets.items as CanvasImageSource, sx: (heap.sprite % 16) * 16, sy: Math.floor(heap.sprite / 16) * 16 };
+      if (!energy && !look?.hidden) itemsAt.push({ image: box.image, sx: box.sx, sy: box.sy, w: 16, h: 16, dx, dy, flip: false });
+    }
     // A heap of energy crystals glints in four frames of 200 ms (design v19: energy-pile.png).
     if (heap.sprite === S.ENERGY && loaded(shImage('energy-pile'))) ctx.drawImage(shImage('energy-pile'), (quality.reducedMotion ? 0 : Math.floor(now / 200) % 4) * 16, 0, 16, 16, -8, -16, 16, 16);
     else if (chests && first) ctx.drawImage(chests.image, first.x, first.y, 16, 16, -8, -16, 16, 16);
@@ -561,22 +611,48 @@ export function render(
       return { puppet, x: Math.round(at.x * camera.zoom) / camera.zoom, y: Math.round(at.y * camera.zoom) / camera.zoom };
     })
     .sort((a, b) => Number(a.puppet.alive) - Number(b.puppet.alive) || a.y - b.y);
+  const placed: Array<{ at: Placed; tint: XrayTint }> = [];
   for (const { puppet, x, y } of shown) {
     if (puppet.kind === 'ghostHero' && puppet.alive) drawGhostLight(ctx, x, y, now);
-    drawPuppet(ctx, puppet, x, y, now, view.timeFrozen);
+    const at = drawPuppet(ctx, puppet, x, y, now, view.timeFrozen);
+    if (at) placed.push({ at, tint: puppet.isHero && puppet.id === myId ? 'hero' : puppet.ally || puppet.isHero ? 'ally' : 'foe' });
   }
 
   // The upper layer over the characters: the tops of walls, lintels, the tops of tall grass and statues.
-  ctx.drawImage(tiles.upper, 0, 0);
+  // While my hero stands right behind a wall, the wall's cells over them fade a little (xray.ts).
+  const behind = placed.find((p) => p.tint === 'hero');
+  const faded = fadeWalls(behind ? wallCellsOver(level, behind.at) : [], now);
+  if (faded.size === 0) {
+    ctx.drawImage(tiles.upper, 0, 0);
+  } else {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, WIDTH * TILE, HEIGHT * TILE);
+    for (const cell of faded.keys()) ctx.rect((cell % WIDTH) * TILE, Math.trunc(cell / WIDTH) * TILE, TILE, TILE);
+    ctx.clip('evenodd');
+    ctx.drawImage(tiles.upper, 0, 0);
+    ctx.restore();
+    for (const [cell, alpha] of faded) {
+      const cx = (cell % WIDTH) * TILE;
+      const cy = Math.trunc(cell / WIDTH) * TILE;
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(tiles.upper, cx, cy, TILE, TILE, cx, cy, TILE, TILE);
+    }
+    ctx.globalAlpha = 1;
+  }
   scene.top?.(ctx);
+  // Whoever or whatever the walls cover is drawn again over them as a silhouette: items grey, enemies red, allies teal, my hero gold.
+  for (const at of itemsAt) if (wallCellsOver(level, at).length > 0) drawXray(ctx, at, 'item', tiles.upper, camera.zoom, camera.x, camera.y);
+  for (const { at, tint } of placed) if (wallCellsOver(level, at).length > 0) drawXray(ctx, at, tint, tiles.upper, camera.zoom, camera.x, camera.y);
+  // The tap's frame, the way ahead and the danger ring are over the walls too, never hidden by them.
+  scene.front?.(ctx);
 
   // The region's mist, drifting slowly over what can be seen (the dark of the fog covers the rest).
   const mist = sheet(`fog${levelRegion(level)}`);
   if (mist && !quality.light) {
-    const pattern = ctx.createPattern(mist.image, 'repeat');
+    const drift = quality.reducedMotion ? 0 : now / 1000;
+    const pattern = patternOf(ctx, mist.image, drift * 6, drift * 3);
     if (pattern) {
-      const drift = quality.reducedMotion ? 0 : now / 1000;
-      pattern.setTransform(new DOMMatrix().translate(drift * 6, drift * 3));
       ctx.fillStyle = pattern;
       const left = Math.max(0, camera.x);
       const top = Math.max(0, camera.y);
@@ -820,6 +896,12 @@ export function render(
     const x = (scene.focus.x - camera.x) * camera.zoom;
     const y = (scene.focus.y - camera.y) * camera.zoom - TILE * camera.zoom * 3;
     if (!levelCard(ctx, t.levelCard(card.lvl), x, y, now - card.start, px)) view.levelCard = null;
+  }
+
+  // Arriving on a floor: its depth, quietly, a third of the way down the free band (a region's first floor has its card instead).
+  const arrival = view.floorTitle;
+  if (arrival && !view.depthCard) {
+    if (!floorTitle(ctx, arrival.text, canvas.width / 2, scene.cardY ?? middle, now - arrival.start, px)) view.floorTitle = null;
   }
 
   // A new region on the way down: «Depth 6» and the region's name beside its emblem.

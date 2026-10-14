@@ -2,6 +2,7 @@ import { type Effect, HEIGHT, type ItemKind, labelOf, type Level, type MobKind, 
 import { type BurstOptions, fx, type Piece } from './fx';
 import { type Puppet, STEP_MS, TILE, type View } from './view';
 import { audio } from './audio';
+import { quality } from './quality';
 import { levelFx } from './levelfx';
 import { wandFx } from './wandfx';
 import { duration, levelRegion } from './sprites';
@@ -217,7 +218,7 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
       // The attacker lunges into the blow.
       if (attacker && from && to) {
         const len = Math.hypot(to.x - from.x, to.y - from.y) || 1;
-        if (len < TILE * 1.6) {
+        if (len < TILE * 1.6 && !quality.reducedMotion) {
           attacker.lungeStart = now;
           attacker.lungeX = ((to.x - from.x) / len) * 4;
           attacker.lungeY = ((to.y - from.y) / len) * 4;
@@ -239,7 +240,7 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
         blows.set(effect.target, { angle, at: now });
         // The struck reels back along the blow, a few whole pixels, and springs back.
         const reach = heavy ? 3 : 2;
-        target.knockStart = now;
+        if (!quality.reducedMotion) target.knockStart = now;
         target.knockX = Math.round(Math.cos(angle) * reach);
         target.knockY = Math.round(Math.sin(angle) * reach);
         // A heavy blow cuts a white streak across them.
@@ -1050,14 +1051,23 @@ export function regionFx(level: Level, visible: readonly boolean[], now: number,
   }
 }
 
+/** The torches in sight, found once per sight (a new array each turn) rather than by walking the whole floor every frame. */
+let torches: { level: Level; visible: readonly boolean[]; cells: readonly number[] } | null = null;
+function torchCells(level: Level, visible: readonly boolean[]): readonly number[] {
+  if (torches && torches.level === level && torches.visible === visible) return torches.cells;
+  const cells: number[] = [];
+  for (let cell = 0; cell < level.map.length; cell++) if (level.map[cell] === T.WALL_DECO && visible[cell]) cells.push(cell);
+  torches = { level, visible, cells };
+  return cells;
+}
+
 /** Light this frame: the prison's torches, whatever burns, fire elementals and fists. */
 export function lightsFor(level: Level, visible: readonly boolean[], view: View, now: number): Light[] {
   const lights: Light[] = [];
   const flicker = (seed: number): number => 0.85 + 0.15 * Math.sin(now / 70 + seed) * Math.sin(now / 23 + seed * 3);
   // (The arena's stands hold a crowd, not torches: arenaview.ts lights its braziers.)
   if (levelRegion(level) === 1 && !level.ring) {
-    for (let cell = 0; cell < level.map.length; cell++) {
-      if (level.map[cell] !== T.WALL_DECO || !visible[cell]) continue;
+    for (const cell of torchCells(level, visible)) {
       lights.push({ x: (cell % WIDTH) * TILE + 8, y: Math.trunc(cell / WIDTH) * TILE + 6, radius: 38, color: '255, 150, 60', strength: 0.22 * flicker(cell) });
     }
   }

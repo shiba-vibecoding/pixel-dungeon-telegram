@@ -36,7 +36,7 @@ export interface CharSprite {
 export type SpriteVariant = 'dm300.charged' | 'pylon.active';
 
 export interface Assets {
-  /** Tiles of each region (the water is in env): the sewers, the prison, the caves, the city, the halls. */
+  /** PD 1.9's tiles of each region, the stand-in for a door or grass animation until its sheet has come: blank until `oldTiles` asks for one (fetched then). */
   tiles: HTMLImageElement[];
   heroes: Record<HeroClass, CharSprite>;
   mobs: Record<MobKind, CharSprite>;
@@ -428,12 +428,25 @@ export function heroSprite(assets: Assets, heroClass: HeroClass, skin?: string):
   return assets.heroes[heroClass];
 }
 
+/** Where each of PD 1.9's tile sheets is, until it is asked for. */
+const oldTilesSource = new WeakMap<HTMLImageElement, string>();
+
+/** PD 1.9's tiles of a region (a stand-in the animations of doors and grass use until their own sheets have come), fetched the first time. */
+export function oldTiles(assets: Assets, region: number): HTMLImageElement {
+  const image = assets.tiles[region]!;
+  const source = oldTilesSource.get(image);
+  if (source !== undefined) {
+    oldTilesSource.delete(image);
+    image.src = source;
+  }
+  return image;
+}
+
 export async function loadAssets(base: string, onProgress?: (done: number) => void): Promise<Assets> {
   assetBase = base;
   // Pixel Dungeon's sheets still in use: the bosses and their minions, the folk, the curse; the monsters are Shattered's.
   const names = [
-    'tiles0', 'tiles1', 'tiles2', 'tiles3',
-    'undead', 'tiles4',
+    'undead',
     'imp', 'sheep', 'wraith', 'ratKing', 'warrior', 'mage', 'rogue', 'ranger', 'duelist', 'cleric', 'ghost',
     'shopkeeper', 'spd/ghost',
     'icons', 'items', 'spd/wards', 'spd/guardian', 'spd/lotus', 'spd/spirit_hawk', 'spd/ninja_log',
@@ -489,8 +502,14 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     'water0', 'water1', 'water2', 'water3', 'water4', 'terrain_features', 'raised_terrain', 'occlusion_shadows',
   ].map(spdEnv));
   const custom = new Map<string, HTMLImageElement>();
+  // (The boss levels' tiles are the same files as the boss sheets above: not fetched twice.)
+  const sameAsBoss: Record<string, (typeof names)[number]> = {
+    sewer_boss: 'spd/sewer_boss', prison_exit: 'spd/prison_exit', caves_boss: 'spd/caves_boss', city_boss: 'spd/city_boss', halls_special: 'spd/halls_special',
+  };
   for (const name of CUSTOM_TILES) {
-    void loadImage(`${base}spd/custom_tiles/${name}.png`).then((image) => custom.set(name, image)).catch(() => undefined);
+    const shared = sameAsBoss[name];
+    if (shared) custom.set(name, images[shared]);
+    else void loadImage(`${base}spd/custom_tiles/${name}.png`).then((image) => custom.set(name, image)).catch(() => undefined);
   }
   const variant = (name: SpriteVariant): CharSprite => {
     const spec = VARIANTS[name];
@@ -502,7 +521,11 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
       tiles: [sewers!, prison!, caves!, city!, halls!], minesCrystal: crystal!, minesGnoll: gnoll!, water: [w0!, w1!, w2!, w3!, w4!],
       features: features!, raised: raised!, occlusion: occlusion!, custom,
     },
-    tiles: [images.tiles0, images.tiles1, images.tiles2, images.tiles3, images.tiles4],
+    tiles: [0, 1, 2, 3, 4].map((region) => {
+      const image = new Image();
+      oldTilesSource.set(image, `${base}tiles${region}.png`);
+      return image;
+    }),
     heroes: {
       warrior: hero(images.warrior),
       mage: hero(images.mage),
