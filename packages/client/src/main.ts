@@ -112,6 +112,7 @@ import { ActionIndicator, type ActionKind } from './actionind';
 import { hasFreePoints, refreshHeroWindow, showComboWindow } from './talentui';
 import { tal as talentLine, talentBuffInfo, talentReason } from './talenttext';
 import { STEP_MS, TILE, View } from './view';
+import { fadingWalls, resetXray } from './xray';
 import { bossBar, cellMarks, drawBossGround, drawBossTop, resetBossFx } from './bossfx';
 
 /*
@@ -272,8 +273,8 @@ let rewardOpen = false;
  * The middle of where a level actually lies, world pixels: the grid is bigger than a level for
  * one hero (core geometry.ts), and the rest of it is solid rock.
  */
-const middles = new WeakMap<Level, { x: number; y: number }>();
-function levelMiddle(level: Level): { x: number; y: number } {
+const middles = new WeakMap<Level, { x: number; y: number; left: number; right: number; top: number; bottom: number }>();
+function levelMiddle(level: Level): { x: number; y: number; left: number; right: number; top: number; bottom: number } {
   let middle = middles.get(level);
   if (!middle) {
     let left = WIDTH;
@@ -288,7 +289,7 @@ function levelMiddle(level: Level): { x: number; y: number } {
       top = Math.min(top, Math.trunc(i / WIDTH));
       bottom = Math.max(bottom, Math.trunc(i / WIDTH));
     }
-    middle = { x: ((left + right + 1) / 2) * TILE, y: ((top + bottom + 1) / 2) * TILE };
+    middle = { x: ((left + right + 1) / 2) * TILE, y: ((top + bottom + 1) / 2) * TILE, left: left * TILE, right: (right + 1) * TILE, top: top * TILE, bottom: (bottom + 1) * TILE };
     middles.set(level, middle);
   }
   return middle;
@@ -308,11 +309,10 @@ const mapControlsActions = {
       pan.x = middle.x - (cellX(me.pos) * TILE + TILE / 2);
       pan.y = middle.y - (cellY(me.pos) * TILE + TILE / 2);
       pan.home = false;
+      pan.loose = true;
     }
   },
-  home: () => {
-    pan.home = true;
-  },
+  home: () => recentre(160),
   attack: () => {
     const world = session?.world;
     const me = world && heroById(world, session!.myId);
@@ -1216,6 +1216,7 @@ function nextDanger(): void {
   pan.x = (cellX(mob.pos) - cellX(me.pos)) * TILE;
   pan.y = (cellY(mob.pos) - cellY(me.pos)) * TILE;
   pan.home = false;
+  pan.loose = true;
   feedback.aim(mob.pos, true, fx.now, mob.id);
   feedback.danger(mob.id, mob.pos, fx.now);
 }
@@ -1282,6 +1283,9 @@ function companionOnTheMove(world: World, me: Hero, cell: number): boolean {
   const other = world.heroes.find((h) => h !== me && h.depth === me.depth && h.pos === cell && isAlive(h));
   return !!other && view.stepLeft(other.id, fx.now) > -250;
 }
+
+/** A step taken between frames is shown as if it began this long (ms) before the frame that shows it, at most: about a frame. */
+const MAX_LEAD_MS = 20;
 
 /** How early (ms) the next step of a walk is sent before the last one ends on screen: about a frame. */
 const FRAME_AHEAD_MS = 17;
@@ -2410,8 +2414,34 @@ try {
 } catch {
   // The default zoom, then.
 }
-/** How far the view has been dragged away from the hero, world pixels; it glides back when the hero moves. */
-const pan = { x: 0, y: 0, home: false };
+/** How far the view has been dragged away from the hero, world pixels: it keeps that offset while the hero walks (see tick). */
+const pan = {
+  x: 0,
+  y: 0,
+  /** Easing back to the hero, with this much lag (ms). */
+  home: false,
+  ease: 160,
+  /** The view was sent to look somewhere on purpose (the danger badge): it stays there, not held to the hero's neighbourhood. */
+  loose: false,
+  /** The offset is moving (back to the hero, or off the view's edge): the picture has to be drawn at full pace. */
+  easing: false,
+};
+
+/** Brings the view back to the hero, easing (the centre button, a double tap on the hero, a new enemy in sight). */
+function recentre(lagMs = 160): void {
+  if (pan.x === 0 && pan.y === 0) return;
+  pan.home = true;
+  pan.ease = lagMs;
+  pan.loose = false;
+}
+
+/** The hero keeps at least this far (tiles) from the edges of what the view shows once it has been dragged about. */
+const EDGE_TILES = 2;
+/** How fast the view eases back off an edge (ms). */
+const EDGE_EASE_MS = 140;
+/** A double tap on the hero: within this long (ms) of the first. */
+const DOUBLE_TAP_MS = 350;
+let heroTapAt = 0;
 /** Where a zoom is centred, device pixels: the fingers, the cursor, or the hero. */
 let zoomAnchor: { x: number; y: number } | null = null;
 
@@ -2507,6 +2537,7 @@ canvas.addEventListener('pointermove', (event) => {
       pan.x = gesture.panX - dx / camera.zoom;
       pan.y = gesture.panY - dy / camera.zoom;
       pan.home = false;
+      pan.loose = false;
     }
   } else if (gesture.kind === 'pinch' && fingers.size >= 2) {
     const { dist, mid } = spread();
@@ -2756,6 +2787,17 @@ function tapAt(px: number, py: number): void {
     examineCell(x + y * WIDTH);
     return;
   }
+  // A double tap on the hero brings the view back to them (the second tap does nothing else).
+  const hero = session.world && heroById(session.world, session.myId);
+  if (hero && x + y * WIDTH === hero.pos && !aim) {
+    const nowMs = performance.now();
+    const again = nowMs - heroTapAt < DOUBLE_TAP_MS;
+    heroTapAt = again ? 0 : nowMs;
+    if (again) {
+      recentre(160);
+      return;
+    }
+  } else heroTapAt = 0;
   tapCell(x + y * WIDTH);
 }
 
@@ -3120,7 +3162,9 @@ let around = new Map<number, number>();
 /** The soft camera: where it looks, eased after the hero (see tick). */
 const follow = { x: 0, y: 0, depth: 0, ready: false };
 /** How far behind the camera trails: the time it takes to close two thirds of the gap. */
-const CAMERA_LAG_MS = 85;
+const CAMERA_LAG_MS = 60;
+/** The same when it has far to go (a teleport, a fall). */
+const CAMERA_CATCH_UP_MS = 45;
 
 /** When the last game frame was drawn, for telling a phone that struggles. */
 let lastFrame = 0;
@@ -3312,6 +3356,69 @@ onWindow((closable) => {
   if (!session) backButton(closable ? () => void closeOverlay() : null);
 });
 
+/**
+ * What the last turn did, shown: the view takes the effects in, then the sounds, particles, windows and notices that
+ * follow from them. Called once a frame for what came out of the world since the last, and again right after a step
+ * is sent (see tick), so a step is on screen the frame it is taken.
+ */
+/** A monster's blow that answers mine in the same turn is shown this long (ms) after it: about a swing. */
+const ANSWER_GAP_MS = 150;
+let answers: { at: number; effects: readonly Effect[]; generation: number; world: World } | null = null;
+
+/** Shows the blows held back once their time has come (or at once, with `force`). */
+function flushAnswers(world: World, me: Hero, now: number, vnow: number, force = false): void {
+  const held = answers;
+  if (!held || (!force && now < held.at)) return;
+  answers = null;
+  if (held.generation !== session?.generation || held.world !== world) return;
+  takeEffects(held.effects, world, me, now, vnow);
+}
+
+function takeEffects(effects: readonly Effect[], world: World, me: Hero, now: number, vnow: number): void {
+  if (effects.length === 0) return;
+  // What was held back to follow an earlier blow comes first, so the order of events never turns round.
+  flushAnswers(world, me, now, vnow, true);
+  // A monster's blow in the same turn as mine answers it a beat later, as the original's actors wait for each other's
+  // swing to end (Actor.process waits on the sprite): two hits that land at once read as one muddle of sound and flash.
+  const mineAt = effects.findIndex((e) => e.type === 'attack' && e.attacker === session!.myId && e.depth === view.depth);
+  const answerAt = mineAt < 0 ? -1 : effects.findIndex((e, i) => i > mineAt && e.type === 'attack' && e.attacker !== session!.myId && e.depth === view.depth);
+  if (answerAt > 0 && !quality.reducedMotion) {
+    answers = { at: now + ANSWER_GAP_MS, effects: effects.slice(answerAt), generation: session!.generation, world };
+    drawPace.effect(now);
+    effects = effects.slice(0, answerAt);
+  }
+  drawPace.effect(now);
+  view.apply(effects, world, session!.myId, vnow);
+  // The backpack, if open, shows the pack as it is now (an item put on, dropped, picked up).
+  const mine = session!.myId;
+  if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
+  // The hero window, if open, shows the talents as they are now (a point spent, a level gained, a way chosen).
+  if (effects.some((e) => ('hero' in e && e.hero === mine) && (e.type === 'talent' || e.type === 'levelUp' || e.type === 'mastered' || e.type === 'metamorphed'))) refreshHeroWindow(world, me);
+  // The pot's window, if open, shows the pack and the energy as they are now.
+  for (const e of effects) if (e.type === 'crafted' && e.hero === mine && alchemyOpen()) noteCrafted(e.item);
+  if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
+  for (const effect of effects) effectFx(effect, view, world, session!.myId, vnow);
+  motion.effects(effects, world, me.depth, (e) => itemSprite(e.item, world.run.labels));
+  scenery.effects(effects, me.depth, vnow);
+  handleMyEffects(effects, session!.myId);
+  if (world.arena) handleArenaEffects(effects, world, me, vnow);
+  // An unblessed ankh got the hero up elsewhere: say where the rest of their things are (ankh.ts; deathcopy.ts).
+  if (effects.some((e) => e.type === 'resurrected' && e.hero === mine && e.blessed === false)) view.say(t.forum.death.packLeft, '#ff8800');
+}
+
+/** My hero has stepped from `from` to where they stand: the sound of the ground, the dust or splash left behind, the view coming home. */
+function footfall(level: Level, me: Hero, from: number, vnow: number): void {
+  feedback.stepped(me.pos, vnow);
+  const terrain = level.map[me.pos]!;
+  // Hero.move: each surface underfoot sounds its own (water, the sturdy floor of special rooms, grass,
+  // high grass trampled on the way in, stone), and hot embers hiss a little.
+  const step = stepSound(terrain, around.get(me.pos) === T.HIGH_GRASS && terrain !== T.HIGH_GRASS);
+  audio.play(step.sound, step.rate, 0.6);
+  if (terrain === T.EMBERS) audio.play('sizzle', 1.3, 0.12);
+  // And what the step stirs where it left: dust, a splash, a few blades of grass.
+  stepFx(level.map[from] ?? terrain, from, vnow);
+}
+
 function tick(now: number): void {
   if (!session) {
     forgetSight();
@@ -3371,12 +3478,15 @@ function tick(now: number): void {
     seenGeneration = session.generation;
     view.reset(me.depth);
     fx.reset();
+    resetXray();
     resetMobFx();
     resetBossFx();
     follow.ready = false;
     pan.x = 0;
     pan.y = 0;
     pan.home = false;
+    pan.loose = false;
+    pan.easing = false;
     walk.reset();
     bakedKey = '';
     threats = new Set();
@@ -3393,10 +3503,12 @@ function tick(now: number): void {
       if (justFell) audio.play('falling');
       if (me.depth > lastPlace.depth && me.depth >= (world.reached ?? me.depth)) audio.play('descend');
       // A new depth comes up out of the dark.
-      fx.flash('0, 0, 0', 1, 650, vnow);
+      fx.flash('0, 0, 0', 1, 520, vnow);
       // GameScene's greetings: the depth, a new region, and the level's feeling (the arena, sinking, has its own: handleArenaEffects).
       if (!world.arena) {
         view.say(justFell ? t.fell(me.depth) : me.depth > lastPlace.depth ? t.descended(me.depth) : t.ascended(me.depth));
+        // The depth, quietly over the middle of the view (a new region's first floor shows its card instead, just below).
+        view.floorTitle = { text: t.depthTitle(me.depth), start: vnow };
         // Down into a new region: its card.
         if (me.depth > lastPlace.depth && me.depth % 5 === 1) view.enterRegion(me.depth, vnow);
         if (me.depth === 6 && lastPlace.depth === 5) view.say(t.enterPrison, '#ffff44');
@@ -3413,17 +3525,7 @@ function tick(now: number): void {
       }
       justFell = false;
     } else if (me.pos !== lastPlace.pos) {
-      feedback.stepped(me.pos, vnow);
-      // The view comes home to the walking hero.
-      if (pan.x !== 0 || pan.y !== 0) pan.home = true;
-      const terrain = level.map[me.pos]!;
-      // Hero.move: each surface underfoot sounds its own (water, the sturdy floor of special rooms, grass,
-      // high grass trampled on the way in, stone), and hot embers hiss a little.
-      const step = stepSound(terrain, around.get(me.pos) === T.HIGH_GRASS && terrain !== T.HIGH_GRASS);
-      audio.play(step.sound, step.rate, 0.6);
-      if (terrain === T.EMBERS) audio.play('sizzle', 1.3, 0.12);
-      // And what the step stirs where it left: dust, a splash, a few blades of grass.
-      stepFx(level.map[lastPlace.pos] ?? terrain, lastPlace.pos, vnow);
+      footfall(level, me, lastPlace.pos, vnow);
     }
   }
   // Setting out: the sewers' card.
@@ -3457,6 +3559,8 @@ function tick(now: number): void {
     if (enemies.some((m) => !enemiesInSight.includes(m.id)) || [...awake].some((id) => !threats.has(id))) {
       // Hero.checkVisibleMobs -> interrupt(): a new enemy in view stops walking, resting and a key held down.
       interruptHero();
+      // And the view, if it was dragged off, comes softly back to the hero: the fight is theirs.
+      if (gesture?.kind !== 'pan' && gesture?.kind !== 'pinch' && enemies.some((m) => !enemiesInSight.includes(m.id))) recentre(300);
     }
     threats = awake;
     enemiesInSight = enemies.map((m) => m.id);
@@ -3467,26 +3571,12 @@ function tick(now: number): void {
     }
   }
 
-  const effects = session.drain();
-  if (effects.length > 0) {
+  // Blows held back to follow mine, when their moment has come.
+  if (answers) {
     drawPace.effect(now);
-    view.apply(effects, world, session.myId, vnow);
-    // The backpack, if open, shows the pack as it is now (an item put on, dropped, picked up).
-    const mine = session.myId;
-    if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
-    // The hero window, if open, shows the talents as they are now (a point spent, a level gained, a way chosen).
-    if (effects.some((e) => ('hero' in e && e.hero === mine) && (e.type === 'talent' || e.type === 'levelUp' || e.type === 'mastered' || e.type === 'metamorphed'))) refreshHeroWindow(world, me);
-    // The pot's window, if open, shows the pack and the energy as they are now.
-    for (const e of effects) if (e.type === 'crafted' && e.hero === mine && alchemyOpen()) noteCrafted(e.item);
-    if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
-    for (const effect of effects) effectFx(effect, view, world, session.myId, vnow);
-    motion.effects(effects, world, me.depth, (e) => itemSprite(e.item, world.run.labels));
-    scenery.effects(effects, me.depth, vnow);
-    handleMyEffects(effects, session.myId);
-    if (world.arena) handleArenaEffects(effects, world, me, vnow);
-    // An unblessed ankh got the hero up elsewhere: say where the rest of their things are (ankh.ts; deathcopy.ts).
-    if (effects.some((e) => e.type === 'resurrected' && e.hero === mine && e.blessed === false)) view.say(t.forum.death.packLeft, '#ff8800');
+    flushAnswers(world, me, now, vnow);
   }
+  takeEffects(session.drain(), world, me, now, vnow);
   // An online session learns my class with its first snapshot: wear the look for it.
   if (!session.looks[session.myId] && session.mode === 'solo') putOnLook();
   view.looks = session.looks;
@@ -3506,7 +3596,25 @@ function tick(now: number): void {
       audio.play('health_warn');
     }
   } else lastStarveRemind = -Infinity;
+  const turnBefore = world.turn;
   step(world, now, visible);
+  // A step (or a blow) just sent is shown on this very frame, not the next: the world has already answered, so its effects are
+  // taken in and the puppets moved on at once. Walkers set off a frame early, as a finger lifted between frames has already
+  // spent part of one (see View.lead). Left for the next frame: a new floor (the view starts over there) or a new run.
+  if (session.generation === seenGeneration && session.world === world && me.depth === view.depth && isAlive(me)) {
+    const sent = session.drain();
+    if (sent.length > 0 || world.turn !== turnBefore) {
+      takeEffects(sent, world, me, now, vnow);
+      view.lead = Math.min(dt, MAX_LEAD_MS);
+      view.sync(world, vnow, session.myId);
+      view.lead = 0;
+      if (me.depth === lastPlace.depth && me.pos !== lastPlace.pos) {
+        footfall(level, me, lastPlace.pos, vnow);
+        lastPlace = { generation: session.generation, depth: me.depth, pos: me.pos };
+        around = new Map(NEIGHBOURS8.map((d) => [me.pos + d, level.map[me.pos + d] ?? -1]));
+      }
+    }
+  }
   fx.update(vnow, dt);
   ambientFx(view, vnow, dt);
   mobAmbient(view, vnow, dt);
@@ -3568,34 +3676,66 @@ function tick(now: number): void {
     applyZoom(z, zoomAnchor ?? { x: canvas.width / 2, y: middle });
     if (z === zoom.target) zoomAnchor = null;
   }
-  // A step brings the view home from wherever it was dragged.
+  // A view dragged off keeps its offset from the hero while they walk (looking ahead along the way). It comes back only when
+  // asked to (the centre button, a double tap on the hero, a new enemy in sight), when the hero would be within two tiles of its
+  // edge, and on a new floor: always eased, never at once.
+  const dragging = gesture?.kind === 'pan' || gesture?.kind === 'pinch';
+  const heroX = at.x + TILE / 2;
+  const heroY = at.y + TILE / 2;
+  pan.easing = false;
   if (pan.home) {
-    const back = Math.exp(-Math.max(0, dt) / 110);
+    const back = Math.exp(-Math.max(0, dt) / pan.ease);
     pan.x *= back;
     pan.y *= back;
+    pan.easing = true;
     if (Math.hypot(pan.x, pan.y) < 0.05) {
       pan.x = 0;
       pan.y = 0;
       pan.home = false;
+      pan.easing = false;
+    }
+  } else if (!dragging && !pan.loose && (pan.x !== 0 || pan.y !== 0)) {
+    // Keeps the hero clear of the edges of the band the HUD leaves free: eased back just far enough.
+    const ratio = canvas.height / (canvas.clientHeight || 1);
+    const z = camera.zoom;
+    const m = EDGE_TILES * TILE;
+    const half = canvas.width / z / 2;
+    const bandTop = (free.top * ratio) / z;
+    const bandBottom = (free.bottom * ratio) / z;
+    const span = (lo: number, hi: number): [number, number] => (lo > hi ? [(lo + hi) / 2, (lo + hi) / 2] : [lo, hi]);
+    const [loX, hiX] = span(-(half - m), half - m);
+    const [loY, hiY] = span(middle / z - (bandBottom - m), middle / z - (bandTop + m));
+    const wantX = Math.max(loX, Math.min(hiX, pan.x));
+    const wantY = Math.max(loY, Math.min(hiY, pan.y));
+    if (wantX !== pan.x || wantY !== pan.y) {
+      const give = 1 - Math.exp(-Math.max(0, dt) / EDGE_EASE_MS);
+      pan.x += (wantX - pan.x) * give;
+      pan.y += (wantY - pan.y) * give;
+      if (Math.abs(wantX - pan.x) < 0.05 && Math.abs(wantY - pan.y) < 0.05) {
+        pan.x = wantX;
+        pan.y = wantY;
+      } else {
+        pan.easing = true;
+      }
     }
   }
-  // Not so far that the level leaves the screen.
-  const reach = (WIDTH * TILE) / 2;
-  pan.x = Math.max(-reach, Math.min(reach, pan.x));
-  pan.y = Math.max(-reach, Math.min(reach, pan.y));
-  const targetX = at.x + TILE / 2 - canvas.width / camera.zoom / 2 + pan.x;
-  const targetY = at.y + TILE / 2 - middle / camera.zoom + pan.y;
-  const dragging = gesture?.kind === 'pan' || gesture?.kind === 'pinch';
-  const far = !dragging && Math.hypot(targetX - follow.x, targetY - follow.y) > TILE * 4 && !pan.home;
+  // Not so far that the level leaves the screen: the point looked at stays within where the level lies (a tile's slack).
+  const bounds = levelMiddle(level);
+  pan.x = Math.max(bounds.left - TILE - heroX, Math.min(bounds.right + TILE - heroX, pan.x));
+  pan.y = Math.max(bounds.top - TILE - heroY, Math.min(bounds.bottom + TILE - heroY, pan.y));
+  const targetX = heroX - canvas.width / camera.zoom / 2 + pan.x;
+  const targetY = heroY - middle / camera.zoom + pan.y;
+  // A jump of more than a few cells (a teleport, a fall) is caught up with quicker, still eased; a new floor is cut to.
+  const far = !dragging && Math.hypot(targetX - follow.x, targetY - follow.y) > TILE * 4;
   if (dragging && follow.ready && follow.depth === me.depth) {
     // Under the finger the map moves with it, not after it.
     follow.x = targetX;
     follow.y = targetY;
-  } else if (!follow.ready || far || follow.depth !== me.depth) {
+  } else if (!follow.ready || follow.depth !== me.depth) {
     follow.x = targetX;
     follow.y = targetY;
   } else {
-    const ease = 1 - Math.exp(-Math.max(0, dt) / CAMERA_LAG_MS);
+    const ease = 1 - Math.exp(-Math.max(0, dt) / (far ? CAMERA_CATCH_UP_MS : CAMERA_LAG_MS));
     follow.x += (targetX - follow.x) * ease;
     follow.y += (targetY - follow.y) * ease;
   }
@@ -3622,9 +3762,9 @@ function tick(now: number): void {
   });
   // The map is drawn at full pace while something moves, and a few times a second when it only breathes (pace.ts).
   const settling = Math.abs(targetX - follow.x) * camera.zoom > 0.25 || Math.abs(targetY - follow.y) * camera.zoom > 0.25
-    || camera.zoom !== zoom.target || pan.home || (gesture !== null && gesture.kind !== 'done');
+    || camera.zoom !== zoom.target || pan.home || pan.easing || (gesture !== null && gesture.kind !== 'done');
   const moving = settling || walk.queue.length > 0 || walk.chase !== null || session.busy
-    || view.moving(vnow) || fx.moving(vnow) || motion.moving();
+    || view.moving(vnow) || fx.moving(vnow) || motion.moving() || fadingWalls();
   if (drawPace.due(now, moving, quality.light)) {
     const plants = (world.floors[me.depth]?.plants ?? []).map((p) => ({ pos: p.pos, index: PLANT_KINDS.indexOf(p.kind) }));
     // Clouds of gas: green toxic, yellow paralytic, and Shattered's (their Speck's hardlight colour; the
@@ -3650,13 +3790,11 @@ function tick(now: number): void {
         motion.draw(c, level, visible, explored, vnow, tiles!);
         if (world.arena) arenaViewNow()?.draw(c, level, explored, vnow, world.arena.phase === 'rest');
       },
-      over: (c: CanvasRenderingContext2D) => {
-        motion.drawOver(c, vnow);
-        feedback.draw(
-          c, walk.queue, (id) => mobById(world, me.depth, id)?.pos,
-          walk.queue.length === 0 && !walk.chase && !session!.busy, vnow,
-        );
-      },
+      over: (c: CanvasRenderingContext2D) => motion.drawOver(c, vnow),
+      front: (c: CanvasRenderingContext2D) => feedback.draw(
+        c, walk.queue, (id) => mobById(world, me.depth, id)?.pos,
+        walk.queue.length === 0 && !walk.chase && !session!.busy, vnow,
+      ),
       mourning: isAlive(me) ? 0 : Math.min(1, (vnow - (fallenAt ||= vnow)) / 1200),
       // The boss levels' art, and what their fights leave about (bossfx.ts).
       ground: (c: CanvasRenderingContext2D) => drawBossGround(c, world, level, assets, explored, visible, vnow),

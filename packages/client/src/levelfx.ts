@@ -147,7 +147,7 @@ const cellRect = (cell: number): { x: number; y: number } => ({ x: cellX(cell) *
 const cellCentre = (cell: number): { x: number; y: number } => ({ x: cellX(cell) * TILE + TILE / 2, y: cellY(cell) * TILE + TILE / 2 });
 
 /** How many of a burst to show: a third on light effects. */
-const fewer = (n: number): number => (quality.light ? Math.ceil(n / 3) : n);
+const fewer = (n: number): number => (quality.lean ? Math.ceil(n / 3) : n);
 
 function loadImage(name: string): HTMLImageElement | null {
   if (typeof Image === 'undefined') return null;

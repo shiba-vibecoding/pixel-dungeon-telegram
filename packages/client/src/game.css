@@ -85,8 +85,8 @@ canvas#game {
 
 /* Windows come in by steps, as the design system moves (2–4 frames, no springs): the scrim darkens,
    the window rises a few pixels and settles. Reduced motion shows them at once. */
-#overlay.open { animation: pd-scrim-in 0.18s steps(3) both; }
-#overlay.open > .pd-window, #overlay.open > .pd-sign { animation: pd-window-in 0.2s steps(4) both; }
+#overlay.open { animation: pd-scrim-in 0.12s steps(3) both; }
+#overlay.open > .pd-window, #overlay.open > .pd-sign { animation: pd-window-in 0.15s steps(3) both; }
 #overlay.bare.open { animation: none; }
 @keyframes pd-scrim-in { from { background-color: rgba(5, 5, 4, 0); } }
 @keyframes pd-window-in { from { opacity: 0; transform: translateY(calc(6 * var(--u))); } 50% { opacity: 1; } }

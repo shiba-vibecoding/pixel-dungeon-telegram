@@ -2,7 +2,8 @@
  * How much the effects cost: full, or light for weaker phones (fewer
  * particles, no vignette or lights, a coarser canvas). «auto» starts full
  * and turns light by itself if frames come too slowly. The choice is kept
- * on this device. Reduced motion (the system setting) never shakes the view.
+ * on this device. Reduced motion (the system setting) never shakes the view, holds no frame for a heavy blow and
+ * thins the particles as the light mode does; the light mode shakes the view less.
  */
 
 export type FxMode = 'auto' | 'full' | 'light';
@@ -53,6 +54,11 @@ class Quality {
 
   get light(): boolean {
     return this.mode === 'light' || (this.mode === 'auto' && this.demoted);
+  }
+
+  /** Fewer particles and a gentler picture: the light mode, and reduced motion (the system setting) too. */
+  get lean(): boolean {
+    return this.light || this.reducedMotion;
   }
 
   setMode(mode: FxMode): void {

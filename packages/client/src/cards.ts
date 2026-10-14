@@ -266,6 +266,13 @@ export function levelCard(ctx: CanvasRenderingContext2D, text: string, x: number
   return t < TIMELINES.level.dur;
 }
 
+/** «Depth 4» on a floor that is no new region's first (those have their card): small, light, over the middle of the free band. False once it is over. */
+export function floorTitle(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, t: number, px: number): boolean {
+  const k = step(TIMELINES.level, t);
+  if (k.a > 0) fxText(ctx, text, x, y + k.dy * 2 * px, px, { scale: 2, color: FX_COLORS.ink, alpha: k.a * 0.9 });
+  return t < TIMELINES.level.dur;
+}
+
 /** A boss's name on a band across the screen, its epithet under it, between two rules. */
 export function bossCard(ctx: CanvasRenderingContext2D, name: string, sub: string, cy: number, width: number, t: number, px: number): boolean {
   const k = step(TIMELINES.boss, t);

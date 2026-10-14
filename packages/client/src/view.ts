@@ -348,6 +348,8 @@ export class View {
   readonly puppets = new Map<string, Puppet>();
   /** How long a step takes on screen (ms): STEP_MS, or under live turns the room's beat, so walks never pause. */
   stepMs = STEP_MS;
+  /** While a step just taken is being shown (main.ts): walkers set off this many ms before `now`, so it is already under way on the first frame. */
+  lead = 0;
   floaters: Floater[] = [];
   /** The talents' SpellSprites over characters (spellfx.ts). */
   spellSprites: Spell[] = [];
@@ -363,6 +365,8 @@ export class View {
   bossIntro: { kind: MobKind; start: number } | null = null;
   /** My level-up card: the new level, and when it appeared. */
   levelCard: { lvl: number; start: number } | null = null;
+  /** «Depth 4» over the middle of the view on arriving at a floor (render.ts floorTitle). */
+  floorTitle: { text: string; start: number } | null = null;
   /** A new region's card on the way down: the depth, and when it appeared. */
   /** The descent's card; `intro` on a region's first visit on this device, with its few lines of text. */
   depthCard: { depth: number; start: number; intro: boolean; title?: string; sub?: string; region?: number } | null = null;
@@ -414,6 +418,7 @@ export class View {
     this.bannerStart = 0;
     this.bossIntro = null;
     this.levelCard = null;
+    this.floorTitle = null;
     this.projectiles = [];
     this.beams = [];
     this.stateIcons = [];
@@ -448,7 +453,7 @@ export class View {
     if (
       this.floaters.length > 0 || this.spellSprites.length > 0 || this.flashes.length > 0 || this.beams.length > 0 ||
       this.projectiles.length > 0 || this.chains.length > 0 || this.stateIcons.length > 0 ||
-      this.bossIntro !== null || this.levelCard !== null || this.depthCard !== null || this.waveCard !== null || this.bannerStart > 0
+      this.bossIntro !== null || this.levelCard !== null || this.floorTitle !== null || this.depthCard !== null || this.waveCard !== null || this.bannerStart > 0
     ) return true;
     for (const p of this.puppets.values()) {
       if (!p.alive) {
@@ -587,7 +592,7 @@ export class View {
           puppet.aim = pos;
           puppet.queue = [];
           puppet.bend = adjacent(pos, puppet.from) ? cornerBend(map, puppet.from, pos) : undefined;
-          puppet.moveStart = now;
+          puppet.moveStart = now - this.lead;
           puppet.moveDur = this.stepMs;
         }
         puppet.to = pos;
@@ -1001,7 +1006,7 @@ export class View {
           const striker = heroById(world, effect.attacker);
           const weapon = striker ? (effect.weapon ?? thrownKind ?? striker.weapon?.kind ?? null) : null;
           if (effect.hit) {
-            if (target) target.flashUntil = now + 160;
+            if (target) target.flashUntil = now + 110;
             const toHero = !effect.target.startsWith('#');
             this.float(effect.target, String(effect.damage), toHero ? COLORS.negative : COLORS.warning, now);
             if (striker && bolt) {
@@ -1016,9 +1021,13 @@ export class View {
               audio.later(weaponHit(weapon)[0] === 'hit_arrow' ? 125 : 0, 'hit_strong', 1, 1, place);
             }
             if (effect.target === myId) {
-              haptic('hurt');
+              // A light tap for a hit taken, a heavy one for a crushing blow (a quarter of my health or more).
+              haptic(me && effect.damage >= me.ht * 0.25 ? 'slam' : 'hit');
               wounded(effect.damage);
-            } else if (effect.attacker === myId) haptic('hit');
+            } else if (effect.attacker === myId) {
+              // My blow lands as a soft tap; one that kills as a light one.
+              haptic(target && target.hp - effect.damage <= 0 ? 'hit' : 'tick');
+            }
           } else {
             this.float(effect.target, t.miss, COLORS.neutral, now);
             audio.play('miss', 1, 1, place);
