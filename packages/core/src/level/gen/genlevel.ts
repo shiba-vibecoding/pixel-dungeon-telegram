@@ -189,13 +189,16 @@ export class GenLevel {
     if (item) this.itemsToSpawn.push(item);
   }
 
-  /** Level.findPrizeItem: one of the items still to spawn (a trinket catalyst first), taken out; or one of a kind. */
+  /** Level.findPrizeItem: one of the items still to spawn (a trinket catalyst first, never a key), taken out; or one of a kind. */
   findPrizeItem(match?: (item: Item) => boolean): Item | null {
     if (this.itemsToSpawn.length === 0) return null;
     if (!match) {
       const catalyst = this.itemsToSpawn.findIndex((item) => (item.kind as string) === TRINKET_CATALYST);
       if (catalyst >= 0) return this.itemsToSpawn.splice(catalyst, 1)[0]!;
-      const item = Random.element(this.itemsToSpawn)!;
+      // Keys are never prizes (Shattered's pick can hand one to a room, which then keeps it from the lock it was made for).
+      const candidates = this.itemsToSpawn.filter((item) => !item.kind.startsWith('key.'));
+      if (candidates.length === 0) return null;
+      const item = Random.element(candidates)!;
       this.itemsToSpawn.splice(this.itemsToSpawn.indexOf(item), 1);
       return item;
     }

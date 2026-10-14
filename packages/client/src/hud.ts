@@ -1,6 +1,6 @@
 import {
   prismaticMaxHp, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, type MobKind, shielding,
-  STARVING, stealthCloak, talentPointsAvailable, berserkOf, comboOf, momentumOf, prepTurns, highestMove, hasTimer, timerLeft, markTurns, type World,
+  S, STARVING, stealthCloak, talentPointsAvailable, berserkOf, comboOf, momentumOf, prepTurns, highestMove, hasTimer, timerLeft, markTurns, type World,
 } from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
@@ -361,6 +361,8 @@ export interface HudState {
   waitingFor?: readonly string[];
   /** Iron keys for the current depth. */
   keys: number;
+  /** The golden and crystal keys held for the current depth (shown beside the iron ones when there are any). */
+  moreKeys?: { golden: number; crystal: number };
   examining: boolean;
   /** Something new in the backpack since it was last opened. */
   newLoot: boolean;
@@ -476,6 +478,12 @@ export class Hud {
   private readonly fightButton: HTMLButtonElement;
   private readonly fightNote: HTMLElement;
   private readonly keys: Text;
+  /** Golden and crystal keys: a row of their own under the iron key's, only while some are held. */
+  private readonly keyRow: HTMLElement;
+  private readonly goldenKeys: Text;
+  private readonly crystalKeys: Text;
+  private readonly goldenStat: HTMLElement;
+  private readonly crystalStat: HTMLElement;
   private readonly buffBox: HTMLElement;
   private readonly mates: HTMLElement;
   private readonly notice: HTMLElement;
@@ -535,6 +543,21 @@ export class Hud {
     this.food = el('div', 'pd-bar thin food');
     this.depth = document.createTextNode('');
     this.keys = document.createTextNode('');
+    this.goldenKeys = document.createTextNode('');
+    this.crystalKeys = document.createTextNode('');
+    const keyStat = (sprite: number, count: Text, label: string): HTMLElement => {
+      const mark = el('i', 'pd-item');
+      mark.dataset.i = String(sprite);
+      const stat = el('span', 'pd-stat pd-keystat', mark, count);
+      stat.title = label;
+      stat.hidden = true;
+      return stat;
+    };
+    this.goldenStat = keyStat(S.GOLDEN_KEY, this.goldenKeys, t.items['key.golden'] ?? '');
+    this.crystalStat = keyStat(S.CRYSTAL_KEY, this.crystalKeys, t.items['key.crystal'] ?? '');
+    this.keyRow = el('div', 'pd-keyrow', this.goldenStat, this.crystalStat);
+    this.keyRow.hidden = true;
+    sprites(this.keyRow);
     const menu = el('button', 'pd-menu');
     menu.ariaLabel = t.menu;
     menu.setAttribute('aria-keyshortcuts', 'Escape');
@@ -574,6 +597,7 @@ export class Hud {
           'pd-hud-side',
           this.depthStat,
           el('span', 'pd-stat', icon('key', 14, 18), this.keys),
+          this.keyRow,
         ),
         menu,
       );
@@ -868,6 +892,15 @@ export class Hud {
     this.depthStat.style.display = state.arena ? 'none' : '';
     this.updateArena(state.arena ?? null, dead);
     if (this.changed('keys', String(state.keys))) this.keys.data = String(state.keys);
+    const golden = state.moreKeys?.golden ?? 0;
+    const crystal = state.moreKeys?.crystal ?? 0;
+    if (this.changed('morekeys', `${golden}/${crystal}`)) {
+      this.goldenKeys.data = String(golden);
+      this.crystalKeys.data = String(crystal);
+      this.goldenStat.hidden = golden === 0;
+      this.crystalStat.hidden = crystal === 0;
+      this.keyRow.hidden = golden === 0 && crystal === 0;
+    }
     const boss = state.boss;
     if (this.changed('boss', boss ? `${boss.kind}:${boss.hp}/${boss.ht}:${boss.shield}:${boss.bleed}` : '')) {
       this.bossBox.hidden = !boss;
@@ -1088,6 +1121,12 @@ export class Hud {
     const top = this.band.getBoundingClientRect().bottom;
     const toolbar = this.toolbar.getBoundingClientRect().top;
     return { top, bottom: toolbar };
+  }
+
+  /** How much of the screen's bottom the toolbar takes, whichever rows it has (six quick slots make it two); 0 where it is not at the bottom. */
+  barHeight(): number {
+    if (this.root.hidden || this.wide) return 0;
+    return Math.max(0, Math.round(innerHeight - this.toolbar.getBoundingClientRect().top));
   }
 
   /** The HUD's height, for toasts to appear under it (wide, they come at the top). */

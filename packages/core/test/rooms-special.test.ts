@@ -196,8 +196,11 @@ describe('statue, pool and vault rooms', () => {
     expect(level.map[chest.pos]).toBe(T.PEDESTAL);
     for (const item of chest.items) expect(/^(wand|ring|artifact)./.test(item.kind)).toBe(true);
     heroAt(world, depth, chest.pos);
-    expect(act(world, 'p', { type: 'pickup' })).toEqual({ ok: false, reason: 'the chest is locked' });
+    expect(act(world, 'p', { type: 'pickup' })).toEqual({ ok: false, reason: 'the crystal chest is locked' });
     const hero = heroById(world, 'p')!;
+    // A golden key does not open crystal: the chest names the key it wants.
+    hero.items = [{ ...createItem('key.golden'), depth }];
+    expect(act(world, 'p', { type: 'pickup' })).toEqual({ ok: false, reason: 'the crystal chest is locked' });
     hero.items = [{ ...createItem('key.crystal'), depth }];
     expect(act(world, 'p', { type: 'pickup' }).ok).toBe(true);
     expect(hero.items.some((item) => item.kind === 'key.crystal')).toBe(false);

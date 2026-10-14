@@ -402,6 +402,7 @@ export function itemInfo(world: World, hero: Hero, item: Item): string[] {
   }
   if (category === 'key') {
     if (item.kind === 'key.skeleton') return [t.skeletonKeyInfo];
+    if (item.kind === 'key.crystal') return [t.crystalKeyInfo(item.depth ?? 0)];
     return [item.kind === 'key.golden' ? t.goldenKeyInfo(item.depth ?? 0) : t.keyInfo(item.depth ?? 0)];
   }
   if (category === 'gold') return [];

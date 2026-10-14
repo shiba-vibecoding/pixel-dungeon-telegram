@@ -193,6 +193,11 @@ function chestKeyFor(world: World, hero: Hero, heap: Heap): number {
   return hero.items.findIndex((item) => item.kind === kind && item.depth === hero.depth);
 }
 
+/** Why a chest will not open: a crystal chest wants a crystal key, a locked one a golden key. */
+function lockedReason(heap: Heap): string {
+  return heap.kind === 'crystalChest' ? 'the crystal chest is locked' : 'the chest is locked';
+}
+
 function heapAt(world: World, hero: Hero): Heap | undefined {
   return world.floors[hero.depth]?.heaps.find((heap) => heap.pos === hero.pos);
 }
@@ -201,7 +206,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
   if (action.type === 'pickup') {
     const heap = heapAt(world, hero);
     if (!heap) return 'nothing here';
-    if ((heap.kind === 'lockedChest' || heap.kind === 'crystalChest') && chestKeyFor(world, hero, heap) < 0) return 'the chest is locked';
+    if ((heap.kind === 'lockedChest' || heap.kind === 'crystalChest') && chestKeyFor(world, hero, heap) < 0) return lockedReason(heap);
     if (heap.kind === 'hidden') return 'nothing here';
     return heap.kind === 'forSale' ? 'that is for sale' : null;
   }
@@ -209,7 +214,7 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
     const heap = Number.isInteger(action.cell) ? world.floors[hero.depth]?.heaps.find((h) => h.pos === action.cell) : undefined;
     if (!heap || heap.kind === 'heap' || heap.kind === 'forSale' || heap.kind === 'hidden') return 'nothing to open';
     if (heap.pos !== hero.pos && !adjacent(heap.pos, hero.pos)) return 'too far away';
-    if ((heap.kind === 'lockedChest' || heap.kind === 'crystalChest') && chestKeyFor(world, hero, heap) < 0) return 'the chest is locked';
+    if ((heap.kind === 'lockedChest' || heap.kind === 'crystalChest') && chestKeyFor(world, hero, heap) < 0) return lockedReason(heap);
     return null;
   }
   if (action.type === 'mine') return mineProblem(world, hero, action.cell);

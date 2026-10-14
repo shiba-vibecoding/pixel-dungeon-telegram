@@ -377,3 +377,34 @@ html.pd-paused *, html.pd-paused *::before, html.pd-paused *::after { animation-
   .pd-pick.empty .pd-hold-hint { display: none; }
   .pd-pick.empty .pd-info, .pd-pick.empty p { margin: 0; font: var(--text-caption, 400 15px/20px var(--font-small)); }
 }
+
+/* ---------- Phones: the log is read, whatever the toolbar's height ----------
+   The toolbar is one row with two or four quick slots and two with six; main.ts measures it (--bar-h) and the
+   log, the map's buttons, the learning card and «To battle!» stand on its real top edge, not on a one-row guess,
+   so the newest line is never half under the quick slots. The log takes the caption size (15/20 Galmuri9):
+   the newest three lines fit in 60 px, a fourth shows when the screen is tall enough. */
+body:not(:has(#ui.pd-wide)) .pd-log { bottom: var(--bar-h, calc(var(--safe-b) + var(--tool-h, 56px) + var(--space-2) * 2)); }
+body:not(:has(#ui.pd-wide)) .pd-mapctl { bottom: calc(var(--bar-h, calc(var(--safe-b) + var(--tool-h, 56px) + var(--space-2) * 2)) + var(--log-h, 120px)); }
+body:not(:has(#ui.pd-wide)) .pd-hint { bottom: calc(var(--bar-h, calc(var(--safe-b) + var(--tool-h, 56px) + var(--space-2) * 2)) + var(--log-h, 120px) + 8px); }
+body:not(:has(#ui.pd-wide)) .pd-fight { bottom: calc(var(--bar-h, calc(var(--safe-b) + var(--tool-h, 56px) + var(--space-2) * 2)) + var(--log-h, 120px) + 12px); }
+@media (max-width: 600px) {
+  body:not(:has(#ui.pd-wide)) .pd-log { padding-top: var(--space-3); gap: 0; }
+  body:not(:has(#ui.pd-wide)) .pd-log .pd-log-line { font: var(--text-caption, 400 15px/20px var(--font-small)); }
+  body:not(:has(#ui.pd-wide)) .pd-log .pd-log-line .pd-n { font-size: 13px; }
+}
+
+/* Keys at the top right: iron beside the depth, and under them, while held, the golden and crystal ones with their own
+   sprites (the HUD counted only iron keys, so a golden or crystal key looked like no key at all). */
+.pd-keyrow { display: flex; gap: 6px; justify-content: flex-end; }
+.pd-keyrow[hidden], .pd-keystat[hidden] { display: none; }
+.pd-keystat .pd-item { --u: 1px; width: 16px; height: 16px; margin: -2px 0; }
+
+/* The portrait opens the hero and talents window; with talent points unspent the «+» says so, big enough to find
+   on a phone and never blinking out (it breathes instead). */
+.pd-talent-badge {
+  left: 40px; top: -9px; width: 28px; height: 28px;
+  filter: drop-shadow(0 0 2px var(--void)) drop-shadow(0 2px 0 var(--void));
+  animation: pd-talent-pulse 1s steps(2) infinite alternate;
+}
+@keyframes pd-talent-pulse { from { transform: scale(1); } to { transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) { .pd-talent-badge { animation: none; } }

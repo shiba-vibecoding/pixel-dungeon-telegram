@@ -1,5 +1,6 @@
 import { drawWater, type LevelTiles } from './tiles';
 import { drawSpell } from './spellfx';
+import { FOG_BLACK, fogHalves } from './fog';
 import { drawAura, drawBeams, drawCharge, drawEbony, drawFallen, drawStateIcons, mobImage } from './mobfx';
 import { HEIGHT, type Level, LENGTH, S, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
@@ -51,9 +52,14 @@ function drawIcon(ctx: CanvasRenderingContext2D, assets: Assets, icon: readonly 
   ctx.drawImage(assets.icons, sx, sy, w, h, Math.round(x - w / 2), Math.round(y - h), w, h);
 }
 
-/** One texel per cell: the fog's darkness, eased from frame to frame (see drawFog). */
+/**
+ * Two texels a cell (left and right halves, as Shattered's fog has them: fog.ts): the fog's darkness, eased from
+ * frame to frame (see drawFog). `fogHard` marks the texels that are black for good, which no easing or smoothing may lighten.
+ */
 const fogCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+const fogHardCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
 let fogDark: Float32Array | null = null;
+let fogTarget: Float32Array | null = null;
 let fogLevel: Level | null = null;
 let fogTime = 0;
 /** How quickly a cell comes out of the dark, and how slowly it sinks back (ms to close most of the gap). */
@@ -61,31 +67,44 @@ const FOG_REVEAL_MS = 70;
 const FOG_FORGET_MS = 260;
 
 function drawFog(ctx: CanvasRenderingContext2D, level: Level, visible: readonly boolean[], explored: readonly boolean[], now: number): void {
-  if (!fogCanvas) return;
+  if (!fogCanvas || !fogHardCanvas) return;
   const fresh = fogLevel !== level || !fogDark;
   if (fresh) {
-    fogCanvas.width = WIDTH;
-    fogCanvas.height = HEIGHT;
-    fogDark = new Float32Array(LENGTH).fill(1);
+    fogCanvas.width = fogHardCanvas.width = WIDTH * 2;
+    fogCanvas.height = fogHardCanvas.height = HEIGHT;
+    fogDark = new Float32Array(LENGTH * 2).fill(1);
+    fogTarget = new Float32Array(LENGTH * 2);
     fogLevel = level;
   }
   const dt = fresh ? 0 : Math.min(100, Math.max(0, now - fogTime));
   fogTime = now;
+  const target = fogHalves(level.map, visible, explored, fogTarget!);
   const fog = fogCanvas.getContext('2d')!;
-  const data = fog.createImageData(WIDTH, HEIGHT);
+  const hard = fogHardCanvas.getContext('2d')!;
+  const data = fog.createImageData(WIDTH * 2, HEIGHT);
+  const black = hard.createImageData(WIDTH * 2, HEIGHT);
   const reveal = 1 - Math.exp(-dt / FOG_REVEAL_MS);
   const forget = 1 - Math.exp(-dt / FOG_FORGET_MS);
-  for (let i = 0; i < LENGTH; i++) {
-    const target = visible[i] ? 0 : explored[i] ? 0.55 : 1;
+  for (let i = 0; i < LENGTH * 2; i++) {
+    const to = target[i]!;
     const dark = fogDark![i]!;
-    fogDark![i] = fresh ? target : dark + (target - dark) * (target < dark ? reveal : forget);
-    data.data[i * 4 + 3] = Math.round(fogDark![i]! * 255);
+    const eased = fresh ? to : dark + (to - dark) * (to < dark ? reveal : forget);
+    fogDark![i] = eased;
+    // The texel's place in the 2-wide image: cell (i >> 1), half (i & 1).
+    const cell = i >> 1;
+    const at = ((Math.trunc(cell / WIDTH)) * WIDTH * 2 + (cell % WIDTH) * 2 + (i & 1)) * 4 + 3;
+    data.data[at] = Math.round(eased * 255);
+    if (to >= FOG_BLACK) black.data[at] = 255;
   }
   fog.putImageData(data, 0, 0);
-  // Drawn up with smoothing: the darkness fades from cell to cell instead of stopping at tile edges.
+  hard.putImageData(black, 0, 0);
+  // Drawn up with smoothing, so the darkness fades from half cell to half cell into what is seen; then what has
+  // never been seen is laid over it hard, so the fade never lights a room beyond a wall.
   ctx.save();
   ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(fogCanvas, 0, 0, WIDTH, HEIGHT, 0, 0, WIDTH * TILE, HEIGHT * TILE);
+  ctx.drawImage(fogCanvas, 0, 0, WIDTH * 2, HEIGHT, 0, 0, WIDTH * TILE, HEIGHT * TILE);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(fogHardCanvas, 0, 0, WIDTH * 2, HEIGHT, 0, 0, WIDTH * TILE, HEIGHT * TILE);
   ctx.restore();
 }
 

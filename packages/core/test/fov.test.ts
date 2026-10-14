@@ -33,6 +33,48 @@ describe('field of view', () => {
   });
 });
 
+describe('Shattered shadow caster', () => {
+  /** A closed room, x 20..30 and y 20..28 inside, walls around it, and open ground beyond the walls. */
+  const solid = (c: number): boolean => {
+    const x = c % WIDTH;
+    const y = Math.trunc(c / WIDTH);
+    return x >= 19 && x <= 31 && y >= 19 && y <= 29 && (x === 19 || x === 31 || y === 19 || y === 29);
+  };
+
+  it('never shows ground beyond the walls of a closed room, from any cell of it (corners too), at any sight', () => {
+    for (const distance of [2, 4, 8, 12, 20]) {
+      for (let y = 20; y <= 28; y++) {
+        for (let x = 20; x <= 30; x++) {
+          const fov = castShadow(cell(x, y), solid, distance);
+          fov.forEach((seen, c) => {
+            if (!seen) return;
+            const cx = c % WIDTH;
+            const cy = Math.trunc(c / WIDTH);
+            expect(cx >= 19 && cx <= 31 && cy >= 19 && cy <= 29, `from ${x},${y} at ${distance}: ${cx},${cy}`).toBe(true);
+          });
+        }
+      }
+    }
+  });
+
+  it('sees a room through its door, no further than the door lets the view go', () => {
+    // The same room with a one-cell door in its east wall at y 24: the view from the middle looks out through it.
+    const door = cell(31, 24);
+    const withDoor = (c: number): boolean => solid(c) && c !== door;
+    const fov = castShadow(cell(25, 24), withDoor, 8);
+    expect(fov[cell(33, 24)]).toBe(true);
+    expect(fov[cell(33, 20)]).toBe(false);
+    expect(fov[cell(33, 28)]).toBe(false);
+  });
+
+  it('fills in the corners of a view of two cells', () => {
+    const fov = castShadow(cell(16, 16), () => false, 2);
+    expect(fov[cell(18, 18)]).toBe(true);
+    expect(fov[cell(14, 14)]).toBe(true);
+    expect(fov[cell(19, 16)]).toBe(false);
+  });
+});
+
 describe('shared exploration and doors', () => {
   it('explores around the heroes and keeps explored cells', () => {
     const world = createWorld(31337);

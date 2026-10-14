@@ -2,9 +2,9 @@ import { HEIGHT, LENGTH, WIDTH } from './level/geometry';
 import { F, hasFlag } from './level/terrain';
 
 /*
- * Field of view: recursive shadow casting in eight sectors, ported from the
- * original ShadowCaster. Rows are scanned outward from the viewer; every
- * line-of-sight blocker adds an angular interval that hides the cells behind.
+ * Field of view: recursive shadow casting in eight octants, ported from Shattered's
+ * ShadowCaster. Rows are scanned outward from the viewer; a line-of-sight blocker
+ * narrows the slopes still open to the rows behind it.
  */
 
 export const MAX_VIEW_DISTANCE = 8;
@@ -33,41 +33,6 @@ export const rounding: number[][] = (() => {
   return table;
 })();
 
-class Obstacles {
-  private readonly a1: number[] = [];
-  private readonly a2: number[] = [];
-  private length = 0;
-  private limit = 0;
-
-  reset(): void {
-    this.length = 0;
-    this.limit = 0;
-  }
-
-  add(o1: number, o2: number): void {
-    if (this.length > this.limit && o1 <= this.a2[this.length - 1]!) {
-      // Adjacent blocking cells merge into one interval.
-      this.a2[this.length - 1] = o2;
-    } else {
-      this.a1[this.length] = o1;
-      this.a2[this.length++] = o2;
-    }
-  }
-
-  isBlocked(a: number): boolean {
-    for (let i = 0; i < this.limit; i++) {
-      if (a >= this.a1[i]! && a <= this.a2[i]!) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  nextRow(): void {
-    this.limit = this.length;
-  }
-}
-
 /**
  * Level.viewDistance: the caves (depths 11-15) are dark, and the demon halls
  * darker the deeper they go (HallsLevel), down to a single cell; the last
@@ -95,47 +60,75 @@ export const DARKNESS_VIEW_DISTANCE = 2;
 /** Light.DISTANCE: how far a torch lets one see, and the demons of the halls see anyway. */
 export const LIGHT_DISTANCE = 4;
 
-/** Cells visible from `pos`, given which cells block line of sight. */
+/**
+ * Cells visible from `pos`, given which cells block line of sight: Shattered's ShadowCaster (the slope-based scan of
+ * eight octants, in place of Pixel Dungeon's interval lists, which let a view peek past wall corners into the rooms
+ * beyond). Each octant is mirrored in x, y and x=y; a blocking cell is seen, what lies behind it is not.
+ */
 export function castShadow(
 pos: number, losBlocking: (cell: number) => boolean, distance = MAX_VIEW_DISTANCE): boolean[] {
   const fov = new Array<boolean>(LENGTH).fill(false);
   const cx = pos % WIDTH;
   const cy = Math.trunc(pos / WIDTH);
-  const limits = rounding[Math.min(distance, ROUNDING_MAX)]!;
-  const obstacles = new Obstacles();
+  if (distance > ROUNDING_MAX) distance = ROUNDING_MAX;
   fov[pos] = true;
+  if (distance < 1) return fov;
 
-  const scan = (m1: number, m2: number, m3: number, m4: number): void => {
-    obstacles.reset();
-    for (let p = 1; p <= distance; p++) {
-      const dq2 = 0.5 / p;
-      for (let q = 0; q <= limits[p]!; q++) {
-        const x = cx + q * m1 + p * m3;
-        const y = cy + p * m2 + q * m4;
-        if (y < 0 || y >= HEIGHT || x < 0 || x >= WIDTH) continue;
-        const a0 = q / p;
-        const a1 = a0 - dq2;
-        const a2 = a0 + dq2;
+  let limits = rounding[distance]!;
+  if (distance === 2) {
+    // At a view distance of 2 the corners of vision are filled in (otherwise it punishes diagonal movement).
+    limits = limits.slice();
+    limits[2] = 2;
+  }
+
+  // ShadowCaster.scanOctant: rows outward from the viewer, `lSlope`..`rSlope` the part of the octant still open.
+  const scan = (row: number, lSlope: number, rSlope: number, mX: number, mY: number, mXY: boolean): void => {
+    let inBlocking = false;
+    for (; row <= distance; row++) {
+      // No space left to look through.
+      if (rSlope < lSlope) return;
+
+      // Offset by slightly less than half a cell, so slopes just touching a cell count.
+      const start = lSlope === 0 ? 0 : Math.floor((row - 0.5) * lSlope + 0.499);
+      const end = rSlope === 1 ? limits[row]! : Math.min(limits[row]!, Math.ceil((row + 0.5) * rSlope - 0.499));
+
+      for (let col = start; col <= end; col++) {
+        // The slope at the end of a cell is a whole cell further than at its beginning, and the cell before is blocking.
+        if (col === end && inBlocking && Math.ceil((row - 0.5) * rSlope - 0.499) !== end) break;
+
+        const x = mXY ? cx + mY * row : cx + mX * col;
+        const y = mXY ? cy + mX * col : cy + mY * row;
+        const inside = x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT;
         const cell = y * WIDTH + x;
-        if (!(obstacles.isBlocked(a0) && obstacles.isBlocked(a1) && obstacles.isBlocked(a2))) {
-          fov[cell] = true;
-        }
-        if (losBlocking(cell)) {
-          obstacles.add(a1, a2);
+        if (inside) fov[cell] = true;
+
+        // Beyond the grid counts as a wall.
+        if (!inside || losBlocking(cell)) {
+          if (!inBlocking) {
+            inBlocking = true;
+            // A new scan one row deeper, ending at the left side of this cell.
+            if (col !== start) scan(row + 1, lSlope, (col - 0.5) / (row + 0.5), mX, mY, mXY);
+          }
+        } else if (inBlocking) {
+          inBlocking = false;
+          // This scan goes on to the right of the cell it passed.
+          lSlope = (col - 0.5) / (row - 0.5);
         }
       }
-      obstacles.nextRow();
+
+      // A row that ends in a wall ends the scan.
+      if (inBlocking) return;
     }
   };
 
-  scan(+1, +1, 0, 0);
-  scan(-1, +1, 0, 0);
-  scan(+1, -1, 0, 0);
-  scan(-1, -1, 0, 0);
-  scan(0, 0, +1, +1);
-  scan(0, 0, -1, +1);
-  scan(0, 0, +1, -1);
-  scan(0, 0, -1, -1);
+  scan(1, 0, 1, +1, -1, false);
+  scan(1, 0, 1, -1, +1, true);
+  scan(1, 0, 1, +1, +1, true);
+  scan(1, 0, 1, +1, +1, false);
+  scan(1, 0, 1, -1, +1, false);
+  scan(1, 0, 1, +1, -1, true);
+  scan(1, 0, 1, -1, -1, true);
+  scan(1, 0, 1, -1, -1, false);
   return fov;
 }
 

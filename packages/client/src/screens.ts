@@ -693,6 +693,15 @@ export function scoreCard(b: ScoreBreakdown, title: string, date: string): HTMLE
   );
 }
 
+/** The keys held for this floor, by sort, for the hero window (the HUD's key counter says the same at the top right). */
+function keyRows(hero: Hero): Array<readonly [string, string, string?]> {
+  const held = (['key.iron', 'key.golden', 'key.crystal'] as const)
+    .map((kind) => [kind, hero.items.filter((i) => (i.kind === kind || (kind === 'key.iron' && i.kind === 'key.skeleton')) && i.depth === hero.depth).length] as const)
+    .filter(([, n]) => n > 0);
+  if (held.length === 0) return [];
+  return [[t.keysLabel, held.map(([kind, n]) => `${t.items[kind] ?? kind} ×${n}`).join(', ')]];
+}
+
 /** WndHero: the hero's numbers and what currently ails or helps them. */
 export function showHero(options: HeroOptions): void {
   const { hero } = options;
@@ -712,6 +721,7 @@ export function showHero(options: HeroOptions): void {
         [t.health, shielding(hero) > 0 ? `${Math.max(0, hero.hp)}+${shielding(hero)}/${hero.ht}` : `${Math.max(0, hero.hp)}/${hero.ht}`],
         [t.experience, `${hero.exp}/${maxExp(hero)}`],
         [t.goldLabel, String(hero.gold), 'gold'],
+        ...keyRows(hero),
         [t.slain, String(hero.kills)],
       ]),
       // The armour ability's tier 4 talents, with a gold plus while there are points to put in them.

@@ -98,7 +98,8 @@ describe('fighting through the sewers', () => {
       kills += effects.filter((e) => e.type === 'died' && e.who.startsWith('#')).length;
       if (effects.some((e) => e.type === 'levelUp')) {
         expect(hero.lvl).toBeGreaterThan(1);
-        expect(hero.ht).toBe((heroClass === 'huntress' ? 15 : 20) + (hero.lvl - 1) * 5);
+        // (Every class starts with 20 health in Shattered, the huntress too.)
+        expect(hero.ht).toBe(20 + (hero.lvl - 1) * 5);
       }
       const mobDeaths = effects.filter((e) => e.type === 'died' && e.who.startsWith('#')).length;
       expect(hero.kills).toBeLessThanOrEqual(mobDeaths);

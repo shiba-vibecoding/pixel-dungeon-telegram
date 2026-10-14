@@ -2,7 +2,7 @@ import './season';
 import {
   type Action, adjacent, blockers, liveBlockers, distance, type Mob, trapAt, buyPrice, cellX, cellY, createHero, createWorld, type Effect, exploredCells, F, findPath, hasFlag,
   HEAP_SPRITES,
-  type Hero, type Item, type Level,
+  type Hero, type Heap, type Item, type Level,
   BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, HERO_CLASSES, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   type PlanStep, PLANT_KINDS, T,
   visibleCells, chargesKnown, staffReach, WIDTH,
@@ -1436,12 +1436,18 @@ function step(world: World, now: number, visible: readonly boolean[]): void {
 }
 
 /** Picks up what lies here, or offers a shop's ware for sale. */
-/** Opens the chest, tomb or remains in the cell beside the hero; a locked chest wants the level's golden key. */
+/** The key a chest wants is in the pack: a golden key for a locked chest, a crystal key for a crystal chest, of this depth. */
+function holdsChestKey(me: Hero, heap: Heap): boolean {
+  const kind = heap.kind === 'crystalChest' ? 'key.crystal' : 'key.golden';
+  return me.items.some((i) => i.kind === kind && i.depth === me.depth);
+}
+
+/** Opens the chest, tomb or remains in the cell beside the hero; a locked chest wants the level's golden key, a crystal one its crystal key. */
 function openAt(world: World, me: Hero, cell: number, now: number): void {
   const heap = world.floors[me.depth]?.heaps.find((h) => h.pos === cell);
   if (!heap) return;
   const locked = heap.kind === 'lockedChest' || heap.kind === 'crystalChest';
-  if (locked && !me.items.some((i) => i.kind === 'key.golden' && i.depth === me.depth)) {
+  if (locked && !holdsChestKey(me, heap)) {
     view.say(heap.kind === 'crystalChest' ? t.crystalChest(itemName(world, heap.items[0]!)) : t.lockedChest, '#ff8800');
     return;
   }
@@ -1451,9 +1457,9 @@ function openAt(world: World, me: Hero, cell: number, now: number): void {
 function takeHere(world: World, me: Hero, now: number): void {
   const heap = world.floors[me.depth]?.heaps.find((h) => h.pos === me.pos);
   if (!heap || heap.kind === 'hidden') return;
-  // A locked or crystal chest wants the level's golden key; through crystal one sees what it holds.
+  // A locked chest wants the level's golden key, a crystal one its crystal key; through crystal one sees what it holds.
   const locked = heap.kind === 'lockedChest' || heap.kind === 'crystalChest';
-  if (locked && !me.items.some((i) => i.kind === 'key.golden' && i.depth === me.depth)) {
+  if (locked && !holdsChestKey(me, heap)) {
     view.say(heap.kind === 'crystalChest' ? t.crystalChest(itemName(world, heap.items[0]!)) : t.lockedChest, '#ff8800');
     return;
   }
@@ -2977,7 +2983,16 @@ function resize(): void {
 /** Toasts appear just under the HUD, however tall it has grown (buffs, companions, a notice). */
 let hudBottom = -1;
 
+let barHeight = -1;
+
 function placeToasts(): void {
+  // The log and what stands over it sit on the toolbar however many rows it has (game.css, --bar-h).
+  const bar = hud.barHeight();
+  if (bar !== barHeight) {
+    barHeight = bar;
+    if (bar > 0) document.documentElement.style.setProperty('--bar-h', `${bar}px`);
+    else document.documentElement.style.removeProperty('--bar-h');
+  }
   const bottom = Math.round(hud.height());
   if (bottom === hudBottom) return;
   hudBottom = bottom;
@@ -3704,6 +3719,10 @@ function tick(now: number): void {
       newLoot,
       looks: session.looks,
       keys: me.items.filter((i) => (i.kind === 'key.iron' || i.kind === 'key.skeleton') && i.depth === me.depth).length,
+      moreKeys: {
+        golden: me.items.filter((i) => i.kind === 'key.golden' && i.depth === me.depth).length,
+        crystal: me.items.filter((i) => i.kind === 'key.crystal' && i.depth === me.depth).length,
+      },
       quick,
       danger: isAlive(me) ? enemiesInSight.length : 0,
       waitingFor: session.mode === 'online' ? holders.filter((id) => id !== me.id) : [],
