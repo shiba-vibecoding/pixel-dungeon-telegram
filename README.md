@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://t.me/pixel_dungeon_gamebot/pixel_dungeon"><img src="docs/github/badge-play-en.png" alt="Play in Telegram" height="44"></a>
   <img src="docs/github/badge-daily-en.png" alt="Daily dungeon" height="44">
-  <img src="docs/github/badge-ver-en.png" alt="Shattered v4" height="44">
+  <img src="docs/github/badge-ver-en.png" alt="Shattered 4.0.2 · v2.4" height="44">
   <a href="LICENSE"><img src="docs/github/badge-gpl-en.png" alt="GPL-3.0" height="44"></a>
 </p>
 
@@ -16,7 +16,7 @@
 server and goes on from your phone or your computer.
 
 <p align="center">
-  <img src="docs/github/screens-en.png" alt="The camp, the dungeon, talents, alchemy" width="100%">
+  <img src="docs/github/screens-en.png" alt="The camp, the dungeon, talents, the daily dungeon" width="100%">
 </p>
 
 ## What’s inside
@@ -38,6 +38,8 @@ server and goes on from your phone or your computer.
 - **Made for newcomers:** a step-by-step tutorial and a guide in the journal covering hunger, curses, mimics, the
   ankh and the other unobvious rules. The game asks before you step on a known trap or into fire, or drink an
   unknown potion with an enemy in view.
+
+<p align="center"><img src="docs/github/camp.gif" alt="The camp: the hero by the fire" width="300"></p>
 
 ## How to play
 

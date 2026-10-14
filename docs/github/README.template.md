@@ -6,14 +6,14 @@
 <p align="center">
   <a href="https://t.me/YOUR_BOT/play"><img src="docs/github/badge-play-ru.png" alt="Играть в Telegram" height="44"></a>
   <img src="docs/github/badge-daily-ru.png" alt="Подземелье дня" height="44">
-  <img src="docs/github/badge-ver-ru.png" alt="Shattered v4 · 2.4" height="44">
+  <img src="docs/github/badge-ver-ru.png" alt="Shattered 4.0.2 · v2.4" height="44">
   <img src="docs/github/badge-gpl-ru.png" alt="GPL-3.0" height="44">
 </p>
 
 **Pixel Dungeon для Telegram** — классический рогалик Watabou, выросший до Shattered Pixel Dungeon v4: шесть классов, таланты, алхимия, подземелье дня с рейтингом. Открывается прямо в Telegram, ничего не нужно ставить.
 
 <p align="center">
-  <img src="docs/github/screens-ru.png" alt="Привал, подземелье, таланты, алхимия" width="100%">
+  <img src="docs/github/screens-ru.png" alt="Привал, подземелье, таланты, подземелье дня" width="100%">
 </p>
 
 ## Что внутри
@@ -51,6 +51,6 @@ GPL-3.0, как у [Pixel Dungeon](https://github.com/watabou/pixel-dungeon) (©
 
 **Pixel Dungeon for Telegram** — Watabou’s classic roguelike grown into Shattered Pixel Dungeon v4: six classes, talents, alchemy and a ranked daily dungeon. It opens right inside Telegram, nothing to install.
 
-<p align="center"><img src="docs/github/screens-en.png" alt="The camp, the dungeon, talents, alchemy" width="100%"></p>
+<p align="center"><img src="docs/github/screens-en.png" alt="The camp, the dungeon, talents, the daily dungeon" width="100%"></p>
 
 </details>

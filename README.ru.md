@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://t.me/pixel_dungeon_gamebot/pixel_dungeon"><img src="docs/github/badge-play-ru.png" alt="Играть в Telegram" height="44"></a>
   <img src="docs/github/badge-daily-ru.png" alt="Подземелье дня" height="44">
-  <img src="docs/github/badge-ver-ru.png" alt="Shattered v4" height="44">
+  <img src="docs/github/badge-ver-ru.png" alt="Shattered 4.0.2 · v2.4" height="44">
   <a href="LICENSE"><img src="docs/github/badge-gpl-ru.png" alt="GPL-3.0" height="44"></a>
 </p>
 
@@ -16,7 +16,7 @@
 на сервере и продолжается с телефона или компьютера.
 
 <p align="center">
-  <img src="docs/github/screens-ru.png" alt="Привал, подземелье, таланты, алхимия" width="100%">
+  <img src="docs/github/screens-ru.png" alt="Привал, подземелье, таланты, подземелье дня" width="100%">
 </p>
 
 ## Что внутри
@@ -37,6 +37,8 @@
 - **Для новичков.** Есть пошаговое обучение и «Памятка» в журнале: голод, проклятия, мимики, анх и другие
   неочевидные правила. Игра переспрашивает, прежде чем вы шагнёте на ловушку, в огонь или выпьете неизвестное
   зелье рядом с врагом.
+
+<p align="center"><img src="docs/github/camp.gif" alt="Привал: герой у костра" width="300"></p>
 
 ## Как играть
 
