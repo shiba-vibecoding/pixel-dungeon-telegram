@@ -42,7 +42,6 @@ export function sanitizeAction(raw: unknown): Action | null {
     case 'branch':
     case 'wait':
     case 'search':
-    case 'impReward':
     case 'endGame':
     case 'pickup':
     case 'buy':
@@ -76,6 +75,27 @@ export function sanitizeAction(raw: unknown): Action | null {
     case 'wandReward':
       // WndWandmaker: the first of his two wands, or the second.
       return a.choice === 1 || a.choice === 2 ? { type: 'wandReward', choice: a.choice } : null;
+    case 'vault': {
+      // The vault: the strange mirror's item, the token door, the vault beacon, the escape crystal (one thing kept).
+      const op = oneOf(a.op, ['mirror', 'door', 'beacon', 'escape'] as const);
+      if (op === 'mirror' || op === 'door') return { type: 'vault', op };
+      if (op === 'beacon') {
+        const item = slot(a.item);
+        return item === null ? null : { type: 'vault', op, item };
+      }
+      if (op === 'escape') {
+        if (a.keep === undefined) return { type: 'vault', op };
+        const keep = itemRef(a.keep);
+        return keep === null ? null : { type: 'vault', op, keep };
+      }
+      return null;
+    }
+    case 'skeletonKey': {
+      // SkeletonKey.AC_INSERT at a cell.
+      const item = slot(a.item);
+      const target = cell(a.target);
+      return item === null || target === null ? null : { type: 'skeletonKey', item, target };
+    }
     case 'blacksmith': {
       // WndBlacksmith: a service, with the items it is done on (reforge: two; harden, upgrade: one), or WndSmith's choice.
       const service = oneOf(a.service, ['pickaxe', 'reforge', 'harden', 'upgrade', 'smith', 'pick', 'cashout'] as const);

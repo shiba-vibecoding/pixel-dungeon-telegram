@@ -94,7 +94,7 @@ function guardAct(ctx: Ctx, mob: Mob): void {
     const other = ctx.floor.mobs.find((m) => m !== mob && m.kind === 'vaultGhoul' && distance(mob.pos, m.pos) < 4 &&
       (m.state === 'investigating' || m.state === 'hunting'));
     if (other) {
-      if (mob.state !== 'hunting') mob.state = 'wandering';
+      mob.state = 'wandering';
       mob.target = other.pos;
     }
   }

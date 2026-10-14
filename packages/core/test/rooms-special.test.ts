@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, createItem, createWorld, floorAt, heroById, isWater, levelAt, NEIGHBOURS8, RoomType, T, type World,
+  act, addHero, canEnter, charAt, createItem, createWorld, floorAt, heroById, isWater, levelAt, NEIGHBOURS8, RoomType, T, type World,
   WIDTH,
 } from '../src/index';
 
@@ -20,7 +20,8 @@ function withRoom(type: RoomType, also: (world: World, depth: number) => boolean
 function heroAt(world: World, depth: number, pos: number): void {
   addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
   const hero = heroById(world, 'p')!;
-  Object.assign(hero, { depth, pos, time: floorAt(world, depth).now, attackSkill: 1000, hp: 1000, ht: 1000, items: [] });
+  Object.assign(hero, { depth, pos, time: floorAt(world, depth).now, attackSkill: 1000, hp: 1000, ht: 1000, items: [], str: 20 });
+  hero.weapon = createItem('weapon.warHammer', 1, 10);
   for (const mob of floorAt(world, depth).mobs) if (mob.kind !== 'statue' && mob.kind !== 'piranha') mob.state = 'passive';
 }
 
@@ -71,7 +72,7 @@ describe('statue, pool and vault rooms', () => {
     expect(statue.item!.level).toBeGreaterThanOrEqual(0);
     expect(statue.ht).toBe(15 + depth * 5);
     const level = levelAt(world, depth);
-    const beside = NEIGHBOURS8.map((n) => statue.pos + n).find((c) => level.map[c] === T.EMPTY)!;
+    const beside = NEIGHBOURS8.map((n) => statue.pos + n).find((c) => canEnter(level, c) && !charAt(world, depth, c))!;
     heroAt(world, depth, beside);
     for (let i = 0; i < 5; i++) act(world, 'p', { type: 'wait' });
     expect(statue.state).toBe('sleeping');

@@ -28,9 +28,9 @@ import { levelRegion } from './sprites';
 import { capitalize, t } from './i18n';
 import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
 import { type Camera, render } from './render';
-import type { GhostLine } from '@pd/core';
+import type { GhostLine, ImpLine } from '@pd/core';
 import { LevelTiles } from './tiles';
-import { feelingLine, lt, spawnerWarning } from './levelnames';
+import { feelingLine, lt, plain, spawnerWarning } from './levelnames';
 import { levelFx } from './levelfx';
 import { mineTarget, setSmithToast, type SmithEnv, smithBranch, talkWithBlacksmith } from './blacksmith-ui';
 import {
@@ -741,7 +741,7 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
   (world.floors[depth]?.heaps ?? []).some((heap) => heap.pos === pos && heap.kind !== 'hidden');
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
-let aim: { index: number; kind: 'throw' | 'zap' | 'special' } | null = null;
+let aim: { index: number; kind: 'throw' | 'zap' | 'special' | 'key' } | null = null;
 
 /** QuickSlotButton.onClick: use what the slot holds; an empty slot, or one whose item ran out, asks what to put in it. */
 function quickTap(slot: number): void {
@@ -1141,6 +1141,9 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
     if (effect.type === 'ratKing' && effect.hero === myId) talkWithRatKing(effect.line);
     if (effect.type === 'wandmaker' && effect.hero === myId) talkWithWandmaker(effect.line, effect.questType);
     if (effect.type === 'imp' && effect.hero === myId) talkWithImp(effect.line);
+    if ((effect.type === 'vaultDoor' || effect.type === 'vaultMirror' || effect.type === 'vaultLeft' || effect.type === 'vaultWarning') && effect.hero === myId) {
+      vaultWindow(effect);
+    }
     if (effect.type === 'blacksmith' && effect.hero === myId) {
       const env = smithEnv();
       if (env) talkWithBlacksmith(env, effect.line, effect.questType);
@@ -1284,26 +1287,71 @@ function smithEnv(): SmithEnv | null {
   return { world, hero: me, send: (action) => send(action, performance.now()), close: hideOverlay };
 }
 
-function talkWithImp(line: 'intro' | 'remind' | 'reward' | 'farewell'): void {
+/**
+ * Imp.interact: his errand (two pages), the reminder, his thanks as well as the heist went; his «psst»
+ * to a hero coming into sight before he asks, and his «see you» as he leaves.
+ */
+function talkWithImp(line: ImpLine): void {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
-  const quest = world?.impQuest;
-  if (!world || !me || !quest) return;
+  if (!world || !me) return;
+  const IMP = 'actors.mobs.npcs.imp';
+  const name = capitalize(me.name || t.heroDefault);
+  if (line === 'hey' || line === 'cya') {
+    view.say(plain(lt(`${IMP}.${line}`, name)), '#ffff44');
+    return;
+  }
   walk.reset();
   const text =
-    line === 'intro' ? t.imp.intro[quest.prey]
-    : line === 'remind' ? t.imp.remind[quest.prey]
-    : line === 'reward' ? t.imp.reward
-    : t.imp.farewell(t.classes[me.heroClass]);
-  showQuest({
-    world,
-    hero: me,
-    who: 'imp',
-    text,
-    offers: line === 'reward' ? [quest.reward] : [],
-    onChoose: () => send({ type: 'impReward' }, performance.now()),
-    onClose: hideOverlay,
-  });
+    line === 'intro' ? `${lt(`${IMP}.quest_intro_1`)}
+
+${lt(`${IMP}.quest_intro_2`)}`
+    : line === 'inProgress' ? lt(`${IMP}.quest_in_progress`)
+    : lt(`${IMP}.quest_${line === 'completedBad' ? 'completed_bad' : line === 'completedGood' ? 'completed_good' : 'completed_great'}`);
+  showQuest({ world, hero: me, who: 'imp', text: plain(text), offers: [], onClose: hideOverlay });
+}
+
+/**
+ * The vault's fixtures and its way out: the token door (VaultTokenDoor.interact), the strange mirror
+ * (VaultMirror.interact: its scene, then «Take the Item»), the imp's warnings by the final room, and the
+ * escape crystal's word on how the heist went.
+ */
+function vaultWindow(effect: Extract<Effect, { type: 'vaultDoor' | 'vaultMirror' | 'vaultLeft' | 'vaultWarning' }>): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me) return;
+  walk.reset();
+  if (effect.type === 'vaultDoor') {
+    const DOOR = 'actors.mobs.npcs.vaulttokendoor';
+    if (effect.tokens >= 10) {
+      showConfirm(capitalize(lt(`${DOOR}.name`)), plain(lt(`${DOOR}.enough_tokens`)), lt(`${DOOR}.open`), lt(`${DOOR}.not_yet`),
+        () => send({ type: 'vault', op: 'door' }, performance.now()), hideOverlay);
+    } else {
+      view.say(plain(lt(`${DOOR}.${effect.tokens > 0 ? 'too_few_tokens' : 'no_tokens'}`)), '#ffff44');
+    }
+  } else if (effect.type === 'vaultMirror') {
+    const MIRROR = 'actors.mobs.npcs.vaultmirror';
+    if (!effect.reward) {
+      view.say(plain(lt(`${MIRROR}.scene_nothing`)), '#ffffff');
+      return;
+    }
+    showQuest({
+      world, hero: me, who: 'vaultMirror', title: capitalize(lt(`${MIRROR}.name`)),
+      text: `${plain(lt(`${MIRROR}.approach`))}
+
+${plain(lt(`${MIRROR}.scene_${me.heroClass}`))}
+
+${plain(lt(`${MIRROR}.scene_final`))}`,
+      offers: [effect.reward],
+      onChoose: () => send({ type: 'vault', op: 'mirror' }, performance.now()),
+      onClose: hideOverlay,
+    });
+  } else if (effect.type === 'vaultWarning') {
+    const ROOM = 'levels.rooms.quest.vault.vaultfinalroom';
+    view.say(plain(lt(`${ROOM}.${effect.line === 'final' ? 'final_warning' : `imp_warning_${effect.line}`}`)), '#ffff44');
+  } else {
+    view.say(plain(lt(`items.quest.escapecrystal.${core.escapeMessage(effect.score)}`)), '#ffff44');
+  }
 }
 
 /* Input */
@@ -1332,6 +1380,7 @@ function tapCell(cell: number, quiet = false): void {
     const shot = aim;
     aim = null;
     if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
+    else if (shot.kind === 'key') send({ type: 'skeletonKey', item: shot.index, target: cell }, performance.now());
     else if (cell !== me.pos && me.items[shot.index]) send({ type: shot.kind, item: shot.index, target: cell }, performance.now());
     return;
   }
@@ -1460,7 +1509,17 @@ function takeBranch(): void {
   const env = smithEnv();
   if (!env) return;
   if (!branchAt(levelAt(env.world, env.hero.depth), env.hero.pos)) return;
-  if (!smithBranch(env)) env.send({ type: 'branch' });
+  if (smithBranch(env)) return;
+  // CityLevel.activateTransition: the imp's vault — his spell keeps the hero's gear; he asks first.
+  const quest = env.world.impQuest;
+  const level = levelAt(env.world, env.hero.depth);
+  if (quest?.given && !quest.done && !level.branch && quest.depth === env.hero.depth) {
+    const IMP = 'actors.mobs.npcs.imp';
+    showConfirm(capitalize(lt(`${IMP}.name`)), plain(lt(`${IMP}.enter_text`)), lt(`${IMP}.enter_yes`), lt(`${IMP}.enter_no`),
+      () => env.send({ type: 'branch' }), hideOverlay);
+    return;
+  }
+  env.send({ type: 'branch' });
 }
 
 /** A tap on a buff icon (BuffIndicator): its name and turns; Shattered's longer ones (the seal's shield, a sealed floor, hunger) in a window. */

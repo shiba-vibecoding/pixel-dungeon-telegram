@@ -22,6 +22,13 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'blacksmith', service: 'upgrade', item: 4 })).toEqual({ type: 'blacksmith', service: 'upgrade', item: 4 });
     expect(sanitizeAction({ type: 'blacksmith', service: 'pick', choice: 3, item: 2 })).toEqual({ type: 'blacksmith', service: 'pick', choice: 3 });
     expect(sanitizeAction({ type: 'blacksmith', service: 'cashout', first: 1 })).toEqual({ type: 'blacksmith', service: 'cashout' });
+    expect(sanitizeAction({ type: 'vault', op: 'door', x: 1 })).toEqual({ type: 'vault', op: 'door' });
+    expect(sanitizeAction({ type: 'vault', op: 'escape', keep: 'weapon' })).toEqual({ type: 'vault', op: 'escape', keep: 'weapon' });
+    expect(sanitizeAction({ type: 'vault', op: 'escape' })).toEqual({ type: 'vault', op: 'escape' });
+    expect(sanitizeAction({ type: 'vault', op: 'beacon', item: 2 })).toEqual({ type: 'vault', op: 'beacon', item: 2 });
+    expect(sanitizeAction({ type: 'vault', op: 'steal' })).toBeNull();
+    expect(sanitizeAction({ type: 'skeletonKey', item: 0, target: 200 })).toEqual({ type: 'skeletonKey', item: 0, target: 200 });
+    expect(sanitizeAction({ type: 'skeletonKey', item: 0, target: -1 })).toBeNull();
     expect(sanitizeAction({ type: 'blacksmith', service: 'pickaxe' })).toEqual({ type: 'blacksmith', service: 'pickaxe' });
     expect(sanitizeAction({ type: 'blacksmith', service: 'smith' })).toEqual({ type: 'blacksmith', service: 'smith' });
     expect(sanitizeAction({ type: 'mine', cell: 130, x: 1 })).toEqual({ type: 'mine', cell: 130 });

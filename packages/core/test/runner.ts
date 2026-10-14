@@ -58,7 +58,7 @@ function plan(world: World, id: string): Action {
     }
   }
   // A boss's arena: the iron key from its chest, through the arena door, and into the middle, where the boss shows.
-  const chest = floor.heaps.find((h) => h.items.some((i) => i.kind === 'key.iron' && (i.depth ?? hero.depth) === hero.depth));
+  const chest = level.arenaDoor === undefined ? undefined : floor.heaps.find((h) => h.items.some((i) => i.kind === 'key.iron' && (i.depth ?? hero.depth) === hero.depth));
   if (chest) {
     if (hero.pos === chest.pos) return { type: 'pickup' };
     const toChest = toward(world, chest.pos, id);

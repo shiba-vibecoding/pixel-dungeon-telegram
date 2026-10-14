@@ -351,7 +351,8 @@ describe('the rotberry seed (RotGardenRoom, RotHeart, RotLasher)', () => {
     heart.hp = 1;
     hero.pos = beside(world, depth, heart.pos);
     const before = world.questScores?.[1] ?? 0;
-    act(world, 'p', { type: 'attack', target: heart.id });
+    // (Its bark may take a blow: strike until it falls.)
+    for (let i = 0; i < 20 && floor.mobs.includes(heart); i++) act(world, 'p', { type: 'attack', target: heart.id });
     expect(floor.mobs.some((m) => m.kind === 'rotHeart' || m.kind === 'rotLasher')).toBe(false);
     expect(floor.heaps.some((h) => h.pos === heart.pos && h.items.some((i) => i.kind === 'seed.rotberry'))).toBe(true);
     expect((world.questScores?.[1] ?? 0) - before).toBe(2000);

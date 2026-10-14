@@ -1,7 +1,8 @@
 import {
   type Action, BACKPACK_SIZE, scrollTargets, isBroken, isIdentified, type Hero, inBag, type HeroClass, type Item, itemDef, itemPrice, type ItemRef,
-  itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, visiblyCursed, type World, CLASS_ARMOR_OF, heroById, offersSealTransfer, shielding,
+  escapeScore, itemAt, keepable, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, visiblyCursed, type World, CLASS_ARMOR_OF, heroById, offersSealTransfer, shielding,
 } from '@pd/core';
+import { lt, plain } from './levelnames';
 import { audio } from './audio';
 import { chooseQuickslot, isQuickslotted, QUICKSLOTS, quickKind, quickUse } from './quickslot';
 import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
@@ -1081,7 +1082,7 @@ export interface BackpackOptions {
   hero: Hero;
   onAction(action: Action): void;
   /** Throw or zap the item at a cell the player picks next. */
-  onAim(index: number, kind: 'throw' | 'zap' | 'special'): void;
+  onAim(index: number, kind: 'throw' | 'zap' | 'special' | 'key'): void;
   onClose(): void;
   /**
    * WndBag's selector: the backpack with only what a scroll can be read on to tap (worn
@@ -1523,6 +1524,30 @@ function showItem(options: ItemOptions): void {
  * What can be done with an item, as the design lays out actions: the first red, the rest
  * stone, dropping last. `act` closes the backpack (the dungeon answers); `stay` keeps it open.
  */
+/**
+ * EscapeCrystal.execute: out of the vault, with one of the hero's things kept (worn or in the pack) when
+ * the heist went well enough to keep anything (WndBag of what may come along); otherwise straight out.
+ */
+function escapeVault(options: ItemOptions, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const score = escapeScore(world, hero);
+  const refs: ItemRef[] = [...hero.items.map((_, i) => i), 'weapon', 'armor', 'ring0', 'ring1'];
+  const targets = score < 500 ? [] : refs.filter((ref) => { const item = itemAt(hero, ref); return item !== undefined && keepable(item, score); });
+  if (targets.length === 0) {
+    act({ type: 'vault', op: 'escape' });
+    return;
+  }
+  showBackpack({
+    ...options,
+    pick: {
+      title: plain(lt('items.quest.escapecrystal.prompt')),
+      targets,
+      onPick: (keep) => act({ type: 'vault', op: 'escape', keep }),
+      onCancel: () => act({ type: 'vault', op: 'escape' }),
+    },
+  });
+}
+
 function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLElement[]; danger: HTMLElement[] } {
   const { world, hero, item, index } = options;
   const category = itemDef(item.kind).category;
@@ -1537,7 +1562,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     options.onAction(action);
     refreshBackpack(options.world, options.hero);
   };
-  const aimWith = (kind: 'throw' | 'zap' | 'special', at: number): void => {
+  const aimWith = (kind: 'throw' | 'zap' | 'special' | 'key', at: number): void => {
     openBag = null;
     options.onClose();
     options.onAim(at, kind);
@@ -1601,6 +1626,12 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       }
     }
     if (category === 'wipeout') use(t.read, () => act({ type: 'use', item: index }));
+    // EscapeCrystal.AC_USE: out of the vault, with one thing kept as the heist allows (its item selector).
+    if (item.kind === 'quest.escapeCrystal') use(lt('items.quest.escapecrystal.ac_use'), () => escapeVault(options, act));
+    // VaultBeacon: back to the vault's entry.
+    if (item.kind === 'quest.vaultBeacon') use(t.beaconReturn, () => act({ type: 'vault', op: 'beacon', item: index }));
+    // SkeletonKey.AC_INSERT: at a door, a chest or a wall cell (SkeletonKey.targeter).
+    if (item.kind === 'artifact.skeletonKey') use(lt('items.artifacts.skeletonkey.ac_insert'), () => aimWith('key', index));
     if (category === 'vial' && item.volume) use(t.drink, () => act({ type: 'use', item: index }));
     // BrokenSeal.AC_AFFIX: onto an armour, worn or in the pack (WndBag's armour selector).
     if (category === 'seal') use(t.hero.affix, () => pickArmorForSeal(options, index, stay));

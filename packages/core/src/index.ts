@@ -37,7 +37,8 @@ export { type WandmakerLine, type WandmakerQuest, type WandmakerType, WANDMAKER_
 export {
   canTarget, isEnchantable, isItemRef, isUnidentified, isUpgradable, itemAt, type ItemRef, scrollTargets, type TargetedScroll,
 } from './scrolls';
-export { type ImpQuest, TOKENS_WANTED } from './imp';
+export { type ImpQuest, type ImpLine, impEarnedShop } from './imp';
+export { escapeMessage, escapeScore, keepable } from './vault';
 export { CLASS_ARMOR, CLASS_ARMOR_OF } from './classArmor';
 export { BAGS, hasRoom, inBag, slotsUsed } from './bags';
 export * from './world';

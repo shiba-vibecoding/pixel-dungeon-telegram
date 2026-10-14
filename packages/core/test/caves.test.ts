@@ -39,13 +39,13 @@ describe('the caves', () => {
     }
   });
 
-  it('are dark: nobody sees more than six cells there', () => {
+  it('see as far as anywhere (the caves are not dark in Shattered): nobody sees more than eight cells there', () => {
     const world = at(12);
     const hero = heroById(world, 'p')!;
     const level = levelAt(world, 12);
     const far = heroView(world, hero).some((seen, cell) => seen && Math.max(
       Math.abs((cell % WIDTH) - (hero.pos % WIDTH)), Math.abs(Math.trunc(cell / WIDTH) - Math.trunc(hero.pos / WIDTH)),
-    ) > 6);
+    ) > 8);
     expect(far).toBe(false);
     expect(castShadow(hero.pos, terrainBlocksSight(level.map)).filter(Boolean).length)
       .toBeGreaterThanOrEqual(heroView(world, hero).filter(Boolean).length);

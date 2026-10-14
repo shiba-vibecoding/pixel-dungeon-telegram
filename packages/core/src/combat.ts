@@ -15,7 +15,6 @@ import { createItem, type Item, itemDef, ItemGenerator, randomRing, rollGold, wa
 import { NEIGHBOURS4, NEIGHBOURS8 } from './level/geometry';
 import { armorProc, TERROR_TURNS, weaponProc } from './enchant';
 import { earthrootAbsorbs } from './plants';
-import { impQuestKill } from './imp';
 import { addQuestScore, ghostFoeSlain } from './quest';
 import { mineAttackProc, mineBeforeAttack, mineDamage, mineDefense, mineMobDied } from './minemobs';
 import { seedGas } from './gas';
@@ -442,7 +441,6 @@ export function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
 
   ghostFoeSlain(ctx, mob, by);
   mineMobDied(ctx, mob);
-  impQuestKill(ctx, mob);
 
   // A thief's stolen goods fall where it dies, and a mimic's treasure (Level.drop: as the challenges allow;
   // a flier slain over a chasm drops them through it).
