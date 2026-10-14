@@ -1,8 +1,9 @@
 import { DurableObject } from 'cloudflare:workers';
-import { type Action, dayOf, type HeroClass, HERO_CLASSES, isPatron, RULES_VERSION, type Wallet } from '@pd/core';
+import { type Action, dayOf, MAX_CHALLENGES, type HeroClass, HERO_CLASSES, isPatron, RULES_VERSION, type Wallet } from '@pd/core';
 import { BOARD_KINDS, type BoardKind, boardName, boardOfRun, boardsFor } from './boards';
 import { CORS, json, jsonBody } from './http';
 import type { Env } from './index';
+import { secretDailySeed } from './daily-seed';
 import { outageDays } from './outages';
 import { type DailyEntry, publicId } from './leaderboard';
 import { claimAll, claimLetter, collectMail, type Lookup, noteEntered, readAll } from './mail';
@@ -240,10 +241,12 @@ export class Player extends DurableObject<Env> {
     switch (body.op) {
       case 'start': {
         const heroClass = (HERO_CLASSES as readonly unknown[]).includes(body.hero) ? (body.hero as HeroClass) : 'warrior';
-        const challenges = Number.isInteger(body.challenges) ? (body.challenges as number) & 0xff : 0;
+        const challenges = Number.isInteger(body.challenges) ? (body.challenges as number) & MAX_CHALLENGES : 0;
+        const today = dayOf(now);
         const run = logic.start({
           slot, heroClass, challenges, name: body.player.name, seed: crypto.getRandomValues(new Uint32Array(1))[0]! >>> 1,
-          id: crypto.randomUUID(), now, today: dayOf(now), outages: slot === 'daily' ? await outageDays(this.env) : [],
+          ...(slot === 'daily' ? { dailySeed: await secretDailySeed(this.env.DAILY_SECRET, today) } : {}),
+          id: crypto.randomUUID(), now, today, outages: slot === 'daily' ? await outageDays(this.env) : [],
         });
         await this.persist(new Set([slot]), new Map());
         // The reminders hear that the streak was kept today (they keep nothing for those who did not ask).
@@ -298,7 +301,7 @@ export class Player extends DurableObject<Env> {
       const entry: DailyEntry = {
         id: await publicId(boardKey(this.env), name, player.key), owner: player.key, name: player.name,
         heroClass: summary.heroClass, depth: summary.depth, level: summary.level, gold: summary.gold, won: summary.won,
-        score: summary.score, kills: summary.kills, at: now, ...(patron ? { patron } : {}),
+        score: summary.score, turns: summary.turns, kills: summary.kills, at: now, ...(patron ? { patron } : {}),
       };
       noteEntered(this.logic!.profile, name);
       try {

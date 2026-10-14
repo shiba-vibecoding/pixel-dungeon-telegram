@@ -1,6 +1,6 @@
 import { type ChampionKind, type Hero, isAlive, type Mob, type MobKind, type SubClass } from './actors';
 import type { DownedGhoul, MobBolt } from './mobskills';
-import { DARKNESS, isChallenged, underChallenges } from './challenges';
+import { DARKNESS, isChallenged, isItemBlocked } from './challenges';
 
 import { castShadow, circleCells, LIGHT_DISTANCE, terrainBlocksSight, viewDistance } from './fov';
 import { discoverable } from './level/flags';
@@ -85,14 +85,13 @@ export interface Floor {
 }
 
 /**
- * Level.drop: what the challenges forbid on the floor comes down as gold
- * instead; an item that comes down on a chasm falls through it, to land on
- * the depth below.
+ * Level.drop: what a challenge blocks (dew under «Barren land») comes to nothing; an item that comes
+ * down on a chasm falls through it, to land on the depth below.
  */
 export function landItem(ctx: Ctx, pos: number, item: Item): void {
-  const landed = underChallenges(ctx.world, item);
-  if (hasFlag(ctx.level.map[pos]!, F.PIT)) (ctx.floor.falling ??= []).push(landed);
-  else dropItem(ctx.floor, pos, landed);
+  if (isItemBlocked(ctx.world, item)) return;
+  if (hasFlag(ctx.level.map[pos]!, F.PIT)) (ctx.floor.falling ??= []).push(item);
+  else dropItem(ctx.floor, pos, item);
 }
 
 /** Puts an item on a cell, adding to whatever lies there already (Heap.drop: as it is, unlike landItem). */

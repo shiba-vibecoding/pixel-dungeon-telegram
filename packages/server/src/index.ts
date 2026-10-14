@@ -69,6 +69,11 @@ export interface Env {
   REPORT_KEY?: string;
   /** Days the server was down (YYYY-MM-DD, separated by commas): streaks take them as played (outages.ts). */
   OUTAGE_DAYS?: string;
+  /**
+   * Secret the daily dungeon's seed is derived from (daily-seed.ts); `npx wrangler secret put DAILY_SECRET`.
+   * Without it (wrangler dev, tests) a fixed development value is used, which is public: set it in production.
+   */
+  DAILY_SECRET?: string;
   /** The moment of the Shattered release (ISO): profiles made before it are pioneers (pioneer.ts). */
   RELEASE_AT?: string;
 }

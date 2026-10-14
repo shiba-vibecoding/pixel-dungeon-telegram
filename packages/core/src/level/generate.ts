@@ -188,7 +188,7 @@ export function generateLevel(run: RunState, depth: number, span = SOLO_SPAN, _i
   }
 
   const boss = bossLayoutFor(depth);
-  if (boss) return legacyLevel(run, depth, rng, boss);
+  if (boss) return legacyLevel(run, depth, rng, boss, world);
 
   return Random.using(rng, () => Dungeon.generating({ depth, branch: 0, run, world }, () => {
     const config = regionFor(depth);
@@ -315,14 +315,15 @@ function roomType(r: GenRoom): RoomType {
 }
 
 /** The older layouts (the bosses' levels and the Amulet's hall), as Pixel Dungeon's port made them. */
-function legacyLevel(run: RunState, depth: number, rng: Rng, layout: { style: RegionStyle; build: (level: LevelBuilder) => boolean }): Level {
+function legacyLevel(run: RunState, depth: number, rng: Rng, layout: { style: RegionStyle; build: (level: LevelBuilder) => boolean }, world: World | null = null): Level {
   // A boss depth needs no pit room below a weak floor.
   Random.using(rng, () => Dungeon.generating({ depth, branch: 0, run, world: null }, () => resetPitRoom(depth)));
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const level = new LevelBuilder(rng, depth, Feeling.NONE, [], SOLO_SPAN);
     // The run's seed, for what a boss level redraws the same way every time (PrisonBossLevel's cages).
     level.layoutSeed = run.seed;
-    if (!layout.build(level)) continue;
+    // (The challenges are read while the layout is built: the caves' wires under the stronger bosses.)
+    if (!Dungeon.generating({ depth, branch: 0, run, world }, () => layout.build(level))) continue;
     layout.style.decorate(level);
     return {
       depth,

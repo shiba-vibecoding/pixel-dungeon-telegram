@@ -4,7 +4,7 @@ import { charAt, type Ctx, dropItem, isHero } from '../floor';
 import { collect } from '../inventory';
 import { type Item, itemPrice } from '../items';
 import { adjacent, LENGTH } from '../level/geometry';
-import { underChallenges } from '../challenges';
+import { isItemBlocked } from '../challenges';
 import type { World } from '../world';
 import { chargeCap, levelCap, visiblyUpgraded } from './artifact';
 import { isWorn, say, upgradeArtifact, wornOf } from './common';
@@ -65,7 +65,7 @@ export function stealFrom(ctx: Ctx, hero: Hero, item: Item, cell: number): numbe
     say(ctx, hero, 'masterthievesarmband.no_steal', 'w');
   } else if (ctx.rng.float() <= chance) {
     const stolen = loot.make();
-    if (!stolen || underChallenges(ctx.world, stolen) !== stolen) {
+    if (!stolen || isItemBlocked(ctx.world, stolen)) {
       say(ctx, hero, 'masterthievesarmband.failed_steal');
       mob.robbed ??= 'tried';
     } else {

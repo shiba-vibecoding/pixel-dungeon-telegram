@@ -104,10 +104,10 @@ export function defenseOf(char: Char, attacker?: Char): number {
 }
 
 /** The most a character's armour may take off a blow: a hero's armour's; a monster's drRoll at its highest. */
-export function charArmor(char: Char): number {
-  if (isHero(char)) return heroArmor(char);
+export function charArmor(char: Char, noArmor = false): number {
+  if (isHero(char)) return heroArmor(char, noArmor);
   const stats = mobStats(char);
-  return stats.dr + (stats.dr2 ?? 0) + (stats.drFlat ?? 0) + (char.armor ? armorDrMax(char.armor) : 0);
+  return stats.dr + (stats.dr2 ?? 0) + (stats.drFlat ?? 0) + (char.armor ? armorDrMax(char.armor, undefined, noArmor) : 0);
 }
 
 /**
@@ -119,7 +119,7 @@ function mobDrRoll(ctx: Ctx, mob: Mob): number {
   let dr = ctx.rng.normalIntRange(0, stats.dr);
   if (stats.dr2) dr += ctx.rng.normalIntRange(0, stats.dr2);
   dr += stats.drFlat ?? 0;
-  if (mob.armor) dr += ctx.rng.normalIntRange(armorDrMin(mob.armor), armorDrMax(mob.armor));
+  if (mob.armor) dr += ctx.rng.normalIntRange(armorDrMin(mob.armor, undefined, isChallenged(ctx.world, NO_ARMOR)), armorDrMax(mob.armor, undefined, isChallenged(ctx.world, NO_ARMOR)));
   return dr;
 }
 
@@ -128,7 +128,7 @@ function mobDrRoll(ctx: Ctx, mob: Mob): number {
  * earth guardian's and a sentry's their own way.
  */
 export function drRoll(ctx: Ctx, char: Char): number {
-  if (isHero(char)) return heroDrRoll(char, ctx.rng);
+  if (isHero(char)) return heroDrRoll(char, ctx.rng, isChallenged(ctx.world, NO_ARMOR));
   // A boss's own (Goo's, Tengu's, DM-300's, the King's, Yog's fists...).
   const own = bossRules(char)?.drRoll;
   if (own) return own(ctx, char);

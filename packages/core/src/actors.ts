@@ -421,10 +421,10 @@ export function heroDefenseSkill(hero: Hero): number {
  * Hero.drRoll: a roll of the armour's protection, two less a point of strength short; a roll of the weapon's
  * parrying (0 to its defence factor), the same way; and a warden's bark (Barkskin).
  */
-export function heroDrRoll(hero: Hero, rng: Rng): number {
+export function heroDrRoll(hero: Hero, rng: Rng, noArmor = false): number {
   let dr = 0;
   const str = heroStr(hero);
-  let armor = rng.normalIntRange(armorDrMin(hero.armor), armorDrMax(hero.armor));
+  let armor = rng.normalIntRange(armorDrMin(hero.armor, undefined, noArmor), armorDrMax(hero.armor, undefined, noArmor));
   if (str < armorStr(hero.armor)) armor -= 2 * (armorStr(hero.armor) - str);
   if (armor > 0) dr += armor;
   if (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon') {
@@ -550,8 +550,8 @@ export function heroSpeed(hero: Hero, footing?: Footing): number {
 }
 
 /** A hero's armour at its most (Armor.DRMax, with the weapon's parrying and the bark at theirs), for what wants one figure. */
-export const heroArmor = (hero: Hero): number =>
-  armorDrMax(hero.armor) + (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon' ? weaponDefense(hero.weapon) : 0) +
+export const heroArmor = (hero: Hero, noArmor = false): number =>
+  armorDrMax(hero.armor, undefined, noArmor) + (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon' ? weaponDefense(hero.weapon) : 0) +
   Math.max(0, Math.ceil(hero.barkskin ?? 0)) + (hero.buffs?.barkskin?.level ?? 0);
 /** Hero.stealth: armour of obfuscation adds 1 and a third a level (Obfuscation.stealthBoost); talents add to it in their stream. */
 export const heroStealth = (hero: Hero): number => (hasGlyph(hero, 'obfuscation') ? Math.fround(1 + gearLevel(hero.armor) / 3) : 0);

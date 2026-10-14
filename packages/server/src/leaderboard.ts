@@ -19,6 +19,8 @@ export interface DailyEntry extends DailyResult {
   name: string;
   score: number;
   at: number;
+  /** Turns the run took: of equal scores, fewer turns rank higher; absent in entries from before it was kept. */
+  turns?: number;
   /** The arena: monsters slain; anywhere, absent in boards from before it was kept. */
   kills?: number;
   /** A patron of the game (Pixel-Mart): a star by the name. */
@@ -58,6 +60,11 @@ export function parseResult(input: unknown): DailyResult | null {
   return { heroClass: r.heroClass, depth, level, gold, won: r.won && depth === LAST_DEPTH };
 }
 
+/** Board order: higher score first; equal scores by fewer turns (an entry without the count goes after those with one), then who finished earlier. */
+export function compareEntries(a: DailyEntry, b: DailyEntry): number {
+  return b.score - a.score || (a.turns ?? Infinity) - (b.turns ?? Infinity) || a.at - b.at;
+}
+
 export class Leaderboard {
   constructor(private readonly board: DailyEntry[] = []) {}
 
@@ -75,12 +82,15 @@ export class Leaderboard {
     const id = entry.id;
     const previous = this.board.findIndex((e) => e.id === id);
     if (previous >= 0) {
-      if (this.board[previous]!.score >= entry.score) return this.rank(id);
+      // A player's best run stands: a higher score, or the same score in fewer turns.
+      const better = entry.score > this.board[previous]!.score
+        || (entry.score === this.board[previous]!.score && (entry.turns ?? Infinity) < (this.board[previous]!.turns ?? Infinity));
+      if (!better) return this.rank(id);
       this.board.splice(previous, 1);
     }
     this.board.push(entry);
-    // Higher scores first; an earlier run wins a tie.
-    this.board.sort((a, b) => b.score - a.score || a.at - b.at);
+    // Higher scores first; equal scores by fewer turns, and only then the earlier run.
+    this.board.sort(compareEntries);
     this.board.length = Math.min(this.board.length, BOARD_SIZE);
     return this.rank(id);
   }

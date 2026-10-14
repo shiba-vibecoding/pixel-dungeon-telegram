@@ -19,7 +19,6 @@ import { questScore } from './score';
 import { isUpgradable, itemAt, type ItemRef } from './scrolls';
 import { mend } from './wear';
 import type { World } from './world';
-import { underChallenges } from './challenges';
 
 export type { BlacksmithQuest, BlacksmithType } from './mine-types';
 
@@ -373,9 +372,8 @@ export function blacksmithProblem(world: World, hero: Hero, action: BlacksmithAc
 
 /** Gives an item to the hero: into the pack, or at their feet. */
 function give(ctx: Ctx, hero: Hero, item: Item): void {
-  const given = underChallenges(ctx.world, item);
-  if (collect(hero, given)) ctx.effects.push({ type: 'pickedUp', hero: hero.id, item: given });
-  else dropItem(ctx.floor, hero.pos, given);
+  if (collect(hero, item)) ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
+  else dropItem(ctx.floor, hero.pos, item);
 }
 
 /** A service done: none takes any time (the windows are the hero's). */

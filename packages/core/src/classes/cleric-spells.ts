@@ -3,7 +3,8 @@ import { MAGIC_BOLT, PROJECTILE } from '../ballistica';
 import { dispelInvisibility } from '../artifacts';
 import { attack } from '../combat';
 import { isDemonic, isUndead } from '../enchant';
-import { charAt, type Char, type Ctx, enterCell, heroView, isHero, leaveCell } from '../floor';
+import { DARKNESS, isChallenged } from '../challenges';
+import { charAt, type Char, type Ctx, enterCell, heroSight, heroView, isHero, leaveCell } from '../floor';
 import { cursedKnown } from '../ident';
 import { isExotic, type Item, itemDef, type ItemKind } from '../items';
 import { adjacent, cellX, cellY, distance, LENGTH, NEIGHBOURS8, WIDTH } from '../level/geometry';
@@ -504,7 +505,7 @@ export const SPELLS_1_3: SpellDef[] = [
       say(ctx, hero, { k: 'flash', color: 0x80ffffff });
       say(ctx, hero, { k: 'sound', name: 'blast' });
       // Level.viewDistance < 6: a light for a hundred turns (twenty in the dark).
-      if (ctx.depth >= 22) hero.light = Math.max(hero.light, 100);
+      if (heroSight(ctx.world, ctx.depth) < 6) hero.light = Math.max(hero.light, isChallenged(ctx.world, DARKNESS) ? 20 : 100);
       const seen = heroView(ctx.world, hero);
       for (const mob of [...ctx.floor.mobs]) {
         if (mob.ally || !seen[mob.pos] || !isAlive(mob)) continue;

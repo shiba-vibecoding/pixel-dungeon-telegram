@@ -40,6 +40,7 @@
    ```powershell
    npx wrangler secret put BOT_TOKEN --config packages/server/wrangler.jsonc
    npx wrangler secret put WEBHOOK_SECRET --config packages/server/wrangler.jsonc
+   npx wrangler secret put DAILY_SECRET --config packages/server/wrangler.jsonc   # любая длинная случайная строка: из неё сервер выводит секретное зерно ежедневного подземелья
    ```
 
 4. Поддержка и возвраты. Узнайте свой Telegram ID (например, у @userinfobot) и

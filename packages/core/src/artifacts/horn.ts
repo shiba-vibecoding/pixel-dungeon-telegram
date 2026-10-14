@@ -115,10 +115,14 @@ export function hornGainsExp(ctx: Ctx, hero: Hero, item: Item, levelPortion: num
   }
 }
 
-/** Food.satisfy: a cursed horn worn takes a third of what food is worth. */
+/**
+ * Food.satisfy: «On diet» makes food a third as satisfying; a cursed horn worn takes a third of what is left
+ * (it keeps 0.67).
+ */
 export function foodValue(ctx: Ctx, hero: Hero, energy: number): number {
+  const value = isChallenged(ctx.world, NO_FOOD) ? energy / 3 : energy;
   const horn = wornOf(hero, 'artifact.horn');
-  if (!horn?.cursed || magicImmune(hero)) return energy;
+  if (!horn?.cursed || magicImmune(hero)) return Math.trunc(value);
   ctx.effects.push({ type: 'artifact', hero: hero.id, msg: 'actors.buffs.hunger.cursedhorn', tone: 'n' });
-  return Math.trunc(energy * 0.67);
+  return Math.trunc(Math.fround(value * Math.fround(0.67)));
 }

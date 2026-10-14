@@ -1,5 +1,5 @@
 import {
-  act, type Action, addHero, applyBoon, type BadgeId, type BadgeProgress, type Bones, checkBadges, countGame, createWorld, dailyRules, dailySeed, deriveSeed,
+  act, type Action, addHero, applyBoon, type BadgeId, type BadgeProgress, type Bones, checkBadges, countGame, createWorld, dailyRules, deriveSeed,
   BONES_ROLLS, emptyBadgeProgress, fingerprint, giveBones, type HeroClass, heroById, leaveBones, Rng, RULES_VERSION, type RunOutcome, runOutcome, type World,
 } from '@pd/core';
 import type { Letter } from './mail';
@@ -189,6 +189,8 @@ export interface StartOptions {
   name: string;
   /** For runs that are not the daily dungeon's. */
   seed: number;
+  /** The daily dungeon's seed, derived from the server's secret (daily-seed.ts); without it the daily takes `seed`, never a public value. */
+  dailySeed?: number;
   /** A fresh id for the run. */
   id: string;
   now: number;
@@ -244,7 +246,7 @@ export class PlayerLogic {
     if (slot === 'daily' && current && current.date === today && !current.finished) return current;
     const daily = slot === 'daily';
     const ranked = !daily || this.profile.dailyDate !== today;
-    const seed = daily ? dailySeed(today) : options.seed;
+    const seed = daily ? (options.dailySeed ?? options.seed) : options.seed;
     // The daily dungeon has its own rules (daily.ts): the day's hardship, and its boon once the hero is there.
     const rules = daily ? dailyRules(today) : null;
     const world = createWorld(seed, rules ? rules.challenge : slot === 'arena' ? 0 : options.challenges, slot === 'arena' ? 'arena' : 'dungeon');

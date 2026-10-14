@@ -62,6 +62,8 @@ export interface CampScreenOptions {
   mail?: { count: number; onOpen(): void };
   challenges: number;
   onChallenges(): void;
+  /** The newcomer's guide («Памятка»), the journal's tab, from the camp too. */
+  onGuide(): void;
 }
 
 /** An icon at the camp's edge: its label for readers, and a count (or a dot) over it. */
@@ -230,6 +232,7 @@ export function showCamp(options: CampScreenOptions): CampScreen {
   cup.style.cssText = `width:24px;height:24px;background-image:var(--spr-challenge-${on ? 'on' : 'off'})`;
   challenges.prepend(cup);
   if (on) challenges.append(el('b', { className: 'pd-ch-n', textContent: String(on) }));
+  const guide = button(t.forum.guide.tab, options.onGuide);
   const actions = el('div', { className: 'pd-actions' });
   if (save) {
     // The saved run's hero on the button (design v20, CampFace): a 44 px portrait, «Warrior · lv 7 · depth 9» left-aligned.
@@ -245,12 +248,12 @@ export function showCamp(options: CampScreenOptions): CampScreen {
       el('span', { className: 'pd-btn-label', textContent: t.continueRun }),
       el('span', { className: 'pd-btn-sub', textContent: t.continueMeta(t.camp.cls[avatar(save.heroClass)] ?? t.classes[save.heroClass], save.lvl, save.depth) }),
     );
-    actions.append(resume, el('div', { className: 'pd-row' }, button(t.newRun, options.onSolo), challenges));
+    actions.append(resume, el('div', { className: 'pd-row' }, button(t.newRun, options.onSolo), challenges), el('div', { className: 'pd-row' }, guide));
   } else {
     const fresh = button(t.solo, options.onSolo, 'primary big stacked');
     const sub = el('span', { className: 'pd-btn-sub', textContent: t.camp.cls[first] ?? '' });
     fresh.append(sub);
-    actions.append(fresh, challenges);
+    actions.append(fresh, el('div', { className: 'pd-row' }, challenges, guide));
     // The label under «New game» follows the hero on the scene.
     root.addEventListener('pd-camp-hero', () => {
       sub.textContent = t.camp.cls[avatar(camp.heroClass)] ?? '';

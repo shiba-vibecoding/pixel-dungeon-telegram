@@ -2,7 +2,7 @@ import { beckon, createMob, type Hero, isAlive, type Mob, type MobKind, mobStats
 import { dealMob, rollMob } from './spawner';
 import { freezeEternalFire } from './roomblobs';
 import { randomRespawnCell } from './ai';
-import { isChallenged } from './challenges';
+import { isChallenged, NO_ARMOR, STRONGER_BOSSES } from './challenges';
 import { charArmor, type Hazard, hurt } from './combat';
 import { burnHeaps, freezeHeaps } from './cooking';
 import {
@@ -50,8 +50,6 @@ const VERTIGO = 10;
 const SUMMON_DELAY = 2;
 /** Wraith.SPAWN_DELAY. */
 const WRAITH_DELAY = 2;
-/** Challenges.STRONGER_BOSSES. SEAM(challenges): not one of pd-ts's challenges yet, so never set. */
-const STRONGER_BOSSES = 256;
 
 /**
  * SEAM(levels): the Hazard a trap's own blow counts as, for the death message. combat.ts has no trap
@@ -157,7 +155,7 @@ function javaShuffle<T>(ctx: Ctx, list: T[]): void {
  * Char.drRoll: a roll of the armour, NormalIntRange(0, dr) as a monster's.
  * SEAM(gear): the hero's is Armor.DRRoll (between its DRMin and DRMax) once armour is Shattered's.
  */
-const drRoll = (ctx: Ctx, ch: Char): number => ctx.rng.normalIntRange(0, charArmor(ch));
+const drRoll = (ctx: Ctx, ch: Char): number => ctx.rng.normalIntRange(0, charArmor(ch, isChallenged(ctx.world, NO_ARMOR)));
 
 /** Char.damage from a trap: shown, then dealt. */
 function harm(ctx: Ctx, ch: Char, damage: number, source: Hazard = TRAP_HAZARD): void {

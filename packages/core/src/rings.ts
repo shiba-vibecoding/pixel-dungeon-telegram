@@ -2,7 +2,6 @@ import { spiritRing } from './classes/state';
 import { pointsInTalent } from './talents/data';
 import { isMagicImmune } from './buffs';
 import { type Hero, heroRings } from './actors';
-import { underChallenges } from './challenges';
 import type { Ctx } from './floor';
 import { createItem, type Item, itemDef, ItemGenerator, type ItemKind, rollGold } from './items';
 import { dpow } from './fmath';
@@ -266,10 +265,10 @@ export function wealthBonusDrops(ctx: Ctx, hero: Hero, tries: number): Item[] {
         const level = soloBonus(ring) + (enhancedRings(hero) ? 1 : 0);
         equipBonus = level > equipBonus ? level + Math.min(equipBonus, 2) : equipBonus + Math.min(level, 2);
       }
-      drops.push(underChallenges(ctx.world, equipment(rng, generator, equipBonus - 1)));
+      drops.push(equipment(rng, generator, equipBonus - 1));
       counters.toEquip += normalInt(rng, 5, 10);
     } else {
-      drops.push(underChallenges(ctx.world, consumable(rng, generator, ctx.depth, bonus - 1)));
+      drops.push(consumable(rng, generator, ctx.depth, bonus - 1));
       counters.toEquip--;
     }
     counters.tries += normalInt(rng, 0, 20);

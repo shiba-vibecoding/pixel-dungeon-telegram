@@ -12,6 +12,7 @@ import {
   START_HALLWAY, TENGU_CELL, TENGU_CELL_CENTER, TENGU_CELL_DOOR,
 } from '../level/prison-boss';
 import { bossHurt } from '../hero';
+import { isChallenged, STRONGER_BOSSES } from '../challenges';
 import { mobFov, spendMob } from '../ai';
 import { scaleMob } from '../party';
 import { S } from '../spd-sprites';
@@ -23,6 +24,7 @@ import {
 import { BOSS_SLOT, bossScore } from '../score';
 import type { BossRules } from './rules';
 import type { Timed } from './state';
+import type { World } from '../world';
 
 /*
  * Tengu (actors/mobs/Tengu.java) and his prison (PrisonBossLevel). He waits
@@ -39,6 +41,9 @@ import type { Timed } from './state';
 
 /** Tengu's numbers: half of them is each phase. */
 export const TENGU_HT = 200;
+
+/** Tengu's health (his initialiser): 200, 250 under the stronger bosses challenge. */
+export const tenguHealth = (world: World): number => (isChallenged(world, STRONGER_BOSSES) ? 250 : TENGU_HT);
 
 const BOMB_ABILITY = 0;
 const FIRE_ABILITY = 1;
@@ -82,7 +87,12 @@ export function progress(ctx: Ctx, by?: Hero): void {
       ctx.effects.push({ type: 'arena', depth: ctx.depth, sealed: true });
       // Companions still outside come in with the hero (Mob.restoreAllies).
       gatherParty(ctx, (pos) => insideRect({ left: TENGU_CELL.left + 1, top: TENGU_CELL.top + 1, right: TENGU_CELL.right - 2, bottom: TENGU_CELL.bottom - 2 }, pos), TENGU_CELL_DOOR + WIDTH);
-      const tengu = boss.tengu ?? scaleMob(world, createMob(`#${++world.nextId}`, 'tengu', pos, 'hunting', floor.now));
+      let tengu = boss.tengu;
+      if (!tengu) {
+        tengu = createMob(`#${++world.nextId}`, 'tengu', pos, 'hunting', floor.now);
+        tengu.hp = tengu.ht = tenguHealth(world);
+        scaleMob(world, tengu);
+      }
       delete boss.tengu;
       tengu.pos = pos;
       tengu.state = 'hunting';
@@ -226,6 +236,8 @@ function placeTrapsInTenguCell(ctx: Ctx, tengu: Mob, hero: Hero, fill: number): 
   const local = (pos: number): number => (pos % WIDTH) - left + (Math.trunc(pos / WIDTH) - top) * 7;
   const tenguPos = local(tengu.pos);
   const heroPos = local(hero.pos);
+  // The fill ramps up much faster under the stronger bosses: effectively 78% to 90%.
+  if (isChallenged(ctx.world, STRONGER_BOSSES)) fill = Math.fround(Math.fround(0.675) + Math.fround(fill / 4));
   const heroIn = heroPos >= 0 && heroPos < 49 && insideRect({ left, top, right: left + 6, bottom: top + 6 }, hero.pos);
   let patch: boolean[];
   let tries = 0;
@@ -239,7 +251,7 @@ function placeTrapsInTenguCell(ctx: Ctx, tengu: Mob, hero: Hero, fill: number): 
     const dist = distanceMap(tenguPos, (c) => !patch[c], Infinity, 7, 49);
     const d = heroIn ? dist[heroPos]! : 0;
     if (!heroIn || guard > 20000) break;
-    if (!(d < Math.ceil(7 * fill) || d > Math.ceil(4 + 4 * fill))) break;
+    if (!(d < Math.ceil(Math.fround(7 * fill)) || d > Math.ceil(Math.fround(4 + Math.fround(4 * fill))))) break;
   }
   const boss = bossFloor(ctx.floor);
   const traps: number[] = [];
@@ -294,7 +306,8 @@ export function tenguDartTrap(ctx: Ctx, victim: Char | null, pos: number): boole
     hurt(ctx, target, damage, 'poison');
   }
   // Poison.set(8): SEAM(alchemy): Pixel Dungeon's poison stands in for Shattered's until it is ported.
-  if (isAlive(target)) target.poison = Math.max(target.poison ?? 0, 8);
+  // TenguDartTrap.poisonAmount: 8, or 15 (50 damage in all) under the stronger bosses challenge.
+  if (isAlive(target)) target.poison = Math.max(target.poison ?? 0, isChallenged(ctx.world, STRONGER_BOSSES) ? 15 : 8);
   return true;
 }
 
@@ -362,7 +375,8 @@ function canUseAbility(ctx: Ctx, tengu: Mob): boolean {
   const target = targetAbilityUses(tengu);
   if (used >= target) return false;
   tb.abilityCooldown = (tb.abilityCooldown ?? 2) - 1;
-  if (target - used >= 4) tb.abilityCooldown = 0;
+  // (Not under the stronger bosses: they already cast quickly, and spend no time on the ones they are far behind on.)
+  if (target - used >= 4 && !isChallenged(ctx.world, STRONGER_BOSSES)) tb.abilityCooldown = 0;
   else if (target - used >= 3) {
     if (tb.abilityCooldown === -1 || tb.abilityCooldown > 1) tb.abilityCooldown = 1;
   } else if (tb.abilityCooldown === -1) tb.abilityCooldown = ctx.rng.intRange(1, 4);
@@ -383,7 +397,8 @@ function useAbility(ctx: Ctx, tengu: Mob, hero: Hero): void {
   for (let guard = 0; !done && guard < 1000; guard++) {
     if (used === 0) ability = BOMB_ABILITY;
     else if (used === 1) ability = SHOCKER_ABILITY;
-    else ability = ctx.rng.int(3);
+    // Under the stronger bosses never fire by choice (0 or 2): it comes with every other ability.
+    else ability = isChallenged(ctx.world, STRONGER_BOSSES) ? ctx.rng.int(2) * 2 : ctx.rng.int(3);
     if (ability !== (tb.lastAbility ?? -1) || ctx.rng.int(10) === 0) {
       switch (ability) {
         case SHOCKER_ABILITY:
@@ -403,9 +418,17 @@ function useAbility(ctx: Ctx, tengu: Mob, hero: Hero): void {
             done = throwFire(ctx, tengu, hero);
           }
       }
+      // Always the fire ability too, under the stronger bosses.
+      if (done && ability !== FIRE_ABILITY && isChallenged(ctx.world, STRONGER_BOSSES)) throwFire(ctx, tengu, hero);
     }
   }
-  spendMob(tengu, targetAbilityUses(tengu) - used >= 4 ? 1 : 2);
+  // Spends a turn less if seriously behind on ability uses (none at all, then, under the stronger bosses).
+  const behind = targetAbilityUses(tengu) - used >= 4;
+  if (isChallenged(ctx.world, STRONGER_BOSSES)) {
+    if (!behind) spendMob(tengu, 1);
+  } else {
+    spendMob(tengu, behind ? 1 : 2);
+  }
   tb.lastAbility = ability;
   tb.abilitiesUsed = used + 1;
 }
@@ -526,7 +549,9 @@ export const TENGU: BossRules = {
     // He cannot be hurt through more than one eighth of his health at a time.
     if (mob.hp <= (cur - 1) * bracket) mob.hp = (cur - 1) * bracket + 1;
     const next = Math.trunc(Math.max(0, mob.hp) / bracket);
-    bossHurt(ctx, mob, before - mob.hp, 1);
+    // Tengu.damage: the lock's time, by the damage (two thirds of it under the stronger bosses).
+    const lost = before - mob.hp;
+    bossHurt(ctx, mob, isChallenged(ctx.world, STRONGER_BOSSES) ? Math.fround((2 * lost) / 3) : lost, 1);
     if (mob.hp <= 0 && boss.prison === 'fightArena') {
       // The second phase is over, once the blow is done.
       mob.hp = 0;

@@ -1,5 +1,6 @@
 import { createMob, type Hero, isAlive, type Mob, type MobKind } from '../actors';
 import { hurt } from '../combat';
+import { isChallenged, STRONGER_BOSSES } from '../challenges';
 import type { Ctx, Floor } from '../floor';
 import { type Item, ItemGenerator, rollSpec } from '../items';
 import type { ItemSpec } from '../level/builder';
@@ -9,7 +10,7 @@ import type { Rng } from '../rng';
 import { bossBeaten } from '../score';
 import type { World } from '../world';
 import { BOSS_KINDS, bossFloor, isFist, nextTimed, removeTimed, schedule } from './common';
-import { GOO } from './goo';
+import { GOO, gooHealth } from './goo';
 import { bombTurn, fireTurn, prisonOccupy, shockerTurn, TENGU, tenguBlobsTurn, tenguDartTrap, tenguTimed } from './tengu';
 import { cavesOccupy, cavesPylons, DM300, energyTurn, PYLON, rocksTurn, rollPylonArcs, ventTurn } from './dm300';
 import { cityOccupy, KING, linking, shareLinkedDamage, subjectDied, summoningTurn } from './king';
@@ -190,11 +191,12 @@ export function populateBoss(world: World, level: Level, rng: Rng, nextId: () =>
       // GooBossRoom: Goo in the middle of its room, asleep.
       const pos = Math.trunc((room.left + room.right) / 2) + Math.trunc((room.top + room.bottom) / 2) * WIDTH;
       const goo = createMob(nextId(), 'goo', pos, 'sleeping', 0);
+      goo.hp = goo.ht = gooHealth(world);
       goo.boss = { pumpedUp: 0, healInc: 1 };
       return level.ratKing === undefined ? [goo] : [goo, createMob(nextId(), 'ratKing', level.ratKing, 'passive', 0)];
     }
     case 15: {
-      const pylons = cavesPylons(nextId);
+      const pylons = cavesPylons(nextId, isChallenged(world, STRONGER_BOSSES));
       rollPylonArcs(pylons, rng);
       return pylons;
     }

@@ -8,12 +8,14 @@ import { adjacent, distance, LENGTH, WIDTH } from '../level/geometry';
 import { setTerrain } from '../level/flags';
 import { T } from '../level/terrain';
 import { bossHealed, bossHurt } from '../hero';
+import { isChallenged, STRONGER_BOSSES } from '../challenges';
 import { spendMob } from '../ai';
 import {
   assignBar, barAssigned, bleed, bossMob, fight, lockFloor, N8, say, show, unlockFloor, yell,
 } from './common';
 import { BOSS_SLOT, bossScore } from '../score';
 import type { BossRules } from './rules';
+import type { World } from '../world';
 
 /*
  * Goo (actors/mobs/Goo.java), in the sewers' boss level (SewerBossLevel): it
@@ -29,6 +31,9 @@ import type { BossRules } from './rules';
 export const OOZE_TURNS = 20;
 
 const enraged = (mob: Mob): boolean => mob.hp * 2 <= mob.ht;
+
+/** Goo's health (Goo's initialiser): 100, 120 under the stronger bosses challenge. */
+export const gooHealth = (world: World): number => (isChallenged(world, STRONGER_BOSSES) ? 120 : 100);
 
 /** Ooze.set on a hero: caustic ooze that eats at them until washed off in water. */
 export function applyOoze(ctx: Ctx, char: Char): void {
@@ -165,8 +170,12 @@ export const GOO: BossRules = {
     if (isWater(ctx.level.map[mob.pos]!) && mob.hp < mob.ht) {
       const inc = boss.healInc ?? 1;
       mob.hp += inc;
-      bossHealed(ctx, inc * 1.5);
+      // The stronger bosses take only what it healed from the lock's time, not half as much again.
+      const badder = isChallenged(ctx.world, STRONGER_BOSSES);
+      bossHealed(ctx, badder ? inc : inc * 1.5);
       ctx.effects.push({ type: 'healedMob', depth: ctx.depth, mob: mob.id, amount: inc });
+      // And its healing ramps up, to 3 a turn, the longer it bathes.
+      if (badder && inc < 3) boss.healInc = inc + 1;
       if (mob.hp * 2 > mob.ht) {
         bleed(ctx, mob, false);
         mob.hp = Math.min(mob.hp, mob.ht);
@@ -197,9 +206,16 @@ export const GOO: BossRules = {
       boss.pumpedUp = 0;
       spendMob(mob, 1);
     } else {
-      boss.pumpedUp = 1;
-      spendMob(mob, 1);
-      pumpUp(ctx, mob, 1);
+      if (isChallenged(ctx.world, STRONGER_BOSSES)) {
+        // Pumped up in one go; the longer the hero's own action, the longer it takes (not past three times
+        // its own; GameMath.gate(attackDelay, ceil(enemy.cooldown()), 3 * attackDelay)).
+        boss.pumpedUp = pumped + 2;
+        spendMob(mob, Math.min(Math.max(1, Math.ceil(Math.fround(enemy.time - mob.time))), 3));
+      } else {
+        boss.pumpedUp = pumped + 1;
+        spendMob(mob, 1);
+      }
+      pumpUp(ctx, mob, boss.pumpedUp);
       say(ctx, mob, '!!!', 'status');
       say(ctx, mob, 'pumpup', 'negative');
     }
@@ -231,7 +247,7 @@ export const GOO: BossRules = {
       say(ctx, mob, 'enraged', 'status');
       yell(ctx, mob, 'gluuurp');
     }
-    bossHurt(ctx, mob, before - mob.hp, 1.5);
+    bossHurt(ctx, mob, before - mob.hp, isChallenged(ctx.world, STRONGER_BOSSES) ? 1 : 1.5);
   },
 
   die(ctx, mob) {

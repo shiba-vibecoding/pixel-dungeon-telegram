@@ -1,3 +1,4 @@
+import { isChallenged, NO_ARMOR } from './challenges';
 import { type Hero, heroDefenseSkill, heroRings, heroStealth, isAlive, type Mob, MOBS } from './actors';
 import { getStep } from './ai';
 import { attack, charArmor, hurt } from './combat';
@@ -532,7 +533,7 @@ function burst(ctx: Ctx, skeleton: Mob): void {
     const victim = charAt(ctx.world, ctx.depth, skeleton.pos + n);
     if (!victim || !isAlive(victim)) continue;
     let damage = ctx.rng.normalIntRange(6, 12);
-    damage = Math.max(0, damage - (ctx.rng.intRange(0, charArmor(victim)) + ctx.rng.intRange(0, charArmor(victim))));
+    damage = Math.max(0, damage - (ctx.rng.intRange(0, charArmor(victim, isChallenged(ctx.world, NO_ARMOR))) + ctx.rng.intRange(0, charArmor(victim, isChallenged(ctx.world, NO_ARMOR)))));
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: victim.id, damage });
     hurt(ctx, victim, damage, isHero(victim) ? 'bones' : skeleton);
   }

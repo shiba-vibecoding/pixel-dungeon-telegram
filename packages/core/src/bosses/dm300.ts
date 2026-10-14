@@ -9,6 +9,7 @@ import { F, hasFlag, T } from '../level/terrain';
 import { DIGGABLE_AREA, GATE, GATE_CELLS, MAIN_ARENA, PYLON_POSITIONS } from '../level/caves-boss';
 import { rectInside } from '../level/spainter';
 import { bossHurt } from '../hero';
+import { isChallenged, STRONGER_BOSSES } from '../challenges';
 import { mobFov, spendMob } from '../ai';
 import { getStep } from '../pathfinder';
 import { seedGas } from '../gas';
@@ -34,12 +35,24 @@ import type { Timed } from './state';
  */
 
 const MIN_COOLDOWN = 5;
-const MAX_COOLDOWN = 9;
 const NONE = 0;
 const GAS = 1;
 const ROCKS = 2;
-/** DM300.totalPylonsToActivate, without the stronger bosses' challenge. */
-const TOTAL_PYLONS = 2;
+
+/* The stronger bosses' challenge (Challenges.STRONGER_BOSSES) in DM-300's fight */
+
+/** Dungeon.isChallenged(Challenges.STRONGER_BOSSES). */
+const stronger = (ctx: Ctx): boolean => isChallenged(ctx.world, STRONGER_BOSSES);
+/** DM300.HT: 300, or 400 under the challenge (the constructor's HP = HT). */
+export const dmHealth = (stronger: boolean): number => (stronger ? 400 : 300);
+/** Pylon.HT: 50, or 80 under the challenge. */
+export const pylonHealth = (stronger: boolean): number => (stronger ? 80 : 50);
+/** DM300.MAX_COOLDOWN: 9, or 7. */
+const maxCooldown = (ctx: Ctx): number => (stronger(ctx) ? 7 : 9);
+/** DM300.totalPylonsToActivate: 2, or 3. */
+const totalPylons = (ctx: Ctx): number => (stronger(ctx) ? 3 : 2);
+/** DM300.spend of supercharging and of digging: 3 turns, or 2. */
+const chargeTime = (ctx: Ctx): number => (stronger(ctx) ? 2 : 3);
 
 /* The caves (CavesBossLevel.seal, unseal, occupyCell, activatePylon, eliminatePylon) */
 
@@ -79,7 +92,10 @@ function sealCaves(ctx: Ctx): void {
   do {
     pos = rng.element(points)!;
   } while ((!open[pos] || level.map[pos] === T.EMPTY_SP || charAt(world, ctx.depth, pos)) && ++tries < 1000);
-  const dm = scaleMob(world, createMob(`#${++world.nextId}`, 'dm300', pos, 'wandering', floor.now));
+  const dm = createMob(`#${++world.nextId}`, 'dm300', pos, 'wandering', floor.now);
+  // DM300's constructor: HP = HT = 400 under the stronger bosses' challenge.
+  dm.hp = dm.ht = dmHealth(stronger(ctx));
+  scaleMob(world, dm);
   floor.mobs.push(dm);
   fight(ctx, dm, 'start');
 }
@@ -128,12 +144,12 @@ function activate(ctx: Ctx, pylon: Mob): void {
   show(ctx, 'pylon', { mob: pylon.id, pos: pylon.pos });
 }
 
-/** CavesBossLevel.eliminatePylon: DM-300 loses its charge; the energy goes while more than two pylons are left. */
+/** CavesBossLevel.eliminatePylon: DM-300 loses its charge; the energy goes while more than two pylons (one, under the challenge) are left. */
 function eliminatePylon(ctx: Ctx): void {
   const dm = ctx.floor.mobs.find((m) => m.kind === 'dm300');
   if (dm) loseSupercharge(ctx, dm);
   const remaining = ctx.floor.mobs.filter((m) => m.kind === 'pylon').length;
-  if (remaining > 2) delete bossFloor(ctx.floor).energy;
+  if (remaining > (stronger(ctx) ? 1 : 2)) delete bossFloor(ctx.floor).energy;
 }
 
 function ensureBlobs(ctx: Ctx): void {
@@ -185,7 +201,7 @@ export function openSpace(ctx: Ctx): boolean[] {
 
 /* DM-300 */
 
-const dmCooldown = (ctx: Ctx): number => ctx.rng.normalIntRange(MIN_COOLDOWN, MAX_COOLDOWN);
+const dmCooldown = (ctx: Ctx): number => ctx.rng.normalIntRange(MIN_COOLDOWN, maxCooldown(ctx));
 
 /** Dungeon.findStep for DM-300: through open space only, round the characters in sight. */
 function findStep(ctx: Ctx, mob: Mob, to: number, fov: boolean[]): number {
@@ -209,14 +225,16 @@ function ventGas(ctx: Ctx, dm: Mob, target: Char): void {
 
 export function ventTurn(ctx: Ctx, vent: Extract<Timed, { kind: 'vent' }>): void {
   removeTimed(ctx, vent);
+  // DM300.ventGas: twice the gas under the stronger bosses' challenge.
+  const gasMulti = stronger(ctx) ? 2 : 1;
   let vented = 0;
-  seedGas(ctx, vent.collision, 'toxic', 100);
+  seedGas(ctx, vent.collision, 'toxic', 100 * gasMulti);
   for (const cell of vent.path) {
-    seedGas(ctx, cell, 'toxic', 20);
-    vented += 20;
+    seedGas(ctx, cell, 'toxic', 20 * gasMulti);
+    vented += 20 * gasMulti;
   }
-  if (vented < 250) {
-    const around = Math.ceil((250 - vented) / 8);
+  if (vented < 250 * gasMulti) {
+    const around = Math.ceil((250 * gasMulti - vented) / 8);
     for (const n of N8) seedGas(ctx, vent.from + n, 'toxic', around);
   }
 }
@@ -259,17 +277,21 @@ function dropRocks(ctx: Ctx, dm: Mob, target: Char, fov: boolean[]): void {
   schedule(ctx, { kind: 'rocks', owner: dm.id, cells, time: ctx.floor.now + delay });
 }
 
-/** DM300.FallingRockBuff: rocks fall, 6 to 12 and a stun to whoever is under them (not DM-300, not a pylon). */
+/**
+ * DM300.FallingRockBuff: rocks fall, 6 to 12 and a stun of 3 turns to whoever is under them (not DM-300,
+ * not a pylon); 10 to 20 and 5 turns under the stronger bosses' challenge.
+ */
 export function rocksTurn(ctx: Ctx, rocks: Extract<Timed, { kind: 'rocks' }>): void {
   removeTimed(ctx, rocks);
   show(ctx, 'rocks', { cells: rocks.cells });
   for (const cell of rocks.cells) {
     const ch = charAt(ctx.world, ctx.depth, cell);
     if (!ch || !isAlive(ch) || (!isHero(ch) && (ch.kind === 'dm300' || ch.kind === 'pylon'))) continue;
-    const damage = ctx.rng.normalIntRange(6, 12);
+    const harder = stronger(ctx);
+    const damage = harder ? ctx.rng.normalIntRange(10, 20) : ctx.rng.normalIntRange(6, 12);
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: ch.id, damage });
     hurt(ctx, ch, damage, 'rocks');
-    if (isAlive(ch)) ch.paralysed = Math.max(ch.paralysed ?? 0, 3);
+    if (isAlive(ch)) ch.paralysed = Math.max(ch.paralysed ?? 0, harder ? 5 : 3);
   }
 }
 
@@ -279,7 +301,7 @@ function supercharge(ctx: Ctx, dm: Mob): void {
   b.supercharged = true;
   activatePylon(ctx);
   b.pylonsActivated = (b.pylonsActivated ?? 0) + 1;
-  spendMob(dm, 3);
+  spendMob(dm, chargeTime(ctx));
   yell(ctx, dm, 'charging');
   say(ctx, dm, 'invulnerable', 'status');
   show(ctx, 'charge', { mob: dm.id });
@@ -293,7 +315,7 @@ function loseSupercharge(ctx: Ctx, dm: Mob): void {
   b.supercharged = false;
   show(ctx, 'discharge', { mob: dm.id });
   b.turnsSinceLastAbility = Math.min(b.turnsSinceLastAbility ?? 0, MIN_COOLDOWN - 3);
-  if ((b.pylonsActivated ?? 0) < TOTAL_PYLONS) {
+  if ((b.pylonsActivated ?? 0) < totalPylons(ctx)) {
     yell(ctx, dm, 'charge_lost');
   } else {
     yell(ctx, dm, 'pylons_destroyed');
@@ -377,7 +399,7 @@ function dig(ctx: Ctx, dm: Mob, target: number): boolean {
   }
   show(ctx, 'dig', { mob: dm.id, cells: dug });
   for (const h of heroesOn(ctx.world, ctx.depth)) observe(ctx.world, h);
-  spendMob(dm, 3);
+  spendMob(dm, chargeTime(ctx));
   const open = openSpace(ctx);
   best = dm.pos;
   for (const n of N8) {
@@ -476,8 +498,12 @@ export const DM300: BossRules = {
   },
   afterDamage(ctx, dm, before) {
     const b = bossMob(dm);
-    bossHurt(ctx, dm, before - dm.hp, 1);
-    const threshold = Math.trunc(dm.ht / 3) * (2 - (b.pylonsActivated ?? 0));
+    // LockedFloor.addTime: the damage taken, or half of it under the stronger bosses' challenge.
+    bossHurt(ctx, dm, before - dm.hp, stronger(ctx) ? 0.5 : 1);
+    // A third of its health at a time, a quarter (three times) under the challenge.
+    const threshold = stronger(ctx)
+      ? Math.trunc(dm.ht / 4) * (3 - (b.pylonsActivated ?? 0))
+      : Math.trunc(dm.ht / 3) * (2 - (b.pylonsActivated ?? 0));
     // (Away from its caves, in the arena of waves, there are no pylons to charge it.)
     const pylons = ctx.floor.mobs.some((m) => m.kind === 'pylon');
     if (dm.hp <= threshold && threshold > 0 && pylons) {
@@ -501,7 +527,10 @@ export const DM300: BossRules = {
 
 /* The pylons */
 
-/** Pylon.act: switched on, it arcs to two opposite neighbours, turning a step every turn. */
+/**
+ * Pylon.act: switched on, it arcs to two opposite neighbours, turning a step every turn; to three
+ * (a third of a turn of the circle apart, then two thirds) under the stronger bosses' challenge.
+ */
 function pylonAct(ctx: Ctx, pylon: Mob): void {
   const b = bossMob(pylon);
   if (!b.active) {
@@ -509,7 +538,9 @@ function pylonAct(ctx: Ctx, pylon: Mob): void {
     return;
   }
   const t = b.targetNeighbor ?? 0;
-  const cells = [pylon.pos + CIRCLE8[t]!, pylon.pos + CIRCLE8[(t + 4) % 8]!];
+  const cells = stronger(ctx)
+    ? [pylon.pos + CIRCLE8[t]!, pylon.pos + CIRCLE8[(t + 3) % 8]!, pylon.pos + CIRCLE8[(t + 5) % 8]!]
+    : [pylon.pos + CIRCLE8[t]!, pylon.pos + CIRCLE8[(t + 4) % 8]!];
   show(ctx, 'zap', { mob: pylon.id, pos: pylon.pos, cells });
   for (const cell of cells) {
     const ch = charAt(ctx.world, ctx.depth, cell);
@@ -539,7 +570,8 @@ export const PYLON: BossRules = {
     }
     // Pylon.damage: big blows count for less.
     if (damage >= 15) damage = 14 + Math.trunc((Math.sqrt(8 * (damage - 14) + 1) - 1) / 2);
-    bossHurt(ctx, pylon, damage, 1);
+    // LockedFloor.addTime(dmg), or dmg / 2 under the stronger bosses' challenge.
+    bossHurt(ctx, pylon, damage, stronger(ctx) ? 0.5 : 1);
     return damage;
   },
   die(ctx) {
@@ -549,9 +581,11 @@ export const PYLON: BossRules = {
 };
 
 /** CavesBossLevel.createMobs: the four pylons. */
-export function cavesPylons(nextId: () => string): Mob[] {
+export function cavesPylons(nextId: () => string, strongerBosses = false): Mob[] {
   return PYLON_POSITIONS.map((pos) => {
     const pylon = createMob(nextId(), 'pylon', pos, 'passive', 0);
+    // Pylon's constructor: HP = HT = 80 under the stronger bosses' challenge.
+    pylon.hp = pylon.ht = pylonHealth(strongerBosses);
     pylon.boss = { active: false, targetNeighbor: 0 };
     return pylon;
   });

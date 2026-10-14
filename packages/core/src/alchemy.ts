@@ -13,7 +13,6 @@ import { adjacent, NEIGHBOURS8 } from './level/geometry';
 import { T } from './level/terrain';
 import { trinketUpgradeCost } from './trinkets';
 import type { World } from './world';
-import { underChallenges } from './challenges';
 
 /*
  * Shattered's alchemy (AlchemyScene, Recipe and every item's own Recipe): at an alchemy pot the hero puts up to
@@ -493,7 +492,7 @@ function give(ctx: Ctx, hero: Hero, item: Item): void {
   const stack = isStackable(item.kind) ? hero.items.find((other) => stacksWith(other, item)) : undefined;
   if (stack) stack.qty += item.qty;
   else if (hasRoom(hero, item)) hero.items.push(item);
-  else ctx.floor.heaps.push({ pos: hero.pos, kind: 'heap', items: [underChallenges(ctx.world, item)], auto: true });
+  else ctx.floor.heaps.push({ pos: hero.pos, kind: 'heap', items: [item], auto: true });
 }
 
 /* Energy */

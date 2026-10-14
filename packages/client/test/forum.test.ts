@@ -161,7 +161,7 @@ describe('the forum stream’s texts', () => {
   it('state the numbers the game’s rules have: hunger, the score, the challenges', () => {
     const text = FORUM_RU.guide.entries.map((entry) => entry.text).join(' ');
     // Hunger.HUNGRY and STARVING; the rations; the score's parts and caps; the challenge multipliers up to eight.
-    for (const part of ['300', '450', '900', '× 65', '50 000', '20 000', '×1,25', '×1,55', '×5,95', '30%']) expect(text, part).toContain(part);
+    for (const part of ['300', '450', '900', '× 65', '50 000', '20 000', '×1,25', '×1,55', '×7,45', '30%']) expect(text, part).toContain(part);
   });
 
   it('use the verbs of the game: no «Да»/«Нет» left on the confirmations', () => {

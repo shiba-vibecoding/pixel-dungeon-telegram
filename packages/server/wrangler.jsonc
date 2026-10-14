@@ -43,7 +43,9 @@
     "RELEASE_AT": ""
   },
   // Secrets: npx wrangler secret put BOT_TOKEN, and WEBHOOK_SECRET for the bot's webhook (/telegram/webhook);
-  // REPORT_KEY reads the error reports back (scripts/reports.mjs).
+  // REPORT_KEY reads the error reports back (scripts/reports.mjs); DAILY_SECRET is what the daily dungeon's seed is
+  // derived from (daily-seed.ts): npx wrangler secret put DAILY_SECRET (any long random string; without it a public
+  // development value is used, so set it before the deploy and never change it mid-day).
   // Logs: what the server itself logs (console.error) is kept; Cloudflare's invocation logs are off, because
   // they record each request's URL, and a room's WebSocket URL carries the player's Telegram init data.
   "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": false } }

@@ -1,3 +1,4 @@
+import { isChallenged, NO_ARMOR } from './challenges';
 import { beckon, createMob, isAlive } from './actors';
 import { cure, freezeChar, healOverTime, isUnholy, magicDamage } from './buffs';
 import { charArmor, hurt } from './combat';
@@ -146,7 +147,7 @@ export function explode(ctx: Ctx, kind: ItemKind, pos: number): void {
       const heap = ctx.floor.heaps.find((h) => h.pos === cell);
       if (heap) explodeHeap(ctx, heap);
     }
-    for (const char of chars) hurtBy(char, scaled() - rng.intRange(0, charArmor(char)), 'bomb');
+    for (const char of chars) hurtBy(char, scaled() - rng.intRange(0, charArmor(char, isChallenged(ctx.world, NO_ARMOR))), 'bomb');
   }
   const around = blastCells(ctx, pos, range, false);
   const charsIn = (cells: readonly number[]): Char[] =>
@@ -187,7 +188,7 @@ export function explode(ctx: Ctx, kind: ItemKind, pos: number): void {
       const fov = castShadow(pos, terrainBlocksSight(level.map), range);
       for (let cell = 0; cell < LENGTH; cell++) {
         const char = fov[cell] ? charAt(ctx.world, depth, cell) : undefined;
-        if (char && isAlive(char)) hurtBy(char, scaled() - rng.intRange(0, charArmor(char)), 'shrapnel');
+        if (char && isAlive(char)) hurtBy(char, scaled() - rng.intRange(0, charArmor(char, isChallenged(ctx.world, NO_ARMOR))), 'shrapnel');
       }
       break;
     }

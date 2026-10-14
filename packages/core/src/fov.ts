@@ -74,7 +74,7 @@ class Obstacles {
  * shop's level before them (depth 21, LastShopLevel) keeps the default.
  *
  * `darkness` (the DARKNESS challenge, "Into darkness") only changes the
- * default the field starts with (3 instead of 8): the caves and the halls set
+ * default the field starts with (2 instead of 8, Level.viewDistance): the caves and the halls set
  * their own distance in their constructors, after it, so they stay as they are
  * вЂ” in the caves one even sees further than elsewhere under the challenge.
  * Only heroes see by this; monsters keep their own sight (see ai.ts).
@@ -90,7 +90,7 @@ export function viewDistance(depth: number, darkness = false): number {
 }
 
 /** Level.viewDistance under the DARKNESS challenge. */
-export const DARKNESS_VIEW_DISTANCE = 3;
+export const DARKNESS_VIEW_DISTANCE = 2;
 
 /** Light.DISTANCE: how far a torch lets one see, and the demons of the halls see anyway. */
 export const LIGHT_DISTANCE = 4;

@@ -44,7 +44,6 @@ import { furrowGrass, type World } from './world';
 import { scaleMob } from './party';
 import { ambush, cleanseSpirit, potDropped, potPickedUp, spawnBee, spawnWraith as spawnShatteredWraith } from './mobskills';
 import { mimicPrize } from './mobs';
-import { underChallenges } from './challenges';
 import { checkCandles, dustPickedUp, UNDROPPABLE } from './wandmaker';
 import {
   canTarget, defaultTarget, enchantItem, isEnchantable, isItemRef, isTargetedScroll, itemAt, type ItemRef, TARGET_PROBLEMS, type TargetedScroll,
@@ -63,7 +62,7 @@ import { readProblem, readScroll, scrollUseProblem } from './reading';
 import { activateStone, INVENTORY_STONES, stoneProblem, useStone } from './stones';
 import { castSpell, spellProblem } from './spells';
 import { explode, lightFuse, snuff } from './bombs';
-import { isChallenged, NO_FOOD } from './challenges';
+import { isChallenged, NO_FOOD, NO_HERBALISM } from './challenges';
 import { classPotionUsed, classScrollUsed, classStoneUsed } from './classes/hooks';
 import { swiftEquip } from './classes/duelist';
 
@@ -522,8 +521,7 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       return TIME_TO_EQUIP;
     }
     case 'drop': {
-      // Level.drop: what the challenges forbid on the floor turns to gold as it leaves the hand, before any well sees it.
-      const item = underChallenges(ctx.world, hero.items.splice(action.item, 1)[0]!);
+      const item = hero.items.splice(action.item, 1)[0]!;
       // Into a well of transmutation, it comes out as something else, and the well runs dry.
       const well = ctx.level.wells.findIndex((w) => w.pos === hero.pos && w.water === 'transmutation');
       const changed = well >= 0 && ctx.level.map[hero.pos] === T.WELL ? transmute(item, ctx.rng, ctx.depth) : null;
@@ -762,7 +760,8 @@ function throwItem(ctx: Ctx, hero: Hero, index: number, target: number): void {
     const end = ballistica(ctx, hero.pos, target, false, true).at(-1)!;
     ctx.effects.push({ type: 'thrown', depth: ctx.depth, from: hero.pos, to: end, item: kind });
     // Onto an alchemy pot it just lies there (seeds are brewed in the pot's window now); into a chasm, it falls.
-    if (ctx.level.map[end] === T.ALCHEMY) {
+    // Plant.Seed.onThrow: under «Barren land» too it just lies where it lands.
+    if (ctx.level.map[end] === T.ALCHEMY || isChallenged(ctx.world, NO_HERBALISM)) {
       dropItem(ctx.floor, end, createItem(kind));
     } else if (hasFlag(ctx.level.map[end]!, F.PIT)) {
       landItem(ctx, end, createItem(kind));

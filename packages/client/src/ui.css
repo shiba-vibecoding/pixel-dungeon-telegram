@@ -1169,6 +1169,7 @@ button.pd-slot:active, .pd-slot.pressed { background: var(--stone-900); }
 .pd-challenge .pd-ch-text { display: flex; flex-direction: column; min-width: 0; }
 .pd-challenge .pd-ch-name { font: var(--text-body, 400 18px/24px var(--font-ui)); color: var(--ink); overflow-wrap: break-word; }
 .pd-challenge .pd-ch-desc { font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+.pd-challenge .pd-ch-rules { font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); white-space: pre-line; margin-top: calc(4 * var(--u)); }
 .pd-challenge .pd-switch-box { position: relative; width: calc(16 * var(--u)); height: calc(9 * var(--u)); background: var(--stone-800); clip-path: var(--notch); box-shadow: inset var(--u) var(--u) 0 var(--void); }
 .pd-challenge .pd-switch-box::after { content: ""; position: absolute; top: var(--u); left: var(--u); width: calc(7 * var(--u)); height: calc(7 * var(--u)); background: var(--stone-300); clip-path: var(--notch); }
 .pd-challenge[aria-checked="true"] .pd-switch-box { background: var(--blood-lo); }

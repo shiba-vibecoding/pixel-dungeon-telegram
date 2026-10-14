@@ -13,7 +13,6 @@ import { QuestHooks } from './level/gen/quests';
 import type { RegularLevel } from './level/gen/regular-level';
 import { QUEST_SLOT, questScore } from './score';
 import type { World } from './world';
-import { underChallenges } from './challenges';
 
 /*
  * The sad ghost of the sewers (Ghost and Ghost.Quest): once a run, on depth 2, 3 or 4 (the deeper,
@@ -149,10 +148,8 @@ export function rewardFromGhost(ctx: Ctx, hero: Hero, choice: 'weapon' | 'armor'
   if (choice === 'armor' && quest.glyph) item.glyph = quest.glyph;
   identify(ctx.world, item);
   const ghost = ctx.floor.mobs.find((mob) => mob.kind === 'ghost');
-  // What the challenges forbid (armour under faith is my armor) is its worth in gold.
-  const given = underChallenges(ctx.world, item);
-  if (collect(hero, given)) ctx.effects.push({ type: 'pickedUp', hero: hero.id, item: given });
-  else dropItem(ctx.floor, ghost?.pos ?? hero.pos, given);
+  if (collect(hero, item)) ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
+  else dropItem(ctx.floor, ghost?.pos ?? hero.pos, item);
   quest.done = true;
   ctx.effects.push({ type: 'ghost', hero: hero.id, line: 'farewell', questType: quest.type });
   if (ghost) {

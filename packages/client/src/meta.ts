@@ -1,5 +1,5 @@
 import {
-  challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, journalNotes, kindKnown, type Landmark, type Mob, type MobKind,
+  CHALLENGES, challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, journalNotes, kindKnown, type Landmark, type Mob, type MobKind,
   S, type World,
 } from '@pd/core';
 import { audio } from './audio';
@@ -379,8 +379,23 @@ export function showAbout(onClose: () => void): void {
 
 /* Challenges */
 
-/** The challenges in the original's order, as bits (Challenges.MASKS). */
-export const CHALLENGE_MASKS = [1, 2, 4, 8, 16, 32, 64] as const;
+/** The challenges in Shattered's order, as bits (Challenges.MASKS): the order of the sheet's list and of `t.meta.challengeList`. */
+export const CHALLENGE_MASKS: readonly number[] = CHALLENGES.map((challenge) => challenge.mask);
+
+/**
+ * A challenge's picture in challenges.png (design v9: seven icons, in the order of the PD 1.9 list). The two Shattered
+ * added, hostile champions and badder bosses, have none yet: their cells (7 and 8) are empty until one is drawn.
+ */
+const ICON_OF_MASK: Readonly<Record<number, number>> = { 1: 0, 2: 1, 4: 2, 8: 3, 16: 4, 32: 5, 64: 6, 128: 7, 256: 8 };
+export const challengeIcon = (mask: number): number => ICON_OF_MASK[mask] ?? 0;
+
+/** A challenge's rules in a line (the daily's «hardship» note): the dashed lines of its text, else its first paragraph. */
+export function challengeBrief(mask: number): string {
+  const row = t.meta.challengeList[CHALLENGE_MASKS.indexOf(mask)];
+  if (!row) return '';
+  const rules = row[2].split(String.fromCharCode(10)).filter((line) => line.startsWith('- ')).map((line) => line.slice(2).replace(/\.$/, ''));
+  return rules.length > 0 ? `${rules.join('; ')}.` : row[1];
+}
 
 export function countChallenges(mask: number): number {
   return CHALLENGE_MASKS.filter((bit) => mask & bit).length;
@@ -394,7 +409,7 @@ export interface ChallengesOptions {
   onClose(): void;
 }
 
-/** WndChallenges: seven switches, locked until the first victory. */
+/** WndChallenges: nine switches, locked until the first victory. */
 export function showChallenges(options: ChallengesOptions): void {
   let mask = options.unlocked ? options.mask : 0;
   // How many are on, and what they do to the score (core daily.ts challengeMultiplier).
@@ -403,10 +418,10 @@ export function showChallenges(options: ChallengesOptions): void {
   const sub = el('span', { className: 'pd-note', textContent: onText(mask) });
   const list = el('div', { className: `pd-challenges${options.unlocked ? '' : ' locked'}` });
   if (!options.unlocked) list.append(el('p', { className: 'pd-lockplate' }, el('span', { textContent: t.meta.challengesLocked })));
-  t.meta.challengeList.forEach(([name, desc], i) => {
+  t.meta.challengeList.forEach(([name, desc, rules], i) => {
     const bit = CHALLENGE_MASKS[i]!;
     const icon = el('i', { className: 'pd-ch-icon' });
-    icon.style.setProperty('--c', String(i));
+    icon.style.setProperty('--c', String(challengeIcon(bit)));
     const row = el(
       'button',
       {
@@ -426,6 +441,7 @@ export function showChallenges(options: ChallengesOptions): void {
         { className: 'pd-ch-text' },
         el('span', { className: 'pd-ch-name', textContent: name }),
         el('span', { className: 'pd-ch-desc', textContent: desc }),
+        el('span', { className: 'pd-ch-rules', textContent: rules }),
       ),
       el('span', { className: 'pd-switch-box' }),
     );
@@ -530,6 +546,11 @@ export function showJournal(options: JournalOptions, tab: 'notes' | 'catalog' | 
     windowOf({ title: t.meta.journal, onClose: options.onClose, className: bestiary ? 'wide pd-best-window' : 'wide' }, tabs, ...parts),
     options.onClose,
   );
+}
+
+/** The guide alone, as the camp opens it (the journal's «Памятка» tab, without the world a run has). */
+export function showGuide(onClose: () => void): void {
+  show(windowOf({ title: t.forum.guide.tab, onClose, className: 'wide' }, el('div', { className: 'pd-scroll' }, guideView())), onClose);
 }
 
 /**

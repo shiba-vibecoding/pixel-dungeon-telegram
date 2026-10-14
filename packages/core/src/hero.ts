@@ -21,6 +21,7 @@ import { dustSpawnerTurn } from './wandmaker';
 import { classTurn } from './classes/turn';
 import { chargeClassArmor } from './classArmor';
 import type { World } from './world';
+import { isChallenged, STRONGER_BOSSES } from './challenges';
 import { artifactsAct, artifactsGainExp, chaliceRegenDelay, talismanBlinds, talismanFound } from './artifacts';
 
 /*
@@ -230,12 +231,13 @@ function lockedFloorTurn(ctx: Ctx, hero: Hero): void {
     delete hero.lockedFloor;
     return;
   }
-  hero.lockedFloor ??= LOCKED_TURNS;
+  // LockedFloor.left: 50 turns, 20 with the badder bosses.
+  hero.lockedFloor ??= isChallenged(ctx.world, STRONGER_BOSSES) ? 20 : LOCKED_TURNS;
   if (hero.lockedFloor >= 1) hero.lockedFloor--;
 }
 
 /** Regeneration.regenOn: off once a sealed floor's time has run out. */
-export const regenOn = (world: World, hero: Hero): boolean => (hero.lockedFloor ?? LOCKED_TURNS) >= 1 || !floorLocked(world, hero.depth);
+export const regenOn = (world: World, hero: Hero): boolean => (hero.lockedFloor ?? (isChallenged(world, STRONGER_BOSSES) ? 20 : LOCKED_TURNS)) >= 1 || !floorLocked(world, hero.depth);
 
 /**
  * LockedFloor.addTime, from Goo.damage, Tengu.damage, DM300.damage, Pylon.damage, DwarfKing.damage,
@@ -254,7 +256,7 @@ export function bossHurt(ctx: Ctx, boss: Mob, damage: number, factor: number): v
 /** LockedFloor.removeTime, from Goo.act: Goo healing in its water takes passive healing's time away. */
 export function bossHealed(ctx: Ctx, time: number): void {
   for (const hero of ctx.world.heroes) {
-    if (hero.depth === ctx.depth && hero.lockedFloor !== undefined) hero.lockedFloor = Math.max(0, hero.lockedFloor - time);
+    if (hero.depth === ctx.depth && hero.lockedFloor !== undefined) hero.lockedFloor -= time;
   }
 }
 

@@ -14,6 +14,7 @@ import { burst } from '../traps';
 import { seedGas } from '../gas';
 import { deriveSeed, Rng, Stream } from '../rng';
 import { scaleMob } from '../party';
+import { isChallenged, STRONGER_BOSSES } from '../challenges';
 import {
   appear, assignBar, bleed, bossFloor, bossMob, deferDamage, fight, isFist, lockFloor, N8, N9, normalFloat, say, show,
   theHero, trueDistance, unlockFloor, yell,
@@ -35,8 +36,12 @@ import type { BossRules } from './rules';
 
 /** YogDzewa.getPairedFist. */
 const PAIRS: ReadonlyArray<readonly [MobKind, MobKind]> = [['burningFist', 'soiledFist'], ['rottingFist', 'rustedFist'], ['brightFist', 'darkFist']];
+const pairedFist = (kind: MobKind): MobKind => {
+  const pair = PAIRS.find(([a, b]) => a === kind || b === kind)!;
+  return pair[0] === kind ? pair[1] : pair[0];
+};
 /** Yog's minions (YogDzewa.die kills them with it): larvae, and ripper demons for the demon spawners left alive. */
-const MINION_KINDS: ReadonlySet<MobKind> = new Set<MobKind>(['larva', 'ripper']);
+const MINION_KINDS: ReadonlySet<MobKind> = new Set<MobKind>(['larva', 'ripper', 'eye', 'scorpio']);
 /** Statistics.spawnersAlive: the demon spawners of the halls (depths 21-24) left alive. */
 export const spawnersAlive = (ctx: Ctx): number => {
   let alive = 0;
@@ -96,12 +101,25 @@ function newYog(ctx: Ctx): NonNullable<Mob['boss']> {
   const rng = Rng.seeded(deriveSeed(ctx.world.run.seed, Stream.MOBS, ctx.depth, 1));
   const fists: MobKind[] = PAIRS.map(([a, b]) => (rng.int(2) === 0 ? a : b));
   rng.shuffle(fists);
+  // YogDzewa.challengeSummons: the paired fists, placed so that two of a pair never come together.
+  const challenge: MobKind[] = rng.int(2) === 0
+    ? [pairedFist(fists[1]!), pairedFist(fists[2]!), pairedFist(fists[0]!)]
+    : [pairedFist(fists[2]!), pairedFist(fists[0]!), pairedFist(fists[1]!)];
   const regular: MobKind[] = [];
-  // YogDzewa: a ripper demon (YogRipper) for each demon spawner left alive, up to four; larvae for the rest.
   const spawners = spawnersAlive(ctx);
-  for (let i = 0; i < 4; i++) regular.push(i >= spawners ? 'larva' : 'ripper');
+  const stronger = isChallenged(ctx.world, STRONGER_BOSSES);
+  if (stronger) {
+    // STRONGER_BOSSES: six summons - ripper demons from the fifth on, larvae for the demon spawners already slain, else eyes and scorpions by turns.
+    for (let i = 0; i < 6; i++) regular.push(i >= 4 ? 'ripper' : i >= spawners ? 'larva' : i % 2 === 0 ? 'eye' : 'scorpio');
+  } else {
+    // A ripper demon (YogRipper) for each demon spawner left alive, up to four; larvae for the rest.
+    for (let i = 0; i < 4; i++) regular.push(i >= spawners ? 'larva' : 'ripper');
+  }
   ctx.rng.shuffle(regular);
-  return { phase: 0, abilityCooldown: 0, summonCooldown: 0, fistSummons: fists, regularSummons: regular, targetedCells: [] };
+  return {
+    phase: 0, abilityCooldown: 0, summonCooldown: 0, fistSummons: fists, regularSummons: regular, targetedCells: [],
+    ...(stronger ? { challengeSummons: challenge } : {}),
+  };
 }
 
 /** YogDzewa.updateVisibility: the hall's light, dimmer with every phase (a torch still lights it). */
@@ -207,7 +225,7 @@ function yogAct(ctx: Ctx, yog: Mob): void {
   if (phase === 5 && b.summonCooldown! > 3) b.summonCooldown = 3;
 }
 
-/** The death rays: 20 to 30 to everyone in their way (never Yog's own), burning what burns. */
+/** The death rays: 20 to 30 (30 to 50 under STRONGER_BOSSES) to everyone in their way (never Yog's own), burning what burns. */
 function fireBeams(ctx: Ctx, yog: Mob, targets: number[]): void {
   const affected: Char[] = [];
   const ends: number[] = [];
@@ -231,7 +249,7 @@ function fireBeams(ctx: Ctx, yog: Mob, targets: number[]): void {
     if (isFist(ch as Mob)) continue;
     if (isHero(ch)) bossScore(ctx.world, BOSS_SLOT.yog, -500);
     // Char.hit with infinite accuracy: it always hits.
-    const damage = ctx.rng.normalIntRange(20, 30);
+    const damage = isChallenged(ctx.world, STRONGER_BOSSES) ? ctx.rng.normalIntRange(30, 50) : ctx.rng.normalIntRange(20, 30);
     ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: yog.id, target: ch.id, hit: true, damage });
     hurt(ctx, ch, damage, yog);
   }
@@ -251,7 +269,7 @@ function processFistDeath(ctx: Ctx): void {
   }
 }
 
-/** YogDzewa.addFist: up out of the pit, to the cell below it (or beside that). */
+/** YogDzewa.addFist: up out of the pit, to the cell below it (or beside that; under STRONGER_BOSSES never straight below). */
 function addFist(ctx: Ctx, yog: Mob, kind: MobKind): void {
   const b = bossMob(yog);
   if ((b.abilityCooldown ?? 0) < 5) b.abilityCooldown = 5;
@@ -262,9 +280,10 @@ function addFist(ctx: Ctx, yog: Mob, kind: MobKind): void {
     return !there || (!isHero(there) && there.kind === 'sheep');
   };
   let pos = HALLS_EXIT;
-  if (sheepOrFree(target)) pos = target;
+  if (!isChallenged(ctx.world, STRONGER_BOSSES) && sheepOrFree(target)) pos = target;
   else if (sheepOrFree(target - 1)) pos = target - 1;
   else if (sheepOrFree(target + 1)) pos = target + 1;
+  else if (sheepOrFree(target)) pos = target;
   const sheep = charAt(ctx.world, ctx.depth, pos);
   if (sheep && !isHero(sheep)) {
     sheep.hp = 0;
@@ -317,11 +336,14 @@ export const YOG: BossRules = {
       show(ctx, 'dark', { mob: yog.id, value: bossFloor(ctx.floor).viewDistance });
       const kind = b.fistSummons?.shift();
       if (kind) addFist(ctx, yog, kind);
+      // STRONGER_BOSSES: a second fist, the pair of another, rises with it.
+      const second = isChallenged(ctx.world, STRONGER_BOSSES) ? b.challengeSummons?.shift() : undefined;
+      if (second) addFist(ctx, yog, second);
       if ((b.abilityCooldown ?? 0) < 5) b.abilityCooldown = 5;
       if ((b.summonCooldown ?? 0) < 5) b.summonCooldown = 5;
       fight(ctx, yog, 'phase', b.phase);
     }
-    bossHurt(ctx, yog, taken, 1 / 2);
+    bossHurt(ctx, yog, taken, isChallenged(ctx.world, STRONGER_BOSSES) ? 1 / 3 : 1 / 2);
     // YogDzewa.aggro: its minions nearby turn on whoever hurt it.
     if (typeof source !== 'string') {
       for (const m of ctx.floor.mobs) {
@@ -570,7 +592,7 @@ const FIST: BossRules = {
     }
   },
   afterDamage(ctx, fist, before) {
-    bossHurt(ctx, fist, before - fist.hp, 1 / 2);
+    bossHurt(ctx, fist, before - fist.hp, isChallenged(ctx.world, STRONGER_BOSSES) ? 1 / 4 : 1 / 2);
     if ((fist.kind === 'brightFist' || fist.kind === 'darkFist') && isAlive(fist) && before > fist.ht / 2 && fist.hp <= fist.ht / 2) {
       fist.hp = Math.trunc(fist.ht / 2);
       fistFlees(ctx, fist);

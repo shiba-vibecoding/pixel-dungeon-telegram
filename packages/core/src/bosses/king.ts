@@ -7,6 +7,7 @@ import { distance, WIDTH } from '../level/geometry';
 import { F, hasFlag, T } from '../level/terrain';
 import { BOTTOM_DOOR, IMP_SHOP, PEDESTALS, THRONE, TOP_DOOR } from '../level/city-boss';
 import { bossHurt } from '../hero';
+import { isChallenged, STRONGER_BOSSES } from '../challenges';
 import { spendMob } from '../ai';
 import { scaleMob } from '../party';
 import {
@@ -31,8 +32,15 @@ import type { Timed } from './state';
 
 /** The King's subjects (DwarfKing.getSubjects): his ghouls, monks, warlocks and golems. */
 const SUBJECT_KINDS: ReadonlySet<MobKind> = new Set<MobKind>(['ghoul', 'monk', 'warlock', 'golem', 'senior']);
+/** DwarfKing.MIN_COOLDOWN, MAX_COOLDOWN: shorter under «Badder bosses» (Challenges.STRONGER_BOSSES). */
 const MIN_COOLDOWN = 10;
 const MAX_COOLDOWN = 14;
+const MIN_COOLDOWN_STRONGER = 8;
+const MAX_COOLDOWN_STRONGER = 10;
+/** DwarfKing's health under «Badder bosses» (HP = HT = 450 instead of 300; created with the King in sealCity). */
+const STRONGER_HEALTH = 450;
+
+const stronger = (ctx: Ctx): boolean => isChallenged(ctx.world, STRONGER_BOSSES);
 const NONE = 0;
 const LINK = 1;
 const TELE = 2;
@@ -51,7 +59,9 @@ export function cityOccupy(ctx: Ctx, hero: Hero): void {
 function sealCity(ctx: Ctx, hero: Hero): void {
   if (!lockFloor(ctx)) return;
   const { world, floor, level } = ctx;
-  const king = scaleMob(world, createMob(`#${++world.nextId}`, 'king', THRONE, 'wandering', floor.now));
+  const born = createMob(`#${++world.nextId}`, 'king', THRONE, 'wandering', floor.now);
+  if (isChallenged(world, STRONGER_BOSSES)) born.ht = born.hp = STRONGER_HEALTH;
+  const king = scaleMob(world, born);
   king.target = hero.pos;
   king.boss = { phase: 1, summonsMade: 0, summonCooldown: 0, abilityCooldown: 0, lastAbility: NONE };
   floor.mobs.push(king);
@@ -135,11 +145,18 @@ export function spawnImpShop(ctx: Ctx): void {
 
 /* The King */
 
-/** DwarfKing.summonSubject(delay): a ghoul, and every fourth time a monk or a warlock. */
+/**
+ * DwarfKing.summonSubject(delay): a ghoul, and every fourth time a monk or a warlock. Under «Badder bosses» every
+ * third is a monk or a warlock, every ninth a golem.
+ */
 function summonSubject(ctx: Ctx, king: Mob, delay: number, type?: MobKind): boolean {
   const b = bossMob(king);
   const made = b.summonsMade ?? 0;
-  const kind = type ?? (made % 4 === 3 ? (ctx.rng.int(2) === 0 ? 'monk' : 'warlock') : 'ghoul');
+  const monkOrWarlock = (): MobKind => (ctx.rng.int(2) === 0 ? 'monk' : 'warlock');
+  let kind: MobKind;
+  if (type) kind = type;
+  else if (stronger(ctx)) kind = made % 3 === 2 ? (made % 9 === 8 ? 'golem' : monkOrWarlock()) : 'ghoul';
+  else kind = made % 4 === 3 ? monkOrWarlock() : 'ghoul';
   const pos = summoningPos(ctx, king);
   if (pos === -1) return false;
   schedule(ctx, { kind: 'summoning', owner: king.id, pos, summon: kind, delay, time: ctx.floor.now });
@@ -197,10 +214,10 @@ export function summoningTurn(ctx: Ctx, s: Extract<Timed, { kind: 'summoning' }>
   }
 }
 
-/** DwarfKing.KingDamager: a twelfth of the King's health off his shield. */
+/** DwarfKing.KingDamager: a twelfth of the King's health off his shield (an eighteenth under «Badder bosses»). */
 function kingDamaged(ctx: Ctx, king: Mob): void {
-  // (A twelfth, rounded up: twelve subjects always break the shield, whatever a party made of his health.)
-  const damage = Math.ceil(king.ht / 12);
+  // (Rounded up: twelve subjects (eighteen) always break the shield, whatever a party made of his health.)
+  const damage = Math.ceil(king.ht / (stronger(ctx) ? 18 : 12));
   hurtKing(ctx, king, damage, true);
 }
 
@@ -285,9 +302,10 @@ function teleportSubject(ctx: Ctx, king: Mob): boolean {
 function kingAct(ctx: Ctx, king: Mob): boolean {
   const b = bossMob(king);
   const phase = b.phase ?? 1;
-  const cd = (): number => ctx.rng.normalIntRange(MIN_COOLDOWN, MAX_COOLDOWN);
+  const hard = stronger(ctx);
+  const cd = (): number => (hard ? ctx.rng.normalIntRange(MIN_COOLDOWN_STRONGER, MAX_COOLDOWN_STRONGER) : ctx.rng.normalIntRange(MIN_COOLDOWN, MAX_COOLDOWN));
   if (phase === 1) {
-    if ((b.summonCooldown ?? 0) <= 0 && summonSubject(ctx, king, 3)) {
+    if ((b.summonCooldown ?? 0) <= 0 && summonSubject(ctx, king, hard ? 2 : 3)) {
       b.summonsMade = (b.summonsMade ?? 0) + 1;
       b.summonCooldown = (b.summonCooldown ?? 0) + cd();
     } else if ((b.summonCooldown ?? 0) > 0) {
@@ -317,6 +335,7 @@ function kingAct(ctx: Ctx, king: Mob): boolean {
     }
     return false;
   }
+  if (phase === 2 && hard) return strongerWaves(ctx, king);
   if (phase === 2) {
     const made = b.summonsMade ?? 0;
     const shield = king.shield ?? 0;
@@ -352,9 +371,56 @@ function kingAct(ctx: Ctx, king: Mob): boolean {
     return true;
   }
   if (timedOf(ctx, 'summoning').filter((s) => s.owner === king.id).length < 4) {
-    if (summonSubject(ctx, king, 3)) b.summonsMade = (b.summonsMade ?? 0) + 1;
+    if (summonSubject(ctx, king, hard ? 2 : 3)) b.summonsMade = (b.summonsMade ?? 0) + 1;
   }
   return false;
+}
+
+/**
+ * DwarfKing.act, phase 2 under «Badder bosses»: eighteen subjects in four waves, each broken by an eighteenth of
+ * his shield (Shattered's 450 of a shield of 450: the second wave once it is down to 300, the third at 150).
+ */
+function strongerWaves(ctx: Ctx, king: Mob): boolean {
+  const b = bossMob(king);
+  const made = b.summonsMade ?? 0;
+  const shield = king.shield ?? 0;
+  const part = Math.ceil(king.ht / 18);
+  const scream = (line: string): void => {
+    show(ctx, 'scream', { mob: king.id });
+    yell(ctx, king, line);
+  };
+  if (made < 6) {
+    if (made === 0) scream('wave_1');
+    summonSubject(ctx, king, 3, 'ghoul');
+    summonSubject(ctx, king, 3, 'ghoul');
+    spendMob(king, 3);
+    b.summonsMade = made + 2;
+  } else if (shield <= king.ht - 6 * part && made < 12) {
+    if (made === 6) scream('wave_2');
+    summonSubject(ctx, king, 3, 'ghoul');
+    summonSubject(ctx, king, 3, 'ghoul');
+    summonSubject(ctx, king, 3, made === 6 ? 'monk' : 'warlock');
+    b.summonsMade = made + 3;
+    spendMob(king, 3);
+  } else if (shield <= king.ht - 12 * part && made < 18) {
+    if (made === 12) {
+      scream('wave_3');
+      summonSubject(ctx, king, 3, 'warlock');
+      summonSubject(ctx, king, 3, 'monk');
+      summonSubject(ctx, king, 3, 'ghoul');
+      summonSubject(ctx, king, 3, 'ghoul');
+      b.summonsMade = made + 4;
+      spendMob(king, 3);
+    } else {
+      summonSubject(ctx, king, 3, 'golem');
+      summonSubject(ctx, king, 3, 'golem');
+      b.summonsMade = made + 2;
+      spendMob(king, 1);
+    }
+  } else {
+    spendMob(king, 1);
+  }
+  return true;
 }
 
 /** LifeLink in Char.damage: a blow on a linked character is shared out among it and those it is linked with. */
@@ -423,12 +489,14 @@ export const KING: BossRules = {
   afterDamage(ctx, king, before) {
     const b = bossMob(king);
     const taken = before - king.hp;
-    bossHurt(ctx, king, taken, 1 / 3);
+    // LockedFloor.addTime(dmg/3f), dmg/5f under «Badder bosses».
+    bossHurt(ctx, king, taken, stronger(ctx) ? 1 / 5 : 1 / 3);
     const phase = b.phase ?? 1;
     if (phase === 1) {
       b.abilityCooldown = (b.abilityCooldown ?? 0) - taken / 8;
       b.summonCooldown = (b.summonCooldown ?? 0) - taken / 8;
-      const floorHp = Math.trunc(king.ht / 6);
+      // His health floor: 50 of 300, 100 of 450 under «Badder bosses».
+      const floorHp = stronger(ctx) ? Math.trunc((king.ht * 2) / 9) : Math.trunc(king.ht / 6);
       if (king.hp <= floorHp) {
         king.hp = floorHp;
         say(ctx, king, 'invulnerable', 'status');

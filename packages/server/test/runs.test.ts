@@ -12,7 +12,7 @@ function player(): PlayerLogic {
 }
 
 function start(logic: PlayerLogic, slot: RunSlot = 'dungeon', today = TODAY, id = 'r1') {
-  return logic.start({ slot, heroClass: 'warrior', challenges: 0, name: 'Alice', seed: 7, id, now: 0, today });
+  return logic.start({ slot, heroClass: 'warrior', challenges: 0, name: 'Alice', seed: 7, id, now: 0, today, ...(slot === 'daily' ? { dailySeed: 12345 } : {}) });
 }
 
 /** A device's copy: plays `count` moves of the bot, returns them (only those taken). */
@@ -124,6 +124,8 @@ describe('checked runs', () => {
     const practice = start(logic, 'daily', TODAY, 'r3');
     expect(practice.ranked).toBe(false);
     expect(practice.world.run.seed).toBe(first.world.run.seed);
+    // The day's seed is the server's secret one, not the run's random seed.
+    expect(first.seed).toBe(12345);
     // Tomorrow's counts again, and keeps the streak going.
     expect(start(logic, 'daily', '2026-10-14', 'r4').ranked).toBe(true);
     expect(logic.profile.streak.count).toBe(2);

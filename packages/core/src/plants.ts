@@ -1,4 +1,5 @@
 import { type Hero, isAlive, MOBS } from './actors';
+import { isChallenged, NO_HERBALISM } from './challenges';
 import { buffsOf, cure, healOverTime, setBarkskin } from './buffs';
 import { startBubble } from './timebubble';
 import { isBossDepth } from './level/builder';
@@ -66,13 +67,17 @@ const DIZZY_TURNS = 10;
 const BLIND_TURNS = 10;
 const CRIPPLE_TURNS = 10;
 
-/** Level.plant: a new plant replaces whatever grew there, and bare ground turns to grass. */
+/**
+ * Level.plant: a new plant replaces whatever grew there, and bare ground turns to grass; under «Barren land»
+ * (NO_HERBALISM) the ground still turns to grass but nothing takes root.
+ */
 export function plant(ctx: Ctx, pos: number, kind: PlantKind): void {
   const { floor, level } = ctx;
   floor.plants = (floor.plants ?? []).filter((p) => p.pos !== pos);
-  floor.plants.push({ pos, kind });
   const terrain = level.map[pos];
   if (terrain === T.EMPTY || terrain === T.EMBERS || terrain === T.EMPTY_DECO || terrain === T.HIGH_GRASS) level.map[pos] = T.GRASS;
+  if (isChallenged(ctx.world, NO_HERBALISM)) return;
+  floor.plants.push({ pos, kind });
   ctx.effects.push({ type: 'planted', depth: ctx.depth, pos, kind });
 }
 

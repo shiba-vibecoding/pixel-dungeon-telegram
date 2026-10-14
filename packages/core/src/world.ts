@@ -73,7 +73,7 @@ import { BRANCH_GATES } from './branchgates';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { deriveSeed, Rng, seedRng, Stream } from './rng';
 import { createRun, type RunState } from './run';
-import { isChallenged, NO_HERBALISM, underChallenges } from './challenges';
+import { isChallenged, isItemBlocked, NO_HERBALISM } from './challenges';
 import { bossFloorCreated, bossOccupy, bossTimedTurn, nextBossTimed, oozeTurn, type Timed } from './bosses/index';
 import { chillFactor, hungerPaused, tickHero } from './buffs';
 import { burnFuses, nextFuse } from './bombs';
@@ -352,11 +352,11 @@ function makeDepth(world: World, d: number, branch: number): void {
     respawn: quietDepth(d) || (branch && !level.mine) ? -1 : TIME_TO_RESPAWN,
     heaps: level.spawn
       // Shattered's levels are made with their items (RegularLevel.createItems and the rooms'), which come
-      // to lie on the floor through Level.drop: what the challenges forbid is gold instead.
-      ? level.spawn.heaps.map((heap) => ({ ...heap, items: heap.items.map((item) => underChallenges(world, item)) }))
+      // to lie on the floor through Level.drop, which makes nothing of what the challenges block.
+      ? level.spawn.heaps.map((heap) => ({ ...heap, items: heap.items.filter((item) => !isItemBlocked(world, item)) }))
       : createItems(
         world.run, level, Rng.seeded(stream(Stream.ITEMS)), quietDepth(d), world.heroes.length,
-        (item) => underChallenges(world, item), levelTrinkets(world),
+        (item) => item, levelTrinkets(world),
       ),
   };
   // A boss level's own (the imp's wares on the King's level).
@@ -453,7 +453,7 @@ function welcome(world: World): void {
     if (!quietDepth(d)) {
       shareOfDepth(
         level, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d, JOIN_STREAM + party)), floor.perHero ?? [], party, floor.heaps,
-        (item) => underChallenges(world, item),
+        (item) => item,
       );
     }
     reinforce(world, level, floor, Rng.seeded(deriveSeed(world.run.seed, Stream.MOBS, d, JOIN_STREAM + party)), party);

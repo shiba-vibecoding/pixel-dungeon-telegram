@@ -1,4 +1,5 @@
 import { type Mob, type MobKind, MOBS } from './actors';
+import { isChallenged, STRONGER_BOSSES } from './challenges';
 import { SOLO_SPAN } from './level/geometry';
 import type { World } from './world';
 
@@ -29,6 +30,9 @@ const LOOT = 0.6;
 /** ...and this many more rooms on a depth. */
 const ROOMS = 0.25;
 
+/** The bosses' health under «Badder bosses» (Goo, Tengu, DM-300, the Dwarf King). */
+const STRONGER_HEALTH: Partial<Record<MobKind, number>> = { goo: 120, tengu: 250, dm300: 400, king: 450 };
+
 /** A monster as sturdy as the party needs it. */
 export function scaleMob(world: World, mob: Mob): Mob {
   const extra = partySize(world) - 1;
@@ -45,7 +49,8 @@ export function scaleMob(world: World, mob: Mob): Mob {
  */
 export function regrowBoss(world: World, mob: Mob): void {
   if (!BOSSES.has(mob.kind)) return;
-  const ht = Math.round(MOBS[mob.kind].ht * (1 + BOSS_HEALTH * (partySize(world) - 1)));
+  const base = isChallenged(world, STRONGER_BOSSES) ? STRONGER_HEALTH[mob.kind] ?? MOBS[mob.kind].ht : MOBS[mob.kind].ht;
+  const ht = Math.round(base * (1 + BOSS_HEALTH * (partySize(world) - 1)));
   mob.hp = Math.max(1, Math.round((mob.hp * ht) / mob.ht));
   mob.ht = ht;
 }

@@ -74,7 +74,7 @@ import { type DailyRulesView, showCamp } from './campui';
 import { showMail, unclaimed } from './mailui';
 import { coachDone, markCoachDone, type Rect, type StepId, Tutorial, veteranSkips } from './coach';
 import { mart } from './mart';
-import { eraseDevice, showChallenges, showJournal, showSettings } from './meta';
+import { challengeBrief, challengeIcon, eraseDevice, showChallenges, showGuide, showJournal, showSettings } from './meta';
 import { netlog, sendNetlog } from './netlog';
 import { watchErrors } from './diag';
 import { markSeenHere, newsDue, seenHere } from './news';
@@ -487,8 +487,11 @@ function playerId(): string {
   return id;
 }
 
-/** Same seed for everyone on the same (UTC) day. */
-const dailySeed = (): number => core.dailySeed(core.dayOf(Date.now()));
+/**
+ * Without the server the day's dungeon is only practice: its real seed is the server's secret and comes with the run it
+ * starts (a counted run, or a repeat), so a device cannot play the day's dungeon ahead of time.
+ */
+const dailySeed = (): number => core.practiceSeed(core.dayOf(Date.now()));
 
 const randomSeed = (): number => Math.floor(Math.random() * 2 ** 31);
 
@@ -857,7 +860,7 @@ function dailyRulesView(): DailyRulesView {
   const [boon, info] = t.ranked.boons[rules.boon] ?? [rules.boon, ''];
   const item = BOON_ITEMS[rules.boon] ?? 'gold';
   return {
-    hardship: { index: Math.max(0, index), name: t.meta.challengeList[index]?.[0] ?? '', info: t.meta.challengeList[index]?.[1] ?? '' },
+    hardship: { index: challengeIcon(rules.challenge), name: t.meta.challengeList[index]?.[0] ?? '', info: challengeBrief(rules.challenge) },
     boon: { sprite: itemSprite(core.createItem(item), {}), name: t.camp.boons[rules.boon] ?? boon, info },
   };
 }
@@ -921,6 +924,7 @@ function toTitle(ask = true): void {
     onSettings: () => settings(toTitle),
     mail: api ? { count: unclaimed(profile?.mail ?? []), onOpen: openMail } : undefined,
     challenges: challengesOpen() ? challenges : 0,
+    onGuide: () => showGuide(toTitle),
     onChallenges: () =>
       showChallenges({
         mask: challenges,
@@ -1450,6 +1454,25 @@ function useStairs(world: World, stairs: 'descend' | 'ascend', now: number): voi
   }
 }
 
+/**
+ * The cells next to a known trap and next to a hostile monster in sight: a tap's way keeps off them when it can
+ * (a trap's own cell and the monsters' cells are walked round already).
+ */
+function cellsBeside(world: World, me: Hero, level: Level): Set<number> {
+  const beside = new Set<number>();
+  const mark = (cell: number): void => {
+    for (const n of core.NEIGHBOURS8) if (adjacent(cell, cell + n)) beside.add(cell + n);
+  };
+  const seen = visibleCells(world, me.depth);
+  const known = exploredCells(world, me.depth);
+  for (let cell = 0; cell < level.map.length; cell++) if (known[cell] && hasFlag(level.map[cell]!, F.AVOID)) mark(cell);
+  for (const mob of world.floors[me.depth]?.mobs ?? []) {
+    if (seen[mob.pos] && !mob.ally && mob.state !== 'passive' && !swapsWithHero(mob)) mark(mob.pos);
+  }
+  beside.delete(me.pos);
+  return beside;
+}
+
 /** Cells taken by living characters on a depth, except `except`. */
 function occupiedCells(world: World, depth: number, except = -1): Set<number> {
   const cells = new Set<number>();
@@ -1919,6 +1942,11 @@ function tapCell(cell: number, quiet = false): void {
   const occupied = occupiedCells(world, me.depth);
   const flames = floating ? occupied : new Set([...occupied, ...burningCells(world, me.depth)]);
   walk.queue = findPath(level, me.pos, cell, flames, explored, floating) ?? findPath(level, me.pos, cell, occupied, explored, floating) ?? [];
+  // Where an equally short way exists, it keeps a step away from known traps and monsters in sight (forum study U7).
+  if (walk.queue.length > 1) {
+    const wide = findPath(level, me.pos, cell, new Set([...flames, ...cellsBeside(world, me, level)]), explored, floating);
+    if (wide && wide.length === walk.queue.length) walk.queue = wide;
+  }
   if (walk.queue.length === 0) {
     // No way around a known trap: walk up to it and say so; a tap on the trap itself steps onto it.
     const risky = findPath(level, me.pos, cell, occupiedCells(world, me.depth), explored, floating, true);

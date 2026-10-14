@@ -6,6 +6,8 @@ import type { RegionStyle } from './regular';
 import { SLevel, srect } from './spainter';
 import { F, hasFlag, T } from './terrain';
 import { distanceMap, patchGenerate } from '../bosses/common';
+import { STRONGER_BOSSES } from '../challenges';
+import { Dungeon } from './gen/dungeon';
 
 /*
  * Depth 15: DM-300's caves (CavesBossLevel), 33×42. The stairs stand in the
@@ -188,7 +190,8 @@ export function buildCavesBossLevel(builder: LevelBuilder): boolean {
   for (let i = 14 * w; i < level.length; i++) {
     if (level.map[i] !== T.EMPTY) continue;
     if (patch[i - 14 * w]) level.map[i] = T.WATER;
-    else if (rng.int(8) === 0) level.map[i] = T.INACTIVE_TRAP;
+    // One cell in eight is a live wire, one in four under the stronger bosses.
+    else if (rng.int(Dungeon.isChallenged(STRONGER_BOSSES) ? 4 : 8) === 0) level.map[i] = T.INACTIVE_TRAP;
   }
   const entrance = buildEntrance(level, rng);
   buildCorners(level, rng);

@@ -116,12 +116,9 @@ export const Dungeon = {
     return this.isChallenged(NO_HERBALISM);
   },
 
-  /**
-   * Challenges.isItemBlocked. Here the world's own rule applies when the level's items come to
-   * lie on its floor (underChallenges: what is forbidden turns to gold), so nothing is blocked.
-   */
-  itemBlocked(_item: Item): boolean {
-    return false;
+  /** Challenges.isItemBlocked: dew under «Barren land». */
+  itemBlocked(item: Item): boolean {
+    return item.kind === 'dew' && this.isChallenged(NO_HERBALISM);
   },
 
   /** Dungeon.posNeeded: two potions of strength each region, every two floors, the earlier half the time. */

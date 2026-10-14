@@ -1,3 +1,4 @@
+import { isChallenged, NO_ARMOR } from '../challenges';
 import { spiritChalice } from '../classes/state';
 import { type Hero, heroArmor, isAlive, isStarving } from '../actors';
 import { hurt } from '../combat';
@@ -44,7 +45,7 @@ export function chaliceProblem(hero: Hero, item: Item): string | null {
 export function prick(ctx: Ctx, hero: Hero, item: Item): number {
   let damage = ctx.rng.normalIntRange(minPrick(item), maxPrick(item));
   damage = earthrootAbsorbs(hero, damage);
-  damage -= ctx.rng.intRange(0, heroArmor(hero));
+  damage -= ctx.rng.intRange(0, heroArmor(hero, isChallenged(ctx.world, NO_ARMOR)));
   say(ctx, hero, 'chaliceofblood.onprick', 'w');
   if (damage <= 0) damage = 1;
   ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: hero.id, damage });

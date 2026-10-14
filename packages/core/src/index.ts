@@ -119,7 +119,7 @@ export { isEnemy as isHostileMob, isOpenSpace, spawningWeight } from './mobs';
 export { type MobBolt } from './mobskills';
 export { type MobLine } from './floor';
 export { hasProp, type Property, propertiesOf } from './props';
-export { CHAMPION_ENEMIES } from './challenges';
+export { CHAMPION_ENEMIES, isItemBlocked, MAX_CHALLENGES, STRONGER_BOSSES } from './challenges';
 // Shattered's talents and subclasses (talents/).
 export {
   bonusTalentPoints, CLASS_OF_TALENT, initSubclassTalents, CLASS_TALENTS, hasTalent, pointsInTalent, SUBCLASS_TALENTS, TALENT_TIERS, TALENTS, talentBook,
