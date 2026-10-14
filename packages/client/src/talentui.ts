@@ -1,6 +1,6 @@
 import {
   type Action, canUseMove, COMBO_MOVES, COMBO_REQ, type ComboMove, comboOf, type Hero, type HeroClass, itemDef, metamorphOptions, metamorphTargets, METAMORPH_OPTIONS, type MetamorphTarget, SUBCLASSES,
-  type SubClass, SUBCLASS_TALENTS, talentBook, talentPointsAvailable, talentPointsSpent, TALENTS, talentIcon, type TalentId, TIER_LEVELS, tierPoints,
+  type SubClass, SUBCLASS_TALENTS, readBook, talentPointsAvailable, talentPointsSpent, TALENTS, talentIcon, type TalentId, TIER_LEVELS, tierPoints,
   pointsInTalent, upgradeProblem, type World,
 } from '@pd/core';
 import { audio } from './audio';
@@ -135,7 +135,7 @@ function spendAtRandom(host: TalentHost): void {
   const choices: TalentId[] = [];
   for (let tier = 1; tier <= 4; tier++) {
     if (talentPointsAvailable(host.hero, tier) <= 0) continue;
-    for (const [id] of Object.entries(talentBook(host.hero).tiers[tier - 1]!)) if (upgradeProblem(host.hero, id) === null) choices.push(id as TalentId);
+    for (const [id] of Object.entries(readBook(host.hero).tiers[tier - 1]!)) if (upgradeProblem(host.hero, id) === null) choices.push(id as TalentId);
   }
   if (choices.length === 0) return;
   host.act({ type: 'talent', talent: choices[Math.floor(Math.random() * choices.length)]! });
@@ -144,7 +144,7 @@ function spendAtRandom(host: TalentHost): void {
 /** The four tiers (TalentsPane): class talents, the way's, the armour ability's; the closed ones say what opens them. */
 export function talentsPane(host: TalentHost, onPick: (id: TalentId) => void, only: ReadonlySet<number> | null = null): HTMLElement {
   const { hero } = host;
-  const book = talentBook(hero);
+  const book = readBook(hero);
   const pane = el('div', { className: 'pd-talents' });
   for (let tier = 1; tier <= 4; tier++) {
     if (only && !only.has(tier)) continue;
@@ -199,7 +199,7 @@ interface CardAction {
 export function showCard(host: TalentHost, id: TalentId, back: () => void, pick?: CardAction, points?: number, metamorphed = false): void {
   const { hero } = host;
   const def = TALENTS[id];
-  const have = points ?? talentBook(hero).tiers.map((tier) => tier[id]).find((value) => value !== undefined) ?? 0;
+  const have = points ?? readBook(hero).tiers.map((tier) => tier[id]).find((value) => value !== undefined) ?? 0;
   const { lead, levels } = talentLevels(id, def.max);
   const tier = def.tier;
   const owner = tier === 4 && hero.ability ? capitalize(abilityName(hero.ability)) : tier === 3 && hero.subclass && SUBCLASS_TALENTS[hero.subclass].includes(id) ? capitalize(subclassName(hero.subclass)) : UI.tierClass;

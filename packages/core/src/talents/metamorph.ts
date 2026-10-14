@@ -3,7 +3,7 @@ import type { Ctx } from '../floor';
 import type { World } from '../world';
 import { deriveSeed, Rng, Stream } from '../rng';
 import {
-  CLASS_TALENTS, pointsInTalent, talentBook, type TalentId,
+  CLASS_TALENTS, pointsInTalent, readBook, talentBook, type TalentId,
 } from './data';
 import { onTalentUpgraded } from './index';
 import { tbOf } from './state';
@@ -25,7 +25,7 @@ export interface MetamorphTarget {
 
 /** Talent.initClassTalents with the replacements: the hero's class talents of tiers 1 to 3 as they stand now. */
 export function metamorphTargets(hero: Hero): MetamorphTarget[] {
-  const book = talentBook(hero);
+  const book = readBook(hero);
   const targets: MetamorphTarget[] = [];
   for (let i = 0; i < 3; i++) {
     for (const original of CLASS_TALENTS[hero.heroClass][i]!) {
@@ -44,7 +44,7 @@ export const METAMORPH_OPTIONS = 8;
  * talent offers none).
  */
 export function metamorphOptions(world: World, hero: Hero, target: MetamorphTarget): TalentId[] {
-  const book = talentBook(hero);
+  const book = readBook(hero);
   const current = Object.keys(book.tiers[target.tier - 1]!);
   const rng = Rng.seeded(deriveSeed(world.run.seed, Stream.PLAY, hero.lvl, tbOf(hero).metamorphs ?? 0, target.tier, target.talent.length));
   const options: TalentId[] = [];

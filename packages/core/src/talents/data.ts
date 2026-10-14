@@ -288,6 +288,18 @@ export function talentBook(hero: Hero): TalentBook {
   return hero.talents;
 }
 
+/**
+ * A hero's talents for the eye: the same book, but made on a copy when it is not the hero's yet. The windows, the hero button's
+ * golden «+» and the tier counts look at talents all the time, and a run's state may change only by its actions: a book made
+ * on the hero while looking would part the device's copy from the server's (it checks the run against its own) and send the
+ * server's back, with «the run was restored».
+ */
+export function readBook(hero: Hero): TalentBook {
+  const own = hero.talents;
+  const copy: TalentBook | undefined = own && { tiers: own.tiers.map((tier) => ({ ...tier })), ...(own.replaced ? { replaced: { ...own.replaced } } : {}) };
+  return talentBook({ ...hero, talents: copy });
+}
+
 /** Talent.initClassTalents: the class's talents of tiers 1 to 3, as metamorphosis left them. */
 export function initClassTalents(hero: Hero): void {
   const book = hero.talents!;
@@ -329,12 +341,12 @@ export const hasTalent = (hero: Hero, id: TalentId): boolean => pointsInTalent(h
 
 /** The talents of a tier (1 to 4) a hero has, with their points, in order. */
 export function talentsOfTier(hero: Hero, tier: number): Array<[TalentId, number]> {
-  return Object.entries(talentBook(hero).tiers[tier - 1] ?? {}) as Array<[TalentId, number]>;
+  return Object.entries(readBook(hero).tiers[tier - 1] ?? {}) as Array<[TalentId, number]>;
 }
 
 /** Hero.talentPointsSpent. */
 export function talentPointsSpent(hero: Hero, tier: number): number {
-  return Object.values(talentBook(hero).tiers[tier - 1] ?? {}).reduce((sum, points) => sum + points, 0);
+  return Object.values(readBook(hero).tiers[tier - 1] ?? {}).reduce((sum, points) => sum + points, 0);
 }
 
 /**
@@ -374,7 +386,7 @@ export function talentPointsFree(hero: Hero): number {
 
 /** Why a point cannot be put in a talent, or null: it must be one the hero has, below its maximum, in a tier with a free point. */
 export function upgradeProblem(hero: Hero, id: string): string | null {
-  const book = talentBook(hero);
+  const book = readBook(hero);
   for (let i = 0; i < book.tiers.length; i++) {
     const points = book.tiers[i]![id];
     if (points === undefined) continue;
@@ -388,7 +400,7 @@ export function upgradeProblem(hero: Hero, id: string): string | null {
 
 /** The tier (1 to 4) a talent sits in for this hero, or 0. */
 export function tierOfTalent(hero: Hero, id: string): number {
-  const book = talentBook(hero);
+  const book = readBook(hero);
   for (let i = 0; i < book.tiers.length; i++) if (book.tiers[i]![id] !== undefined) return i + 1;
   return 0;
 }

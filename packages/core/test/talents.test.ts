@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, addHero, initSubclassTalents, createItem, createMob, createWorld, type Effect, eatingTime, floorAt, hasTalent, heroById, heroStr, idSpeedFactor, isAlive,
-  type Hero, type ItemKind, levelAt, type Mob, type MobKind, pointsInTalent, T, talentBook, talentPointsAvailable, talentPointsFree, type TalentId,
+  type Hero, type ItemKind, levelAt, type Mob, type MobKind, pointsInTalent, readBook, T, talentBook, talentPointsAvailable, talentPointsFree, type TalentId,
   TALENTS, WIDTH, type World, heroView, durabilityPerUse, sharpshootingDurability, canTransferGlyph, maxShield, metamorphOptions, metamorphTargets,
 } from '../src/index';
 import { pacify } from './helpers';
@@ -472,5 +472,28 @@ describe('metamorphosis', () => {
     hero.items = [createItem('scroll.metamorphosis')];
     world.known.push('scroll.transmutation');
     expect(act(world, 'p', { type: 'use', item: 0, choice: 255 }).ok).toBe(false);
+  });
+});
+
+describe('looking at talents', () => {
+  it('leaves the hero as it was: a device must not part from the server by opening a window', () => {
+    const { hero } = ground('duelist', 6);
+    const before = JSON.stringify(hero);
+    expect(hero.talents).toBeUndefined();
+    talentPointsFree(hero);
+    expect(talentPointsAvailable(hero, 1)).toBeGreaterThan(0);
+    expect(readBook(hero).tiers[0]!.strengthening_meal).toBe(0);
+    expect(metamorphTargets(hero)).toHaveLength(11);
+    expect(JSON.stringify(hero)).toBe(before);
+    expect(hero.talents).toBeUndefined();
+  });
+
+  it('keeps an existing book untouched too', () => {
+    const { hero } = ground('warrior', 6);
+    talentBook(hero);
+    const before = JSON.stringify(hero);
+    talentPointsFree(hero);
+    readBook(hero).tiers[0]!.hearty_meal = 9;
+    expect(JSON.stringify(hero)).toBe(before);
   });
 });

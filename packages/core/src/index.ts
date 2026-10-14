@@ -122,7 +122,7 @@ export { hasProp, type Property, propertiesOf } from './props';
 export { CHAMPION_ENEMIES, isItemBlocked, MAX_CHALLENGES, STRONGER_BOSSES } from './challenges';
 // Shattered's talents and subclasses (talents/).
 export {
-  bonusTalentPoints, CLASS_OF_TALENT, initSubclassTalents, CLASS_TALENTS, hasTalent, pointsInTalent, SUBCLASS_TALENTS, TALENT_TIERS, TALENTS, talentBook,
+  bonusTalentPoints, CLASS_OF_TALENT, initSubclassTalents, CLASS_TALENTS, hasTalent, pointsInTalent, readBook, SUBCLASS_TALENTS, TALENT_TIERS, TALENTS, talentBook,
   type TalentBook, type TalentDef, type TalentId, talentPointsAvailable, talentPointsFree, talentPointsSpent, talentsOfTier, tierOfTalent,
   tierPoints, TIER_LEVELS, upgradeProblem,
 } from './talents/data';
