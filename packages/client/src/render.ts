@@ -5,7 +5,7 @@ import { drawAura, drawBeams, drawCharge, drawEbony, drawFallen, drawStateIcons,
 import { HEIGHT, type Level, LENGTH, S, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
 import { CHAIN_MS, FALL_MS, type Puppet, TILE, type View } from './view';
-import { bossCard, depthCard, floatNumber, levelCard, nameplate, slainCard, waveCard } from './cards';
+import { bossCard, depthCard, floatNumber, floorTitle, levelCard, nameplate, slainCard, waveCard } from './cards';
 
 import { fx } from './fx';
 import { levelFx } from './levelfx';
@@ -16,6 +16,7 @@ import { BOLT_FRAME_MS, HEART_MS, loaded, PRISM_PHASE_MS, shImage, WAND_BOLT_ROW
 import { tintSprite, wandFx } from './wandfx';
 import { t } from './i18n';
 import { flightAngle, glowStrength } from './gearfx';
+import { drawXray, fadeWalls, type Placed, wallCellsOver, type XrayTint } from './xray';
 
 /** An item's sprite in one colour, kept once made (for ItemSprite.Glowing). */
 const tintedItems = new Map<string, HTMLCanvasElement>();
@@ -243,7 +244,8 @@ function drawLightHalo(ctx: CanvasRenderingContext2D, w: number, h: number, now:
   ctx.restore();
 }
 
-function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y: number, now: number, frozen = false): void {
+/** Draws a character; says where its sprite went, for the x-ray over the walls (undefined where it is no plain sprite). */
+function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y: number, now: number, frozen = false): Placed | undefined {
   const { sheet, anims } = puppet.sprite;
   const anim = puppet.anim === 'idle' && puppet.pumped ? 'pump' : puppet.anim;
   const frame = frameAt(anims[anim], frozen && !puppet.isHero ? 0 : now - puppet.animStart);
@@ -271,7 +273,7 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
 
   drawAura(ctx, puppet, x, y, now);
   // A hidden ebony mimic is a faint chest of its own (design v21), and shows a plain one for a blink when it is found out.
-  if (drawEbony(ctx, puppet, x, y, now)) return;
+  if (drawEbony(ctx, puppet, x, y, now)) return undefined;
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
   if (puppet.alpha !== undefined) ctx.globalAlpha = puppet.alpha;
@@ -308,6 +310,8 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   if (puppet.appearStart !== undefined && now - puppet.appearStart < (puppet.appearMs ?? 400)) {
     ctx.globalAlpha *= Math.max(0, (now - puppet.appearStart) / (puppet.appearMs ?? 400));
   }
+  const placed: Placed | undefined = puppet.alive && puppet.fallStart === undefined && !puppet.invisible && !puppet.light && !glass && !puppet.frozen
+    ? { image, sx, sy, w: sheet.w, h: sheet.h, dx, dy, flip: puppet.flip === true } : undefined;
   if (puppet.flip) {
     ctx.translate(dx + sheet.w, dy);
     ctx.scale(-1, 1);
@@ -366,6 +370,7 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.drawImage(image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
   }
   ctx.restore();
+  return placed;
 }
 
 const LUNGE_MS = 150;
@@ -422,6 +427,8 @@ export interface Scene {
   lights?: ReadonlyArray<{ x: number; y: number; radius: number; color: string; strength: number }>;
   /** The hero has fallen: how far the world has drained of colour, 0 to 1. */
   mourning?: number;
+  /** Drawn over the walls: the tap's frame, the path, the danger ring (feedback.ts). */
+  front?: (ctx: CanvasRenderingContext2D) => void;
   /** The middle of the band the HUD and toolbar leave free, in device pixels. */
   middle?: number;
   /** Where the cards (a new region, a boss) go, in device pixels: above the hero, in the band's upper part. */
@@ -475,6 +482,7 @@ export function render(
   onScreen.bottom = camera.y + canvas.height / camera.zoom;
   fx.drawDecals(ctx, now, (x, y) => explored[Math.trunc(y / TILE) * WIDTH + Math.trunc(x / TILE)] === true, onScreen);
   scene.under?.(ctx);
+  const itemsAt: Placed[] = [];
   for (const heap of scene.heaps) {
     if (!explored[heap.pos]) continue;
     const look = visible[heap.pos] ? scene.heapLook?.(heap.pos, now) : undefined;
@@ -503,6 +511,14 @@ export function render(
     const chests = sheet('chests');
     const closed = CHEST_ANIMS.get(heap.sprite);
     const first = closed ? chests?.anims[closed]?.[0] : undefined;
+    // Where the item is drawn, for the x-ray: what a wall's overhang covers of it is drawn again over the wall.
+    if (visible[heap.pos]) {
+      const dx = snap(x + TILE / 2 + (look?.dx ?? 0)) - 8;
+      const dy = snap(y + TILE - 1 - lift) - 16;
+      const energy = heap.sprite === S.ENERGY && loaded(shImage('energy-pile'));
+      const box = chests && first ? { image: chests.image, sx: first.x, sy: first.y } : { image: assets.items as CanvasImageSource, sx: (heap.sprite % 16) * 16, sy: Math.floor(heap.sprite / 16) * 16 };
+      if (!energy && !look?.hidden) itemsAt.push({ image: box.image, sx: box.sx, sy: box.sy, w: 16, h: 16, dx, dy, flip: false });
+    }
     // A heap of energy crystals glints in four frames of 200 ms (design v19: energy-pile.png).
     if (heap.sprite === S.ENERGY && loaded(shImage('energy-pile'))) ctx.drawImage(shImage('energy-pile'), (quality.reducedMotion ? 0 : Math.floor(now / 200) % 4) * 16, 0, 16, 16, -8, -16, 16, 16);
     else if (chests && first) ctx.drawImage(chests.image, first.x, first.y, 16, 16, -8, -16, 16, 16);
@@ -595,14 +611,41 @@ export function render(
       return { puppet, x: Math.round(at.x * camera.zoom) / camera.zoom, y: Math.round(at.y * camera.zoom) / camera.zoom };
     })
     .sort((a, b) => Number(a.puppet.alive) - Number(b.puppet.alive) || a.y - b.y);
+  const placed: Array<{ at: Placed; tint: XrayTint }> = [];
   for (const { puppet, x, y } of shown) {
     if (puppet.kind === 'ghostHero' && puppet.alive) drawGhostLight(ctx, x, y, now);
-    drawPuppet(ctx, puppet, x, y, now, view.timeFrozen);
+    const at = drawPuppet(ctx, puppet, x, y, now, view.timeFrozen);
+    if (at) placed.push({ at, tint: puppet.isHero && puppet.id === myId ? 'hero' : puppet.ally || puppet.isHero ? 'ally' : 'foe' });
   }
 
   // The upper layer over the characters: the tops of walls, lintels, the tops of tall grass and statues.
-  ctx.drawImage(tiles.upper, 0, 0);
+  // While my hero stands right behind a wall, the wall's cells over them fade a little (xray.ts).
+  const behind = placed.find((p) => p.tint === 'hero');
+  const faded = fadeWalls(behind ? wallCellsOver(level, behind.at) : [], now);
+  if (faded.size === 0) {
+    ctx.drawImage(tiles.upper, 0, 0);
+  } else {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, WIDTH * TILE, HEIGHT * TILE);
+    for (const cell of faded.keys()) ctx.rect((cell % WIDTH) * TILE, Math.trunc(cell / WIDTH) * TILE, TILE, TILE);
+    ctx.clip('evenodd');
+    ctx.drawImage(tiles.upper, 0, 0);
+    ctx.restore();
+    for (const [cell, alpha] of faded) {
+      const cx = (cell % WIDTH) * TILE;
+      const cy = Math.trunc(cell / WIDTH) * TILE;
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(tiles.upper, cx, cy, TILE, TILE, cx, cy, TILE, TILE);
+    }
+    ctx.globalAlpha = 1;
+  }
   scene.top?.(ctx);
+  // Whoever or whatever the walls cover is drawn again over them as a silhouette: items grey, enemies red, allies teal, my hero gold.
+  for (const at of itemsAt) if (wallCellsOver(level, at).length > 0) drawXray(ctx, at, 'item', tiles.upper, camera.zoom, camera.x, camera.y);
+  for (const { at, tint } of placed) if (wallCellsOver(level, at).length > 0) drawXray(ctx, at, tint, tiles.upper, camera.zoom, camera.x, camera.y);
+  // The tap's frame, the way ahead and the danger ring are over the walls too, never hidden by them.
+  scene.front?.(ctx);
 
   // The region's mist, drifting slowly over what can be seen (the dark of the fog covers the rest).
   const mist = sheet(`fog${levelRegion(level)}`);
@@ -853,6 +896,12 @@ export function render(
     const x = (scene.focus.x - camera.x) * camera.zoom;
     const y = (scene.focus.y - camera.y) * camera.zoom - TILE * camera.zoom * 3;
     if (!levelCard(ctx, t.levelCard(card.lvl), x, y, now - card.start, px)) view.levelCard = null;
+  }
+
+  // Arriving on a floor: its depth, quietly, a third of the way down the free band (a region's first floor has its card instead).
+  const arrival = view.floorTitle;
+  if (arrival && !view.depthCard) {
+    if (!floorTitle(ctx, arrival.text, canvas.width / 2, scene.cardY ?? middle, now - arrival.start, px)) view.floorTitle = null;
   }
 
   // A new region on the way down: «Depth 6» and the region's name beside its emblem.

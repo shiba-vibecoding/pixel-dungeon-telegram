@@ -2,6 +2,7 @@ import { type Effect, HEIGHT, type ItemKind, labelOf, type Level, type MobKind, 
 import { type BurstOptions, fx, type Piece } from './fx';
 import { type Puppet, STEP_MS, TILE, type View } from './view';
 import { audio } from './audio';
+import { quality } from './quality';
 import { levelFx } from './levelfx';
 import { wandFx } from './wandfx';
 import { duration, levelRegion } from './sprites';
@@ -217,7 +218,7 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
       // The attacker lunges into the blow.
       if (attacker && from && to) {
         const len = Math.hypot(to.x - from.x, to.y - from.y) || 1;
-        if (len < TILE * 1.6) {
+        if (len < TILE * 1.6 && !quality.reducedMotion) {
           attacker.lungeStart = now;
           attacker.lungeX = ((to.x - from.x) / len) * 4;
           attacker.lungeY = ((to.y - from.y) / len) * 4;
@@ -239,7 +240,7 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
         blows.set(effect.target, { angle, at: now });
         // The struck reels back along the blow, a few whole pixels, and springs back.
         const reach = heavy ? 3 : 2;
-        target.knockStart = now;
+        if (!quality.reducedMotion) target.knockStart = now;
         target.knockX = Math.round(Math.cos(angle) * reach);
         target.knockY = Math.round(Math.sin(angle) * reach);
         // A heavy blow cuts a white streak across them.

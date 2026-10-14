@@ -10,6 +10,7 @@
 import { F, HEIGHT, terrainFlags, WIDTH } from '@pd/core';
 import { FLOOR, type Gib, gibTurned, stepGib, type Surface, SWALLOW, WALL } from './gibs';
 import { quality } from './quality';
+import { haptic } from './telegram';
 
 const TILE = 16;
 
@@ -227,6 +228,8 @@ class Fx {
 
   /** Hit-stop: the next `ms` of real time pass at a crawl. */
   hitStop(ms: number): void {
+    // Reduced motion: time is never slowed for a blow.
+    if (quality.reducedMotion) return;
     const until = this.lastReal + ms;
     if (until > this.stopUntil) this.stopUntil = until;
   }
@@ -234,8 +237,10 @@ class Fx {
   shake(power: number, ms: number, now: number): void {
     // Reduced motion (the system setting): the view never shakes.
     if (quality.reducedMotion || quality.shake <= 0) return;
+    // A hard shake (a boss's slam, a heavy blow taken, a quake) is felt in the hand as well.
+    if (power >= 5) haptic('slam');
     // As hard as the player likes it (the settings' shake, 0 to 1; 0.6 is the old strength).
-    power *= quality.shake / 0.6;
+    power *= (quality.shake / 0.6) * (quality.light ? 0.6 : 1);
     // A stronger or longer shake takes over; a weaker one does not cut a strong one short.
     const left = Math.max(0, this.shakeUntil - now);
     if (power >= this.shakePower * (left / Math.max(1, this.shakeUntil - this.shakeStart)) || now >= this.shakeUntil) {
@@ -259,8 +264,8 @@ class Fx {
 
   burst(x: number, y: number, now: number, o: BurstOptions): void {
     // Light effects: a third of the particles, and fewer at once.
-    const room = (quality.light ? MAX_PARTICLES / 4 : MAX_PARTICLES) - this.particles.length;
-    const count = Math.min(quality.light ? Math.ceil(o.count / 3) : o.count, Math.max(0, room));
+    const room = (quality.lean ? MAX_PARTICLES / 4 : MAX_PARTICLES) - this.particles.length;
+    const count = Math.min(quality.lean ? Math.ceil(o.count / 3) : o.count, Math.max(0, room));
     for (let i = 0; i < count; i++) {
       const angle = o.angle === undefined ? Math.random() * Math.PI * 2 : o.angle + (Math.random() - 0.5) * (o.cone ?? Math.PI / 2);
       const speed = o.speed[0] + Math.random() * (o.speed[1] - o.speed[0]);
@@ -287,7 +292,7 @@ class Fx {
    * flat (squashed, as the floor is seen from above) and settling at once.
    */
   ring(x: number, y: number, now: number, colors: readonly string[], count: number): void {
-    const n = quality.light ? Math.ceil(count / 2) : count;
+    const n = quality.lean ? Math.ceil(count / 2) : count;
     const room = MAX_PARTICLES - this.particles.length;
     for (let i = 0; i < Math.min(n, room); i++) {
       const angle = (i / n) * Math.PI * 2 + Math.random() * 0.3;
@@ -301,7 +306,7 @@ class Fx {
 
   /** Chunks thrown off a body, from a point on the floor (x, y) and a height over it (z). */
   gib(x: number, y: number, z: number, now: number, o: GibOptions): void {
-    const count = Math.min(quality.light ? Math.max(2, Math.ceil(o.count / 2)) : o.count, Math.max(0, MAX_GIBS - this.gibs.length));
+    const count = Math.min(quality.lean ? Math.max(2, Math.ceil(o.count / 2)) : o.count, Math.max(0, MAX_GIBS - this.gibs.length));
     const size = o.size ?? [2, 4];
     for (let i = 0; i < count; i++) {
       // Most fly on the way the blow went; a few anywhere.
