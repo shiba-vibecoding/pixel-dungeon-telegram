@@ -1,7 +1,7 @@
 import { isAlive } from './actors';
 import { randomRespawnCell } from './ai';
 import { hurt } from './combat';
-import { type Char, charAt, type Ctx, enterCell, isHero, isPassable, leaveCell, observe } from './floor';
+import { type Char, charAt, type Ctx, enterCell, exploredCells, heroesOn, heroView, isHero, isPassable, leaveCell, observe } from './floor';
 import { isBossDepth } from './level/builder';
 import { cellX, cellY, HEIGHT, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
@@ -133,17 +133,55 @@ export function press(ctx: Ctx, char: Char): void {
 }
 
 /**
+ * ScrollOfTeleportation.teleportChar's test for «in locked levels, we must do a pathfind check»: on a boss's level (no
+ * RegularLevel) and on any floor sealed by a fight (Level.locked), a character goes only where it could walk to.
+ */
+export const walkOnlyLevel = (ctx: Ctx): boolean => isBossDepth(ctx.depth) || ctx.floor.boss?.locked === true;
+
+/**
+ * ScrollOfTeleportation.teleportInNonRegularLevel: a cell the character could walk to from where it stands (never a
+ * secret one, nor an occupied one); out of the hero's sight if there is one, and with `preferUnseen` one the party has
+ * not seen. -1 if there is none.
+ */
+export function walkableTeleportCell(ctx: Ctx, char: Char, preferUnseen = false): number {
+  const { world, level, depth, rng } = ctx;
+  const reached = new Set([char.pos]);
+  const queue = [char.pos];
+  for (let head = 0; head < queue.length; head++) {
+    const cell = queue[head]!;
+    for (const n of NEIGHBOURS8) {
+      const next = cell + n;
+      if (next < 0 || next >= LENGTH || reached.has(next) || Math.abs(cellX(next) - cellX(cell)) > 1 || !isPassable(level, next)) continue;
+      reached.add(next);
+      queue.push(next);
+    }
+  }
+  const sight = new Array<boolean>(LENGTH).fill(false);
+  for (const hero of heroesOn(world, depth)) heroView(world, hero).forEach((v, i) => { if (v) sight[i] = true; });
+  const explored = exploredCells(world, depth);
+  const unseen: number[] = [];
+  const hidden: number[] = [];
+  const visible: number[] = [];
+  for (const cell of [...reached].sort((a, b) => a - b)) {
+    if (hasFlag(level.map[cell]!, F.SECRET) || charAt(world, depth, cell)) continue;
+    if (preferUnseen && !explored[cell]) unseen.push(cell);
+    else if (sight[cell]) visible.push(cell);
+    else hidden.push(cell);
+  }
+  return rng.element(unseen.length > 0 ? unseen : hidden.length > 0 ? hidden : visible) ?? -1;
+}
+
+/**
  * ScrollOfTeleportation.teleportChar: somewhere else on the level, out of sight if it can be (RegularLevel's
- * respawn cells); on a boss's level, anywhere open (teleportInNonRegularLevel). False if there was nowhere.
+ * respawn cells); on a boss's level or a sealed floor, somewhere it can walk to (teleportInNonRegularLevel). False if
+ * there was nowhere.
  */
 export function teleportChar(ctx: Ctx, char: Char): boolean {
   const { world, level, depth, rng } = ctx;
   if (isImmovable(char)) return false;
   let pos = -1;
-  if (isBossDepth(depth)) {
-    const free: number[] = [];
-    for (let cell = 0; cell < LENGTH; cell++) if (isPassable(level, cell) && !charAt(world, depth, cell)) free.push(cell);
-    pos = rng.element(free) ?? -1;
+  if (walkOnlyLevel(ctx)) {
+    pos = walkableTeleportCell(ctx, char);
   } else {
     for (let count = 20; count > 0 && (pos === -1 || hasFlag(level.map[pos]!, F.SECRET)); count--) {
       pos = randomRespawnCell(rng, world, level, () => true);

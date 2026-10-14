@@ -1,5 +1,5 @@
 import {
-  type Action, adjacent, blockers, canEnter, F, findPath, MOBS, swapsWithHero, floorAt, hasFlag, heroById, HUNGRY, isAlive, levelAt, NEIGHBOURS8, T,
+  type Action, adjacent, blockers, canEnter, F, findPath, HALLS_EXIT, isFist, MOBS, swapsWithHero, floorAt, hasFlag, heroById, HUNGRY, isAlive, levelAt, NEIGHBOURS8, T,
   type World,
 } from '../src/index';
 
@@ -35,7 +35,10 @@ export function botAction(world: World, id: string, deepest = 4): Action {
   // (A locked chest only with its golden key: the trinket catalyst and the artifacts lie in some.)
   const golden = hero.items.some((item) => item.kind === 'key.golden' && item.depth === hero.depth);
   const takeable = (kind: string): boolean => kind !== 'forSale' && (golden || (kind !== 'lockedChest' && kind !== 'crystalChest'));
-  if (floor.heaps.some((heap) => heap.pos === hero.pos && takeable(heap.kind)) && hero.items.length < 20) {
+  // (Dew an unhurt hero cannot use stays where it lies, and taking it up again and again gets nowhere.)
+  const skin = hero.items.find((item) => item.kind === 'waterskin');
+  const dewLost = hero.hp >= hero.ht && !(skin && (skin.volume ?? 0) < 20);
+  if (floor.heaps.some((heap) => heap.pos === hero.pos && takeable(heap.kind) && !(dewLost && heap.items.every((i) => i.kind === 'dew'))) && hero.items.length < 20) {
     return { type: 'pickup' };
   }
   if (hero.pos === level.exit && hero.depth < deepest) return { type: 'descend' };
@@ -45,9 +48,17 @@ export function botAction(world: World, id: string, deepest = 4): Action {
     world.heroes.filter((h) => h !== hero && h.depth === hero.depth && isAlive(h)).map((h) => h.pos),
   );
   const toward = (target: number): Action => {
-    const path = findPath(level, hero.pos, target, companions);
+    let path = findPath(level, hero.pos, target, companions);
     if (!path || path.length === 0) return { type: 'wait' };
-    const inTheWay = floor.mobs.find((mob) => mob.pos === path[0]);
+    let inTheWay = floor.mobs.find((mob) => mob.pos === path![0]);
+    // (A passive one that does not swap, the blacksmith or the like, is gone around if there is a way round.)
+    if (inTheWay?.state === 'passive' && inTheWay.kind !== 'spawner' && !swapsWithHero(inTheWay)) {
+      const standing = new Set([...companions, ...floor.mobs.filter((mob) => mob.state === 'passive' && mob.kind !== 'spawner' && !swapsWithHero(mob)).map((mob) => mob.pos)]);
+      const round = findPath(level, hero.pos, target, standing);
+      if (!round || round.length === 0) return { type: 'wait' };
+      path = round;
+      inTheWay = floor.mobs.find((mob) => mob.pos === path![0]);
+    }
     if (swapsWithHero(inTheWay)) return { type: 'move', to: path[0]! };
     // (A demon spawner never moves, nor fights: it is struck down.)
     if (inTheWay?.state === 'passive' && inTheWay.kind !== 'spawner') return { type: 'wait' };
@@ -93,7 +104,9 @@ export function checkInvariants(world: World): void {
       const flier = MOBS[mob.kind].flying === true;
       // The Dwarf King sits on his throne (DwarfKing, CityBossLevel.throne).
       const throned = mob.kind === 'king' && level.boss?.throne === mob.pos;
-      if (!canEnter(level, mob.pos) && !throned && !(flier && hasFlag(level.map[mob.pos]!, F.PIT))) throw new Error(`${mob.id} (${mob.kind}) stands in a wall at ${mob.pos} on depth ${depth} (terrain ${level.map[mob.pos]})`);
+      // YogDzewa.addFist: with the three cells below the exit taken, a fist rises on the exit itself.
+      const risen = isFist(mob) && mob.pos === HALLS_EXIT;
+      if (!canEnter(level, mob.pos) && !throned && !risen && !(flier && hasFlag(level.map[mob.pos]!, F.PIT))) throw new Error(`${mob.id} (${mob.kind}) stands in a wall at ${mob.pos} on depth ${depth} (terrain ${level.map[mob.pos]})`);
       occupy(mob.pos, mob.id);
     }
     for (const hero of world.heroes.filter((h) => h.depth === depth && isAlive(h))) {

@@ -206,7 +206,8 @@ function respawnCell(ctx: Ctx, large: boolean): number {
 
 /** ScrollOfTeleportation.teleportChar: somewhere else on the level, out of sight; false if it stays. */
 function teleportChar(ctx: Ctx, ch: Char): boolean {
-  if (!isRegularLevel(ctx)) return teleportInNonRegularLevel(ctx, ch);
+  // (Level.locked: a floor sealed by a fight is looked at like one that is no RegularLevel.)
+  if (!isRegularLevel(ctx) || ctx.floor.boss?.locked) return teleportInNonRegularLevel(ctx, ch);
   if (hasProp(ch, IMMOVABLE)) return false;
   let count = 20;
   let pos: number;

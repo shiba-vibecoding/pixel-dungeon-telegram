@@ -21,11 +21,12 @@ export function chargeCap(hero: Hero): number {
 
 /** The charges the hero has (a Duelist's Charger exists from the moment her first weapon is in hand). */
 export function charges(hero: Hero): number {
-  return (cs(hero).charges ??= START_CHARGES);
+  // (Only a read: the checks of what an action may do look at the charges, and a refused action must change nothing.)
+  return hero.cls?.charges ?? START_CHARGES;
 }
 
 /** Charger.charges + partialCharge, as the ability checks count them. */
-export const chargeTotal = (hero: Hero): number => charges(hero) + (cs(hero).partial ?? 0);
+export const chargeTotal = (hero: Hero): number => charges(hero) + (hero.cls?.partial ?? 0);
 
 /** Charger.act, a turn's worth. */
 export function chargerTurn(ctx: Ctx, hero: Hero): void {

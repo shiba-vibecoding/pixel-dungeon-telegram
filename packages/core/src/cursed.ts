@@ -17,6 +17,7 @@ import { plant, SEED_PLANTS } from './plants';
 import { isChallenged, NO_HERBALISM } from './challenges';
 import { conjureImages } from './allies';
 import { randomRespawnCell } from './ai';
+import { walkableTeleportCell, walkOnlyLevel } from './displace';
 import { beckon } from './actors';
 import { scaleMob } from './party';
 import { pressCell, RECHARGING_TURNS, throwChar, wandProc, zapAs } from './wands';
@@ -472,7 +473,7 @@ const mobFlies = (mob: Mob): boolean => (mob.levitating ?? 0) > 0 || mobStats(mo
 export function teleportChar(ctx: Ctx, ch: Char): boolean {
   if (hasProp(ch, 'immovable')) return false;
   const fov = isHero(ch) ? heroView(ctx.world, ch) : null;
-  const to = randomRespawnCell(ctx.rng, ctx.world, ctx.level, (cell) => !fov || !fov[cell]);
+  const to = walkOnlyLevel(ctx) ? walkableTeleportCell(ctx, ch) : randomRespawnCell(ctx.rng, ctx.world, ctx.level, (cell) => !fov || !fov[cell]);
   if (to < 0 || charAt(ctx.world, ctx.depth, to)) {
     if (isHero(ch)) ctx.effects.push({ type: 'wand', hero: ch.id, note: 'noTele' });
     return false;

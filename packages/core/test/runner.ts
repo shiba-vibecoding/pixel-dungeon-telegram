@@ -13,6 +13,13 @@ import { botAction, checkInvariants, skeletonKey, unblock } from './helpers';
 
 const BOSSES = new Set(['goo', 'tengu', 'dm300', 'king', 'yog']);
 
+/** The bot's few changes to the world besides actions, as a seam: the soak logs them, so that a replay makes them too. */
+export const botCheats = {
+  burn(world: World, depth: number, cells: readonly number[]): void {
+    for (const c of cells) levelAt(world, depth).map[c] = T.EMBERS;
+  },
+};
+
 export function step(world: World, id = 'p'): Action {
   const action = plan(world, id);
   // Companions swap places when one walks into the other; two bots bound for the same cell would
@@ -43,7 +50,7 @@ function plan(world: World, id: string): Action {
   const fight = bossPlan(world, id);
   if (fight) return fight;
   // Whatever stands beside the hero, and can be hurt.
-  const awake = floor.mobs.filter((m) => adjacent(m.pos, hero.pos) && m.state !== 'passive' && !invulnerable(world, m));
+  const awake = floor.mobs.filter((m) => adjacent(m.pos, hero.pos) && m.state !== 'passive' && !invulnerable(world, m, id));
   const foe = awake[0];
   if (foe) return { type: 'attack', target: foe.id };
   // A fallen boss's skeleton key, for the locked way down.
@@ -51,7 +58,7 @@ function plan(world: World, id: string): Action {
   if (skeleton) return skeleton;
   if (hero.pos === level.exit || (level.exits?.includes(hero.pos) && level.map[hero.pos] === T.EXIT)) return { type: 'descend' };
   // A boss on the floor is hunted down: its fall opens the way on.
-  const boss = floor.mobs.find((m) => BOSSES.has(m.kind) && !invulnerable(world, m));
+  const boss = floor.mobs.find((m) => BOSSES.has(m.kind) && !invulnerable(world, m, id));
   if (boss) {
     const others = new Set(floor.mobs.filter((m) => m !== boss).map((m) => m.pos));
     const path = findPath(level, hero.pos, boss.pos, others);
@@ -104,8 +111,8 @@ function plan(world: World, id: string): Action {
 }
 
 /** Whether a monster cannot be hurt now: a boss behind its phase, a fist near Yog, a pylon not switched on. */
-function invulnerable(world: World, m: import('../src/index').Mob): boolean {
-  const floor = floorAt(world, heroById(world, 'p')?.depth ?? 1);
+function invulnerable(world: World, m: import('../src/index').Mob, id = 'p'): boolean {
+  const floor = floorAt(world, heroById(world, id)?.depth ?? 1);
   if (m.kind === 'dm300') return m.boss?.supercharged === true;
   if (m.kind === 'pylon') return !m.boss?.active;
   if (m.kind === 'king') return m.boss?.phase === 2;
@@ -162,7 +169,8 @@ function bossPlan(world: World, id: string): Action | null {
       if (fist) {
         // The soiled fist's grass shields it (SoiledFist.damage): a player burns it away, the bot just clears it.
         if (fist.kind === 'soiledFist') {
-          for (const n of [0, ...NEIGHBOURS8]) if (level.map[fist.pos + n] === T.HIGH_GRASS) level.map[fist.pos + n] = T.EMBERS;
+          const grass = [0, ...NEIGHBOURS8].map((n) => fist.pos + n).filter((c) => level.map[c] === T.HIGH_GRASS);
+          if (grass.length > 0) botCheats.burn(world, hero.depth, grass);
         }
         if (distance(fist.pos, YOG_POS) > 4) return hunt(fist);
         // Drawn away from Yog: wait for it far off.
@@ -174,7 +182,7 @@ function bossPlan(world: World, id: string): Action | null {
         const away = far === -1 ? null : toward(world, far, id);
         if (away) return away;
         // Hemmed in (Yog's rippers and larvae all round): cut a way out, never at Yog while it cannot be hurt.
-        const foe = floor.mobs.find((m) => adjacent(m.pos, hero.pos) && !invulnerable(world, m));
+        const foe = floor.mobs.find((m) => adjacent(m.pos, hero.pos) && !invulnerable(world, m, id));
         return foe ? { type: 'attack', target: foe.id } : { type: 'wait' };
       }
       const yog = floor.mobs.find((m) => m.kind === 'yog');

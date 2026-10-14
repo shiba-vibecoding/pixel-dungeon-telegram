@@ -18,6 +18,7 @@ import { identify, learn, liftCurse } from './ident';
 import {
   type Enchantment, type Glyph, type Item, itemDef, type ItemKind, ITEMS, knownIn, randomEnchantment, randomGlyph, REGULAR_OF,
 } from './items';
+import { walkableTeleportCell, walkOnlyLevel } from './displace';
 import { discoverable } from './level/flags';
 import { adjacent, cellX, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { RoomType } from './level/room';
@@ -334,6 +335,13 @@ export function appear(ctx: Ctx, char: Hero | Mob, pos: number): void {
 /** ScrollOfTeleportation.teleportChar: somewhere random on the level (Level.randomRespawnCell, never hidden). */
 export function teleportChar(ctx: Ctx, char: Hero | Mob): boolean {
   if (!('heroClass' in char) && ['yog', 'rottingFist', 'burningFist'].includes(char.kind)) return false;
+  // A boss's level, or a floor sealed by the fight: only where the character could walk to (never out of the arena).
+  if (walkOnlyLevel(ctx)) {
+    const to = walkableTeleportCell(ctx, char);
+    if (to === -1) return false;
+    appear(ctx, char, to);
+    return true;
+  }
   for (let count = 0; count < 20; count++) {
     const pos = randomRespawnCell(ctx.rng, ctx.world, ctx.level, (cell) => cell !== char.pos);
     if (pos !== -1 && !hasFlag(ctx.level.map[pos]!, F.SECRET)) {
@@ -377,6 +385,12 @@ export function teleportToLocation(ctx: Ctx, char: Hero | Mob, pos: number): boo
  */
 export function teleportPreferringUnseen(ctx: Ctx, hero: Hero): boolean {
   const { level, world } = ctx;
+  if (walkOnlyLevel(ctx)) {
+    const to = walkableTeleportCell(ctx, hero, true);
+    if (to === -1) return false;
+    appear(ctx, hero, to);
+    return true;
+  }
   const explored = exploredCells(world, hero.depth);
   const candidates: number[] = [];
   const locked: ReadonlySet<number> = new Set([T.LOCKED_DOOR, T.BARRICADE]);

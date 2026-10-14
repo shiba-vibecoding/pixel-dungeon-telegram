@@ -373,7 +373,9 @@ const turnsIn = (now: number, time: number): number => Math.floor(now) - Math.fl
 
 /** A hero's buffs, as `time` passes (it has been added to hero.time already). */
 export function tickHero(ctx: Ctx, hero: Hero, time: number): void {
-  const b = hero.buffs;
+  // (A hero with no buffs has nothing to tick, unless they carry a chaotic censer: that works from the pack. Whether the
+  // `buffs` object exists yet must not matter: a refused action, a look at the hero, may have made it on one copy of a run.)
+  const b = hero.buffs ?? (trinketLevel(hero, 'trinket.chaoticCenser') >= 0 ? buffsOf(hero) : undefined);
   if (!b) return;
   for (const key of ['haste', 'stamina', 'magicalSight', 'magicImmune', 'foresight', 'artifactRecharge', 'frostImbue',
     'featherFall', 'cleanse'] as const) {

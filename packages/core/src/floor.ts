@@ -535,12 +535,13 @@ export function charAt(world: World, depth: number, cell: number): Char | undefi
 }
 
 /** Who a hero swaps places with: the quest givers and harmless wanderers, never a shopkeeper nor the troll blacksmith (IMMOVABLE). */
-const SWAPPERS: ReadonlySet<string> = new Set(['ghost', 'sheep', 'wandmaker', 'imp', 'ratKing']);
+const SWAPPERS: ReadonlySet<string> = new Set(['ghost', 'sheep', 'wandmaker', 'imp', 'ratKing', 'mirror']);
 
 /**
  * Harmless folk a hero swaps places with rather than being stopped by (as in
- * later versions of the game): the sad ghost, magic sheep and the quest
- * givers, so that none of them can wall a hero into a corridor. Talking to
+ * later versions of the game): the sad ghost, magic sheep, the quest
+ * givers and the hero's own mirror images (MirrorImage.interact), so that none
+ * of them can wall a hero into a corridor. Talking to
  * them is still a bump into them; walking past simply trades cells.
  */
 export function swapsWithHero(char: Char | undefined): boolean {

@@ -12,8 +12,21 @@ import type { World } from './world';
  */
 
 /**
+ * Whether a property counts as not there: undefined, or an empty array or object. Code makes such containers on
+ * first use (`buffs ??= {}`), and even a refused action or a look at the world may do it on one copy and not the
+ * other; an empty one and none at all are the same state.
+ */
+function absent(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (typeof value !== 'object' || value === null) return false;
+  if (Array.isArray(value)) return value.length === 0;
+  const record = value as Record<string, unknown>;
+  return Object.keys(record).every((key) => record[key] === undefined);
+}
+
+/**
  * A hash of a value that does not depend on the order of its objects' keys (a world that went
- * through storage comes back with its keys in another order) and skips what is undefined.
+ * through storage comes back with its keys in another order) and skips what is not there (see `absent`).
  */
 function hashValue(value: unknown, h: [number, number]): void {
   const feed = (text: string): void => {
@@ -44,7 +57,7 @@ function hashValue(value: unknown, h: [number, number]): void {
           return feed(']');
         }
         const record = v as Record<string, unknown>;
-        const keys = Object.keys(record).filter((key) => record[key] !== undefined).sort();
+        const keys = Object.keys(record).filter((key) => !absent(record[key])).sort();
         feed(`{${keys.length}`);
         for (const key of keys) {
           feed(key);
