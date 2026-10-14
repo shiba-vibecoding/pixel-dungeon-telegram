@@ -12,7 +12,10 @@ import './ui.css';
 import { loop } from './lifecycle';
 import { reloadForUpdate } from './update';
 import { preloadMapFx } from './shfx';
+import { preloadMobFx } from './mobfx';
 import './game.css';
+import { showChampion, showFallenGhoul, showHiddenMimic } from './mobwin';
+import { burningCells, confirmDanger, firstDanger } from './mistap';
 import { bossTile, mobDescription, mobName, plantText, tileText, wellText } from './examine';
 import {
   chooseQuickslot, isPlaceholder, quickArtifact, quickClassArmor, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
@@ -43,16 +46,16 @@ import { stepSound } from './sfx';
 import {
   aheadOf, DangerMeter, fadeFor, type FightSeen, MUSIC_BOSSES, placeTune, sameTune, TITLE, VICTORY, withDanger,
 } from './soundtrack';
-import { type ArenaHud, type BuffName, heroBuffs, Hud, type HudStatus, type QuickState } from './hud';
+import { type ArenaHud, type BuffName, heroBuffs, Hud, type HudStatus, MOB_BUFFS, type QuickState } from './hud';
 import { arenaBest, recordArena, showArenaEnd, showArenaReward } from './arenaui';
 import { ArenaView } from './arenaview';
 import { levelRegion } from './sprites';
-import { capitalize, t } from './i18n';
+import { capitalize, fill, t } from './i18n';
 import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
 import { bakeLevel, type Camera, patchLevel, render } from './render';
 import {
-  armorTier, closeOverlay, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showReforge, showHelp, showHero,
-  refreshBackpack, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice,
+  armorTier, closeOverlay, el, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showReforge, showHelp, showHero,
+  refreshBackpack, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, info, show, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice, windowOf,
 } from './screens';
 import { rankingBlock, showBoards } from './rankui';
 import { type Camp, campClasses } from './camp';
@@ -170,6 +173,7 @@ loading.remove();
 setAssets(assets);
 // The map's effects of design v19 (bolts, the glass image, hearts, chains): loaded behind the first screen.
 preloadMapFx();
+preloadMobFx();
 
 const view = new View(assets);
 /** The world answering touch: doors, grass, water, what falls and what is taken (motion.ts). */
@@ -1754,7 +1758,10 @@ function tapCell(cell: number, quiet = false): void {
   }
   // The alchemy pot: what it is for, then walk up to it as usual.
   if (level.map[cell] === T.ALCHEMY) view.say(t.alchemyPot, '#ffff44');
-  walk.queue = findPath(level, me.pos, cell, occupiedCells(world, me.depth), explored, floating) ?? [];
+  // The way goes round monsters in sight, known traps (findPath) and flames in sight, where another way exists.
+  const occupied = occupiedCells(world, me.depth);
+  const flames = floating ? occupied : new Set([...occupied, ...burningCells(world, me.depth)]);
+  walk.queue = findPath(level, me.pos, cell, flames, explored, floating) ?? findPath(level, me.pos, cell, occupied, explored, floating) ?? [];
   if (walk.queue.length === 0) {
     // No way around a known trap: walk up to it and say so; a tap on the trap itself steps onto it.
     const risky = findPath(level, me.pos, cell, occupiedCells(world, me.depth), explored, floating, true);
@@ -1767,6 +1774,31 @@ function tapCell(cell: number, quiet = false): void {
       // No way there: say so where the finger was.
       feedback.refuse(cell, vnow);
     }
+    return;
+  }
+  // Mis-tap protection (mistap.ts): a step onto a trap or into flames in sight is asked about first; with a walk
+  // ahead of it, the hero stops short and the next tap on the spot asks.
+  const peril = confirmDanger.on ? firstDanger(world, me, level, walk.queue) : null;
+  if (peril) {
+    const way = walk.queue;
+    if (peril.index > 0) {
+      walk.queue = way.slice(0, peril.index);
+      view.say(peril.danger === 'trap' ? t.trapInTheWay : t.danger.fireAhead, '#ff8800');
+      if (!quiet) feedback.aim(walk.queue[walk.queue.length - 1]!, false, vnow);
+      return;
+    }
+    walk.queue = [];
+    held.code = '';
+    const trap = peril.danger === 'trap';
+    showConfirm(
+      trap ? t.danger.trap : t.danger.fire, trap ? t.danger.trapQuestion : t.danger.fireQuestion, t.danger.yes, t.danger.no,
+      () => {
+        const now = session?.world && heroById(session.world, session.myId);
+        if (now && isAlive(now) && now.pos === me.pos) walk.queue = way;
+      },
+      hideOverlay,
+      { label: t.danger.never, onPress: () => confirmDanger.set(false) },
+    );
     return;
   }
   if (!quiet && walk.queue.length > 1) feedback.aim(cell, false, vnow);
@@ -1798,6 +1830,22 @@ function showBuff(name: BuffName, turns?: number): void {
           : name === 'naturesPower' ? artText('actors.hero.abilities.huntress.naturespower$naturespowertracker.desc', [turns ?? 0])
           // The talents' and subclasses': Shattered's descriptions.
           : (me && talentBuffInfo(me, name, turns)) || null;
+  // The monsters' curses (design v21, .pd-buff-window): their icon, Shattered's words and the turns left.
+  const mobIx = MOB_BUFFS[name];
+  if (mobIx !== undefined) {
+    walk.reset();
+    const icon = el('i', { className: 'pd-mbuff large' });
+    icon.style.setProperty('--ix', String(mobIx));
+    const key = name as 'vulnerable' | 'hexed' | 'degrade';
+    show(
+      windowOf(
+        { title: capitalize(t.buffs[name]), icon, onClose: hideOverlay, narrow: true, className: 'pd-buff-window' },
+        ...t.mobBuffDesc[key].split('\n\n').map((line) => info(fill(line, turns ?? 0))),
+      ),
+      hideOverlay,
+    );
+    return;
+  }
   if (long) {
     walk.reset();
     showInfo(t.buffs[name], long.split('\n\n'), hideOverlay);
@@ -2275,6 +2323,23 @@ function examineCell(pos: number): void {
   }
   const seen = visibleCells(world, me.depth)[pos];
   const char = seen ? charAt(world, me.depth, pos) : undefined;
+  // A ghoul lying crumpled is in no list of monsters (GhoulLifeLink): a tap on it tells it is playing dead.
+  const fallen = seen ? world.floors[me.depth]?.downed?.find((link) => link.mob.pos === pos) : undefined;
+  if (!char && fallen) {
+    showFallenGhoul(fallen.mob, fallen.turns, Math.max(1, (fallen.mob.timesDowned ?? 1) * 5));
+    return;
+  }
+  if (char && 'kind' in char && char.kind === 'ebonyMimic' && char.hidden) {
+    showHiddenMimic(char);
+    return;
+  }
+  if (char && 'kind' in char && char.champion) {
+    showChampion(char, [
+      ...mobDescription({ ...char, champion: undefined }, (item) => itemName(world, item), world.floors[me.depth]?.now ?? 0),
+      char.state === 'passive' ? '' : t.mobStates[char.state] ?? '',
+    ]);
+    return;
+  }
   if (char && 'kind' in char) {
     const state = char.state === 'passive' ? '' : t.mobStates[char.state] ?? '';
     const health = char.state === 'passive' ? '' : t.examineHealth(Math.max(0, char.hp), char.ht);

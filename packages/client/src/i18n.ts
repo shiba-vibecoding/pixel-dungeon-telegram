@@ -1293,6 +1293,9 @@ const en = {
     ate: (item: string) => `The mimic ate your ${item}!`,
     mimicReveal: 'That chest is a mimic!',
     ebonyReveal: 'There was a mimic there!',
+    ghoulRises: 'The ghoul rises!',
+    ghoulTag: 'playing dead',
+    ghoulRiseIn: (turns: number) => `It will rise in ${turns} ${turns === 1 ? 'turn' : 'turns'} if the other ghoul is still alive.`,
     debuffs: { weakness: 'You feel weakened!', vulnerable: 'You feel fragile!', hex: 'You have been hexed!', degrade: 'Your equipment feels weaker!', blindness: 'You are blinded!' },
   },
   isMimic: 'This is a mimic!',
@@ -1443,6 +1446,14 @@ const en = {
   jumpQuestion: 'Do you really want to jump into the chasm? You can probably die.',
   jumpYes: "Yes, I know what I'm doing",
   jumpNo: 'No, I changed my mind',
+  /** Mis-tap protection (mistap.ts): the question before a step onto a trap in sight or into flames in sight. */
+  danger: {
+    trap: 'Trap', fire: 'Fire',
+    trapQuestion: 'There is a trap on that cell. Do you really want to step onto it?',
+    fireQuestion: 'That cell is on fire. Do you really want to step into the flames?',
+    yes: 'Step there anyway', no: 'No, stay put', never: "Yes, and don't ask again",
+    fireAhead: 'Flames bar the way. Tap the spot again to step in.',
+  },
   enterPrison: 'The sewers give way to an old prison. Its inmates have long since gone mad.',
   depthTitle: (depth: number) => `Depth ${depth}`,
   regionNames: ['Sewers', 'Prison', 'Caves', 'Dwarven City', 'Demon Halls'] as readonly string[],
@@ -2366,6 +2377,12 @@ const en = {
   conditions: 'Conditions',
   noConditions: 'Nothing out of the ordinary.',
   turnsLeft: (n: number) => `${n} turns`,
+  /** Shattered's own texts of the monsters' curses (actors.buffs.*.desc): %s is the turns left. */
+  mobBuffDesc: {
+    vulnerable: "Vulnerability magic increases all physical damage that a character takes by 33%%, after that damage has been reduced by armor.\n\nTurns of vulnerable remaining: %s.",
+    hexed: "Dark magic which saps focus, making the target slightly disoriented.\n\nHexing reduces accuracy and evasion by 20%%, making the target less effective in combat.\n\nTurns of hex remaining: %s.",
+    degrade: "Powerful dark magic is sapping the strength that scrolls of upgrade have applied to your equipment!\n\nWhile degraded, upgraded gear will be treated as if it is a lower level than it actually is. Every upgrade after +3 becomes exponentially weaker than the last one. The descriptions of your items will change to reflect their reduced power level.\n\nDegradation does not affect strength requirements, wand charges, durability of thrown weapons, or artifacts.\n\nTurns of degradation remaining: %s. Using a scroll of upgrade or remove curse will end degradation immediately.",
+  },
   buffs: {
     mindVision: 'Mind vision', invisible: 'Invisible', ooze: 'Caustic ooze', poison: 'Poisoned', fire: 'Burning',
     paralysis: 'Paralysed', roots: 'Rooted', slow: 'Slowed', hunger: 'Hungry', starvation: 'Starving', weakness: 'Weakened',
@@ -2434,6 +2451,8 @@ const en = {
     sound: 'Sound',
     vibration: 'Vibration',
     vibrationNote: 'On hits and finds',
+    confirmDanger: 'Ask before a trap or fire',
+    confirmDangerNote: 'A tap that would step onto a trap or into flames in sight asks first',
     game: 'Game',
     effects: 'Effects',
     shake: 'Screen shake',
@@ -2509,6 +2528,14 @@ const en = {
     notSeenEnemy: "You haven't come across this enemy in this run yet.",
     enemyCount: (n: number) => `You have defeated this enemy ${n} ${n === 1 ? 'time' : 'times'} in this run.`,
     seenCount: (a: number, b: number) => `${a} of ${b} seen`,
+    /** The bestiary of design v21: counts, group captions and the detail line. */
+    best: {
+      count: (seen: number, all: number, slain: number) => `Seen ${seen} of ${all} · slain ${slain}`,
+      depths: (a: number, b: number) => `depths ${a}–${b}`,
+      groups: { boss: 'Bosses', any: 'Everywhere', rare: 'Rare', quest: 'Quest' },
+      slain: (n: number) => `Slain: ${n}`,
+      unseen: 'Not met yet',
+    },
     identified: 'Identified · tap to read',
     notIdentified: 'Not identified yet',
     known: (a: number, b: number) => `${a} of ${b} known`,
@@ -3171,6 +3198,9 @@ const ru: Strings = {
     ate: (item: string) => `Мимик съел ваш ${item}!`,
     mimicReveal: 'Этот сундук оказался мимиком!',
     ebonyReveal: 'Здесь прятался мимик!',
+    ghoulRises: 'Гуль поднимается!',
+    ghoulTag: 'притворяется мёртвым',
+    ghoulRiseIn: (turns) => `Поднимется через ходов: ${turns}, если второй гуль жив.`,
     debuffs: { weakness: 'Вы чувствуете слабость!', vulnerable: 'Вы чувствуете себя хрупким!', hex: 'Вас сглазили!', degrade: 'Ваша экипировка выглядит дряхлой!', blindness: 'Вас ослепили!' },
   },
   isMimic: 'Это мимик!',
@@ -3316,6 +3346,13 @@ const ru: Strings = {
   jumpQuestion: 'Вы действительно хотите прыгнуть в пропасть? Можно и разбиться насмерть.',
   jumpYes: 'Да, я знаю, что делаю',
   jumpNo: 'Нет, я передумал',
+  danger: {
+    trap: 'Ловушка', fire: 'Огонь',
+    trapQuestion: 'На этой клетке ловушка. Вы действительно хотите на неё наступить?',
+    fireQuestion: 'Эта клетка горит. Вы действительно хотите шагнуть в огонь?',
+    yes: 'Всё равно шагнуть', no: 'Нет, остаться', never: 'Да, больше не спрашивать',
+    fireAhead: 'Путь преграждает огонь. Коснитесь места ещё раз, чтобы шагнуть в него.',
+  },
   enterPrison: 'Канализация сменяется старой тюрьмой. Её узники давно обезумели.',
   depthTitle: (depth) => `Глубина ${depth}`,
   regionNames: ['Канализация', 'Тюрьма', 'Пещеры', 'Город гномов', 'Демонические залы'],
@@ -4224,6 +4261,12 @@ const ru: Strings = {
   conditions: 'Состояние',
   noConditions: 'Ничего необычного.',
   turnsLeft: (n) => `ходов: ${n}`,
+  /** Shattered's own texts of the monsters' curses (actors.buffs.*.desc): %s is the turns left. */
+  mobBuffDesc: {
+    vulnerable: "Магия уязвимости повышает физический урон, причиняемый персонажу. Весь входящий физический урон, оставшийся после блокирования броней, увеличен на 33%%.\n\nОсталось ходов с уязвимостью: %s.",
+    hexed: "От темной дезориентирующей магии сложнее сосредоточиться на цели и уклоняться.\n\nСглаз снижает меткость и уклонение на 20%%, и, таким образом, снижает эффективность цели в бою.\n\nОсталось ходов со сглазом: %s.",
+    degrade: "Мощная, темная магия высасывает силу, которой Свитки улучшения наделили вашу экипировку!\n\nВо время, пока ваша экипировка деградирована, ее фактический уровень ниже действительного. Любое улучшение после +3 становится порядком слабее предыдущего. Описание ваших предметов будет изменяться с учетом его сниженного уровня силы.\n\nДеградация не влияет на требования силы, заряды палочек, прочность метательного оружия или на артефакты.\n\nОсталось ходов с деградацией: %s. Использование Свитка улучшения или рассеяния немедленно снимет эффект деградации.",
+  },
   buffs: {
     mindVision: 'Ясновидение', invisible: 'Невидимость', ooze: 'Едкая слизь', poison: 'Отравление', fire: 'Горение',
     paralysis: 'Паралич', roots: 'Опутан корнями', slow: 'Замедление', hunger: 'Голод', starvation: 'Истощение', weakness: 'Слабость',
@@ -4288,6 +4331,8 @@ const ru: Strings = {
     sound: 'Звук',
     vibration: 'Вибрация',
     vibrationNote: 'При ударах и находках',
+    confirmDanger: 'Спрашивать перед ловушкой и огнём',
+    confirmDangerNote: 'Шаг на видимую ловушку или в видимый огонь сначала переспросит',
     game: 'Игра',
     effects: 'Эффекты',
     shake: 'Тряска экрана',
@@ -4361,6 +4406,13 @@ const ru: Strings = {
     notSeenEnemy: 'Вы ещё не встречали этого врага в этом забеге.',
     enemyCount: (n) => `Вы победили этого врага ${n} раз в этом забеге.`,
     seenCount: (a, b) => `Встречено: ${a} из ${b}`,
+    best: {
+      count: (seen, all, slain) => `Встречено ${seen} из ${all} · убито ${slain}`,
+      depths: (a, b) => `глубины ${a}–${b}`,
+      groups: { boss: 'Боссы', any: 'Всюду', rare: 'Редкие', quest: 'Задания' },
+      slain: (n) => `Убито: ${n}`,
+      unseen: 'Ещё не встречен',
+    },
     identified: 'Опознано · коснитесь, чтобы прочитать',
     notIdentified: 'Ещё не опознано',
     known: (a: number, b: number) => `Известно ${a} из ${b}`,
@@ -4754,6 +4806,8 @@ export const t: Strings = lang === 'ru' ? ru : en;
 export const locale = lang === 'ru' ? 'ru-RU' : 'en-US';
 if (typeof document !== 'undefined') document.documentElement.lang = lang;
 export { capitalize };
+/** Both languages' texts, for the tests that check one against the other. */
+export { en as enStrings, ru as ruStrings };
 
 /** Messages.format: a Shattered template's %s, %d, %.1f and %1$d filled in order (or by number), %% a percent sign. */
 export function fill(template: string, ...args: Array<string | number>): string {

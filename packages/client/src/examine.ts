@@ -279,6 +279,18 @@ export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item)
 
 const capital = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
+/** A champion's name and what it does, in Shattered's words (ChampionEnemy), for its window; null for anything else. */
+export function championText(mob: Mob): { name: string; desc: string } | null {
+  if (!mob.champion) return null;
+  const x = MOB_EXTRAS[lang === 'ru' ? 'ru' : 'en'];
+  if (mob.champion === 'growing') {
+    const growth = mob.growth ?? 1.19;
+    return { name: capital(x.growing), desc: x.growingDesc(Math.trunc(100 * (growth - 1)), Math.trunc(100 * (1 - 1 / growth))) };
+  }
+  const [name, desc] = x.champions[mob.champion];
+  return { name: capital(name), desc };
+}
+
 const EN_PLANTS: Record<PlantKind, readonly [string, string]> = {
   firebloom: ['Firebloom', 'When something touches a Firebloom, it bursts into flames.'],
   icecap: ['Icecap', 'Touched, an Icecap lets out a pollen that freezes everything around.'],

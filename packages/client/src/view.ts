@@ -174,6 +174,11 @@ export interface Puppet {
   rest?: AnimName;
   aura?: { color: string; rays: number };
   alpha?: number;
+  /** A ghoul lying crumpled (GhoulLifeLink): the ghoul that holds it up, the turns left until it rises and the turns it began with. */
+  downed?: { host: string; turns: number; of: number };
+  /** An ebony mimic still hidden (design v21: ebony-hidden.png), and when it showed itself. */
+  ebonyHidden?: boolean;
+  revealAt?: number;
   /** CharSprite's states (Shattered): FROZEN in a block of ice, CHILLED under falling snow, DARKENED (corruption, doom), SHIELDED in a halo. */
   frozen?: boolean;
   chilled?: boolean;
@@ -343,7 +348,13 @@ export class View {
   /** The arena's wave banner: its words, its kind, and when it shows (after a sinking card, if one is up). */
   waveCard: { title: string; sub: string; kind: '' | 'champions' | 'boss'; start: number } | null = null;
   /** Beams and arcs for a moment (Shattered's Beam and Lightning): from a cell to a cell, in a colour, of a kind. */
-  beams: Array<{ from: number; to: number; start: number; duration: number; color: string; kind: 'beam' | 'lightning' | 'chain' }> = [];
+  beams: Array<{
+    from: number; to: number; start: number; duration: number; color: string; kind: 'beam' | 'lightning' | 'chain' | 'ray';
+    /** A ray (design v21: mob-beams.png): its row of the sheet, and how much farther than `to` it reaches (a fraction of its length). */
+    row?: number; extend?: number;
+  }> = [];
+  /** The curse that has just hit a hero, rising over their head in five steps (design v21: mob-buffs-l.png). */
+  stateIcons: Array<{ hero: string; ix: number; start: number }> = [];
   /** Thrown items and magic bolts in flight; `sprite` null for a bolt. */
   projectiles: Array<{
     from: number; to: number; start: number; duration: number; sprite: number | null; color?: string;
@@ -351,6 +362,8 @@ export class View {
     trail?: string; wide?: boolean;
     /** A thrown weapon flies as MissileSprite has it (gearfx.ts). */
     flight?: Flight;
+    /** A monster's ball (design v21: mob-bolts.png): its row of the sheet and the colour of its four squares of trail. */
+    mobBolt?: { row: number; trail: string };
     /** A glow over a missile's own pixels (the spectral blades). */
     tint?: string;
     /** Leaves pour off it (the spirit bow's arrows under Nature's Power). */
@@ -381,6 +394,7 @@ export class View {
     this.levelCard = null;
     this.projectiles = [];
     this.beams = [];
+    this.stateIcons = [];
     this.chains = [];
     this.spells = [];
     this.spellSprites = [];
@@ -588,6 +602,11 @@ export class View {
         puppet.dim = mob.ward.tier <= 3 ? Math.max(0.2, 1 - mob.ward.zaps / (2 * mob.ward.tier - 1)) : 1;
       }
       if (mob.lotus) puppet.reach = mob.lotus.level;
+      // A ghoul that was lying crumpled stands again (design v21: «The ghoul rises!»).
+      if (puppet.downed) {
+        puppet.downed = undefined;
+        this.say(t.mobLines.ghoulRises, COLORS.warning, now);
+      }
       dressMob(this.assets, puppet, mob, now);
     }
     // Ghouls lying crumpled (GhoulLifeLink), until they rise or die for good.
@@ -600,6 +619,7 @@ export class View {
         puppet.animStart = now;
         puppet.hp = 0;
       }
+      if (puppet) puppet.downed = { host: link.host, turns: link.turns, of: Math.max(1, (link.mob.timesDowned ?? 1) * 5) };
     }
     for (const [id, puppet] of this.puppets) {
       if (!seen.has(id) && (puppet.alive || now >= puppet.removeAt)) this.puppets.delete(id);
@@ -621,6 +641,7 @@ export class View {
     }
     this.floaters = this.floaters.filter((floater) => now - floater.start < 1200);
     this.spellSprites = this.spellSprites.filter((spell) => now - spell.start < SPELL_LIFE);
+    this.stateIcons = this.stateIcons.filter((icon) => now - icon.start < 900);
     this.flashes = this.flashes.filter((flash) => now - flash.start < (flash.duration ?? 600));
     this.projectiles = this.projectiles.filter((p) => now - p.start < p.duration);
     this.beams = this.beams.filter((b) => now - b.start < b.duration);

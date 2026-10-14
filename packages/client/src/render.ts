@@ -1,5 +1,5 @@
 import { drawSpell } from './spellfx';
-import { drawAura, drawBeams } from './mobfx';
+import { drawAura, drawBeams, drawCharge, drawEbony, drawFallen, drawStateIcons, mobImage } from './mobfx';
 import { HEIGHT, type Level, LENGTH, S, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
 import { CHAIN_MS, FALL_MS, type Puppet, TILE, type View } from './view';
@@ -222,6 +222,8 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   }
 
   drawAura(ctx, puppet, x, y, now);
+  // A hidden ebony mimic is a faint chest of its own (design v21), and shows a plain one for a blink when it is found out.
+  if (drawEbony(ctx, puppet, x, y, now)) return;
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
   if (puppet.alpha !== undefined) ctx.globalAlpha = puppet.alpha;
@@ -587,7 +589,11 @@ export function render(
     } else if (now < puppet.alertUntil) {
       drawIcon(ctx, assets, ICONS.alert, x + TILE / 2, top - 2);
     }
-    if (puppet.hp < puppet.ht && !(puppet.isHero && puppet.id === myId)) drawHealth(ctx, puppet, x, y);
+    // A crumpled ghoul has no health bar (design v21): a red line to the ghoul that holds it up, and dots for the turns left.
+    if (puppet.downed) drawFallen(ctx, puppet, x, y, shown.find((other) => other.puppet.id === puppet.downed!.host), now);
+    else if (puppet.hp < puppet.ht && !(puppet.isHero && puppet.id === myId)) drawHealth(ctx, puppet, x, y);
+    drawCharge(ctx, puppet, x, y, now);
+    if (puppet.isHero) drawStateIcons(ctx, view, puppet.id, x, top, now);
     // An ally wears a heart over its head (design v19: ally-heart.png, two frames of 7×7 every 400 ms, the second a pixel lower).
     if (puppet.ally && loaded(shImage('ally-heart'))) {
       const beat = Math.floor(now / HEART_MS) % 2;
@@ -602,7 +608,21 @@ export function render(
     const x = ((p.from % WIDTH) + ((p.to % WIDTH) - (p.from % WIDTH)) * k) * TILE + TILE / 2;
     const y = (Math.trunc(p.from / WIDTH) + (Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)) * k) * TILE + TILE / 2;
     const boltRow = p.sprite === null && p.trail ? WAND_BOLT_ROW[p.trail] : undefined;
-    if (boltRow !== undefined && loaded(shImage('wand-bolts'))) {
+    if (p.mobBolt && loaded(mobImage('mob-bolts'))) {
+      // A monster's ball (design v21, mob-bolts.png): two frames of 8×8 at 90 ms, four squares of its colour behind it.
+      const dx = ((p.to % WIDTH) - (p.from % WIDTH)) * TILE;
+      const dy = (Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)) * TILE;
+      const length = Math.hypot(dx, dy) || 1;
+      if (!quality.light) {
+        ctx.fillStyle = p.mobBolt.trail;
+        for (let j = 1; j < 5; j++) {
+          ctx.globalAlpha = 0.5 - j * 0.1;
+          ctx.fillRect(Math.round(x - (dx / length) * j * 2.5) - 1, Math.round(y - (dy / length) * j * 2.5) - 1, 2, 2);
+        }
+        ctx.globalAlpha = 1;
+      }
+      ctx.drawImage(mobImage('mob-bolts'), (Math.floor(now / BOLT_FRAME_MS) % 2) * 8, p.mobBolt.row * 8, 8, 8, Math.round(x) - 4, Math.round(y) - 4, 8, 8);
+    } else if (boltRow !== undefined && loaded(shImage('wand-bolts'))) {
       // A wand's bolt (design v19, wand-bolts.png): two frames of 8×8 at 90 ms, four squares of the wand's colour behind it.
       const dx = ((p.to % WIDTH) - (p.from % WIDTH)) * TILE;
       const dy = (Math.trunc(p.to / WIDTH) - Math.trunc(p.from / WIDTH)) * TILE;

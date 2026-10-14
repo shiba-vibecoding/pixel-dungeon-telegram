@@ -53,6 +53,9 @@ export const BUFF_ICONS = {
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
 
+/** The monsters' curses have icons of their own in the design's mob-buffs.png (v21): 7×7 in the list, 16×16 in the window. */
+export const MOB_BUFFS: Readonly<Partial<Record<BuffName, number>>> = { vulnerable: 0, hexed: 1, degrade: 2 };
+
 /** A buff in the list: its name, the turns it has left where that is known, and its place in buffs-tints.png where it has one. */
 export interface BuffEntry {
   name: BuffName;
@@ -807,8 +810,10 @@ export class Hud {
     if (this.changed('buffs', buffKey)) {
       this.buffBox.replaceChildren(
         ...state.buffs.map((buff) => {
-          const glyphNode = el('i', buff.tint !== undefined ? 'pd-tbuff' : '');
-          if (buff.tint !== undefined) glyphNode.dataset.tb = String(buff.tint);
+          const mobIx = MOB_BUFFS[buff.name];
+          const glyphNode = el('i', mobIx !== undefined ? 'mob' : buff.tint !== undefined ? 'pd-tbuff' : '');
+          if (mobIx !== undefined) glyphNode.style.setProperty('--ix', String(mobIx));
+          else if (buff.tint !== undefined) glyphNode.dataset.tb = String(buff.tint);
           else glyphNode.dataset.b = String(BUFF_ICONS[buff.name]);
           glyphNode.dataset.buff = buff.name;
           const node = el('button', `pd-buff${buff.turns !== undefined && buff.turns <= 3 ? ' fading' : ''}`, glyphNode);

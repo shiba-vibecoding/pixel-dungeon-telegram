@@ -877,7 +877,11 @@ export function showSign(text: string, onClose: () => void): void {
 }
 
 /** Chasm.heroJump's WndOptions: a question with a yes and a no; the yes is dangerous here. */
-export function showConfirm(title: string, text: string, yes: string, no: string, onYes: () => void, onClose: () => void): void {
+export function showConfirm(
+  title: string, text: string, yes: string, no: string, onYes: () => void, onClose: () => void,
+  /** A third answer under the others: «don't ask again». */
+  never?: { label: string; onPress: () => void },
+): void {
   show(
     windowOf(
       { narrow: true },
@@ -892,6 +896,11 @@ export function showConfirm(title: string, text: string, yes: string, no: string
           onYes();
         }, 'danger'),
         button(no, onClose, 'quiet'),
+        ...(never ? [button(never.label, () => {
+          onClose();
+          never.onPress();
+          onYes();
+        }, 'quiet')] : []),
       ),
     ),
     onClose,

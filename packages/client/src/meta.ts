@@ -13,6 +13,8 @@ import { el, info, portrait, show, sprites, windowOf } from './screens';
 import { mobDescription } from './examine';
 import { canFullscreen, haptics, isFullscreen, openExternal, setFullscreen } from './telegram';
 import { hints } from './hints';
+import { confirmDanger } from './mistap';
+import { BEST_GROUPS, BESTIARY_ENTRIES, type BestEntry, type BestGroup, portraitCell, REGION_DEPTHS, slainLabel } from './bestiary';
 
 /*
  * The windows around the game rather than in it (design system v9): the
@@ -208,6 +210,7 @@ export function showSettings(options: SettingsOptions): void {
       }),
       fxNote,
     ),
+    switchRow(t.meta.confirmDanger, t.meta.confirmDangerNote, confirmDanger.on, (on) => confirmDanger.set(on)),
     stepsRow(t.meta.shake, () => quality.shake, (v) => quality.setShake(v), () => fx.shake(3, 240, fx.now)),
     el(
       'div',
@@ -515,9 +518,12 @@ export function showJournal(options: JournalOptions, tab: 'notes' | 'catalog' = 
     node.setAttribute('aria-selected', String(id === tab));
     tabs.append(node);
   }
-  const body = tab === 'notes' ? notesView(world, hero) : catalogView(options, category, (next) => reopen('catalog', next));
+  const bestiary = tab === 'catalog' && category === CATALOG.length;
+  const parts = tab === 'notes'
+    ? [el('div', { className: 'pd-scroll' }, notesView(world, hero))]
+    : catalogView(options, category, (next) => reopen('catalog', next));
   show(
-    windowOf({ title: t.meta.journal, onClose: options.onClose, className: 'wide' }, tabs, el('div', { className: 'pd-scroll' }, body)),
+    windowOf({ title: t.meta.journal, onClose: options.onClose, className: bestiary ? 'wide pd-best-window' : 'wide' }, tabs, ...parts),
     options.onClose,
   );
 }
@@ -557,20 +563,26 @@ function notesView(world: World, hero: Hero): HTMLElement {
   return list;
 }
 
-function catalogView(options: JournalOptions, category: number, choose: (category: number) => void): HTMLElement {
+/**
+ * The catalog's own tabs, as shelves (design v21): an icon each, the word only on the chosen one. Then what the tab
+ * shows: for the bestiary a count, the list in a scroll and the chosen monster below it; for the rest one scroll.
+ */
+function catalogView(options: JournalOptions, category: number, choose: (category: number) => void): HTMLElement[] {
   const { world, hero } = options;
-  const tabs = el('div', { className: 'pd-tabs compact' });
+  const tabs = el('div', { className: 'pd-tabs compact shelf' });
   tabs.setAttribute('role', 'tablist');
   t.meta.categories.forEach((label, i) => {
-    const node = el('button', { className: 'pd-tab', textContent: label, onclick: () => (click(), choose(i)) });
+    const icon = i < CATALOG.length ? itemIcon(CATALOG[i]!.silhouette, false) : el('i', { className: 'pd-tab-ico bestiary' });
+    if (i < CATALOG.length) icon.classList.add('pd-tab-item');
+    const node = el('button', { className: 'pd-tab', onclick: () => (click(), choose(i)) }, icon, el('span', { textContent: label }));
+    node.ariaLabel = label;
+    node.title = label;
     node.setAttribute('role', 'tab');
     node.setAttribute('aria-selected', String(i === category));
     tabs.append(node);
   });
-  if (category === CATALOG.length) {
-    void hero;
-    return el('div', {}, tabs, bestiaryView(options));
-  }
+  sprites(tabs);
+  if (category === CATALOG.length) return [tabs, ...bestiaryView(options)];
   const { category: kind, silhouette } = CATALOG[category]!;
   const kinds = (Object.keys(ITEMS) as ItemKind[]).filter((k) => itemDef(k).category === kind);
   const known = kinds.filter((k) => kindKnown(world, { kind: k, qty: 1, level: 0 }));
@@ -609,70 +621,112 @@ function catalogView(options: JournalOptions, category: number, choose: (categor
     grid.append(slot);
   }
   void hero;
-  return el(
+  return [tabs, el(
     'div',
-    {},
-    tabs,
+    { className: 'pd-scroll' },
     el('div', { className: 'pd-cat-count', textContent: t.meta.known(known.length, kinds.length) }),
     grid,
     detail,
-  );
+  )];
 }
 
-/** Bestiary.REGIONAL, UNIVERSAL, RARE and QUEST, in Shattered's order (the bosses are the bosses stream's). */
-const BESTIARY: ReadonlyArray<readonly MobKind[]> = [
-  ['rat', 'snake', 'gnoll', 'swarm', 'crab', 'slime', 'skeleton', 'thief', 'dm100', 'guard', 'necromancer', 'bat', 'brute', 'shaman',
-    'blueShaman', 'purpleShaman', 'spinner', 'dm200', 'ghoul', 'elemental', 'frostElemental', 'shockElemental', 'warlock', 'monk', 'golem',
-    'ripper', 'spawner', 'succubus', 'eye', 'scorpio'],
-  ['wraith', 'piranha', 'mimic', 'goldenMimic', 'ebonyMimic', 'statue'],
-  ['albino', 'gnollExile', 'hermitCrab', 'causticSlime', 'bandit', 'spectralNecromancer', 'shielded', 'dm201', 'chaosElemental', 'senior',
-    'acidic', 'tormentedSpirit', 'phantomPiranha', 'crystalMimic', 'armoredStatue'],
-  ['fetidRat', 'gnollTrickster', 'greatCrab'],
-];
+/** The design's portrait of a monster (24×24 cell of bestiary.png), or its own sprite where the sheet has none. */
+function mobFace(entry: BestEntry, large: boolean, silhouette: boolean): HTMLElement {
+  if (entry.n === null) {
+    const face = portrait(entry.kind!);
+    if (silhouette) face.classList.add('silhouette');
+    return face;
+  }
+  const { mx, my } = portraitCell(entry.n);
+  const face = el('i', { className: `pd-mob${large ? ' x3' : ''}${silhouette ? ' silhouette' : ''}` });
+  face.style.setProperty('--mx', String(mx));
+  face.style.setProperty('--my', String(my));
+  return face;
+}
+
+type PlainGroup = 'boss' | 'any' | 'rare' | 'quest';
 
 /**
- * WndJournal.CatalogTab's bestiary: every monster of Shattered's roster, by group — those the party has seen this run
- * shown, the rest as dark shapes; a tap tells what it is and how many have been slain.
+ * WndJournal.CatalogTab's bestiary (design v21): every monster of Shattered's roster by region, the bosses, those found
+ * everywhere, the rare ones and the quest's. Those the party has seen this run are shown, the rest as dark shapes;
+ * a tap tells what the monster is and how many have been slain. The list scrolls; the chosen monster stays below it.
  */
-function bestiaryView(options: JournalOptions): HTMLElement {
+function bestiaryView(options: JournalOptions): HTMLElement[] {
   const { world } = options;
   const book = world.bestiary ?? {};
-  const all = BESTIARY.flat();
-  const detail = el('div', { className: 'pd-cat-detail' });
-  const body = el('div', {}, el('div', { className: 'pd-cat-count', textContent: t.meta.seenCount(all.filter((k) => book[k]?.seen).length, all.length) }));
-  BESTIARY.forEach((kinds, group) => {
-    body.append(el('div', { className: 'pd-jdepth-mark', textContent: capitalize(t.meta.bestiaryGroups[group]!) }));
-    const grid = el('div', { className: 'pd-grid pd-catalog' });
+  const seenIn = (entry: BestEntry): boolean => book[entry.kind!]?.seen === true;
+  const slainOf = (entry: BestEntry): number => book[entry.kind!]?.slain ?? 0;
+  const count = el('div', {
+    className: 'pd-cat-count',
+    textContent: t.meta.best.count(BESTIARY_ENTRIES.filter(seenIn).length, BESTIARY_ENTRIES.length, BESTIARY_ENTRIES.reduce((sum, entry) => sum + slainOf(entry), 0)),
+  });
+  const list = el('div', { className: 'pd-best' });
+  const detail = el('div', { className: 'pd-best-detail unseen' });
+  const regionOf = (group: BestGroup): number => (group.startsWith('region') ? Number(group.slice(6)) : -1);
+  const where = (entry: BestEntry): string => {
+    const region = regionOf(entry.group);
+    if (region < 0) return capitalize(t.meta.best.groups[entry.group as PlainGroup]);
+    const [from, to] = REGION_DEPTHS[region]!;
+    return `${capitalize(t.regionNames[region]!)} · ${t.meta.best.depths(from, to)}`;
+  };
+  const choose = (entry: BestEntry, slot: HTMLElement | null): void => {
+    list.querySelectorAll('.selected').forEach((node) => {
+      node.classList.remove('selected');
+      node.setAttribute('aria-selected', 'false');
+    });
+    slot?.classList.add('selected');
+    slot?.setAttribute('aria-selected', 'true');
+    const seen = seenIn(entry);
+    const slain = slainOf(entry);
+    detail.className = `pd-best-detail${seen ? '' : ' unseen'}`;
+    detail.replaceChildren(
+      el('span', { className: 'pd-best-face' }, mobFace(entry, true, !seen)),
+      el(
+        'span',
+        { className: 'pd-best-text' },
+        el('b', { textContent: seen ? capitalize(t.mobs[entry.kind!]) : entry.group === 'boss' ? '???' : t.meta.best.unseen }),
+        el('small', { textContent: seen && slain > 0 ? `${where(entry)} · ${t.meta.best.slain(slain)}` : where(entry) }),
+        el('span', { textContent: seen ? mobDescription({ kind: entry.kind! } as Mob)[0] ?? '' : t.meta.notSeenEnemy }),
+      ),
+    );
+  };
+  for (const group of BEST_GROUPS) {
+    const entries = BESTIARY_ENTRIES.filter((entry) => entry.group === group);
+    if (entries.length === 0) continue;
+    const region = regionOf(group);
+    const title = region >= 0 ? capitalize(t.regionNames[region]!) : capitalize(t.meta.best.groups[group as PlainGroup]);
+    const grid = el('div', { className: 'pd-best-grid' });
     grid.setAttribute('role', 'listbox');
-    for (const kind of kinds) {
-      const seen = book[kind]?.seen === true;
-      const face = portrait(kind);
-      if (!seen) face.classList.add('silhouette');
-      const slot = el('button', {
-        className: `pd-slot${seen ? '' : ' unknown'}`,
-        ariaLabel: seen ? t.mobs[kind] : '?',
-        onclick: () => {
-          click();
-          body.querySelectorAll('.selected').forEach((node) => node.classList.remove('selected'));
-          slot.classList.add('selected');
-          const slain = book[kind]?.slain ?? 0;
-          detail.className = `pd-cat-detail${seen ? '' : ' unknown'}`;
-          detail.replaceChildren(
-            portrait(kind),
-            el('span', {}, el('b', { textContent: seen ? capitalize(t.mobs[kind]) : '???' }),
-              el('small', { textContent: seen ? (slain > 0 ? t.meta.enemyCount(slain) : '') : t.meta.notSeenEnemy })),
-          );
-          if (!seen) detail.firstElementChild!.classList.add('silhouette');
-          if (seen) detail.append(el('p', { className: 'pd-note', textContent: mobDescription({ kind } as Mob)[0] ?? '' }));
-        },
-      }, face);
+    grid.ariaLabel = title;
+    for (const entry of entries) {
+      const seen = seenIn(entry);
+      const slain = slainOf(entry);
+      const slot = el(
+        'button',
+        { className: `pd-best-cell${seen ? '' : ' unseen'}`, onclick: () => (click(), choose(entry, slot)) },
+        mobFace(entry, false, !seen),
+        seen && slain > 0 && el('span', { className: 'pd-best-n', textContent: slainLabel(slain) }),
+      );
       slot.setAttribute('role', 'option');
+      slot.setAttribute('aria-selected', 'false');
+      slot.ariaLabel = seen ? `${capitalize(t.mobs[entry.kind!])}${slain > 0 ? `, ${t.meta.best.slain(slain)}` : ''}` : t.meta.best.unseen;
       grid.append(slot);
     }
-    body.append(grid);
-  });
-  body.append(detail);
-  return body;
+    list.append(el(
+      'section',
+      { className: 'pd-best-group' },
+      el(
+        'header',
+        { className: 'pd-best-head' },
+        el('b', { textContent: title }),
+        region >= 0 && el('span', { textContent: t.meta.best.depths(REGION_DEPTHS[region]![0], REGION_DEPTHS[region]![1]) }),
+        el('em', { textContent: `${entries.filter(seenIn).length}/${entries.length}` }),
+      ),
+      grid,
+    ));
+  }
+  choose(BESTIARY_ENTRIES[0]!, null);
+  return [count, el('div', { className: 'pd-scroll' }, list), detail];
 }
 
 function itemIcon(sprite: number, silhouette: boolean): HTMLElement {
