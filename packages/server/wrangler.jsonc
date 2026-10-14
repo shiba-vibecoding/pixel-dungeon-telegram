@@ -41,7 +41,7 @@
     // The wipe of the old world needs no date (every profile of an earlier season is reset on first contact, and the
     // pioneer cup goes to whoever had played). RELEASE_AT is the cut for profiles made after the deploy but before
     // this moment, which count as pioneers too (pioneer.ts). Empty is allowed: no such cut. See DEPLOY.md.
-    "RELEASE_AT": ""
+    "RELEASE_AT": "2026-10-14T10:45:00Z"
   },
   // Secrets: npx wrangler secret put BOT_TOKEN, and WEBHOOK_SECRET for the bot's webhook (/telegram/webhook);
   // REPORT_KEY reads the error reports back (scripts/reports.mjs); DAILY_SECRET is what the daily dungeon's seed is
