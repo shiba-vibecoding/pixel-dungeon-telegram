@@ -140,7 +140,7 @@ export class CoopMarks {
 
   /** A long press on the map pinged a cell of the depth I am on: tells the party (co-op only). True if it went. */
   ping(session: Session, depth: number, cell: number): boolean {
-    if (session.mode !== 'online') return false;
+    if (session.mode !== 'online' || (session.world?.heroes.length ?? 0) < 2) return false;
     session.signal({ kind: 'ping', depth, cell });
     return true;
   }
@@ -149,7 +149,8 @@ export class CoopMarks {
   frame(ctx: CanvasRenderingContext2D, f: CoopFrame): void {
     const { session, world, view, now } = f;
     this.session = session;
-    const online = session.mode === 'online';
+    // Only a party has anyone to signal: a run the server checks is 'online' too, and showed the emote button over a lone hero.
+    const online = session.mode === 'online' && (world?.heroes.length ?? 0) > 1;
     this.show(online);
     if (!online) {
       this.pings = [];
