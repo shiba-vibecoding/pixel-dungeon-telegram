@@ -71,7 +71,7 @@ import { Finds, MapControls } from './mapui';
 import { type HintId, hints } from './hints';
 import { lookIndex, preloadSheets, regionIndex } from './worldsheets';
 import { type ShareCard, shareCard, sharePicture, storyCard } from './share';
-import { rankings, recordRun, runScore } from './rankings';
+import { rankings, recordRun } from './rankings';
 import { type CheckOptions, forgetSolo, loadCheck, loadSolo, type Session, soloSession, staleSolo } from './session';
 import { type BoardKind, type Profile, type RunMeta, type RunSlot, runApi, type SyncAnswer } from './checked';
 import { loadAssets } from './sprites';
@@ -760,7 +760,7 @@ function dailyRulesView(): DailyRulesView {
   const [boon, info] = t.ranked.boons[rules.boon] ?? [rules.boon, ''];
   const item = BOON_ITEMS[rules.boon] ?? 'gold';
   return {
-    hardship: { index: Math.max(0, index), name: t.meta.challengeList[index]?.[0] ?? '' },
+    hardship: { index: Math.max(0, index), name: t.meta.challengeList[index]?.[0] ?? '', info: t.meta.challengeList[index]?.[1] ?? '' },
     boon: { sprite: itemSprite(core.createItem(item), {}), name: t.camp.boons[rules.boon] ?? boon, info },
   };
 }
@@ -814,6 +814,7 @@ function toTitle(ask = true): void {
     onDailyBoard: api ? () => openBoards('daily') : undefined,
     dailyState: dailyState(),
     rules: dailyRulesView(),
+    onNewDay: () => toTitle(false),
     onPractice: () => startSolo('daily'),
     onRankings: () => openBoards(),
     onMart: () => showMart({ heroClass, onClose: toTitle }),
@@ -3083,8 +3084,9 @@ function tick(now: number): void {
     const answer = session.checked ? session.checked.finished() : null;
     if (answer) void answer.then((reply) => reply?.badges && announceBadges(reply.badges.filter((id) => !earnedBadges().has(id))));
     const deepestNow = Object.keys(world.levels).length;
-    // Scored as the server scores it (core verify.ts runOutcome: challenges raise it).
-    const scoreNow = core.runOutcome(world, me).score;
+    // Scored as the server scores it (core verify.ts runOutcome: Shattered's score, the parts in `breakdown`).
+    const outcomeNow = core.runOutcome(world, me);
+    const scoreNow = outcomeNow.score;
     const killer = me.killedBy && (t.causes[me.killedBy] ?? t.mobs[me.killedBy as MobKind] ?? t.classes[me.killedBy as HeroClass] ?? me.killedBy);
     const shareText = dailyRun ? t.shareText(scoreNow, deepestNow) : t.shareTextRun(scoreNow, deepestNow);
     const share = shareChoices(async () => {
@@ -3105,6 +3107,7 @@ function tick(now: number): void {
       const place = recordRun({
         key: `${world.run.seed}:${me.id}:${world.turn}`,
         score: scoreNow,
+        ...(outcomeNow.breakdown ? { breakdown: outcomeNow.breakdown } : {}),
         name: me.name || playerName || telegramName() || t.heroLabel,
         heroClass: me.heroClass,
         lvl: me.lvl,
@@ -3130,6 +3133,7 @@ function tick(now: number): void {
         },
         onExit: () => toTitle(),
         score: scoreNow,
+        ...(outcomeNow.breakdown ? { breakdown: outcomeNow.breakdown } : {}),
         ranking: rankingBlock(answer),
         onBoards: api ? () => openBoards(dailyRun ? 'daily' : 'week') : undefined,
         share,

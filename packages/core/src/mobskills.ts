@@ -28,6 +28,7 @@ import { looseItems } from './bags';
 import { isBossDepth } from './level/builder';
 import { adjacent, cellX, cellY, distance, LENGTH, trueDistance, NEIGHBOURS4, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
+import { BOSS_SLOT, bossScore } from './score';
 
 /*
  * What each of Shattered's monsters does beyond the common Mob AI (ai.ts):
@@ -193,7 +194,8 @@ export function attackSpecial(ctx: Ctx, mob: Mob, enemy: Char): boolean {
     }
     case 'warlock':
       if (adjacentNow || !boltReaches(ctx, mob, enemy)) return false;
-      // Warlock.zap: a dark bolt, 12-18, that half the time degrades the hero's gear.
+      // Warlock.zap: a dark bolt, 12-18, that half the time degrades the hero's gear. The King's own (DKWarlock) costs score.
+      if (mob.bossMinion && isHero(enemy)) bossScore(ctx.world, BOSS_SLOT.king, -400);
       spend(mob, TICK);
       zapFx(ctx, mob, enemy.pos, 'shadow');
       if (magicHit(ctx, mob, enemy)) {

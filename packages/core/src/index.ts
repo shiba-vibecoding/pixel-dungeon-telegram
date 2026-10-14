@@ -55,6 +55,7 @@ export {
 } from './ident';
 export * from './shop';
 export * from './verify';
+export * from './score';
 export * from './badges';
 export * from './daily';
 export * from './spd-sprites';

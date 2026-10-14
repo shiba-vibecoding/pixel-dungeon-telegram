@@ -86,7 +86,7 @@ export function landItem(ctx: Ctx, pos: number, item: Item): void {
 export function dropItem(floor: Floor, pos: number, item: Item): void {
   const heap = floor.heaps.find((h) => h.pos === pos);
   if (!heap) {
-    floor.heaps.push({ pos, kind: 'heap', items: [item] });
+    floor.heaps.push({ pos, kind: 'heap', items: [item], auto: true });
   } else if (heap.kind !== 'heap') {
     heap.items.push(item);
   } else {

@@ -2343,6 +2343,23 @@ const en = {
   goldLabel: 'Gold',
   slain: 'Foes slain',
   scoreLabel: 'Score',
+  /* The score table (WndScoreBreakdown): Shattered's own words. */
+  scoring: {
+    title: 'Score Breakdown',
+    progress: ['Progression', 'Based on maximum depth and hero level.'],
+    treasure: ['Treasure', 'Based on gold collected and held item value.'],
+    explore: ['Exploration', 'Based on floors explored. Reduced by missing items or hidden doors, or unsolved puzzles.'],
+    bosses: ['Bosses', 'Based on bosses defeated. Reduced by standing in avoidable attacks during boss fights.'],
+    quests: ['Quests', 'Based on quests completed. Reduced by taking avoidable attacks or missing quest score.'],
+    win: 'Win Multiplier',
+    challenge: 'Challenge Multiplier',
+    total: 'Total Score',
+    /** The small print under a part: where it came from. */
+    treasureFrom: (gold: number, items: string) => `gold ${gold.toLocaleString('en-US')} + items ${items}`,
+    exploreFrom: (clean: number, floors: number) => `${clean} of ${floors} floors cleared`,
+    more: 'What each part counts',
+    open: 'Score breakdown',
+  },
   conditions: 'Conditions',
   noConditions: 'Nothing out of the ordinary.',
   turnsLeft: (n: number) => `${n} turns`,
@@ -2464,7 +2481,7 @@ const en = {
     challenges: 'Challenges',
     challengesOn: (n: number) => `${n} of 7 on`,
     challengesLocked: 'They open after your first victory, once you take the Amulet of Yendor.',
-    challengesFoot: 'Chosen before a new game; they last the whole run. Each one adds a quarter to the score.',
+    challengesFoot: 'Chosen before a new game; they last the whole run. Each one multiplies the score by 1.25.',
     challengeList: [
       ['On diet', 'No food turns up; gold lies in its place.'],
       ['Faith is my armor', 'No armor turns up; gold lies in its place.'],
@@ -2581,6 +2598,12 @@ const en = {
     ofTotal: (n: number) => `of ${n}`,
     practice2: 'Practice',
     dailyOpenNote: 'The same dungeon for everyone; one attempt goes to the board.',
+    /** The day's rules, each in a line: «Hardship — name: what it does», «Boon — name: what it gives». */
+    dailyHardship: (name: string, info: string) => `Hardship · ${name}: ${info}`,
+    dailyBoon: (name: string, info: string) => `Boon · ${name}: ${info}`,
+    /** The countdown to the next daily dungeon (the day is UTC) and when that is for this player. */
+    dailyNext: (left: string) => `Next daily dungeon in ${left}`,
+    dailyResets: (time: string) => `New rules at ${time} your time`,
   },
   /* The camp (the home screen), its mail, the step tutorial, and what the boards give. */
   camp: {
@@ -4178,6 +4201,22 @@ const ru: Strings = {
   goldLabel: 'Золото',
   slain: 'Побеждено врагов',
   scoreLabel: 'Очки',
+  /* The score table (WndScoreBreakdown): Shattered's own words. */
+  scoring: {
+    title: 'Распределение очков',
+    progress: ['Прогресс', 'Даются за максимальную глубину и уровень героя.'],
+    treasure: ['Сокровища', 'Даются за собранное золото и общую цену предметов в инвентаре.'],
+    explore: ['Исследование', 'Даются за исследованные этажи. Уменьшаются за пропущенные предметы, скрытые двери или неразгаданные загадки.'],
+    bosses: ['Боссы', 'Даются за побежденных боссов. Уменьшаются за то, что вы стоите в атаках, которых можно избежать во время боев с боссами.'],
+    quests: ['Задания', 'Даются за выполненные задания у NPC. Уменьшаются за то, что вы стоите в атаках, которые можно избежать, или за недостающие очки задания.'],
+    win: 'Множитель победы',
+    challenge: 'Множитель испытаний',
+    total: 'Всего очков',
+    treasureFrom: (gold, items) => `золото ${gold.toLocaleString('ru-RU')} + предметы ${items}`,
+    exploreFrom: (clean, floors) => `этажей без упущенного: ${clean} из ${floors}`,
+    more: 'За что даются очки',
+    open: 'Распределение очков',
+  },
   conditions: 'Состояние',
   noConditions: 'Ничего необычного.',
   turnsLeft: (n) => `ходов: ${n}`,
@@ -4294,7 +4333,7 @@ const ru: Strings = {
     challenges: 'Испытания',
     challengesOn: (n: number) => `Включено: ${n} из 7`,
     challengesLocked: 'Откроются после первой победы, когда вы добудете Амулет Йендора.',
-    challengesFoot: 'Выбираются перед новой игрой и действуют весь забег. Каждое добавляет к очкам четверть.',
+    challengesFoot: 'Выбираются перед новой игрой и действуют весь забег. Каждое умножает очки на 1,25.',
     challengeList: [
       ['На диете', 'Еда не встречается — на её месте золото.'],
       ['Вера — мой доспех', 'Броня не встречается — на её месте золото.'],
@@ -4408,6 +4447,10 @@ const ru: Strings = {
     ofTotal: (n) => `из ${n}`,
     practice2: 'Тренировка',
     dailyOpenNote: 'У всех одно подземелье; в таблицу идёт одна попытка.',
+    dailyHardship: (name, info) => `Помеха · ${name}: ${info}`,
+    dailyBoon: (name, info) => `Дар · ${name}: ${info}`,
+    dailyNext: (left) => `До следующего подземелья дня: ${left}`,
+    dailyResets: (time) => `Новые правила в ${time} по вашему времени`,
   },
   camp: {
     cls: ['Воин', 'Маг', 'Разбойник', 'Охотница', 'Дуэлянтка', 'Клирик'],

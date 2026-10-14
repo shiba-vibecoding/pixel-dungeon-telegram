@@ -9,6 +9,7 @@ import { adjacent, cellX, cellY, LENGTH, WIDTH } from './level/geometry';
 import { RoomType } from './level/room';
 import { F, hasFlag, T } from './level/terrain';
 import type { Rng } from './rng';
+import { scoreWandmakerDone } from './score';
 import type { World } from './world';
 
 /*
@@ -161,6 +162,7 @@ export function wandFromWandmaker(ctx: Ctx, hero: Hero, choice: 'battle' | 'util
   if (!collect(hero, wand)) dropItem(ctx.floor, hero.pos, wand);
   ctx.effects.push({ type: 'pickedUp', hero: hero.id, item: wand });
   quest.done = true;
+  scoreWandmakerDone(ctx.world);
   ctx.floor.mobs = ctx.floor.mobs.filter((mob) => mob.kind !== 'wandmaker');
   ctx.effects.push({ type: 'wandmaker', hero: hero.id, line: 'farewell' });
 }

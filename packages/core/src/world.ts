@@ -66,6 +66,7 @@ import {
   type ArtifactAction, artifactProblem, artifactsAct, artifactsTime, carriedOf, chaliceRegenDelay, disarmPresses, freezeTime, frozenBy,
   ghostFollows, ghostSeesBoss, ghostSays, heroPress, naturalism, performArtifact, petalsFor, talismanBlinds, talismanFound,
 } from './artifacts';
+import type { ScoreState } from './score';
 import { abilityProblem, alliesFollow, copyReach, endEnduring, swapWithClone, useAbility } from './abilities';
 
 /*
@@ -168,6 +169,8 @@ export interface World {
   night?: boolean;
   /** The daily dungeon's boon the hero set out with (daily.ts), for the screens. */
   boon?: string;
+  /** Statistics.bossScores and questScores (score.ts): what the bosses beaten and the errands done have earned, less avoidable hits; absent until the first. */
+  score?: ScoreState;
   /** The Amulet of Yendor has been taken up (Statistics.amuletObtained): its question is asked once. */
   amuletTaken?: boolean;
   /** A fallen hero's bones from an earlier run on this device, for their depth to hold (bones.ts; solo only). */

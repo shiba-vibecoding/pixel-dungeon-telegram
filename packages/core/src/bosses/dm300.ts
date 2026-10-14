@@ -17,6 +17,7 @@ import {
   assignBar, barAssigned, bleed, bossFloor, bossMob, CIRCLE8, fight, insideMap, lockFloor, N8, N9, removeTimed,
   say, schedule, setBarrier, show, theHero, throwChar, trueDistance, unlockFloor, yell,
 } from './common';
+import { BOSS_SLOT, bossScore } from '../score';
 import type { BossRules } from './rules';
 import type { Timed } from './state';
 
@@ -159,6 +160,7 @@ export function energyTurn(ctx: Ctx): void {
   if (victims.length > 0) show(ctx, 'zap', { cells: victims.map((v) => v.pos) });
   for (const ch of victims) {
     const damage = ctx.rng.normalIntRange(6, 12);
+    if (isHero(ch)) bossScore(ctx.world, BOSS_SLOT.dm300, -200);
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: ch.id, damage });
     hurt(ctx, ch, damage, 'lightning');
   }
@@ -513,6 +515,7 @@ function pylonAct(ctx: Ctx, pylon: Mob): void {
     const ch = charAt(ctx.world, ctx.depth, cell);
     if (!ch || !isAlive(ch) || (!isHero(ch) && ch.kind === 'dm300')) continue;
     const damage = ctx.rng.normalIntRange(10, 20);
+    if (isHero(ch)) bossScore(ctx.world, BOSS_SLOT.dm300, -100);
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: ch.id, damage });
     hurt(ctx, ch, damage, 'lightning');
   }

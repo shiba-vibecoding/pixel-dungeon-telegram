@@ -270,7 +270,7 @@ function recycle(ctx: Ctx, hero: Hero, item: Item): void {
   while (kind === item.kind) kind = draw();
   if (--item.qty <= 0) removeHeld(hero, item);
   const result = createItem(kind);
-  if (!collect(hero, result)) ctx.floor.heaps.push({ pos: hero.pos, kind: 'heap', items: [result] });
+  if (!collect(hero, result)) ctx.floor.heaps.push({ pos: hero.pos, kind: 'heap', items: [result], auto: true });
   ctx.effects.push({ type: 'transmuted', hero: hero.id, from: { ...item, qty: 1 }, to: result });
 }
 

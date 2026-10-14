@@ -18,6 +18,7 @@ import {
   appear, assignBar, bleed, bossFloor, bossMob, deferDamage, fight, isFist, lockFloor, N8, N9, normalFloat, say, show,
   theHero, trueDistance, unlockFloor, yell,
 } from './common';
+import { BOSS_SLOT, bossScore } from '../score';
 import type { BossRules } from './rules';
 
 /*
@@ -228,6 +229,7 @@ function fireBeams(ctx: Ctx, yog: Mob, targets: number[]): void {
   if (burnt) for (const h of heroesOn(ctx.world, ctx.depth)) observe(ctx.world, h);
   for (const ch of affected) {
     if (isFist(ch as Mob)) continue;
+    if (isHero(ch)) bossScore(ctx.world, BOSS_SLOT.yog, -500);
     // Char.hit with infinite accuracy: it always hits.
     const damage = ctx.rng.normalIntRange(20, 30);
     ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: yog.id, target: ch.id, hit: true, damage });

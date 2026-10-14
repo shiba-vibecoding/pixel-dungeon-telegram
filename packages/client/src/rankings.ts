@@ -1,10 +1,9 @@
-import type { HeroClass } from '@pd/core';
+import type { HeroClass, ScoreBreakdown } from '@pd/core';
 import { mergeWith } from './cloud';
 
 /*
  * Rankings: the best runs played on this device, as in the original
- * (Rankings.TABLE_SIZE records, scored by gold collected and level times the
- * deepest depth, doubled for a win). Kept in local storage.
+ * (Rankings.TABLE_SIZE records, scored as Shattered scores them: core score.ts). Kept in local storage.
  */
 
 export interface RunRecord {
@@ -23,13 +22,12 @@ export interface RunRecord {
   /** The arena of waves' runs are scored by arenaScore (core arena.ts) and say so in the table. */
   mode: 'solo' | 'daily' | 'coop' | 'arena';
   date: number;
+  /** The score's parts (core score.ts); absent in runs from before the table. */
+  breakdown?: ScoreBreakdown;
 }
 
 const KEY = 'pd-rankings';
 const TABLE_SIZE = 11;
-
-/** Rankings.score: gold collected plus level times the deepest depth times a hundred, twice that for a win. */
-export const runScore = (gold: number, lvl: number, depth: number, won: boolean): number => (gold + lvl * depth * 100) * (won ? 2 : 1);
 
 // Two devices' tables become one: every run once, the best first.
 mergeWith(KEY, (here, cloud) => {

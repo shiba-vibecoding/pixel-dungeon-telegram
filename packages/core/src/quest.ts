@@ -7,6 +7,7 @@ import { identify } from './ident';
 import type { Level } from './level/generate';
 import { adjacent } from './level/geometry';
 import type { Rng } from './rng';
+import { scoreGhostDone } from './score';
 import type { World } from './world';
 import { isChallenged, NO_ARMOR, underChallenges } from './challenges';
 
@@ -164,6 +165,7 @@ export function rewardFromGhost(ctx: Ctx, hero: Hero, choice: 'weapon' | 'armor'
   if (!collect(hero, item)) dropItem(ctx.floor, hero.pos, underChallenges(ctx.world, item));
   ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
   quest.done = true;
+  scoreGhostDone(ctx.world);
   ctx.floor.mobs = ctx.floor.mobs.filter((mob) => mob.kind !== 'ghost');
   ctx.effects.push({ type: 'ghost', hero: hero.id, line: 'farewell', errand: errandOf(quest) });
 }

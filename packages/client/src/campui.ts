@@ -2,9 +2,9 @@ import type { EffectId, HeroClass, SkinVariant } from '@pd/core';
 import { audio } from './audio';
 import { Camp, type CampScene, campClasses, CAMP_ORDER, seasonOf } from './camp';
 import type { Profile } from './checked';
-import { t } from './i18n';
+import { locale, t } from './i18n';
 import { countChallenges } from './meta';
-import { type CardFallback, profileCard } from './rankui';
+import { boardCloses, type CardFallback, countdown, profileCard } from './rankui';
 import { button, el, show } from './screens';
 import { rankIcon, trophyKind } from './trophyicons';
 
@@ -23,7 +23,7 @@ const QUESTS_ICON = false;
 
 export interface DailyRulesView {
   /** The hardship's place in the challenges' sheet and its name. */
-  hardship: { index: number; name: string };
+  hardship: { index: number; name: string; info: string };
   /** The boon's item in items.png, its name and what it gives. */
   boon: { sprite: number; name: string; info: string };
 }
@@ -53,6 +53,8 @@ export interface CampScreenOptions {
   dailyState?: { state: 'open' | 'going' | 'done'; place: number | null; total: number };
   onPractice?: () => void;
   rules?: DailyRulesView;
+  /** The UTC day turned over while the camp stood: the rules shown are yesterday's. */
+  onNewDay?: () => void;
   onRankings(): void;
   onMart(): void;
   onSettings(): void;
@@ -80,6 +82,42 @@ function edgeIcon(kind: string, label: string, onClick: () => void, count?: numb
     badge,
   );
   node.type = 'button';
+  return node;
+}
+
+/**
+ * Under the day's rules: each in a line of words (what the hardship does, what the boon gives), then the countdown to the next
+ * daily dungeon and when that is on the player's own clock (the day is UTC: core verify.ts dayOf).
+ */
+function dailyInfo(options: CampScreenOptions): HTMLElement {
+  const node = el('p', { className: 'pd-daily-info' });
+  const { rules } = options;
+  if (rules) {
+    node.append(
+      el('span', { className: 'bad', textContent: t.ranked.dailyHardship(rules.hardship.name, rules.hardship.info) }),
+      el('span', { className: 'boon', textContent: t.ranked.dailyBoon(rules.boon.name, rules.boon.info) }),
+    );
+  }
+  const next = el('span', { className: 'timer' });
+  const resets = el('span', { className: 'timer' });
+  node.append(next, resets);
+  const opened = Date.now();
+  const closes = boardCloses('daily', opened);
+  resets.textContent = t.ranked.dailyResets(new Date(closes).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }));
+  let started = false;
+  const tick = (): void => {
+    const now = Date.now();
+    if (now >= closes) {
+      if (node.isConnected) options.onNewDay?.();
+      return;
+    }
+    next.textContent = t.ranked.dailyNext(countdown(closes - now));
+    if (!started || node.isConnected) {
+      started = true;
+      window.setTimeout(tick, Math.min(30_000, closes - now + 500));
+    }
+  };
+  tick();
   return node;
 }
 
@@ -128,6 +166,7 @@ function dailyBlock(options: CampScreenOptions): HTMLElement {
     { className: `pd-daily compact${done ? ' done' : ''}` },
     el('div', { className: 'pd-daily-title' }, el('h3', { textContent: t.daily })),
     rulesNode,
+    dailyInfo(options),
     done && options.onPractice ? button(t.ranked.practice2, options.onPractice) : button(t.descendDaily, options.onDaily),
   );
 }
