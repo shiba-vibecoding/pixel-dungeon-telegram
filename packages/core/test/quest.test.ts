@@ -113,6 +113,8 @@ describe('the sad ghost (Ghost, Ghost.Quest)', () => {
       const effects = [];
       for (let k = 0; k < 200 && floor.mobs.includes(foe); k++) {
         if (type === 3) foe.enemySeen = false;
+        // (The trickster keeps its distance, as Shattered's does: it is brought back each time.)
+        if (type === 2 && !adjacent(foe.pos, hero.pos)) foe.pos = beside(world, hero.pos);
         const r = adjacent(foe.pos, hero.pos) ? act(world, 'p', { type: 'attack', target: foe.id }) : act(world, 'p', { type: 'wait' });
         if (r.ok) effects.push(...r.effects);
       }

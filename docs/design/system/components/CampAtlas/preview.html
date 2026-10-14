@@ -1,0 +1,30 @@
+<!-- @dsCard group="Привал" height=480 width=1100 page subtitle="Листы привала: шесть фонов 94×203 (лето, осень, зима у входа; пещера с кристаллами, тюремный двор, зал гномьего города), пламя костра 6×13×17 и факела 4×5×7, ряд героев camp-heroes.png (6 классов и облики), значки краёв 16×16: задания, почта, Пиксель-Март, знак обиды" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Листы привала</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .wrap { width: 1100px; box-sizing: border-box; padding: 16px 20px; color: var(--ink); display: flex; flex-direction: column; gap: 10px; }
+  h2 { margin: 0; font: var(--text-label, 400 18px/20px var(--font-ui)); color: var(--gold); }
+  h2 span { margin-left: 8px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .cell { display: flex; flex-direction: column; gap: 4px; font: var(--text-caption, 400 15px/18px var(--font-small)); color: var(--ink-muted); }
+  canvas { image-rendering: pixelated; display: block; background: #000; }
+</style></head>
+<body>
+<div class="pd-root wrap" id="w"></div>
+<script>
+  var q = new URLSearchParams(location.search), en = q.get("lang") === "en";
+  var w = document.getElementById('w');
+  function sec(t, n) { w.insertAdjacentHTML('beforeend', '<h2>' + t + '<span>' + n + '</span></h2>'); var r = document.createElement('div'); r.className = 'row'; w.appendChild(r); return r; }
+  function cell(row, cap, k, sx, sy, sw, sh, sc) { var c = document.createElement('canvas'); c.width = sw; c.height = sh; c.style.width = sw * sc + 'px'; c.style.height = sh * sc + 'px'; var d = document.createElement('div'); d.className = 'cell'; d.appendChild(c); d.insertAdjacentHTML('beforeend', '<span>' + cap + '</span>'); row.appendChild(d); var im = new Image(); im.onload = function () { c.getContext('2d').drawImage(im, sx, sy, sw, sh, 0, 0, sw, sh); }; im.src = PD.demo.campSrc(k); }
+  var r1 = sec(en ? 'Backgrounds' : 'Фоны', en ? '94×203, top 130 px shown ×1.5; the hero stands at 50,119, the fire at 24,118' : '94×203, показан верх 130 px ×1,5; герой стоит в 50,119, костёр — в 24,118');
+  [['summer', en ? 'Entrance · summer' : 'Вход · лето'], ['autumn', en ? 'Entrance · autumn' : 'Вход · осень'], ['winter', en ? 'Entrance · winter' : 'Вход · зима'], ['cave', en ? 'Crystal cave' : 'Пещера с кристаллами'], ['prison', en ? 'Prison yard' : 'Тюремный двор'], ['hall', en ? 'Dwarf hall' : 'Зал гномов']].forEach(function (b) { cell(r1, b[1], b[0], 0, 0, 94, 130, 1.5); });
+  var r2 = sec(en ? 'Fire, torch, heroes, icons' : 'Пламя, факел, герои, значки', en ? 'fire 100 ms a frame, torch 130 ms; heroes — row 1 of each sheet' : 'костёр 100 мс на кадр, факел 130 мс; герои — ряд 1 каждого листа');
+  cell(r2, en ? 'fire ×3' : 'костёр ×3', 'fire', 0, 0, 78, 17, 3); cell(r2, en ? 'torch ×4' : 'факел ×4', 'torch', 0, 0, 20, 7, 4);
+  cell(r2, en ? 'camp-heroes.png: idle 0–1, run 2–7, attack 13–15 ×2' : 'camp-heroes.png: покой 0–1, бег 2–7, удар 13–15 ×2', 'heroes', 0, 0, 192, 240, 1);
+  cell(r2, en ? 'sulk ×4' : 'обида ×4', 'sulk', 0, 0, 7, 7, 4);
+  [['quests', en ? 'quests' : 'задания'], ['mail', en ? 'mail' : 'почта'], ['mart', en ? 'Pixel-Mart' : 'Пиксель-Март']].forEach(function (k) { r2.insertAdjacentHTML('beforeend', '<div class="cell"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-' + k[0] + ')"></i><span>' + k[1] + ' ×2</span></div>'); });
+</script>
+</body>
+</html>

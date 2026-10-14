@@ -16,12 +16,12 @@ export interface BagDef {
 }
 
 export const BAGS: Readonly<Partial<Record<ItemKind, BagDef>>> = {
-  // VelvetPouch: seeds and runestones (and goo blobs and metal shards; SEAM(alchemy): weightstones stand for runestones).
-  'bag.seeds': { holds: ['seed', 'weightstone'], size: 19 },
-  // ScrollHolder: scrolls (and spells, arcane resin, styli).
-  'bag.scrolls': { holds: ['scroll', 'wipeout'], size: 19 },
-  // PotionBandolier: potions, the waterskin (and liquid metal).
-  'bag.potions': { holds: ['potion', 'vial'], size: 19 },
+  // VelvetPouch: seeds and runestones (and goo blobs and metal shards).
+  'bag.seeds': { holds: ['seed', 'stone'], size: 19 },
+  // ScrollHolder: scrolls and spells (and arcane resin, styli).
+  'bag.scrolls': { holds: ['scroll', 'spell', 'wipeout'], size: 19 },
+  // PotionBandolier: potions with the brews and elixirs, the waterskin (and liquid metal).
+  'bag.potions': { holds: ['potion', 'brew', 'elixir', 'vial'], size: 19 },
   // MagicalHolster: wands, thrown weapons and bombs.
   'bag.wands': { holds: ['wand', 'missile', 'bomb'], size: 19 },
 };

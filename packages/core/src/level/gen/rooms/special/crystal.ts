@@ -322,10 +322,10 @@ export class CrystalVaultRoom extends SpecialRoom {
     if (altChance > Math.fround(0.1)) altChance = Math.fround(Math.fround(altChance + Math.fround(0.1)) / 2);
     if (Random.Float() < altChance) {
       // Mimic.spawnAt(i2Pos, CrystalMimic.class, i2): a crystal mimic's prize is only made sure to be uncursed.
-      // SEAM(mobs): no crystal mimic yet; a mimic heap stands for it.
+      // (A crystalMimic heap: the mobs stream's CrystalMimic springs from it.)
       i2.cursed = false;
       knowCurse(i2);
-      level.drop(i2, i2Pos).kind = 'mimic';
+      level.drop(i2, i2Pos).kind = 'crystalMimic';
     } else {
       level.drop(i2, i2Pos).kind = 'crystalChest';
     }

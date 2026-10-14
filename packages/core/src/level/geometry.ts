@@ -29,6 +29,18 @@ export function distance(a: number, b: number): number {
   return Math.max(Math.abs(cellX(a) - cellX(b)), Math.abs(cellY(a) - cellY(b)));
 }
 
+/** Squared straight-line distance: exact in integers, to compare distances without a square root. */
+export function squaredDistance(a: number, b: number): number {
+  const dx = cellX(a) - cellX(b);
+  const dy = cellY(a) - cellY(b);
+  return dx * dx + dy * dy;
+}
+
+/** Level.trueDistance: as the crow flies (Math.sqrt is correctly rounded on every engine, Math.hypot is not). */
+export function trueDistance(a: number, b: number): number {
+  return Math.sqrt(squaredDistance(a, b));
+}
+
 export function adjacent(a: number, b: number): boolean {
   const diff = Math.abs(a - b);
   return diff === 1 || diff === WIDTH || diff === WIDTH + 1 || diff === WIDTH - 1;

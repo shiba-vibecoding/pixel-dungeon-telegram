@@ -33,10 +33,12 @@ function freeNeighbour(world: World, depth: number, pos: number): number {
 }
 
 describe('monsters', () => {
-  it('populate sewer levels as the bestiary says, asleep in standard rooms, away from the entrance', () => {
-    // Bestiary.mob: never a rare variant at first; now and then a visitor from the prison below.
+  it("populate sewer levels from MobSpawner's rotations, asleep in standard rooms", () => {
+    // MobSpawner: each depth's rotation, one in fifty of a kind its rare one, now and then a visitor from the prison below.
     const allowed: Record<number, string[]> = {
-      1: ['rat'], 2: ['rat', 'gnoll'], 3: ['rat', 'gnoll', 'crab', 'swarm'], 4: ['rat', 'gnoll', 'crab', 'swarm', 'skeleton', 'thief'],
+      1: ['rat', 'snake', 'albino'], 2: ['rat', 'snake', 'gnoll', 'albino', 'gnollExile'],
+      3: ['rat', 'snake', 'gnoll', 'swarm', 'crab', 'albino', 'gnollExile', 'hermitCrab'],
+      4: ['gnoll', 'swarm', 'crab', 'slime', 'thief', 'gnollExile', 'hermitCrab', 'causticSlime', 'bandit'],
     };
 
     for (let seed = 1; seed <= 25; seed++) {
@@ -44,7 +46,7 @@ describe('monsters', () => {
       for (let depth = 1; depth <= 4; depth++) {
         const level = levelAt(world, depth);
         // The sad ghost may haunt one level besides its monsters, and special rooms have guardians of their own.
-        const mobs = floorAt(world, depth).mobs.filter((mob) => mob.kind !== 'ghost' && mob.kind !== 'statue' && mob.kind !== 'piranha' && mob.kind !== 'sentry' && mob.kind !== 'bee');
+        const mobs = floorAt(world, depth).mobs.filter((mob) => !['ghost', 'statue', 'armoredStatue', 'piranha', 'phantomPiranha', 'sentry', 'bee'].includes(mob.kind));
         // RegularLevel.createMobs: eight on the first depth, then mobLimit: 3 + depth % 5, and up to two more.
         const base = depth === 1 ? 8 : 3 + (depth % 5);
         // A third more on a large level.
@@ -63,18 +65,24 @@ describe('monsters', () => {
     }
   });
 
-  it('use the original weapons, armour and stats', () => {
+  it("use Shattered's weapons and armour, and the original monsters", () => {
     const stats = (kind: ItemKind, level = 0) => weaponStats(createItem(kind, 1, level));
-    // The warrior's, as Shattered's worn shortsword: ten strength.
-    expect(stats('weapon.shortSword')).toMatchObject({ min: 1, max: 10, str: 10 });
+    // MeleeWeapon: tier + lvl to 5(tier+1) + lvl(tier+1), each kind its own; strength 8 + 2×tier, less at +1, +3, +6...
+    expect(stats('weapon.wornShortsword')).toMatchObject({ min: 1, max: 10, str: 10 });
     expect(stats('weapon.dagger')).toMatchObject({ min: 1, max: 8, str: 10 });
-    expect(stats('weapon.knuckles')).toMatchObject({ min: 1, max: 5, delay: 0.5 });
-    expect(stats('weapon.mace')).toMatchObject({ min: 3, max: 12, str: 14 });
-    // 30 / 1.2f is 24.99999 in Java's float arithmetic: the war hammer tops out at 24.
+    expect(stats('weapon.gloves')).toMatchObject({ min: 1, max: 5, delay: 0.5 });
+    expect(stats('weapon.mace')).toMatchObject({ min: 3, max: 16, str: 14 });
+    expect(stats('weapon.spear')).toMatchObject({ min: 2, max: 20, str: 12, reach: 2, delay: 1.5 });
+    expect(stats('weapon.glaive', 1)).toMatchObject({ min: 6, max: 48, str: 17 });
+    expect(stats('weapon.greataxe')).toMatchObject({ min: 5, max: 45, str: 20 });
     expect(stats('weapon.warHammer')).toMatchObject({ min: 5, max: 24, str: 18 });
-    // Upgrades raise damage and lower the strength needed.
-    expect(stats('weapon.sword', 2)).toMatchObject({ min: 5, max: 22, str: 12 });
-    expect(armorStats(createItem('armor.mail', 1, 1))).toEqual({ dr: 9, str: 12 });
+    expect(stats('weapon.sword', 3)).toMatchObject({ min: 6, max: 32, str: 12 });
+    // Armor: tier×(2+lvl) at most, lvl at least.
+    expect(armorStats(createItem('armor.mail', 1, 1))).toEqual({ min: 1, max: 9, str: 13, tier: 3 });
+    expect(armorStats(createItem('armor.plate'))).toEqual({ min: 0, max: 10, str: 18, tier: 5 });
+    // Augmented: for speed 0.7× the damage in 2/3 the time; armour for defence, more of it.
+    expect(weaponStats({ ...createItem('weapon.sword'), augment: 'speed' })).toMatchObject({ min: 2, max: 14 });
+    expect(armorStats({ ...createItem('armor.leather'), augment: 'defense' }).max).toBe(6);
     expect(MOBS.crab).toMatchObject({ ht: 15, speed: 2, dr: 4 });
   });
 });
@@ -262,27 +270,22 @@ describe('rare variants', () => {
 });
 
 describe('dwarf monks', () => {
-  it("may knock the weapon out of the hero's hands, who then fights bare-handed", () => {
+  it('gain focus while they hunt, and a focused monk parries any blow, then needs six or seven turns to focus again', () => {
     const world = pacify(createWorld(4));
     addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
     const hero = heroById(world, 'p')!;
-    Object.assign(hero, { hp: 5000, ht: 5000, defenseSkill: 0 });
+    Object.assign(hero, { hp: 5000, ht: 5000, defenseSkill: 0, attackSkill: 100000 });
     const monk = createMob('#monk', 'monk', freeNeighbour(world, 1, hero.pos), 'hunting', floorAt(world, 1).now);
     Object.assign(monk, { enemy: 'p', target: hero.pos, enemySeen: true, hp: 100000, ht: 100000 });
     floorAt(world, 1).mobs.push(monk);
-    const sword = hero.weapon!;
-    for (let i = 0; i < 200 && hero.weapon; i++) act(world, 'p', { type: 'wait' });
-    expect(hero.weapon).toBeNull();
-    const heap = floorAt(world, 1).heaps.find((h) => h.pos === hero.pos)!;
-    expect(heap.items).toContain(sword);
-    // Bare fists still strike.
-    expect(act(world, 'p', { type: 'attack', target: '#monk' }).ok).toBe(true);
-    // Picked up and wielded again, nothing is lost.
-    floorAt(world, 1).mobs = [];
-    act(world, 'p', { type: 'pickup' });
-    const index = hero.items.indexOf(sword);
-    expect(act(world, 'p', { type: 'equip', item: index }).ok).toBe(true);
-    expect(hero.weapon).toBe(sword);
-    expect(hero.items).not.toContain(sword);
+    for (let i = 0; i < 3 && !monk.focused; i++) act(world, 'p', { type: 'wait' });
+    expect(monk.focused).toBe(true);
+    const result = act(world, 'p', { type: 'attack', target: '#monk' });
+    expect(result.ok && result.effects.some((e) => e.type === 'attack' && e.attacker === 'p' && !e.hit)).toBe(true);
+    expect(result.ok && result.effects.some((e) => e.type === 'mobSays' && e.line === 'parried')).toBe(true);
+    expect(monk.focused).toBe(false);
+    expect(monk.focusCooldown).toBeGreaterThan(4);
+    // And the weapon stays in the hero's hands: Shattered's monks do not disarm.
+    expect(hero.weapon).not.toBeNull();
   });
 });

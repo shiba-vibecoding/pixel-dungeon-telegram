@@ -269,14 +269,14 @@ export function skeletonKeyTurn(ctx: Ctx, hero: Hero): void {
     const cap = keyChargeCap(key);
     let charge = keyCharge(key);
     if (charge >= cap || !regenOn(ctx.world, hero)) continue;
-    let partial = f32((key.partialCharge ?? 0) + f32(1 / f32(120 - f32((cap - charge) * 7.5))));
+    let partial = f32((key.partial ?? 0) + f32(1 / f32(120 - f32((cap - charge) * 7.5))));
     while (partial >= 1) {
       partial = f32(partial - 1);
       charge++;
       if (charge === cap) partial = 0;
     }
     key.charge = charge;
-    key.partialCharge = partial;
+    key.partial = partial;
   }
   keyWallsTurn(ctx);
 }

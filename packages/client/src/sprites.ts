@@ -1,5 +1,6 @@
-import { baseKind, type HeroClass, type MobKind } from '@pd/core';
 import type { TileSheets } from './tiles';
+import { baseKind, type HeroClass, LAST_SHOP_DEPTH, type MobKind } from '@pd/core';
+import { type MobAnim, type MobSheet, MOB_SHEETS, SPD_SHEETS, type SpdSheet } from './mobsprites';
 
 /* Sprite sheets and animations of the original (HeroSprite, RatSprite, …). */
 
@@ -16,12 +17,23 @@ export interface Animation {
   loop: boolean;
 }
 
-export type AnimName = 'idle' | 'run' | 'attack' | 'die' | 'operate' | 'pump';
+export type AnimName = 'idle' | 'run' | 'attack' | 'die' | 'operate' | 'pump' | MobAnim | 'attack2' | 'pumpAttack';
 
 export interface CharSprite {
   sheet: Sheet;
   anims: Readonly<Record<AnimName, Animation>>;
+  /** Shattered's monsters (mobsprites.ts): a second way to strike now and then, what bleeds out, how dim, what it gives off. */
+  altAttack?: number;
+  blood?: string;
+  brightness?: number;
+  emitter?: MobSheet['emitter'];
 }
+
+/**
+ * Shattered's boss sprites (sprites/*Sprite.java), each with its frames and timing, and the variants a
+ * boss changes to: DM-300 supercharged (DM300Sprite.updateChargeState), a pylon switched on (PylonSprite.activate).
+ */
+export type SpriteVariant = 'dm300.charged' | 'pylon.active';
 
 export interface Assets {
   /** Tiles and water of each region: the sewers, the prison, the caves, the city, the halls. */
@@ -29,19 +41,45 @@ export interface Assets {
   water: HTMLImageElement[];
   heroes: Record<HeroClass, CharSprite>;
   mobs: Record<MobKind, CharSprite>;
+  variants: Record<SpriteVariant, CharSprite>;
+  /** Shattered's custom tiles of the boss levels (assets/spd: sewer_boss, prison_exit, caves_boss, city_boss, halls_special). */
+  bossTiles: Record<'sewer_boss' | 'prison_exit' | 'caves_boss' | 'city_boss' | 'halls_sp', HTMLImageElement>;
   icons: HTMLImageElement;
   items: HTMLImageElement;
-  /** 16x16 plants, in the order of PLANT_KINDS. */
+  /** 16x16 plants, in the order of PLANT_KINDS (the wand of regrowth's two after Pixel Dungeon's eight). */
   plants: HTMLImageElement;
   /** Shattered's environment: tiles, water, terrain features, raised terrain, occlusion shadows, custom tiles (tiles.ts). */
   env: TileSheets;
+  /** Shattered's monster sheets, by file (an armoured statue's tier is cut from the statue's when drawn). */
+  spd: Record<SpdSheet, HTMLImageElement>;
+  /** Shattered's effects.png (Effects.get): the chains among them. */
+  effects: HTMLImageElement;
+  /** Shattered's spell_icons.png (SpellSprite): 16 by 16 icons that swell in over a creature. */
+  spells: HTMLImageElement;
 }
 
 const anim = (fps: number, frames: number[], loop = false): Animation => ({ fps, frames, loop });
 
 /** Animations of a character that has no special ones for operating or pumping up. */
 function basic(idle: Animation, run: Animation, attack: Animation, die: Animation): Record<AnimName, Animation> {
-  return { idle, run, attack, die, operate: idle, pump: idle };
+  return {
+    idle, run, attack, die, operate: idle, pump: idle, attack2: attack, pumpAttack: attack,
+    zap: attack, charge: idle, crumple: die, hide: idle, hideStealth: idle, prep: idle, leap: run, cast: attack,
+  };
+}
+
+/** A Shattered monster's sheet as a sprite: its animations, the ones it lacks standing in as Shattered's MobSprite does. */
+export function spdSprite(image: HTMLImageElement, spec: MobSheet): CharSprite {
+  const anims = basic(spec.idle, spec.run, spec.attack, spec.die);
+  for (const [name, anim] of Object.entries(spec.more ?? {})) anims[name as MobAnim] = anim;
+  if (spec.altAttack) anims.attack2 = spec.altAttack.anim;
+  return {
+    sheet: sheet(image, spec.w, spec.h), anims,
+    ...(spec.altAttack ? { altAttack: spec.altAttack.chance } : {}),
+    ...(spec.blood ? { blood: spec.blood } : {}),
+    ...(spec.brightness ? { brightness: spec.brightness } : {}),
+    ...(spec.emitter ? { emitter: spec.emitter } : {}),
+  };
 }
 
 const HERO_ANIMS: Record<AnimName, Animation> = {
@@ -64,7 +102,7 @@ const IMP_SPRITE = {
 };
 
 /** A monster's sheet: its frame size and animations, and, for Shattered's sheets (assets/spd/<spd>.png), which file. */
-interface MobSheet {
+interface LevelSheet {
   w: number;
   h: number;
   anims: Record<AnimName, Animation>;
@@ -72,7 +110,7 @@ interface MobSheet {
 }
 
 /** Shattered's sprites for the levels stream's characters (sprites/*Sprite.java): the quests' givers and foes. */
-const SPD_MOBS: Partial<Record<MobKind, MobSheet>> = {
+const SPD_MOBS: Partial<Record<MobKind, LevelSheet>> = {
   // GhostSprite.
   ghost: {
     w: 14, h: 15, spd: 'ghost',
@@ -92,11 +130,6 @@ const SPD_MOBS: Partial<Record<MobKind, MobSheet>> = {
   sentry: {
     w: 8, h: 15, spd: 'sentry',
     anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0], true), anim(1, [0], true)),
-  },
-  // SpawnerSprite: sixteen frames turning over and over, whatever it does (it bobs, see render.ts).
-  demonSpawner: {
-    w: 16, h: 16, spd: 'spawner',
-    anims: basic(...([0, 1, 2, 3].map(() => anim(8, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], true)) as [Animation, Animation, Animation, Animation])),
   },
   // GreatCrabSprite: the crab sheet from frame 32, a slower run.
   greatCrab: {
@@ -174,34 +207,100 @@ const SPD_MOBS: Partial<Record<MobKind, MobSheet>> = {
   },
 };
 
-const MOB_SPRITES: Partial<Record<MobKind, MobSheet>> = {
-  rat: {
-    w: 16,
-    h: 15,
-    anims: basic(anim(2, [0, 0, 0, 1], true), anim(10, [6, 7, 8, 9, 10], true), anim(15, [2, 3, 4, 5, 0]), anim(10, [11, 12, 13, 14])),
+/** FistSprite: the six fists share a sheet, each its own ten frames from `c`. */
+const fist = (c: number): { w: number; h: number; file: string; anims: Record<AnimName, Animation> } => ({
+  w: 24, h: 17, file: 'spd/yog_fists',
+  anims: {
+    ...basic(anim(2, [c, c, c + 1], true), anim(3, [c, c + 1], true), anim(3, [c]), anim(10, [c, c + 2, c + 3, c + 4])),
+    zap: anim(8, [c, c + 5, c + 6]),
   },
-  gnoll: {
-    w: 12,
-    h: 15,
-    anims: basic(anim(2, [0, 0, 0, 1, 0, 0, 1, 1], true), anim(12, [4, 5, 6, 7], true), anim(12, [2, 3, 0]), anim(12, [8, 9, 10])),
+});
+
+/** DM300Sprite.updateChargeState: its frames, plain or supercharged (ten further along). */
+const dm300 = (charged: boolean): { w: number; h: number; file: string; anims: Record<AnimName, Animation> } => {
+  const c = charged ? 10 : 0;
+  return {
+    w: 25, h: 22, file: 'spd/dm300',
+    anims: {
+      ...basic(anim(charged ? 15 : 10, [c, c + 1], true), anim(charged ? 15 : 10, [c, c + 2], true), anim(15, [c + 3, c + 4, c + 5]),
+        anim(20, [0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10])),
+      zap: anim(15, [6, 7, 7, 6]),
+      charge: anim(4, [0, 10], true),
+    },
+  };
+};
+
+/** PylonSprite: a still frame, the lit one once it is switched on, a wreck once destroyed. */
+const pylon = (active: boolean): { w: number; h: number; file: string; anims: Record<AnimName, Animation> } => ({
+  w: 10, h: 20, file: 'spd/pylon',
+  anims: basic(anim(1, [active ? 1 : 0]), anim(1, [active ? 1 : 0]), anim(1, [active ? 1 : 0]), anim(1, [2])),
+});
+
+const VARIANTS: Record<SpriteVariant, { w: number; h: number; file: string; anims: Record<AnimName, Animation> }> = {
+  'dm300.charged': dm300(true),
+  'pylon.active': pylon(true),
+};
+
+/** Pixel Dungeon's sheets, for those Shattered's (MOB_SHEETS) do not cover yet; the bosses' Shattered's own (assets/spd). */
+const MOB_SPRITES: Partial<Record<MobKind, { w: number; h: number; file?: string; anims: Record<AnimName, Animation> }>> = {
+  // Shattered's bosses (assets/spd).
+  // GooSprite.
+  goo: {
+    w: 20,
+    h: 14,
+    file: 'spd/goo',
+    anims: {
+      ...basic(anim(10, [2, 1, 0, 0, 1], true), anim(15, [3, 2, 1, 2], true), anim(10, [8, 9, 10]), anim(10, [5, 6, 7])),
+      pump: anim(20, [4, 3, 2, 1, 0], true),
+      pumpAttack: anim(20, [4, 3, 2, 1, 0, 7]),
+    },
   },
-  crab: {
+  // TenguSprite.
+  tengu: {
+    w: 14,
+    h: 16,
+    file: 'spd/tengu',
+    anims: basic(anim(2, [0, 0, 0, 1], true), anim(15, [2, 3, 4, 5, 0]), anim(15, [6, 7, 7, 0]), anim(8, [8, 9, 10, 10, 10, 10, 10, 10])),
+  },
+  // KingSprite.
+  king: {
     w: 16,
     h: 16,
-    anims: basic(anim(5, [0, 1, 0, 2], true), anim(15, [3, 4, 5, 6], true), anim(12, [7, 8, 9]), anim(12, [10, 11, 12, 13])),
+    file: 'spd/king',
+    anims: basic(anim(12, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2], true), anim(15, [3, 4, 5, 6, 7, 8], true), anim(15, [9, 10, 11]), anim(8, [12, 13, 14, 15])),
+  },
+  // YogSprite.
+  yog: {
+    w: 20,
+    h: 19,
+    file: 'spd/yog',
+    anims: basic(anim(10, [0, 1, 2, 2, 1, 0, 3, 4, 4, 3, 0, 5, 6, 6, 5], true), anim(12, [0], true), anim(12, [0]), anim(10, [0, 7, 8, 9])),
+  },
+  // LarvaSprite.
+  larva: {
+    w: 12,
+    h: 8,
+    file: 'spd/larva',
+    anims: basic(anim(5, [4, 4, 4, 4, 4, 5, 5], true), anim(12, [0, 1, 2, 3], true), anim(15, [6, 5, 7]), anim(10, [8])),
+  },
+  dm300: dm300(false),
+  pylon: pylon(false),
+  burningFist: fist(0),
+  soiledFist: fist(10),
+  rottingFist: fist(20),
+  rustedFist: fist(30),
+  brightFist: fist(40),
+  darkFist: fist(50),
+  // GhostSprite, Shattered's sheet (spd/ghost.png): it strikes and fades away as the sad ghost does not.
+  ghostHero: {
+    w: 14,
+    h: 15,
+    anims: basic(anim(5, [0, 1], true), anim(10, [0, 1], true), anim(10, [0, 2, 3]), anim(8, [0, 4, 5, 6, 7])),
   },
   ghost: {
     w: 14,
     h: 15,
     anims: basic(anim(5, [0, 1], true), anim(10, [0, 1], true), anim(5, [0, 1]), anim(20, [0])),
-  },
-  goo: {
-    w: 20,
-    h: 14,
-    anims: {
-      ...basic(anim(10, [0, 1], true), anim(10, [0, 1], true), anim(10, [5, 0, 6]), anim(10, [2, 3, 4])),
-      pump: anim(20, [0, 1], true),
-    },
   },
   shopkeeper: {
     w: 14,
@@ -213,74 +312,6 @@ const MOB_SPRITES: Partial<Record<MobKind, MobSheet>> = {
     h: 14,
     anims: basic(anim(10, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 3, 3, 3, 3, 3, 2, 1], true), anim(20, [0], true), anim(20, [0]), anim(20, [0])),
   },
-  skeleton: {
-    w: 12,
-    h: 15,
-    anims: basic(
-      anim(12, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3], true), anim(15, [4, 5, 6, 7, 8, 9], true),
-      anim(15, [14, 15, 16]), anim(12, [10, 11, 12, 13]),
-    ),
-  },
-  thief: {
-    w: 12,
-    h: 13,
-    anims: basic(anim(1, [0, 0, 0, 1, 0, 0, 0, 0, 1], true), anim(15, [0, 0, 2, 3, 3, 4], true), anim(12, [10, 11, 12, 0]), anim(10, [5, 6, 7, 8, 9])),
-  },
-  swarm: {
-    w: 16,
-    h: 16,
-    anims: basic(anim(15, [0, 1, 2, 3, 4, 5], true), anim(15, [0, 1, 2, 3, 4, 5], true), anim(20, [6, 7, 8, 9]), anim(15, [10, 11, 12, 13, 14])),
-  },
-  shaman: {
-    w: 12,
-    h: 15,
-    anims: basic(anim(2, [0, 0, 0, 1, 0, 0, 1, 1], true), anim(12, [4, 5, 6, 7], true), anim(12, [2, 3, 0]), anim(12, [8, 9, 10])),
-  },
-  bat: {
-    w: 15,
-    h: 15,
-    anims: basic(anim(8, [0, 1], true), anim(12, [0, 1], true), anim(12, [2, 3, 0, 1]), anim(12, [4, 5, 6])),
-  },
-  brute: {
-    w: 12,
-    h: 16,
-    anims: basic(anim(2, [0, 0, 0, 1, 0, 0, 1, 1], true), anim(12, [4, 5, 6, 7], true), anim(12, [2, 3, 0]), anim(12, [8, 9, 10])),
-  },
-  spinner: {
-    w: 16,
-    h: 16,
-    anims: basic(anim(10, [0, 0, 0, 0, 0, 1, 0, 1], true), anim(15, [0, 2, 0, 3], true), anim(12, [0, 4, 5, 0]), anim(12, [6, 7, 8, 9])),
-  },
-  dm300: {
-    w: 22,
-    h: 20,
-    anims: basic(anim(10, [0, 1], true), anim(10, [2, 3], true), anim(15, [4, 5, 6]), anim(20, [0, 7, 0, 7, 0, 7, 0, 7, 0, 7, 0, 7, 8])),
-  },
-  elemental: {
-    w: 12,
-    h: 14,
-    anims: basic(anim(10, [0, 1, 2], true), anim(12, [0, 1, 3], true), anim(15, [4, 5, 6]), anim(15, [7, 8, 9, 10, 11, 12, 13, 12])),
-  },
-  monk: {
-    w: 15,
-    h: 14,
-    anims: basic(anim(6, [1, 0, 1, 2], true), anim(15, [11, 12, 13, 14, 15, 16], true), anim(12, [3, 4, 3, 4]), anim(15, [1, 7, 8, 8, 9, 10])),
-  },
-  warlock: {
-    w: 12,
-    h: 15,
-    anims: basic(anim(2, [0, 0, 0, 1, 0, 0, 1, 1], true), anim(15, [0, 2, 3, 4], true), anim(12, [0, 5, 6]), anim(15, [0, 7, 8, 8, 9, 10])),
-  },
-  golem: {
-    w: 16,
-    h: 16,
-    anims: basic(anim(4, [0, 1], true), anim(12, [2, 3, 4, 5], true), anim(10, [6, 7, 8]), anim(15, [9, 10, 11, 12, 13])),
-  },
-  king: {
-    w: 16,
-    h: 16,
-    anims: basic(anim(12, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2], true), anim(15, [3, 4, 5, 6, 7, 8], true), anim(15, [9, 10, 11]), anim(8, [12, 13, 14, 15])),
-  },
   undead: {
     w: 12,
     h: 16,
@@ -289,66 +320,9 @@ const MOB_SPRITES: Partial<Record<MobKind, MobSheet>> = {
       anim(12, [10, 11, 12, 13]),
     ),
   },
-  succubus: {
-    w: 12,
-    h: 15,
-    anims: basic(anim(8, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 1], true), anim(15, [3, 4, 5, 6, 7, 8], true), anim(12, [9, 10, 11]), anim(10, [12])),
-  },
-  eye: {
-    w: 16,
-    h: 18,
-    anims: basic(anim(8, [0, 1, 2], true), anim(12, [5, 6], true), anim(8, [4, 3]), anim(8, [7, 8, 9])),
-  },
-  scorpio: {
-    w: 18,
-    h: 17,
-    anims: basic(anim(12, [0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 2, 1, 2], true), anim(8, [5, 5, 6, 6], true), anim(15, [0, 3, 4]), anim(12, [0, 7, 8, 9, 10])),
-  },
-  yog: {
-    w: 20,
-    h: 19,
-    anims: basic(anim(10, [0, 1, 2, 2, 1, 0, 3, 4, 4, 3, 0, 5, 6, 6, 5], true), anim(12, [0], true), anim(12, [0]), anim(10, [0, 7, 8, 9])),
-  },
-  rottingFist: {
-    w: 24,
-    h: 17,
-    anims: basic(anim(2, [0, 0, 1], true), anim(3, [0, 1], true), anim(2, [0]), anim(10, [0, 2, 3, 4])),
-  },
-  burningFist: {
-    w: 24,
-    h: 17,
-    anims: basic(anim(2, [0, 0, 1], true), anim(3, [0, 1], true), anim(8, [0, 5, 6]), anim(10, [0, 2, 3, 4])),
-  },
-  mimic: {
-    w: 16,
-    h: 16,
-    anims: basic(anim(5, [0, 0, 0, 1, 1], true), anim(10, [0, 1, 2, 3, 3, 2, 1], true), anim(10, [0, 4, 5, 6]), anim(5, [7, 8, 9])),
-  },
-  larva: {
-    w: 12,
-    h: 8,
-    anims: basic(anim(5, [4, 4, 4, 4, 4, 5, 5], true), anim(12, [0, 1, 2, 3], true), anim(15, [6, 5, 7]), anim(10, [8])),
-  },
   imp: IMP_SPRITE,
   impShopkeeper: IMP_SPRITE,
-  // The rare variants share their kind's sheet, further along it.
-  // FetidRatSprite is the rat's; CursePersonificationSprite the wraith's.
-  fetidRat: {
-    w: 16,
-    h: 15,
-    anims: basic(anim(2, [0, 0, 0, 1], true), anim(10, [6, 7, 8, 9, 10], true), anim(15, [2, 3, 4, 5, 0]), anim(10, [11, 12, 13, 14])),
-  },
   curse: {
-    w: 14,
-    h: 15,
-    anims: basic(anim(5, [0, 1], true), anim(10, [0, 1], true), anim(10, [0, 2, 3]), anim(8, [0, 4, 5, 6, 7])),
-  },
-  bee: {
-    w: 16,
-    h: 16,
-    anims: basic(anim(12, [0, 1, 1, 0, 2, 2], true), anim(15, [0, 1, 1, 0, 2, 2], true), anim(20, [3, 4, 5, 6]), anim(20, [7, 8, 9, 10])),
-  },
-  wraith: {
     w: 14,
     h: 15,
     anims: basic(anim(5, [0, 1], true), anim(10, [0, 1], true), anim(10, [0, 2, 3]), anim(8, [0, 4, 5, 6, 7])),
@@ -358,32 +332,9 @@ const MOB_SPRITES: Partial<Record<MobKind, MobSheet>> = {
     h: 16,
     anims: basic(anim(2, [0, 0, 0, 1], true), anim(10, [2, 3, 4, 5, 6], true), anim(15, [0]), anim(10, [0])),
   },
-  albino: {
-    w: 16,
-    h: 15,
-    anims: basic(anim(2, [16, 16, 16, 17], true), anim(10, [22, 23, 24, 25, 26], true), anim(15, [18, 19, 20, 21]), anim(10, [27, 28, 29, 30])),
-  },
-  bandit: {
-    w: 12,
-    h: 13,
-    anims: basic(anim(1, [21, 21, 21, 22, 21, 21, 21, 21, 22], true), anim(15, [21, 21, 23, 24, 24, 25], true), anim(12, [31, 32, 33]), anim(10, [25, 27, 28, 29, 30])),
-  },
-  shielded: {
-    w: 12,
-    h: 16,
-    anims: basic(anim(2, [21, 21, 21, 22, 21, 21, 22, 22], true), anim(12, [25, 26, 27, 28], true), anim(12, [23, 24]), anim(12, [29, 30, 31])),
-  },
-  senior: {
-    w: 15,
-    h: 14,
-    anims: basic(anim(6, [18, 17, 18, 19], true), anim(15, [28, 29, 30, 31, 32, 33], true), anim(12, [20, 21, 20, 21]), anim(15, [18, 24, 25, 25, 26, 27])),
-  },
-  acidic: {
-    w: 18,
-    h: 17,
-    anims: basic(anim(12, [14, 14, 14, 14, 14, 14, 14, 14, 15, 16, 15, 16, 15, 16], true), anim(4, [19, 20], true), anim(15, [14, 17, 18]), anim(12, [14, 21, 22, 23, 24])),
-  },
   mirror: { w: 12, h: 15, anims: HERO_ANIMS },
+  // A prismatic image (PrismaticImage) is drawn with its hero's sheet too, until it has a sprite of its own.
+  prismatic: { w: 12, h: 15, anims: HERO_ANIMS },
   blacksmith: {
     w: 13,
     h: 16,
@@ -394,21 +345,23 @@ const MOB_SPRITES: Partial<Record<MobKind, MobSheet>> = {
     h: 15,
     anims: basic(anim(8, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0], true), anim(8, [0], true), anim(8, [0]), anim(20, [4])),
   },
-  statue: {
+  // Shattered's (assets/spd): WardSprite, one tier a row (see View.sync), EarthGuardianSprite and LotusSprite.
+  ward: { w: 16, h: 16, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(1, [0])) },
+  guardian: {
     w: 12,
     h: 15,
     anims: basic(anim(2, [0, 0, 0, 0, 0, 1, 1], true), anim(15, [2, 3, 4, 5, 6, 7], true), anim(12, [8, 9, 10]), anim(5, [11, 12, 13, 14, 15, 15])),
   },
-  piranha: {
-    w: 12,
-    h: 16,
-    anims: basic(anim(8, [0, 1, 2, 1], true), anim(20, [0, 1, 2, 1], true), anim(20, [3, 4, 5, 6, 7, 8, 9, 10, 11]), anim(4, [12, 13, 14])),
+  lotus: { w: 19, h: 16, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(1, [0])) },
+  // The armour abilities' allies: ShadowSprite (the rogue's own frames, class armour's row, drawn as a dark shadow: render.ts),
+  // SpiritHawk.HawkSprite and SmokeBomb.NinjaLogSprite (assets/spd).
+  shadow: { w: 12, h: 15, anims: basic(anim(1, [0, 0, 0, 1, 0, 0, 1, 1], true), anim(20, [2, 3, 4, 5, 6, 7], true), anim(15, [13, 14, 15, 0]), anim(20, [0])) },
+  hawk: {
+    w: 15,
+    h: 15,
+    anims: basic(anim(6, [0, 1], true), anim(8, [0, 1], true), anim(12, [2, 3, 0, 1]), anim(12, [4, 5, 6])),
   },
-  tengu: {
-    w: 14,
-    h: 16,
-    anims: basic(anim(2, [0, 0, 0, 1], true), anim(15, [2, 3, 4, 5, 0]), anim(15, [6, 7, 7, 0]), anim(8, [8, 9, 10, 10, 10, 10, 10, 10])),
-  },
+  ninjaLog: { w: 11, h: 12, anims: basic(anim(1, [0], true), anim(1, [0], true), anim(1, [0]), anim(12, [1, 2, 3, 4])) },
 };
 
 /**
@@ -481,23 +434,38 @@ export function heroSprite(assets: Assets, heroClass: HeroClass, skin?: string):
 
 export async function loadAssets(base: string, onProgress?: (done: number) => void): Promise<Assets> {
   assetBase = base;
+  // Pixel Dungeon's sheets still in use: the bosses and their minions, the folk, the curse; the monsters are Shattered's.
   const names = [
-    'tiles0', 'water0', 'tiles1', 'water1', 'tiles2', 'water2', 'spinner', 'dm300', 'tiles3', 'water3',
-    'elemental', 'monk', 'warlock', 'golem', 'king', 'undead', 'tiles4', 'water4',
-    'succubus', 'eye', 'scorpio', 'yog', 'rottingFist', 'burningFist', 'larva', 'mimic', 'statue', 'piranha', 'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'bee', 'warrior', 'mage', 'rogue', 'ranger', 'rat', 'gnoll', 'crab', 'goo', 'ghost',
-    'skeleton', 'thief', 'swarm', 'shaman', 'bat', 'brute', 'tengu', 'shopkeeper', 'wandmaker',
-    'icons', 'items', 'plants',
+    'tiles0', 'water0', 'tiles1', 'water1', 'tiles2', 'water2', 'tiles3', 'water3',
+    'undead', 'tiles4', 'water4',
+    'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'warrior', 'mage', 'rogue', 'ranger', 'ghost',
+    'shopkeeper', 'wandmaker', 'spd/ghost', 'spd/effects',
+    'icons', 'items', 'plants', 'spd/wards', 'spd/guardian', 'spd/lotus', 'spd/spirit_hawk', 'spd/ninja_log', 'spd/spell_icons',
+    // Shattered's bosses and their levels' custom tiles.
+    'spd/goo', 'spd/tengu', 'spd/dm300', 'spd/pylon', 'spd/king', 'spd/yog', 'spd/yog_fists', 'spd/larva',
+    'spd/sewer_boss', 'spd/prison_exit', 'spd/caves_boss', 'spd/city_boss', 'spd/halls_special',
   ] as const;
   let loaded = 0;
+  const total = names.length + SPD_SHEETS.length;
   const images = Object.fromEntries(
     await Promise.all(
       names.map(async (name) => {
         const image = await loadImage(`${base}${name}.png`);
-        onProgress?.(++loaded / names.length);
+        onProgress?.(++loaded / total);
         return [name, image] as const;
       }),
     ),
   ) as Record<(typeof names)[number], HTMLImageElement>;
+  // Shattered's monster sheets (assets/spd/mobs).
+  const spd = Object.fromEntries(
+    await Promise.all(
+      SPD_SHEETS.map(async (name) => {
+        const image = await loadImage(`${base}spd/mobs/${name}.png`);
+        onProgress?.(++loaded / total);
+        return [name, image] as const;
+      }),
+    ),
+  ) as Record<SpdSheet, HTMLImageElement>;
 
   const hero = (image: HTMLImageElement): CharSprite => ({ sheet: sheet(image, 12, 15), anims: HERO_ANIMS });
   // Shattered's sheets the quests' characters are drawn from.
@@ -506,23 +474,33 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     spdMobs.set(name, await loadImage(`${base}spd/${name}.png`));
   }));
   const mob = (kind: MobKind): CharSprite => {
-    const shattered = SPD_MOBS[kind];
-    if (shattered) return { sheet: sheet(spdMobs.get(shattered.spd!)!, shattered.w, shattered.h), anims: shattered.anims };
-    const spec = MOB_SPRITES[kind]!;
+    const shattered = MOB_SHEETS[kind] ?? MOB_SHEETS[VAULT_LOOKS[kind] ?? kind];
+    if (shattered) return spdSprite(spd[shattered.sheet], shattered);
+    const level = SPD_MOBS[kind];
+    if (level) return { sheet: sheet(spdMobs.get(level.spd!)!, level.w, level.h), anims: level.anims };
+    const spec = MOB_SPRITES[kind] ?? MOB_SPRITES.ghost!;
     // A mirror image is drawn with its hero's own sheet (see View.sync); the warrior's stands in here.
-    const image = kind === 'mirror' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp' : baseKind(kind);
-    return { sheet: sheet(images[image as (typeof names)[number]], spec.w, spec.h), anims: spec.anims };
+    const image = spec.file ?? (kind === 'mirror' || kind === 'prismatic' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp'
+      : kind === 'ward' ? 'spd/wards' : kind === 'guardian' ? 'spd/guardian' : kind === 'lotus' ? 'spd/lotus' : kind === 'ghostHero' ? 'spd/ghost'
+      : kind === 'shadow' ? 'rogue' : kind === 'hawk' ? 'spd/spirit_hawk' : kind === 'ninjaLog' ? 'spd/ninja_log'
+      : baseKind(kind));
+    return { sheet: sheet(images[image as (typeof names)[number]] ?? images.ghost, spec.w, spec.h), anims: spec.anims };
   };
   // Shattered's environment (assets/spd): the regions' tiles and water, the mine's tiles, and the layers over them.
-  const spd = async (name: string): Promise<HTMLImageElement> => loadImage(`${base}spd/${name}.png`);
+  const spdEnv = async (name: string): Promise<HTMLImageElement> => loadImage(`${base}spd/${name}.png`);
   const [sewers, prison, caves, city, halls, crystal, gnoll, w0, w1, w2, w3, w4, features, raised, occlusion] = await Promise.all([
     'tiles_sewers', 'tiles_prison', 'tiles_caves', 'tiles_city', 'tiles_halls', 'tiles_caves_crystal', 'tiles_caves_gnoll',
     'water0', 'water1', 'water2', 'water3', 'water4', 'terrain_features', 'raised_terrain', 'occlusion_shadows',
-  ].map(spd));
+  ].map(spdEnv));
   const custom = new Map<string, HTMLImageElement>();
   for (const name of CUSTOM_TILES) {
     void loadImage(`${base}spd/custom_tiles/${name}.png`).then((image) => custom.set(name, image)).catch(() => undefined);
   }
+  const variant = (name: SpriteVariant): CharSprite => {
+    const spec = VARIANTS[name];
+    return { sheet: sheet(images[spec.file as (typeof names)[number]], spec.w, spec.h), anims: spec.anims };
+  };
+  const kinds = new Set<MobKind>([...(Object.keys(MOB_SPRITES) as MobKind[]), ...(Object.keys(MOB_SHEETS) as MobKind[]), ...(Object.keys(SPD_MOBS) as MobKind[])]);
   return {
     env: {
       tiles: [sewers!, prison!, caves!, city!, halls!], minesCrystal: crystal!, minesGnoll: gnoll!, water: [w0!, w1!, w2!, w3!, w4!],
@@ -536,12 +514,26 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
       rogue: hero(images.rogue),
       huntress: hero(images.ranger),
     },
-    mobs: Object.fromEntries(([...new Set([...Object.keys(MOB_SPRITES), ...Object.keys(SPD_MOBS)])] as MobKind[]).map((kind) => [kind, mob(kind)])) as Record<MobKind, CharSprite>,
+    mobs: Object.fromEntries([...kinds].map((kind) => [kind, mob(kind)])) as Record<MobKind, CharSprite>,
+    variants: { 'dm300.charged': variant('dm300.charged'), 'pylon.active': variant('pylon.active') },
+    bossTiles: {
+      sewer_boss: images['spd/sewer_boss'], prison_exit: images['spd/prison_exit'], caves_boss: images['spd/caves_boss'],
+      city_boss: images['spd/city_boss'], halls_sp: images['spd/halls_special'],
+    },
+    spd,
     icons: images.icons,
     items: images.items,
     plants: images.plants,
+    effects: images['spd/effects'],
+    spells: images['spd/spell_icons'],
   };
 }
+
+/** The vault's guards are drawn as the monsters they are made from (Imp vault: VaultRat is a RatSprite, and so on). */
+const VAULT_LOOKS: Partial<Record<MobKind, MobKind>> = {
+  vaultRat: 'rat', vaultSkeleton: 'skeleton', vaultGhoul: 'ghoul', vaultGolem: 'golem', vaultShaman: 'shaman',
+  vaultFireElemental: 'elemental', vaultFrostElemental: 'frostElemental', vaultShockElemental: 'shockElemental', vaultBossElemental: 'chaosElemental',
+};
 
 /** Shattered's environment/custom_tiles. */
 const CUSTOM_TILES = [

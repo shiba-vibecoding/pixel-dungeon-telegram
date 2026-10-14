@@ -1,4 +1,4 @@
-import { type EffectId, type FrameId, forSale, type HeroClass, inSeason, type Look, type Offer, offerBySku, OFFERS, type SkinVariant } from '@pd/core';
+import { type CampId, type EffectId, type FrameId, forSale, type HeroClass, inSeason, type Look, type Offer, offerBySku, OFFERS, type SkinVariant } from '@pd/core';
 import { earnedBadges } from './badges';
 import { initData, inTelegram, openInvoice } from './telegram';
 
@@ -17,11 +17,13 @@ const DEV_KEY = 'pd-dev-owned';
 /** What the server last said this player owns, so bought looks stay on while it cannot be reached. */
 const OWNED_KEY = 'pd-mart-owned';
 
-/** What is worn: a look for each class, one effect, one frame. */
+/** What is worn: a look for each class, one effect, one frame, one camp. */
 interface Worn {
   skins: Partial<Record<HeroClass, SkinVariant>>;
   effect?: EffectId;
   frame?: FrameId;
+  /** The camp of the home screen; none: the dungeon's gate. */
+  camp?: CampId;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -51,6 +53,8 @@ class Mart {
   private worn: Worn = load<Worn>(LOOK_KEY, { skins: {} });
   private listeners: Listener[] = [];
   private server = '';
+  /** A camp tried on for a few seconds (the Mart's «Try it at the camp»): shown on the home screen until `until`, then the own camp is back. */
+  private trying: { camp: CampId; until: number } | null = null;
 
   /** Payments go through the co-op server; without one (or outside Telegram) the shop only shows. */
   get open(): boolean {
@@ -118,10 +122,55 @@ class Mart {
     return look;
   }
 
+  /** The camp the home screen shows: the one worn, if it is this player's. */
+  campWorn(): CampId | undefined {
+    const camp = this.worn.camp;
+    return camp && this.owns(offerBySku(`camp.${camp}`)!) ? camp : undefined;
+  }
+
+  /** Tries a camp on the home screen for `ms` (10 s by default); it is shown by campShown() until then. */
+  tryCamp(camp: CampId, ms = 10_000): void {
+    this.trying = { camp, until: Date.now() + ms };
+  }
+
+  /** The camp the home screen shows now: the one being tried on, else the one worn. */
+  campShown(): CampId | undefined {
+    if (this.trying && this.trying.until > Date.now()) return this.trying.camp;
+    this.trying = null;
+    return this.campWorn();
+  }
+
+  /** The look a class wears on the home screen: its skin, if it is this player's. */
+  skinOf(heroClass: string): SkinVariant | undefined {
+    const skin = this.worn.skins[heroClass as HeroClass];
+    const offer = skin && offerBySku(`skin.${heroClass}.${skin}`);
+    return skin && offer && this.owns(offer) ? skin : undefined;
+  }
+
+  /** The effect worn, if it is this player's. */
+  effectWorn(): EffectId | undefined {
+    const effect = this.worn.effect;
+    return effect && this.owns(offerBySku(`effect.${effect}`)!) ? effect : undefined;
+  }
+
+  /** The portrait frame worn, if it is this player's. */
+  frameWorn(): FrameId | undefined {
+    const frame = this.worn.frame;
+    return frame && this.owns(offerBySku(`frame.${frame}`)!) ? frame : undefined;
+  }
+
+  /** Puts a camp on the home screen; none: the dungeon's gate. */
+  wearCamp(camp: CampId | undefined): void {
+    this.worn.camp = camp;
+    save(LOOK_KEY, this.worn);
+    this.changed();
+  }
+
   isWorn(offer: Offer): boolean {
     if (offer.kind === 'skin') return this.worn.skins[offer.heroClass!] === offer.skin;
     if (offer.kind === 'effect') return this.worn.effect === offer.effect;
     if (offer.kind === 'frame') return this.worn.frame === offer.frame;
+    if (offer.kind === 'camp') return this.worn.camp === offer.camp;
     return false;
   }
 
@@ -134,6 +183,8 @@ class Mart {
       this.worn.effect = on ? offer.effect : undefined;
     } else if (offer.kind === 'frame') {
       this.worn.frame = on ? offer.frame : undefined;
+    } else if (offer.kind === 'camp') {
+      this.worn.camp = on ? offer.camp : undefined;
     }
     save(LOOK_KEY, this.worn);
     this.changed();
@@ -191,6 +242,6 @@ class Mart {
 export const mart = new Mart();
 
 /** The offers of a shelf, for one hero class where it matters. */
-export function shelf(kind: 'skin' | 'effect' | 'frame', heroClass: HeroClass): Offer[] {
+export function shelf(kind: 'skin' | 'effect' | 'frame' | 'camp', heroClass: HeroClass): Offer[] {
   return OFFERS.filter((offer) => offer.kind === kind && (kind !== 'skin' || offer.heroClass === heroClass));
 }

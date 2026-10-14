@@ -133,7 +133,7 @@ describe('secret rooms, each on its own', () => {
     const honey = paintRoomAlone(SECRET_ROOMS.get('SecretHoneypotRoom')!, 9, ['bottom'], 2).level;
     expect(honey.mobs.map((m) => m.kind)).toEqual(['bee']);
     expect(honey.mobs[0]!.level).toBe(9);
-    expect([...honey.heaps.values()].map((h) => h.items[0]!.kind).sort()).toEqual(['bomb', 'honeypot']);
+    expect([...honey.heaps.values()].map((h) => h.items[0]!.kind).sort()).toEqual(['bomb', 'honeypot', 'honeypot.shattered']);
 
     for (let seed = 1; seed <= 5; seed++) {
       const maze = paintRoomAlone(SECRET_ROOMS.get('SecretMazeRoom')!, 12, ['left'], seed).level;

@@ -39,15 +39,18 @@ describe('the classes (HeroClass.initHero)', () => {
   });
 
   it("each class's own kit, through the seams other streams fill (KIT_SEAMS)", () => {
-    expect(heroById(solo('warrior'), 'p')!.weapon!.kind).toBe(KIT_SEAMS.wornShortsword.kind);
-    expect(heroById(solo('mage'), 'p')!.weapon!.kind).toBe(KIT_SEAMS.magesStaff.kind);
+    expect(heroById(solo('warrior'), 'p')!.weapon!.kind).toBe('weapon.wornShortsword');
+    // The mage's staff is the real one (the wands stream's MagesStaff), with a wand of magic missile imbued.
+    expect(heroById(solo('mage'), 'p')!.weapon).toMatchObject({ kind: 'weapon.magesStaff', wand: { kind: 'wand.magicMissile' } });
     expect(heroById(solo('rogue'), 'p')!.weapon!.kind).toBe('weapon.dagger');
-    expect(heroById(solo('rogue'), 'p')!.rings[0]!.kind).toBe(KIT_SEAMS.cloakOfShadows.kind);
-    expect(heroById(solo('huntress'), 'p')!.weapon!.kind).toBe(KIT_SEAMS.gloves.kind);
-    expect(heroById(solo('huntress'), 'p')!.items[0]!.kind).toBe(KIT_SEAMS.spiritBow.kind);
+    expect(heroById(solo('rogue'), 'p')!.artifact!.kind).toBe('artifact.cloak');
+    expect(heroById(solo('huntress'), 'p')!.weapon!.kind).toBe('weapon.gloves');
+    expect(heroById(solo('huntress'), 'p')!.items[0]!.kind).toBe('spiritBow');
     // The quick slots each class starts with (Dungeon.quickslot.setSlot).
-    expect(startingKit('warrior').quickslots).toEqual([KIT_SEAMS.throwingStones.kind]);
-    expect(startingKit('mage').quickslots).toEqual(['wand.magicMissile']);
+    expect(startingKit('warrior').quickslots).toEqual(['missile.throwingStone']);
+    expect(startingKit('mage').quickslots).toEqual(['weapon.magesStaff']);
+    expect(startingKit('warrior').items[0]).toMatchObject({ kind: 'missile.throwingStone', qty: 3 });
+    expect(startingKit('rogue').items[0]).toMatchObject({ kind: 'missile.throwingKnife', qty: 3 });
   });
 
   it("the warrior's armour comes with the broken seal affixed; nobody else's", () => {
@@ -87,12 +90,13 @@ describe('levels (Hero.earnExp)', () => {
     expect(skill).toBe(Math.round(heroAttackSkill(hero) * 1.25));
   });
 
-  it('a potion of might adds five health for good', () => {
+  it('an elixir of might adds a point of strength and a boost of health that wanes with levels (ElixirOfMight)', () => {
     const world = solo('mage');
     const hero = heroById(world, 'p')!;
-    hero.items.push(createItem('potion.might'));
+    hero.items.push(createItem('elixir.might'));
     act(world, 'p', { type: 'use', item: hero.items.length - 1 });
-    expect(hero).toMatchObject({ str: 11, ht: 25, hp: 25, htBoost: 5 });
+    // HTBoost.boost(20): 4 + 20 / 20.
+    expect(hero).toMatchObject({ str: 11, ht: 25 });
   });
 });
 
@@ -103,9 +107,9 @@ describe('accuracy, evasion and speed (Hero)', () => {
     // A sword wants 14 strength: four short.
     expect(heroAttackSkill(hero)).toBe(Math.round(10 / 1.5 ** 4));
     hero.armor = createItem('armor.mail');
-    // Mail wants 13: three short.
-    expect(heroDefenseSkill(hero)).toBe(Math.max(1, Math.round(5 / 1.5 ** 3)));
-    expect(heroSpeed(hero)).toBeCloseTo(1 / 1.2 ** 3);
+    // Mail (tier 3) wants 14: four short.
+    expect(heroDefenseSkill(hero)).toBe(Math.max(1, Math.round(5 / 1.5 ** 4)));
+    expect(heroSpeed(hero)).toBeCloseTo(1 / 1.2 ** 4);
     hero.str = 20;
     expect(heroDefenseSkill(hero)).toBe(5);
     expect(heroSpeed(hero)).toBe(1);
@@ -171,6 +175,8 @@ describe("a boss's sealed floor (LockedFloor)", () => {
     const goo = createMob('#goo', 'goo', freeBeside(world, freeBeside(world, level.entrance)), 'hunting', floor.now);
     Object.assign(goo, { paralysed: 1e9, enemy: 'p' });
     floor.mobs.push(goo);
+    // Goo awake: its level is sealed (SewerBossLevel.seal).
+    floor.boss = { timed: [], locked: true };
     return world;
   }
 

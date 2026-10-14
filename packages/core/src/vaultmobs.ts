@@ -1,4 +1,4 @@
-import { type Hero, heroDefenseSkill, heroStealth, isAlive, type Mob, MOBS } from './actors';
+import { type Hero, heroDefenseSkill, heroRings, heroStealth, isAlive, type Mob, MOBS } from './actors';
 import { getStep } from './ai';
 import { attack, charArmor, hurt } from './combat';
 import { ballistica, MAGIC_BOLT, PF_NEIGHBOURS8, STOP_TARGET, subPath } from './cone';
@@ -512,7 +512,7 @@ export function vaultMobDied(ctx: Ctx, mob: Mob): void {
   }
   if (isVault(ctx.level)) {
     for (const hero of heroes) {
-      for (const ring of hero.rings) {
+      for (const ring of heroRings(hero)) {
         if (isIdentified(ctx.world, ring)) continue;
         ring.levelsToID = f32((ring.levelsToID ?? 1) - f32(0.2));
         if (ring.levelsToID <= 0.0001) {

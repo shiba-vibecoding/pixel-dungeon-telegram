@@ -1,4 +1,5 @@
-import { beckon, createMob, type Hero, isAlive, type Mob, type MobKind, mobStats, MOBS, rollMob } from './actors';
+import { beckon, createMob, type Hero, isAlive, type Mob, type MobKind, mobStats, MOBS } from './actors';
+import { dealMob, rollMob } from './spawner';
 import { freezeEternalFire } from './roomblobs';
 import { randomRespawnCell } from './ai';
 import { isChallenged } from './challenges';
@@ -1103,14 +1104,14 @@ export function openPits(ctx: Ctx): Hero[] {
 }
 
 /** SummoningTrap: one to three monsters of the level appear around it, a moment later on the move. */
-function summoning(ctx: Ctx, pos: number): void {
+export function summoning(ctx: Ctx, pos: number): void {
   const points = spawnPoints(ctx, pos, 1);
   const mobs: Mob[] = [];
   for (const point of points) {
-    // SEAM(mobs): Level.createMob (the level's mob rotation, champions) — Bestiary.mutable for now.
-    let kind = rollMob(ctx.rng, ctx.depth);
-    while (largeKind(kind) && !openSpace(ctx, point)) kind = rollMob(ctx.rng, ctx.depth);
-    const mob = scaleMob(ctx.world, createMob(nextMobId(ctx), kind, point, 'wandering', ctx.floor.now + SUMMON_DELAY));
+    // Level.createMob: the level's rotation of monsters (and its champions); a large one only in the open.
+    let mob = dealMob(ctx.world, ctx.level, ctx.rng, nextMobId(ctx), point, ctx.floor.now + SUMMON_DELAY);
+    while (largeKind(mob.kind) && !openSpace(ctx, point)) mob = dealMob(ctx.world, ctx.level, ctx.rng, nextMobId(ctx), point, ctx.floor.now + SUMMON_DELAY);
+    if (mob.state !== 'passive') mob.state = 'wandering';
     ctx.floor.mobs.push(mob);
     mobs.push(mob);
   }

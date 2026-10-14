@@ -109,7 +109,7 @@ export function showBlacksmith(env: SmithEnv): void {
 /** Everything the hero has, worn first (as WndBag lists them). */
 function refsOf(hero: Hero): ItemRef[] {
   return [
-    ...(hero.weapon ? ['weapon' as const] : []), 'armor' as const, ...hero.rings.map((_, i) => (i === 0 ? 'ring0' as const : 'ring1' as const)),
+    ...(hero.weapon ? ['weapon' as const] : []), 'armor' as const, ...(hero.artifact ? ['artifact' as const] : []), ...(hero.misc ? ['misc' as const] : []), ...(hero.ring ? ['ring' as const] : []),
     ...hero.items.map((_, i) => i),
   ];
 }

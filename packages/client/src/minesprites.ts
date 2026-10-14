@@ -45,7 +45,7 @@ export function mineSprite(assets: Assets, mob: Mob): CharSprite {
         const hp = mob.hp / mob.ht;
         const frame = (hp > 0.9 ? 0 : hp > 0.67 ? 1 : hp > 0.33 ? 2 : 3) + by;
         return derive(base, `spire:${frame}`, () => ({
-          idle: still(frame), run: still(frame), attack: still(frame, false), die: still(4 + by, false), operate: still(frame), pump: still(frame),
+          ...base.anims, idle: still(frame), run: still(frame), attack: still(frame, false), die: still(4 + by, false), operate: still(frame), pump: still(frame),
         }));
       }
       if (by === 0) return base;

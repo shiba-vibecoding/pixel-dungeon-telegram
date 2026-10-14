@@ -14,7 +14,7 @@ export type HintId =
   | 'monster' | 'attacked' | 'lowHealth' | 'floorItem' | 'container' | 'trap' | 'lockedDoor' | 'stairs' | 'secret'
   | 'hungry' | 'levelUp' | 'well' | 'altar' | 'alchemy' | 'shop' | 'npc' | 'boss' | 'companion' | 'waiting' | 'examine'
   | 'potion' | 'scroll' | 'weapon' | 'armor' | 'ring' | 'wand' | 'food' | 'seed' | 'missile' | 'bomb' | 'key' | 'gold'
-  | 'dew' | 'vial' | 'bag' | 'ankh' | 'honeypot' | 'torch' | 'tome' | 'kit' | 'beacon' | 'weightstone' | 'arena' | 'live';
+  | 'dew' | 'vial' | 'bag' | 'ankh' | 'honeypot' | 'torch' | 'tome' | 'kit' | 'beacon' | 'arena' | 'live';
 
 type Text = readonly [title: string, text: string];
 
@@ -32,7 +32,7 @@ const RU: Record<HintId, Text> = {
   levelUp: ['Новый уровень', 'Герой стал сильнее: больше здоровья, точнее удары. Опыт — жёлтая полоса под здоровьем.'],
   well: ['Колодец', 'Магический колодец: здоровья, знания или превращений. Встаньте в него, чтобы испить, или бросьте предмет в колодец превращений.'],
   altar: ['Алтарь', 'Жертвенный огонь притягивает монстров. Убитые на нём засчитываются как жертва, и алтарь наградит вас.'],
-  alchemy: ['Алхимический котёл', 'Бросьте в котёл три семени, и сварится зелье.'],
+  alchemy: ['Алхимический котёл', 'Встаньте рядом и коснитесь котла: до трёх ингредиентов дают зелья, камни, заклинания, бомбы и аксессуары, часто за алхимическую энергию.'],
   shop: ['Лавка', 'Ненужное можно продать торговцу из рюкзака.'],
   npc: ['Житель подземелья', 'У многих есть просьба и награда за неё.'],
   boss: ['Логово босса', 'Здесь живёт босс. Следите за его действиями и подсказками на экране: каждый бьёт по-своему. Возьмите с собой зелья.'],
@@ -55,12 +55,11 @@ const RU: Record<HintId, Text> = {
   vial: ['Бурдюк', 'В него собирается роса. Выпейте из бурдюка, чтобы вылечиться: вы выпьете ровно столько, сколько нужно.'],
   bag: ['Сумка', 'Сумка держит семена, свитки или палочки отдельно и бережёт их от огня и холода.'],
   ankh: ['Анх', 'Если вы погибнете, анх вернёт вас к жизни один раз.'],
-  honeypot: ['Горшок с мёдом', 'Разбейте его, и пчела будет сражаться за вас.'],
+  honeypot: ['Горшок с мёдом', 'Разбитый, он выпускает пчелу, которая бросается на всех рядом с горшком — и на того, кто его несёт.'],
   torch: ['Факел', 'Зажгите факел, чтобы видеть дальше в тёмных местах.'],
   tome: ['Книга мастерства', 'Прочитайте её, чтобы выбрать путь героя: один из двух подклассов.'],
   kit: ['Набор для брони', 'Превращает надетую броню в броню класса со своей особой способностью.'],
   beacon: ['Маяк Ллойда', 'Поставьте маяк, и потом сможете вернуться в это место с любой глубины.'],
-  weightstone: ['Утяжелитель', 'Балансирует оружие в руке: на скорость или на точность.'],
   arena: ['Арена волн', 'Монстры идут волнами через четверо ворот. После волны — передышка: павшие встают, каждый берёт награду. Отдохните и начните следующую.'],
   live: ['Живые ходы', 'Пока спокойно, герой сам идёт, куда сказано, и никого не ждёт. В бою — ходы, как обычно: время стоит, пока вы не сходите, а ходы отряда идут вместе.'],
 };
@@ -79,7 +78,7 @@ const EN: Record<HintId, Text> = {
   levelUp: ['Level up', 'The hero grew stronger: more health, surer blows. Experience is the yellow bar under health.'],
   well: ['A well', 'A magic well: of health, awareness or transmutation. Step into it to drink, or throw an item into the well of transmutation.'],
   altar: ['An altar', 'The sacrificial fire draws monsters in. Those slain in it count as offerings, and the altar rewards you.'],
-  alchemy: ['An alchemy pot', 'Throw three seeds into the pot and a potion will brew.'],
+  alchemy: ['An alchemy pot', 'Stand by the pot and tap it: up to three ingredients make potions, stones, spells, bombs and trinkets, often for alchemical energy.'],
   shop: ['A shop', 'What you do not need can be sold to the shopkeeper from the backpack.'],
   npc: ['A dweller of the dungeon', 'Many have a request, and a reward for it.'],
   boss: ['A boss\'s lair', 'A boss lives here. Watch what it does and the warnings on screen: each fights in its own way. Bring potions.'],
@@ -102,12 +101,11 @@ const EN: Record<HintId, Text> = {
   vial: ['The waterskin', 'It collects dew. Drink from it to heal: you only drink as much as you need.'],
   bag: ['A bag', 'A bag keeps seeds, scrolls or wands apart and safe from fire and frost.'],
   ankh: ['An ankh', 'Should you die, the ankh brings you back to life once.'],
-  honeypot: ['A honeypot', 'Shatter it and the bee inside fights for you.'],
+  honeypot: ['A honeypot', 'Shattered, it lets out its bee, which goes for anyone near the pot — and for whoever carries it.'],
   torch: ['A torch', 'Light it to see further in dark places.'],
   tome: ['The tome of mastery', 'Read it to choose your hero\'s way: one of two subclasses.'],
   kit: ['An armour kit', 'Turns the armour worn into class armour, with a special ability.'],
   beacon: ['Lloyd\'s beacon', 'Set it, and you can come back to this spot later from any depth.'],
-  weightstone: ['A weightstone', 'Balances the weapon in hand: for speed or for accuracy.'],
   arena: ['Wave arena', 'Monsters come in waves through four gates. After each wave a breather: the fallen rise, everyone takes a reward. Rest, then start the next.'],
   live: ['Live turns', 'While all is calm, the hero walks where told and waits for no one. In a fight it is turns as ever: time stands still until you move, and the party’s moves play out together.'],
 };
@@ -275,6 +273,11 @@ class Hints {
   /** A button the card means that is not on screen yet (the attack shows a moment after the enemy). */
   private wanted: Target | null = null;
 
+  /** Hints another guide covers (the step tutorial): never queued while it does. */
+  suppress: (id: HintId) => boolean = () => false;
+  /** A card waits while this holds (the tutorial's bubble is up). */
+  hold: () => boolean = () => false;
+
   /** Where the cards appear (the interface layer). */
   attach(root: HTMLElement): void {
     this.root = root;
@@ -294,7 +297,7 @@ class Hints {
 
   /** The first time something is met, its hint (if learning is on); later times, nothing. */
   first(id: HintId, icon?: () => HTMLElement): void {
-    if (!this.enabled || this.seen.has(id) || this.queue.some((q) => q.id === id)) return;
+    if (!this.enabled || this.seen.has(id) || this.suppress(id) || this.queue.some((q) => q.id === id)) return;
     this.queue.push({ id, icon });
     this.pump();
   }
@@ -302,7 +305,7 @@ class Hints {
   /** Called every frame: keeps the arrow by its button, and shows the next hint once the last has gone and a moment has passed. */
   pump(): void {
     this.placeArrow();
-    if (!this.root || this.card || this.queue.length === 0) return;
+    if (!this.root || this.card || this.queue.length === 0 || this.hold()) return;
     if (performance.now() - this.lastShown < GAP_MS) return;
     const { id, icon } = this.queue.shift()!;
     this.seen.add(id);

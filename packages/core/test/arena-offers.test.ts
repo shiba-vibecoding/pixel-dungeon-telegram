@@ -6,8 +6,8 @@ import { Rng } from '../src/rng';
 /** What is of no use in the pit: nothing to map, identify, uncurse or flee to. */
 const USELESS: readonly ItemKind[] = [
   'scroll.mapping', 'scroll.identify', 'scroll.removeCurse', 'scroll.teleportation', 'scroll.challenge', 'potion.mindVision', 'potion.levitation',
-  'potion.purity', 'potion.invisibility', 'ring.detection', 'ring.shadows', 'ring.haggler', 'ring.herbalism', 'seed.fadeleaf', 'seed.rotberry',
-  'wand.blink', 'wand.reach', 'wand.regrowth', 'torch', 'beacon',
+  'potion.purity', 'potion.invisibility', 'ring.wealth', 'ring.arcana', 'seed.fadeleaf', 'seed.rotberry',
+  'wand.regrowth', 'torch', 'artifact.beacon',
 ];
 
 describe('the arena\'s rewards', () => {

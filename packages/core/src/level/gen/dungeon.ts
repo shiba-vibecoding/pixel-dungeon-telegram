@@ -1,4 +1,9 @@
-import { isChallenged, NO_HERBALISM, NO_SCROLLS } from '../../challenges';
+import type { NO_HERBALISM as Herbalism, NO_SCROLLS as Scrolls } from '../../challenges';
+
+/* challenges.ts's bits, here so this module stays light (it is loaded early, from the rooms' base classes). */
+const NO_HERBALISM: typeof Herbalism = 8;
+const NO_SCROLLS: typeof Scrolls = 64;
+const isChallenged = (world: { challenges?: number }, mask: number): boolean => ((world.challenges ?? 0) & mask) !== 0;
 import type { Item } from '../../items';
 import type { RunState } from '../../run';
 import type { World } from '../../world';

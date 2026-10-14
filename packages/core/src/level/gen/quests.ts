@@ -1,7 +1,9 @@
-import { type MobKind, rollMob } from '../../actors';
+import { createMob, type MobKind } from '../../actors';
+import { hasProp } from '../../props';
+import { mobRotation } from '../../spawner';
 import { Dungeon } from './dungeon';
 import { Random } from './random';
-import type { MobSpawn } from './genlevel';
+import type { GenLevel, MobSpawn } from './genlevel';
 import type { Room } from './room';
 import type { RegularLevel } from './regular-level';
 
@@ -20,9 +22,14 @@ export interface MobChoice {
 }
 
 export const QuestHooks = {
-  /** SEAM(mobs): Level.createMob (Bestiary.getMobRotation, champions); Pixel Dungeon's bestiary stands in. */
-  createMob(): MobChoice {
-    return { kind: rollMob(Random.rng, Dungeon.depth, false) };
+  /**
+   * Level.createMob: the next of the level's rotation of monsters (MobSpawner.getMobRotation), a new one when it
+   * runs out; what is left of it the level keeps for its respawns. (Champions are rolled as the monsters come.)
+   */
+  createMob(level: GenLevel): MobChoice {
+    if (level.mobRotation.length === 0) level.mobRotation = mobRotation(Random.rng, Dungeon.depth, Dungeon.world ?? undefined);
+    const kind = level.mobRotation.shift()!;
+    return { kind, large: hasProp(createMob('', kind, 0, 'sleeping', 0), 'large') };
   },
 
   /** Ghost.Quest.spawn(level, roomExit), from SewerLevel.createMobs. */

@@ -2,25 +2,47 @@ import {
   type Action, adjacent, blockers, liveBlockers, distance, type Mob, trapAt, buyPrice, cellX, cellY, createHero, createWorld, type Effect, exploredCells, F, findPath, hasFlag,
   HEAP_SPRITES,
   type Hero, type Item, type Level,
-  type Bones, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
+  BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   type PlanStep, PLANT_KINDS, T,
-  visibleCells, chargesKnown, WIDTH,
-  type World, charAt, swapsWithHero, visibleEnemies,
+  visibleCells, chargesKnown, staffReach, WIDTH,
+  type World, charAt, swapsWithHero, canReach, copyReach, heroReach, isClassArmor, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
+import { loop } from './lifecycle';
+import { reloadForUpdate } from './update';
+import { preloadMapFx } from './shfx';
 import './game.css';
-import { blobTexts, mobDescription, plantText, tileText, wellText } from './examine';
-import { chooseQuickslot, isPlaceholder, quickIndex, quickKind, quickUse, syncQuickslots, visibleQuickslots } from './quickslot';
+import { blobTexts, bossTile, mobDescription, mobName, plantText, tileText, wellText } from './examine';
+import {
+  chooseQuickslot, isPlaceholder, quickArtifact, quickClassArmor, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
+} from './quickslot';
+import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookChoice } from './artifactui';
+import { artText, chargeOf } from './artifacttext';
+import { armorStatus } from './abilitytext';
+import { showTalents, startAbility } from './abilityui';
+import { glowOf } from './gearfx';
 import { fx } from './fx';
-import { ambientFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
+import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
+import { mobAmbient } from './mobfx';
+
+/** The clouds' tints (Blob emitters' Speck colours): Pixel Dungeon's two, and Shattered's from alchemy. */
+const GAS_TINTS: Readonly<Record<string, string | readonly string[]>> = {
+  toxic: '80, 200, 60', paralytic: '230, 220, 70', corrosive: '170, 160, 140', smoke: '20, 20, 20', storm: '138, 216, 216',
+  stench: '20, 70, 20', confusion: ['255, 96, 160', '96, 160, 255', '160, 255, 96', '255, 160, 96'], inferno: '238, 119, 34',
+  blizzard: '235, 245, 255', regrowth: '90, 180, 60', freezing: '200, 230, 255', fire: '255, 140, 40',
+};
 /** The visual clock's last reading, for frame-to-frame particle steps. */
 let lastVisual = 0;
 /** When my hero fell, on the visual clock, or 0 while alive. */
 let fallenAt = 0;
 import { adoptBadges, BADGES, type BadgeId, badgeText, checkBadges, countGame, earnedBadges, reloadBadges } from './badges';
 import { pullCloud, pushCloud } from './cloud';
-import { audio } from './audio';
+import { audio, CROSSFADE } from './audio';
+import { stepSound } from './sfx';
+import {
+  aheadOf, DangerMeter, fadeFor, type FightSeen, MUSIC_BOSSES, placeTune, sameTune, TITLE, VICTORY, withDanger,
+} from './soundtrack';
 import { type ArenaHud, type BuffName, heroBuffs, Hud, type HudStatus, type QuickState } from './hud';
 import { arenaBest, recordArena, showArenaEnd, showArenaReward } from './arenaui';
 import { ArenaView } from './arenaview';
@@ -35,12 +57,22 @@ import { levelFx } from './levelfx';
 import { mineTarget, setSmithToast, type SmithEnv, smithBranch, talkWithBlacksmith } from './blacksmith-ui';
 import {
   armorTier, closeOverlay, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showHelp, showHero,
-  refreshBackpack, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showTitle, showTrade, showWaiting, slot, toast, type ShareChoice,
+  refreshBackpack, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice,
 } from './screens';
-import { profileCard, rankingBlock, showBoards, trophyText } from './rankui';
+import { rankingBlock, showBoards } from './rankui';
+import { type Camp, campClasses } from './camp';
+import { type DailyRulesView, showCamp } from './campui';
+import { showMail, unclaimed } from './mailui';
+import { coachDone, markCoachDone, type Rect, type StepId, Tutorial, veteranSkips } from './coach';
 import { mart } from './mart';
 import { eraseDevice, showChallenges, showJournal, showSettings } from './meta';
 import { netlog, sendNetlog } from './netlog';
+import { watchErrors } from './diag';
+import { markSeenHere, newsDue, seenHere } from './news';
+import { showNews } from './newsui';
+import { closeOffline, showOffline } from './offlineui';
+import { CURRENT } from './releases';
+import { type RunFacts, showErrorScreen, showReport } from './reportui';
 import { looksRows, setBadgeImages, showMart, showTreat } from './martui';
 import { quality } from './quality';
 import { type Launch, Motion } from './motion';
@@ -60,15 +92,19 @@ import {
   shareArena, shareDaily, telegramName, appLink, canShareMessage, canShareStory, shareMessage, shareStory, requestWriteAccess,
   homeScreenStatus, addToHomeScreen,
 } from './telegram';
-import { startReporting } from './report';
+import { report, startReporting } from './report';
+import { alchemyOpen, noteCrafted, refreshAlchemy, showAlchemy } from './alchemyui';
+import { ActionIndicator, type ActionKind } from './actionind';
+import { hasFreePoints, refreshHeroWindow, showComboWindow } from './talentui';
+import { tal as talentLine, talentBuffInfo, talentReason } from './talenttext';
 import { STEP_MS, TILE, View } from './view';
+import { bossBar, cellMarks, drawBossGround, drawBossTop } from './bossfx';
 
 /*
  * Pixel Dungeon client: title screen, then a solo run (kept in local storage),
  * the daily dungeon or the arena of waves; the server (VITE_SERVER_URL) keeps the boards.
  */
 
-const HERO_CLASSES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
 const SOLO_SLOT = 'pd-solo';
 /** The arena of waves' solo run has a slot of its own: it never takes the dungeon run's place. */
 const ARENA_SLOT = 'pd-arena';
@@ -76,6 +112,7 @@ const SERVER: string = import.meta.env.VITE_SERVER_URL ?? (import.meta.env.DEV ?
 
 initTelegram('#1f1d1d');
 // What goes wrong reaches whoever looks after the game (report.ts): never who, only where.
+watchErrors();
 startReporting(import.meta.env.DEV ? '' : SERVER, () => {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
@@ -136,6 +173,8 @@ const assets = await loadAssets(`${import.meta.env.BASE_URL}assets/`, (done) => 
 await Promise.all([document.fonts.load('18px Galmuri11'), document.fonts.load('15px Galmuri9')]).catch(() => undefined);
 loading.remove();
 setAssets(assets);
+// The map's effects of design v19 (bolts, the glass image, hearts, chains): loaded behind the first screen.
+preloadMapFx();
 
 const view = new View(assets);
 /** The world answering touch: doors, grass, water, what falls and what is taken (motion.ts). */
@@ -249,7 +288,7 @@ const mapControlsActions = {
     const target = world && me ? attackTarget(world, me) : null;
     if (!world || !me || !target || session!.busy) return;
     walk.reset();
-    if (adjacent(me.pos, target.pos)) send({ type: 'attack', target: target.id }, performance.now());
+    if (inReach(world, me, target.pos)) send({ type: 'attack', target: target.id }, performance.now());
     else walk.chase = target.id;
   },
   resume: () => {
@@ -263,14 +302,15 @@ const mapControls = new MapControls(document.getElementById('ui')!, mapControlsA
 let coach: HTMLElement | null = null;
 let coached = stored('pd-moved') === '1';
 function coachMove(me: Hero): void {
-  if (coached) {
+  // The step tutorial's bubble is up: the first hint gives way.
+  if (coached || tutorial.visible) {
     coach?.remove();
     coach = null;
     return;
   }
   if (!coach) {
     coach = document.createElement('div');
-    coach.className = 'pd-coach';
+    coach.className = 'pd-movehint';
     coach.textContent = t.moveHint;
     document.getElementById('ui')!.append(coach);
   }
@@ -286,11 +326,100 @@ function coachMove(me: Hero): void {
  */
 function attackTarget(world: World, me: Hero): Mob | null {
   const visible = visibleCells(world, me.depth);
-  const foes = (world.floors[me.depth]?.mobs ?? []).filter((m) => m.state !== 'passive' && visible[m.pos] && m.hp > 0 && !m.image);
+  const foes = (world.floors[me.depth]?.mobs ?? []).filter((m) => m.state !== 'passive' && !m.ally && visible[m.pos] && m.hp > 0 && !m.image);
   // The enemy picked with the danger indicator comes first (AttackIndicator.target).
   const rank = (m: Mob): number => (m.id === dangerTarget ? -1 : m.enemy === me.id && m.state === 'hunting' ? 0 : m.state === 'sleeping' ? 2 : 1) * 1000 + distance(m.pos, me.pos);
   return foes.sort((a, b) => rank(a) - rank(b) || (a.id < b.id ? -1 : 1))[0] ?? null;
 }
+/*
+ * The step tutorial (coach.ts) of the first run: an enemy, the stairs, the backpack, the quick slot, each when it
+ * comes up. It replaces the old «tap where to go» card and the hints for the enemy and the stairs while it is on.
+ */
+const uiLayer = document.getElementById('ui')!;
+
+/** A box in the page's pixels as a place on the interface layer, `pad` wider all round. */
+function layerRect(box: DOMRect, pad: number): Rect | null {
+  if (box.width <= 0 || box.height <= 0) return null;
+  const layer = uiLayer.getBoundingClientRect();
+  const scale = hud.scale || 1;
+  return { x: (box.left - layer.left) / scale - pad, y: (box.top - layer.top) / scale - pad, w: box.width / scale + 2 * pad, h: box.height / scale + 2 * pad };
+}
+
+/** The renderer's cell on the interface layer (the camera's zoom and the canvas's own scale undone), `up` taller to take in a head. */
+function cellRect(pos: number, pad: number, up = 0): Rect | null {
+  const ratio = canvas.width / (canvas.clientWidth || 1);
+  const unit = camera.zoom / ratio / (hud.scale || 1);
+  const x = (cellX(pos) * TILE - camera.x) * unit;
+  const y = (cellY(pos) * TILE - camera.y) * unit;
+  const size = TILE * unit;
+  const layer = uiLayer.getBoundingClientRect();
+  const scale = hud.scale || 1;
+  // Off the screen: no ring.
+  if (x + size < 0 || y + size < 0 || x > layer.width / scale || y > layer.height / scale) return null;
+  return { x: x - pad, y: y - pad - up, w: size + 2 * pad, h: size + 2 * pad + up };
+}
+
+/** The first of a button's kind that is on screen (the toolbar's, or the monitor's islands'). */
+function buttonRect(selector: string): Rect | null {
+  for (const node of uiLayer.querySelectorAll<HTMLElement>(selector)) {
+    const rect = layerRect(node.getBoundingClientRect(), 2);
+    if (rect && !node.hidden) return rect;
+  }
+  return null;
+}
+
+const tutorialHost = {
+  root: uiLayer,
+  scale: () => hud.scale,
+  rectOf: (step: StepId): Rect | null => {
+    const world = session?.world;
+    const me = world && heroById(world, session!.myId);
+    if (!world || !me) return null;
+    switch (step) {
+      case 'enemy': {
+        const foe = attackTarget(world, me);
+        return foe ? cellRect(foe.pos, 4, 6) : null;
+      }
+      case 'stairs': {
+        const exit = levelAt(world, me.depth).exit;
+        return visibleCells(world, me.depth)[exit] ? cellRect(exit, 4) : null;
+      }
+      case 'backpack':
+        return buttonRect('.pd-tool.bag');
+      case 'quick':
+        return buttonRect('.pd-tool.quick');
+    }
+  },
+  ready: (step: StepId): boolean => {
+    const world = session?.world;
+    const me = world && heroById(world, session!.myId);
+    if (!world || !me || !isAlive(me) || world.arena || session!.mode === 'online') return false;
+    switch (step) {
+      case 'enemy':
+        return attackTarget(world, me) !== null;
+      case 'stairs':
+        return me.depth < 26 && Boolean(visibleCells(world, me.depth)[levelAt(world, me.depth).exit]);
+      case 'backpack':
+        return newLoot || world.turn > 200;
+      case 'quick':
+        return quickKind(0) !== null && !isPlaceholder(me, 0) && attackTarget(world, me) === null;
+    }
+  },
+  noun: (step: StepId): string => {
+    const world = session?.world;
+    const me = world && heroById(world, session!.myId);
+    const foe = step === 'enemy' && world && me ? attackTarget(world, me) : null;
+    return foe ? mobName(foe).toLowerCase() : '';
+  },
+  blocked: (): boolean => overlayOpen() || !session,
+  finished: (): void => void api?.coachDone(),
+};
+const tutorial = new Tutorial(tutorialHost);
+// Players from before the tutorial know the game; the hints it covers wait while it is on.
+veteranSkips();
+hints.suppress = (id) => tutorial.active && (id === 'monster' || id === 'stairs');
+hints.hold = () => tutorial.visible;
+
 const finds = new Finds(document.getElementById('ui')!);
 /** Something was picked up since the backpack was last opened. */
 let newLoot = false;
@@ -333,7 +462,7 @@ function forget(key: string): void {
 // ?hero= and ?name= override the saved choices (handy for testing several players).
 const query = new URLSearchParams(location.search);
 const savedClass = query.get('hero') ?? stored('pd-class') ?? '';
-let heroClass: HeroClass = (HERO_CLASSES as readonly string[]).includes(savedClass) ? (savedClass as HeroClass) : 'warrior';
+let heroClass: HeroClass = (campClasses() as readonly string[]).includes(savedClass) ? (savedClass as HeroClass) : 'warrior';
 let playerName = query.get('name') ?? stored('pd-name') ?? '';
 
 function playerId(): string {
@@ -369,7 +498,6 @@ function enterGame(next: Session, roomId: string | null, welcome = t.welcome): v
   seenGeneration = -1;
   deathShown = -1;
   walk.reset();
-  audio.playMusic('game');
   // Telegram's back button opens the menu, or closes whatever window is open.
   backButton(() => (overlayOpen() ? closeOverlay() : openMenu()));
   hud.show(true);
@@ -470,7 +598,23 @@ async function startRun(key: string, mode: 'dungeon' | 'arena', fresh: boolean, 
       ? { run: carried.run, world: carried.world }
       : await api.start(slot, heroClass, chosen);
     if (answer === 'rules') {
-      location.reload();
+      reloadForUpdate();
+      return;
+    }
+    if (answer === 'offline') {
+      // The server hands out every run that counts: with none to be had, the player may wait for it or play without ranking.
+      hideOverlay();
+      showOffline({
+        kind: 'start',
+        ping: async () => (await api.me()) !== null,
+        onBack: () => void startRun(key, mode, fresh, welcome),
+        onPlay: () => {
+          hideOverlay();
+          forgetSolo(key);
+          enterGame(local(), null, welcome);
+          dailyRun = slot === 'daily';
+        },
+      });
       return;
     }
     if (typeof answer === 'string') {
@@ -523,6 +667,10 @@ function settings(onClose: () => void): void {
   showSettings({
     onClose, onEffects: () => resize(), onReset: resetDevice,
     ...(api && inTelegram ? { reminders: { on: stored('pd-notify') === 'on', set: (on: boolean) => void setReminders(on) } } : {}),
+    onNews: () => showNews({ release: CURRENT, onClose: () => settings(onClose) }),
+    ...(api ? { onReport: () => showReport({ api, run: runFacts, onClose: () => settings(onClose) }) } : {}),
+    // Outside Telegram the name is not known, and the camp has no field for it.
+    ...(!inTelegram ? { name: { value: playerName, set: (value: string) => { playerName = value; store('pd-name', value); } } } : {}),
   });
 }
 
@@ -595,27 +743,113 @@ function dailyState(): { state: 'open' | 'going' | 'done'; place: number | null;
   return { state, place: profile.places.daily ?? null, total: profile.totals?.daily ?? 0 };
 }
 
-/** Trophies won since the device last looked: announced once each. */
-function announceTrophies(trophies: Profile['trophies']): void {
-  const seen = Number(stored('pd-trophies-seen') ?? 0);
-  const fresh = trophies.filter((trophy) => trophy.at > seen);
-  for (const trophy of fresh.slice(0, 3)) toast(t.ranked.newTrophy(trophyText(trophy)), { tone: 'badge' });
-  if (fresh.length > 0) store('pd-trophies-seen', String(Math.max(...fresh.map((trophy) => trophy.at))));
-}
+/** The camp now on screen (camp.ts), drawn by the game's frame loop. */
+let activeCamp: Camp | null = null;
+/** How many letters waited when the mail was last counted: a new one is told by a soft sound and the icon's count. */
+let lettersCounted = -1;
 
-/** Asks the server who the player is; the title shows their card once it answers. */
+/** Asks the server who the player is; the camp shows their card, mail and tutorial once it answers. */
 function refreshProfile(): void {
   void api?.me().then((answer) => {
-    if (!answer) return;
+    if (!answer) {
+      maybeNews(null);
+      return;
+    }
     profile = answer;
     adoptBadges(answer.badges);
-    announceTrophies(answer.trophies);
-    if (!session && document.querySelector('.pd-title-screen')) {
+    // The tutorial's end is kept with the profile, for every device (and told to it from here, if only this device knew).
+    if (answer.coachDone) markCoachDone();
+    else if (coachDone()) void api?.coachDone();
+    const waiting = unclaimed(answer.mail);
+    if (lettersCounted >= 0 && waiting > lettersCounted) audio.play('item', 1.1, 0.5);
+    lettersCounted = waiting;
+    if (maybeNews(answer)) return;
+    if (!session && document.querySelector('.pd-camp')) {
       toTitle(false);
       askOnTitle();
     }
   });
 }
+
+/** «Try it at the camp»: the camp of the Mart is on the home screen for ten seconds, then the player's own is back. */
+let tryTimer = 0;
+function startTry(camp: core.CampId): void {
+  mart.tryCamp(camp);
+  toTitle(false);
+  toast(t.rel.mart.trying(t.rel.mart.camps[camp]?.[3] ?? camp, 10), { tone: 'good' });
+  clearTimeout(tryTimer);
+  tryTimer = window.setTimeout(() => {
+    if (!session && activeCamp?.canvas.isConnected) {
+      activeCamp.setCamp(mart.campWorn() ?? 'outdoor');
+      toast(t.rel.mart.tryOver);
+    }
+  }, 10_000);
+}
+
+/** The run on now, as far as a problem report may say (reportui.ts). */
+function runFacts(): RunFacts | null {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me) return null;
+  return { id: session!.checked?.meta.id ?? '', seed: world.run.seed, depth: me.depth, slot: dailyRun ? 'daily' : 'dungeon', seq: session!.checked?.meta.seq ?? 0 };
+}
+
+/** «Что нового» is looked at once a launch: shown to a player who has played before the update, once per version (news.ts). */
+let newsChecked = false;
+function maybeNews(answer: Profile | null): boolean {
+  if (newsChecked || session || !document.querySelector('.pd-camp')) return false;
+  newsChecked = true;
+  const veteran = openings > 1 || stored('pd-moved') === '1' || coachDone() || loadSolo(SOLO_SLOT) !== null || Boolean(answer && (answer.games > 0 || answer.history.length > 0));
+  const due = newsDue({ local: seenHere(), ...(answer ? { server: answer.newsSeen ?? null } : {}), veteran, current: CURRENT.version });
+  if (due === 'none') return false;
+  if (due === 'mark') {
+    markSeenHere();
+    void api?.news(CURRENT.version);
+    return false;
+  }
+  showNews({
+    release: CURRENT,
+    onClose: () => {
+      // «Play» and the cross both record the version, here and with the profile.
+      markSeenHere();
+      void api?.news(CURRENT.version);
+      toTitle(false);
+      askOnTitle();
+    },
+  });
+  return true;
+}
+
+/** The mail window; back to the camp when closed. */
+function openMail(): void {
+  if (!api) return;
+  showMail({
+    letters: profile?.mail ?? [],
+    api,
+    onChange: (mail, trophies) => {
+      if (!profile) return;
+      profile.mail = mail;
+      profile.trophies = trophies;
+      lettersCounted = unclaimed(mail);
+    },
+    onClose: () => toTitle(false),
+  });
+}
+
+/** Today's rules of the daily dungeon for the camp: the hardship's place in the challenges' sheet and name, the boon's item and words. */
+function dailyRulesView(): DailyRulesView {
+  const rules = core.dailyRules(core.dayOf(Date.now()));
+  const index = core.CHALLENGES.findIndex((challenge) => challenge.mask === rules.challenge);
+  const [boon, info] = t.ranked.boons[rules.boon] ?? [rules.boon, ''];
+  const item = BOON_ITEMS[rules.boon] ?? 'gold';
+  return {
+    hardship: { index: Math.max(0, index), name: t.meta.challengeList[index]?.[0] ?? '' },
+    boon: { sprite: itemSprite(core.createItem(item), {}), name: t.camp.boons[rules.boon] ?? boon, info },
+  };
+}
+const BOON_ITEMS: Record<string, core.ItemKind> = {
+  alchemist: 'potion.healing', scholar: 'scroll.identify', purse: 'gold', supplies: 'food.ration', whetstone: 'stone.augmentation', cartographer: 'scroll.mapping',
+};
 
 function toTitle(ask = true): void {
   session?.close();
@@ -625,7 +859,7 @@ function toTitle(ask = true): void {
   aim = null;
   examining = false;
   held.code = '';
-  audio.playMusic('theme');
+  audio.playMusic(TITLE);
   audio.ambience(null);
   audio.muffle(false);
   backButton(null);
@@ -636,17 +870,22 @@ function toTitle(ask = true): void {
   const saved = loadSolo(SOLO_SLOT)?.heroes[0] ?? (away?.heroClass ? { heroClass: away.heroClass, lvl: away.lvl, depth: away.depth } : undefined);
   // A run an update can no longer carry on is not dropped unannounced.
   const stale = saved ? null : staleSolo(SOLO_SLOT);
-  showTitle({
+  // With a run to continue, the scene opens on its hero; a swipe then picks the class of a new game (and is kept as before).
+  if (saved && (campClasses() as readonly string[]).includes(saved.heroClass)) heroClass = saved.heroClass;
+  const records = rankings();
+  const camp = showCamp({
     heroClass,
     save: saved ? { heroClass: saved.heroClass, lvl: saved.lvl, depth: saved.depth } : null,
-    askName: inTelegram ? null : playerName,
+    name: profile?.name || (inTelegram ? telegramName() : playerName.trim()) || t.heroDefault,
+    profile,
+    fallback: { best: records.reduce((best, record) => Math.max(best, record.score), 0), games: records.length },
+    scene: mart.campShown() ?? 'outdoor',
+    skinOf: (name) => mart.skinOf(name),
+    effect: mart.effectWorn(),
+    frame: mart.frameWorn(),
     onClass: (value) => {
-      heroClass = value;
+      heroClass = value as HeroClass;
       store('pd-class', value);
-    },
-    onName: (value) => {
-      playerName = value;
-      store('pd-name', value);
     },
     onContinue: () => startSolo('continue'),
     // A new game over a saved one asks first: the saved run is lost.
@@ -657,12 +896,12 @@ function toTitle(ask = true): void {
     onDaily: () => startSolo('daily'),
     onDailyBoard: api ? () => openBoards('daily') : undefined,
     dailyState: dailyState(),
-    dailyRules: todayRules((hardship, boon, info) => t.ranked.rulesLine(hardship, boon, info)),
+    rules: dailyRulesView(),
     onPractice: () => startSolo('daily'),
-    profile: profile ? profileCard(profile, () => openBoards()) : undefined,
     onRankings: () => openBoards(),
-    onMart: () => showMart({ heroClass, onClose: toTitle }),
+    onMart: () => showMart({ heroClass, onClose: toTitle, onTry: startTry }),
     onSettings: () => settings(toTitle),
+    mail: api ? { count: unclaimed(profile?.mail ?? []), onOpen: openMail } : undefined,
     challenges: challengesOpen() ? challenges : 0,
     onChallenges: () =>
       showChallenges({
@@ -675,6 +914,7 @@ function toTitle(ask = true): void {
         onClose: toTitle,
       }),
   });
+  activeCamp = camp.camp;
 }
 
 /** The journal and catalog; from the menu it goes back to the menu, from the corner button to the game. */
@@ -688,7 +928,7 @@ function openMenu(): void {
   showMenu({
     onResume: hideOverlay,
     onHelp: () => showHelp(hideOverlay),
-    onBadges: () => showBadges(hideOverlay),
+    onBadges: () => showBadges(hideOverlay, profile?.honors ?? []),
     onJournal: () => openJournal(openMenu),
     onSettings: () => settings(openMenu),
     onReport: session?.mode === 'online'
@@ -741,12 +981,42 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
   (world.floors[depth]?.heaps ?? []).some((heap) => heap.pos === pos && heap.kind !== 'hidden');
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
-let aim: { index: number; kind: 'throw' | 'zap' | 'special' | 'key' } | null = null;
+let aim:
+  | { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key' }
+  | { index: -1; kind: 'artifact'; action: ArtifactAction }
+  /** A subclass's action that wants a target: a combo move, the assassin's prepared strike. */
+  | { index: -1; kind: 'ability'; ability: 'combo'; move: core.ComboMove }
+  | { index: -1; kind: 'ability'; ability: 'ambush' }
+  | null = null;
+
+/** What artifacts ask of the game outside the backpack (a quick slot's default action, the spellbook's window). */
+function artifactHost(world: World, me: Hero): ArtifactHost {
+  const back = (): void => hideOverlay();
+  return {
+    world,
+    hero: me,
+    act: (action) => {
+      hideOverlay();
+      send(action, performance.now());
+    },
+    stay: (action) => send(action, performance.now()),
+    aim: (action) => {
+      hideOverlay();
+      aim = { index: -1, kind: 'artifact', action };
+    },
+    pick: (title, targets, onPick, onCancel) => showBackpack({
+      world, hero: me, onAction: (action) => send(action, performance.now()), onAim: () => undefined, onClose: hideOverlay,
+      pick: { title, targets, onPick, onCancel: onCancel ?? back },
+    }),
+    back,
+  };
+}
 
 /** QuickSlotButton.onClick: use what the slot holds; an empty slot, or one whose item ran out, asks what to put in it. */
 function quickTap(slot: number): void {
   const me = session?.world && heroById(session.world, session.myId);
   if (!me) return;
+  tutorial.did('quick');
   if (!aim && (quickKind(slot) === null || isPlaceholder(me, slot))) assignQuickslot(slot);
   else toggleQuickslot(slot);
 }
@@ -759,18 +1029,49 @@ function toggleQuickslot(slot = 0): void {
     aim = null;
     return;
   }
+  // An artifact, worn or carried: its default action (Artifact.defaultAction).
+  const artifact = quickArtifact(me, slot);
+  if (artifact) {
+    walk.reset();
+    const run = defaultArtifactAction(artifactHost(world, me), artifact.item, artifact.ref);
+    if (run) run();
+    return;
+  }
+  // ClassArmor.defaultAction: the armour's ability (worn; from the pack, it says it is not on).
+  const armor = quickClassArmor(me, slot);
+  if (armor) {
+    walk.reset();
+    if (armor !== me.armor) view.say(artText('items.armor.classarmor.not_equipped'), '#cccccc');
+    else useAbilityNow();
+    return;
+  }
   const index = quickIndex(me, slot);
-  if (index < 0) return;
-  const item = me.items[index]!;
-  // Wand.actions: no zapping a wand known to be empty (one of unknown charges may be tried, and fizzle).
-  if (item.charges === 0 && chargesKnown(item)) {
+  const item = quickItem(me, slot);
+  if (!item) return;
+  // Wand.actions: no zapping a wand known to be empty (one of unknown charges may be tried, and fizzle); the staff's, not at all.
+  const wand = item.kind === 'weapon.magesStaff' ? item.wand : item;
+  if (wand?.charges === 0 && (chargesKnown(wand) || wand !== item)) {
     view.say(t.noCharges, '#cccccc');
     return;
   }
   walk.reset();
   const use = quickUse(item.kind);
   if (use === 'use') send({ type: 'use', item: index }, performance.now());
-  else if (use) aim = { index, kind: use };
+  // Shattered's potions, scrolls, stones, spells...: whatever the item's first action is (it may want a target or a choice).
+  else if (use === 'item') quickAction(backpackOptions(world!, me), index);
+  else if (use && use !== 'artifact' && use !== 'ability') aim = { index, kind: use };
+}
+
+/**
+ * Hero.canAttack: next to it, or within the weapon's reach (a spear, a glaive, a whip; MagesStaff.reachFactor: a
+ * battlemage's staff of disintegration), but an ally only face to face.
+ */
+function inReach(world: World, me: Hero, pos: number): boolean {
+  if (adjacent(me.pos, pos)) return true;
+  const there = charAt(world, me.depth, pos);
+  // ShadowAlly.canInteract: with Perfect Copy the clone trades places from a few cells away.
+  if (there && 'kind' in there && there.ally) return copyReach(world, me, there);
+  return canReach(world, levelAt(world, me.depth), me, pos, Math.max(heroReach(me), staffReach(me)));
 }
 
 /** Awake monsters the party could see last frame (a walk goes no further while there are any). */
@@ -797,6 +1098,7 @@ function nextDanger(): void {
   pan.y = (cellY(mob.pos) - cellY(me.pos)) * TILE;
   pan.home = false;
   feedback.aim(mob.pos, true, fx.now, mob.id);
+  feedback.danger(mob.id, mob.pos, fx.now);
 }
 
 /**
@@ -843,6 +1145,8 @@ function send(action: Parameters<Session['send']>[0], now: number): void {
   }
   walk.lastSent = now;
   session!.send(action);
+  if (action.type === 'attack') tutorial.did('enemy');
+  else if (action.type === 'descend') tutorial.did('stairs');
   // The first thing done: the first game's hint has done its job.
   if (!coached) {
     coached = true;
@@ -952,7 +1256,7 @@ function step(world: World, now: number, visible: readonly boolean[]): void {
     const mob = mobById(world, me.depth, walk.chase);
     if (!mob || !visible[mob.pos]) {
       walk.chase = null;
-    } else if (adjacent(me.pos, mob.pos)) {
+    } else if (inReach(world, me, mob.pos) && (adjacent(me.pos, mob.pos) || mob.state !== 'passive')) {
       walk.chase = null;
       send({ type: 'attack', target: mob.id }, now);
       return;
@@ -1058,12 +1362,22 @@ function takeHere(world: World, me: Hero, now: number): void {
   else send({ type: 'pickup' }, now);
 }
 
+/** The master thieves' armband's offer for a ware (WndTradeItem's steal button), if it is worn and charged. */
+function stealOffer(world: World, me: Hero, item: Item): { label: string; sure: boolean; onSteal(): void } | undefined {
+  const offer = shopliftOffer(world, me, item);
+  const armband = thievery(me);
+  const ref = armband && (me.artifact === armband ? 'artifact' : 'misc');
+  if (!offer || !ref) return undefined;
+  return { ...offer, onSteal: () => send({ type: 'artifact', item: ref, use: 'shoplift' }, performance.now()) };
+}
+
 function openTrade(world: World, me: Hero, item: Item): void {
   walk.reset();
   showTrade({
     world, hero: me, item,
-    price: buyPrice(item, me.depth, world.known.includes(item.kind), me.rings.some((ring) => ring.kind === 'ring.haggler')),
+    price: buyPrice(item, me.depth, world.known.includes(item.kind), haggles(me)),
     onBuy: () => send({ type: 'buy' }, performance.now()),
+    steal: stealOffer(world, me, item),
     onClose: hideOverlay,
   });
 }
@@ -1087,12 +1401,16 @@ function openShop(): void {
   });
 }
 
+/** The way down: the stairs, or any cell of a boss level's way out once it is open (LevelTransition's area). */
+const isExitCell = (level: Level, cell: number): boolean =>
+  cell === level.exit || (level.exits?.includes(cell) === true && level.map[cell] === T.EXIT);
+
 function useStairs(world: World, stairs: 'descend' | 'ascend', now: number): void {
   // The arena has no stairs: its dais is no way up.
   if (world.arena) return;
   const me = heroById(world, session!.myId)!;
   const level = levelAt(world, me.depth);
-  if (stairs === 'descend' && me.pos === level.exit) {
+  if (stairs === 'descend' && isExitCell(level, me.pos)) {
     send({ type: 'descend' }, now);
   } else if (stairs === 'ascend' && me.pos === level.entrance && (me.depth > 1 || hasAmulet(me))) {
     send({ type: 'ascend' }, now);
@@ -1122,19 +1440,50 @@ function announceBadges(ids: readonly BadgeId[]): void {
   }
 }
 
-/** The region's tune for each region (the sewers keep the original's), and the bosses that have the boss's. */
-const REGION_MUSIC = ['game', 'prison', 'caves', 'city', 'halls'] as const;
-const MUSIC_BOSSES: ReadonlySet<string> = new Set(['goo', 'tengu', 'dm300', 'king', 'yog']);
-/** A boss fight on my depth: from the boss's cry until it falls, or the hero leaves, or the run starts over. */
-let bossFight: { session: Session; generation: number; depth: number } | null = null;
+/**
+ * The boss fight on my depth as its effects tell it, for the music (soundtrack.ts): from the boss's cry until it
+ * falls, its finale, and its fall, until the hero leaves or the run starts over.
+ */
+let bossFight: { session: Session; generation: number; depth: number; seen: FightSeen } | null = null;
+const NO_FIGHT: FightSeen = { fighting: false, finale: false, slain: null };
+/** The depth the music last fetched ahead for. */
+let musicAhead = -1;
+/** Real danger turns the region's music tense (soundtrack.ts DangerMeter); a monster's blow on me this frame. */
+const danger = new DangerMeter();
+let dangerOf: { session: Session; generation: number } | null = null;
+let struckByMonster = false;
+
+/** The fight on my depth, made on first word of it. */
+function fightHere(depth: number): FightSeen | null {
+  if (!session) return null;
+  if (!bossFight || bossFight.session !== session || bossFight.generation !== session.generation || bossFight.depth !== depth) {
+    bossFight = { session, generation: session.generation, depth, seen: { ...NO_FIGHT } };
+  }
+  return bossFight.seen;
+}
 
 function handleMyEffects(effects: readonly Effect[], myId: string): void {
   const world = session?.world;
   const me = world && heroById(world, myId);
   if (world && me) announceBadges([...countGame(world.run.seed), ...checkBadges(world, me, effects)]);
   for (const effect of effects) {
-    if (effect.type === 'yell' && effect.line === 'notice' && MUSIC_BOSSES.has(effect.kind) && session && me && effect.depth === me.depth) {
-      bossFight = { session, generation: session.generation, depth: effect.depth };
+    if (effect.type === 'attack' && effect.hit && effect.target === myId && effect.attacker.startsWith('#')) struckByMonster = true;
+    // The boss's cry starts the fight's music; its fall ends it (Level.unseal: the music fades out).
+    if (effect.type === 'yell' && effect.line === 'notice' && MUSIC_BOSSES.has(effect.kind) && me && effect.depth === me.depth) {
+      const seen = fightHere(effect.depth);
+      if (seen) seen.fighting = true;
+    }
+    if (effect.type === 'bossSlain' && me && effect.depth === me.depth && MUSIC_BOSSES.has(effect.kind)) {
+      const seen = fightHere(effect.depth);
+      if (seen) Object.assign(seen, { fighting: false, finale: false, slain: effect.kind });
+    }
+    // Seam for the bosses stream: its `bossFight` effect (start, phase, finale: BossHealthBar.bleed, end).
+    const course = effect as { type: string; depth?: number; kind?: string; state?: string };
+    if (course.type === 'bossFight' && me && course.depth === me.depth) {
+      const seen = fightHere(me.depth);
+      if (seen && course.state === 'start') seen.fighting = true;
+      if (seen && course.state === 'finale') seen.finale = true;
+      if (seen && course.state === 'end') Object.assign(seen, { fighting: false, finale: false, slain: course.kind ?? 'boss' });
     }
     if (effect.type === 'bossSlain' && effect.depth === bossFight?.depth) bossFight = null;
     if (effect.type === 'ghost' && effect.hero === myId) talkWithGhost(effect.line, effect.questType);
@@ -1149,6 +1498,32 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
       if (env) talkWithBlacksmith(env, effect.line, effect.questType);
     }
     if (effect.type === 'shop' && effect.hero === myId) openShop();
+    // Hero.earnExp: a level with a talent point to spend (+1 Talent Point!); the hero window opens on the talents next.
+    if (effect.type === 'mastered' && effect.hero === myId && me && hasFreePoints(me)) newTalents = true;
+    if (effect.type === 'levelUp' && effect.hero === myId && me && hasFreePoints(me)) {
+      newTalents = true;
+      view.say(talentLine('actors.hero.hero.new_talent'), '#44ff44');
+    }
+    // The unstable spellbook's scroll to settle: its window (and again, if some other action was refused meanwhile).
+    const pendingWorld = session?.world;
+    const pendingHero = pendingWorld && heroById(pendingWorld, myId);
+    if (pendingWorld && pendingHero?.pendingScroll && ((effect.type === 'spellbook' && effect.hero === myId) ||
+      (effect.type === 'interrupted' && effect.hero === myId && effect.reason === 'art:unstablespellbook.prompt'))) {
+      walk.reset();
+      showSpellbookChoice(artifactHost(pendingWorld, pendingHero), pendingHero.pendingScroll.kind, pendingHero.pendingScroll.exotic, hideOverlay);
+    }
+    // AlchemistsToolkit.AC_BREW: the alchemy window, wherever the hero is (alchemyui.ts).
+    if (effect.type === 'alchemy' && effect.hero === myId) openAlchemy();
+    // Ward.interact: dismiss the ward?
+    if (effect.type === 'ward' && effect.hero === myId) {
+      walk.reset();
+      const ward = effect.mob;
+      showConfirm(t.dismissTitle, t.dismissInfo, t.dismissYes, t.dismissNo, () => send({ type: 'dismiss', target: ward }, performance.now()), hideOverlay);
+    }
+    // CursedWand.AbortRetryFail: the game seems to crash (in English only: the joke would not translate).
+    if (effect.type === 'cursedZap' && effect.hero === myId && effect.effect === 'abortRetryFail' && t.crashTitle) {
+      showConfirm(t.crashTitle, t.crashBody, t.crashButtons[0] ?? '', t.crashButtons[2] ?? '', hideOverlay, hideOverlay);
+    }
     // The Amulet of Yendor: its question for whoever takes it (once a run); the party hears of it.
     if (effect.type === 'amulet' && world && me) {
       if (effect.hero === myId) {
@@ -1173,7 +1548,7 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
     if (effect.type === 'sold' && effect.hero === myId && selling && overlayOpen()) openShop();
     if (world && me) learnFromEffect(world, me, effect);
     // Goo winding up: a warning nobody can miss, while there is still time to step back.
-    if (effect.type === 'pumped' && me && effect.depth === me.depth) toast(t.gooPumpsTip, { tone: 'warn' });
+    if (effect.type === 'bossFx' && effect.fx === 'pumpUp' && effect.value === 1 && me && effect.depth === me.depth) toast(t.gooPumpsTip, { tone: 'warn' });
     // Hunger kills quietly in the original's log: here it says what to do, and with what.
     if (effect.type === 'hunger' && effect.hero === myId && world && me) {
       const food = me.items.find((item) => itemDef(item.kind).category === 'food');
@@ -1379,19 +1754,40 @@ function tapCell(cell: number, quiet = false): void {
   if (aim) {
     const shot = aim;
     aim = null;
-    if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
+    if (shot.kind === 'artifact') send({ ...shot.action, cell }, performance.now());
+    else if (shot.kind === 'ability') {
+      // The subclasses' actions on a target: the monster on the cell.
+      const target = world.floors[me.depth]?.mobs.find((m) => m.pos === cell && visible[cell]);
+      const action: Action = shot.ability === 'combo'
+        ? { type: 'ability', ability: 'combo', move: shot.move, ...(target ? { target: target.id } : {}) }
+        : { type: 'ability', ability: 'ambush', target: target?.id ?? '' };
+      const problem = core.actionProblem(world, me, action);
+      if (problem) toast(talentReason(problem) || t.reasons[problem] || problem);
+      else send(action, performance.now());
+    }
+    else if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
     else if (shot.kind === 'key') send({ type: 'skeletonKey', item: shot.index, target: cell }, performance.now());
-    else if (cell !== me.pos && me.items[shot.index]) send({ type: shot.kind, item: shot.index, target: cell }, performance.now());
+    // A spell cast, dragon's breath breathed, a siren's song sung at the cell.
+    else if (shot.kind === 'cast') {
+      if (cell !== me.pos && me.items[shot.index]) send({ type: 'use', item: shot.index, cell }, performance.now());
+    }
+    else if ((cell !== me.pos || core.hasTalent(me, 'shield_battery')) && shot.index === WEAPON_SLOT && shot.kind === 'zap' && me.weapon) send({ type: 'zap', item: 'weapon', target: cell }, performance.now());
+    else if ((cell !== me.pos || (shot.kind === 'zap' && core.hasTalent(me, 'shield_battery'))) && me.items[shot.index]) send({ type: shot.kind, item: shot.index, target: cell }, performance.now());
     return;
   }
 
+  // Hero.actAlchemy: the pot, tapped from beside it (or standing in it), opens AlchemyScene.
+  if (level.map[cell] === T.ALCHEMY && atPot(world, me) && (cell === me.pos || adjacent(cell, me.pos))) {
+    openAlchemy();
+    return;
+  }
   if (cell === me.pos) {
     if (heapAt(world, me.depth, me.pos)) takeHere(world, me, performance.now());
     // Hero.handle on the hero's own cell: standing in tall grass or on a plant, it is trampled where the hero stands.
     else if (core.canSelfTrample(world, me)) send({ type: 'move', to: me.pos }, performance.now());
     // A way to the depth's side level (the blacksmith's mine) or back up from it.
     else if (branchAt(level, me.pos)) takeBranch();
-    else if (!world.arena && me.pos === level.exit) useStairs(world, 'descend', performance.now());
+    else if (!world.arena && isExitCell(level, me.pos)) useStairs(world, 'descend', performance.now());
     else if (!world.arena && me.pos === level.entrance && (me.depth > 1 || hasAmulet(me))) useStairs(world, 'ascend', performance.now());
     else if (me.pos === level.entrance && heapAt(world, me.depth, me.pos) === undefined && me.depth === 1 && (level.map[me.pos] === T.ENTRANCE || level.map[me.pos] === T.ENTRANCE_SP)) {
       // Hero.actAscend without the Amulet: the way out stays shut.
@@ -1495,7 +1891,7 @@ function tapCell(cell: number, quiet = false): void {
   walk.pickup = heapAt(world, me.depth, cell) && enemiesInSight.length === 0;
   // Hero.handle: walking to the stairs doesn't take them while enemies are in sight (a tap on them, standing there, does).
   if (world.arena || enemiesInSight.length > 0) return;
-  if (cell === level.exit) walk.stairs = 'descend';
+  if (isExitCell(level, cell)) walk.stairs = 'descend';
   else if (cell === level.entrance && (me.depth > 1 || hasAmulet(me))) walk.stairs = 'ascend';
   else if (branchAt(level, cell)) walk.branch = true;
 }
@@ -1530,13 +1926,70 @@ function showBuff(name: BuffName, turns?: number): void {
     ? shield.shield > 0 ? t.hero.shieldActive(shield.shield, shield.cooldown) : t.hero.shieldCooldown(shield.cooldown)
     : name === 'lockedFloor' ? t.hero.lockedFloorDesc
       : name === 'hunger' ? t.hero.hungryIntro + t.hero.hungerDesc
-        : name === 'starvation' ? t.hero.starvingIntro + t.hero.hungerDesc : null;
+        : name === 'starvation' ? t.hero.starvingIntro + t.hero.hungerDesc
+          // The artifacts' buffs: Shattered's own descriptions.
+          : name === 'stealth' ? artText('cloakofshadows$cloakstealth.desc', [turns ?? 0])
+          : name === 'timeFreeze' ? artText('timekeepershourglass$timefreeze.desc', [turns ?? 0])
+          : name === 'thorns' ? artText('capeofthorns$thorns.desc', [turns ?? 0])
+          : name === 'foresight' ? artText('talismanofforesight$foresight.desc') || null
+          // The armour abilities': Endure's stored blows, Nature's Power.
+          : name === 'endure' && me?.abil?.endure ? artText('actors.hero.abilities.warrior.endure$enduretracker.desc', [me.abil.endure.damageBonus, me.abil.endure.hitsLeft])
+          : name === 'naturesPower' ? artText('actors.hero.abilities.huntress.naturespower$naturespowertracker.desc', [turns ?? 0])
+          // The talents' and subclasses': Shattered's descriptions.
+          : (me && talentBuffInfo(me, name, turns)) || null;
   if (long) {
     walk.reset();
     showInfo(t.buffs[name], long.split('\n\n'), hideOverlay);
     return;
   }
   toast(turns ? `${t.buffs[name]} (${t.turnsLeft(turns)})` : t.buffs[name]);
+}
+
+/** A level gained with a point to spend: the hero window opens on the talents (WndHero.lastIdx). */
+let newTalents = false;
+
+/** The action indicator's buttons (actionind.ts). */
+const actionInd = new ActionIndicator({
+  use: (kind) => useAction(kind),
+});
+
+/** ClassArmor.execute(AC_ABILITY) from a quick slot: the ability of the armour worn, aimed at a cell where it wants one. */
+function useAbilityNow(): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me || !isAlive(me)) return;
+  walk.reset();
+  startAbility({
+    world, hero: me,
+    send: (action) => send(action, performance.now()),
+    aim: (prompt) => {
+      aim = { index: -1, kind: 'special' };
+      toast(prompt);
+    },
+    back: hideOverlay,
+  });
+}
+
+/** An action of the talents' and subclasses' indicator (berserk, freerun, snipe, a combo move, ambush). */
+function useAction(kind: ActionKind): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me || !isAlive(me)) return;
+  walk.reset();
+  const host = { world, hero: me, act: (action: Action) => send(action, performance.now()), onClose: hideOverlay };
+  switch (kind) {
+    case 'berserk': send({ type: 'ability', ability: 'berserk' }, performance.now()); break;
+    case 'freerun': send({ type: 'ability', ability: 'freerun' }, performance.now()); break;
+    case 'snipe': send({ type: 'ability', ability: 'snipe' }, performance.now()); break;
+    case 'combo':
+      showComboWindow(host, (move) => {
+        // Parry needs no target; the rest ask for one (Combo.useMove).
+        if (move === 'parry') send({ type: 'ability', ability: 'combo', move }, performance.now());
+        else aim = { index: -1, kind: 'ability', ability: 'combo', move };
+      });
+      break;
+    case 'ambush': aim = { index: -1, kind: 'ability', ability: 'ambush' }; break;
+  }
 }
 
 function openHero(): void {
@@ -1546,8 +1999,39 @@ function openHero(): void {
   walk.reset();
   aim = null;
   showHero({
-    hero: me, buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
+    hero: me, world, act: (action) => send(action, performance.now()), tab: newTalents ? 'talents' : 'stats',
+    buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
     looks: looksRows(me.heroClass, (shelf) => showMart({ heroClass: me.heroClass, shelf, onClose: openHero })),
+  });
+  newTalents = false;
+}
+
+/** What the backpack (and the windows it opens) are given. */
+function backpackOptions(world: World, me: Hero): Parameters<typeof showBackpack>[0] {
+  return {
+    world,
+    hero: me,
+    onAction: (action) => send(action, performance.now()),
+    onAim: (index, kind) => {
+      aim = { index, kind };
+    },
+    onClose: hideOverlay,
+  };
+}
+
+/** The alchemy pot's window (alchemyui.ts), over the map until closed. */
+function openAlchemy(): void {
+  walk.reset();
+  aim = null;
+  audio.play('click');
+  showAlchemy({
+    current: () => {
+      const world = session?.world;
+      const me = world && heroById(world, session!.myId);
+      return world && me && isAlive(me) ? { world, hero: me } : null;
+    },
+    onAction: (action) => send(action, performance.now()),
+    onClose: hideOverlay,
   });
 }
 
@@ -1558,12 +2042,16 @@ function openBackpack(): void {
   walk.reset();
   aim = null;
   newLoot = false;
+  tutorial.did('backpack');
   showBackpack({
     world,
     hero: me,
     onAction: (action) => send(action, performance.now()),
     onAim: (index, kind) => {
       aim = { index, kind };
+    },
+    onAimArtifact: (action) => {
+      aim = { index: -1, kind: 'artifact', action };
     },
     onClose: hideOverlay,
   });
@@ -1759,7 +2247,7 @@ addEventListener('pd-save-failed', () => {
 
 const HINT_CATEGORIES: ReadonlySet<string> = new Set([
   'potion', 'scroll', 'weapon', 'armor', 'ring', 'wand', 'food', 'seed', 'missile', 'bomb', 'key', 'gold', 'vial', 'bag',
-  'ankh', 'honeypot', 'torch', 'tome', 'kit', 'beacon', 'weightstone',
+  'ankh', 'honeypot', 'torch', 'tome', 'kit', 'beacon',
 ]);
 const NPCS: ReadonlySet<string> = new Set(['ghost', 'wandmaker', 'blacksmith', 'imp', 'ratKing']);
 const BOSS_DEPTHS: ReadonlySet<number> = new Set([5, 10, 15, 20, 25]);
@@ -1929,7 +2417,7 @@ function examineCell(pos: number): void {
   if (char && 'kind' in char) {
     const state = char.state === 'passive' ? '' : t.mobStates[char.state] ?? '';
     const health = char.state === 'passive' ? '' : t.examineHealth(Math.max(0, char.hp), char.ht);
-    showInfo(t.mobs[char.kind], [mobDescription(char), state], hideOverlay, {
+    showInfo(mobName(char, t.mobs[char.kind]), [...mobDescription(char, (item) => itemName(world, item), world.floors[me.depth]?.now ?? 0), state], hideOverlay, {
       icon: portrait(char.kind),
       ...(health ? { health: [Math.max(0, char.hp), char.ht] as const } : {}),
     });
@@ -1954,6 +2442,12 @@ function examineCell(pos: number): void {
   }
   const plant = world.floors[me.depth]?.plants?.find((p) => p.pos === pos);
   const level = levelAt(world, me.depth);
+  // A boss level's own fixtures and what its fight leaves about (bossTile, examine.ts).
+  const own = bossTile(world, level, pos);
+  if (own && !plant) {
+    showInfo(own.name, [own.desc, ...own.extra], hideOverlay);
+    return;
+  }
   const { name, desc } = plant ? plantText(plant.kind) : tileText(level, pos);
   const well = level.map[pos] === T.WELL ? level.wells.find((w) => w.pos === pos) : undefined;
   // Level.tileDesc: and what covers it (Web.tileDesc).
@@ -2196,8 +2690,8 @@ function flyToBag(launch: Launch): void {
 /** When the low-health heartbeat last pulsed, on the visual clock. */
 let lastBeat = 0;
 
-/** Which foot: footsteps alternate a touch in pitch. */
-let stride = 1;
+/** What lay around my hero a frame ago: the cell stepped onto as it was before the step (high grass, trampled by it). */
+let around = new Map<number, number>();
 
 /** The soft camera: where it looks, eased after the hero (see tick). */
 const follow = { x: 0, y: 0, depth: 0, ready: false };
@@ -2289,8 +2783,25 @@ function noteFrame(now: number): void {
   }
 }
 
-function frame(now: number): void {
-  requestAnimationFrame(frame);
+/**
+ * The game came back from being out of sight (a hidden tab, Telegram Desktop's minimised window): clocks measured
+ * between frames start over (the long gap must not look like a struggling phone or a jump in the visual clock),
+ * the canvas is sized afresh (a WebView may have dropped its pixels) and the map is baked and drawn anew.
+ */
+function restoreAfterPause(): void {
+  lastFrame = 0;
+  lastVisual = 0;
+  lastUnderWindow = 0;
+  frames.prev = 0;
+  frames.since = 0;
+  bakedKey = '';
+  bakedFor = '';
+  vignetteState = '';
+  resize();
+}
+
+function frame(now: number, resumed = false): void {
+  if (resumed) restoreAfterPause();
   noteFrame(now);
   if (session && windowOverMap()) {
     if (now - lastUnderWindow < UNDER_WINDOW_MS) return;
@@ -2298,12 +2809,72 @@ function frame(now: number): void {
     // These slow frames are on purpose: «auto» effects must not take them for a struggling phone.
     lastFrame = now;
   }
-  tick(now);
+  if (crashed) return;
+  try {
+    tick(now);
+    loopFailures = 0;
+  } catch (error) {
+    // A frame that fails now and then is only reported; one that fails again and again leaves the game stuck: the error screen.
+    report('error', `frame: ${(error as Error).message}`, (error as Error).stack);
+    if (++loopFailures >= 5) showCrash();
+  }
+  netStrip();
 }
+
+let loopFailures = 0;
+let crashed = false;
+
+/** «Something went wrong»: «Restart» loads the page again (the run is kept), «Report a problem» where the server can take one. */
+function showCrash(): void {
+  if (crashed) return;
+  crashed = true;
+  session?.close();
+  showErrorScreen({ api, run: runFacts, restart: () => location.reload() });
+}
+
+/*
+ * The strip under the HUD while the connection is down (design v20, .pd-net-badge): a run the server handed out says it
+ * will count later; a run played on the device alone (begun offline or past a refusal) says it is not ranked.
+ */
+const netBadge = Object.assign(document.createElement('span'), { className: 'pd-net-badge', hidden: true });
+netBadge.setAttribute('role', 'status');
+document.getElementById('ui')!.append(netBadge);
+function netStrip(): void {
+  const checked = session?.checked;
+  const text = !session || session.mode !== 'solo' || !api ? '' : checked ? (checked.offline ? t.rel.offline.strip : '') : t.rel.offline.stripLocal;
+  if (netBadge.textContent !== text) netBadge.textContent = text;
+  netBadge.hidden = text === '' || overlayOpen();
+}
+
+/** The connection went or came back (session.ts): once a run, the window says so; the strip stays while it lasts. */
+let offlineShownFor = '';
+addEventListener('pd-net', (event) => {
+  const state = (event as CustomEvent<string>).detail;
+  const checked = session?.checked;
+  if (state === 'online') {
+    if (closeOffline()) hideOverlay();
+    toast(t.rel.offline.back, { tone: 'good' });
+    return;
+  }
+  if (!checked || overlayOpen() || offlineShownFor === checked.meta.id) return;
+  offlineShownFor = checked.meta.id;
+  showOffline({
+    kind: 'live',
+    ping: async () => (await api?.me()) !== null,
+    onBack: () => {
+      hideOverlay();
+      session?.checked?.retry();
+    },
+    onPlay: hideOverlay,
+  });
+});
 
 function tick(now: number): void {
   if (!session) {
-    drawBackdrop(now);
+    // The camp covers a phone's whole screen; behind a wide screen's column the dungeon is still shown.
+    if (activeCamp?.canvas.isConnected) activeCamp.frame(now);
+    else activeCamp = null;
+    if (!activeCamp || innerWidth > 480) drawBackdrop(now);
     return;
   }
   const world = session.world;
@@ -2367,7 +2938,9 @@ function tick(now: number): void {
   // Footsteps, doors and stairs of my own hero.
   if (lastPlace.generation === session.generation && isAlive(me)) {
     if (me.depth !== lastPlace.depth) {
-      audio.play(justFell ? 'falling' : 'descend');
+      // Chasm.heroFall: the fall; GameScene: down (stairs or a fall) onto the deepest floor yet, the descent.
+      if (justFell) audio.play('falling');
+      if (me.depth > lastPlace.depth && me.depth >= (world.reached ?? me.depth)) audio.play('descend');
       // A new depth comes up out of the dark.
       fx.flash('0, 0, 0', 1, 650, vnow);
       // GameScene's greetings: the depth, a new region, and the level's feeling (the arena, sinking, has its own: handleArenaEffects).
@@ -2393,14 +2966,10 @@ function tick(now: number): void {
       // The view comes home to the walking hero.
       if (pan.x !== 0 || pan.y !== 0) pan.home = true;
       const terrain = level.map[me.pos]!;
-      // Footsteps: never quite the same twice, left foot and right a touch apart.
-      stride = -stride;
-      // Each surface underfoot sounds its own: stone, water, grass, the wood of a doorway, hot embers.
-      const pitch = 1 + stride * 0.05;
-      if (terrain === T.WATER) audio.play('water', pitch, 0.5);
-      else if (terrain === T.OPEN_DOOR || terrain === T.DOOR) audio.play('stepWood', pitch, 0.55);
-      else audio.play('step', pitch, 0.45);
-      if (terrain === T.GRASS || terrain === T.HIGH_GRASS || terrain === T.FURROWED_GRASS) audio.play('grass', pitch, 0.4);
+      // Hero.move: each surface underfoot sounds its own (water, the sturdy floor of special rooms, grass,
+      // high grass trampled on the way in, stone), and hot embers hiss a little.
+      const step = stepSound(terrain, around.get(me.pos) === T.HIGH_GRASS && terrain !== T.HIGH_GRASS);
+      audio.play(step.sound, step.rate, 0.6);
       if (terrain === T.EMBERS) audio.play('sizzle', 1.3, 0.12);
       // And what the step stirs where it left: dust, a splash, a few blades of grass.
       stepFx(level.map[lastPlace.pos] ?? terrain, lastPlace.pos, vnow);
@@ -2412,6 +2981,7 @@ function tick(now: number): void {
     view.arenaSinks(0, t.arena.title, t.arena.sub, vnow);
   } else if (lastPlace.generation !== session.generation && me.depth === 1 && world.turn < 3) view.enterRegion(1, vnow);
   lastPlace = { generation: session.generation, depth: me.depth, pos: me.pos };
+  around = new Map(NEIGHBOURS8.map((d) => [me.pos + d, level.map[me.pos + d] ?? -1]));
 
   const key = `${me.depth}:${world.turn}:${session.generation}`;
   if (key !== bakedKey) {
@@ -2442,6 +3012,7 @@ function tick(now: number): void {
     if (dangerTarget && !enemiesInSight.includes(dangerTarget)) {
       dangerTarget = null;
       dangerIndex = -1;
+      feedback.clearDanger();
     }
   }
 
@@ -2451,6 +3022,11 @@ function tick(now: number): void {
     // The backpack, if open, shows the pack as it is now (an item put on, dropped, picked up).
     const mine = session.myId;
     if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
+    // The hero window, if open, shows the talents as they are now (a point spent, a level gained, a way chosen).
+    if (effects.some((e) => ('hero' in e && e.hero === mine) && (e.type === 'talent' || e.type === 'levelUp' || e.type === 'mastered' || e.type === 'metamorphed'))) refreshHeroWindow(world, me);
+    // The pot's window, if open, shows the pack and the energy as they are now.
+    for (const e of effects) if (e.type === 'crafted' && e.hero === mine && alchemyOpen()) noteCrafted(e.item);
+    if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
     for (const effect of effects) effectFx(effect, view, world, session.myId, vnow);
     motion.effects(effects, world, me.depth, (e) => itemSprite(e.item, world.run.labels));
     scenery.effects(effects, me.depth, vnow);
@@ -2466,8 +3042,10 @@ function tick(now: number): void {
   step(world, now, visible);
   fx.update(vnow, dt);
   ambientFx(view, vnow, dt);
+  mobAmbient(view, vnow, dt);
   regionFx(level, visible, vnow, dt);
   levelFx.frame(world, me.depth, visible, view, vnow);
+  blobFx(world.floors[me.depth]?.gas ?? {}, visible, vnow, dt);
 
   const mine = view.puppets.get(me.id);
   const at = mine ? view.position(mine, vnow) : { x: cellX(me.pos) * TILE, y: cellY(me.pos) * TILE };
@@ -2479,11 +3057,30 @@ function tick(now: number): void {
   const region = level.region ?? regionIndex(me.depth);
   audio.ambience(levelRegion(level));
   preloadSheets(levelRegion(level));
-  // Each region has its tune, and a boss fight its own while it lasts.
+  // Shattered's music, as its levels play it (soundtrack.ts); the run won, the victory's.
   if (bossFight && (bossFight.session !== session || bossFight.generation !== session.generation || bossFight.depth !== me.depth)) bossFight = null;
-  // A champions' wave in the arena is a boss fight from its first monster to its last.
-  const champions = world.arena?.phase === 'fight' && core.isChampionsWave(world.arena.wave);
-  audio.playMusic(bossFight || champions ? 'boss' : REGION_MUSIC[region]!);
+  // Beyond Shattered: an enemy hunting me for a while, or a monster's blow, turns the region's tracks tense until
+  // the danger has been gone a good while; the list comes back where it left off.
+  if (dangerOf?.session !== session || dangerOf.generation !== session.generation) {
+    dangerOf = { session, generation: session.generation };
+    danger.reset();
+  }
+  const hunted = isAlive(me) && visibleEnemies(world, me).some((mob) => mob.state === 'hunting');
+  const wasTense = danger.on;
+  const inDanger = danger.update(now, hunted, struckByMonster && isAlive(me));
+  struckByMonster = false;
+  const placed = world.over && world.victory ? VICTORY : placeTune(world, me, region, bossFight?.seen ?? NO_FIGHT);
+  const tune = world.over ? placed : withDanger(placed, region, inDanger);
+  if (!sameTune(audio.tune, tune)) {
+    // In and out of danger, a crossfade both ways; otherwise as Shattered fades.
+    const fade = wasTense !== inDanger ? CROSSFADE : fadeFor(audio.tune, tune);
+    audio.playMusic(tune, fade, fade !== CROSSFADE);
+  }
+  // What will be wanted soon is fetched ahead, a little at a time.
+  if (musicAhead !== me.depth) {
+    musicAhead = me.depth;
+    audio.prefetch(aheadOf(me.depth, region, !!world.arena));
+  }
   audio.muffle(overlayOpen() || !isAlive(me));
   const kick = fx.shakeOffset(vnow);
   // The hero stands in the middle of the band the HUD and the toolbar leave free, not of the screen.
@@ -2546,6 +3143,8 @@ function tick(now: number): void {
     // Rings and wands lying about glow, gold and blue.
     ...(heap.kind === 'heap' && heap.items[0]!.kind.startsWith('ring.') ? { aura: '#ffd27a' }
       : heap.kind === 'heap' && heap.items[0]!.kind.startsWith('wand.') ? { aura: '#8fc4ff' } : {}),
+    // ItemSprite.Glowing: an enchanted weapon or inscribed armour lying about glows in its magic's colour.
+    ...((heap.kind === 'heap' || heap.kind === 'forSale') && glowOf(heap.items[0]!) ? { glow: glowOf(heap.items[0]!)! } : {}),
   }));
   motion.update(level, heaps, visible, view, session.myId, `${session.generation}:${me.depth}`, vnow);
   for (const launch of motion.takeLaunches()) if (!launch.gold) launches.push(launch);
@@ -2554,12 +3153,17 @@ function tick(now: number): void {
     flyToBag(launch);
     return false;
   });
-  // Clouds of gas: green toxic, yellow paralytic.
+  const plants = (world.floors[me.depth]?.plants ?? []).map((p) => ({ pos: p.pos, index: PLANT_KINDS.indexOf(p.kind) }));
+  // Clouds of gas: green toxic, yellow paralytic, and Shattered's (their Speck's hardlight colour; the
+  // confusion gas's changes from cell to cell, as its specks do).
   const clouds = world.floors[me.depth]?.gas ?? {};
-  const gas = [
-    ...(clouds.toxic ?? []).map(([pos, volume]) => ({ pos, volume, color: '80, 200, 60' })),
-    ...(clouds.paralytic ?? []).map(([pos, volume]) => ({ pos, volume, color: '230, 220, 70' })),
-  ];
+  const gas = Object.entries(GAS_TINTS).flatMap(([kind, tint]) =>
+    (clouds[kind as keyof typeof clouds] ?? []).map(([pos, volume]) => ({
+      pos,
+      // Fire is thick for the few turns it burns.
+      volume: kind === 'fire' ? 30 + volume * 10 : volume,
+      color: Array.isArray(tint) ? tint[pos % tint.length]! : tint as string,
+    })));
   const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
   const explored = exploredCells(world, me.depth);
   const scene = {
@@ -2581,6 +3185,10 @@ function tick(now: number): void {
       );
     },
     mourning: isAlive(me) ? 0 : Math.min(1, (vnow - (fallenAt ||= vnow)) / 1200),
+    // The boss levels' art, and what their fights leave about (bossfx.ts).
+    ground: (c: CanvasRenderingContext2D) => drawBossGround(c, world, level, assets, explored, visible, vnow),
+    top: (c: CanvasRenderingContext2D) => drawBossTop(c, world, level, assets, explored, visible, vnow),
+    marks: cellMarks(vnow),
     middle,
     // The cards sit above the hero, not on them: a third of the way down the free band.
     cardY: (free.top + (free.bottom - free.top) * 0.3) * (canvas.height / (canvas.clientHeight || 1)),
@@ -2607,6 +3215,7 @@ function tick(now: number): void {
       : walk.queue.length === 0 && !walk.chase && !session.busy),
   );
   coachMove(me);
+  tutorial.frame(now);
 
   // Who the dungeon is waiting for, once my action has been queued for a moment. Under live turns, the
   // companions a fight waits for once I have made my move (and none while it waits for mine).
@@ -2651,24 +3260,27 @@ function tick(now: number): void {
   const quickState = (slot: number): QuickState | null => {
     const kind = quickKind(slot);
     if (!kind) return null;
-    const item = me.items[quickIndex(me, slot)];
+    // An artifact may be worn: Shattered's quick slots hold it all the same; the mage's staff is zapped from the hand (quickItem).
+    const item = quickArtifact(me, slot)?.item ?? quickClassArmor(me, slot) ?? quickItem(me, slot);
     if (!item || isPlaceholder(me, slot)) {
       return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };
     }
     return {
       sprite: itemSprite(item, world.run.labels),
-      label: chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
-      aiming: aim !== null && aim.index === quickIndex(me, slot),
+      label: isClassArmor(item) ? armorStatus(item) : chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
+      aiming: aim !== null && (aim.kind === 'artifact' ? itemAt(me, aim.action.item) === item : aim.index === quickIndex(me, slot)),
+      charge: itemDef(item.kind).category === 'artifact' ? chargeOf(world, me, item) : isClassArmor(item) ? { share: Math.min(1, (item.charge ?? 0) / 100), full: (item.charge ?? 0) >= 100 } : null,
       wear: wearOf(world, item),
     };
   };
-  const quick = Array.from({ length: visibleQuickslots(hud.wide, innerWidth) }, (_, slot) => quickState(slot));
+  const quick = Array.from({ length: visibleQuickslots(hud.wide) }, (_, slot) => quickState(slot));
   const cancelChoice = (): void => {
     aim = null;
     examining = false;
   };
   // One state at a time, the most pressing: the connection, death, a target to choose, examining, companions.
-  const aimed = aim && aim.index >= 0 ? me.items[aim.index] : undefined;
+  const aimed = aim && aim.kind === 'artifact' ? itemAt(me, aim.action.item)
+    : aim && aim.index >= 0 ? me.items[aim.index] : aim?.index === WEAPON_SLOT ? me.weapon ?? undefined : undefined;
   const status: HudStatus | null =
     session.status ? { kind: session.status === t.reconnecting ? 'reconnecting' : 'connecting', text: session.status }
     : !isAlive(me) && !world.over ? { kind: 'dead', text: `${t.youDied}. ${world.arena ? t.arena.fallenCoop : t.youDiedCoop}` }
@@ -2677,6 +3289,7 @@ function tick(now: number): void {
     : waitingFor.length > 0 ? { kind: 'waiting', text: t.waitingShort, names: waitingFor }
     : holdingFelt ? { kind: 'waiting', text: t.partyWaitsForYou }
     : null;
+  actionInd.update(world, me);
   hud.update(
     {
       me,
@@ -2693,6 +3306,7 @@ function tick(now: number): void {
       danger: isAlive(me) ? enemiesInSight.length : 0,
       waitingFor: session.mode === 'online' ? holders.filter((id) => id !== me.id) : [],
       arena: arenaHud(world, me, session.mode === 'online'),
+      boss: bossBar(world, me.depth),
     },
     walk.resting,
   );
@@ -2730,7 +3344,7 @@ function tick(now: number): void {
     const solo = session.mode === 'solo';
     const victory = world.victory;
     // Bones.leave: a hero fallen alone in an ordinary run leaves something for the next.
-    if (!victory && solo && !dailyRun && !session.checked) store(BONES_KEY, JSON.stringify(leaveBones(me, Math.floor(Math.random() * 4), Math.random())));
+    if (!victory && solo && !dailyRun && !session.checked) store(BONES_KEY, JSON.stringify(leaveBones(me, Math.floor(Math.random() * BONES_ROLLS), Math.random())));
     if (victory) {
       audio.play('levelup');
       haptic('success');
@@ -2969,7 +3583,7 @@ function shareChoices(card: () => Promise<ShareCard>, text: string, start: 'dail
   return choices;
 }
 
-requestAnimationFrame(frame);
+loop(frame);
 
 addEventListener('pd-run-restored', () => toast(t.ranked.restored));
 
@@ -2978,13 +3592,15 @@ if (launchedForDaily()) {
   startSolo('daily');
 } else {
   toTitle();
+  // Without the server there is no profile to ask: the news are judged by this device alone.
+  if (!api) maybeNews(null);
 }
 
 
 // Badges and the rankings from the player's other devices: on the title at once, once they come.
 void pullCloud().then(() => {
   reloadBadges();
-  if (!session && document.querySelector('.pd-title-screen')) toTitle(false);
+  if (!session && document.querySelector('.pd-camp')) toTitle(false);
   pushCloud();
 });
 
@@ -3004,5 +3620,6 @@ if (import.meta.env.DEV) {
       await new Promise((resolve) => setTimeout(resolve, 33));
     }
   };
-  Object.assign(window, { __pd: { get session() { return session; }, camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
+  Object.assign(window, { __release: { news: () => showNews({ release: CURRENT, onClose: () => toTitle(false) }), report: () => api && showReport({ api, run: runFacts, onClose: () => toTitle(false) }), crash: showCrash } });
+  Object.assign(window, { __pd: { get session() { return session; }, openAlchemy, openBackpack, camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
 }

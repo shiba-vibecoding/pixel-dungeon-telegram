@@ -1,5 +1,6 @@
 import { DARKNESS } from '../challenges';
 import type { Heap, Item } from '../items';
+import type { MobKind } from '../actors';
 import type { PlantInfo } from '../plants';
 import type { ArenaRing } from './arena';
 import { deriveSeed, Rng, Stream } from '../rng';
@@ -24,6 +25,8 @@ import type { Room as GenRoom } from './gen/room';
 import { resetPitRoom } from './gen/rooms/special/special';
 import type { SacrificialFireSpawn } from './gen/rooms/special/sacrifice';
 import './gen/rooms';
+// The branch levels register themselves (BRANCH_LEVELS): the blacksmith's mine.
+import './gen/mining-level';
 import { BRANCH_LEVELS } from './gen/branches';
 
 export { Feeling } from './gen/dungeon';
@@ -107,6 +110,43 @@ export interface Level {
   ring?: ArenaRing;
   /** Unused since Shattered's terrain (FURROWED_GRASS is a terrain of its own); kept for older saves' shape. */
   furrowed?: number[];
+  /** Level.mobsToSpawn: what is left of the depth's rotation of monsters (MobSpawner, spawner.ts). */
+  mobRotation?: MobKind[];
+  /** Where a demon spawner pulses (DemonSpawnerRoom). SEAM(levels): the room places it; the monsters' stream raises it (ai.ts populate). */
+  demonSpawner?: number;
+  /** The cells that lead down besides `exit` (a boss level's LevelTransition area). */
+  exits?: number[];
+  /** A boss level's fixtures and the art laid over them (bosses/*.ts, the client's bossart.ts). */
+  boss?: BossLevelInfo;
+}
+
+/**
+ * A boss level's fixtures: where things stand that its fight needs (Goo's nest, DM-300's pylons and gate,
+ * the King's throne and pedestals, the imp's shop, Yog's place) and Shattered's custom tiles laid over the
+ * map (CustomTilemap: `sheet` is the texture, `tiles` its indices, -1 for none, `w` wide).
+ */
+export interface BossLevelInfo {
+  /** Goo's nest (GooBossRoom.setupGooNest), Goo's room. */
+  nest?: { x: number; y: number; w: number; h: number };
+  gooRoom?: { left: number; top: number; right: number; bottom: number };
+  /** DM-300's arena: its pylons. */
+  pylons?: number[];
+  /** The King's throne and summoning pedestals; the imp's shop room (ImpShopRoom) and its wares to come. */
+  throne?: number;
+  pedestals?: number[];
+  impShop?: { left: number; top: number; right: number; bottom: number };
+  /** Custom tiles laid over the map, drawn by the client. */
+  art?: BossArt[];
+}
+
+export interface BossArt {
+  sheet: 'sewer_boss' | 'prison_exit' | 'caves_boss' | 'city_boss' | 'halls_sp';
+  x: number;
+  y: number;
+  w: number;
+  tiles: number[];
+  /** Under the characters (CustomTilemap in customTiles) or over them, as walls are (customWalls). */
+  layer: 'ground' | 'wall';
 }
 
 /** The deepest depth the port can generate. */
@@ -206,6 +246,7 @@ export function toLevel(level: GenLevel, depth: number, branch: number): Level {
     viewDistance: level.viewDistance,
     ...(level.customTiles.length > 0 ? { customTiles: level.customTiles } : {}),
     ...(shopkeeper ? { shopkeeper: shopkeeper.pos } : {}),
+    ...(level.mobRotation.length > 0 ? { mobRotation: [...level.mobRotation] } : {}),
     spawn: {
       heaps: [...level.heaps.values()].filter((h) => h.items.length > 0).sort((a, b) => a.pos - b.pos),
       mobs: level.mobs,
@@ -277,6 +318,8 @@ function legacyLevel(run: RunState, depth: number, rng: Rng, layout: { style: Re
   Random.using(rng, () => Dungeon.generating({ depth, branch: 0, run, world: null }, () => resetPitRoom(depth)));
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const level = new LevelBuilder(rng, depth, Feeling.NONE, [], SOLO_SPAN);
+    // The run's seed, for what a boss level redraws the same way every time (PrisonBossLevel's cages).
+    level.layoutSeed = run.seed;
     if (!layout.build(level)) continue;
     layout.style.decorate(level);
     return {
@@ -294,6 +337,8 @@ function legacyLevel(run: RunState, depth: number, rng: Rng, layout: { style: Re
       ...(isBossDepth(depth) || depth === 26 ? {} : {}),
       ...(level.arenaDoor >= 0 ? { arenaDoor: level.arenaDoor } : {}),
       ...(level.ratKing >= 0 ? { ratKing: level.ratKing } : {}),
+      ...(level.exits.length > 0 ? { exits: level.exits } : {}),
+      ...(level.boss ? { boss: level.boss } : {}),
     };
   }
   throw new Error(`Unable to generate depth ${depth} after ${MAX_ATTEMPTS} attempts`);

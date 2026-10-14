@@ -1,4 +1,5 @@
 import type { HeroClass } from '../../../../actors';
+import { staffWith } from '../../../../staff';
 import { createItem, type Item, randomEnchantment, randomGlyph, wandMaxCharges } from '../../../../items';
 import type { VaultMob } from '../../../../vault-types';
 import { T } from '../../../terrain';
@@ -215,8 +216,7 @@ export class VaultEntranceRoom extends VaultRoom {
 /**
  * VaultMirror.createReward: the hero class's own item, better (on a stream of its own, as some classes
  * draw and some do not). SEAM(gear/wands/artifacts): the warrior's broken seal +1 with a glyph; the
- * mage's staff +3, enchanted (its wand of magic missile +3 stands in); the rogue's cloak of shadows +8
- * (its ring of shadows +3 stands in); the huntress's spirit bow, enchanted (the boomerang +3 stands in). The
+ * mage's staff +3 (magic missile), enchanted; the rogue's cloak of shadows +8; the huntress's spirit bow, enchanted. The
  * seal, the cloak and the bow are one of a kind (Item.unique): never taken out of the vault; the staff's
  * wand may be (EscapeCrystal).
  */
@@ -229,15 +229,16 @@ export function mirrorReward(heroClass: HeroClass): Item {
         reward = { ...createItem('seal'), level: 1, glyph: randomGlyph(Random.rng) };
         break;
       case 'mage':
-        reward = createItem('wand.magicMissile', 1, 3);
-        reward.charges = wandMaxCharges(reward);
-        randomEnchantment(Random.rng);
+        // A mage's staff +3, its wand of magic missile, enchanted.
+        reward = staffWith(createItem('wand.magicMissile', 1, 3));
+        reward.level = 3;
+        reward.enchant = randomEnchantment(Random.rng);
         break;
       case 'rogue':
-        reward = { ...createItem('ring.shadows', 1, 3), unique: true };
+        reward = { ...createItem('artifact.cloak', 1, 8), unique: true };
         break;
       case 'huntress':
-        reward = { ...createItem('missile.boomerang', 1, 3), enchant: randomEnchantment(Random.rng), unique: true };
+        reward = { ...createItem('spiritBow'), enchant: randomEnchantment(Random.rng), unique: true };
         break;
     }
     return reward;

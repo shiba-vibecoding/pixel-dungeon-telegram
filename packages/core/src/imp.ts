@@ -236,9 +236,11 @@ export function enterVault(world: World, hero: Hero): void {
   hero.hp = hero.ht;
   const stored = (quest.stored ??= {});
   if (!stored[hero.id]) {
-    stored[hero.id] = { weapon: hero.weapon, armor: hero.armor, rings: hero.rings, items: hero.items, gold: hero.gold };
+    stored[hero.id] = { weapon: hero.weapon, armor: hero.armor, artifact: hero.artifact, misc: hero.misc, ring: hero.ring, items: hero.items, gold: hero.gold };
     hero.weapon = null;
-    hero.rings = [];
+    hero.artifact = null;
+    hero.misc = null;
+    hero.ring = null;
     hero.items = [];
     hero.gold = 0;
   } else {

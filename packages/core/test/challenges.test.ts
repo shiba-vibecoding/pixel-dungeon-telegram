@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   act, addHero, canEnter, CHALLENGES, createMob, createWorld, DARKNESS, floorAt, heroById, heroView, isChallenged,
   type Item, ItemGenerator, itemDef, levelAt, NEIGHBOURS8, NO_ARMOR, NO_FOOD, NO_HEALING, NO_HERBALISM, NO_SCROLLS, restartWorld,
-  Rng, rollMob, SWARM_INTELLIGENCE, T, viewDistance, WIDTH, type World,
+  mobRotation, Rng, rollMob, SWARM_INTELLIGENCE, T, viewDistance, WIDTH, type World,
 } from '../src/index';
 import { pacify } from './helpers';
 
@@ -32,9 +32,10 @@ const distance = (a: number, b: number): number =>
   Math.max(Math.abs((a % WIDTH) - (b % WIDTH)), Math.abs(Math.trunc(a / WIDTH) - Math.trunc(b / WIDTH)));
 
 describe('challenges', () => {
-  it('are the original seven, with its masks, kept by the world and through a restart', () => {
+  it("are the original seven and Shattered's hostile champions, with their masks, kept by the world and through a restart", () => {
     expect(CHALLENGES.map((c) => [c.id, c.mask])).toEqual([
       ['noFood', 1], ['noArmor', 2], ['noHealing', 4], ['noHerbalism', 8], ['swarm', 16], ['darkness', 32], ['noScrolls', 64],
+      ['champions', 128],
     ]);
     const world = createWorld(1, NO_FOOD | DARKNESS);
     expect(isChallenged(world, NO_FOOD)).toBe(true);
@@ -109,7 +110,7 @@ describe('challenges', () => {
     expect(floorItems(0, 12).some((item) => category(item) === 'scroll' && item.kind !== 'scroll.upgrade')).toBe(true);
   });
 
-  it('swarm intelligence: a monster that wakes to a hero calls every other on the level to them', () => {
+  it('swarm intelligence: a monster hunting a hero in sight calls the others near it, further the longer it sees them', () => {
     for (const challenges of [0, SWARM_INTELLIGENCE]) {
       const world = solo(challenges);
       const hero = heroById(world, 'p')!;
@@ -117,21 +118,23 @@ describe('challenges', () => {
       const floor = floorAt(world, 1);
       const seen = heroView(world, hero);
       const beside = NEIGHBOURS8.map((n) => hero.pos + n).find((c) => canEnter(level, c))!;
-      const far = level.map.map((_, c) => c).filter((c) => canEnter(level, c) && !seen[c] && distance(c, hero.pos) > 10).slice(0, 2);
-      // The warrior has no stealth: right next to a sleeping rat, it is sure to wake.
+      const cells = level.map.map((_, c) => c).filter((c) => canEnter(level, c) && !seen[c]);
+      const near = cells.find((c) => distance(c, beside) <= 2 && distance(c, hero.pos) > 1);
+      const far = cells.filter((c) => distance(c, beside) > 12).slice(0, 1);
       floor.mobs = [
-        createMob('#near', 'rat', beside, 'sleeping', floor.now),
+        createMob('#near', 'rat', beside, 'hunting', floor.now),
         ...far.map((pos, i) => createMob(`#far${i}`, 'rat', pos, 'sleeping', floor.now)),
       ];
-      act(world, 'p', { type: 'wait' });
-      expect(floor.mobs[0]!.state).toBe('hunting');
-      for (const mob of floor.mobs.slice(1)) {
-        if (challenges) expect(mob).toMatchObject({ state: 'wandering', target: hero.pos });
-        else expect(mob.state).toBe('sleeping');
-      }
+      Object.assign(floor.mobs[0]!, { enemy: 'p', target: hero.pos, enemySeen: true });
+      if (near !== undefined) floor.mobs.push(createMob('#close', 'rat', near, 'sleeping', floor.now));
+      hero.hp = hero.ht = 500;
+      for (let i = 0; i < 3; i++) act(world, 'p', { type: 'wait' });
+      // Mob.processSwarmIntel: the call reaches two cells a turn the hunter keeps its prey in sight, twelve at most.
+      for (const mob of floor.mobs.filter((m) => m.id.startsWith('#far'))) expect(mob.state).toBe('sleeping');
+      const close = floor.mobs.find((m) => m.id === '#close');
+      if (close) expect(close.state === 'sleeping').toBe(!challenges);
     }
   });
-
   it('into darkness: heroes see three cells (four by torchlight) where the level is not darker anyway', () => {
     expect(viewDistance(1, true)).toBe(3);
     expect(viewDistance(20, true)).toBe(3);
@@ -187,33 +190,51 @@ describe('what each class knows from the start (HeroClass.initHero)', () => {
 });
 
 describe('Generator and Bestiary odds, as in the original', () => {
-  it('wands of amok, reach and flock come up 10, 6 and 10 times in 113', () => {
-    const generator = new ItemGenerator(Rng.seeded(9), 5);
+  it("wands come from a deck of three of each of Shattered's thirteen, drawn the same whenever they turn up", () => {
+    const run = createWorld(9).run;
+    const generator = new ItemGenerator(Rng.seeded(9), 5, { run });
     const counts: Record<string, number> = {};
-    const n = 30000;
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < 39; i++) {
       const kind = generator.of('wand').kind;
       counts[kind] = (counts[kind] ?? 0) + 1;
     }
-    expect(counts['wand.magicMissile']).toBeUndefined();
-    for (const [kind, weight] of [['wand.amok', 10], ['wand.reach', 6], ['wand.flock', 10], ['wand.firebolt', 15]] as const) {
-      expect(Math.abs(counts[kind]! / n - weight / 113)).toBeLessThan(0.01);
-    }
+    expect(Object.keys(counts)).toHaveLength(13);
+    expect(Object.values(counts).every((n) => n === 3)).toBe(true);
+    // A new deck once one is spent; the draws depend on the run alone.
+    const again = new ItemGenerator(Rng.seeded(1234), 7, { run: createWorld(9).run });
+    const first = new ItemGenerator(Rng.seeded(9), 5, { run: createWorld(9).run });
+    for (let i = 0; i < 20; i++) expect(again.of('wand').kind).toBe(first.of('wand').kind);
+    // Without a run (Generator.randomUsingDefaults), any kind as likely as another.
+    const loose = new ItemGenerator(Rng.seeded(3), 5);
+    const seen = new Set<string>();
+    for (let i = 0; i < 3000; i++) seen.add(loose.of('wand').kind);
+    expect(seen.size).toBe(13);
   });
 
-  it('now and then a visitor from the region below; rare variants only among the respawns', () => {
+  it("MobSpawner: each depth's rotation, now and then a visitor from the region below, one in fifty of a kind its rare one", () => {
     const seen = (depth: number, mutable: boolean): Set<string> => {
       const rng = Rng.seeded(depth);
       const kinds = new Set<string>();
       for (let i = 0; i < 20000; i++) kinds.add(rollMob(rng, depth, mutable));
       return kinds;
     };
-    expect([...seen(3, false)].sort()).toEqual(['crab', 'gnoll', 'rat', 'swarm']);
-    expect([...seen(4, false)].sort()).toEqual(['crab', 'gnoll', 'rat', 'skeleton', 'swarm', 'thief']);
-    expect([...seen(13, false)].sort()).toEqual(['bat', 'brute', 'elemental', 'shaman', 'spinner']);
-    expect([...seen(14, false)].sort()).toEqual(['bat', 'brute', 'elemental', 'monk', 'shaman', 'spinner']);
-    expect(seen(19, false).has('succubus')).toBe(true);
+    expect([...seen(1, false)].sort()).toEqual(['rat', 'snake']);
+    expect([...seen(3, false)].sort()).toEqual(['crab', 'gnoll', 'rat', 'snake', 'swarm']);
+    expect([...seen(4, false)].sort()).toEqual(['crab', 'gnoll', 'slime', 'swarm']);
+    expect([...seen(4, true)]).toContain('thief');
+    expect([...seen(8, false)].sort()).toEqual(['dm100', 'guard', 'necromancer', 'skeleton', 'thief']);
+    expect([...seen(13, false)].sort()).toEqual(['bat', 'blueShaman', 'brute', 'dm200', 'purpleShaman', 'shaman', 'spinner']);
+    expect([...seen(16, false)].sort()).toEqual(['chaosElemental', 'elemental', 'frostElemental', 'ghoul', 'shockElemental', 'warlock']);
+    expect([...seen(24, false)].sort()).toEqual(['eye', 'scorpio', 'succubus']);
+    expect(seen(19, true).has('succubus')).toBe(true);
     expect(seen(1, true).has('albino')).toBe(true);
     expect(seen(1, false).has('albino')).toBe(false);
+  });
+
+  it("a rotation is the depth's list (a kind now and then its rare one), shuffled", () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const rotation = mobRotation(Rng.seeded(seed), 2).map((kind) => (kind === 'albino' ? 'rat' : kind === 'gnollExile' ? 'gnoll' : kind));
+      expect([...rotation].sort()).toEqual(['gnoll', 'gnoll', 'rat', 'rat', 'snake']);
+    }
   });
 });

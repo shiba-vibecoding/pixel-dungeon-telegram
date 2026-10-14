@@ -5,9 +5,11 @@ import {
   type Look, restartWorld, RULES_VERSION, type ServerMessage, type Signal, type World,
 } from '@pd/core';
 import type { RunApi, RunMeta, SyncAnswer } from './checked';
+import { noteAction, resetActions } from './diag';
 import { guestSecret } from './guest';
 import { netlog, sendNetlog, startNetlog } from './netlog';
 import { report } from './report';
+import { reloadForUpdate } from './update';
 
 /*
  * Where the world comes from. A solo session runs the core directly and keeps
@@ -64,6 +66,8 @@ export interface CheckState {
   readonly meta: RunMeta;
   /** The device has moves the server has not taken, and cannot reach it just now. */
   readonly offline: boolean;
+  /** Tries the server again at once (the offline window's «Retry», the network coming back), instead of waiting out the backoff. */
+  retry(): void;
   /** The run's end as the server scored it, once the run is over; null if it cannot be had (or the run is not checked). */
   finished(): Promise<SyncAnswer | null>;
 }
@@ -166,6 +170,8 @@ export function soloSession(
   key: string | null, heroClass: HeroClass, newSeed: () => number, name = 'Hero', challenges = 0, mode: GameMode = 'dungeon',
   bones: () => Bones | null = () => null, live = false, checkOptions?: CheckOptions, daily?: string,
 ): Session {
+  // A problem report's log is of the run played now.
+  resetActions();
   const fresh = (): World => {
     // The daily dungeon played without the server keeps the day's rules all the same (daily.ts).
     const rules = daily ? dailyRules(daily) : null;
@@ -240,6 +246,9 @@ export function soloSession(
     // Another run took the slot meanwhile (a restart): this answer is of no use.
     if (!check || check.meta.id !== meta.id) return;
     if (reply === 'offline') {
+      // The server cannot be reached: the moves stay in the log (kept on the device with the run), and are sent
+      // again after 2, 4, 8... seconds up to a minute, or at once when the network comes back or the player asks.
+      if (!offline) dispatchEvent(new CustomEvent('pd-net', { detail: 'offline' }));
       offline = true;
       retryMs = Math.min(60_000, retryMs ? retryMs * 2 : 2000);
       syncSoon(retryMs);
@@ -255,7 +264,7 @@ export function soloSession(
     if (reply === 'rules') {
       // The game was updated: the new version picks the run up where the server has it.
       flush();
-      location.reload();
+      reloadForUpdate();
       return;
     }
     if (reply.reason === 'none') {
@@ -271,6 +280,7 @@ export function soloSession(
       syncSoon(retryMs);
       return;
     }
+    if (offline) dispatchEvent(new CustomEvent('pd-net', { detail: 'online' }));
     offline = false;
     retryMs = 0;
     verify = false;
@@ -292,8 +302,16 @@ export function soloSession(
     save();
     if (check.log.length > 0) syncSoon(check.log.length >= SYNC_BATCH ? 0 : SYNC_DELAY_MS);
   };
+  /** The network came back (the browser says so): the waiting moves go at once. */
+  const back = (): void => {
+    if (offline && check) {
+      retryMs = 0;
+      void syncNow();
+    }
+  };
   document.addEventListener('visibilitychange', away);
   addEventListener('pagehide', flush);
+  addEventListener('online', back);
 
   const session: Session = {
     mode: 'solo',
@@ -312,6 +330,7 @@ export function soloSession(
       const result = act(session.world!, 'me', action);
       if (result.ok) {
         pending.push(...result.effects);
+        noteAction(action);
         save();
         if (check) {
           check.log.push(action);
@@ -365,6 +384,7 @@ export function soloSession(
       flush();
       document.removeEventListener('visibilitychange', away);
       removeEventListener('pagehide', flush);
+      removeEventListener('online', back);
     },
     looks: {},
     wear(look) {
@@ -378,6 +398,7 @@ export function soloSession(
       return {
         meta,
         offline,
+        retry: back,
         finished: () => {
           if (answer) return Promise.resolve(answer);
           if (!check || !session.world?.over) return Promise.resolve(null);

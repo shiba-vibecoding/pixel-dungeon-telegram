@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, type Action, addHero, adjacent, canEnter, charAt, createItem, createMob, createWorld, type Effect, findPath,
-  floorAt, heroById, isAlive, levelAt, type Mob, type MobKind, NEIGHBOURS8, RoomType, T, WIDTH, type World,
+  act, isIdentified, type Action, addHero, adjacent, canEnter, charAt, createItem, createMob, createWorld, type Effect, findPath,
+  floorAt, heroById, isAlive, itemDef, levelAt, type Mob, type MobKind, NEIGHBOURS8, RoomType, T, WIDTH, type World,
 } from '../src/index';
 import { botAction, checkInvariants, pacify, skeletonKey } from './helpers';
 
@@ -43,7 +43,7 @@ describe('the prison', () => {
       }
       expect(floorAt(world, 10).mobs, 'Tengu waits for the arena').toEqual([]);
     }
-    for (const kind of ['skeleton', 'thief', 'swarm', 'shaman']) expect(kinds).toContain(kind);
+    for (const kind of ['skeleton', 'thief', 'swarm', 'dm100', 'guard', 'necromancer']) expect(kinds).toContain(kind);
     expect(kinds).not.toContain('rat');
   });
 
@@ -98,7 +98,7 @@ describe('the prison', () => {
     expect(result.ok && result.effects.some((e) => e.type === 'hurt' && e.who === 'p')).toBe(true);
   });
 
-  it('a shaman strikes with lightning from afar', () => {
+  it('a DM-100 strikes with lightning from afar', () => {
     for (let seed = 1; seed <= 30; seed++) {
       const world = at(7, seed);
       const hero = heroById(world, 'p')!;
@@ -108,27 +108,28 @@ describe('the prison', () => {
         (c) => canEnter(level, c) && level.map[c] !== T.DOOR && canEnter(level, (c + hero.pos) / 2) && !charAt(world, 7, c),
       );
       if (far === undefined || !Number.isInteger((far + hero.pos) / 2)) continue;
-      const shaman = createMob('#shaman', 'shaman', far, 'hunting', floorAt(world, 7).now);
+      const shaman = createMob('#shaman', 'dm100', far, 'hunting', floorAt(world, 7).now);
       Object.assign(shaman, { enemy: 'p', target: hero.pos, enemySeen: true });
       floorAt(world, 7).mobs.push(shaman);
+      hero.hp = hero.ht = 500;
       const effects: Effect[] = [];
       for (let i = 0; i < 6; i++) {
         const result = act(world, 'p', { type: 'search' });
         if (result.ok) effects.push(...result.effects);
       }
-      const bolt = effects.find((e) => e.type === 'zapped' && e.bolt === 'lightning');
+      const bolt = effects.find((e) => e.type === 'mobZap' && e.bolt === 'lightning');
       if (!bolt) continue;
       expect(effects.some((e) => e.type === 'attack' && e.attacker === '#shaman')).toBe(true);
       return;
     }
-    throw new Error('the shaman never cast');
+    throw new Error('the DM-100 never cast');
   });
 
   it('a brute flies into a rage when badly hurt; a bat heals as it bites', () => {
     const world = at(9);
     const hero = heroById(world, 'p')!;
     Object.assign(hero, { attackSkill: 1000, ht: 1000, hp: 1000, defenseSkill: 0 });
-    hero.weapon = createItem('weapon.knuckles');
+    hero.weapon = createItem('weapon.gloves');
     const brute = besides(world, 'brute');
     brute.hp = 11;
     let enraged = false;
@@ -169,7 +170,7 @@ describe('the shop on depth 6', () => {
       // stone of augmentation, now and then more.
       expect(wares.length, `seed ${seed}`).toBeGreaterThanOrEqual(15);
       expect(wares.some((h) => h.items[0]!.kind.startsWith('bag.')), `seed ${seed}`).toBe(true);
-      expect(wares.some((h) => h.items[0]!.kind === 'weightstone'), `seed ${seed}`).toBe(true);
+      expect(wares.some((h) => h.items[0]!.kind === 'stone.augmentation'), `seed ${seed}`).toBe(true);
       expect(wares.some((h) => h.items[0]!.kind === 'ankh'), `seed ${seed}`).toBe(true);
       expect(floorAt(world, 6).mobs.filter((m) => m.kind === 'shopkeeper'), `seed ${seed}`).toHaveLength(1);
     }
@@ -196,9 +197,9 @@ describe('the shop on depth 6', () => {
     hero.pos = NEIGHBOURS8.map((n) => keeper.pos + n).find((c) => canEnter(level, c) && !charAt(world, 6, c))!;
     const gold = hero.gold;
     const sale = act(world, 'p', { type: 'sell', item: 0 });
-    // A tier 3 sword +1: 80 gold, twice over.
-    expect(sale.ok && sale.effects.find((e) => e.type === 'sold')).toMatchObject({ price: 160 });
-    expect(hero.gold).toBe(gold + 160);
+    // A tier 3 sword +1 (MeleeWeapon.value): 60 gold, twice over.
+    expect(sale.ok && sale.effects.find((e) => e.type === 'sold')).toMatchObject({ price: 120 });
+    expect(hero.gold).toBe(gold + 120);
     expect(hero.items).toHaveLength(0);
     // Talking to him opens his trade.
     const talk = act(world, 'p', { type: 'attack', target: keeper.id });
@@ -219,127 +220,14 @@ describe('the shop on depth 6', () => {
   });
 });
 
-describe("Tengu's prison", () => {
-  /** A strong scripted hero: to the key, through the arena door, Tengu, then the exit. */
-  function bossAction(world: World): Action {
-    const hero = heroById(world, 'p')!;
-    const level = levelAt(world, 10);
-    const floor = floorAt(world, 10);
-    const tengu = floor.mobs.find((m) => m.kind === 'tengu');
-    if (tengu && adjacent(tengu.pos, hero.pos)) return { type: 'attack', target: tengu.id };
-    const skeleton = tengu ? null : skeletonKey(world, 'p');
-    if (skeleton) return skeleton;
-    const key = hero.items.some((i) => i.kind === 'key.iron');
-    const chest = floor.heaps.find((h) => h.items.some((i) => i.kind === 'key.iron'));
-    if (chest && hero.pos === chest.pos) return { type: 'pickup' };
-    const arena = level.rooms.find((r) => r.type === RoomType.BOSS_EXIT)!;
-    const middle = Math.trunc((arena.left + arena.right) / 2) + Math.trunc((arena.top + arena.bottom) / 2) * WIDTH;
-    let goal: number;
-    if (chest) goal = chest.pos;
-    else if (tengu) goal = tengu.pos;
-    else if (!floor.arenaEntered) goal = key ? level.arenaDoor! : middle;
-    else goal = level.exit;
-    if (hero.pos === level.exit) return { type: 'descend' };
-    const others = new Set(floor.mobs.map((m) => m.pos));
-    others.delete(goal);
-    const path = findPath(level, hero.pos, goal, others);
-    if (!path || path.length === 0) return { type: 'wait' };
-    const blocker = floor.mobs.find((m) => m.pos === path![0]);
-    return blocker ? { type: 'attack', target: blocker.id } : { type: 'move', to: path[0]! };
-  }
-
-  it('Tengu appears in the arena, seals it, and falling opens the way down to the caves', () => {
-    let won = 0;
-    for (const seed of [2, 3, 4]) {
-      const world = at(10, seed);
-      const hero = heroById(world, 'p')!;
-      Object.assign(hero, { attackSkill: 300, defenseSkill: 40, ht: 5000, hp: 5000, str: 18 });
-      hero.weapon = createItem('weapon.longsword', 1, 3);
-      const level = levelAt(world, 10);
-      const effects: Effect[] = [];
-      for (let i = 0; i < 4000 && !world.over && hero.depth === 10; i++) {
-        const action = bossAction(world);
-        let result = act(world, 'p', action);
-        if (!result.ok) result = act(world, 'p', { type: 'wait' });
-        if (result.ok) effects.push(...result.effects);
-        checkInvariants(world);
-      }
-      const types = new Set(effects.map((e) => e.type));
-      expect(types.has('yell'), `seed ${seed}`).toBe(true);
-      expect(effects.some((e) => e.type === 'arena' && e.sealed), `seed ${seed}`).toBe(true);
-      expect(types.has('bossSlain'), `seed ${seed}`).toBe(true);
-      expect(effects.some((e) => e.type === 'arena' && !e.sealed), `seed ${seed}`).toBe(true);
-      expect(hero.depth, `seed ${seed}`).toBe(11);
-      expect(world.over, `seed ${seed}`).toBe(false);
-      won++;
-    }
-    expect(won).toBe(3);
-  });
-
-  it('in a party, the arena locks only once everyone is inside', () => {
-    const world = at(10, 4);
-    addHero(world, { id: 'q', name: 'Q', heroClass: 'mage' });
-    const [p, q] = [heroById(world, 'p')!, heroById(world, 'q')!];
-    const level = levelAt(world, 10);
-    const arena = level.rooms.find((r) => r.type === RoomType.BOSS_EXIT)!;
-    const door = level.arenaDoor!;
-    level.map[door] = T.DOOR;
-    const inside = NEIGHBOURS8.map((n) => door + n).find(
-      (c) => canEnter(level, c) && c % WIDTH > arena.left && c % WIDTH < arena.right &&
-        Math.trunc(c / WIDTH) > arena.top && Math.trunc(c / WIDTH) < arena.bottom,
-    )!;
-    const inArena = (c: number): boolean =>
-      c % WIDTH > arena.left && c % WIDTH < arena.right && Math.trunc(c / WIDTH) > arena.top && Math.trunc(c / WIDTH) < arena.bottom;
-    const outside = NEIGHBOURS8.map((n) => door + n).find((c) => canEnter(level, c) && !inArena(c))!;
-    q.depth = 10;
-    Object.assign(p, { pos: door, time: floorAt(world, 10).now, hp: 500, ht: 500 });
-    Object.assign(q, { pos: outside, time: floorAt(world, 10).now, hp: 500, ht: 500 });
-    act(world, 'p', { type: 'move', to: inside });
-    expect(floorAt(world, 10).arenaEntered).toBe(true);
-    expect(floorAt(world, 10).mobs.some((m) => m.kind === 'tengu')).toBe(true);
-    // Q is still outside: the way in stays open for them.
-    expect(level.map[door]).not.toBe(T.LOCKED_DOOR);
-    // In a fight, turns alternate: P waits while Q comes in.
-    for (let i = 0; i < 10 && q.pos !== door; i++) {
-      act(world, 'q', { type: 'move', to: door });
-      act(world, 'p', { type: 'wait' });
-    }
-    expect(q.pos).toBe(door);
-    for (let i = 0; i < 10 && q.pos === door; i++) {
-      const further = NEIGHBOURS8.map((n) => door + n).find((c) => canEnter(level, c) && !charAt(world, 10, c) && inArena(c))!;
-      act(world, 'q', { type: 'move', to: further });
-      act(world, 'p', { type: 'wait' });
-    }
-    expect(inArena(q.pos)).toBe(true);
-    expect(level.map[door]).toBe(T.LOCKED_DOOR);
-  });
-
-  it('nor while a companion is still upstairs, who could never get in after', () => {
-    const world = at(10, 4);
-    addHero(world, { id: 'q', name: 'Q', heroClass: 'mage' });
-    const p = heroById(world, 'p')!;
-    const level = levelAt(world, 10);
-    const arena = level.rooms.find((r) => r.type === RoomType.BOSS_EXIT)!;
-    const door = level.arenaDoor!;
-    level.map[door] = T.DOOR;
-    const inArena = (c: number): boolean =>
-      c % WIDTH > arena.left && c % WIDTH < arena.right && Math.trunc(c / WIDTH) > arena.top && Math.trunc(c / WIDTH) < arena.bottom;
-    const inside = NEIGHBOURS8.map((n) => door + n).find((c) => canEnter(level, c) && inArena(c))!;
-    Object.assign(p, { pos: door, time: floorAt(world, 10).now, hp: 500, ht: 500 });
-    act(world, 'p', { type: 'move', to: inside });
-    for (let i = 0; i < 5; i++) {
-      const further = NEIGHBOURS8.map((n) => p.pos + n).find((c) => canEnter(level, c) && !charAt(world, 10, c) && inArena(c))!;
-      act(world, 'p', { type: 'move', to: further });
-    }
-    expect(floorAt(world, 10).mobs.some((m) => m.kind === 'tengu')).toBe(true);
-    expect(level.map[door]).not.toBe(T.LOCKED_DOOR);
-  });
-
+// Tengu's fight: bosses.test.ts.
+describe('the prison, played through', () => {
   it('a simple bot can play through the prison without breaking anything', () => {
     for (const seed of [11, 12]) {
       const world = at(6, seed);
       const hero = heroById(world, 'p')!;
-      Object.assign(hero, { attackSkill: 200, defenseSkill: 30, ht: 3000, hp: 3000 });
+      // (Strong enough to outhit a necromancer healing its skeleton, as this simple bot only fights what blocks it.)
+      Object.assign(hero, { attackSkill: 200, defenseSkill: 30, ht: 3000, hp: 3000, str: 40 });
       for (let i = 0; i < 6000 && isAlive(hero) && hero.depth < 10; i++) {
         const result = act(world, 'p', botAction(world, 'p', 10));
         if (!result.ok) act(world, 'p', { type: 'wait' });

@@ -27,11 +27,6 @@ export function mobFromSpawn(world: World, level: Level, spec: MobSpawn): Mob {
   Object.assign(mob, extra);
   // Statue: it waits, still, until disturbed (our statues sleep where Shattered's are passive).
   if (kind === 'statue' && mob.state === 'passive') mob.state = 'sleeping';
-  // DemonSpawner: Shattered's passive state, but a foe to be fought; it acts through roommobs.ts.
-  if (kind === 'demonSpawner') {
-    mob.state = 'hunting';
-    mob.enemySeen = true;
-  }
   if (DEPTH_SCALED.has(kind)) {
     mob.level ??= level.depth;
     mob.ht = mob.hp = mobStats(mob).ht;

@@ -1,16 +1,14 @@
-import { createItem, type Item, itemDef, ItemGenerator, type ItemKind, rollFood, rollGold } from '../../items';
+import { createItem, type Item, itemDef, ItemGenerator, rollFood, rollGold } from '../../items';
+import { randomArmor, randomizeWeapon, randomMissile, randomOfTier, randomWeapon } from '../../gear';
 import { Rng } from '../../rng';
 import { Dungeon } from './dungeon';
 import { Random } from './random';
 
 /*
- * items/Generator, as level generation calls it. Shattered's Generator (its categories, decks and
- * tiers) is being brought in by other streams; until they land, Pixel Dungeon's item tables stand
- * in through these calls, which keep Shattered's names so the rooms read as the original.
- *
- * SEAM(gear): WEAPON/WEP_T1..T5, ARMOR, MISSILE/MIS_T1..T5 (Generator.randomWeapon/Armor/Missile).
- * SEAM(wands): WAND. SEAM(artifacts): ARTIFACT, RING (Generator.randomArtifact; null once none is left).
- * SEAM(alchemy): STONE, TRINKET, and the exotic potions and scrolls some rooms make.
+ * items/Generator, as level generation calls it, with Shattered's names: the gear stream's weapon, armour and
+ * thrown weapon tiers and decks (gear.ts), the run's decks for potions, scrolls, runestones and wands
+ * (ItemGenerator with the run), its artifacts (null once none is left, as Generator.randomArtifact).
+ * SEAM(alchemy): TRINKET (the trinket catalyst's choice is the alchemy stream's; gold stands in).
  */
 
 export type GenCategory =
@@ -29,26 +27,11 @@ class StackRng extends Rng {
 }
 
 const stackRng = new StackRng();
-const generator = (): ItemGenerator => new ItemGenerator(stackRng, Dungeon.depth);
+const run = () => (Dungeon.world?.run ?? (() => { try { return Dungeon.run; } catch { return undefined; } })());
+const generator = (): ItemGenerator => new ItemGenerator(stackRng, Dungeon.depth, { run: run() });
 
-/** Pixel Dungeon's thrown weapons, the stand-in for Shattered's (SEAM(gear)). */
-const MISSILE_KINDS: ItemKind[] = ['missile.javelin', 'missile.incendiary', 'missile.curare', 'missile.shuriken', 'missile.tomahawk', 'missile.dart'];
-
-/** Shattered's weapon tiers by name (WEP_T1..T5) mapped to Pixel Dungeon's tiers. */
-const WEAPONS_BY_TIER: Record<number, ItemKind[]> = {
-  1: ['weapon.dagger', 'weapon.knuckles', 'weapon.shortSword'],
-  2: ['weapon.quarterstaff', 'weapon.spear'],
-  3: ['weapon.mace', 'weapon.sword'],
-  4: ['weapon.longsword', 'weapon.battleAxe'],
-  5: ['weapon.warHammer', 'weapon.glaive'],
-};
-
-function randomOf(category: 'weapon' | 'armor' | 'potion' | 'scroll' | 'wand' | 'ring' | 'seed'): Item {
-  for (;;) {
-    const item = generator().of(category);
-    // Pixel Dungeon's weapon table holds thrown weapons too; a melee weapon is asked for.
-    if (category !== 'weapon' || itemDef(item.kind).category === 'weapon') return item;
-  }
+function randomOf(category: 'potion' | 'scroll' | 'wand' | 'ring' | 'seed' | 'stone'): Item {
+  return generator().of(category);
 }
 
 export const Generator = {
@@ -66,28 +49,24 @@ export const Generator = {
       case 'WEP_T2':
       case 'WEP_T3':
       case 'WEP_T4':
-      case 'WEP_T5': {
-        const tier = Number(category.slice(5));
-        const item = randomOf('weapon');
-        const kinds = WEAPONS_BY_TIER[tier]!;
-        return { ...item, kind: kinds[Random.Int(kinds.length)]! };
-      }
+      case 'WEP_T5':
+        return randomizeWeapon(createItem(randomOfTier(stackRng, Number(category.slice(5)), false, run())), stackRng);
       case 'ARMOR':
         return this.randomArmor();
       case 'MISSILE':
+        return this.randomMissile();
       case 'MIS_T1':
       case 'MIS_T2':
       case 'MIS_T3':
       case 'MIS_T4':
       case 'MIS_T5':
-        return this.randomMissile();
+        return randomizeWeapon(createItem(randomOfTier(stackRng, Number(category.slice(5)), true, run()), 3), stackRng);
       case 'WAND':
         return randomOf('wand');
       case 'RING':
         return randomOf('ring');
       case 'ARTIFACT':
-        // SEAM(artifacts): Generator.randomArtifact; a ring stands in, as Shattered gives once none is left.
-        return randomOf('ring');
+        return this.randomArtifact() ?? randomOf('ring');
       case 'FOOD':
         return rollFood(stackRng);
       case 'POTION':
@@ -97,39 +76,38 @@ export const Generator = {
       case 'SCROLL':
         return randomOf('scroll');
       case 'STONE':
-        // SEAM(alchemy): runestones; Pixel Dungeon's weightstone (the stone of augmentation) stands in.
-        return createItem('weightstone');
+        return randomOf('stone');
       case 'TRINKET':
-        // SEAM(alchemy): trinkets; nothing stands in.
+        // SEAM(alchemy): Generator.Category.TRINKET.
         return createItem('gold', 1);
       case 'GOLD':
         return rollGold(stackRng, Dungeon.depth);
     }
   },
 
-  /** Generator.randomUsingDefaults: the same, without the decks (no decks yet: the same). */
+  /** Generator.randomUsingDefaults: the same, without the decks. */
   randomUsingDefaults(category?: GenCategory): Item {
     return this.random(category);
   },
 
-  /** Generator.randomWeapon: a melee weapon of the depth's tiers (SEAM(gear)). */
+  /** Generator.randomWeapon: a melee weapon of the depth's tiers. */
   randomWeapon(): Item {
-    return randomOf('weapon');
+    return randomWeapon(stackRng, Dungeon.depth, run());
   },
 
-  /** Generator.randomArmor (SEAM(gear)). */
+  /** Generator.randomArmor. */
   randomArmor(): Item {
-    return randomOf('armor');
+    return randomArmor(stackRng, Dungeon.depth);
   },
 
-  /** Generator.randomMissile (SEAM(gear)): a set of thrown weapons. */
+  /** Generator.randomMissile: a set of thrown weapons. */
   randomMissile(): Item {
-    const kind = MISSILE_KINDS[Random.Int(MISSILE_KINDS.length - 1)]!;
-    return createItem(kind, Random.IntRange(2, 4));
+    return randomMissile(stackRng, Dungeon.depth, run());
   },
 
-  /** Generator.randomArtifact (SEAM(artifacts)): null, as when the run's artifacts are all found. */
+  /** Generator.randomArtifact: one the run has not dealt yet, or null once none is left. */
   randomArtifact(): Item | null {
-    return null;
+    const item = generator().of('artifact');
+    return itemDef(item.kind).category === 'artifact' ? item : null;
   },
 };

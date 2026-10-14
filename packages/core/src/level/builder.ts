@@ -34,7 +34,7 @@ export type ItemSpec =
   /** A few loose coins (Gold(Random.IntRange(1, 3))). */
   | { roll: 'coins' }
   /** From one of the categories, keeping the best of `tries` rolls by upgrade level. */
-  | { roll: 'category'; categories: ReadonlyArray<'weapon' | 'armor' | 'potion' | 'scroll' | 'food' | 'gold' | 'ring' | 'wand'>; tries: number }
+  | { roll: 'category'; categories: ReadonlyArray<'weapon' | 'armor' | 'potion' | 'scroll' | 'food' | 'gold' | 'ring' | 'wand' | 'stone'>; tries: number }
   /** The iron key to this level's locked room. */
   | { roll: 'key' }
   /** The golden key to this level's locked or crystal chest. */
@@ -45,8 +45,17 @@ export type ItemSpec =
   | { roll: 'bombs' }
   /** One of the Rat King's chests: mostly a few coins, now and then worn gear. */
   | { roll: 'kingsPrize' }
-  /** One particular item. */
-  | { roll: 'kind'; kind: ItemKind };
+  /** One particular item, such as the wares of a shop. */
+  | { roll: 'kind'; kind: ItemKind; qty?: number }
+  /** A shop's melee weapon and set of thrown weapons of a tier, plain and known (ShopRoom.generateItems). */
+  | { roll: 'shopWeapon'; tier: number }
+  | { roll: 'shopMissile'; tier: number }
+  /** Two darts tipped with a random seed (TippedDart.randomTipped(2)). */
+  | { roll: 'tippedDarts' }
+  /** An artifact the run has not dealt yet (or a ring, if it has none left). */
+  | { roll: 'artifact' }
+  /** ShopRoom's rare ware: now and then a wand, a ring or an artifact. */
+  | { roll: 'rare' };
 
 export type WellWater = 'health' | 'awareness' | 'transmutation';
 
@@ -72,6 +81,20 @@ export class LevelBuilder {
   secretDoors = 0;
   /** Tengu's level: the locked door into the arena. */
   arenaDoor = -1;
+  /** The run's seed, for what a level redraws the same way every time (PrisonBossLevel's cages: seedCurDepth). */
+  layoutSeed = 0;
+  /** A boss level's way down when it is more than one cell (LevelTransition's area). */
+  exits: number[] = [];
+  /** A boss level's own data for its fight and its visuals (Level.boss). */
+  boss: import('./generate').BossLevelInfo | null = null;
+  /** A shop's level: where the shopkeeper stands. */
+  shopkeeper = -1;
+  /** The caves: whether the troll blacksmith may set up his forge here, whether he did, and where he stands. */
+  blacksmithWanted = false;
+  blacksmithPlaced = false;
+  blacksmith = -1;
+  /** An altar room: where the sacrificial fire burns, and how much it hungers for. */
+  altar: { pos: number; volume: number } | null = null;
   /** The sewers' boss level: where the Rat King sits in his hidden treasury. */
   ratKing = -1;
   readonly items: ItemSpawn[] = [];
@@ -155,3 +178,11 @@ export class LevelBuilder {
     this.items.push({ pos, heap, item });
   }
 }
+
+/**
+ * Pixel Dungeon's last shop (depth 21): Shattered has none — depth 21 is a halls level, and the imp keeps his shop
+ * by the King's throne (CityBossLevel). Kept for the code that asks, matching no depth.
+ */
+export const LAST_SHOP_DEPTH = -1;
+
+export { Feeling } from './gen/dungeon';

@@ -125,7 +125,7 @@ describe('talking to him, and his reward (WndWandmaker)', () => {
       expect(given.ok && given.effects).toContainEqual({ type: 'wandmaker', hero: 'p', line: 'farewell', questType: type });
       expect(hero.items.some((i) => i.kind === wand.kind && i.level === wand.level)).toBe(true);
       expect(hero.items.some((i) => i.kind === WANDMAKER_WANTS[type])).toBe(false);
-      expect(world.known).toContain(wand.kind);
+      expect(hero.items.find((i) => i.kind === wand.kind)!.levelUnknown).toBeFalsy();
       expect(floor.mobs.some((m) => m.kind === 'wandmaker')).toBe(false);
       expect(quest.wand1).toBeNull();
       // Quest.complete scores the dust's errand; the others score as their foe falls.

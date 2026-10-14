@@ -1,0 +1,34 @@
+<!-- @dsCard group="Shattered" height=900 width=1173 page subtitle="Значки для окон выбора — кадры items.png Shattered: 12 рунных камней, 15 заклинаний, 17 безделушек и силуэты пустых ячеек. Слева — выбор безделушки после магического катализатора" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Камни, заклинания, безделушки</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; }
+  .phone { position: relative; width: 375px; height: 812px; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+  .icons { width: 774px; box-sizing: border-box; padding: 12px 8px; color: var(--ink); display: flex; flex-direction: column; gap: 6px; }
+  .icons h2 { margin: 4px 0 0; font: var(--text-label, 400 18px/20px var(--font-ui)); color: var(--gold); }
+  .icons h2 span { margin-left: 8px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .ig { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .ig > div { display: grid; grid-template-columns: 44px 1fr; grid-template-rows: auto auto; column-gap: 6px; align-items: center; font: var(--text-caption, 400 15px/16px var(--font-small)); }
+  .ig .pd-slot { grid-row: 1 / 3; width: 44px; height: 44px; }
+  .ig .pd-sitem { --u: 2px; margin: auto; }
+  .ig b { font-weight: 400; color: var(--ink); }
+  .ig small { font: inherit; color: var(--stone-300); }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get("lang") || "ru", en = L === "en";
+  var a = document.createElement("div"); a.className = "phone pd-phone"; document.getElementById("row").appendChild(a);
+  PD.demo.game(a, { mates: false }); PD.alchMount(PD.demo.overlay(a, PD.demo.win.trinkets(L)));
+  var I = PD.demo.shIcons[L], box = document.createElement("div"); box.className = "icons"; document.getElementById("row").appendChild(box);
+  [["stones", en ? "Runestones" : "Рунные камни", en ? "stone of …" : "камень …"], ["spells", en ? "Spells" : "Заклинания", ""], ["trinkets", en ? "Trinkets" : "Безделушки", ""], ["holders", en ? "Empty slots" : "Пустые ячейки", ""]].forEach(function (g) {
+    var h = '<h2>' + g[1] + (g[2] ? '<span>' + g[2] + '</span>' : '') + '</h2><div class="ig">';
+    I[g[0]].forEach(function (t) { h += '<div><span class="pd-slot"><i class="pd-sitem" data-s="' + t[0] + '"></i></span><b>' + t[1] + '</b><small>' + t[0] + '</small></div>'; });
+    box.insertAdjacentHTML('beforeend', h + '</div>');
+  });
+  PD.sprite(document.body);
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import type { Hero, MobKind } from './actors';
+import { type Hero, heroBelongings, type MobKind } from './actors';
 import { heroView } from './floor';
 import { questCompleted, rewardsAvailable } from './blacksmith';
 import { Feeling } from './level/gen/dungeon';
@@ -23,9 +23,9 @@ import type { World } from './world';
 
 /** Notes.Landmark, of what this dungeon has (and Pixel Dungeon's well of transmutation beside the other wells). */
 export const LANDMARKS = [
-  'chasmFloor', 'waterFloor', 'grassFloor',
+  'chasmFloor', 'waterFloor', 'grassFloor', 'darkFloor', 'largeFloor', 'trapsFloor', 'secretsFloor',
   'shop', 'alchemy', 'garden', 'wellOfHealth', 'wellOfAwareness', 'wellOfTransmutation', 'sacrificialFire', 'statue',
-  'beaconLocation',
+  'beaconLocation', 'demonSpawner',
   'ghost', 'ratKing', 'wandmaker', 'troll', 'imp',
 ] as const;
 export type Landmark = (typeof LANDMARKS)[number];
@@ -35,16 +35,26 @@ export interface Note {
   depth: number;
 }
 
-const FEELING_NOTES: Partial<Record<Feeling, Landmark>> = {
-  [Feeling.CHASM]: 'chasmFloor', [Feeling.WATER]: 'waterFloor', [Feeling.GRASS]: 'grassFloor',
-};
+/** Level.Feeling's landmarks (read at call time: dungeon.ts may not be loaded yet when this module is). */
+function feelingNote(feeling: Feeling): Landmark | undefined {
+  switch (feeling) {
+    case Feeling.CHASM: return 'chasmFloor';
+    case Feeling.WATER: return 'waterFloor';
+    case Feeling.GRASS: return 'grassFloor';
+    case Feeling.DARK: return 'darkFloor';
+    case Feeling.LARGE: return 'largeFloor';
+    case Feeling.TRAPS: return 'trapsFloor';
+    case Feeling.SECRETS: return 'secretsFloor';
+    default: return undefined;
+  }
+}
 
 const WELL_NOTES = { health: 'wellOfHealth', awareness: 'wellOfAwareness', transmutation: 'wellOfTransmutation' } as const;
 
 /** Mob.landmark: who is worth a note once seen. */
 const MOB_NOTES: Partial<Record<MobKind, Landmark>> = {
   shopkeeper: 'shop', impShopkeeper: 'shop', statue: 'statue', ghost: 'ghost', ratKing: 'ratKing', wandmaker: 'wandmaker',
-  blacksmith: 'troll', imp: 'imp',
+  blacksmith: 'troll', imp: 'imp', spawner: 'demonSpawner',
 };
 
 /** Notes.add: a note, once. */
@@ -62,7 +72,7 @@ export function noteLandmarks(world: World, hero: Hero): void {
   const level = world.levels[depth];
   const floor = world.floors[depth];
   if (!level || !floor || world.arena) return;
-  const feeling = FEELING_NOTES[level.feeling];
+  const feeling = feelingNote(level.feeling);
   if (feeling) add(world, feeling, depth);
   const fov = heroView(world, hero);
   for (const mob of floor.mobs) {
@@ -82,7 +92,7 @@ export function noteLandmarks(world: World, hero: Hero): void {
   }
   // BeaconOfReturning: where a hero's beacon is set (Lloyd's beacon, here).
   for (const other of world.heroes) {
-    for (const item of other.items) if (item.kind === 'beacon' && item.returnTo) add(world, 'beaconLocation', item.returnTo.depth);
+    for (const item of heroBelongings(other)) if (item.kind === 'artifact.beacon' && item.returnTo) add(world, 'beaconLocation', item.returnTo.depth);
   }
   prune(world);
 }
@@ -106,6 +116,8 @@ function stillUseful(world: World, { landmark, depth }: Note): boolean {
     case 'sacrificialFire': return (floor?.altar?.volume ?? 0) > 0;
     // Statue.die; Shopkeeper.flee.
     case 'statue': return has('statue');
+    // DemonSpawner.die.
+    case 'demonSpawner': return has('spawner');
     case 'shop': return has('shopkeeper') || has('impShopkeeper');
     // Ghost.Quest.complete, Wandmaker's and the Imp's quests done, the Blacksmith's rewards all given.
     case 'ghost': return !world.quest?.done;
@@ -114,7 +126,7 @@ function stillUseful(world: World, { landmark, depth }: Note): boolean {
     // Blacksmith.landmark: until the errand is over and nothing is left to have of him.
     case 'troll': return !world.smithQuest || !questCompleted(world.smithQuest) || rewardsAvailable(world.smithQuest);
     case 'beaconLocation':
-      return world.heroes.some((hero) => hero.items.some((item) => item.kind === 'beacon' && item.returnTo?.depth === depth));
+      return world.heroes.some((hero) => heroBelongings(hero).some((item) => item.kind === 'artifact.beacon' && item.returnTo?.depth === depth));
     default:
       return true;
   }

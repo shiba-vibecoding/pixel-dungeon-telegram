@@ -89,6 +89,8 @@ export class GenLevel {
   plants = new Map<number, PlantKind>();
   blobs: BlobSpawn[] = [];
   customTiles: CustomTile[] = [];
+  /** Level.mobsToSpawn: what is left of the level's rotation of monsters (QuestHooks.createMob). */
+  mobRotation: MobKind[] = [];
   /** Level.itemsToSpawn: items to drop somewhere in the level once it is built. */
   itemsToSpawn: Item[] = [];
   /** Level.locked: a boss's level, sealed for the fight. */
@@ -373,4 +375,4 @@ export class GenLevel {
   }
 }
 
-const TRINKET_CATALYST = 'trinketCatalyst';
+const TRINKET_CATALYST = 'trinket.catalyst';

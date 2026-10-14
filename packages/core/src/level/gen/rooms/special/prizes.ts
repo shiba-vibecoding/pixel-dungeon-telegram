@@ -16,7 +16,7 @@ export const crystalKey = (): Item => ({ ...createItem('key.crystal'), depth: Du
 export const randomGold = (): Item => createItem('gold', Random.IntRange(30 + Dungeon.depth * 10, 60 + Dungeon.depth * 20));
 
 /** level.findPrizeItem(TrinketCatalyst.class). SEAM(alchemy): there is no catalyst to find yet. */
-export const findCatalyst = (level: GenLevel): Item | null => level.findPrizeItem((item) => (item.kind as string) === 'trinketCatalyst');
+export const findCatalyst = (level: GenLevel): Item | null => level.findPrizeItem((item) => item.kind === 'trinket.catalyst');
 
 export const categoryOf = (item: Item): string => itemDef(item.kind).category;
 

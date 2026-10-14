@@ -9,13 +9,24 @@ import { F, hasFlag } from './level/terrain';
 
 export const MAX_VIEW_DISTANCE = 8;
 
-/** rounding[r][p]: how far a row p cells out extends within a circle of radius r. */
-const rounding: number[][] = (() => {
+/** Shattered's ShadowCaster.MAX_DISTANCE: far enough for magical sight (12) and clairvoyance (20). */
+const ROUNDING_MAX = 20;
+
+/**
+ * rounding[r][p]: how far a row p cells out extends within a circle of radius r, which the original takes as
+ * min(p, round(r cos(asin(p / (r + 0.5))))). Done in integers so that no engine's trigonometry can differ:
+ * r cos(asin(q)) is r sqrt((2r+1)^2 - 4p^2) / (2r+1), and round(v) is the greatest k with (2k-1)(2r+1) <= 2r sqrt(D),
+ * i.e. (2k-1)^2 (2r+1)^2 <= 4 r^2 D. The test pins the table.
+ */
+export const rounding: number[][] = (() => {
   const table: number[][] = [[]];
-  for (let r = 1; r <= MAX_VIEW_DISTANCE; r++) {
+  for (let r = 1; r <= ROUNDING_MAX; r++) {
     const row = new Array<number>(r + 1).fill(0);
     for (let p = 1; p <= r; p++) {
-      row[p] = Math.min(p, Math.round(r * Math.cos(Math.asin(p / (r + 0.5)))));
+      const d = (2 * r + 1) * (2 * r + 1) - 4 * p * p;
+      let k = 0;
+      while ((2 * k + 1) * (2 * k + 1) * (2 * r + 1) * (2 * r + 1) <= 4 * r * r * d) k++;
+      row[p] = Math.min(p, k);
     }
     table.push(row);
   }
@@ -69,9 +80,12 @@ class Obstacles {
  * Only heroes see by this; monsters keep their own sight (see ai.ts).
  */
 export function viewDistance(depth: number, darkness = false): number {
+  // PrisonBossLevel: the whole of Tengu's arena is in sight (12, whatever the challenges).
+  if (depth === 10) return 12;
   if (depth >= 11 && depth <= 15) return 6;
   if (depth >= 22 && depth <= 24) return Math.max(25 - depth, 1);
-  if (depth === 25) return 3;
+  // HallsBossLevel and LastLevel: min(4, the level's).
+  if (depth >= 25) return Math.min(4, darkness ? DARKNESS_VIEW_DISTANCE : MAX_VIEW_DISTANCE);
   return darkness ? DARKNESS_VIEW_DISTANCE : MAX_VIEW_DISTANCE;
 }
 
@@ -87,7 +101,7 @@ pos: number, losBlocking: (cell: number) => boolean, distance = MAX_VIEW_DISTANC
   const fov = new Array<boolean>(LENGTH).fill(false);
   const cx = pos % WIDTH;
   const cy = Math.trunc(pos / WIDTH);
-  const limits = rounding[Math.min(distance, MAX_VIEW_DISTANCE)]!;
+  const limits = rounding[Math.min(distance, ROUNDING_MAX)]!;
   const obstacles = new Obstacles();
   fov[pos] = true;
 
@@ -127,4 +141,30 @@ pos: number, losBlocking: (cell: number) => boolean, distance = MAX_VIEW_DISTANC
 
 export function terrainBlocksSight(map: readonly number[]): (cell: number) => boolean {
   return (cell) => hasFlag(map[cell]!, F.LOS_BLOCKING);
+}
+
+/**
+ * The cells within a circle of `radius` around `pos`, row by row as StoneOfClairvoyance.activate and Hero.search
+ * (with foresight) lay it out from ShadowCaster.rounding.
+ */
+export function circleCells(pos: number, radius: number): number[] {
+  const r = Math.min(radius, ROUNDING_MAX);
+  const row = rounding[r]!;
+  const cx = pos % WIDTH;
+  const cy = Math.trunc(pos / WIDTH);
+  const cells: number[] = [];
+  for (let y = Math.max(0, cy - r); y <= Math.min(HEIGHT - 1, cy + r); y++) {
+    const dy = Math.abs(cy - y);
+    let left: number;
+    if (row[dy]! < dy) {
+      left = cx - row[dy]!;
+    } else {
+      left = r;
+      while (row[left]! < row[dy]!) left--;
+      left = cx - left;
+    }
+    const right = Math.min(WIDTH - 1, cx + cx - left);
+    for (let x = Math.max(0, left); x <= right; x++) cells.push(x + y * WIDTH);
+  }
+  return cells;
 }

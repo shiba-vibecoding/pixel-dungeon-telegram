@@ -31,9 +31,9 @@ describe('the caves', () => {
         expect(level.map[level.exit], `seed ${seed} depth ${level.depth}`).toBe(T.EXIT);
       }
       expect(levels[10]!.rooms.some((r) => r.type === RoomType.SHOP)).toBe(true);
+      // CavesBossLevel: the way down beyond the gate, wires strewn about the arena (bosses.test.ts has more).
       const lair = levels[14]!;
-      expect(lair.map[lair.exit]).toBe(T.LOCKED_EXIT);
-      expect(lair.map[lair.arenaDoor!]).toBe(T.DOOR);
+      expect(lair.map[lair.exit]).toBe(T.EXIT);
       expect(lair.map[lair.entrance]).toBe(T.ENTRANCE);
       expect(lair.map.filter((t) => t === T.INACTIVE_TRAP).length).toBeGreaterThan(10);
     }
@@ -74,74 +74,3 @@ describe('the caves', () => {
   });
 });
 
-describe("DM-300's caves", () => {
-  it('DM-300 starts up when someone steps into the cave, and the door closes behind', () => {
-    const world = at(15);
-    const hero = heroById(world, 'p')!;
-    Object.assign(hero, { ht: 500, hp: 500 });
-    const level = levelAt(world, 15);
-    const door = level.arenaDoor!;
-    // Walk through the door and out into the cave.
-    for (let i = 0; i < 40 && !floorAt(world, 15).arenaEntered; i++) {
-      const path = findPath(level, hero.pos, door + WIDTH);
-      if (!path || path.length === 0) break;
-      act(world, 'p', { type: 'move', to: path[0]! });
-    }
-    expect(floorAt(world, 15).arenaEntered).toBe(true);
-    expect(floorAt(world, 15).mobs.some((m) => m.kind === 'dm300')).toBe(true);
-    expect(level.map[door]).toBe(T.WALL);
-  });
-
-  it('it leaks gas, repairs itself on spent traps, and its fall opens the way down to the city', () => {
-    let won = 0;
-    for (const seed of [2, 3]) {
-      const world = at(15, seed);
-      const hero = heroById(world, 'p')!;
-      Object.assign(hero, { attackSkill: 300, defenseSkill: 50, ht: 8000, hp: 8000, str: 18 });
-      hero.weapon = { kind: 'weapon.glaive', qty: 1, level: 5 };
-      const level = levelAt(world, 15);
-      const effects: Effect[] = [];
-      let leaked = false;
-      const step = (): Action => {
-        const dm = floorAt(world, 15).mobs.find((m) => m.kind === 'dm300');
-        if (dm && adjacent(dm.pos, hero.pos)) return { type: 'attack', target: dm.id };
-        const key = dm ? null : skeletonKey(world, 'p');
-        if (key) return key;
-        if (hero.pos === level.exit) return { type: 'descend' };
-        const goal = dm ? dm.pos : floorAt(world, 15).arenaEntered ? level.exit : level.arenaDoor! + WIDTH;
-        const others = new Set(floorAt(world, 15).mobs.map((m) => m.pos));
-        others.delete(goal);
-        const path = findPath(level, hero.pos, goal, others);
-        return path && path.length > 0 ? { type: 'move', to: path[0]! } : { type: 'wait' };
-      };
-      for (let i = 0; i < 4000 && !world.over && hero.depth === 15; i++) {
-        let result = act(world, 'p', step());
-        if (!result.ok) result = act(world, 'p', { type: 'wait' });
-        if (result.ok) effects.push(...result.effects);
-        if (floorAt(world, 15).gas?.toxic?.length) leaked = true;
-        checkInvariants(world);
-      }
-      expect(leaked, `seed ${seed}`).toBe(true);
-      expect(effects.some((e) => e.type === 'bossSlain' && e.kind === 'dm300'), `seed ${seed}`).toBe(true);
-      expect(level.map[level.arenaDoor!], `seed ${seed}`).toBe(T.EMPTY_DECO);
-      expect(hero.depth, `seed ${seed}`).toBe(16);
-      expect(world.over, `seed ${seed}`).toBe(false);
-      won++;
-    }
-    expect(won).toBe(2);
-  });
-
-  it('a simple bot can play through the caves without breaking anything', () => {
-    for (const seed of [21, 22]) {
-      const world = at(11, seed);
-      const hero = heroById(world, 'p')!;
-      Object.assign(hero, { attackSkill: 300, defenseSkill: 60, ht: 6000, hp: 6000 });
-      for (let i = 0; i < 6000 && isAlive(hero) && hero.depth < 15; i++) {
-        const result = act(world, 'p', botAction(world, 'p', 15));
-        if (!result.ok) act(world, 'p', { type: 'wait' });
-        checkInvariants(world);
-      }
-      expect(hero.depth, `seed ${seed}`).toBe(15);
-    }
-  });
-});

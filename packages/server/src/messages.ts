@@ -1,6 +1,6 @@
 import {
-  type Action, type EffectId, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
-  type SubClass,
+  type Action, ARTIFACT_USES, type EffectId, MISC_SLOTS, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
+  type SubClass, COMBO_MOVES, TALENTS, type TalentId,
 } from '@pd/core';
 
 /*
@@ -14,6 +14,12 @@ import {
 
 /** A backpack slot or a worn ring's index: small and whole. */
 const MAX_SLOT = 255;
+/** An item's choice (an enchantment, a guess, a recipe...): small and whole. */
+const MAX_CHOICE = 63;
+/** A used item's choice: a scroll of metamorphosis names a talent and one of its options (target * 8 + option). */
+const MAX_USE_CHOICE = 255;
+/** The largest choice an artifact's window offers (the toolkit's levels at most). */
+const MAX_ARTIFACT_CHOICE = 10;
 /** Monster ids are short ('#12'); anything longer is not one. */
 const MAX_ID = 64;
 
@@ -26,6 +32,7 @@ const oneOf = <T extends string>(value: unknown, options: readonly T[]): T | nul
   (options as readonly unknown[]).includes(value) ? (value as T) : null;
 /** A backpack slot, the weapon, the armour or a worn ring (the core's ItemRef). */
 const itemRef = (value: unknown): ItemRef | null => (isItemRef(value) && (typeof value !== 'number' || slot(value) !== null) ? value : null);
+
 
 const ALL_SUBCLASSES: readonly SubClass[] = Object.values(SUBCLASSES).flat();
 
@@ -112,40 +119,139 @@ export function sanitizeAction(raw: unknown): Action | null {
       if (service === 'pick') return isInt(a.choice, 0, 3) ? { type: 'blacksmith', service, choice: a.choice } : null;
       return { type: 'blacksmith', service };
     }
-    case 'beacon': {
-      const item = slot(a.item);
-      const mode = oneOf(a.mode, ['set', 'return'] as const);
-      return item === null || !mode ? null : { type: 'beacon', item, mode };
+    case 'artifact': {
+      // An artifact's action (the core's ArtifactAction): which artifact, which use, and what it is aimed at or takes.
+      const item = itemRef(a.item);
+      const use = oneOf(a.use, ARTIFACT_USES);
+      if (item === null || !use) return null;
+      const action: Action = { type: 'artifact', item, use };
+      if (a.cell !== undefined) {
+        const at = cell(a.cell);
+        if (at === null) return null;
+        action.cell = at;
+      }
+      if (a.with !== undefined) {
+        const taken = slot(a.with);
+        if (taken === null) return null;
+        action.with = taken;
+      }
+      if (a.choice !== undefined) {
+        if (!isInt(a.choice, 0, MAX_ARTIFACT_CHOICE)) return null;
+        action.choice = a.choice;
+      }
+      if (a.on !== undefined) {
+        const on = itemRef(a.on);
+        if (on === null) return null;
+        action.on = on;
+      }
+      return action;
     }
     case 'use': {
       const item = slot(a.item);
       if (item === null) return null;
-      // What a scroll is read on: picked from the whole pack and what is worn (`target` is older clients' way).
+      const use: Extract<Action, { type: 'use' }> = { type: 'use', item };
+      // What a scroll (or stone, spell...) is used on: picked from the whole pack and what is worn (`target` is older clients' way).
       if (a.on !== undefined) {
         const on = itemRef(a.on);
-        return on === null ? null : { type: 'use', item, on };
+        if (on === null) return null;
+        use.on = on;
+      } else if (a.target !== undefined) {
+        const target = oneOf(a.target, ['weapon', 'armor'] as const);
+        if (!target) return null;
+        use.target = target;
       }
-      if (a.target === undefined) return { type: 'use', item };
-      const target = oneOf(a.target, ['weapon', 'armor'] as const);
-      return target ? { type: 'use', item, target } : null;
+      // Where a dragon's breath, a siren's song or a spell is aimed; which of an item's choices.
+      if (a.cell !== undefined) {
+        const at = cell(a.cell);
+        if (at === null) return null;
+        use.cell = at;
+      }
+      if (a.choice !== undefined) {
+        if (!isInt(a.choice, 0, MAX_USE_CHOICE)) return null;
+        use.choice = a.choice;
+      }
+      return use;
     }
-    case 'equip':
+    case 'alchemy': {
+      // Up to three pack slots into the pot, and which of the recipes they make.
+      if (!Array.isArray(a.inputs) || a.inputs.length < 1 || a.inputs.length > 3) return null;
+      const inputs: number[] = [];
+      for (const raw of a.inputs as unknown[]) {
+        const s = slot(raw);
+        if (s === null) return null;
+        inputs.push(s);
+      }
+      if (a.recipe === undefined) return { type: 'alchemy', inputs };
+      return isInt(a.recipe, 0, MAX_CHOICE) ? { type: 'alchemy', inputs, recipe: a.recipe } : null;
+    }
+    case 'energize': {
+      const item = slot(a.item);
+      if (item === null) return null;
+      return a.all === true ? { type: 'energize', item, all: true } : { type: 'energize', item };
+    }
+    case 'equip': {
+      const item = slot(a.item);
+      if (item === null) return null;
+      // KindofMisc's window: which of the artifact, misc and ring slots to free for it.
+      if (a.replace === undefined) return { type: 'equip', item };
+      const replace = oneOf(a.replace, MISC_SLOTS);
+      return replace ? { type: 'equip', item, replace } : null;
+    }
     case 'drop':
     case 'sell': {
       const item = slot(a.item);
       return item === null ? null : { type: a.type, item };
     }
     case 'throw':
-    case 'zap': {
+    case 'shoot': {
       const item = slot(a.item);
       const target = cell(a.target);
       return item === null || target === null ? null : { type: a.type, item, target };
     }
+    case 'zap': {
+      // A wand in the pack (its slot), or the mage's staff: in hand ('weapon') or in the pack.
+      const item = a.item === 'weapon' ? 'weapon' : slot(a.item);
+      const target = cell(a.target);
+      return item === null || target === null ? null : { type: 'zap', item, target };
+    }
+    case 'imbue': {
+      // MagesStaff.AC_IMBUE: a wand from the pack into the staff (in hand, or in the pack).
+      const staff = a.staff === 'weapon' ? 'weapon' : slot(a.staff);
+      const wand = slot(a.wand);
+      return staff === null || wand === null ? null : { type: 'imbue', staff, wand };
+    }
+    case 'dismiss':
+      // Ward.interact: the ward beside the hero dismissed.
+      return typeof a.target === 'string' && a.target.length > 0 && a.target.length <= MAX_ID ? { type: 'dismiss', target: a.target } : null;
+    case 'talent': {
+      // Hero.upgradeTalent: a point in one of the talents (the rules say whether the hero has it and a point to spend).
+      const talent = typeof a.talent === 'string' && Object.hasOwn(TALENTS, a.talent) ? (a.talent as TalentId) : null;
+      return talent ? { type: 'talent', talent } : null;
+    }
+    case 'ability': {
+      // The subclasses' action indicator: the berserker's rage, the freerunner's run, the sniper's mark, a combo move, a prepared strike.
+      const target = typeof a.target === 'string' && a.target.length > 0 && a.target.length <= MAX_ID ? a.target : null;
+      switch (a.ability) {
+        case 'berserk':
+        case 'freerun':
+        case 'snipe':
+          return { type: 'ability', ability: a.ability };
+        case 'combo': {
+          const move = oneOf(a.move, COMBO_MOVES);
+          return move ? (target ? { type: 'ability', ability: 'combo', move, target } : { type: 'ability', ability: 'combo', move }) : null;
+        }
+        case 'ambush':
+          return target ? { type: 'ability', ability: 'ambush', target } : null;
+        default:
+          return null;
+      }
+    }
     case 'unequip':
       return { type: 'unequip' };
     case 'remove': {
-      const ring = slot(a.ring);
-      return ring === null ? null : { type: 'remove', ring };
+      // A worn ring or artifact, by its slot.
+      const from = oneOf(a.slot, MISC_SLOTS);
+      return from ? { type: 'remove', slot: from } : null;
     }
     case 'master': {
       const item = slot(a.item);
@@ -153,17 +259,43 @@ export function sanitizeAction(raw: unknown): Action | null {
       return item === null || !subclass ? null : { type: 'master', item, subclass };
     }
     case 'special': {
-      if (a.target === undefined) return { type: 'special' };
-      const target = cell(a.target);
-      return target === null ? null : { type: 'special', target };
+      // The class armour's ability: the cell it is aimed at, and the warp beacon's choice (0 warp, 1 clear).
+      const action: Action = { type: 'special' };
+      if (a.target !== undefined) {
+        const target = cell(a.target);
+        if (target === null) return null;
+        action.target = target;
+      }
+      if (a.choice !== undefined) {
+        if (!isInt(a.choice, 0, 1)) return null;
+        action.choice = a.choice;
+      }
+      return action;
     }
-    case 'balance': {
+    case 'transfer': {
+      // ClassArmor.AC_TRANSFER: the class armour, and the armour whose properties it takes over.
+      const to = sealSource(a.to);
+      const from = sealSource(a.from);
+      return to === null || from === null ? null : { type: 'transfer', to, from };
+    }
+    case 'augment': {
+      // StoneOfAugmentation: the stone, what it is used on, and how.
       const item = slot(a.item);
-      const imbue = oneOf(a.imbue, ['speed', 'accuracy'] as const);
-      if (item === null || !imbue) return null;
-      if (a.weapon === undefined) return { type: 'balance', item, imbue };
-      const weapon = slot(a.weapon);
-      return weapon === null ? null : { type: 'balance', item, weapon, imbue };
+      const on = itemRef(a.on);
+      const augment = oneOf(a.augment, ['speed', 'damage', 'evasion', 'defense', 'none'] as const);
+      return item === null || on === null || !augment ? null : { type: 'augment', item, on, augment };
+    }
+    case 'tip': {
+      // Dart.AC_TIP: the darts, the seed, and whether as many as it will.
+      const item = slot(a.item);
+      const seed = slot(a.seed);
+      if (item === null || seed === null) return null;
+      return a.all === true ? { type: 'tip', item, seed, all: true } : { type: 'tip', item, seed };
+    }
+    case 'clean': {
+      const item = slot(a.item);
+      if (item === null) return null;
+      return a.all === true ? { type: 'clean', item, all: true } : { type: 'clean', item };
     }
     case 'affix': {
       const from = sealSource(a.from);

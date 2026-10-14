@@ -1,7 +1,9 @@
-import { type Hero, isAlive, type Mob, type MobKind, type SubClass } from './actors';
+import { type ChampionKind, type Hero, isAlive, type Mob, type MobKind, type SubClass } from './actors';
+import type { DownedGhoul, MobBolt } from './mobskills';
 import { DARKNESS, isChallenged, underChallenges } from './challenges';
 
-import { castShadow, LIGHT_DISTANCE, terrainBlocksSight, viewDistance } from './fov';
+import { castShadow, circleCells, LIGHT_DISTANCE, terrainBlocksSight, viewDistance } from './fov';
+import { discoverable } from './level/flags';
 
 import type { Enchantment, Glyph, Heap, HeapKind, Item, ItemKind } from './items';
 import type { WellWater } from './level/builder';
@@ -14,13 +16,22 @@ import type { ImpLine } from './imp';
 import type { VaultEffect, VaultFloor } from './vault-types';
 import type { BlacksmithLine, BlacksmithService } from './blacksmith';
 import type { MineEventKind } from './minemobs';
-import type { Bolt } from './wands';
-import type { GasKind } from './gas';
+import type { Bolt, WandNote } from './wands';
+import type { CursedEffect } from './cursed';
+import { type GasKind, smokeCells } from './gas';
+import { MAGICAL_SIGHT_DISTANCE } from './buffs';
+import { EYE_OF_NEWT, trinketLevel } from './trinkets';
 import type { Level } from './level/generate';
+import type { AbilityKind, Talent } from './talents';
 import { LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { discover, F, hasFlag, T } from './level/terrain';
 import type { Rng, RngState } from './rng';
 import type { World } from './world';
+import type { BossFloor } from './bosses/state';
+import type { BossFx } from './bosses/common';
+import { awareCells } from './artifacts/talisman';
+import { pointsInTalent } from './talents/data';
+import { hawkVision } from './abilities/allies';
 
 /*
  * The live part of a depth: its monsters, its clock and its random stream.
@@ -50,6 +61,8 @@ export interface Floor {
   /** Clouds of gas, as [cell, volume] pairs in cell order, and when they next spread (see gas.ts). */
   gas?: Partial<Record<GasKind, Array<[number, number]>>>;
   gasAt?: number;
+  /** How strong a cloud is, where the kind has a strength (CorrosiveGas.strength). */
+  gasStrength?: Partial<Record<GasKind, number>>;
   /** An altar room's sacrificial fire: where it burns, and how much more it hungers for (0 once it has gone out). */
   altar?: { pos: number; volume: number; prize?: Item; bonusSpawns?: number };
   /** What this depth gave every hero (strength, upgrades): a hero who joins later gets theirs too (party.ts). */
@@ -62,6 +75,10 @@ export interface Floor {
   vault?: VaultFloor;
   /** SkeletonKey.KeyWall: the key's temporary walls, the terrain under each and the turns left (skeletonkey.ts). */
   keyWalls?: Array<{ cell: number; terrain: number; left: number }>;
+  /** A boss's level: the fight's state (sealed, the health bar, its phases, buffs and blobs): bosses/state.ts. */
+  boss?: BossFloor;
+  /** Ghouls lying crumpled, held up by another (GhoulLifeLink, mobskills.ts): they rise again in time. */
+  downed?: DownedGhoul[];
 }
 
 /**
@@ -91,7 +108,9 @@ export const isWater = (terrain: number): boolean => terrain === T.WATER;
 
 /** What players should see happen; returned by every accepted action. */
 export type Effect =
-  | { type: 'attack'; depth: number; attacker: string; target: string; hit: boolean; damage: number }
+  /** A blow or shot; `weapon`: what a hero struck with (the weapon in hand, a thrown one, the spirit bow), for its sound. */
+  /** `weapon`: what a hero struck with (the thrown weapon, the spirit bow); `surprise`: a surprise attack (Mob.surprisedBy). */
+  | { type: 'attack'; depth: number; attacker: string; target: string; hit: boolean; damage: number; weapon?: ItemKind; surprise?: boolean }
   /** Someone died; for a monster, what it was and which hero (if any) slew it. */
   | { type: 'died'; depth: number; who: string; pos: number; kind?: MobKind; by?: string }
   | { type: 'noticed'; depth: number; mob: string }
@@ -111,14 +130,52 @@ export type Effect =
   /** An enchanted weapon showed its power on a blow; an inscribed armour on one taken. */
   | { type: 'enchanted'; depth: number; pos: number; enchant: Enchantment }
   | { type: 'glyph'; depth: number; hero: string; glyph: Glyph }
-  /** A monster thrown back a step (armour of bounce). */
+  /** Someone knocked back (a knockback, a geyser, an elastic blow): `mob` is whoever it was, hero or monster. */
   | { type: 'pushed'; depth: number; mob: string; from: number; to: number }
+  /** A monster teleported elsewhere on the level (a displacing curse or dart). */
+  | { type: 'blinked'; depth: number; who: string; from: number; to: number }
+  /** A geyser of water burst out at a cell (the pressurized curse; GeyserTrap). */
+  | { type: 'geyser'; depth: number; pos: number }
+  /** An explosive curse grows warm, then hot (Explosive: it blows up when it is spent). */
+  | { type: 'explosive'; hero: string; item: Item; state: 'warm' | 'hot' }
+  /** A crystal weapon flawed, cracked, shattered (and gone), or whole again (Crystal). */
+  | { type: 'crystal'; hero: string; item: Item; state: 'flawed' | 'cracked' | 'shattered' | 'fixed' }
+  /** A slain foe rose again on the heroes' side (a corrupting weapon). */
+  | { type: 'corrupted'; depth: number; mob: string; pos: number }
+  /** A blocking weapon shielded its wielder (Blocking). */
+  | { type: 'shielded'; hero: string; amount: number }
+  /** Tall grass sprang up on these cells (a blooming weapon). */
+  | { type: 'bloomed'; depth: number; cells: number[] }
+  /** An annoying weapon screamed one of its lines (Annoying.msg_1 to msg_13). */
+  | { type: 'annoying'; hero: string; line: number }
+  /** A dazzling weapon flashed, blinding whoever saw it; a wondrous one let out its colours. */
+  | { type: 'dazzled'; depth: number; pos: number }
+  | { type: 'wondrous'; depth: number; pos: number }
+  /** A lucky blow's prize dropped where the foe fell (Lucky). */
+  | { type: 'lucky'; depth: number; pos: number }
+  /** A weapon or armour augmented with a stone of augmentation (or its augment taken away). */
+  | { type: 'augmented'; hero: string; item: Item }
+  /** Darts tipped with a seed, or tipped darts wiped clean (Dart.AC_TIP, TippedDart.AC_CLEAN). */
+  | { type: 'tipped'; hero: string; kind: ItemKind; qty: number }
+  | { type: 'cleaned'; hero: string; qty: number }
+  /** A thrown weapon of a set upgraded since crumbled to dust as it was picked up. */
+  | { type: 'dust'; hero: string; item: Item }
   /** A scroll of enchantment gave an item its power; a scroll of upgrade drove one out. */
   | { type: 'imbued'; hero: string; item: Item }
   | { type: 'disenchanted'; hero: string; item: Item }
-  /** The armour kit made a hero's armour into class armour; a class armour's special ability was used. */
-  | { type: 'classArmor'; hero: string; item: Item }
-  | { type: 'special'; hero: string; ability: 'leap' | 'moltenEarth' | 'smokeBomb' | 'blades'; from: number; to: number }
+  /** The Dwarf King's crown made a hero's armour into class armour with an ability; the crown's magic moved to another armour. */
+  | { type: 'classArmor'; hero: string; item: Item; ability: AbilityKind }
+  | { type: 'classArmorMoved'; hero: string; item: Item }
+  /**
+   * An armour ability used (abilities/): from where, to where (the target, or the hero's own cell); `cells` what the
+   * animation needs (a cone's tips, the blades' targets, Endure's stored damage), `wand` the staff's wand for the blast.
+   */
+  | { type: 'ability'; depth: number; hero: string; ability: AbilityKind | 'perfectCopy'; from: number; to: number; cells?: number[]; wand?: ItemKind; bolt?: Bolt; mob?: string }
+  /** A point of talent spent. */
+  /** A warp beacon's telefrag at a cell. */
+  | { type: 'telefrag'; depth: number; pos: number }
+  /** Death Mark put on a monster, or ended (`died`: it dies as it ends). */
+  | { type: 'deathMarked'; depth: number; mob: string; on: boolean; died?: boolean }
   /** A dwarf monk knocked the weapon out of a hero's hands; it lies at their feet. */
   | { type: 'disarmed'; depth: number; hero: string; mob: string; item: Item }
   /** A hero jumped into a chasm on `depth` and landed on the depth below. */
@@ -129,8 +186,20 @@ export type Effect =
   | { type: 'hurt'; depth: number; who: string; damage: number }
   | { type: 'oozed'; hero: string }
   | { type: 'pumped'; depth: number; mob: string }
-  /** A boss speaks up; `hero` is whom it noticed. */
-  | { type: 'yell'; depth: number; mob: string; kind: MobKind; line: 'notice' | 'death' | 'summon'; hero?: string }
+  /**
+   * A boss speaks up (Mob.yell): `line` is the key of its line in Shattered's texts for its kind ('notice',
+   * 'defeated', 'gluuurp', 'interesting', 'charging', 'wave_1'...); `hero` is whom it noticed.
+   */
+  | { type: 'yell'; depth: number; mob: string; kind: MobKind; line: string; hero?: string }
+  /** A boss's status over its head ('!!!', 'invulnerable', 'enraged') or a line in the log ('pumpup', 'shield'...). */
+  | { type: 'bossLine'; depth: number; mob: string; kind: MobKind; line: string; as: 'status' | 'log' | 'warn' | 'negative' }
+  /** A boss fight's visual and sound (bosses/common.ts BossFx). */
+  | { type: 'bossFx'; depth: number; fx: BossFx; mob?: string; pos?: number; to?: number; cells?: number[]; value?: number }
+  /**
+   * A boss fight's course, for the music and the screens: it starts (the boss noticed the hero, the floor sealed),
+   * changes phase, reaches its finale (BossHealthBar.bleed) and ends (the boss slain, or the floor unsealed).
+   */
+  | { type: 'bossFight'; depth: number; mob: string; kind: MobKind; state: 'start' | 'phase' | 'finale' | 'end'; phase?: number }
   /** A warlock's shadow bolt left the hero weakened. */
   | { type: 'weakened'; hero: string }
   /** A seed took root; a plant was set off by someone stepping on it. */
@@ -173,6 +242,8 @@ export type Effect =
   /** A wand of unknown charges zapped with none left (Wand.zapper): it fizzles, and its level is known. */
   | { type: 'fizzled'; hero: string; item: Item }
   | { type: 'healed'; hero: string; amount: number }
+  /** A monster healed (showStatusWithIcon HEALING): Goo in its water, the rotting fist, a boss's minion. */
+  | { type: 'healedMob'; depth: number; mob: string; amount: number }
   | { type: 'strength'; hero: string }
   | { type: 'upgraded'; hero: string; item: Item }
   | { type: 'teleported'; hero: string }
@@ -199,9 +270,9 @@ export type Effect =
   | { type: 'thrown'; depth: number; from: number; to: number; item: ItemKind }
   /** A magic bolt: the mage's wand, or a shaman's lightning. */
   | { type: 'zapped'; depth: number; from: number; to: number; bolt?: Bolt }
-  /** Rocks falling on these cells (wand of avalanche). */
+  /** Rocks falling on these cells (DM-300 shaking them loose). */
   | { type: 'avalanche'; depth: number; cells: number[] }
-  /** Magic sheep appear on these cells (wand of flock); one fades away; one is spoken to. */
+  /** Magic sheep appear on these cells (a cursed wand's flock); one fades away; one is spoken to. */
   | { type: 'flock'; depth: number; cells: number[] }
   /** Mirror images of a hero appear on these cells. */
   | { type: 'mirrored'; depth: number; hero: string; cells: number[] }
@@ -285,10 +356,8 @@ export type Effect =
   | { type: 'marked'; depth: number; who: string }
   | { type: 'sacrifice'; depth: number; pos: number; outcome: 'worthy' | 'unworthy' | 'reward' }
   | { type: 'wipedOut'; depth: number; hero: string }
-  /** A bomb went off. */
-  | { type: 'exploded'; depth: number; pos: number }
-  /** A weapon balanced with a weightstone. */
-  | { type: 'balanced'; hero: string; item: Item }
+  /** A bomb went off (which kind, for the special ones). */
+  | { type: 'exploded'; depth: number; pos: number; bomb?: ItemKind }
   /** Terrain burnt down to embers, opening what it blocked. */
   | { type: 'burnt'; depth: number; pos: number }
   /** A thrown potion breaking; `identified` when what came out taught the party what it was. */
@@ -303,8 +372,133 @@ export type Effect =
   | { type: 'arenaReady'; hero: string; ready: boolean }
   | { type: 'arenaSinks'; depth: number; tier: number }
   | { type: 'arenaGates'; depth: number; open: boolean; cells: number[] }
+  /*
+   * Alchemy (alchemy.ts, potions.ts, reading.ts, stones.ts, spells.ts, bombs.ts, buffs.ts, trinkets.ts):
+   * something brewed in the pot (null: a catalyst's trinkets rolled), its cost; an item turned into energy;
+   * a catalyst's four trinkets offered.
+   */
+  | { type: 'crafted'; hero: string; item: Item | null; cost: number }
+  | { type: 'energized'; hero: string; item: Item; energy: number }
+  | { type: 'catalyst'; hero: string; trinkets: ItemKind[] }
+  /** A monster enthralled by a siren's song; an elemental summoned; a lit fuse snuffed; a noisemaker's call. */
+  | { type: 'enthralled'; depth: number; mob: string; hero: string }
+  | { type: 'summoned'; depth: number; mob: string; pos: number }
+  | { type: 'snuffed'; hero: string }
+  | { type: 'noise'; depth: number; pos: number }
+  /** A potion in a frozen hero's pack shattered; a challenge arena faded; a potion of healing began to heal. */
+  | { type: 'frozenPotion'; hero: string; kind: ItemKind }
+  | { type: 'arenaGone'; hero: string }
+  | { type: 'healing'; hero: string }
+  /** Ground changed by a blob (grass grown, water from a storm cloud or a geyser). */
+  | { type: 'grown'; depth: number; pos: number }
+  /** A potion breaking at a cell (its splash); a dragon's breath cone; an aqua brew's geyser. */
+  | { type: 'splash'; depth: number; pos: number; kind: ItemKind }
+  | { type: 'breath'; depth: number; from: number; to: number; cells: number[] }
+  | { type: 'geyser'; depth: number; pos: number }
+  /** What an unstable brew or spell turned out to be. */
+  | { type: 'unstable'; hero: string; kind: ItemKind }
+  /** A potion of mastery made an item easier; a potion of divine inspiration boosted a talent tier; a scroll of metamorphosis read. */
+  | { type: 'masteryPotion'; hero: string; item: Item }
+  | { type: 'inspired'; hero: string; tier: number }
+  | { type: 'metamorphosis'; hero: string }
+  /** Kinds a scroll of divination made known. */
+  | { type: 'divined'; hero: string; kinds: ItemKind[] }
+  /** A curse infused; a trap taken back by the spell; an item augmented; magic detected on an item; a guess of a stone of intuition. */
+  | { type: 'curseInfused'; hero: string; item: Item }
+  | { type: 'reclaimed'; hero: string; trap: TrapKind }
+  | { type: 'augmented'; hero: string; item: Item }
+  | { type: 'detected'; hero: string; item: Item; result: 'none' | 'good' | 'bad' | 'both' }
+  | { type: 'guessed'; hero: string; kind: ItemKind; right: boolean }
+  /** A thrown runestone working where it landed; a stone of shock's discharge. */
+  | { type: 'stone'; depth: number; pos: number; kind: ItemKind }
+  | { type: 'shock'; depth: number; pos: number; count: number }
+  /** The chaotic censer spewing a gas. */
+  | { type: 'censer'; hero: string; depth: number; from: number; to: number; gas: string }
+  /*
+   * Artifacts (artifacts/): a line for the log by its message key (under items.artifacts, or a full key); the cloak's
+   * stealth and the hourglass's stasis and time freeze on or off; the talisman's sweep; the chains pulling someone
+   * (and the hero pulled); the rose's ghost appearing and speaking; the spellbook's scroll to settle and a scroll it read;
+   * a monster caught unawares by the armband; the alchemy window, opened by the toolkit.
+   */
+  | { type: 'artifact'; hero: string; msg: string; tone: 'i' | 'p' | 'w' | 'n'; args?: Array<string | number>; item?: Item }
+  | { type: 'stealth'; hero: string; on: boolean }
+  | { type: 'stasis'; hero: string; on: boolean }
+  | { type: 'timeFreeze'; hero: string; on: boolean }
+  | { type: 'scried'; depth: number; hero: string; to: number; cells: number[]; noticed: boolean }
+  | { type: 'chained'; depth: number; from: number; to: number; who: string }
+  | { type: 'pulled'; depth: number; hero: string; from: number; to: number }
+  | { type: 'ghostSummoned'; depth: number; mob: string; pos: number }
+  | { type: 'ghostSays'; depth: number; mob: string; line: string; args?: Array<string | number> }
+  | { type: 'spellbook'; hero: string; kind: ItemKind; exotic?: ItemKind }
+  | { type: 'spellbookRead'; hero: string; kind: ItemKind }
+  | { type: 'surprised'; depth: number; mob: string }
+  | { type: 'alchemy'; hero: string; toolkit: boolean }
+  /* Shattered's wands */
+  /** What a wand tells its wielder (it fizzles, there is no room for more wards, its curse shows...). */
+  | { type: 'wand'; hero: string; note: WandNote; item?: ItemKind }
+  /** A cone of fire, growth or colours from `from`, its rays reaching these cells. */
+  | { type: 'cone'; depth: number; from: number; cells: number[]; bolt: Bolt }
+  /** A blast wave rippling out from a cell. */
+  | { type: 'blast'; depth: number; pos: number; radius: number }
+  /** Someone shielded (a Barrier), and a monster healed. */
+  | { type: 'barrier'; depth: number; who: string; amount: number }
+  | { type: 'mobHealed'; depth: number; mob: string; amount: number }
+  /** An ally made, grown or gone: a corrupted (or doomed) monster, a ward, a sentry, the guardian, the lotus. */
+  | { type: 'ally'; depth: number; mob: string; event: 'corrupted' | 'doomed' | 'warded' | 'upgraded' | 'guardian' | 'dissolved' | 'lotus' }
+  /** The wand of corruption weakened a monster it could not corrupt. */
+  | { type: 'debuffed'; depth: number; mob: string; debuff: string }
+  /** A cursed wand did something random. */
+  | { type: 'cursedZap'; depth: number; hero: string; effect: CursedEffect }
+  /** A supernova about to go off (turns left), and the ground giving way under a sinkhole. */
+  | { type: 'supernova'; depth: number; pos: number; turns: number }
+  | { type: 'sinkhole'; depth: number; cells: number[] }
+  /** A ward the hero bumped into: dismiss it? (WndOptions) */
+  | { type: 'ward'; hero: string; mob: string }
   /** A queued action that became impossible before the hero's turn came. */
-  | { type: 'interrupted'; hero: string; reason: string };
+  | { type: 'interrupted'; hero: string; reason: string }
+  /*
+   * Talents and subclasses (talents/): a point put in a talent; a SpellSprite over the hero; recharging's sparks
+   * (ScrollOfRecharging.charge); the berserker going berserk (with the shield it gave); a combo move made and the combo
+   * spent; a leap (enhanced combo); freerunning begun; the sniper's special shot; an empowered zap or blow (a strong
+   * hit); a line for the log by its key in the talents' texts; a talent swapped by metamorphosis.
+   */
+  | { type: 'talent'; hero: string; talent: string; points: number }
+  | { type: 'spell'; hero: string; sprite: 'food' | 'map' | 'charge' | 'berserk' | 'ankh' | 'haste' | 'vision' | 'purity'; tint?: [number, number, number] }
+  | { type: 'charged'; hero: string }
+  | { type: 'berserk'; hero: string; amount: number }
+  | { type: 'comboMove'; hero: string; move: 'clobber' | 'slam' | 'parry' | 'crush' | 'fury' }
+  | { type: 'comboEnd'; hero: string }
+  | { type: 'leapt'; depth: number; who: string; from: number; to: number }
+  | { type: 'freerun'; hero: string; stacks: number }
+  | { type: 'snipe'; hero: string; kind: 'none' | 'speed' | 'damage' }
+  | { type: 'hit'; hero: string }
+  | { type: 'tmsg'; hero: string; key: string; tone: 'i' | 'p' | 'w' | 'n'; args?: Array<string | number> }
+  | { type: 'metamorphed'; hero: string; from: string; to: string }
+  /** A prepared strike executed a weakened foe (Preparation: assassinated). */
+  | { type: 'assassinated'; depth: number; mob: string }
+  /**
+   * Shattered's monsters (mobskills.ts): a spell or missile of theirs, a word or a sound of theirs, a curse on a
+   * hero, health regained, lightning arcing, a summoning begun (or given up: pos -1) and done, a ghoul crumpled, a
+   * teleport, a golem gathering itself, an eye charging, a ripper about to leap, a thief or a crystal mimic gone,
+   * a champion come (champions.ts).
+   */
+  | { type: 'mobZap'; depth: number; mob: string; from: number; to: number; bolt: MobBolt }
+  | { type: 'mobSays'; depth: number; mob: string; line: MobLine }
+  | { type: 'afflicted'; hero: string; by: 'weakness' | 'vulnerable' | 'hex' | 'degrade' | 'blindness' }
+  | { type: 'mobHealed'; depth: number; mob: string; amount: number }
+  | { type: 'arcs'; depth: number; from: number; cells: number[] }
+  | { type: 'summoning'; depth: number; mob: string; pos: number }
+  | { type: 'summoned'; depth: number; mob: string; minion: string; pos: number }
+  | { type: 'crumpled'; depth: number; mob: string; pos: number }
+  | { type: 'mobTeleported'; depth: number; mob: string; from: number; to: number }
+  | { type: 'gathering'; depth: number; mob: string }
+  | { type: 'charging'; depth: number; mob: string; pos: number }
+  | { type: 'leapReady'; depth: number; mob: string; pos: number }
+  | { type: 'escaped'; depth: number; mob: string; kind: MobKind; item?: Item }
+  | { type: 'champion'; depth: number; mob: string; champion: ChampionKind };
+
+/** What a monster says or shows in words (its Messages): a parry, a guard's call, a vent, a gnoll exile's mood, a piranha gone. */
+export type MobLine = 'parried' | 'scorpion' | 'vent' | 'seenPassive' | 'seenAggro' | 'teleportAway' | 'blocked' | 'thankYou' | 'spawnerDied';
 
 /** Everything the rules need while simulating one depth. */
 export interface Ctx {
@@ -342,25 +536,56 @@ const SWAPPERS: ReadonlySet<string> = new Set(['ghost', 'sheep', 'wandmaker', 'i
  * them is still a bump into them; walking past simply trades cells.
  */
 export function swapsWithHero(char: Char | undefined): boolean {
-  return char !== undefined && 'kind' in char && char.state === 'passive' && SWAPPERS.has(char.kind);
+  if (char === undefined || !('kind' in char)) return false;
+  // Mob.interact for an ally: the hero swaps places with it (with nothing immovable, a ward).
+  if (char.ally) return char.kind !== 'ward' && char.kind !== 'lotus';
+  return char.state === 'passive' && SWAPPERS.has(char.kind);
 }
 
 /** Level.viewDistance for heroes on a depth: shorter under the DARKNESS challenge. */
-export const heroSight = (world: World, depth: number): number =>
-  world.levels[depth]?.viewDistance ?? viewDistance(depth, isChallenged(world, DARKNESS));
+export const heroSight = (world: World, depth: number): number => {
+  // HallsBossLevel: Yog-Dzewa darkens its hall (YogDzewa.updateVisibility).
+  const own = world.floors[depth]?.boss?.viewDistance;
+  if (own !== undefined) return isChallenged(world, DARKNESS) ? Math.min(own, 2) : own;
+  // Shattered's levels have their own sight (Level.viewDistance: the dark feeling, the halls).
+  return world.levels[depth]?.viewDistance ?? viewDistance(depth, isChallenged(world, DARKNESS));
+};
 
 /** Field of view of one hero (Dungeon.switchLevel and Light: a torch lights up to Light.DISTANCE). */
 export function heroView(world: World, hero: Hero): boolean[] {
-  // Blinded, a hero sees no further than arm's reach.
-  const distance = (hero.blind ?? 0) > 0 ? 1
+  // Blinded, a hero sees no further than arm's reach; with an eye of newt, less far (EyeOfNewt.visionRangeMultiplier).
+  let distance = (hero.blind ?? 0) > 0 ? 1
     : hero.light > 0 ? Math.max(heroSight(world, hero.depth), LIGHT_DISTANCE) : heroSight(world, hero.depth);
-  const fov = castShadow(hero.pos, terrainBlocksSight(world.levels[hero.depth]!.map), distance);
+  const newt = trinketLevel(hero, 'trinket.eyeOfNewt');
+  if (newt >= 0 && distance > 1) distance = Math.max(1, Math.round(distance * EYE_OF_NEWT.visionRangeMultiplier(newt)));
+  // Level.updateFieldOfView: farsight, a quarter further a point.
+  const far = pointsInTalent(hero, 'farsight');
+  if (far > 0) distance = Math.round(Math.fround(distance * Math.fround(1 + 0.25 * far)));
+  // A smoke screen blocks sight (SmokeScreen.onBuildFlagMaps).
+  const blocks = terrainBlocksSight(world.levels[hero.depth]!.map);
+  // The warden sees through tall and furrowed grass as if it were empty space.
+  const map = world.levels[hero.depth]!.map;
+  const terrain = hero.subclass === 'warden' ? (cell: number): boolean => blocks(cell) && map[cell] !== T.HIGH_GRASS : blocks;
+  const smoke = smokeCells(world.floors[hero.depth]);
+  const fov = castShadow(hero.pos, smoke.size === 0 ? terrain : (cell) => terrain(cell) || smoke.has(cell), distance);
+  // MagicalSight: everything there is to see within twelve cells, through walls (Level.updateFieldOfView's sense).
+  if ((hero.buffs?.magicalSight ?? 0) > 0) {
+    const open = discoverable(world.levels[hero.depth]!.map);
+    for (const cell of circleCells(hero.pos, MAGICAL_SIGHT_DISTANCE)) if (open[cell]) fov[cell] = true;
+  }
   // Arm's reach is always seen, round a corner or into a doorway too: whatever can strike the hero
   // (anything next to them may) is never an unseen blow.
   for (const n of NEIGHBOURS8) {
     const cell = hero.pos + n;
     if (cell >= 0 && cell < LENGTH && Math.abs((cell % WIDTH) - (hero.pos % WIDTH)) <= 1) fov[cell] = true;
   }
+  // Dungeon.observe: what the talisman of foresight shows is seen, and the cells around it.
+  awareCells(world, hero, fov);
+  // Heightened senses: creatures within a few cells are sensed through walls (Level.updateFieldOfView's mind vision),
+  // and seer shot's revealed area is seen.
+  senseCells(world, hero, fov);
+  // The spirit hawk shares its whole field of vision with its hunter (Dungeon.observe).
+  hawkVision(world, hero, fov);
   return fov;
 }
 
@@ -371,9 +596,15 @@ export function exploredCells(world: World, depth: number): boolean[] {
 /** Adds what a hero sees to the party's shared map. */
 export function observe(world: World, hero: Hero): void {
   const explored = exploredCells(world, hero.depth);
-  heroView(world, hero).forEach((seen, i) => {
+  const view = heroView(world, hero);
+  view.forEach((seen, i) => {
     if (seen) explored[i] = true;
   });
+  // Bestiary.setSeen: every monster the party has set eyes on.
+  for (const mob of world.floors[hero.depth]?.mobs ?? []) {
+    if (!view[mob.pos] || mob.ally || world.bestiary?.[mob.kind]?.seen) continue;
+    ((world.bestiary ??= {})[mob.kind] ??= { seen: true, slain: 0 }).seen = true;
+  }
 }
 
 /** Cells a hero may step on: open ground, doors and visible traps. */
@@ -433,4 +664,26 @@ export function discoverCell(level: Level, cell: number): void {
   level.map[cell] = discover(terrain);
   const trap = level.traps?.find((t) => t.pos === cell);
   if (trap) trap.visible = true;
+}
+
+/**
+ * Level.updateFieldOfView: heightened senses lets the hero sense creatures within 1 + a point cells through walls (the
+ * cells around each are seen), and seer shot's revealed area (RevealedArea) shows the cells around where the shot flew.
+ */
+function senseCells(world: World, hero: Hero, fov: boolean[]): void {
+  const mark = (at: number): void => {
+    for (const n of NEIGHBOURS8.concat(0)) {
+      const c = at + n;
+      if (c >= 0 && c < LENGTH && Math.abs((c % WIDTH) - (at % WIDTH)) <= 1) fov[c] = true;
+    }
+  };
+  const senses = pointsInTalent(hero, 'heightened_senses');
+  if (senses > 0) {
+    const range = 1 + senses;
+    for (const mob of world.floors[hero.depth]?.mobs ?? []) {
+      if (isAlive(mob) && mob.kind !== 'mimic' && Math.max(Math.abs((mob.pos % WIDTH) - (hero.pos % WIDTH)), Math.abs(Math.trunc(mob.pos / WIDTH) - Math.trunc(hero.pos / WIDTH))) <= range) mark(mob.pos);
+    }
+  }
+  const area = hero.tal?.revealed;
+  if (area && area.depth === hero.depth) mark(area.pos);
 }

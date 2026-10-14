@@ -536,7 +536,9 @@ function leaveVault(ctx: Ctx, hero: Hero, keepRef: ItemRef | undefined): void {
   if (stored) {
     hero.weapon = stored.weapon;
     hero.armor = stored.armor;
-    hero.rings = stored.rings;
+    hero.artifact = stored.artifact;
+    hero.misc = stored.misc;
+    hero.ring = stored.ring;
     hero.items = stored.items;
     hero.gold = stored.gold;
     delete quest.stored![hero.id];
@@ -598,7 +600,7 @@ export function vaultStep(ctx: Ctx, hero: Hero): void {
 /** Whether the hero looks ready for the elemental: +2 vault loot of each kind, and the mirror's gift. */
 function prepared(world: World, hero: Hero): boolean {
   const criteria = [false, false, false, false];
-  for (const item of [hero.weapon, hero.armor, ...hero.rings, ...hero.items]) {
+  for (const item of [hero.weapon, hero.armor, hero.artifact, hero.misc, hero.ring, ...hero.items]) {
     if (!item || item.level < 2) continue;
     const category = itemDef(item.kind).category;
     if (category === 'weapon') criteria[0] = true;

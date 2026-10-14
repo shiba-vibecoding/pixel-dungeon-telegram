@@ -136,14 +136,14 @@ body:has(#ui.pd-wide) #game { cursor: var(--spr-cursor) 0 0, default; }
 /* The learning card on a phone keeps clear of the map's buttons down the right edge (design system v13 centres it). */
 #ui:not(.pd-wide) .pd-hint { left: 12px; transform: none; width: min(380px, calc(100% - 12px - 44px - 20px)); }
 .pd-hint-head .pd-slot .pd-icon { width: calc(var(--w) * 2px); height: calc(var(--h) * 2px); } /* a button's glyph, when the hint is about that button */
-.pd-coach {
+.pd-movehint {
   position: absolute; z-index: var(--z-hud, 10); transform: translate(-50%, calc(-100% - 10px)); pointer-events: none;
   padding: 4px 10px; background: var(--stone-900, #1f1d1d); border: 2px solid var(--gold-deep, #ffcc66); color: var(--gold, #ffeba4);
-  font: var(--text-body, 400 18px/24px var(--font-ui)); white-space: nowrap; animation: pd-coach 1.2s steps(4) infinite;
+  font: var(--text-body, 400 18px/24px var(--font-ui)); white-space: nowrap; animation: pd-movehint 1.2s steps(4) infinite;
 }
-.pd-coach::after { content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--gold-deep, #ffcc66); border-bottom: 0; }
-@keyframes pd-coach { 0%, 100% { margin-top: 0; } 50% { margin-top: -4px; } }
-@media (prefers-reduced-motion: reduce) { .pd-coach { animation: none; } }
+.pd-movehint::after { content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--gold-deep, #ffcc66); border-bottom: 0; }
+@keyframes pd-movehint { 0%, 100% { margin-top: 0; } 50% { margin-top: -4px; } }
+@media (prefers-reduced-motion: reduce) { .pd-movehint { animation: none; } }
 .pd-mapbtn.resume { box-shadow: inset 0 0 0 2px var(--gold-deep), inset 0 0 0 4px var(--void); }
 
 /* A question's answers, one above the other: long ones wrap rather than being cut. */
@@ -197,20 +197,109 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* Six classes (design system v17): the narrow title's faces come from the 144-wide avatars too. */
 @media (max-height: 700px) { .pd-class .pd-class-face { background-size: 216px 48px; } }
 /* Shattered's buff icons (the hero stream: the warrior's shield, a sealed floor), from its own buffs.png, 18 a row. */
-.pd-buff i.spd { background-image: url("/assets/spd/buffs.png"); background-size: 384px 192px; }
+/* (And the wands stream's conditions: chill, corrosion, barrier, magic charge...; `i.spd[data-b]` in the buff list.) */
+.pd-buff i.spd, i.spd[data-b] { background-image: url("/assets/spd/buffs.png"); background-size: 384px 192px; }
+/* A question's text may come in paragraphs (MagesStaff's imbue: what it makes of the staff, what it costs). */
+.pd-window .pd-info.center { white-space: pre-line; }
 /* Shattered's quick slots (QuickSlot.SIZE 6; the hero stream): the toolbar grows a column for each slot shown; a slot whose item is used up keeps it greyed. */
 .pd-toolbar { grid-template-columns: repeat(var(--tools, 5), 1fr); gap: 4px; }
 .pd-tool[hidden] { display: none; }
 .pd-tool.quick.placeholder .pd-item { opacity: .35; filter: grayscale(1); }
-/* DangerIndicator: how many enemies are in sight; a tap steps to the next. Under the HUD's right edge (wide: in the corner). */
-.pd-danger {
-  position: absolute; right: calc(var(--safe-r, 0px) + 8px); bottom: -40px; pointer-events: auto;
-  min-width: 36px; height: 32px; padding: 0 8px; display: grid; place-items: center;
-  font: var(--text-digits, 400 15px/15px var(--font-small)); color: var(--ink); text-shadow: var(--text-outline);
-  background: var(--bad, #a33); clip-path: var(--notch); box-shadow: inset 0 0 0 var(--u, 2px) var(--void);
-}
+/* DangerIndicator: how many enemies are in sight (a skull and the number, design v19: ui.css .pd-danger); a tap steps to the next. Under the HUD's right edge (wide: in the corner). */
+.pd-danger { top: auto; bottom: -44px; pointer-events: auto; }
 .pd-danger[hidden] { display: none; }
 .pd-dcorner .pd-danger { position: static; height: auto; }
 /* The journal's notes (the hero stream): a landmark journal.png has no icon for takes an item's picture; a floor's feeling, none. */
 .pd-jicon.item { background: none; display: grid; place-items: center; }
 .pd-jicon.blank { background: none; }
+
+/* BossHealthBar: the boss's name and health under the HUD's band, a blood-red bar that drips at the boss's last stand. */
+.pd-bossbar { display: flex; align-items: center; gap: 6px; margin: 4px 8px 0; }
+.pd-bossbar[hidden] { display: none; }
+.pd-bossbar .pd-icon { width: 16px; height: 16px; flex: none; }
+.pd-bossbar .pd-boss-name { font: var(--text-hud, 400 20px/20px var(--font-small)); color: #ff6a4a; text-shadow: var(--text-outline); white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.pd-bossbar .pd-bar.boss { flex: 1; height: 16px; }
+.pd-bossbar .pd-bar.boss::before { background: linear-gradient(to bottom, #ff6a5a 0 25%, #c81e1e 25% 70%, #7a0e0e 70% 100%); }
+.pd-bossbar .pd-bar.boss.shield::after { background: rgba(140, 200, 255, 0.45); }
+.pd-bossbar.bleeding .pd-bar.boss::before { animation: pd-boss-bleed 0.8s steps(2) infinite; }
+.pd-bossbar .pd-bar.boss .pd-bar-text { font-size: 16px; line-height: 16px; }
+@keyframes pd-boss-bleed { 50% { filter: brightness(1.35); } }
+/* The bestiary (mobs stream): a monster not seen yet is its dark shape. */
+.pd-portrait.silhouette canvas { filter: brightness(0) opacity(0.45); }
+.pd-catalog .pd-portrait canvas { max-width: 32px; max-height: 32px; image-rendering: pixelated; }
+/* The alchemy pot (alchemyui.ts) is a canvas now (ShAlchFx, ui.css .pd-alch-pot); while it brews or energy flies, the window stands still. */
+.pd-energy { position: relative; }
+.pd-slot.disabled .pd-sitem { opacity: .3; }
+.pd-window.brewing { pointer-events: none; }
+/* A choice an item asks for (alchemyui.ts showChoice): the option's picture before its words, long words wrapping. */
+.pd-button.pd-choice { display: flex; align-items: center; justify-content: center; gap: 6px; white-space: normal; text-align: left; }
+.pd-button.pd-choice .pd-sitem { --u: 2px; }
+
+/* ---------- Talents: the action indicator (ActionIndicator) ---------- */
+.pd-actionind {
+  position: absolute; left: calc(var(--safe-l, 0px) + 8px); top: 42%; z-index: var(--z-hud, 10);
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
+}
+.pd-actionind[hidden] { display: none; }
+.pd-actionbtn {
+  position: relative; width: 48px; height: 48px; display: grid; place-items: center; padding: 0; background: var(--stone-800);
+  clip-path: var(--notch); box-shadow: inset 0 0 0 2px var(--gold-deep), inset 0 0 0 4px var(--void); cursor: pointer;
+}
+.pd-actionbtn .pd-hicon { --u: 2px; }
+.pd-actionbtn b {
+  position: absolute; right: 3px; bottom: 1px; font: var(--text-caption, 400 15px/16px var(--font-small)); color: var(--good, #8f8);
+  text-shadow: 1px 1px 0 var(--void);
+}
+.pd-actionbtn:active { background: var(--stone-900); }
+.pd-actionbtn.berserk { box-shadow: inset 0 0 0 2px #c02020, inset 0 0 0 4px var(--void); }
+@media (prefers-reduced-motion: no-preference) {
+  .pd-actionbtn { animation: pd-blink 1.6s steps(1) infinite; }
+}
+.pd-choice.dim { opacity: .55; }
+#ui .pd-actionind .pd-actionbtn { pointer-events: auto; }
+
+/* Buffs that share one Shattered icon come pre-tinted from buffs-tints.png (design v19; hud.ts BUFF_TINTS): 7 px frames at 3×, as the other buff icons. */
+.pd-buff i.pd-tbuff { width: 21px; height: 21px; background-image: var(--atlas-buff-tints); background-size: calc(18 * 21px) 21px; background-position: calc(var(--ix, 0) * -21px) 0; }
+
+/* Out of sight (lifecycle.ts): the tab hidden or Telegram's window minimised. CSS animations stand still and start again on return. */
+html.pd-paused *, html.pd-paused *::before, html.pd-paused *::after { animation-play-state: paused !important; }
+/* The journal's new marks (journal2.png): as wide as the others in the row. */
+.pd-jrow .pd-jicon2 { flex: none; }
+/* «Привал»: the home screen is as tall and as wide as the screen. The scene runs to the edges (camp.ts fill: reflected, darkening sides); the interface is a 440 px column in the middle (ui.css .pd-camp-ui, design v20 CampWide). */
+#overlay.bare > .pd-camp { flex: 1 1 auto; align-self: stretch; width: 100%; min-width: 0; }
+.pd-daily-rules .pd-chip[role="button"] { cursor: pointer; }
+.pd-daily-rules .pd-chip .pd-tro { --u: 1px; margin: -2px 2px 0 -2px; }
+/* A camp's picture in the Pixel-Mart: the scene cropped to the fire and the hero. */
+.pd-camp-preview { position: relative; overflow: hidden; background: var(--void); flex: none; }
+.pd-offer-art .pd-camp-preview { max-width: 100%; }
+.pd-offer-hero .pd-camp-preview { max-width: 100%; }
+/* The board's timer slot adds no box of its own. */
+.pd-prize-slot { display: contents; }
+@media (prefers-reduced-motion: reduce) { .pd-camp-arrow { transition: none; } }
+/* The strip between the card and the sheet lets taps through to the hero; only its icons take them. */
+.pd-camp-ui > .pd-camp-edges { pointer-events: none; }
+.pd-camp-edges > .pd-camp-edge { pointer-events: none; }
+.pd-camp-edge > .pd-camp-icon { pointer-events: auto; }
+/* The «Bug hunter» honour (server-side) beside the run badges; the sprite is 16 px, like the patron's. */
+.pd-offer-badge.bughunter { background: var(--spr-badge-bughunter) center / contain no-repeat; image-rendering: pixelated; }
+/* A camp's name may take two lines: they are long. */
+.pd-offer.camp .pd-offer-name { white-space: normal; line-height: 18px; min-height: 36px; }
+/* With no streak, the card's line is a sentence: it may take two lines. */
+.pd-profile-streak.off { white-space: normal; font: var(--text-caption, 400 15px/20px var(--font-small)); }
+/* A narrow phone (360): the pot's row of five (ui.css) is two pixels too wide, so the slots give up a few. */
+@media (max-width: 380px) {
+  .pd-alch { grid-template-columns: repeat(3, 46px) 64px 54px; gap: 4px; padding: 10px 4px; }
+  .pd-alch .pd-slot { --slot: 46px; width: 46px; height: 46px; }
+  .pd-alch .pd-slot.out { --slot: 54px; width: 54px; height: 54px; }
+  .pd-alch .pd-slot .pd-sitem { --u: 2px; }
+  .pd-alch .pd-slot.out .pd-sitem { --u: 2px; }
+  .pd-catalyst, .pd-energy-pile { width: 32px; height: 32px; }
+}
+/* The trinket window (alchemyui.ts): an effect takes at most three lines; on a narrow phone «Take» goes under the text. */
+.pd-trinket-desc { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+@media (max-width: 420px) {
+  .pd-trinket { grid-template-columns: 52px minmax(0, 1fr); grid-template-areas: "art name" "art desc" "btn btn"; row-gap: 4px; }
+  .pd-trinket > .pd-button { justify-self: stretch; min-height: 32px; }
+}
+/* The stone of augmentation's rows on a narrow phone: the label gives up some width so the note beside the number fits. */
+@media (max-width: 380px) { .pd-aug-row { grid-template-columns: 52px auto minmax(0, 1fr); gap: 6px; } }

@@ -4,6 +4,10 @@ import { visibleEnemies, regenOn } from './hero';
 import { cursedKnown } from './ident';
 import { createItem, type Item, itemDef } from './items';
 import { hasRoom } from './bags';
+import { canTransferGlyph as transferable } from './talents';
+import { pointsInTalent } from './talents/data';
+import { onShieldBroken } from './talents/combat';
+import { holdFastDecay } from './talents/hold-fast';
 import { dropItem } from './floor';
 
 /*
@@ -28,10 +32,10 @@ export const SHIELD_COOLDOWN = 150;
 /** Turns without an enemy in sight before the shield ends. */
 const SHIELD_IDLE_TURNS = 5;
 
-/** Talent seam: Iron Will's points (Talent.IRON_WILL), none until the talents stream. */
-export const ironWill = (_hero: Hero): number => 0;
-/** Talent seam: BrokenSeal.canTransferGlyph (Runic Transference); never, until the talents stream. */
-export const canTransferGlyph = (_hero: Hero): boolean => false;
+/** Iron Will's points (Talent.IRON_WILL): the seal's shield is that much stronger; for another class it is the whole shield. */
+export const ironWill = (hero: Hero): number => pointsInTalent(hero, 'iron_will');
+/** BrokenSeal.canTransferGlyph (Runic Transference): the glyph on the armour goes with the seal. */
+export const canTransferGlyph = (hero: Hero, glyph?: string): boolean => transferable(hero, glyph);
 
 /** The armour's tier, as Armor.tier (class armour is tier 6). */
 const tierOf = (armor: Item): number => itemDef(armor.kind).tier ?? 1;
@@ -41,6 +45,8 @@ export const sealShield = (hero: Hero, armor: Item): number => 3 + 2 * tierOf(ar
 
 /** WarriorShield.maxShield: the seal's shield while sealed armour is worn, otherwise none. */
 export function maxShield(hero: Hero): number {
+  // Metamorphosed iron will: another class gets a shield of as many points as it has.
+  if (hero.heroClass !== 'warrior' && ironWill(hero) > 0) return ironWill(hero);
   return hero.armor?.seal ? sealShield(hero, hero.armor) : 0;
 }
 
@@ -66,9 +72,9 @@ export function sealShieldTick(ctx: Ctx, hero: Hero): void {
   if (buff.cooldown > 0 && regenOn(ctx.world, hero)) buff.cooldown--;
   if (buff.shield > 0) {
     // Combo: a gladiator's combo going on counts as a fight.
-    const combo = hero.subclass === 'gladiator' && hero.combo > 0 && hero.time <= hero.comboUntil;
+    const combo = hero.tal?.combo !== undefined;
     if (visibleEnemies(ctx.world, hero).length === 0 && !combo) {
-      buff.idle += 1;
+      buff.idle += holdFastDecay(hero);
       if (buff.idle >= SHIELD_IDLE_TURNS) {
         if (buff.cooldown > 0) {
           const left = buff.shield / buff.initial;
@@ -103,6 +109,7 @@ export function shieldDamage(ctx: Ctx, hero: Hero, damage: number, hunger: boole
   }
   const absorbed = Math.min(buff.shield, damage);
   buff.shield -= absorbed;
+  if (absorbed > 0 && buff.shield <= 0) onShieldBroken(hero);
   return damage - absorbed;
 }
 
@@ -156,7 +163,7 @@ function detachFrom(hero: Hero, armor: Item): Item {
   const seal = createItem('seal', 1, armor.seal?.level ?? 0);
   delete armor.seal;
   if (seal.level > 0) armor.level--;
-  if (canTransferGlyph(hero) && armor.glyph) {
+  if (canTransferGlyph(hero, armor.glyph) && armor.glyph) {
     seal.glyph = armor.glyph;
     delete armor.glyph;
   }

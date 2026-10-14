@@ -2,6 +2,7 @@ import type { Hero } from './actors';
 import type { Ctx } from './floor';
 import type { Item } from './items';
 import { T } from './level/terrain';
+import { pointsInTalent } from './talents/data';
 
 /*
  * The waterskin (Waterskin) every hero sets out with, and dew (Dewdrop), as
@@ -27,8 +28,19 @@ const f32 = Math.fround;
 export function consumeDew(hero: Hero, quantity: number, force: boolean): number | null {
   const effect = Math.round(f32(f32(hero.ht * f32(0.05)) * quantity));
   const heal = Math.min(hero.ht - hero.hp, effect);
-  if (heal <= 0) return force ? 0 : null;
+  // Shielding dew: what the hero could not heal becomes a shield, up to a fifth of their health a point.
+  let shield = 0;
+  const points = pointsInTalent(hero, 'shielding_dew');
+  if (points > 0) {
+    shield = effect - heal;
+    shield = Math.min(shield, Math.round(f32(hero.ht * f32(0.2 * points))) - (hero.shield ?? 0));
+  }
+  if (heal <= 0 && shield <= 0) return force ? 0 : null;
   hero.hp += heal;
+  if (shield > 0) {
+    hero.shield = (hero.shield ?? 0) + shield;
+    hero.shieldDecay = 0;
+  }
   return heal;
 }
 
@@ -58,7 +70,14 @@ export function pickUpDew(ctx: Ctx, hero: Hero, pos: number, quantity = 1): bool
  */
 export function drinkFromWaterskin(ctx: Ctx, hero: Hero, skin: Item): void {
   const missing = f32(1 - f32(hero.hp / hero.ht));
-  const needed = f32(missing / f32(0.05));
+  let needed = f32(missing / f32(0.05));
+  // Shielding dew: extra drops if a shield can still grow.
+  const points = pointsInTalent(hero, 'shielding_dew');
+  if (points > 0) {
+    const max = Math.round(f32(hero.ht * f32(0.2 * points)));
+    const missingShield = f32(f32(1 - (hero.shield ?? 0) / max) * f32(0.2 * points));
+    if (missingShield > 0) needed = f32(needed + f32(missingShield / f32(0.05)));
+  }
   const drops = Math.max(1, Math.min(Math.ceil(needed - f32(0.01)), skin.volume ?? 0));
   const heal = consumeDew(hero, drops, true) ?? 0;
   skin.volume = (skin.volume ?? 0) - drops;

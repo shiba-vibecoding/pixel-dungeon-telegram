@@ -1,17 +1,26 @@
 import {
-  type Action, BACKPACK_SIZE, scrollTargets, isBroken, isIdentified, type Hero, inBag, type HeroClass, type Item, itemDef, itemPrice, type ItemRef,
-  escapeScore, itemAt, keepable, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, visiblyCursed, type World, CLASS_ARMOR_OF, heroById, offersSealTransfer, shielding,
+  escapeScore, keepable, ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
+  knownIn, MUST_THROW, TARGETED_SPELLS,
+  type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass,
+  type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
+  visiblyCursed, type World, CLASS_ARMOR_OF, heroById, isClassArmor, type SealSource, talentPointsAvailable, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
 } from '@pd/core';
+import { artifactActions, artifactCard, type ArtifactHost, chargeStrip, showMiscChooser } from './artifactui';
+import { artText } from './artifacttext';
+import { abilityName as abilityLabel, AT } from './abilitytext';
+import { type AbilityHost, classArmorCard, showAbilityPick, showTalents, startAbility } from './abilityui';
 import { lt, plain } from './levelnames';
 import { audio } from './audio';
-import { chooseQuickslot, isQuickslotted, QUICKSLOTS, quickKind, quickUse } from './quickslot';
+import { type ChoiceOption, showChoice } from './alchemyui';
+import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse, WEAPON_SLOT } from './quickslot';
 import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
-import { BUFF_ICONS, type BuffName } from './hud';
-import { capitalize, locale, t } from './i18n';
-import { chargesOf, isKnown, itemInfo, itemName, plainName, strengthOf, wearOf } from './itemtext';
+import { BUFF_ICONS, type BuffEntry, type BuffName } from './hud';
+import { capitalize, fill, fmt, locale, t } from './i18n';
+import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
 import { mart } from './mart';
-import { rankIcon, trophyKind } from './trophyicons';
-import { countChallenges } from './meta';
+import { showHeroWindow } from './talentui';
+import { showMetamorphosis, showSubclassPick } from './talentui';
+import { subclassName, tal } from './talenttext';
 import type { RunRecord } from './rankings';
 import { type Assets, heroSprite } from './sprites';
 import type { LogLine } from './view';
@@ -23,7 +32,6 @@ import type { LogLine } from './view';
  */
 
 const root = document.getElementById('overlay')!;
-const HERO_CLASSES: readonly HeroClass[] = ['warrior', 'mage', 'rogue', 'huntress'];
 /** Heroes in avatars.png and in the heroes strip, in this order. */
 export const AVATAR: Readonly<Record<HeroClass, number>> = { warrior: 0, mage: 1, rogue: 2, huntress: 3 };
 
@@ -130,6 +138,26 @@ export function sprites(scope: ParentNode): void {
     node.style.setProperty('--ix', String(i % perRow));
     node.style.setProperty('--iy', String(Math.floor(i / perRow)));
   });
+  // Shattered's items.png in the design system's own markup (.pd-sitem, data-s: 16 a row).
+  scope.querySelectorAll<HTMLElement>('[data-s]').forEach((node) => {
+    const s = Number(node.dataset.s);
+    node.style.setProperty('--ix', String(s % 16));
+    node.style.setProperty('--iy', String(Math.floor(s / 16)));
+  });
+  // Shattered's talent_icons.png (32 a row, data-t) and hero_icons.png (8 a row, data-h): the talents' and armour abilities' icons.
+  scope.querySelectorAll<HTMLElement>('[data-t]').forEach((node) => {
+    const i = Number(node.dataset.t);
+    node.style.setProperty('--ix', String(i % 32));
+    node.style.setProperty('--iy', String(Math.floor(i / 32)));
+  });
+  scope.querySelectorAll<HTMLElement>('[data-h]').forEach((node) => {
+    const i = Number(node.dataset.h);
+    node.style.setProperty('--ix', String(i % 8));
+    node.style.setProperty('--iy', String(Math.floor(i / 8)));
+  });
+  // The sheets of v19 in one row each: tinted buffs (buffs-tints.png, 18), the journal's new marks (journal2.png, 14).
+  scope.querySelectorAll<HTMLElement>('[data-tb]').forEach((node) => node.style.setProperty('--ix', node.dataset.tb!));
+  scope.querySelectorAll<HTMLElement>('[data-j2]').forEach((node) => node.style.setProperty('--ix', node.dataset.j2!));
   scope.querySelectorAll<HTMLElement>('[data-b]').forEach((node) => {
     // From 1000: Shattered's buffs.png, the same 18 a row but more rows (see BUFF_ICONS).
     const spd = Number(node.dataset.b) >= 1000;
@@ -223,7 +251,7 @@ export function healthBar(hp: number, ht: number, text = true): HTMLElement {
 
 /* Item slots */
 
-function itemIcon(world: World, item: Item): HTMLElement {
+export function itemIcon(world: World, item: Item): HTMLElement {
   const icon = el('i', { className: 'pd-item' });
   icon.dataset.i = String(itemSprite(item, world.run.labels));
   return icon;
@@ -253,11 +281,14 @@ interface SlotOptions {
   hero?: Hero;
   /** An empty equipment place: the silhouette of what goes there (Shattered's holders in items.png). */
   placeholder?: number;
+  /** The empty «misc» place (design v19: slot-misc.png, a ring and an amulet in silhouette) in place of a holder. */
+  misc?: boolean;
 }
 
 /** A 52×52 slot: the sprite and up to three corner labels (level, strength, quantity). */
 export function slot(world: World, item: Item | undefined, options: SlotOptions = {}): HTMLElement {
   if (!item) {
+    if (options.misc) return el('div', { className: 'pd-slot placeholder misc', ariaLabel: t.miscEmpty });
     if (options.placeholder !== undefined) {
       const icon = el('i', { className: 'pd-item' });
       icon.dataset.i = String(options.placeholder);
@@ -272,14 +303,17 @@ export function slot(world: World, item: Item | undefined, options: SlotOptions 
     ariaLabel: capitalize(itemName(world, item)),
   });
   node.append(itemIcon(world, item));
-  const charges = chargesOf(item);
+  // ClassArmor.status: the charge as a percentage.
+  const charges = isClassArmor(item) && options.hero && item.kind === `armor.${options.hero.heroClass}` ? `${Math.floor(item.charge ?? 0)}%` : chargesOf(item);
   if (charges !== null) {
     node.append(el('span', { className: 'pd-qty', textContent: charges }));
   } else if (item.qty > 1) {
     node.append(el('span', { className: 'pd-qty', textContent: String(item.qty) }));
   }
-  if (item.level !== 0 && levelKnown(item)) {
-    node.append(el('span', { className: `pd-lvl ${item.level > 0 ? 'up' : 'down'}`, textContent: `${item.level > 0 ? '+' : '−'}${Math.abs(item.level)}` }));
+  // Artifact.visiblyUpgraded: an artifact shows +0 to +10 whatever its own cap.
+  const shown = itemDef(item.kind).category === 'artifact' ? visiblyUpgraded(item) : item.level;
+  if (shown !== 0 && levelKnown(item)) {
+    node.append(el('span', { className: `pd-lvl ${shown > 0 ? 'up' : 'down'}`, textContent: `${shown > 0 ? '+' : '−'}${Math.abs(shown)}` }));
   }
   // WndBag's durability bars: how worn an upgraded item is; a broken one's level is struck through (it works as +0).
   const wear = wearOf(world, item);
@@ -288,13 +322,23 @@ export function slot(world: World, item: Item | undefined, options: SlotOptions 
     markWear(node);
   }
   // ItemSlot's top right: the strength it wants, or the typical one with a «?» while its level is unknown.
-  const strength = strengthOf(item);
+  const strength = strengthOf(item, options.hero);
   if (strength && !options.equipped) {
     const { str, known } = strength;
     node.append(el('span', { className: `pd-tag${options.hero && options.hero.str < str ? ' bad' : ''}`, textContent: known ? String(str) : `${str}?` }));
   }
+  // ShMarks: the enchantment's spark (a weapon) or the glyph's shield-rune (armour), in its colour; red for a curse.
+  const magic = magicOf(item);
+  if (magic) {
+    const mark = el('i', { className: `pd-mark ${magic.glyph ? 'glyph' : 'ench'}${magic.fresh ? ' new' : ''}` });
+    mark.style.setProperty('--ench', magic.color);
+    node.append(mark);
+  }
   if (cursed) node.append(el('span', { className: 'pd-mark curse' }));
   if (options.hero && inQuickslot(options.hero, item)) node.append(el('span', { className: 'pd-mark quick' }));
+  // ShArtifact: the artifact's charge as a strip along the icon's bottom.
+  const strip = options.hero ? chargeStrip(world, options.hero, item) : null;
+  if (strip) node.append(strip);
   node.onclick = () => {
     audio.play('click');
     options.onClick?.();
@@ -330,7 +374,16 @@ export function markWear(node: HTMLElement): void {
 /** An item's description, its curse and weight set apart as warnings, and how worn it is under its numbers. */
 function describedItem(world: World, hero: Hero, item: Item): HTMLElement[] {
   const nodes = described(itemInfo(world, hero, item));
-  const wear = wearOf(world, item);
+  // ShMarks' .pd-ench-line: the enchantment or glyph, named in its colour, and what it does (and it is seen now).
+  const magic = magicOf(item);
+  if (magic) {
+    const line = el('div', { className: `pd-ench-line${magic.curse ? ' curse' : ''}` },
+      el('i', { className: `pd-mark ${magic.glyph ? 'glyph' : 'ench'}` }), el('span', {}, el('b', { textContent: magic.name }), magic.desc));
+    line.style.setProperty('--ench', magic.color);
+    nodes.splice(Math.min(2, nodes.length), 0, line);
+    markSeen(magic.id);
+  }
+  const wear = itemDef(item.kind).category === 'missile' ? null : wearOf(world, item);
   if (!wear) return nodes;
   const line = el('div', { className: `pd-durability${wear.left > 0 && wear.left / wear.max <= 0.25 ? ' low' : ''}` },
     info(t.durability(wear.left, wear.max)), durabilityBar(wear.left, wear.max, true));
@@ -348,188 +401,12 @@ function titleFor(world: World, item: Item, box: HTMLElement): void {
 }
 
 /** The item is the one the quickslot shows. */
-const inQuickslot = (hero: Hero, item: Item): boolean => isQuickslotted(item.kind) && hero.items.find((other) => other.kind === item.kind) === item;
-
-/* Title */
-
-export interface TitleOptions {
-  heroClass: HeroClass;
-  /** The solo run that can be continued, if any. */
-  save: { heroClass: HeroClass; lvl: number; depth: number } | null;
-  /** Shown outside Telegram, where the name is not known. */
-  askName: string | null;
-  onClass(heroClass: HeroClass): void;
-  onName(name: string): void;
-  onContinue(): void;
-  onSolo(): void;
-  onDaily(): void;
-  /** Shows today's board; absent without checked runs. */
-  onDailyBoard?: () => void;
-  /**
-   * The daily dungeon today, as the server knows it: its attempt open, under way, or played (with
-   * the place it took of how many); absent without checked runs.
-   */
-  dailyState?: { state: 'open' | 'going' | 'done'; place: number | null; total: number };
-  /** Practice in today's dungeon, once its attempt is played. */
-  onPractice?: () => void;
-  /** Today's rules of the daily dungeon, as a line. */
-  dailyRules?: string;
-  /** The player's card (rankui.ts profileCard), once the server has told who they are. */
-  profile?: HTMLElement;
-  onRankings(): void;
-  onMart(): void;
-  onSettings(): void;
-  /** Challenges switched on for the next new game (a bit mask). */
-  challenges: number;
-  onChallenges(): void;
-  /** The arena of waves' entry, under «Play with friends» (arenaui.ts). */
-  arena?: HTMLElement;
-}
-
-/** «Rankings» with its cup. */
-function rankingsButton(onClick: () => void): HTMLButtonElement {
-  const node = button(t.ranked.title, onClick);
-  node.prepend(rankIcon('gold', { x1: true }));
-  return node;
-}
-
-export function showTitle(options: TitleOptions): void {
-  let selected = options.heroClass;
-  const name = el('span', { className: 'pd-class-name', textContent: t.classes[selected] });
-  const about = info(t.classInfo[selected], 'pd-note');
-  const classes = el('div', { className: 'pd-classes' });
-  classes.setAttribute('role', 'radiogroup');
-  const renderClasses = (): void => {
-    classes.replaceChildren(
-      ...HERO_CLASSES.map((heroClass) => {
-        const face = el('i', { className: 'pd-class-face' });
-        face.style.setProperty('--av', String(AVATAR[heroClass]));
-        const node = el(
-          'button',
-          {
-            className: `pd-class${heroClass === selected ? ' selected' : ''}`,
-            ariaLabel: t.classes[heroClass],
-            onclick: () => {
-              audio.play('click');
-              selected = heroClass;
-              name.textContent = t.classes[heroClass];
-              about.textContent = t.classInfo[heroClass];
-              options.onClass(heroClass);
-              renderClasses();
-            },
-          },
-          face,
-        );
-        node.setAttribute('role', 'radio');
-        node.setAttribute('aria-checked', String(heroClass === selected));
-        return node;
-      }),
-    );
-  };
-  renderClasses();
-
-  const field =
-    options.askName !== null &&
-    el(
-      'div',
-      { className: 'pd-field' },
-      el('label', { htmlFor: 'pd-name', textContent: t.heroName }),
-      el('input', {
-        id: 'pd-name',
-        className: 'pd-input',
-        value: options.askName,
-        maxLength: 20,
-        placeholder: t.yourName,
-        oninput: (event: Event) => options.onName((event.target as HTMLInputElement).value),
-      }),
-    );
-
-  const { save } = options;
-  const main: HTMLElement[] = [];
-  const rest: HTMLElement[] = [];
-  if (save) {
-    const resume = button(t.continueRun, options.onContinue, `${main.length ? '' : 'primary big '}stacked`);
-    resume.append(el('span', { className: 'pd-btn-sub', textContent: t.continueMeta(t.classes[save.heroClass], save.lvl, save.depth) }));
-    (main.length ? rest : main).push(resume);
-  }
-  const fresh = button(save ? t.newRun : t.solo, options.onSolo, main.length ? '' : 'primary big');
-  // The challenges go with a new game: beside it, the cup lit when some are on.
-  const on = countChallenges(options.challenges);
-  const challenges = button(t.meta.challenges, options.onChallenges);
-  const cup = el('i', { className: 'pd-icon' });
-  cup.style.cssText = `width:24px;height:24px;background-image:var(--spr-challenge-${on ? 'on' : 'off'})`;
-  challenges.prepend(cup);
-  if (on) challenges.append(el('b', { className: 'pd-ch-n', textContent: String(on) }));
-  if (main.length) rest.push(el('div', { className: 'pd-row' }, fresh, challenges));
-  else main.push(fresh, challenges);
-
-  // The daily dungeon: its attempt open (or under way), or played, with the place it took (a cup for 1–3).
-  const day = options.dailyState;
-  const done = day?.state === 'done';
-  const chip = day && el('span', { className: `pd-chip${done ? ' done' : ''}`, textContent: done ? t.ranked.dailyChipDone : day.state === 'going' ? t.ranked.dailyChipGoing : t.ranked.dailyChipOpen });
-  const place = done && day.place !== null
-    ? el(
-      'div',
-      { className: 'pd-daily-place' },
-      day.place <= 3 ? rankIcon(trophyKind('daily', day.place)) : null,
-      el('b', { textContent: `#${day.place}` }),
-      el('span', { textContent: t.ranked.ofTotal(Math.max(day.total, day.place)) }),
-    )
-    : null;
-  const daily = el(
-    'div',
-    { className: `pd-daily${done ? ' done' : ''}` },
-    el('div', { className: 'pd-daily-head' }, picture('stairs'), el('h3', { textContent: t.daily }), chip),
-    place,
-    options.dailyRules ? el('p', { className: 'pd-daily-rules', textContent: options.dailyRules }) : null,
-    info(done ? t.ranked.dailyDone : day ? t.ranked.dailyOpenNote : t.dailyInfo, 'pd-note'),
-    el(
-      'div',
-      { className: 'pd-row' },
-      done && options.onPractice ? button(t.ranked.practice2, options.onPractice) : button(t.descendDaily, options.onDaily),
-      options.onDailyBoard && button(t.dailyBoard, options.onDailyBoard),
-    ),
-  );
-
-  const logo = el(
-    'div',
-    { className: 'pd-logo' },
-    el('img', { src: 'assets/banner-title.png', alt: 'Pixel Dungeon' }),
-    el('span', { className: 'pd-logo-sub', textContent: t.subtitle }),
-  );
-
-  show(
-    el(
-      'main',
-      { className: `pd-title-screen${options.profile ? ' ranked' : ''}` },
-      el(
-        'div',
-        { className: 'pd-corner' },
-        el('button', { className: 'pd-iconbtn prefs', ariaLabel: t.meta.settings, onclick: () => (audio.play('click'), options.onSettings()) }),
-      ),
-      logo,
-      options.profile,
-      el(
-        'section',
-        { className: 'pd-window' },
-        classes,
-        el('div', { className: 'pd-class-info' }, name, about),
-        field,
-        el(
-          'div',
-          { className: 'pd-actions' },
-          daily,
-          ...main,
-          ...rest,
-          options.arena,
-          el('div', { className: 'pd-row' }, rankingsButton(options.onRankings), button(t.mart, options.onMart)),
-        ),
-      ),
-    ),
-    null,
-    true,
-  );
-}
+// (The mage's staff counts in hand too: Shattered keeps it in a quick slot from the start; so do worn artifacts.)
+const inQuickslot = (hero: Hero, item: Item): boolean =>
+  isQuickslotted(item.kind) &&
+  (itemDef(item.kind).category === 'artifact' && (hero.artifact?.kind === item.kind || hero.misc?.kind === item.kind)
+    ? item === hero.artifact || item === hero.misc
+    : hero.items.find((other) => other.kind === item.kind) === item || (item === hero.weapon && item.kind === 'weapon.magesStaff'));
 
 /* Menu */
 
@@ -569,7 +446,7 @@ export function showMenu(options: MenuOptions): void {
 /* Badges */
 
 /** WndBadges: every badge, the ones earned bright, new ones with a golden dot; a tap tells what each is for. */
-export function showBadges(onClose: () => void): void {
+export function showBadges(onClose: () => void, honors: readonly string[] = []): void {
   const earned = earnedBadges();
   const fresh = unseenBadges();
   markBadgesSeen();
@@ -611,6 +488,21 @@ export function showBadges(onClose: () => void): void {
     };
     grid.append(node);
   }
+  // Honours the admin gave (server-side, not the run's badges in core): «Bug hunter» for a confirmed problem report.
+  for (const honor of honors) {
+    const words = t.rel.honors[honor];
+    if (!words) continue;
+    const node = el('button', { className: 'pd-slot', ariaLabel: words[0] }, el('i', { className: 'pd-offer-badge bughunter' }));
+    node.onclick = () => {
+      audio.play('click');
+      grid.querySelectorAll('.selected').forEach((n) => n.classList.remove('selected'));
+      node.classList.add('selected');
+      big.className = 'pd-offer-badge bughunter';
+      name.textContent = `${words[0]} · ${words[1]}`;
+      detail.classList.remove('locked');
+    };
+    grid.append(node);
+  }
   const first = BADGES.find((b) => fresh.has(b.id)) ?? BADGES.find((b) => earned.has(b.id)) ?? BADGES[0]!;
   show(
     windowOf(
@@ -627,11 +519,18 @@ export function showBadges(onClose: () => void): void {
 
 export interface HeroOptions {
   hero: Hero;
+  world: World;
+  /** The hero's actions (a talent point spent). */
+  act(action: Action): void;
+  /** The tab to open on (the talents', after a level gained). */
+  tab?: 'stats' | 'talents';
   /** Pixel-Mart's «Look» rows, if the shop is there. */
   looks?: HTMLElement;
   /** The look the hero wears, for their portrait. */
   skin?: string;
-  buffs: ReadonlyArray<{ name: BuffName; turns?: number }>;
+  buffs: readonly BuffEntry[];
+  /** The armour ability's tier 4 talents (abilityui.ts), if the hero has an ability. */
+  onTalents?(): void;
   onClose(): void;
 }
 
@@ -647,18 +546,15 @@ export function stats(rows: ReadonlyArray<readonly [string, string, string?]>): 
 export function showHero(options: HeroOptions): void {
   const { hero } = options;
   const buffs = options.buffs.map((buff) => {
-    const icon = el('i');
-    icon.dataset.b = String(BUFF_ICONS[buff.name]);
+    const icon = el('i', buff.tint !== undefined ? 'pd-tbuff' : '');
+    if (buff.tint !== undefined) icon.dataset.tb = String(buff.tint);
+    else icon.dataset.b = String(BUFF_ICONS[buff.name]);
     const text = buff.turns ? `${t.buffs[buff.name]} (${t.turnsLeft(buff.turns)})` : t.buffs[buff.name];
     return el('div', { className: 'pd-row' }, el('span', { className: 'pd-buff' }, icon), info(text));
   });
-  show(
-    windowOf(
-      {
-        title: t.heroTitle(hero.subclass ? capitalize(t.subclasses[hero.subclass]) : t.classes[hero.heroClass], hero.lvl),
-        icon: portrait(hero.heroClass, armorTier(hero), options.skin),
-        onClose: options.onClose,
-      },
+  showHeroWindow(
+    { world: options.world, hero, act: options.act, onClose: options.onClose },
+    [
       stats([
         [t.strength, String(hero.str)],
         // WndHero: health, and the shield over it (the warrior's seal).
@@ -667,12 +563,17 @@ export function showHero(options: HeroOptions): void {
         [t.goldLabel, String(hero.gold), 'gold'],
         [t.slain, String(hero.kills)],
       ]),
+      // The armour ability's tier 4 talents, with a gold plus while there are points to put in them.
+      hero.ability && options.onTalents && button(`${abilityLabel(hero.ability)} · ${AT.talentsShort}`, options.onTalents, talentPointsAvailable(hero, 4) > 0 ? 'primary' : ''),
       el('h3', { className: 'pd-heading', textContent: t.conditions }),
       ...(buffs.length > 0 ? buffs : [info(t.noConditions, 'pd-note')]),
       options.looks && el('h3', { className: 'pd-subhead', textContent: t.looksTitle }),
       options.looks,
-    ),
-    options.onClose,
+    ].filter((node): node is HTMLElement => !!node),
+    t.heroTitle(hero.subclass ? capitalize(subclassName(hero.subclass)) : t.classes[hero.heroClass], hero.lvl),
+    '',
+    portrait(hero.heroClass, armorTier(hero), options.skin),
+    options.tab ?? 'stats',
   );
 }
 
@@ -684,6 +585,8 @@ export interface TradeOptions {
   item: Item;
   price: number;
   onBuy(): void;
+  /** WndTradeItem's steal, with the master thieves' armband worn: the offer, and what taking it does. */
+  steal?: { label: string; sure: boolean; onSteal(): void };
   onClose(): void;
 }
 
@@ -696,10 +599,25 @@ export function showTrade(options: TradeOptions): void {
     options.onClose();
   }, 'primary');
   buy.disabled = short;
+  const steal = options.steal;
+  // Not sure to work: the armband's warning first, as WndTradeItem asks.
+  const stealButton = steal && button(steal.label, () => {
+    if (steal.sure) {
+      steal.onSteal();
+      options.onClose();
+    } else {
+      showConfirm(capitalize(itemName(world, item)), artText('windows.wndtradeitem.steal_warn'), artText('windows.wndtradeitem.steal_warn_yes'),
+        artText('windows.wndtradeitem.steal_warn_no'), () => {
+          steal.onSteal();
+          options.onClose();
+        }, options.onClose);
+    }
+  }, 'small');
+  stealButton?.prepend(el('i', { className: 'pd-steal' }));
   const head = windowOf(
     { title: capitalize(itemName(world, item)), icon: slot(world, item, { hero }), onClose: options.onClose },
     ...describedItem(world, hero, item),
-    actions([buy], []),
+    actions(stealButton ? [buy, stealButton] : [buy], []),
     info(t.yourGold(hero.gold), 'pd-note center'),
   );
   titleFor(world, item, head);
@@ -1072,8 +990,24 @@ export function showRankings(records: readonly RunRecord[], onClose: () => void,
   );
 }
 
-/** Scrolls read on one thing the player picks. */
-const TARGETED_SCROLLS = ['scroll.upgrade', 'scroll.enchantment', 'scroll.identify'] as const;
+/** Scrolls read on one thing the player picks, and nothing more to choose (so one can be dropped on its target). */
+const TARGETED_SCROLLS = ['scroll.upgrade', 'scroll.identify', 'scroll.removeCurse', 'scroll.transmutation'] as const;
+
+/** The selector's title for what an item is used on (WndBag's prompt). */
+function pickTitleOf(kind: ItemKind): string {
+  switch (kind) {
+    case 'scroll.upgrade': return t.alch.upgradeTitle;
+    case 'scroll.enchantment': return t.alch.enchantTitle;
+    case 'scroll.identify': return t.alch.identifyTitle;
+    case 'scroll.removeCurse': return t.alch.removeCurseTitle;
+    case 'scroll.transmutation': return t.alch.transmuteTitle;
+    case 'stone.augmentation': return t.alch.augmentTitle;
+    case 'stone.enchantment': return t.alch.enchantStoneTitle;
+    case 'stone.detectMagic': return t.alch.detectTitle;
+    case 'stone.intuition': return t.alch.intuitionTitle;
+    default: return t.chooseTarget;
+  }
+}
 
 /* Backpack */
 
@@ -1081,8 +1015,10 @@ export interface BackpackOptions {
   world: World;
   hero: Hero;
   onAction(action: Action): void;
-  /** Throw or zap the item at a cell the player picks next. */
-  onAim(index: number, kind: 'throw' | 'zap' | 'special' | 'key'): void;
+  /** Throw, zap or shoot the item at a cell the player picks next (or cast it there: a spell, dragon's breath, a siren's song). */
+  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key'): void;
+  /** An artifact's use aimed at a cell the player picks next (talisman, chains, rose, armband, sandals, beacon). */
+  onAimArtifact?(action: ArtifactAction): void;
   onClose(): void;
   /**
    * WndBag's selector: the backpack with only what a scroll can be read on to tap (worn
@@ -1092,7 +1028,7 @@ export interface BackpackOptions {
 }
 
 /** What is chosen in the backpack: an item in the pack (by slot) or one worn. */
-type BagChoice = { index: number } | { worn: 'weapon' | 'armor' } | { ring: number };
+type BagChoice = { index: number } | { worn: 'weapon' | 'armor' } | { slot: MiscSlot };
 
 /** The backpack's filters (design system v10): the rest dims but stays where it is. */
 type BagFilter = 'all' | 'potions' | 'scrolls' | 'gear';
@@ -1113,7 +1049,7 @@ export function refreshBackpack(world: World, hero: Hero): void {
 function chosenItem(hero: Hero, choice: BagChoice | null): Item | undefined {
   if (!choice) return undefined;
   if ('index' in choice) return hero.items[choice.index];
-  if ('ring' in choice) return hero.rings[choice.ring];
+  if ('slot' in choice) return hero[choice.slot] ?? undefined;
   return choice.worn === 'weapon' ? hero.weapon ?? undefined : hero.armor;
 }
 
@@ -1122,7 +1058,7 @@ function passes(filter: BagFilter, item: Item): boolean {
   const category = itemDef(item.kind).category;
   if (filter === 'potions') return category === 'potion';
   if (filter === 'scrolls') return category === 'scroll';
-  if (filter === 'gear') return ['weapon', 'armor', 'ring', 'wand', 'missile'].includes(category);
+  if (filter === 'gear') return ['weapon', 'armor', 'ring', 'artifact', 'wand', 'missile'].includes(category);
   return true;
 }
 
@@ -1142,7 +1078,7 @@ export function showBackpack(options: BackpackOptions, choice: BagChoice | null 
   if (!chosenItem(hero, choice)) choice = null;
   const choose = (next: BagChoice): void => {
     if (pick) {
-      const ref: ItemRef = 'index' in next ? next.index : 'ring' in next ? (next.ring === 0 ? 'ring0' : 'ring1') : next.worn;
+      const ref: ItemRef = 'index' in next ? next.index : 'slot' in next ? next.slot : next.worn;
       if (targets.has(String(ref))) pick.onPick(ref);
       return;
     }
@@ -1159,7 +1095,7 @@ export function showBackpack(options: BackpackOptions, choice: BagChoice | null 
       const opts = { ...options, item, ...where(here) };
       holdToUse(node, () => firstActionName(opts), () => firstAction(opts));
       // What can be dragged: anything in the pack, and a worn ring or the weapon in hand (to take it off).
-      if ('index' in here || 'ring' in here || ('worn' in here && here.worn === 'weapon')) node.dataset.from = JSON.stringify(here);
+      if ('index' in here || 'slot' in here || ('worn' in here && here.worn === 'weapon')) node.dataset.from = JSON.stringify(here);
     }
     node.dataset.drop = String(ref);
     return node;
@@ -1209,7 +1145,7 @@ export function showBackpack(options: BackpackOptions, choice: BagChoice | null 
   const worn = (item: Item | undefined, placeholder: number, ref: ItemRef, here: BagChoice): HTMLElement =>
     item
       ? mark(slot(world, item, { hero, equipped: true, onClick: () => choose(here) }), ref, here, item)
-      : withDrop(slot(world, undefined, { hero, equipped: true, placeholder }), String(ref));
+      : withDrop(slot(world, undefined, { hero, equipped: true, placeholder, misc: ref === 'misc' || ref === 'artifact' || ref === 'ring' }), String(ref));
   // The key ring: how many keys there are; what they open is said on the map.
   const keyCount = keys.reduce((sum, entry) => sum + entry.item.qty, 0);
   const keyring = el(
@@ -1224,7 +1160,10 @@ export function showBackpack(options: BackpackOptions, choice: BagChoice | null 
     // Bare-handed after a monk's blow: the weapon's silhouette.
     worn(hero.weapon ?? undefined, S.WEAPON_HOLDER, 'weapon', { worn: 'weapon' }),
     worn(hero.armor, S.ARMOR_HOLDER, 'armor', { worn: 'armor' }),
-    ...[0, 1].map((i) => worn(hero.rings[i], S.RING_HOLDER, i === 0 ? 'ring0' : 'ring1', { ring: i })),
+    // Belongings: the artifact, misc and ring slots (KindofMisc).
+    worn(hero.artifact ?? undefined, S.ARTIFACT_HOLDER, 'artifact', { slot: 'artifact' }),
+    worn(hero.misc ?? undefined, S.SOMETHING, 'misc', { slot: 'misc' }),
+    worn(hero.ring ?? undefined, S.RING_HOLDER, 'ring', { slot: 'ring' }),
     keyring,
   );
   const item = chosenItem(hero, choice);
@@ -1286,9 +1225,9 @@ function dragAndDrop(box: HTMLElement, options: BackpackOptions): void {
   /** What letting go of `from` on each place would do. */
   const dropsFor = (from: BagChoice, item: Item): Map<string, Action> => {
     const drops = new Map<string, Action>();
-    if ('ring' in from) {
-      drops.set('pack', { type: 'remove', ring: from.ring });
-      hero.items.forEach((_, i) => drops.set(String(i), { type: 'remove', ring: from.ring }));
+    if ('slot' in from) {
+      drops.set('pack', { type: 'remove', slot: from.slot });
+      hero.items.forEach((_, i) => drops.set(String(i), { type: 'remove', slot: from.slot }));
       return drops;
     }
     // The weapon in hand back into the pack.
@@ -1302,9 +1241,13 @@ function dragAndDrop(box: HTMLElement, options: BackpackOptions): void {
     const category = itemDef(item.kind).category;
     if (category === 'weapon') drops.set('weapon', { type: 'equip', item: index });
     if (category === 'armor') drops.set('armor', { type: 'equip', item: index });
-    if (category === 'ring') {
-      drops.set('ring0', { type: 'equip', item: index });
-      drops.set('ring1', { type: 'equip', item: index });
+    if (category === 'ring' || category === 'artifact') {
+      // KindofMisc: onto a slot that is taken, it takes that one's place (where its kind may go).
+      const choices = miscChoices(hero, item);
+      for (const slot of ['artifact', 'misc', 'ring'] as const) {
+        const fits = category === 'ring' ? slot !== 'artifact' : slot !== 'ring';
+        if (choices.length === 0 ? fits : choices.includes(slot)) drops.set(slot, { type: 'equip', item: index, ...(choices.length > 0 ? { replace: slot } : {}) });
+      }
     }
     if (category === 'scroll' && isKnown(world, item) && (TARGETED_SCROLLS as readonly string[]).includes(item.kind)) {
       for (const ref of scrollTargets(world, hero, item.kind)) drops.set(String(ref), { type: 'use', item: index, on: ref });
@@ -1414,8 +1357,8 @@ function itemIconAt(sprite: number): HTMLElement {
 }
 
 /** Where a choice sits, as the item window's options say it. */
-function where(choice: BagChoice): { index: number | null; ring?: number } {
-  return 'index' in choice ? { index: choice.index } : 'ring' in choice ? { index: null, ring: choice.ring } : { index: null };
+function where(choice: BagChoice): { index: number | null; slot?: MiscSlot } {
+  return 'index' in choice ? { index: choice.index } : 'slot' in choice ? { index: null, slot: choice.slot } : { index: null };
 }
 
 /**
@@ -1469,8 +1412,8 @@ interface ItemOptions extends BackpackOptions {
   item: Item;
   /** Backpack slot, or null for equipped items. */
   index: number | null;
-  /** For a worn ring: which of the two it is. */
-  ring?: number;
+  /** For a worn ring or artifact: its slot. */
+  slot?: MiscSlot;
 }
 
 /** The chosen item's panel: its picture and name («worn»), what it is, «drop» in the corner, and its actions. */
@@ -1495,6 +1438,8 @@ function itemDetail(options: ItemOptions): HTMLElement {
     'div',
     { className: 'pd-pick' },
     el('div', { className: 'pd-pick-head' }, slot(world, item, { hero, equipped: index === null }), title, drop),
+    ...(itemDef(item.kind).category === 'artifact' ? artifactCard(world, hero, item) : []),
+    ...(isClassArmor(item) ? classArmorCard(world, hero, item) : []),
     ...describedItem(world, hero, item),
     all.length > 0 && el('div', { className: 'pd-pick-actions' }, ...all),
   );
@@ -1508,6 +1453,12 @@ function firstActionName(options: ItemOptions): string | null {
   return itemActions(options).main[0]?.textContent ?? null;
 }
 
+/** A quick slot's tap: the item's first action, as holding it in the backpack would do. */
+export function quickAction(options: BackpackOptions, index: number): void {
+  const item = options.hero.items[index];
+  if (item) firstAction({ ...options, item, index });
+}
+
 /** Holding an item: its first action, done. */
 function firstAction(options: ItemOptions): void {
   const first = itemActions(options).main[0];
@@ -1516,7 +1467,7 @@ function firstAction(options: ItemOptions): void {
 
 /** The old item window, kept for what still opens an item on its own: now the backpack with it chosen. */
 function showItem(options: ItemOptions): void {
-  const choice: BagChoice = options.index !== null ? { index: options.index } : options.ring !== undefined ? { ring: options.ring } : { worn: options.item === options.hero.armor ? 'armor' : 'weapon' };
+  const choice: BagChoice = options.index !== null ? { index: options.index } : options.slot !== undefined ? { slot: options.slot } : { worn: options.item === options.hero.armor ? 'armor' : 'weapon' };
   showBackpack(options, choice);
 }
 
@@ -1531,7 +1482,7 @@ function showItem(options: ItemOptions): void {
 function escapeVault(options: ItemOptions, act: (action: Action) => void): void {
   const { world, hero } = options;
   const score = escapeScore(world, hero);
-  const refs: ItemRef[] = [...hero.items.map((_, i) => i), 'weapon', 'armor', 'ring0', 'ring1'];
+  const refs: ItemRef[] = [...hero.items.map((_, i) => i), 'weapon', 'armor', 'artifact', 'misc', 'ring'];
   const targets = score < 500 ? [] : refs.filter((ref) => { const item = itemAt(hero, ref); return item !== undefined && keepable(item, score); });
   if (targets.length === 0) {
     act({ type: 'vault', op: 'escape' });
@@ -1562,7 +1513,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     options.onAction(action);
     refreshBackpack(options.world, options.hero);
   };
-  const aimWith = (kind: 'throw' | 'zap' | 'special' | 'key', at: number): void => {
+  const aimWith = (kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key', at: number): void => {
     openBag = null;
     options.onClose();
     options.onAim(at, kind);
@@ -1570,61 +1521,222 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
   const main: HTMLElement[] = [];
   const more: HTMLElement[] = [];
   const danger: HTMLElement[] = [];
-  const use = (label: string, onClick: () => void): void => {
-    (main.length === 0 ? main : more).push(button(label, onClick, main.length === 0 ? 'primary' : ''));
+  const use = (label: string, onClick: () => void, icon?: 'steal'): void => {
+    const node = button(label, onClick, main.length === 0 ? 'primary' : '');
+    // The thieves' armband's «Steal» wears its picture (design v19: icon-steal.png).
+    if (icon) node.prepend(el('i', { className: `pd-${icon}` }));
+    (main.length === 0 ? main : more).push(node);
   };
   if (index !== null) {
-    if (category === 'potion') use(t.drink, () => act({ type: 'use', item: index }));
+    const known = isKnown(world, item);
+    const back = (): void => showBackpack(options, { index });
+    /** WndBag's selector for what an item acts on, then what follows. */
+    const pickThen = (title: string, targets: readonly ItemRef[], then: (on: ItemRef) => void): void => {
+      openBag = null;
+      showBackpack({ ...options, pick: { title, targets, onPick: then, onCancel: back } });
+    };
+    const pickFor = (kind: ItemKind, title: string, then: (on: ItemRef) => void): void => pickThen(title, scrollTargets(world, hero, kind), then);
+    const choose = (title: string, text: string, on: Item | null, choices: readonly ChoiceOption[]): void => {
+      openBag = null;
+      showChoice(world, title, text, on, choices, back);
+    };
+    if (category === 'potion' || category === 'brew' || category === 'elixir') {
+      // Potion.actions: known harmful potions (and brews) are thrown first; drinking one asks first.
+      const mustThrow = category === 'brew' ? item.kind !== 'brew.unstable' : known && MUST_THROW.has(item.kind);
+      const drink = (): void => {
+        if (known && item.kind === 'potion.dragonsBreath') return aimWith('cast', index);
+        if (known && item.kind === 'potion.mastery') return pickFor('potion.mastery', t.alch.masteryPrompt, (on) => act({ type: 'use', item: index, on }));
+        if (known && item.kind === 'potion.divineInspiration') {
+          // PotionOfDivineInspiration: a talent tier to boost, one not boosted yet.
+          const boosted = hero.buffs?.inspired ?? [];
+          return choose(t.items[item.kind], t.alch.selectTier, item, [1, 2, 3, 4].map((tier) => ({
+            label: fill(t.alch.tier1, tier), disabled: boosted.includes(tier), onPick: () => act({ type: 'use', item: index, choice: tier }),
+          })));
+        }
+        act({ type: 'use', item: index });
+      };
+      const throwIt = (): void => aimWith('throw', index);
+      if (mustThrow) {
+        use(t.throwItem, throwIt);
+        if (category === 'potion') {
+          more.push(button(t.drink, () => {
+            openBag = null;
+            showConfirm(t.alch.harmful, t.alch.sureDrink, t.drink, t.cancel, drink, back);
+          }));
+        }
+      } else {
+        use(t.drink, drink);
+        // A known potion that is better drunk asks before it is thrown away (Potion.doThrow's beneficial warning).
+        const beneficial = known && category !== 'brew' && !CAN_THROW.has(item.kind);
+        use(t.throwItem, beneficial ? () => {
+          openBag = null;
+          showConfirm(t.alch.beneficial, t.alch.sureThrow, t.throwItem, t.cancel, throwIt, back);
+        } : throwIt);
+      }
+    }
     if (category === 'food' || item.kind === 'quest.fish') use(t.eat, () => act({ type: 'use', item: index }));
     if (category === 'torch') use(t.light, () => act({ type: 'use', item: index }));
-    if (category === 'tome') use(t.readTome, () => showWays(options, index, act));
+    if (category === 'tome') {
+      // TengusMask.AC_WEAR: the choice of a way (talentui.ts); the old Tome of Mastery too.
+      use(item.kind === 'mask.tengu' ? capitalize(tal('items.tengusmask.ac_wear').toLowerCase()) || t.readTome : t.readTome, () => {
+        openBag = null;
+        showSubclassPick({ world, hero, act: (action) => options.onAction(action), onClose: options.onClose }, index, () => showBackpack(options));
+      });
+    }
     if (item.kind === 'quest.amulet') {
       use(t.amuletEndGame, () => {
         openBag = null;
         showAmulet(world, hero, false, () => options.onAction({ type: 'endGame' }), options.onClose);
       });
     }
-    if (category === 'kit') use(t.applyKit, () => act({ type: 'use', item: index, target: 'armor' }));
+    // KingsCrown.AC_WEAR: the pick of an armour ability for the armour worn.
+    if (category === 'kit') use(actionLabel(t.wearCrown), () => {
+      openBag = null;
+      showAbilityPick(abilityHost(options, () => showBackpack(options, { index })), index);
+    });
     if (category === 'seed') use(t.plantSeed, () => aimWith('throw', index));
     if (category === 'scroll') {
       // A known scroll that acts on one thing asks which, from the whole pack and what is worn (WndBag's selector).
-      const targeted = isKnown(world, item) && (TARGETED_SCROLLS as readonly string[]).includes(item.kind);
-      const targets = targeted ? scrollTargets(world, hero, item.kind) : [];
-      if (targeted) {
-        use(t.readOn, () =>
-          showBackpack({
-            ...options,
-            pick: {
-              title: t.pickTitle[item.kind as 'scroll.upgrade' | 'scroll.enchantment' | 'scroll.identify'] ?? t.read,
-              targets,
-              onPick: (on) => act({ type: 'use', item: index, on }),
-              onCancel: () => showBackpack(options, { index }),
-            },
-          }));
+      if (known && isTargetedScroll(item.kind)) {
+        use(t.readOn, () => pickFor(item.kind, pickTitleOf(item.kind), (on) => {
+          const target = itemAt(hero, on);
+          // ScrollOfEnchantment: then one of three enchantments (WndEnchantSelect).
+          if (item.kind === 'scroll.enchantment' && target) {
+            const armor = itemDef(target.kind).category === 'armor';
+            const name = plainName(world, { ...target, enchant: undefined, glyph: undefined });
+            return choose(t.alch.enchantTitle, '', target, enchantOptions(world, hero, target).map((magic, choice) => ({
+              label: capitalize(armor ? t.glyphName(name, magic as never) : t.enchantName(name, magic as never, target.kind)),
+              onPick: () => act({ type: 'use', item: index, on, choice }),
+            })));
+          }
+          act({ type: 'use', item: index, on });
+        }));
+      } else if (known && item.kind === 'scroll.sirensSong') {
+        use(t.read, () => aimWith('cast', index));
+      } else if (known && item.kind === 'scroll.metamorphosis') {
+        // ScrollOfMetamorphosis: a talent to change, then one of those offered for it (talentui.ts).
+        use(t.read, () => {
+          openBag = null;
+          showMetamorphosis({ world, hero, act: (action) => options.onAction(action), onClose: options.onClose }, index, back);
+        });
       } else {
         use(t.read, () => act({ type: 'use', item: index }));
       }
     }
-    if (category === 'weapon' || category === 'armor' || category === 'ring') {
-      const worn: BagChoice = category === 'ring' ? { ring: hero.rings.length < 2 ? hero.rings.length : 0 } : { worn: category === 'armor' ? 'armor' : 'weapon' };
-      use(category === 'ring' ? t.putOn : t.equip, () => {
+    if (category === 'stone') {
+      if (INVENTORY_STONES.has(item.kind)) {
+        use(t.alchUi.use, () => pickFor(item.kind, pickTitleOf(item.kind), (on) => {
+          const target = itemAt(hero, on);
+          if (!target) return;
+          if (item.kind === 'stone.augmentation') {
+            // StoneOfAugmentation.WndAugment: one property against the other, or none (the numbers before and after).
+            openBag = null;
+            return showAugmentStone(options, index, on, target, act);
+          }
+          if (item.kind === 'stone.intuition') {
+            // StoneOfIntuition.WndGuess: what kind it might be.
+            return choose(t.alch.intuitionTitle, t.alch.guessText, target, intuitionChoices(world, target).map((kind, choice) => ({
+              label: capitalize(t.items[kind]), sprite: guessSprite(itemDef(kind).category), onPick: () => act({ type: 'use', item: index, on, choice }),
+            })));
+          }
+          act({ type: 'use', item: index, on });
+        }));
+      }
+      use(t.throwItem, () => aimWith('throw', index));
+    }
+    if (category === 'spell') {
+      if (TARGETED_SPELLS.has(item.kind)) {
+        use(t.alchUi.cast, () => aimWith('cast', index));
+      } else if (item.kind === 'spell.alchemize') {
+        use(t.alchUi.cast, () => pickFor(item.kind, t.alch.alchemizePrompt, (on) => {
+          const target = itemAt(hero, on);
+          if (!target) return;
+          // WndAlchemizeItem: sell or energize, one or all.
+          const knownKind = knownIn(world.known, target.kind);
+          const price = itemPrice({ ...target, qty: 1 }, knownKind);
+          const energy = energyValue({ ...target, qty: 1 }, knownKind);
+          const worn = heroEquipped(hero).includes(target);
+          const labels: Record<(typeof ALCHEMIZE_CHOICES)[number], string> = {
+            sellOne: fill(target.qty > 1 ? t.alch.sell1 : t.alch.sellIt, price), sellAll: fill(t.alch.sellAll, price * target.qty),
+            energizeOne: fill(target.qty > 1 ? t.alch.energizeOne : t.alch.energizeIt, energy), energizeAll: fill(t.alch.energizeAll, energy * target.qty),
+          };
+          const shown = ALCHEMIZE_CHOICES.map((what, choice) => ({ what, choice })).filter(({ what }) =>
+            (what.startsWith('sell') ? price > 0 && !worn : energy > 0) && (what.endsWith('All') ? target.qty > 1 : true));
+          choose(t.alch.alchemizePrompt, '', target, shown.map(({ what, choice }) => ({ label: labels[what], onPick: () => act({ type: 'use', item: index, on, choice }) })));
+        }));
+      } else if (item.kind === 'spell.beacon') {
+        // BeaconOfReturning: set it here, or go back to where it was set.
+        use(t.alchUi.cast, () => choose(t.items[item.kind], t.alch.beaconBody, item, [
+          { label: t.alch.beaconWndSet, onPick: () => act({ type: 'use', item: index, choice: 0 }) },
+          { label: t.alch.beaconWndReturn, disabled: !hero.buffs?.beacon, onPick: () => act({ type: 'use', item: index, choice: 1 }) },
+        ]));
+      } else if (isTargetedScroll(item.kind)) {
+        const title = item.kind === 'spell.recycle' ? t.alch.recycleTitle : item.kind === 'spell.curseInfusion' ? t.alch.curseInfusionTitle : t.alch.infuseTitle;
+        use(t.alchUi.cast, () => pickFor(item.kind, title, (on) => act({ type: 'use', item: index, on })));
+      } else {
+        use(t.alchUi.cast, () => act({ type: 'use', item: index }));
+      }
+      if (item.kind === 'spell.summonElemental') {
+        // SummonElemental: imbued with a known potion of liquid flame or frost, or scroll of recharging or transmutation.
+        const imbues: readonly ItemKind[] = ['potion.liquidFlame', 'potion.frost', 'scroll.recharging', 'scroll.transmutation'];
+        const targets = hero.items.flatMap((other, i) => (imbues.includes(other.kind) && isIdentified(world, other) ? [i] : []));
+        if (targets.length > 0) use(t.alchUi.imbue, () => pickThen(t.alch.imbuePrompt, targets, (on) => act({ type: 'use', item: index, on })));
+      }
+    }
+    if (category === 'catalyst' && item.rolled) {
+      // TrinketCatalyst.WndTrinket: three trinkets shown, the fourth a surprise.
+      const rolled = item.rolled;
+      use(t.alchUi.choose, () => choose(t.alch.chooseTrinket, t.alch.catalystText, item, rolled.map((kind, choice) => ({
+        label: choice < 3 ? capitalize(t.items[kind]) : capitalize(t.alch.catalystRandom),
+        sprite: choice < 3 ? itemSprite({ kind, qty: 1, level: 0 }, world.run.labels) : S.TRINKET_HOLDER,
+        onPick: () => act({ type: 'use', item: index, choice }),
+      }))));
+    }
+    if (item.kind === 'resin') use(t.alchUi.use, () => pickFor('resin', t.alch.resinTitle, (on) => act({ type: 'use', item: index, on })));
+    // LiquidMetal: a thrown weapon (no dart) to mend.
+    if (item.kind === 'liquidMetal') use(t.alchUi.use, () => pickFor('liquidMetal', t.alch.metalTitle, (on) => act({ type: 'use', item: index, on })));
+    // MagesStaff.actions: zap (its default) and imbue, wherever the staff is.
+    if (item.kind === 'weapon.magesStaff') {
+      if (item.wand) use(t.zap, () => aimWith('zap', index));
+      use(t.staffImbue, () => pickWandToImbue(options, index, act));
+    }
+    if (category === 'ring' || category === 'artifact') {
+      // KindofMisc.doEquip: every slot taken, the player says which to take off for it.
+      use(t.putOn, () => {
+        const choices = miscChoices(hero, item);
+        if (choices.length === 0) {
+          stay({ type: 'equip', item: index }, null);
+          return;
+        }
+        showMiscChooser(world, hero, item, choices, (replace) => {
+          showBackpack(options);
+          stay({ type: 'equip', item: index, replace }, null);
+        }, () => showBackpack(options, { index }));
+      });
+    }
+    if (category === 'weapon' || category === 'armor') {
+      const worn: BagChoice = { worn: category === 'armor' ? 'armor' : 'weapon' };
+      use(t.equip, () => {
         stay({ type: 'equip', item: index }, worn);
         if (category === 'armor') offerSealTransfer(options, index);
       });
     }
+    // ClassArmor.actions from the pack: the crown's magic can be moved to another armour (the ability wants it worn).
+    if (isClassArmor(item) && item.kind === CLASS_ARMOR_OF[hero.heroClass]) {
+      if (hero.ability) more.push(button(AT.talentsShort, () => {
+        openBag = null;
+        showTalents(abilityHost(options, () => showBackpack(options, { index })));
+      }));
+      more.push(button(actionLabel(artText('items.armor.classarmor.ac_transfer')), () => transferWindow(options, index, () => showBackpack(options, { index }))));
+    }
+    // Artifact.actions, from the pack (the beacon's set and return, the rose's outfit; the rest want it worn).
+    if (category === 'artifact') for (const action of artifactActions(artifactHost(options, index), item, index)) use(action.label, action.run, action.icon);
     // Armor.AC_DETACH: the warrior's seal off an armour in the pack.
     if (item.seal) more.push(button(t.hero.detach, () => stay({ type: 'detach', armor: index }, null)));
-    if (category === 'beacon') {
-      // LloydsBeacon: set it here, or go back to where it was set.
-      if (item.returnTo) use(t.beaconReturn, () => act({ type: 'beacon', item: index, mode: 'return' }));
-      use(t.beaconSet, () => act({ type: 'beacon', item: index, mode: 'set' }));
-    }
-    if (category === 'weightstone' && hero.weapon) {
-      // Weightstone.WndBalance: the weapon in hand, balanced the way it is not yet.
-      for (const imbue of ['speed', 'accuracy'] as const) {
-        if (hero.weapon.imbue !== imbue) use(t.balanceFor[imbue], () => stay({ type: 'balance', item: index, imbue }, { worn: 'weapon' }));
-      }
-    }
+    // SpiritBow.AC_SHOOT; Dart.AC_TIP; TippedDart.AC_CLEAN.
+    if (category === 'bow') use(actionLabel(t.gear.shoot), () => aimWith('shoot', index));
+    if (item.kind === 'missile.dart' && tippingSeeds(hero).length > 0) use(actionLabel(t.gear.tip), () => showTip(options, index, act));
+    if (isTippedDart(item.kind)) use(actionLabel(t.gear.clean), () => showClean(options, index, act));
     if (category === 'wipeout') use(t.read, () => act({ type: 'use', item: index }));
     // EscapeCrystal.AC_USE: out of the vault, with one thing kept as the heist allows (its item selector).
     if (item.kind === 'quest.escapeCrystal') use(lt('items.quest.escapecrystal.ac_use'), () => escapeVault(options, act));
@@ -1637,39 +1749,406 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     if (category === 'seal') use(t.hero.affix, () => pickArmorForSeal(options, index, stay));
     if (category === 'missile' || category === 'wand' || category === 'bomb' || category === 'honeypot') {
       const kind = category === 'wand' ? 'zap' : 'throw';
-      use(kind === 'throw' ? t.throwItem : t.zap, () => aimWith(kind, index));
+      use(category === 'bomb' && !item.fuse ? t.alchUi.lightThrow : kind === 'throw' ? t.throwItem : t.zap, () => aimWith(kind, index));
     }
-    if (category === 'potion') use(t.throwItem, () => aimWith('throw', index));
     if (category === 'honeypot') use(t.shatterPot, () => act({ type: 'use', item: index }));
     // Item.AC_THROW: anything in the pack can be thrown where the player taps (a bag would scatter what it holds).
     // (CorpseDust has no actions at all: not even throwing or dropping it.)
-    if (!['bag', 'missile', 'bomb', 'honeypot', 'potion', 'seed'].includes(category) && item.kind !== 'quest.dust') use(t.throwItem, () => aimWith('throw', index));
+    if (!['bag', 'missile', 'bomb', 'honeypot', 'potion', 'seed', 'stone', 'brew', 'elixir'].includes(category) && item.kind !== 'quest.dust') use(t.throwItem, () => aimWith('throw', index));
     // QuickSlot: any item with a use can be kept one tap away: into the first free slot (or one whose item
     // ran out), else the first. Holding a slot on the toolbar chooses for that slot (Toolbar's quickslot_assign).
-    if (quickUse(item.kind) && !isQuickslotted(item.kind)) {
-      more.push(button(t.quickslotShort, () => {
+    if (quickUse(item.kind) && !isQuickslotted(item.kind)) more.push(quickslotButton(world, hero, item));
+    danger.push(button(t.dropItem, () => stay({ type: 'drop', item: index }), 'danger'));
+  } else if (options.slot !== undefined) {
+    const slot = options.slot;
+    // Artifact.actions on a worn artifact, then taking it off.
+    if (itemDef(item.kind).category === 'artifact') {
+      for (const action of artifactActions(artifactHost(options, slot), item, slot)) use(action.label, action.run, action.icon);
+      // Shattered's quick slots hold a worn artifact too (the rogue's cloak starts in one).
+      if (!isQuickslotted(item.kind)) more.push(quickslotButton(world, hero, item));
+    }
+    use(t.takeOff, () => stay({ type: 'remove', slot }));
+  } else if (item === hero.weapon) {
+    if (item.kind === 'weapon.magesStaff') {
+      if (item.wand) use(t.zap, () => aimWith('zap', WEAPON_SLOT));
+      use(t.staffImbue, () => pickWandToImbue(options, 'weapon', act));
+      // QuickSlot: the staff in hand can be kept one tap away too.
+      if (!isQuickslotted(item.kind)) more.push(button(t.quickslotShort, () => {
         const free = Array.from({ length: QUICKSLOTS }, (_, i) => i).find((i) => {
           const kind = quickKind(i);
-          return kind === null || !hero.items.some((other) => other.kind === kind);
+          return kind === null || (!hero.items.some((other) => other.kind === kind) && hero.weapon?.kind !== kind);
         });
         chooseQuickslot(item.kind, free ?? 0);
         refreshBackpack(world, hero);
       }));
     }
-    if (item.kind !== 'quest.dust') danger.push(button(t.dropItem, () => stay({ type: 'drop', item: index }), 'danger'));
-  } else if (options.ring !== undefined) {
-    const ring = options.ring;
-    use(t.takeOff, () => stay({ type: 'remove', ring }));
-  } else if (item === hero.weapon) {
     use(t.takeOff, () => stay({ type: 'unequip' }));
   } else if (item === hero.armor && item.kind === CLASS_ARMOR_OF[hero.heroClass]) {
-    // ClassArmor.doSpecial: the leap and the smoke bomb want a cell; the others act at once.
-    const aimed = hero.heroClass === 'warrior' || hero.heroClass === 'rogue';
-    use(t.specials[hero.heroClass], () => (aimed ? aimWith('special', -1) : act({ type: 'special' })));
+    // ClassArmor.execute(AC_ABILITY): the ability of the armour (it wants a cell to aim at, or none, or the beacon's choice).
+    if (hero.ability) {
+      use(actionLabel(abilityLabel(hero.ability)), () => {
+        openBag = null;
+        startAbility({
+          world, hero,
+          send: (action) => {
+            options.onAction(action);
+            options.onClose();
+          },
+          aim: (prompt) => {
+            options.onClose();
+            options.onAim(-1, 'special');
+            toast(prompt);
+          },
+          back: () => showBackpack(options, { worn: 'armor' }),
+        });
+      });
+      more.push(button(AT.talentsShort, () => {
+        openBag = null;
+        showTalents(abilityHost(options, () => showBackpack(options, { worn: 'armor' })));
+      }));
+    }
+    more.push(button(actionLabel(artText('items.armor.classarmor.ac_transfer')), () => transferWindow(options, 'armor', () => showBackpack(options, { worn: 'armor' }))));
+    if (!isQuickslotted(item.kind)) more.push(quickslotButton(world, hero, item));
   }
   // Armor.AC_DETACH, on the armour worn.
   if (item === hero.armor && item.seal) more.push(button(t.hero.detach, () => stay({ type: 'detach', armor: 'armor' }, null)));
   return { main, more, danger };
+}
+
+/** What the armour ability windows are given (abilityui.ts): the world, the hero, how to act from them, where they come back to. */
+function abilityHost(options: BackpackOptions, back: () => void): AbilityHost {
+  return {
+    world: options.world,
+    hero: options.hero,
+    act: (action) => {
+      options.onAction(action);
+      options.onClose();
+    },
+    stay: (action) => options.onAction(action),
+    back,
+  };
+}
+
+/** ClassArmor.AC_TRANSFER's WndOptions: the crown's magic moves to another armour, which is destroyed; which one is asked next. */
+function transferWindow(options: BackpackOptions, to: SealSource, back: () => void): void {
+  const { hero } = options;
+  const targets = hero.items.flatMap((other, i) => (itemDef(other.kind).category === 'armor' && !isClassArmor(other) ? [i] : []));
+  show(
+    windowOf(
+      { title: capitalize(artText('items.armor.classarmor.transfer_title')), icon: el('div', { className: 'pd-slot' }, itemIconAt(S.CROWN)), onClose: back, narrow: true },
+      info(artText('items.armor.classarmor.transfer_desc')),
+      targets.length > 0
+        ? button(artText('items.armor.classarmor.transfer_prompt'), () => showBackpack({
+          ...options,
+          pick: {
+            title: artText('items.armor.classarmor.transfer_prompt'),
+            targets,
+            onPick: (on) => {
+              if (typeof on !== 'number') return;
+              options.onAction({ type: 'transfer', to, from: on });
+              options.onClose();
+            },
+            onCancel: back,
+          },
+        }), 'primary')
+        : info(AT.noArmor, 'pd-note'),
+      button(artText('items.armor.classarmor.transfer_cancel'), back, 'quiet'),
+    ),
+    back,
+  );
+}
+
+/** Shattered's action names are in capitals (AC_SHOOT: «SHOOT»): as a button says them. */
+const actionLabel = (label: string): string => capitalize(label.toLowerCase());
+
+/** What a stone of augmentation can be used on (ScrollOfEnchantment.enchantable), worn first. */
+function augmentTargets(hero: Hero): ItemRef[] {
+  const refs: ItemRef[] = [...(hero.weapon ? ['weapon' as const] : []), 'armor', ...hero.items.map((_, i) => i)];
+  return refs.filter((ref) => {
+    const item = itemAt(hero, ref);
+    return item !== undefined && isEnchantable(item);
+  });
+}
+
+/** StoneOfAugmentation.WndAugment: what to enhance, at the cost of what; or to take the augment away. */
+function showAugment(options: ItemOptions, stone: number, on: ItemRef, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const item = itemAt(hero, on)!;
+  const back = (): void => showBackpack(options, { index: stone });
+  const armour = itemDef(item.kind).category === 'armor';
+  const choices: Array<Augment | 'none'> = armour ? ['evasion', 'defense', 'none'] : ['speed', 'damage', 'none'];
+  const labels: Record<Augment | 'none', string> = {
+    speed: t.gear.augmentSpeed, damage: t.gear.augmentDamage, evasion: t.gear.augmentEvasion, defense: t.gear.augmentDefense, none: t.gear.augmentNone,
+  };
+  const current = item.augment ?? 'none';
+  show(
+    windowOf(
+      { title: capitalize(itemName(world, item)), icon: slot(world, item, { hero }), onClose: back },
+      info(item.augment ? `${t.gear.augmentChoice}\n\n${t.gear.augmentAlready}` : t.gear.augmentChoice),
+      actions(
+        [],
+        choices.filter((c) => c !== current).map((c) => button(labels[c], () => act({ type: 'augment', item: stone, on, augment: c }))),
+      ),
+    ),
+    back,
+  );
+}
+
+/** The picture beside a guess in a stone of intuition's window (design v19: ShIcons): the holder of what is guessed at. */
+const guessSprite = (category: string): number | undefined =>
+  category === 'potion' ? S.POTION_HOLDER : category === 'scroll' ? S.SCROLL_HOLDER : category === 'ring' ? S.RING_HOLDER : category === 'wand' ? S.WAND_HOLDER
+  : category === 'stone' ? S.STONE_HOLDER : category === 'spell' ? S.SPELL_HOLDER : category === 'trinket' ? S.TRINKET_HOLDER : undefined;
+
+/** Seeds in the pack that darts can be tipped with (TippedDart.types). */
+const tippingSeeds = (hero: Hero): number[] =>
+  hero.items.flatMap((item, i) => (itemDef(item.kind).category === 'seed' && TIPPED_DARTS[item.kind] ? [i] : []));
+
+/** A Shattered item sprite (items.png) in the design system's markup (.pd-sitem, data-s). */
+function sitem(sprite: number): HTMLElement {
+  const icon = el('i', { className: 'pd-sitem' });
+  icon.dataset.s = String(sprite);
+  return icon;
+}
+
+/** A slot holding an item's picture, with a quantity if there are several. */
+function plainSlot(world: World, item: Item, qty?: number): HTMLElement {
+  const node = el('span', { className: 'pd-slot' }, sitem(itemSprite(item, world.run.labels)));
+  if (qty !== undefined && qty > 1) node.append(el('span', { className: 'pd-qty', textContent: String(qty) }));
+  return node;
+}
+
+/**
+ * Dart.AC_TIP (design v19: ShWeapons): the seeds of the pack in a row with their numbers, the chosen one framed;
+ * what it makes of the darts (two darts to a seed) and its effect; «tip 2» and «tip all».
+ */
+function showTip(options: ItemOptions, index: number, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const darts = hero.items[index]!;
+  const back = (): void => showBackpack(options, { index });
+  const seeds = tippingSeeds(hero);
+  let chosen = seeds[0]!;
+  const row = el('div', { className: 'pd-dart-seeds' });
+  const preview = el('div', { className: 'pd-dart-preview' });
+  const buttons = el('div', { className: 'pd-actions' });
+  const draw = (): void => {
+    const seed = hero.items[chosen]!;
+    const tipped: Item = { kind: TIPPED_DARTS[seed.kind]!, qty: 1, level: 0 };
+    const two = Math.min(darts.qty, 2);
+    const most = Math.min(darts.qty, seed.qty * 2);
+    row.querySelectorAll<HTMLElement>('.pd-slot').forEach((node) => node.classList.toggle('selected', node.dataset.seed === String(chosen)));
+    preview.replaceChildren(
+      plainSlot(world, tipped, two),
+      el(
+        'span',
+        { className: 'pd-dart-text' },
+        el('b', { textContent: `${capitalize(itemName(world, { ...seed, qty: 1 }))} → ${t.weaponsUi.tipResult(two, capitalize(itemName(world, tipped)))}` }),
+        t.itemInfo[tipped.kind] ?? '',
+      ),
+    );
+    const one = button(darts.qty === 1 ? t.gear.tipOne : t.gear.tipTwo, () => act({ type: 'tip', item: index, seed: chosen }), 'primary');
+    const all = darts.qty > 2 && most > 2
+      ? [button(fmt(t.gear.tipAll, most, Math.trunc((most + 1) / 2)), () => act({ type: 'tip', item: index, seed: chosen, all: true }))]
+      : [];
+    // Shattered's labels are long: they wrap rather than run out of the button.
+    for (const choice of [one, ...all]) Object.assign(choice.style, { whiteSpace: 'normal', height: 'auto', minHeight: '36px', lineHeight: '20px' });
+    buttons.replaceChildren(one, ...all);
+  };
+  for (const seedIndex of seeds) {
+    const seed = hero.items[seedIndex]!;
+    const node = el(
+      'button',
+      {
+        className: 'pd-slot',
+        ariaLabel: capitalize(itemName(world, { ...seed, qty: 1 })),
+        onclick: () => {
+          audio.play('click');
+          chosen = seedIndex;
+          draw();
+        },
+      },
+      sitem(itemSprite(seed, world.run.labels)),
+      el('span', { className: 'pd-qty', textContent: String(seed.qty) }),
+    );
+    node.dataset.seed = String(seedIndex);
+    row.append(node);
+  }
+  draw();
+  show(
+    windowOf(
+      { title: t.gear.tipTitle, sub: t.weaponsUi.tipSub, icon: slot(world, darts, { hero }), onClose: back },
+      el('p', { className: 'pd-note', textContent: t.gear.tipPrompt }),
+      row,
+      preview,
+      buttons,
+    ),
+    back,
+  );
+}
+
+/** TippedDart.AC_CLEAN (design v19: ShWeapons): the tipped dart, an arrow, the plain dart; one, or the whole stack. */
+function showClean(options: ItemOptions, index: number, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const darts = hero.items[index]!;
+  const back = (): void => showBackpack(options, { index });
+  const plain: Item = { kind: 'missile.dart', qty: 1, level: 0 };
+  show(
+    windowOf(
+      { title: t.gear.cleanTitle, sub: `${capitalize(itemName(world, { ...darts, qty: 1 }))} ×${darts.qty}`, icon: slot(world, darts, { hero }), onClose: back, narrow: true },
+      el('div', { className: 'pd-dart-clean' }, plainSlot(world, { ...darts, qty: 1 }), el('i', { className: 'pd-alch-arrow ready' }), plainSlot(world, plain)),
+      info(t.gear.cleanDesc),
+      actions(
+        [],
+        [
+          button(t.gear.cleanOne, () => act({ type: 'clean', item: index })),
+          ...(darts.qty > 1 ? [button(`${t.gear.cleanAll} (${darts.qty})`, () => act({ type: 'clean', item: index, all: true }))] : []),
+          button(t.cancel, back, 'quiet'),
+        ],
+      ),
+    ),
+    back,
+  );
+}
+
+/**
+ * StoneOfAugmentation.WndAugment (design v19: ShWeapons): the item, and three ways to balance it with what each leaves
+ * of its numbers: a gain in green, a cost in red, the present state marked «now».
+ */
+function showAugmentStone(options: ItemOptions, stone: number, on: ItemRef, target: Item, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const back = (): void => showBackpack(options, { index: stone });
+  const armour = itemDef(target.kind).category === 'armor';
+  const augments = augmentsFor(target);
+  const current = target.augment ?? null;
+  const names: Record<Augment | 'none', string> = {
+    speed: t.weaponsUi.speed, damage: t.weaponsUi.damage, evasion: t.weaponsUi.evasion, defense: t.weaponsUi.defense, none: t.weaponsUi.none,
+  };
+  const as = (augment: Augment | null): Item => {
+    const copy: Item = { ...target };
+    if (augment) copy.augment = augment;
+    else delete copy.augment;
+    return copy;
+  };
+  type Tone = 'good' | 'bad' | '';
+  interface Line { label: string; value: string; tone: Tone; note: string }
+  const signed = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '0');
+  const percent = (n: number): string => `${n > 0 ? '+' : '−'}${Math.abs(n)}%`;
+  const tone = (better: number): Tone => (better > 0 ? 'good' : better < 0 ? 'bad' : '');
+  const linesOf = (augment: Augment | null): Line[] => {
+    const now = as(current);
+    const item = as(augment);
+    const same = augment === current;
+    if (armour) {
+      const had = armorStats(now);
+      const has = armorStats(item);
+      const evasion = armorEvasionBonus(item);
+      return [
+        { label: t.weaponsUi.armorRow, value: `${has.min}–${has.max}`, tone: same ? '' : tone(has.max - had.max), note: same || has.max === had.max ? '' : signed(has.max - had.max) },
+        { label: t.weaponsUi.evasionRow, value: signed(evasion), tone: same ? '' : tone(evasion - armorEvasionBonus(now)), note: '' },
+      ];
+    }
+    const had = weaponStats(now);
+    const has = weaponStats(item);
+    const damageShift = had.max > 0 ? Math.round((has.max / had.max - 1) * 100) : 0;
+    const delayShift = had.delay > 0 ? Math.round((has.delay / had.delay - 1) * 100) : 0;
+    return [
+      { label: t.weaponsUi.damageRow, value: `${has.min}–${has.max}`, tone: same ? '' : tone(damageShift), note: same || damageShift === 0 ? '' : percent(damageShift) },
+      {
+        label: t.weaponsUi.attackRow, value: t.weaponsUi.turns(has.delay), tone: same ? '' : tone(-delayShift),
+        note: same || delayShift === 0 ? '' : delayShift < 0 ? t.weaponsUi.faster(Math.abs(delayShift)) : t.weaponsUi.slower(delayShift),
+      },
+    ];
+  };
+  // In the design's order: the two ways, then none.
+  const order: Array<Augment | null> = [augments[1] ?? null, augments[2] ?? null, null];
+  let chosen: Augment | null = order.find((augment) => augment !== current) ?? null;
+  const list = el('div', { className: 'pd-aug-opts' });
+  list.setAttribute('role', 'radiogroup');
+  const apply = button(t.weaponsUi.apply, () => act({ type: 'use', item: stone, on, choice: augments.indexOf(chosen) }), 'primary');
+  const paint = (): void => {
+    list.querySelectorAll<HTMLElement>('.pd-aug-opt').forEach((node) => {
+      const selected = node.dataset.augment === String(chosen);
+      node.classList.toggle('selected', selected);
+      node.setAttribute('aria-checked', String(selected));
+    });
+    apply.disabled = chosen === current;
+  };
+  for (const augment of order) {
+    const node = el(
+      'button',
+      {
+        className: 'pd-aug-opt',
+        onclick: () => {
+          audio.play('click');
+          chosen = augment;
+          paint();
+        },
+      },
+      el('span', { className: 'pd-aug-name' }, names[augment ?? 'none'], augment === current ? el('span', { className: 'pd-chip', textContent: t.weaponsUi.now }) : null),
+      ...linesOf(augment).map((line) =>
+        el(
+          'span',
+          { className: 'pd-aug-row' },
+          el('span', { textContent: line.label }),
+          el('b', { className: line.tone, textContent: line.value }),
+          line.note ? el('em', { className: line.tone, textContent: line.note }) : null,
+        )),
+    );
+    node.setAttribute('role', 'radio');
+    node.dataset.augment = String(augment);
+    list.append(node);
+  }
+  paint();
+  show(
+    windowOf(
+      { title: t.alch.augmentTitle, sub: t.weaponsUi.augSub, icon: plainSlot(world, hero.items[stone]!), onClose: back },
+      el('div', { className: 'pd-aug-item' }, slot(world, target, { hero }), el('b', { textContent: capitalize(itemName(world, target)) })),
+      list,
+      el('div', { className: 'pd-actions' }, apply),
+    ),
+    back,
+  );
+}
+
+/** Into the first free quick slot (or one whose item ran out), else the first. */
+function quickslotButton(world: World, hero: Hero, item: Item): HTMLButtonElement {
+  return button(t.quickslotShort, () => {
+    const free = Array.from({ length: QUICKSLOTS }, (_, i) => i).find((i) => quickKind(i) === null || isPlaceholder(hero, i));
+    chooseQuickslot(item.kind, free ?? 0);
+    refreshBackpack(world, hero);
+  });
+}
+
+/**
+ * MagesStaff.AC_IMBUE: the backpack's selector, with only the wands to tap (WndBag.ItemSelector), then
+ * WndOptions: what the imbue will make of the staff, and what it costs.
+ */
+function pickWandToImbue(options: ItemOptions, staffRef: ItemRef, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const back = (): void => showBackpack(options, staffRef === 'weapon' ? { worn: 'weapon' } : { index: staffRef as number });
+  const wands = hero.items.flatMap((item, i) => (itemDef(item.kind).category === 'wand' ? [i] : []));
+  showBackpack({
+    ...options,
+    pick: {
+      title: t.staffImbuePrompt,
+      targets: wands,
+      onPick: (ref) => {
+        const staff = staffRef === 'weapon' ? hero.weapon : hero.items[staffRef as number];
+        const wand = typeof ref === 'number' ? hero.items[ref] : undefined;
+        if (!staff || !wand) return;
+        // MagesStaff.itemSelector.onSelect: the staff's level after the imbue (one more if the wand is as good).
+        const level = wand.level >= staff.level ? (staff.level > 0 ? wand.level + 1 : wand.level) : staff.level;
+        const text = [
+          t.staffImbueText,
+          isIdentified(world, wand) ? t.staffImbueLevel(level) : t.staffImbueUnknown(staff.level),
+          ...(wand.curseUnknown || wand.cursed ? [t.staffImbueCursed] : []),
+          ...(staff.wand ? [t.staffImbueLost] : []),
+        ].join('\n\n');
+        showConfirm(capitalize(itemName(world, wand)), text, t.staffImbueYes, t.staffImbueNo,
+          () => act({ type: 'imbue', staff: staffRef, wand: ref as number }), back);
+      },
+      onCancel: back,
+    },
+  });
 }
 
 /** BrokenSeal.armorSelector: the backpack opened on the armours the seal can go onto (the one worn too). */
@@ -1707,30 +2186,29 @@ function offerSealTransfer(options: ItemOptions, index: number): void {
   }, () => showBackpack(options, { worn: 'armor' }));
 }
 
-/** TomeOfMastery: the two ways of the hero's class, as equal cards; the choice can wait. */
-function showWays(options: ItemOptions, index: number, act: (action: Action) => void): void {
-  const { hero } = options;
-  const back = (): void => showBackpack(options);
-  const book = el('div', { className: 'pd-slot' }, itemIcon(options.world, hero.items[index]!));
-  show(
-    windowOf(
-      { title: t.chooseWay, icon: book },
-      el(
-        'div',
-        { className: 'pd-choices' },
-        ...SUBCLASSES[hero.heroClass].map((way) =>
-          el(
-            'div',
-            { className: 'pd-choice' },
-            el('span', { className: 'pd-choice-name', textContent: capitalize(t.subclasses[way]) }),
-            el('p', { className: 'pd-choice-desc', textContent: t.subclassInfo[way] }),
-            button(t.choose, () => act({ type: 'master', item: index, subclass: way }), 'small'),
-          )),
-      ),
-      button(t.later, back, 'quiet'),
-    ),
+/** What the backpack lends an artifact's actions (artifactui.ts): acting, aiming, picking from the pack. */
+function artifactHost(options: ItemOptions, ref: ItemRef): ArtifactHost {
+  const back = (): void => showBackpack(options, typeof ref === 'number' ? { index: ref } : ref === 'weapon' || ref === 'armor' ? { worn: ref } : { slot: ref });
+  return {
+    world: options.world,
+    hero: options.hero,
+    act: (action) => {
+      openBag = null;
+      options.onAction(action);
+      options.onClose();
+    },
+    stay: (action) => {
+      options.onAction(action);
+      refreshBackpack(options.world, options.hero);
+    },
+    aim: (action) => {
+      openBag = null;
+      options.onClose();
+      options.onAimArtifact?.(action);
+    },
+    pick: (title, targets, onPick, onCancel) => showBackpack({ ...options, pick: { title, targets, onPick, onCancel: onCancel ?? back } }),
     back,
-  );
+  };
 }
 
 /* Toast */
@@ -1738,7 +2216,8 @@ function showWays(options: ItemOptions, index: number, act: (action: Action) => 
 let toastTimer = 0;
 
 export interface ToastOptions {
-  tone?: 'good' | 'warn' | 'ally' | 'badge';
+  /** `update`: the new-version notice of design v20 (a turning icon, update.ts). */
+  tone?: 'good' | 'warn' | 'ally' | 'badge' | 'update';
   /** An item sprite or a badge image beside the text. */
   item?: number;
   badge?: number;

@@ -13,7 +13,6 @@ import { QuestHooks } from './level/gen/quests';
 import { Random } from './level/gen/random';
 import type { Room } from './level/gen/room';
 import { BlacksmithRoom } from './level/gen/rooms/quest/blacksmith-room';
-import './level/gen/mining-level';
 import { T } from './level/terrain';
 import type { BlacksmithQuest, BlacksmithType } from './mine-types';
 import { addQuestScore } from './quest';
@@ -467,8 +466,8 @@ function reforge(ctx: Ctx, hero: Hero, firstRef: ItemRef, secondRef: ItemRef): I
     hero.items.splice(worseRef, 1);
   } else if (worseRef === 'weapon') {
     hero.weapon = null;
-  } else if (worseRef === 'ring0' || worseRef === 'ring1') {
-    hero.rings.splice(worseRef === 'ring0' ? 0 : 1, 1);
+  } else if (worseRef === 'artifact' || worseRef === 'misc' || worseRef === 'ring') {
+    hero[worseRef] = null;
   } else {
     // The worn armour goes: the better one, from the pack, is put on in its place.
     hero.items.splice(betterRef as number, 1);

@@ -49,36 +49,49 @@ export type SeamItem =
 
 export function seamItem(name: SeamItem): Item | null {
   switch (name) {
+    // SEAM(gear): the arcane stylus; the stone of enchantment stands in.
     case 'stylus':
     case 'stoneOfEnchantment':
-      return createItem('scroll.enchantment');
+      return createItem('stone.enchantment');
     case 'stoneOfIntuition':
-      return createItem('scroll.identify');
+      return createItem('stone.intuition');
     case 'stoneOfAugmentation':
-      return createItem('weightstone');
+      return createItem('stone.augmentation');
     case 'stoneOfBlink':
-      return createItem('scroll.teleportation');
+      return createItem('stone.blink');
     case 'potionOfHaste':
-      return createItem('potion.levitation');
+      return createItem('potion.haste');
     case 'potionOfDivineInspiration':
-      return createItem('potion.experience');
+      return createItem('potion.divineInspiration');
     case 'scrollOfTransmutation':
+      return createItem('scroll.transmutation');
     case 'scrollOfMetamorphosis':
-      return createItem('scroll.enchantment');
+      return createItem('scroll.metamorphosis');
     case 'scrollOfRetribution':
-      return createItem('scroll.psionicBlast');
+      return createItem('scroll.retribution');
     case 'stoneOfFlock':
+      return createItem('stone.flock');
     case 'stoneOfDeepSleep':
-      return createItem('scroll.lullaby');
+      return createItem('stone.deepSleep');
     case 'stoneOfShock':
+      return createItem('stone.shock');
     case 'stoneOfBlast':
-      return createItem('bomb');
+      return createItem('stone.blast');
     case 'stoneOfFear':
-      return createItem('scroll.terror');
+      return createItem('stone.fear');
     case 'stoneOfClairvoyance':
-      return createItem('scroll.mapping');
+      return createItem('stone.clairvoyance');
     case 'stoneOfAggression':
-      return createItem('scroll.challenge');
+      return createItem('stone.aggression');
+    case 'energyCrystal':
+      return createItem('energy');
+    case 'trinketCatalyst':
+      return createItem('trinket.catalyst');
+    case 'shatteredPot':
+      return createItem('honeypot.shattered');
+    case 'alchemize':
+      return createItem('spell.alchemize');
+    // SEAM(plants): seeds Pixel Dungeon has not; the nearest stands in.
     case 'mageroyalSeed':
     case 'starflowerSeed':
       return createItem('seed.sungrass');
@@ -87,11 +100,8 @@ export function seamItem(name: SeamItem): Item | null {
       return createItem('seed.dreamweed');
     case 'swiftthistleSeed':
       return createItem('seed.fadeleaf');
-    case 'energyCrystal':
-    case 'trinketCatalyst':
+    // The alchemy guide's pages: their own item (inventory: picked up, the page is found).
     case 'alchemyPage':
-    case 'shatteredPot':
-    case 'alchemize':
       return null;
   }
 }

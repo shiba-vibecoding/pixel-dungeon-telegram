@@ -1,4 +1,5 @@
 import { createItem, type Item, itemDef, type ItemKind } from '../../../../items';
+import { TIPPED_DARTS } from '../../../../missiles';
 import { inBag } from '../../../../bags';
 import { T } from '../../../terrain';
 import { Dungeon, limitedDrop, limitedDropped } from '../../dungeon';
@@ -63,10 +64,11 @@ function plain(item: Item): Item {
   return item;
 }
 
-/** TippedDart.randomTipped(2): darts tipped with a random seed. SEAM(gear): only the fire and paralysis darts are in Pixel Dungeon. */
+/** TippedDart.randomTipped(2): a seed by the seed deck's defaults, until it is one darts are tipped with. */
 function randomTippedDarts(quantity: number): Item {
-  const seed = Generator.randomUsingDefaults('SEED');
-  return createItem(seed.kind === 'seed.firebloom' ? 'missile.incendiary' : 'missile.curare', quantity);
+  let kind = TIPPED_DARTS[Generator.randomUsingDefaults('SEED').kind];
+  while (!kind) kind = TIPPED_DARTS[Generator.randomUsingDefaults('SEED').kind];
+  return createItem(kind, quantity);
 }
 
 /** ShopRoom.generateItems: the shop's stock for the depth, shuffled on a stream of its own. */

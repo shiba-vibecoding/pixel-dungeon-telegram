@@ -1,111 +1,132 @@
 import { HeapType, type LevelBuilder } from './builder';
 import { HALLS_STYLE } from './halls';
-import { LENGTH, SOLO_SPAN, WIDTH } from './geometry';
-import { patch, type RegionStyle } from './regular';
-import { Room, RoomType } from './room';
-import { T } from './terrain';
+import { cell, WIDTH } from './geometry';
+import type { RegionStyle } from './regular';
+import { SLevel } from './spainter';
+import { F, hasFlag, T } from './terrain';
+import { distanceMap, patchGenerate } from '../bosses/common';
 
 /*
- * Depth 25: Yog-Dzewa's hall (HallsBossLevel) - five tall chambers side by
- * side, the stairs walled in at the middle. The first step off the stairs
- * breaks the walls, and the stairs with them: Yog-Dzewa awakens somewhere in
- * the dark with its two fists. The way down opens when it falls.
+ * Depth 25: Yog-Dzewa's hall (HallsBossLevel), 32×32: five tall chambers side
+ * by side, statues and pools about, and in the middle, under a ceiling of
+ * carved wall, the pit Yog rises from. Two steps off the stairs, the stairs
+ * burn away behind the hero and Yog-Dzewa is there, before the sealed way down.
  *
- * Depth 26 (LastLevel): a small hall, a moat of water around it, and the
- * Amulet of Yendor on a pedestal between two statues.
+ * Depth 26 (LastLevel): the Amulet of Yendor on its altar at the end of a long
+ * walk over the abyss, ringed with candles. Shattered's is 64 cells tall; here
+ * it is 48 (the grid's height): the walk is sixteen cells shorter.
+ *
+ * Shattered's region decorations (REGION_DECO, REGION_DECO_ALT) stand here as
+ * statues until the levels stream brings its terrain.
  */
 
-// Laid out on the level's own span (32), the grid's top-left part, whatever the grid's size.
-const ROOM_LEFT = SOLO_SPAN / 2 - 1;
-const ROOM_RIGHT = SOLO_SPAN / 2 + 1;
-const ROOM_TOP = SOLO_SPAN / 2 - 1;
-const ROOM_BOTTOM = SOLO_SPAN / 2 + 1;
+export const HALLS_W = 32;
+export const HALLS_H = 32;
+const ROOM_LEFT = HALLS_W / 2 - 4;
+const ROOM_RIGHT = HALLS_W / 2 + 4;
+const ROOM_TOP = 8;
+const ROOM_BOTTOM = ROOM_TOP + 8;
+/** REGION_DECO and REGION_DECO_ALT. SEAM(levels): Shattered's own terrains. */
+const REGION_DECO = T.STATUE;
+const REGION_DECO_ALT = T.STATUE_SP;
 
-export const HALLS_BOSS_STYLE: RegionStyle = { ...HALLS_STYLE, decorate: decorateBossLevel };
+/** The way down (sealed, a carved wall, until Yog falls), and where Yog-Dzewa rises. */
+export const HALLS_EXIT = cell(HALLS_W / 2, ROOM_TOP + 1);
+export const YOG_POS = HALLS_EXIT + 3 * WIDTH;
+export const HALLS_EXITS: readonly number[] = [HALLS_EXIT - 1, HALLS_EXIT, HALLS_EXIT + 1, HALLS_EXIT - WIDTH - 1, HALLS_EXIT - WIDTH, HALLS_EXIT - WIDTH + 1];
 
-export function buildHallsBossLevel(level: LevelBuilder): boolean {
-  const { rng, map } = level;
+export const HALLS_BOSS_STYLE: RegionStyle = { ...HALLS_STYLE, decorate: () => undefined };
+
+/** HallsBossLevel.build. */
+export function buildHallsBossLevel(builder: LevelBuilder): boolean {
+  const { rng } = builder;
+  const level = new SLevel(HALLS_W, HALLS_H);
+  const w = level.w;
+  let entrance = -1;
   for (let i = 0; i < 5; i++) {
-    const top = rng.intRange(2, ROOM_TOP - 1);
-    const bottom = rng.intRange(ROOM_BOTTOM + 1, 22);
-    level.fill(2 + i * 4, top, 4, bottom - top + 1, T.EMPTY);
-    if (i === 2) level.exit = i * 4 + 3 + (top - 1) * WIDTH;
-    for (let j = 0; j < 4; j++) {
-      if (rng.int(2) === 0) {
-        const y = rng.intRange(top + 1, bottom - 1);
-        map[i * 4 + j + y * WIDTH] = T.WALL_DECO;
-      }
+    let top: number;
+    let bottom: number;
+    if (i === 0 || i === 4) {
+      top = rng.intRange(ROOM_TOP - 1, ROOM_TOP + 3);
+      bottom = rng.intRange(ROOM_BOTTOM + 2, ROOM_BOTTOM + 6);
+    } else if (i === 1 || i === 3) {
+      top = rng.intRange(ROOM_TOP - 5, ROOM_TOP - 1);
+      bottom = rng.intRange(ROOM_BOTTOM + 6, ROOM_BOTTOM + 10);
+    } else {
+      top = rng.intRange(ROOM_TOP - 6, ROOM_TOP - 3);
+      bottom = rng.intRange(ROOM_BOTTOM + 8, ROOM_BOTTOM + 12);
     }
+    level.fill(4 + i * 5, top, 5, bottom - top + 1, T.EMPTY);
+    if (i === 2) entrance = 6 + i * 5 + (bottom - 1) * w;
   }
-  map[level.exit] = T.LOCKED_EXIT;
-
-  level.fill(ROOM_LEFT - 1, ROOM_TOP - 1, ROOM_RIGHT - ROOM_LEFT + 3, ROOM_BOTTOM - ROOM_TOP + 3, T.WALL);
-  level.fill(ROOM_LEFT, ROOM_TOP, ROOM_RIGHT - ROOM_LEFT + 1, ROOM_BOTTOM - ROOM_TOP + 1, T.EMPTY);
-  level.entrance = rng.intBetween(ROOM_LEFT + 1, ROOM_RIGHT - 1) + rng.intBetween(ROOM_TOP + 1, ROOM_BOTTOM - 1) * WIDTH;
-  map[level.entrance] = T.ENTRANCE;
-
-  const water = patch(level, 0.45, 6);
-  for (let i = 0; i < LENGTH; i++) {
-    if (map[i] === T.EMPTY && water[i]) map[i] = T.WATER;
+  const exitCell = w / 2 + (ROOM_TOP + 1) * w;
+  const bossPos = exitCell + w * 3;
+  const sdist = (a: number, b: number): number => Math.max(Math.abs((a % w) - (b % w)), Math.abs(Math.trunc(a / w) - Math.trunc(b / w)));
+  let patch = patchGenerate(rng, w, level.h, 0.2, 0, true);
+  for (let i = 0; i < level.length; i++) {
+    if (level.map[i] === T.EMPTY && patch[i]) level.map[i] = sdist(i, bossPos) + rng.int(5) >= 10 ? REGION_DECO : T.STATUE;
   }
-
-  const room = new Room();
-  room.set(ROOM_LEFT - 1, ROOM_TOP - 1, ROOM_RIGHT + 1, ROOM_BOTTOM + 1);
-  room.type = RoomType.ENTRANCE;
-  level.rooms = [room];
-  // Remembered so the walls can be broken: any cell will do as the "door".
-  level.arenaDoor = level.entrance;
+  level.set(entrance, T.ENTRANCE);
+  level.fill(ROOM_LEFT - 1, ROOM_TOP - 1, 11, 11, T.EMPTY);
+  patch = patchGenerate(rng, w, level.h, 0.3, 3, true);
+  for (let i = 0; i < level.length; i++) {
+    const t = level.map[i];
+    if ((t === T.EMPTY || t === T.STATUE || t === REGION_DECO) && patch[i]) level.map[i] = T.WATER;
+  }
+  for (let i = 0; i < level.length; i++) if (level.map[i] === T.EMPTY && rng.int(4) === 0) level.map[i] = T.EMPTY_DECO;
+  level.fill(ROOM_LEFT, ROOM_TOP, 9, 9, T.EMPTY_SP);
+  level.fill(ROOM_LEFT, ROOM_TOP, 9, 2, T.WALL_DECO);
+  level.fill(ROOM_LEFT, ROOM_BOTTOM - 1, 2, 2, T.WALL_DECO);
+  level.fill(ROOM_RIGHT - 1, ROOM_BOTTOM - 1, 2, 2, T.WALL_DECO);
+  level.fill(ROOM_LEFT + 3, ROOM_TOP + 2, 3, 4, T.EMPTY);
+  for (let i = 0; i < level.length; i++) if (level.map[i] === REGION_DECO && rng.int(2) === 0) level.map[i] = REGION_DECO_ALT;
+  // A way from the stairs to the way down.
+  const dist = distanceMap(exitCell, (c) => hasFlag(level.map[c]!, F.PASSABLE), Infinity, w, level.length);
+  if (dist[entrance] === Infinity) return false;
+  level.blit(builder.map);
+  builder.entrance = level.toCell(entrance);
+  builder.exit = HALLS_EXIT;
+  builder.exits = [...HALLS_EXITS];
+  builder.arenaDoor = builder.entrance;
   return true;
 }
 
-function decorateBossLevel(level: LevelBuilder): void {
-  const { map, rng } = level;
-  for (let i = 0; i < LENGTH; i++) {
-    if (map[i] === T.EMPTY && rng.int(10) === 0) map[i] = T.EMPTY_DECO;
-  }
-}
+/* The Amulet's hall (LastLevel) */
 
-/** HallsBossLevel.doMagic: the walls of the stairs room, and the stairs, burn away. */
-export function breakStairsRoom(map: number[]): number[] {
-  const cells: number[] = [];
-  for (let x = ROOM_LEFT - 1; x <= ROOM_RIGHT + 1; x++) {
-    cells.push((ROOM_TOP - 1) * WIDTH + x, (ROOM_BOTTOM + 1) * WIDTH + x);
-  }
-  for (let y = ROOM_TOP; y < ROOM_BOTTOM + 1; y++) {
-    cells.push(y * WIDTH + ROOM_LEFT - 1, y * WIDTH + ROOM_RIGHT + 1);
-  }
-  for (const cell of cells) map[cell] = T.EMPTY_SP;
-  return cells;
-}
+const LAST_W = 16;
+const LAST_H = 48;
+const LAST_ROOM_TOP = 10;
+const MID = LAST_W / 2;
+/** LastLevel.AMULET_POS. */
+export const AMULET_POS = cell(MID, 12);
 
-const SIZE = 7;
+export const LAST_STYLE: RegionStyle = { ...HALLS_STYLE, decorate: () => undefined };
 
-export const LAST_STYLE: RegionStyle = { ...HALLS_STYLE, decorate: decorateLastLevel };
-
-export function buildLastLevel(level: LevelBuilder): boolean {
-  const { map } = level;
-  level.fill(1, 1, SIZE, SIZE, T.WATER);
-  level.fill(2, 2, SIZE - 2, SIZE - 2, T.EMPTY);
-  level.fill(Math.trunc(SIZE / 2), Math.trunc(SIZE / 2), 3, 3, T.EMPTY_SP);
-  level.entrance = SIZE * WIDTH + Math.trunc(SIZE / 2) + 1;
-  map[level.entrance] = T.ENTRANCE;
-  level.exit = level.entrance - WIDTH * SIZE;
-  map[level.exit] = T.LOCKED_EXIT;
-  const pedestal = (Math.trunc(SIZE / 2) + 1) * (WIDTH + 1);
-  map[pedestal] = T.PEDESTAL;
-  map[pedestal - 1] = T.STATUE_SP;
-  map[pedestal + 1] = T.STATUE_SP;
-  level.dropItem(pedestal, HeapType.HEAP, { roll: 'kind', kind: 'quest.amulet' });
-  const room = new Room();
-  room.set(1, 1, SIZE + 1, SIZE + 1);
-  room.type = RoomType.ENTRANCE;
-  level.rooms = [room];
+/** LastLevel.build: the walk over the abyss to the Amulet; below the stairs, the hall of Yog seen from above. */
+export function buildLastLevel(builder: LevelBuilder): boolean {
+  const { rng } = builder;
+  const level = new SLevel(LAST_W, LAST_H, T.CHASM);
+  const w = level.w;
+  const h = level.h;
+  level.fill(0, h - 1, w, 1, T.WALL);
+  level.fill(MID - 1, 10, 3, h - 11, T.EMPTY);
+  level.fill(MID - 2, h - 3, 5, 1, T.EMPTY);
+  level.fill(MID - 3, h - 2, 7, 1, T.EMPTY);
+  const entrance = (h - LAST_ROOM_TOP) * w + MID;
+  level.fill(0, h - LAST_ROOM_TOP, w, 2, T.WALL);
+  level.set(entrance, T.ENTRANCE);
+  level.set(entrance + w, T.ENTRANCE);
+  level.fill(0, h - LAST_ROOM_TOP + 2, w, 8, T.EMPTY);
+  level.fill(MID - 1, h - LAST_ROOM_TOP + 2, 3, 1, T.ENTRANCE);
+  for (let i = 0; i < level.length; i++) if (level.map[i] === T.EMPTY && rng.int(5) === 0) level.map[i] = T.EMPTY_DECO;
+  level.fill(MID - 2, 9, 5, 7, T.EMPTY);
+  level.fill(MID - 3, 10, 7, 5, T.EMPTY);
+  // LastLevel.buildFlagMaps: below the stairs nothing can be walked on (it is the hall of Yog, far below).
+  for (let i = (h - LAST_ROOM_TOP + 2) * w; i < level.length; i++) level.map[i] = T.WALL;
+  level.blit(builder.map);
+  builder.entrance = level.toCell(entrance);
+  // Nothing leads further down.
+  builder.exit = -1;
+  builder.dropItem(AMULET_POS, HeapType.HEAP, { roll: 'kind', kind: 'quest.amulet' });
   return true;
-}
-
-function decorateLastLevel(level: LevelBuilder): void {
-  const { map, rng } = level;
-  for (let i = 0; i < LENGTH; i++) {
-    if (map[i] === T.EMPTY && rng.int(10) === 0) map[i] = T.EMPTY_DECO;
-  }
 }

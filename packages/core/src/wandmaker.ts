@@ -2,8 +2,9 @@ import { createMob, type Hero } from './actors';
 import { mobDied } from './combat';
 import { charAt, type Ctx, dropItem, enterCell, heroSight, heroView, isPassable } from './floor';
 import { collect } from './inventory';
+import { createItem, type Item, type ItemKind, randomWand, undoWand, wandFromDeck, wandMaxCharges } from './items';
 import { identify } from './ident';
-import { type Item, type ItemKind, wandMaxCharges } from './items';
+import type { Rng } from './rng';
 import { addQuestScore } from './quest';
 import { adjacent, distance, LENGTH, WIDTH } from './level/geometry';
 import { JAVA_N8 } from './wandmaker-mobs';
@@ -47,6 +48,30 @@ export interface WandmakerQuest {
 
 /** Older name, kept for the World's field. */
 export type WandQuest = WandmakerQuest;
+
+/**
+ * Wandmaker.Quest.spawn: two wands of different kinds from the run's deck (Generator.random, the second
+ * drawn again until it differs, what was drawn in vain put back), neither cursed, each upgraded once.
+ */
+function rewardWands(world: World, rng: Rng): [Item, Item] {
+  const reward = (kind: ItemKind): Item => {
+    const wand = randomWand(rng, kind);
+    delete wand.cursed;
+    // Wand.upgrade: a level, and a charge.
+    wand.level++;
+    wand.charges = Math.min((wand.charges ?? 0) + 1, wandMaxCharges(wand));
+    return wand;
+  };
+  const first = wandFromDeck(world.run);
+  let second = wandFromDeck(world.run);
+  const undo: ItemKind[] = [];
+  while (second === first) {
+    undo.push(second);
+    second = wandFromDeck(world.run);
+  }
+  for (const kind of undo) undoWand(world.run, kind);
+  return [reward(first), reward(second)];
+}
 
 /** What he says: the errand (two windows, the hero's class's greeting first), a reminder, the wands on offer, his farewell. */
 export type WandmakerLine = 'intro' | 'reminder' | 'reward' | 'farewell';
@@ -134,15 +159,9 @@ export function spawnWandmaker(level: RegularLevel): void {
   quest.spawned = true;
   quest.depth = Dungeon.depth;
   quest.given = false;
-  const wand1 = Generator.random('WAND');
-  delete wand1.cursed;
-  upgradeWand(wand1);
-
-  let wand2 = Generator.random('WAND');
-  // SEAM(wands): Generator.undoDrop for the wands drawn again (the wand deck is the wands stream's).
-  while (wand2.kind === wand1.kind) wand2 = Generator.random('WAND');
-  delete wand2.cursed;
-  upgradeWand(wand2);
+  // Generator.random(WAND) from the run's deck, the second drawn again until it differs (Generator.undoDrop);
+  // each uncursed and upgraded once.
+  const [wand1, wand2] = rewardWands(world, Random.rng);
   quest.wand1 = wand1;
   quest.wand2 = wand2;
 

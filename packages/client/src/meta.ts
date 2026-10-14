@@ -1,10 +1,16 @@
-import { challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, journalNotes, type Landmark, S, type World } from '@pd/core';
+import {
+  challengeMultiplier, type Hero, type Item, itemDef, type ItemKind, ITEMS, itemSprite, journalNotes, kindKnown, type Landmark, type Mob, type MobKind,
+  S, type World,
+} from '@pd/core';
 import { audio } from './audio';
+import { sliderSound } from './sfx';
 import { fx } from './fx';
 import { capitalize, lang, locale, t } from './i18n';
 import { itemInfo, itemName } from './itemtext';
 import { type FxMode, quality } from './quality';
-import { el, info, show, sprites, windowOf } from './screens';
+import { type QuickCount, quickCount, setQuickCount } from './quickslot';
+import { el, info, portrait, show, sprites, windowOf } from './screens';
+import { mobDescription } from './examine';
 import { canFullscreen, haptics, isFullscreen, openExternal, setFullscreen } from './telegram';
 import { hints } from './hints';
 
@@ -133,6 +139,15 @@ function linkRow(label: string, onClick: () => void, external = false, sub?: str
   );
 }
 
+/** «Report a problem»: a row with the report's icon (design v20, .pd-linkrow.report). */
+function reportRow(onClick: () => void): HTMLElement {
+  const icon = el('i', { className: 'pd-icon' });
+  icon.style.cssText = 'width:24px;height:24px;background-image:var(--spr-report)';
+  const row = el('button', { className: 'pd-linkrow report', onclick: () => (click(), onClick()) }, icon, el('span', { textContent: t.rel.report.title }));
+  row.type = 'button';
+  return row;
+}
+
 const group = (head: string | null, ...rows: Array<HTMLElement | null | false>): HTMLElement =>
   el('section', { className: 'pd-set-group' }, head && el('h3', { className: 'pd-set-head', textContent: head }), ...rows);
 
@@ -146,6 +161,12 @@ export interface SettingsOptions {
   onReset(): void;
   /** The bot's reminders (in Telegram): on now, and the switch; absent elsewhere. */
   reminders?: { on: boolean; set(on: boolean): void };
+  /** The hero's name, asked for where Telegram does not tell it (the camp has no field for it); absent in Telegram. */
+  name?: { value: string; set(name: string): void };
+  /** «Report a problem» (reportui.ts): absent where the server cannot take one (no Telegram, no server). */
+  onReport?: () => void;
+  /** «What's new»: the window of the last update again. */
+  onNews?: () => void;
 }
 
 /** The settings, from the title's corner or the menu in a run. */
@@ -160,7 +181,7 @@ export function showSettings(options: SettingsOptions): void {
   const sound = group(
     t.meta.sound,
     stepsRow(t.musicVolume, () => level(audio.musicVolume), louder((v) => audio.setMusicVolume(v)), () => undefined),
-    stepsRow(t.soundVolume, () => level(audio.soundVolume), louder((v) => audio.setSoundVolume(v)), () => audio.play('coin', 1, 0.6)),
+    stepsRow(t.soundVolume, () => level(audio.soundVolume), louder((v) => audio.setSoundVolume(v)), () => audio.play(sliderSound())),
     switchRow(t.meta.vibration, t.meta.vibrationNote, haptics.on, (on) => haptics.set(on)),
   );
   const modes: ReadonlyArray<readonly [FxMode, string]> = (['auto', 'full', 'light'] as const).map((m) => [m, t.meta.fxModes[m]] as const);
@@ -188,6 +209,12 @@ export function showSettings(options: SettingsOptions): void {
       fxNote,
     ),
     stepsRow(t.meta.shake, () => quality.shake, (v) => quality.setShake(v), () => fx.shake(3, 240, fx.now)),
+    el(
+      'div',
+      { className: 'pd-set-row' },
+      el('span', { className: 'pd-info', textContent: t.meta.quickslots }),
+      segments([['2', '2'], ['4', '4'], ['6', '6']] as const, String(quickCount()) as '2' | '4' | '6', (n) => setQuickCount(Number(n) as QuickCount), true),
+    ),
     canFullscreen() && switchRow(t.fullscreen, null, isFullscreen(), (on) => setFullscreen(on)),
     el(
       'div',
@@ -206,8 +233,17 @@ export function showSettings(options: SettingsOptions): void {
     ),
   );
   const reopen = (): void => showSettings(options);
+  const nameGroup = options.name && group(
+    t.heroName,
+    el('input', {
+      className: 'pd-input', value: options.name.value, maxLength: 20, placeholder: t.yourName,
+      oninput: (event: Event) => options.name!.set((event.target as HTMLInputElement).value),
+    }),
+  );
   const more = group(
     t.meta.more,
+    options.onNews ? linkRow(t.rel.news.row, options.onNews) : null,
+    options.onReport ? reportRow(options.onReport) : null,
     linkRow(t.meta.about, () => showAbout(reopen)),
     linkRow(t.meta.privacy, () => openExternal(page('privacy.html')), true),
     linkRow(t.meta.terms, () => openExternal(page('terms.html')), true),
@@ -223,7 +259,7 @@ export function showSettings(options: SettingsOptions): void {
       el(
         'div',
         { className: 'pd-scroll pd-settings' },
-        el('div', { className: 'pd-col' }, sound, game, learning),
+        el('div', { className: 'pd-col' }, nameGroup, sound, game, learning),
         el('div', { className: 'pd-col' }, more, reset),
       ),
     ),
@@ -270,6 +306,35 @@ function confirmReset(onCancel: () => void, onDone: () => void): void {
 
 /* About */
 
+/** AboutScene: the freesound.org samples in Shattered's sounds, and their authors, by licence. */
+const FREESOUND_BY: ReadonlyArray<readonly [string, string]> = [
+  ['SFX ATTACK SWORD 001.wav', 'JoelAudio'],
+  ['Pack: Slingshots and Longbows', 'saturdaysoundguy'],
+  ['Cracking/Crunching, A.wav', 'InspectorJ'],
+  ['Extracting a sword.mp3', 'Taira Komori'],
+  ['Pack: Uni Sound Library', 'timmy h123'],
+];
+const FREESOUND_ZERO: ReadonlyArray<readonly [string, string]> = [
+  ['Pack: Movie Foley: Swords', 'Black Snow'],
+  ['machine gun shot 2.flac', 'qubodup'],
+  ['m240h machine gun burst 4.flac', 'qubodup'],
+  ['Pack: Onomatopoeia', 'Adam N'],
+  ['Pack: Watermelon', 'lolamadeus'],
+  ['metal chain', 'Mediapaja2009'],
+  ['Pack: Sword Clashes Pack', 'JohnBuhr'],
+  ['Pack: Metal Clangs and Pings', 'wilhellboy'],
+  ['Pack: Stabbing Stomachs & Crushing Skulls', 'TheFilmLook'],
+  ['Sheep bleating', 'zachrau'],
+  ['Lemon,Juicy,Squeeze,Fruit.wav', 'Filipe Chagas'],
+  ['Lemon,Squeeze,Squishy,Fruit.wav', 'Filipe Chagas'],
+];
+
+function freesoundCredits(): HTMLElement {
+  const list = (title: string, samples: ReadonlyArray<readonly [string, string]>): HTMLElement =>
+    el('p', { className: 'pd-legal' }, title, ...samples.flatMap(([work, author]) => [el('br'), `${work} — ${author}`]));
+  return el('div', {}, el('p', { className: 'pd-legal', textContent: t.meta.freesound }), list(t.meta.ccBy, FREESOUND_BY), list(t.meta.ccZero, FREESOUND_ZERO));
+}
+
 export function showAbout(onClose: () => void): void {
   const credits = el('dl', { className: 'pd-credits' });
   for (const [what, who, more] of t.meta.credits) {
@@ -292,6 +357,7 @@ export function showAbout(onClose: () => void): void {
           el('span', { className: 'pd-build', textContent: t.meta.build(BUILD.commit, BUILD.date) }),
         ),
         credits,
+        freesoundCredits(),
         el(
           'div',
           {},
@@ -377,7 +443,7 @@ const enum Feature {
 
 /** A landmark's icon (Notes.LandmarkRecord.icon): journal.png's where it has one, else an item's picture. */
 const LANDMARK_ICONS: Readonly<Record<Landmark, { feature: Feature } | { item: number } | null>> = {
-  chasmFloor: null, waterFloor: null, grassFloor: null,
+  chasmFloor: null, waterFloor: null, grassFloor: null, darkFloor: null, largeFloor: null, trapsFloor: null, secretsFloor: null, demonSpawner: null,
   shop: { item: S.GOLD }, alchemy: { feature: Feature.Alchemy }, garden: { feature: Feature.Garden },
   wellOfHealth: { feature: Feature.WellOfHealth }, wellOfAwareness: { feature: Feature.WellOfAwareness },
   wellOfTransmutation: { feature: Feature.WellOfTransmutation }, sacrificialFire: { feature: Feature.Sacrifice },
@@ -385,8 +451,33 @@ const LANDMARK_ICONS: Readonly<Record<Landmark, { feature: Feature } | { item: n
   wandmaker: { feature: Feature.Wandmaker }, troll: { feature: Feature.Troll }, imp: { feature: Feature.Imp },
 };
 
-function noteIcon(landmark: Landmark): HTMLElement {
-  const icon = LANDMARK_ICONS[landmark];
+/**
+ * journal2.png (design v19), by a note's key: marks the journal.png lacks. The imp's shop is the shop on the twentieth
+ * depth (Notes.LandmarkRecord.icon). The lost backpack, a distant well, the demon lair and the dark, large, trap and
+ * secret floors have their marks here ahead of the notes that will name them (the levels stream): a note with one of
+ * these keys picks its mark up by itself.
+ */
+const MARK2: Readonly<Record<string, number>> = {
+  shop: 0, impShop: 1, ratKing: 2, demonSpawner: 3, lostPack: 4, beaconLocation: 5, distantWell: 6,
+  chasmFloor: 7, waterFloor: 8, grassFloor: 9, darkFloor: 10, largeFloor: 11, trapsFloor: 12, secretsFloor: 13,
+};
+
+/** Names for notes whose keys the core does not make yet (journal2.json's): a note with one of them reads right at once. */
+const MARK2_NAMES: Readonly<Record<string, { ru: string; en: string }>> = {
+  lostPack: { ru: 'потерянный рюкзак', en: 'lost backpack' }, distantWell: { ru: 'дальний колодец', en: 'distant well' },
+  demonSpawner: { ru: 'логово демонов', en: 'demon spawner' }, darkFloor: { ru: 'этаж: тьма', en: 'floor: dark' },
+  largeFloor: { ru: 'этаж: большой', en: 'floor: large' }, trapsFloor: { ru: 'этаж: ловушки', en: 'floor: traps' },
+  secretsFloor: { ru: 'этаж: тайники', en: 'floor: secrets' },
+};
+
+function noteIcon(landmark: string, depth: number): HTMLElement {
+  const mark = MARK2[landmark === 'shop' && depth === 20 ? 'impShop' : landmark];
+  if (mark !== undefined) {
+    const node = el('i', { className: 'pd-jicon2' });
+    node.dataset.j2 = String(mark);
+    return node;
+  }
+  const icon = LANDMARK_ICONS[landmark as Landmark];
   if (icon && 'item' in icon) {
     const node = el('i', { className: 'pd-item' });
     node.dataset.i = String(icon.item);
@@ -447,8 +538,8 @@ function notesView(world: World, hero: Hero): HTMLElement {
       list.append(el(
         'div',
         { className: `pd-jrow${depth === hero.depth ? ' here' : ''}` },
-        noteIcon(note.landmark),
-        el('span', { className: 'pd-jname', textContent: capitalize(t.hero.landmarks[note.landmark]) }),
+        noteIcon(note.landmark, depth),
+        el('span', { className: 'pd-jname', textContent: capitalize((t.hero.landmarks as Record<string, string>)[note.landmark] ?? MARK2_NAMES[note.landmark]?.[lang] ?? note.landmark) }),
       ));
     }
     for (const key of keys.filter((k) => k.depth === depth)) {
@@ -476,16 +567,20 @@ function catalogView(options: JournalOptions, category: number, choose: (categor
     node.setAttribute('aria-selected', String(i === category));
     tabs.append(node);
   });
+  if (category === CATALOG.length) {
+    void hero;
+    return el('div', {}, tabs, bestiaryView(options));
+  }
   const { category: kind, silhouette } = CATALOG[category]!;
   const kinds = (Object.keys(ITEMS) as ItemKind[]).filter((k) => itemDef(k).category === kind);
-  const known = kinds.filter((k) => world.known.includes(k));
+  const known = kinds.filter((k) => kindKnown(world, { kind: k, qty: 1, level: 0 }));
   const detail = el('div', { className: 'pd-cat-detail' });
   const grid = el('div', { className: 'pd-grid pd-catalog' });
   grid.setAttribute('role', 'listbox');
   const pick = (k: ItemKind, slot: HTMLElement): void => {
     grid.querySelectorAll('.selected').forEach((node) => node.classList.remove('selected'));
     slot.classList.add('selected');
-    const isKnown = world.known.includes(k);
+    const isKnown = kindKnown(world, { kind: k, qty: 1, level: 0 });
     const item = { kind: k, qty: 1, level: 0 } as Item;
     detail.className = `pd-cat-detail${isKnown ? '' : ' unknown'}`;
     detail.replaceChildren(
@@ -495,7 +590,7 @@ function catalogView(options: JournalOptions, category: number, choose: (categor
     sprites(detail);
   };
   for (const k of kinds) {
-    const isKnown = world.known.includes(k);
+    const isKnown = kindKnown(world, { kind: k, qty: 1, level: 0 });
     const item = { kind: k, qty: 1, level: 0 } as Item;
     const slot = el('button', {
       className: `pd-slot${isKnown ? '' : ' unknown'}`,
@@ -522,6 +617,62 @@ function catalogView(options: JournalOptions, category: number, choose: (categor
     grid,
     detail,
   );
+}
+
+/** Bestiary.REGIONAL, UNIVERSAL, RARE and QUEST, in Shattered's order (the bosses are the bosses stream's). */
+const BESTIARY: ReadonlyArray<readonly MobKind[]> = [
+  ['rat', 'snake', 'gnoll', 'swarm', 'crab', 'slime', 'skeleton', 'thief', 'dm100', 'guard', 'necromancer', 'bat', 'brute', 'shaman',
+    'blueShaman', 'purpleShaman', 'spinner', 'dm200', 'ghoul', 'elemental', 'frostElemental', 'shockElemental', 'warlock', 'monk', 'golem',
+    'ripper', 'spawner', 'succubus', 'eye', 'scorpio'],
+  ['wraith', 'piranha', 'mimic', 'goldenMimic', 'ebonyMimic', 'statue'],
+  ['albino', 'gnollExile', 'hermitCrab', 'causticSlime', 'bandit', 'spectralNecromancer', 'shielded', 'dm201', 'chaosElemental', 'senior',
+    'acidic', 'tormentedSpirit', 'phantomPiranha', 'crystalMimic', 'armoredStatue'],
+  ['fetidRat', 'gnollTrickster', 'greatCrab'],
+];
+
+/**
+ * WndJournal.CatalogTab's bestiary: every monster of Shattered's roster, by group — those the party has seen this run
+ * shown, the rest as dark shapes; a tap tells what it is and how many have been slain.
+ */
+function bestiaryView(options: JournalOptions): HTMLElement {
+  const { world } = options;
+  const book = world.bestiary ?? {};
+  const all = BESTIARY.flat();
+  const detail = el('div', { className: 'pd-cat-detail' });
+  const body = el('div', {}, el('div', { className: 'pd-cat-count', textContent: t.meta.seenCount(all.filter((k) => book[k]?.seen).length, all.length) }));
+  BESTIARY.forEach((kinds, group) => {
+    body.append(el('div', { className: 'pd-jdepth-mark', textContent: capitalize(t.meta.bestiaryGroups[group]!) }));
+    const grid = el('div', { className: 'pd-grid pd-catalog' });
+    grid.setAttribute('role', 'listbox');
+    for (const kind of kinds) {
+      const seen = book[kind]?.seen === true;
+      const face = portrait(kind);
+      if (!seen) face.classList.add('silhouette');
+      const slot = el('button', {
+        className: `pd-slot${seen ? '' : ' unknown'}`,
+        ariaLabel: seen ? t.mobs[kind] : '?',
+        onclick: () => {
+          click();
+          body.querySelectorAll('.selected').forEach((node) => node.classList.remove('selected'));
+          slot.classList.add('selected');
+          const slain = book[kind]?.slain ?? 0;
+          detail.className = `pd-cat-detail${seen ? '' : ' unknown'}`;
+          detail.replaceChildren(
+            portrait(kind),
+            el('span', {}, el('b', { textContent: seen ? capitalize(t.mobs[kind]) : '???' }),
+              el('small', { textContent: seen ? (slain > 0 ? t.meta.enemyCount(slain) : '') : t.meta.notSeenEnemy })),
+          );
+          if (!seen) detail.firstElementChild!.classList.add('silhouette');
+          if (seen) detail.append(el('p', { className: 'pd-note', textContent: mobDescription({ kind } as Mob)[0] ?? '' }));
+        },
+      }, face);
+      slot.setAttribute('role', 'option');
+      grid.append(slot);
+    }
+    body.append(grid);
+  });
+  body.append(detail);
+  return body;
 }
 
 function itemIcon(sprite: number, silhouette: boolean): HTMLElement {

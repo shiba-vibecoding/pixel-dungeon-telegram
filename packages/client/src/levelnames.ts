@@ -204,7 +204,7 @@ export function spawnerWarning(world: World, depth: number): string {
   let above = 0;
   for (const [d, floor] of Object.entries(world.floors)) {
     if (Number(d) === depth) continue;
-    above += floor.mobs.filter((m) => m.kind === 'demonSpawner' && m.hp > 0).length;
+    above += floor.mobs.filter((m) => m.kind === 'spawner' && m.hp > 0).length;
   }
   if (above === 0) return '';
   return plain(lt(isBossDepth(depth) ? 'scenes.gamescene.spawner_warn_final' : 'scenes.gamescene.spawner_warn'));

@@ -38,7 +38,7 @@ export function initRooms(level: LevelBuilder, style: RegionStyle): boolean {
 }
 
 /** Binary space partition of the map into room rectangles. */
-function split(level: LevelBuilder, style: RegionStyle, rect: Rect): void {
+export function split(level: LevelBuilder, style: RegionStyle, rect: Rect): void {
   const { rng } = level;
   const w = rect.width();
   const h = rect.height();

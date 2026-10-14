@@ -1,7 +1,7 @@
 import { isAlive, type Mob, MOBS, mobStats } from './actors';
 import { burstOnEternalFire } from './roomblobs';
 import { isTallGrass, trample } from './highgrass';
-import { chasmLoot, earnExp, hurt } from './combat';
+import { earnExp, hurt, mobDied } from './combat';
 import { type Char, type Ctx, enterCell, exploredCells, heroesOn, isHero, isWater, leaveCell } from './floor';
 import { distance } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
@@ -12,6 +12,13 @@ import { activate } from './trap-effects';
 import { frostHurtsElemental } from './wandmaker-mobs';
 import type { Level } from './level/generate';
 import { type TrapInfo, type TrapKind, TRAPS } from './level/trapdefs';
+import { mobGearTick } from './throwing';
+import { bleedTick } from './afflict';
+import { hasProp } from './props';
+import { tenguDartTrap } from './bosses/index';
+import { tickMob } from './buffs';
+import { deathMarkTurn } from './abilities';
+import { flies, mobStatusTurn } from './status';
 
 /*
  * Traps (levels/traps): set off by stepping on them, visible or hidden; then most are spent.
@@ -63,9 +70,27 @@ export type Burst = 'toxic' | 'paralytic' | 'fire' | 'frost' | 'purity';
  * IMMUNITIES: Yog-Dzewa breathes no gas and does not burn, nor does its
  * burning fist; piranhas in their pool fear neither gas, fire nor frost.
  */
-export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost'): boolean {
-  if (isHero(char)) return harm === 'gas' && (char.gasImmune ?? 0) > 0;
-  if (char.kind === 'piranha') return true;
+export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost' | 'toxic' | 'shock'): boolean {
+  if (isHero(char)) {
+    const b = char.buffs;
+    // BlobImmunity (purity), and the imbues: fire (FireImbue), frost and chill (FrostImbue), toxic gas (ToxicImbue);
+    // armour of brimstone keeps fire off its wearer (Char.isImmune: Burning).
+    if (harm === 'gas') return (char.gasImmune ?? 0) > 0;
+    if (harm === 'burning') return (b?.fireImbue ?? 0) > 0 || char.armor.glyph === 'brimstone';
+    if (harm === 'frost') return (b?.frostImbue ?? 0) > 0;
+    if (harm === 'toxic') return (b?.toxicImbue ?? 0) > 0;
+    return false;
+  }
+  // SpiritHawk.HawkAlly: immune to all area-bound effects (BlobImmunity): gas, fire, frost and the rest of the blobs.
+  if (char.kind === 'hawk') return true;
+  // Piranha: the blobs but electricity and freezing, and burning.
+  if (char.kind === 'piranha' || char.kind === 'phantomPiranha') return harm !== 'frost' && harm !== 'shock';
+  if (harm === 'shock') return false;
+  // Char.Property.INORGANIC: no toxic gas.
+  if (harm === 'toxic') return hasProp(char, 'inorganic');
+  // Char.Property: the fiery do not burn, the icy do not freeze (FIERY, ICY immunities); a blazing champion does not burn.
+  if (harm === 'burning' && (hasProp(char, 'fiery') || char.champion === 'blazing')) return true;
+  if (harm === 'frost' && hasProp(char, 'icy')) return true;
   // DM-300 breathes its own fumes unharmed.
   if (harm === 'gas' && char.kind === 'dm300') return true;
   // A newborn fire elemental does not burn (Char.Property.FIERY).
@@ -92,6 +117,11 @@ export function burst(ctx: Ctx, pos: number, kind: Burst, radius = GAS_RADIUS, s
     if (kind === 'fire' && !isWater(level.map[char.pos]!) && !immuneTo(char, 'burning')) {
       char.burning = Math.max(char.burning ?? 0, BURNING_TURNS);
     }
+    // Elemental.add: frost does a fire elemental harm instead (half to three fifths of its health).
+    if (kind === 'frost' && !isHero(char) && char.kind === 'elemental') {
+      elementalHarm(ctx, char);
+      continue;
+    }
     // Freezing: frozen stiff, and any fire put out (Elemental.add: a newborn fire elemental is hurt instead).
     if (kind === 'frost' && !frostHurtsElemental(ctx, char) && !immuneTo(char, 'frost')) {
       char.paralysed = Math.max(char.paralysed ?? 0, Math.round(FROST_TURNS * ctx.rng.floatRange(1, 1.5)));
@@ -114,6 +144,13 @@ export function burst(ctx: Ctx, pos: number, kind: Burst, radius = GAS_RADIUS, s
   }
 }
 
+/** Elemental.add with one of its harmfulBuffs: half to three fifths of its health, instead of the buff. */
+export function elementalHarm(ctx: Ctx, mob: Mob): void {
+  const damage = ctx.rng.normalIntRange(Math.trunc(mob.ht / 2), Math.trunc((mob.ht * 3) / 5));
+  ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage });
+  hurt(ctx, mob, damage, 'burning');
+}
+
 /** Everyone alive within `radius` of a cell. */
 function around(ctx: Ctx, pos: number, radius: number): Char[] {
   const chars: Char[] = heroesOn(ctx.world, ctx.depth).filter((hero) => distance(hero.pos, pos) <= radius);
@@ -127,6 +164,8 @@ function around(ctx: Ctx, pos: number, radius: number): Char[] {
  * flashing and gateway traps), and found if it was hidden; then it does what it does (activateTrap).
  */
 export function triggerTrap(ctx: Ctx, victim: Char | null, pos: number): void {
+  // Tengu's cell: its hidden traps are dart traps (TenguDartTrap).
+  if (tenguDartTrap(ctx, victim, pos)) return;
   const trap = trapAt(ctx.level, pos);
   if (!trap) return;
   const mob = victim && !isHero(victim) ? victim : null;
@@ -167,7 +206,7 @@ export function activateTrap(ctx: Ctx, trap: TrapInfo, victim: Char | null): voi
 export function mobPress(ctx: Ctx, mob: Mob): void {
   const cell = mob.pos;
   const terrain = ctx.level.map[cell]!;
-  if (MOBS[mob.kind].flying) {
+  if (flies(mob)) {
     enterCell(ctx.level, cell);
     return;
   }
@@ -187,26 +226,22 @@ export function mobPress(ctx: Ctx, mob: Mob): void {
  * it, and whatever it carried or would have dropped falls through to the depth below.
  */
 export function mobFall(ctx: Ctx, mob: Mob): void {
-  const index = ctx.floor.mobs.indexOf(mob);
-  if (index < 0) return;
-  ctx.floor.mobs.splice(index, 1);
-  mob.hp = 0;
-  leaveCell(ctx.world, ctx.level, ctx.depth, mob.pos);
+  if (!ctx.floor.mobs.includes(mob)) return;
   ctx.effects.push({ type: 'mobFell', depth: ctx.depth, mob: mob.id, pos: mob.pos, kind: mob.kind });
-  // Mob.die(Chasm): half the experience (an odd point rounded up or down at random), and its loot
-  // falls with it.
-  const stats = mobStats(mob);
-  let exp = stats.exp;
-  if (exp % 2 === 1) exp += ctx.rng.int(2);
-  exp = Math.trunc(exp / 2);
-  for (const hero of heroesOn(ctx.world, ctx.depth)) {
-    if (exp > 0 && hero.lvl <= stats.maxLvl) earnExp(ctx, hero, exp);
-  }
-  chasmLoot(ctx, mob);
+  mob.fell = true;
+  mobDied(ctx, mob);
 }
 
 /** Hurt a monster's turn by the conditions traps leave behind; true if it loses the turn. */
 export function mobConditions(ctx: Ctx, mob: Mob): boolean {
+  // DeathMarkTracker: the mark runs out, and a monster at no health dies.
+  if (deathMarkTurn(ctx, mob)) return true;
+  // What gear left on it: adrenaline, a lucky blow's tracker (throwing.ts).
+  if (mobGearTick(ctx, mob)) return true;
+  // Shattered's conditions first: corrosion, ooze, corruption, frost and the rest (status.ts); then alchemy's
+  // buffs (buffs.ts): dread, aggression, a magical sleep...
+  if (mobStatusTurn(ctx, mob)) return true;
+  if (tickMob(ctx, mob)) return true;
   // IMMUNITIES: the fetid rat breathes its own paralytic cloud unharmed, and nothing holds the curse.
   if (mob.kind === 'fetidRat' || mob.kind === 'curse') mob.paralysed = 0;
   if (mob.kind === 'curse') mob.rooted = 0;
@@ -215,12 +250,13 @@ export function mobConditions(ctx: Ctx, mob: Mob): boolean {
   if ((mob.rooted ?? 0) > 0) mob.rooted!--;
   if ((mob.rage ?? 0) > 0) mob.rage!--;
   if ((mob.blind ?? 0) > 0) mob.blind!--;
-  // Bleeding: it hurts every turn, and eases, until it stops.
+  // (Weakness, Vulnerable, Hex and a Barrier's shield wear off in status.ts mobStatusTurn.)
+  // Bleeding: it hurts every turn as much as it bleeds, and eases, until it stops (Bleeding.act).
   if ((mob.bleeding ?? 0) > 0) {
-    mob.bleeding = ctx.rng.intRange(Math.trunc(mob.bleeding! / 2), mob.bleeding!);
-    if (mob.bleeding > 0) {
-      ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage: mob.bleeding });
-      hurt(ctx, mob, mob.bleeding, 'bleeding');
+    const damage = bleedTick(ctx.rng, mob);
+    if (damage > 0) {
+      ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage });
+      hurt(ctx, mob, damage, 'bleeding');
       if (!isAlive(mob)) return true;
     }
   }
@@ -230,13 +266,15 @@ export function mobConditions(ctx: Ctx, mob: Mob): boolean {
     hurt(ctx, mob, 1, 'poison');
     if (!isAlive(mob)) return true;
   }
+  // Elemental.add: burning does a frost elemental harm instead.
+  if ((mob.burning ?? 0) > 0 && mob.kind === 'frostElemental') {
+    mob.burning = 0;
+    elementalHarm(ctx, mob);
+    if (!isAlive(mob)) return true;
+  }
   if ((mob.burning ?? 0) > 0) {
     mob.burning!--;
-    if (mob.kind === 'elemental') {
-      // Fire only feeds a fire elemental (Elemental.add).
-      mob.burning = 0;
-      if (mob.hp < mob.ht) mob.hp++;
-    } else if (isWater(ctx.level.map[mob.pos]!) || immuneTo(mob, 'burning')) {
+    if (isWater(ctx.level.map[mob.pos]!) || immuneTo(mob, 'burning')) {
       mob.burning = 0;
     } else {
       const damage = ctx.rng.intRange(1, 3 + Math.trunc(ctx.depth / 4));
@@ -252,3 +290,25 @@ export function mobConditions(ctx: Ctx, mob: Mob): boolean {
   }
   return false;
 }
+
+/**
+ * Fire.burn on one cell (Tengu's fire as it goes out): what lies there burns, a plant withers, and
+ * whatever can burn burns down to embers.
+ */
+export function burnCell(ctx: Ctx, cell: number): void {
+  burnHeaps(ctx, cell, 0);
+  if (ctx.floor.plants) ctx.floor.plants = ctx.floor.plants.filter((plant) => plant.pos !== cell);
+  if (hasFlag(ctx.level.map[cell]!, F.FLAMABLE)) {
+    ctx.level.map[cell] = T.EMBERS;
+    ctx.effects.push({ type: 'burnt', depth: ctx.depth, pos: cell });
+  }
+}
+
+/**
+ * Trap.activate for a kind of trap at a cell, not one lying there (a reclaimed trap set off by a spell): what the
+ * trap would do, without spending one.
+ */
+export function springTrapKind(ctx: Ctx, kind: TrapKind, victim: Char | null, pos: number): void {
+  activateTrap(ctx, { pos, kind, visible: true, active: true }, victim);
+}
+export { summoning as summonAround } from './trap-effects';

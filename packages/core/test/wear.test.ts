@@ -32,67 +32,32 @@ function strike(world: World, target: string, times: number): Effect[] {
 }
 
 describe('wear (Item.use)', () => {
-  it('an upgraded weapon wears with every blow that lands, warns, and breaks into a plain one', () => {
+  it("weapons and armour never wear, as in Shattered", () => {
     const { world, target } = sparring();
     const hero = heroById(world, 'p')!;
     hero.weapon = createItem('weapon.sword', 1, 3);
-    const whole = weaponStats(hero.weapon);
-    const uses = maxDurability(hero.weapon);
-    expect(uses).toBe(5 * 13);
-    const effects = strike(world, target, uses + 5);
-    expect(effects.some((e) => e.type === 'worn' && e.state === 'warning')).toBe(true);
-    expect(effects.filter((e) => e.type === 'worn' && e.state === 'broken')).toHaveLength(1);
-    expect(isBroken(hero.weapon)).toBe(true);
-    expect(effectiveLevel(hero.weapon)).toBe(0);
-    expect(hero.weapon.level).toBe(3);
-    const broken = weaponStats(hero.weapon);
-    expect(broken.max).toBeLessThan(whole.max);
-    // Its strength requirement stays what the upgrades made it.
-    expect(broken.str).toBe(whole.str);
-  });
-
-  it('a plain weapon never wears', () => {
-    const { world, target } = sparring();
-    const hero = heroById(world, 'p')!;
-    hero.weapon = createItem('weapon.sword', 1, 0);
+    hero.armor = createItem('armor.mail', 1, 3);
+    expect(maxDurability(hero.weapon)).toBe(Infinity);
+    expect(maxDurability(hero.armor)).toBe(Infinity);
     strike(world, target, 200);
     expect(hero.weapon.durability).toBeUndefined();
-  });
-
-  it('a tempered weapon mends what each blow wears', () => {
-    const { world, target } = sparring();
-    const hero = heroById(world, 'p')!;
-    hero.weapon = { ...createItem('weapon.sword', 1, 3), enchant: 'tempering' };
-    strike(world, target, 200);
     expect(isBroken(hero.weapon)).toBe(false);
+    expect(effectiveLevel(hero.weapon)).toBe(3);
+    expect(weaponStats(hero.weapon).max).toBe(32);
   });
 
-  it('a scroll of upgrade read on a broken item only mends it', () => {
-    const { world } = sparring();
-    const hero = heroById(world, 'p')!;
-    hero.weapon = { ...createItem('weapon.sword', 1, 3), durability: 0 };
-    hero.items.push(createItem('scroll.upgrade'));
-    world.known.push('scroll.upgrade');
-    const result = act(world, 'p', { type: 'use', item: hero.items.length - 1, target: 'weapon' });
-    expect(result.ok).toBe(true);
-    expect(hero.weapon.level).toBe(3);
-    expect(isBroken(hero.weapon)).toBe(false);
-    expect(result.ok && result.effects.some((e) => e.type === 'mended')).toBe(true);
-  });
-
-  it('a +1 ring never wears; a +2 ring wears turn by turn and then works as +1', () => {
+  it("Shattered's rings never wear", () => {
     const { world } = sparring();
     const hero = heroById(world, 'p')!;
     floorAt(world, 1).mobs = [];
-    hero.rings = [createItem('ring.mending', 1, 1), createItem('ring.power', 1, 2)];
-    const turns = maxDurability(hero.rings[1]!);
-    expect(maxDurability(hero.rings[0]!)).toBe(Infinity);
-    for (let i = 0; i < turns + 10; i++) {
+    hero.ring = createItem('ring.energy', 1, 1);
+    hero.misc = createItem('ring.haste', 1, 4);
+    expect(maxDurability(hero.misc)).toBe(Infinity);
+    for (let i = 0; i < 50; i++) {
       hero.hunger = 0;
       act(world, 'p', { type: 'wait' });
     }
-    expect(isBroken(hero.rings[0]!)).toBe(false);
-    expect(isBroken(hero.rings[1]!)).toBe(true);
-    expect(effectiveLevel(hero.rings[1]!)).toBe(1);
+    expect(isBroken(hero.misc)).toBe(false);
+    expect(effectiveLevel(hero.misc)).toBe(4);
   });
 });

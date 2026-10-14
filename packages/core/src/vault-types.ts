@@ -102,7 +102,10 @@ export interface VaultFloor {
 export interface StoredBelongings {
   weapon: Item | null;
   armor: Item;
-  rings: Item[];
+  /** The artifact, misc and ring slots (Belongings' KindofMisc). */
+  artifact: Item | null;
+  misc: Item | null;
+  ring: Item | null;
   items: Item[];
   gold: number;
 }

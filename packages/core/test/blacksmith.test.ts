@@ -49,7 +49,7 @@ describe('the troll blacksmith (Blacksmith, Blacksmith.Quest)', () => {
     let gnoll = 0;
     for (let seed = 1; seed <= 40 && (crystal < 2 || gnoll < 2); seed++) {
       const run = createRun(seed);
-      const world = { smithQuest: null, challenges: 0, heroes: [] } as unknown as World;
+      const world = { smithQuest: null, challenges: 0, heroes: [], run } as unknown as World;
       for (let d = 1; d <= 14; d++) if (d % 5 !== 0) generateLevel(run, d, undefined, false, world);
       const q = world.smithQuest;
       if (!q) continue;

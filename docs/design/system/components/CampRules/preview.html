@@ -1,0 +1,25 @@
+<!-- @dsCard group="Привал" height=852 width=1173 page subtitle="Правила дня при длинных названиях: «1 попытка · ещё 5 ч» переезжает под заголовок, в строке правил остаются только испытание и дар — «Фармакофобия» и «Точильный камень» влезают от 360 px. Слева — как было" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Правила дня</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 8px; flex: none; }
+  .cap { margin: 0; height: 20px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .cap b { color: var(--gold); font-weight: 400; }
+  .phone { position: relative; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get('lang') || 'ru', en = L === 'en';
+  function phone(w, h, cap) { var c = document.createElement('div'); c.className = 'col'; c.innerHTML = '<p class="cap">' + (cap || '') + '</p>'; var p = document.createElement('div'); p.className = 'phone pd-phone'; p.style.width = w + 'px'; p.style.height = h + 'px'; c.appendChild(p); document.getElementById('row').appendChild(c); return p; }
+  function game(p) { var g = document.createElement('div'); g.style.cssText = 'position:absolute;inset:0'; p.appendChild(g); PD.demo.game(g); return g; }
+  PD.demo.campScreen(phone(360, 812, en ? '<b>Before</b> · wraps' : '<b>Было</b> · переносится'), { lang: L, hero: 0, frame: 'gold', oldRules: true, hardName: en ? 'Pharmacophobia' : 'Фармакофобия', hardC: 2, boonName: en ? 'Whetstone' : 'Точильный камень', boonI: 50 });
+  PD.demo.campScreen(phone(360, 812, en ? '<b>Now</b> · 360 px' : '<b>Стало</b> · 360 px'), { lang: L, hero: 0, frame: 'gold', hardName: en ? 'Pharmacophobia' : 'Фармакофобия', hardC: 2, boonName: en ? 'Whetstone' : 'Точильный камень', boonI: 50 });
+  PD.demo.campScreen(phone(375, 812, en ? '<b>Now</b> · short names' : '<b>Стало</b> · короткие'), { lang: L, hero: 0, frame: 'gold' });
+  PD.sprite(document.body);
+</script>
+</body>
+</html>

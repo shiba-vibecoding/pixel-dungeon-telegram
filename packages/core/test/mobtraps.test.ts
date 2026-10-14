@@ -112,7 +112,8 @@ describe('monsters and chasms (Chasm.mobFall)', () => {
     const effects = wait(world);
     expect(effects).toContainEqual({ type: 'mobFell', depth: 1, mob: rat.id, pos: chasm, kind: 'rat' });
     expect(floorAt(world, 1).mobs).not.toContain(rat);
-    expect(effects.some((e) => e.type === 'died')).toBe(false);
+    // Mob.die(Chasm): it dies, but drops out of sight rather than playing its death.
+    expect(effects.findIndex((e) => e.type === 'mobFell')).toBeLessThan(effects.findIndex((e) => e.type === 'died'));
     expect(floorAt(world, 1).heaps.length).toBe(heaps);
     // Mob.die(Chasm): half a rat's one point, rounded either way.
     expect(hero.exp).toBeLessThanOrEqual(1);
@@ -147,61 +148,42 @@ describe('monsters and chasms (Chasm.mobFall)', () => {
   });
 });
 
-describe('monsters set down by magic (WandOfFlock)', () => {
-  it('a magic sheep that appears over a chasm falls, and one on a trap sets it off', () => {
-    const world = openGround();
-    const hero = heroById(world, 'p')!;
-    hero.items = [createItem('wand.flock', 1)];
-    const level = levelAt(world, 1);
-    const spot = CENTRE + 3;
-    level.map[spot] = T.CHASM;
-    for (const n of [-1, 1, -WIDTH, WIDTH, -WIDTH - 1, -WIDTH + 1, WIDTH - 1, WIDTH + 1]) setTrap(level, spot + n, 'alarm', true);
-    const result = act(world, 'p', { type: 'zap', item: 0, target: spot });
-    const effects = result.ok ? result.effects : [];
-    expect(effects).toContainEqual(expect.objectContaining({ type: 'mobFell', pos: spot, kind: 'sheep' }));
-    const trap = effects.find((e) => e.type === 'trap');
-    expect(trap).toMatchObject({ type: 'trap', kind: 'alarm', hero: '' });
-    expect(floorAt(world, 1).mobs.some((mob) => mob.kind === 'sheep' && trap?.type === 'trap' && mob.id === trap.mob)).toBe(true);
-  });
-});
-
 describe('spinner webs (Web)', () => {
-  it('a fleeing spinner leaves webs behind it that hold a hero fast, until they wear away', () => {
+  it('a spinner shoots a web where its prey is going, and a web holds a hero fast until it wears away', () => {
     const world = openGround();
     const hero = heroById(world, 'p')!;
-    const start = CENTRE + 1;
-    const spinner = addMob(world, 'spinner', start, 'fleeing', CENTRE);
-    wait(world);
-    // Spinner.move: a web where it stood, and it is not held by its own web.
-    expect(spinner.pos).not.toBe(start);
-    const web = floorAt(world, 1).gas?.web ?? [];
-    expect(web.map(([cell]) => cell)).toContain(start);
-    expect(web.find(([cell]) => cell === start)![1]).toBeGreaterThanOrEqual(4);
-    wait(world);
-    expect(spinner.pos).not.toBe(start);
+    hero.invisible = 0;
+    hero.hp = hero.ht = 500;
+    const spinner = addMob(world, 'spinner', CENTRE + 3, 'hunting', CENTRE);
+    // Spinner.webPos: the hero came from the left, so the web goes on the cell after them, on the way they go.
+    Object.assign(spinner, { enemy: 'p', enemySeen: true, lastEnemyPos: CENTRE - 1, webCooldown: 0 });
+    const effects = wait(world);
+    expect(effects.some((e) => e.type === 'mobZap' && e.bolt === 'web')).toBe(true);
+    const web = (floorAt(world, 1).gas?.web ?? []).map(([cell]) => cell);
+    expect(web).toContain(CENTRE + 1);
+    expect(web).toContain(CENTRE + 1 - WIDTH);
+    expect(web).toContain(CENTRE + 1 + WIDTH);
+    // Not again for ten turns.
+    expect(spinner.webCooldown).toBeGreaterThan(5);
     floorAt(world, 1).mobs = [];
 
-    expect(act(world, 'p', { type: 'move', to: start }).ok).toBe(true);
-    expect(hero.pos).toBe(start);
+    expect(act(world, 'p', { type: 'move', to: CENTRE + 1 }).ok).toBe(true);
+    expect(hero.pos).toBe(CENTRE + 1);
     expect(hero.rooted).toBeGreaterThan(0);
-    expect(act(world, 'p', { type: 'move', to: start + 1 })).toEqual({ ok: false, reason: 'you are rooted' });
-    expect(hero.pos).toBe(start);
-
-    // The web wears thinner every turn, and is gone in a few.
-    for (let i = 0; i < 8; i++) wait(world);
+    expect(act(world, 'p', { type: 'move', to: CENTRE + 2 })).toEqual({ ok: false, reason: 'you are rooted' });
+    // The web wears thinner every turn (Spinner's webs: twenty of it), and is gone in time.
+    for (let i = 0; i < 25; i++) wait(world);
     expect(floorAt(world, 1).gas?.web ?? []).toEqual([]);
-    expect(act(world, 'p', { type: 'move', to: start + 1 }).ok).toBe(true);
-    expect(hero.pos).toBe(start + 1);
+    expect(act(world, 'p', { type: 'move', to: CENTRE + 2 }).ok).toBe(true);
   });
 
   it('a web holds a monster on foot, but not a flier', () => {
     const world = openGround();
     const level = levelAt(world, 1);
     expect(level.map[CENTRE + 2]).toBe(T.EMPTY);
-    const spinner = addMob(world, 'spinner', CENTRE - 3 * WIDTH, 'fleeing', CENTRE);
-    wait(world);
     const webbed = CENTRE - 3 * WIDTH;
-    floorAt(world, 1).mobs = floorAt(world, 1).mobs.filter((mob) => mob !== spinner);
+    floorAt(world, 1).gas = { web: [[webbed, 4], [webbed + 1, 4]] };
+    floorAt(world, 1).gasAt = floorAt(world, 1).now + 1;
     const rat = addMob(world, 'rat', webbed, 'wandering', webbed + 3);
     const bat = addMob(world, 'bat', webbed + 1, 'wandering', webbed - 3);
     // Caught in it before their turns come: the bat flies out of the web at once; the rat stays caught while it lasts.

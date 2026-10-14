@@ -152,14 +152,14 @@ describe('special rooms painted alone', () => {
 });
 
 describe('shops', () => {
-  it('stock 19 wares at 6, 11 and 16 (20 with the alchemize spell to come), and the imp 22 at 20', () => {
+  it('stock 20 wares at 6, 11 and 16, and the imp 23 at 20', () => {
     for (const seed of [1, 2, 3, 4, 5]) {
-      for (const [depth, count] of [[6, 19], [11, 19], [16, 19], [20, 22]] as const) {
+      for (const [depth, count] of [[6, 20], [11, 20], [16, 20], [20, 23]] as const) {
         const run = createRun(seed);
         const wares = withWorld(depth, run, null, () => generateShopItems());
-        // Leather/mail/scale/plate armour, a weapon, thrown weapons, darts, (alchemize), a bag, eleven consumables,
+        // Leather/mail/scale/plate armour, a weapon, thrown weapons, darts, alchemize, a bag, eleven consumables,
         // a bomb or honeypot, an ankh, a stone of augmentation and something rare; the imp adds three torches.
-        expect(wares.length).toBe(count + 1);
+        expect(wares.length).toBe(count);
         expect(wareCount(wares)).toBe(count);
         expect(wares.some((w) => w?.kind.startsWith('bag.'))).toBe(true);
         expect(wares.filter((w) => w?.kind === 'torch').length).toBe(depth === 20 ? 3 : 0);
@@ -172,7 +172,7 @@ describe('shops', () => {
       for (const side of SIDES) {
         const { level, room } = paintRoomAlone(() => new ShopRoom(), depth, [side], depth);
         const forSale = [...level.heaps.values()].filter((h) => h.kind === 'forSale');
-        expect(forSale.length).toBe(19);
+        expect(forSale.length).toBe(20);
         for (const h of forSale) expect(room.inside(level.cellToPoint(h.pos))).toBe(true);
         expect(level.mobs).toMatchObject([{ kind: 'shopkeeper', state: 'passive' }]);
         expect(level.heaps.has(level.mobs[0]!.pos)).toBe(false);
@@ -185,7 +185,7 @@ describe('shops', () => {
     expect(room.width()).toBe(9);
     expect(level.heaps.size).toBe(0);
     const shop = room as ImpShopRoom;
-    expect(wareCount(shop.wares())).toBe(22);
+    expect(wareCount(shop.wares())).toBe(23);
     generating(20, () => {
       Painter.fill(level, room, 1, T.EMPTY_SP);
       Painter.set(level, room.left + 4, room.top + 4, T.PEDESTAL);
@@ -194,7 +194,7 @@ describe('shops', () => {
     });
     expect(shop.shopSpawned()).toBe(true);
     expect(level.mobs).toMatchObject([{ kind: 'impShopkeeper', pos: room.left + 4 + (room.top + 4) * level.width }]);
-    expect([...level.heaps.values()].filter((h) => h.kind === 'forSale').reduce((n, h) => n + h.items.length, 0)).toBe(22);
+    expect([...level.heaps.values()].filter((h) => h.kind === 'forSale').reduce((n, h) => n + h.items.length, 0)).toBe(23);
     // What lay in the room was moved out below it.
     const ration = [...level.heaps.values()].find((h) => h.items.some((i) => i.kind === 'food.ration'))!;
     expect(room.inside(level.cellToPoint(ration.pos))).toBe(false);
@@ -212,11 +212,11 @@ describe('shops', () => {
     expect(withWorld(20, run, null, () => chooseBag())?.kind).toBe('bag.wands');
     // All sold: no bag, and one ware fewer.
     expect(withWorld(21, run, null, () => chooseBag())).toBeNull();
-    expect(wareCount(withWorld(6, run, null, () => generateShopItems()))).toBe(18);
+    expect(wareCount(withWorld(6, run, null, () => generateShopItems()))).toBe(19);
   });
 
   it('counts only what lies loose in the backpack, not what is in a bag already', () => {
-    const wands = [createItem('wand.firebolt'), createItem('wand.lightning'), createItem('wand.poison')];
+    const wands = [createItem('wand.fireblast'), createItem('wand.lightning'), createItem('wand.corrosion')];
     const loose = createRun(4);
     expect(withWorld(6, loose, worldWith([...wands, createItem('seed.icecap')]), () => chooseBag())?.kind).toBe('bag.wands');
     const holstered = createRun(4);
@@ -262,7 +262,7 @@ describe('whole levels', () => {
           expect(level.spawn!.heaps.filter((h) => h.kind === 'forSale').length).toBeGreaterThanOrEqual(18);
         }
         if (depth > 20) {
-          const spawner = mobs.filter((m) => (m.kind as string) === 'demonSpawner');
+          const spawner = mobs.filter((m) => m.kind === 'spawner');
           expect(spawner.length).toBe(1);
           // Its floor, worked out once the level is done: the spawner's base under it, the halls' cracks kept.
           const floor = level.customTiles!.find((t) => t.kind === 'DemonSpawnerRoom.CustomFloor')!;

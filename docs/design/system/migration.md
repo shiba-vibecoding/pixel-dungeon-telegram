@@ -1319,21 +1319,21 @@ export function trophyClass(board: string, place: number): string {
 ```html
 <section class="pd-window" role="dialog" aria-label="Путь мастерства">
   <header class="pd-window-head"><div class="pd-slot"><i class="pd-sitem" data-s="59"></i></div><div class="pd-titles"><h2 class="pd-heading">Путь мастерства</h2></div></header>
-  <p class="pd-pick-intro">Маска Тенгу ложится на лицо…</p>
-  <div class="pd-picks two">
-    <div class="pd-pick" style="--glow:#ffcc66">
-      <div class="pd-pick-art"><i class="pd-pick-avatar" style="--av:0"></i><i class="pd-hicon" data-h="1"></i></div>
-      <span class="pd-pick-name">Гладиатор</span>
-      <p class="pd-pick-desc">Точные удары копят <em>комбо</em>…</p>
-      <div class="pd-pick-tal"><span class="pd-pick-talents"><i class="pd-ticon" data-t="14"></i>…</span>откроет ярус 3</div>
-      <div class="pd-pick-act"><button class="pd-button">Выбрать</button><button class="pd-button quiet">Подробнее</button></div>
+  <p class="pd-tpick-intro">Маска Тенгу ложится на лицо…</p>
+  <div class="pd-tpicks two">
+    <div class="pd-tpick" style="--glow:#ffcc66">
+      <div class="pd-tpick-art"><i class="pd-tpick-avatar" style="--av:0"></i><i class="pd-hicon" data-h="1"></i></div>
+      <span class="pd-tpick-name">Гладиатор</span>
+      <p class="pd-tpick-desc">Точные удары копят <em>комбо</em>…</p>
+      <div class="pd-tpick-tal"><span class="pd-tpick-talents"><i class="pd-ticon" data-t="14"></i>…</span>откроет ярус 3</div>
+      <div class="pd-tpick-act"><button class="pd-button">Выбрать</button><button class="pd-button quiet">Подробнее</button></div>
     </div>
   </div>
   <button class="pd-button quiet">Решу позже</button>
 </section>
 ```
 
-Способность брони — то же без `.two`: `.pd-pick-art` 72×72 со значком `data-h` (16 «Героический прыжок», 17 «Ударная волна», 18 «Выдержка»; остальные классы — `HeroIcon`), в `.pd-pick-act` «Выбрать» и три таланта яруса 4. В шапке — корона `data-s="60"`. После «Выбрать» спросите подтверждение (`windows.wndchooseability.are_you_sure`) окном `showConfirm`.
+Способность брони — то же без `.two`: `.pd-tpick-art` 72×72 со значком `data-h` (16 «Героический прыжок», 17 «Ударная волна», 18 «Выдержка»; остальные классы — `HeroIcon`), в `.pd-tpick-act` «Выбрать» и три таланта яруса 4. В шапке — корона `data-s="60"`. После «Выбрать» спросите подтверждение (`windows.wndchooseability.are_you_sure`) окном `showConfirm`.
 
 ### Алхимия
 
@@ -1444,9 +1444,431 @@ export function trophyClass(board: string, place: number): string {
 | `.pd-hero-window`, `.pd-tab-plus`, `.pd-talent-badge`, `.pd-avatar-wrap.talent` | окно героя с вкладками и «+» |
 | `.pd-talents`, `.pd-tier(.locked)`, `.pd-tier-head`, `.pd-tier-sub`, `.pd-tier-points(.free)`, `.pd-talent-row`, `.pd-talent(.zero/.max/.selected)`, `.pd-pips`, `.pd-talent-ghosts`, `.pd-tier-lock`, `.pd-talents-foot` | таланты |
 | `.pd-talent-card`, `.pd-talent-progress`, `.pd-talent-levels li(.done/.next)`, `.pd-talent-cost` | карточка таланта |
-| `.pd-picks(.two)`, `.pd-pick(.chosen)`, `.pd-pick-art`, `.pd-pick-avatar`, `.pd-pick-name`, `.pd-pick-desc`, `.pd-pick-tal`, `.pd-pick-talents`, `.pd-pick-act`, `.pd-pick-intro` | выбор пути и способности |
+| `.pd-tpicks(.two)`, `.pd-tpick(.chosen)`, `.pd-tpick-art`, `.pd-tpick-avatar`, `.pd-tpick-name`, `.pd-tpick-desc`, `.pd-tpick-tal`, `.pd-tpick-talents`, `.pd-tpick-act`, `.pd-tpick-intro` | выбор пути и способности (в v17 было `.pd-pick*` — совпадало с панелью предмета рюкзака) |
 | `.pd-alch-window`, `.pd-energy`, `.pd-energy-ico`, `.pd-alch`, `.pd-slot.out(.unknown/.empty)`, `.pd-slot.add`, `.pd-alch-arrow(.ready)`, `.pd-alch-out`, `.pd-alch-name`, `.pd-alch-cost(.short)`, `.pd-alch-pick`, `.pd-energize-sum` | котёл |
 | `.pd-guide-pages`, `.pd-recipes`, `.pd-recipe`, `.pd-recipe-line`, `.pd-recipe-name` | учебник алхимии |
 | `.pd-art-level`, `.pd-steps`, `.pd-art-charge`, `.pd-charge-bar(.seg/.full)`, `.pd-art-state(.on)`, `.pd-charge(.full)` | артефакт |
 | `.pd-mark.ench/.glyph(.new)`, `.pd-ench-line(.curse)` | зачарования и глифы |
 | `.pd-classes.six`, `.pd-class.new` | 6 классов |
+
+## Привал
+
+Привал заменяет `showTitle`: форма с классами уходит, класс выбирают на сцене. Ассеты — группа `Camp` (в `packages/client/public/assets/camp/`), значки краёв встроены в `bundle.css` как `--spr-quests`, `--spr-mail`, `--spr-mart`.
+
+### Разметка
+
+```html
+<main class="pd-camp" id="camp">            <!-- canvas и слой героя ставит PD.camp / ваш рантайм -->
+  <div class="pd-camp-ui">
+    <div class="pd-camp-top">
+      <button class="pd-profile framed" aria-label="Рейтинг">
+        <span class="pd-profile-face frame-gold"><i style="--av:0"></i></span>
+        <span class="pd-profile-text">
+          <span class="pd-profile-name">QA</span>
+          <span class="pd-profile-streak"><i class="pd-tro x1 flame"></i>12 дней подряд</span>
+          <span class="pd-profile-facts">Рекорд <b>4 320</b> · Забегов <b>37</b></span>
+        </span>
+        <span class="pd-profile-side"><span class="pd-counter frost"><i class="pd-tro frost"></i>1</span><span class="pd-counter trophies"><i class="pd-tro gold"></i>3</span></span>
+      </button>
+    </div>
+    <div class="pd-camp-edges">
+      <nav class="pd-camp-edge left">
+        <button class="pd-camp-icon quests" aria-label="Задания, есть новые" title="Задания"><i></i><span class="pd-count dot"></span></button>
+        <button class="pd-camp-icon mail" aria-label="Почта, 3" title="Почта"><i></i><span class="pd-count">3</span></button>
+      </nav>
+      <nav class="pd-camp-edge right">
+        <button class="pd-camp-icon ranks" aria-label="Рейтинг" title="Рейтинг"><i></i></button>
+        <button class="pd-camp-icon mart" aria-label="Пиксель-Март" title="Пиксель-Март"><i></i></button>
+        <button class="pd-camp-icon prefs" aria-label="Настройки" title="Настройки"><i></i></button>
+      </nav>
+    </div>
+    <div class="pd-camp-sheet">
+      <div class="pd-daily compact">
+        <div class="pd-daily-title"><h3>Подземелье дня</h3></div>
+        <div class="pd-daily-rules" aria-label="Сегодня: Во тьму, Припасы — 2 зелья лечения и паёк">
+          <span class="bad"><i class="pd-ch-mini" style="--c:5"></i>Во тьму</span>
+          <span class="boon" title="2 зелья лечения и паёк"><i class="pd-item" data-i="56"></i>Припасы</span>
+          <span class="pd-chip">1 попытка</span>
+        </div>
+        <button class="pd-button">Спуститься</button>
+      </div>
+      <div class="pd-actions">
+        <button class="pd-button primary big stacked">Продолжить<span class="pd-btn-sub">Воин, уровень 7 · глубина 9</span></button>
+        <div class="pd-row"><button class="pd-button">Новая игра</button><button class="pd-button pd-ch-btn"><i class="pd-icon" style="width:24px;height:24px;background-image:var(--spr-challenge-off)"></i>Испытания</button></div>
+      </div>
+    </div>
+  </div>
+</main>
+```
+
+- `--c` у `.pd-ch-mini` — номер испытания дня в `challenges.png` (как в `challengeList`), дар — значок предмета дара. Сыграно — `.pd-daily.done` с местом, как на старом титуле.
+- `.pd-count.dot` — точка без числа; почта показывает число незабранных писем, 0 — без значка.
+- Рамка портрета — `frame-bronze | frame-gold | frame-shadow | frame-patron` из `worn.frame`; без рамки — без класса.
+
+### Сцена
+
+```ts
+// main.ts — вместо showTitle
+const camp = PD.camp(root, { scene: worn.camp ?? 'outdoor', season: seasonOf(new Date()), hero: CLASS_INDEX[selected],
+  skin: worn.skins[selected] ?? null, effect: worn.effect ?? null, lang });
+// свайп и стрелки меняют класс: слушайте смену и сохраняйте 'pd-class'
+```
+
+- Холст 94×203, `image-rendering: pixelated`, CSS 376×812, по центру; слой `.pd-camp-layer` того же размера поверх — кнопка-герой `.pd-camp-hero`, облачко `.pd-camp-bubble`, имя `.pd-camp-name` со стрелками `.pd-camp-arrow.prev/.next`.
+- Порядок слоёв за кадр: фон → звёзды → факелы (`torch.png`, 130 мс) → костёр (`fire.png`, 100 мс) → тень и герой → свет (`globalCompositeOperation = 'lighter'`) → частицы.
+- Герой смотрит на костёр (отражён по горизонтали), обиженный — от костра.
+- Сезон входа: декабрь–февраль — зима, сентябрь–ноябрь — осень, остальное — лето (как сезон снега в Пиксель-Марте).
+- Платные привалы — новые товары Пиксель-Марта `kind: 'camp'`: `camp.cave`, `camp.prison`, `camp.hall`; превью товара — тот же `PD.camp` с `crop`.
+- Сдвиг на низком экране: `top = min(0, sheetTop − 16 − 129 × 4)` для холста и слоя.
+- Фразы касания и обиды — `CAMPT` в `bundle.js` (по три на класс, RU и EN, у Охотницы и Дуэлянтки женский род).
+
+### Обучение по шагу
+
+```html
+<div class="pd-coach" role="dialog" aria-label="Враг">
+  <div class="pd-coach-ring" style="left:72px;top:380px;width:40px;height:46px"></div>   <!-- клетка цели ± 4 px -->
+  <div class="pd-coach-bubble above" style="bottom:450px;--tail:80px">
+    <div class="pd-coach-head"><b>Враг</b><span class="pd-coach-step">Шаг 1 из 4</span></div>
+    <p class="pd-coach-text">Это <em>крыса</em>. Коснитесь её, чтобы ударить…</p>
+    <div class="pd-coach-actions"><button class="pd-button quiet">Пропустить обучение</button><button class="pd-button">Дальше</button></div>
+    <div class="pd-coach-dots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
+  </div>
+</div>
+```
+
+- Рамку ставьте по клетке карты (`cellRect(x, y)` из рендера) или по кнопке (`getBoundingClientRect`) и обновляйте при сдвиге камеры.
+- `.below` — облачко под местом (место в верхней половине), `.above` — над ним. `--tail` — x хвостика от левого края облачка.
+- Последний шаг: кнопка `.primary` «Понятно». «Пропустить обучение» сохраняет `pd-coach-done`, как и прохождение.
+
+### Почта
+
+```html
+<section class="pd-window pd-mail-window" role="dialog" aria-label="Почта">
+  <header class="pd-window-head"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-mail)"></i><div class="pd-titles"><h2 class="pd-heading">Почта</h2></div><button class="pd-close"></button></header>
+  <div class="pd-scroll"><div class="pd-mail">
+    <article class="pd-letter unread">
+      <span class="pd-letter-ico"><i class="pd-tro big gold"></i></span>
+      <header class="pd-letter-head"><b>Кубок дня</b><time>сегодня</time></header>
+      <p class="pd-letter-text">Подземелье дня 13.10: <em>1 место из 214</em>.</p>
+      <div class="pd-letter-act"><span class="pd-letter-gifts"><span class="pd-gift"><i class="pd-tro x1 gold"></i>Золотой кубок</span></span><button class="pd-button primary">Забрать</button></div>
+    </article>
+    <article class="pd-letter claimed">…<div class="pd-letter-act">…<span class="pd-letter-done">Получено</span></div></article>
+  </div></div>
+  <div class="pd-mail-foot"><span>Письма хранятся 30 дней</span><button class="pd-button quiet">Забрать всё</button></div>
+</section>
+```
+
+- Значок письма: кубок дня `gold | silver | bronze`, итоги недели `week`, сезон — `--spr-season`. Награда звёздами — `<i class="pd-icon" style="background-image:var(--spr-stars)"></i><span class="price">+25</span>`, рамка — 16 px рамки из Пиксель-Марта.
+- Пустая почта: `<p class="pd-mail-empty">` вместо списка и без подвала.
+
+| Класс | Что это |
+| --- | --- |
+| `.pd-camp`, `.pd-camp-canvas`, `.pd-camp-layer`, `.pd-camp-hero`, `.pd-camp-name`, `.pd-camp-arrow(.prev/.next)`, `.pd-camp-bubble` | сцена и герой |
+| `.pd-camp-ui`, `.pd-camp-top`, `.pd-profile.framed`, `.pd-profile-face(.frame-*)`, `.pd-profile-name` | карточка игрока |
+| `.pd-camp-edges`, `.pd-camp-edge(.left/.right)`, `.pd-camp-icon(.quests/.mail/.ranks/.mart/.prefs)`, `.pd-count(.dot)` | значки по краям |
+| `.pd-camp-sheet`, `.pd-daily.compact`, `.pd-daily-title`, `.pd-daily-rules span(.bad/.boon)` | нижняя панель |
+| `.pd-coach`, `.pd-coach-ring`, `.pd-coach-bubble(.above/.below)`, `.pd-coach-head`, `.pd-coach-step`, `.pd-coach-text`, `.pd-coach-actions`, `.pd-coach-dots` | обучение по шагу |
+| `.pd-mail-window`, `.pd-mail`, `.pd-letter(.unread/.claimed)`, `.pd-letter-ico`, `.pd-letter-head`, `.pd-letter-text`, `.pd-letter-act`, `.pd-letter-gifts`, `.pd-gift`, `.pd-letter-done`, `.pd-mail-empty`, `.pd-mail-foot` | почта |
+
+
+## Обновление «Shattered», часть 2 (v19)
+
+### Срочно: `.pd-pick` → `.pd-tpick`
+
+В v17 выбор пути и способности брони использовал `.pd-pick*` — это имя уже было у панели предмета рюкзака (v10), и стили ломали карточку предмета. Теперь:
+
+| v17 | v19 |
+| --- | --- |
+| `.pd-picks`, `.pd-picks.two` | `.pd-tpicks`, `.pd-tpicks.two` |
+| `.pd-pick`, `.pd-pick.chosen` | `.pd-tpick`, `.pd-tpick.chosen` |
+| `.pd-pick-art`, `-avatar`, `-name`, `-desc`, `-tal`, `-talents`, `-act`, `-intro` | `.pd-tpick-art`, `-avatar`, `-name`, `-desc`, `-tal`, `-talents`, `-act`, `-intro` |
+
+`.pd-pick`, `.pd-pick-head`, `.pd-pick-actions`, `.pd-pick-dropbtn` остаются за рюкзаком.
+
+### Облики новых классов
+
+- Листы: `skins/duelist-ash|royal|shadow.png`, `skins/cleric-ash|royal|shadow.png` — как у остальных; в `shop.ts` добавьте 6 товаров `skin.duelist.*`, `skin.cleric.*`.
+- Аватар облика: `avatars-skins.png`, ячейка = `(класс − 4) × 3 + [ash, royal, shadow]`; CSS: `<i class="skin" style="--av:N">` внутри `.pd-profile-face` / `.pd-avatar` (атлас `--atlas-avatar-skins`).
+
+### Алхимия
+
+```html
+<div class="pd-alch">
+  <button class="pd-slot">…</button><button class="pd-slot">…</button><button class="pd-slot add"></button>
+  <canvas class="pd-alch-pot" data-mode="brew" aria-hidden="true"></canvas>      <!-- idle | brew | cata -->
+  <div class="pd-slot out catalyst"><canvas class="pd-catalyst" aria-hidden="true"></canvas></div>
+</div>
+```
+
+- Котёл заменяет стрелку. Состояния: `idle` — пока рецепта нет; по «Сварить» — `brew` (или `cata`), 540 мс нагрева и 440 мс «пуфа», потом результат появляется в ячейке и котёл снова кипит.
+- Энергия: по «Расщепить» вызовите полёт осколков (`PD.alchEnergy`) — 3 осколка от вещи, задержка 90 мс между вещами; число на счётчике меняется, когда долетел последний.
+- Кучка энергии на полу — `energy-pile.png` как предмет на клетке, блик 4 кадра.
+- Выбор безделушки: `.pd-trinkets` → `.pd-trinket(.selected)` с `.pd-trinket-art`, `-name`, `-desc` и кнопкой.
+- Значки окон выбора — `.pd-sitem` с кадрами из `ItemSpriteSheet` (`PD.demo.shIcons`): камни 336–347, заклинания 416–430, безделушки 272–288, пустые ячейки 13 / 15 / 7.
+- Ненайденная страница: в учебнике вместо списка — `<div class="pd-guide-lost"><i class="pd-page-lost"></i><b>…</b><p>…</p><div class="pd-recipes ghost">…</div></div>`; вкладка страницы — `.lost`. Выбранную вкладку прокрутите в видимую часть (`scrollIntoView({ inline: 'nearest' })`).
+
+### Баффы с оттенками
+
+`<i class="pd-tbuff large" data-tb="N"></i>` (32 px) или `<i class="pd-tbuff" data-tb="N"></i>` (14 px). Листы уже окрашены, `hardlight` в коде не нужен.
+
+| N | ключ | имя | иконка Shattered | окраска |
+| --- | --- | --- | --- | --- |
+| 0 | `haste` | Ускорение | 41 | тон 47°, насыщенность 0.95 |
+| 1 | `stamina` | Выносливость | 41 | тон 119°, насыщенность 0.8 |
+| 2 | `fireImbue` | Огненная пропитка | 55 | ×2/0.75/0 |
+| 3 | `toxicImbue` | Ядовитая пропитка | 55 | ×1/1.5/0 |
+| 4 | `frostImbue` | Ледяная пропитка | 55 | ×0/1.6/2.6 |
+| 5 | `barrier` | Барьер | 20 | тон 191°, насыщенность 0.85 |
+| 6 | `arcaneArmor` | Тайная броня | 20 | тон 281°, насыщенность 0.7 |
+| 7 | `prismatic` | Призматический щит | 20 | тон 216°, насыщенность 0.28 |
+| 8 | `prismaticFull` | Призматический щит, усилен | 20 | ×1.6/1.5/0.9 |
+| 9 | `healing` | Лечение | 44 | как есть |
+| 10 | `aquaHealing` | Водное лечение | 44 | тон 180°, насыщенность 0.85 |
+| 11 | `might` | Рост здоровья | 44 | тон 29°, насыщенность 0.95 |
+| 12 | `cloak` | Плащ теней | 12 | тон 277°, насыщенность 0.6 |
+| 13 | `invisible` | Невидимость (зелье) | 12 | как есть |
+| 14 | `hourglass` | Песочные часы: стазис | 7 | тон 29°, насыщенность 0.9 |
+| 15 | `slow` | Замедление | 7 | как есть |
+| 16 | `capeThorns` | Плащ шипов | 31 | тон 29°, насыщенность 0.6 |
+| 17 | `talisman` | Талисман предвидения | 32 | тон 180°, насыщенность 0.65 |
+
+### Карта
+
+- Призматическое отражение рисуйте листом `prismatic.png` вместо листа героя: кадры те же (0–20), ряд = `floor(t / 120) % 4`.
+- Союзник: `ally-heart.png` над спрайтом, на 6–7 px выше головы, кадр `floor(t / 400) % 2` (второй — на 1 px ниже).
+- Призрак-спутник: `globalAlpha = 0.82`, покачивание `sin(t / 500) × 2 px`; свет — радиальный градиент r = 1,6 клетки `rgba(150,210,255,0.22 ± 0.06)`, `lighter`.
+- Эфирные цепи: звено каждые 5 px вдоль линии, повёрнуто по направлению, чередуются кадры 0/1; наконечник на конце; вылет 600 мс, затем притягивание.
+- Снаряды палочек: ряд `wand-bolts.png` по палочке (`PD.demo.wands`), кадр `floor(t / 90) % 2`, за снарядом 4 квадрата 2×2 цвета шлейфа с прозрачностью 0,4…0,1.
+- Опасность: `<button class="pd-danger" aria-label="Видят вас: 3">3</button>` справа под HUD; касание переводит камеру на следующего врага и ставит рамку `.pd-danger-ring` на его клетку; новый враг — класс `.new` на 1,5 с.
+
+### Панель, снаряжение, журнал
+
+- Быстрые слоты: настройка «Быстрых слотов: 2 / 4 / 6». 4 — `.pd-toolbar.q4` (7 кнопок в ряд, осмотр — долгое касание поиска), 6 — `.pd-toolbar.q6` с `.pd-quickbar` из 6 слотов над панелью.
+- Пустая ячейка «разное» — `.pd-slot.placeholder.misc`.
+- «Украсть»: `<button class="pd-button primary"><i class="pd-steal"></i>Украсть</button>`.
+- Новые отметки журнала: `<i class="pd-jicon2" data-j2="N">` (`journal2.png`): 0 лавка, 1 лавка беса, 2 крысиный король, 3 логово демонов, 4 потерянный рюкзак, 5 маяк возвращения, 6 дальний колодец, 7–13 особые этажи (пропасти, вода, заросли, тьма, большой, ловушки, тайники).
+
+### Дротики и камень усиления
+
+```html
+<div class="pd-dart-seeds"><button class="pd-slot selected" aria-label="Солнцетрав"><i class="pd-sitem" data-s="387"></i><span class="pd-qty">3</span></button>…</div>
+<div class="pd-dart-preview"><span class="pd-slot"><i class="pd-sitem" data-s="164"></i><span class="pd-qty">2</span></span><span class="pd-dart-text"><b>Солнцетрав → 2 исцеляющих дротика</b>Лечит того, в кого попал…</span></div>
+
+<div class="pd-aug-opts" role="radiogroup">
+  <button class="pd-aug-opt selected" role="radio" aria-checked="true"><span class="pd-aug-name">Скорость</span>
+    <span class="pd-aug-row"><span>Урон</span><b class="bad">7–17</b><em class="bad">−30%</em></span>
+    <span class="pd-aug-row"><span>Удар</span><b class="good">0,67 хода</b><em class="good">на треть быстрее</em></span></button>
+  …
+</div>
+```
+
+Семена → дротики: кадр дротика = 161 + (кадр семени − 384). Текущий вариант — чип «сейчас» в `.pd-aug-name`.
+
+### Доски
+
+- `.pd-rank.prize` — под номером `<i class="pd-tro x1 gold|silver|bronze|week">` (кубок дня 1–3, медаль недели 1–10).
+- `<div class="pd-ranks-cut">Медали недели — места 1–10</div>` после 10-й строки недели.
+- `<p class="pd-board-timer"><i></i>Доска закроется через <b>5 ч 12 мин</b> · награды придут почтой</p>` под `.pd-board-note`; обновляйте раз в минуту, в последний час — раз в секунду.
+- Вкладки: День, Неделя, Лучшие, Мои.
+
+
+## Релиз Shattered (v20)
+
+### «Что нового»
+
+```html
+<section class="pd-window pd-news" role="dialog" aria-label="Что нового">
+  <header class="pd-window-head"><div class="pd-titles"><h2 class="pd-heading">Что нового</h2><span class="pd-sub">Версия 2.4</span></div></header>
+  <ul class="pd-news-list">
+    <li><span class="pd-news-tag add">Добавлено</span><span>Обучение по шагу для новых игроков.</span></li>
+    <li><span class="pd-news-tag now">Теперь</span><span>…</span></li>
+    <li><span class="pd-news-tag fix">Поправлено</span><span>…</span></li>
+    <li><span class="pd-news-tag bal">Баланс</span><span>…</span></li>
+  </ul>
+  <div class="pd-actions"><button class="pd-button primary">Играть</button><button class="pd-button quiet">Все изменения</button></div>
+  <p class="pd-note center">Это окно показывается один раз после обновления</p>
+</section>
+```
+
+Большое: `.pd-news.big`, первым ребёнком — `<div class="pd-news-banner" role="img" aria-label="Шесть героев у костра"><span class="pd-news-kick">Большое обновление · Версия 2.4</span><b>Shattered</b></div>`, затем `<p class="pd-news-sub">` и `<ul class="pd-news-big"><li><span class="pd-news-ico">…</span><span><b>Два новых класса</b>…</span></li>…</ul>`. Значок классов — `<span class="pd-news-faces"><i style="--av:4"></i><i style="--av:5"></i></span>`.
+
+Показ: если `pd-seen-version` меньше текущей — окно после загрузки, до Привала; «Играть» и крестик записывают версию. Для большого релиза (`major: true` в списке изменений) — `.big`.
+
+### «Первопроходец»
+
+- Выдача: сервер ставит трофей `pioneer` всем, у кого есть забег раньше даты релиза, и кладёт письмо в почту. На полке «Мои» он первый.
+- Значки: `.pd-tro.pioneer`, `.pd-tro.big.pioneer`; эмблема в письме — `<i class="pd-pioneer"></i>` (`--spr-pioneer`, 48×48 ×2).
+- Письмо в списке: `<article class="pd-letter special unread">` с `.pd-tro.big.pioneer`; открытое: `.pd-letter-open` (эмблема, «Памятный кубок», заголовок, текст, `.pd-gift`, «Забрать», дата).
+
+### Сообщить о проблеме
+
+```html
+<section class="pd-window pd-report" role="dialog" aria-label="Сообщить о проблеме">
+  <header class="pd-window-head"><i class="pd-icon" style="width:32px;height:32px;background-image:var(--spr-report)"></i><div class="pd-titles"><h2 class="pd-heading">Сообщить о проблеме</h2></div><button class="pd-close"></button></header>
+  <label class="pd-field"><span class="pd-field-label">Что случилось <small>необязательно</small></span><textarea class="pd-textarea" rows="4" placeholder="Например: после лестницы пропал рюкзак"></textarea></label>
+  <button class="pd-check" role="checkbox" aria-checked="true"><i></i><span><b>Приложить журнал забега</b><small>Ходы и действия этого забега, версия игры и телефона. Без имени и переписки.</small></span></button>
+  <div class="pd-actions"><button class="pd-button primary">Отправить</button><button class="pd-button quiet">Отмена</button></div>
+</section>
+```
+
+- Во время отправки: `<button class="pd-button primary" disabled><span class="pd-dots"><i></i><i></i><i></i></span> Отправляем…</button>`.
+- После: `.pd-report-done` — `.pd-report-check`, «Отправлено, спасибо!», текст, `.pd-badge-row` со значком «Охотник за багами», «Закрыть».
+- В настройках: `<button class="pd-linkrow report"><i class="pd-icon" style="background-image:var(--spr-report)"></i><span>Сообщить о проблеме</span></button>`; на экране ошибки — обычная кнопка с тем же значком под «Перезапустить».
+- Отправка — тот же канал, что `/paysupport` в чат админа: текст, `runId`, версии, при отметке — журнал забега.
+
+### Нет связи и обновление
+
+- Окно `.pd-offline` (`role="alertdialog"`): `.pd-offline-ico`, заголовок, два абзаца, «Повторить» (основная), «Играть без связи», «Проверим сами через 20 с».
+- В игре: `<span class="pd-net-badge" role="status">Нет связи · забег засчитается позже</span>` под HUD.
+- Обновление: `<div class="pd-toast update" role="status">Вышла новая версия — обновляем</div>`; значок крутится шагами 8 × 45°, при `prefers-reduced-motion` стоит.
+
+### Правила доски
+
+`<button class="pd-help" aria-label="Правила доски">?</button>` в шапке `.pd-boards-window`; окно:
+
+```html
+<dl class="pd-rules">
+  <div><dt><span class="pd-rules-ico"><i class="pd-tro x1 gold"></i></span>Очки</dt><dd>Как в оригинале: золото + уровень × глубина × 100…</dd></div>
+  …
+</dl>
+```
+
+Пункты: очки (`gold`), места (`week`), когда закрывается (`--spr-hourglass`), равные очки (`<b class="pd-rules-eq">=</b>`), что засчитывается (`--spr-check`).
+
+| Класс | Что это |
+| --- | --- |
+| `.pd-news(.big)`, `.pd-news-list`, `.pd-news-tag(.add/.now/.fix/.bal)`, `.pd-news-banner`, `.pd-news-kick`, `.pd-news-sub`, `.pd-news-big`, `.pd-news-ico`, `.pd-news-faces` | «Что нового» |
+| `.pd-tro.pioneer`, `.pd-pioneer`, `.pd-letter.special`, `.pd-letter-open`, `.pd-letter-kind` | «Первопроходец» |
+| `.pd-report`, `.pd-field-label`, `.pd-textarea`, `.pd-check`, `.pd-report-done`, `.pd-report-check`, `.pd-badge-row`, `.pd-linkrow.report` | сообщить о проблеме |
+| `.pd-offline`, `.pd-offline-ico`, `.pd-net-badge`, `.pd-toast.update` | нет связи, обновление |
+| `.pd-help`, `.pd-rules`, `.pd-rules-ico`, `.pd-rules-eq` | правила доски |
+
+
+## Дополнения от сборки «Привала» (v20)
+
+### Пиксель-Март: пять полок
+
+```html
+<div class="pd-tabs compact shelf" role="tablist">
+  <button class="pd-tab skin" role="tab" aria-selected="false" aria-label="Облики" title="Облики"><i class="pd-tab-ico skin"></i><span>Облики</span></button>
+  <button class="pd-tab camp" role="tab" aria-selected="true" aria-label="Привалы" title="Привалы"><i class="pd-tab-ico camp"></i><span>Привалы</span></button>
+  <button class="pd-tab effect" …><i class="pd-tab-ico effect"></i><span>Эффекты</span></button>
+  <button class="pd-tab frame" …><i class="pd-tab-ico frame"></i><span>Рамки</span></button>
+  <button class="pd-tab patron" …><i class="pd-tab-ico patron"></i><span>Меценат</span></button>
+</div>
+```
+
+Подпись у невыбранных скрыта CSS (`[aria-selected="false"] span { display: none }`), так что в разметке она есть всегда. Сжатие «Мецената» до значка — убрать.
+
+Карточка привала: `<div class="pd-offer-art camp"><i class="pd-camp-card" style="--card:var(--spr-camp-card-cave)" role="img" aria-label="Пещера"></i></div>` — файлы `camp-card-*.png` (группа `Camp`), 66×48, `background-size: 132px 96px`.
+
+Окно привала `.pd-camp-offer`: `<div class="pd-camp-peek" data-camp="cave"></div>` и `PD.camp(box, { scene: 'cave', scale: 3, crop: [0, 46, 94, 73], label: false })`; затем `.pd-info`, `<ul class="pd-camp-facts">`, `.pd-note`, кнопки по состоянию (см. README компонента). «Примерить» — 10 секунд с этим фоном на настоящем привале и обратно.
+
+### Почта
+
+Удалите `<br>` между наградой и «Забрать». Достаточно стилей бандла: `.pd-letter` — `"ico head" "ico text" "act act"`, `.pd-letter-act` — `flex-wrap: wrap`, кнопка `margin-left: auto`, `.pd-gift` в письме — `white-space: normal`. Числа с разделителем тысяч и «4 место» — через U+00A0.
+
+### Лицо на «Продолжить»
+
+Классы `.with-face`, `.pd-camp-face`, `.pd-btn-label` — разметка в README `CampFace`. Портрет — герой сохранённого забега (`run.heroClass`, облик — `run.skin`), не тот, что сейчас в сцене.
+
+### Правила дня
+
+```html
+<div class="pd-daily-title"><h3>Подземелье дня</h3><small class="pd-daily-left">1 попытка · ещё 5 ч</small></div>
+<div class="pd-daily-rules"><span class="bad"><i class="pd-ch-mini" style="--c:2"></i>Фармакофобия</span><span class="boon"><i class="pd-item" data-i="50"></i>Точильный камень</span></div>
+```
+
+Плашку `.pd-chip` «1 попытка» из строки правил — убрать. Когда попытка сыграна — «Сыграно · 12 место»; время — до 00:00 UTC.
+
+### Широкий экран и высокие телефоны
+
+- `PD.camp(el, { fill: true })` (в `campScreen` по умолчанию): холст больше 94×203 — `crop = [−ex, −et, 94 + 2ex, 203 + et + 24]`, где `ex = ⌈(ширина / 4 − 94) / 2⌉`, `et = ⌈высота / 4 / 2⌉`; фон дорисовывается один раз на сцену (`extBg`). `shift(y)` учитывает `et`; `cam.ext` — насколько можно опустить сцену.
+- Подгонка: `shift = min(cam.ext, верх панели − 16 − 516)` — теперь и положительная (высокие экраны).
+- `.pd-camp-ui { max-width: 440px; margin: 0 auto; }` — интерфейс колонкой; на телефоне ничего не меняется.
+- При смене размера пересоздавайте `PD.camp` (или пересчитайте `crop` и сбросьте кэш фона).
+
+| Класс | Что это |
+| --- | --- |
+| `.pd-tabs.shelf`, `.pd-tab-ico.skin/.camp/.effect/.frame/.patron` | пять полок |
+| `.pd-camp-card`, `.pd-offer-art.camp`, `.pd-camp-offer`, `.pd-camp-peek`, `.pd-camp-facts` | привалы в Марте |
+| `.with-face`, `.pd-camp-face`, `.pd-btn-label` | лицо на «Продолжить» |
+| `.pd-daily-left` | попытки и время под заголовком |
+
+
+## Монстры Shattered (v21)
+
+### Портреты
+
+`bestiary.png` (группа `Monsters`): ячейки 24×24, 11 в ряд. Номер — порядок в `PD.demo.best.keys`. Столбец `n % 11`, строка `⌊n / 11⌋`:
+
+```html
+<i class="pd-mob" style="--mx:8;--my:0"></i>              <!-- DM-100, ×2 = 48 px -->
+<i class="pd-mob x3" style="--mx:8;--my:0"></i>           <!-- ×3 = 72 px -->
+<i class="pd-mob silhouette" style="--mx:5;--my:2"></i>   <!-- не встречен -->
+```
+
+На карте этот же атлас годится для неподвижных портретов, но в игре у вас анимированные листы Shattered — атлас только для интерфейса.
+
+### Бестиарий
+
+```html
+<div class="pd-tabs compact shelf" role="tablist">
+  <button class="pd-tab" role="tab" aria-selected="false" aria-label="Зелья" title="Зелья"><i class="pd-item pd-tab-item" data-i="57"></i><span>Зелья</span></button>
+  … Свитки 44, Кольца 34, Палочки 50 …
+  <button class="pd-tab" role="tab" aria-selected="true" aria-label="Бестиарий" title="Бестиарий"><i class="pd-tab-ico bestiary"></i><span>Бестиарий</span></button>
+</div>
+<div class="pd-cat-count">Встречено 25 из 66 · убито 287</div>
+<div class="pd-scroll pd-best">
+  <section class="pd-best-group">
+    <header class="pd-best-head"><b>Тюрьма</b><span>глубины 6–9</span><em>5/5</em></header>
+    <div class="pd-best-grid" role="listbox" aria-label="Тюрьма">
+      <button class="pd-best-cell selected" role="option" aria-selected="true" aria-label="DM-100, убито 11"><i class="pd-mob" style="--mx:8;--my:0"></i><span class="pd-best-n">11</span></button>
+      <button class="pd-best-cell unseen" role="option" aria-selected="false" aria-label="Ещё не встречен"><i class="pd-mob silhouette" style="--mx:6;--my:1"></i></button>
+    </div>
+  </section>
+</div>
+<div class="pd-best-detail"><span class="pd-best-face"><i class="pd-mob x3" style="…"></i></span><span class="pd-best-text"><b>DM-100</b><small>Тюрьма · глубины 6–9 · Убито: 11</small><span>…</span></span></div>
+```
+
+Детали `.pd-best-detail` — вне прокрутки, под ней. Не встреченный — `.pd-best-detail.unseen`, силуэт ×3. «Убито:» — с неразрывным пробелом.
+
+### Ауры чемпионов
+
+На карте: за спрайтом, по центру спрайта, `globalCompositeOperation = 'lighter'`. Готовая отрисовка — `auraCanvas(цвет, лучей, радиус, шаг)` внутри `PD.demo.mobFx` в бандле. Шаг = `⌊t / 167⌋ mod 24`, угол = шаг × 15° + 45°. Кэшируйте 24 кадра на чемпиона. Цвета и лучи — в README `MobChampions`.
+
+Окно существа:
+
+```html
+<section class="pd-window pd-mob-window" role="dialog">
+  <header class="pd-window-head"><span class="pd-mob-face champ" style="--champ:#ff8800"><i class="pd-mob" …></i></span><div class="pd-titles"><h2 class="pd-heading">Гнолл-громила</h2><span class="pd-champ-tag" style="--champ:#ff8800">Огненный чемпион</span></div><button class="pd-close"></button></header>
+  <div class="pd-mob-hp"><div class="pd-bar" style="--v:.8"><span class="pd-bar-text">Здоровье 32/40</span></div></div>
+  <ul class="pd-mob-buffs"><li><i class="pd-mbuff large" style="--ix:4"></i><span><b style="color:#ff8800">Огненный чемпион</b>+25% урона вблизи…</span></li></ul>
+</section>
+```
+
+### Снаряды и лучи
+
+- Шар: кадр 8×8 из `mob-bolts.png` (или `wand-bolts.png` для огня и мороза) ×2, смена кадра 90 мс, полёт 600 мс, шлейф 4 квадрата 2×2 цвета снаряда.
+- Молния DM-100: ломаная из 5 отрезков, поперечный сдвиг до ±9 px, каждые 66 мс новая; три прохода — `#4a7aff` 3 px, `#ffffff` 1 px, `#bcd4ff` 1 px.
+- Лучи: текстура 16×8 из `mob-beams.png`, повернуть по направлению и класть подряд; прозрачность 1 → 0,66 → 0,33 за 500 мс. Смертельный взгляд — до стены за героем, световой луч грозового элементаля — на 60% дальше цели.
+- Злой глаз: 1 с зарядки — 6 точек 1×1 сходятся к глазу (`#e0a0ff`, `#ffffff`), потом луч.
+- Попадание: значок состояния 16×16 ×2 над героем поднимается 5 ступенями по 100 мс, гаснет; в HUD — `<button class="pd-buff"><i class="mob" style="--ix:1"></i></button>`.
+
+### Гуль и эбеновый мимик
+
+- `ghoul-fall.png`: 0 стоит, 1–2 падает, 3 лежит, 4 мёртв. Упавший держит кадр 3; пунктир к напарнику и точки ходов — README `MobGhoulMimic`. В окне — `<i class="pd-ghoul-fallen"></i>`, `.pd-bar.fallen`, `.pd-rise-pips`.
+- `ebony-hidden.png`: 0 — спрятан, 1 — вспышка (раз в 2,4 с на 133 мс), 2 — сундук, 3 — мимик. В окне — `<i class="pd-ebony-hidden"></i>` (вспышка — CSS-анимацией).
+
+### Состояния
+
+`.pd-buff i.mob` (7×7 ×3) и `.pd-mbuff`, `.pd-mbuff.large` (16×16 ×2), `--ix`: 0 уязвимость, 1 порча, 2 деградация, 3 слабость, 4–9 чемпионы. Окно — `.pd-window.narrow.pd-buff-window`.
+
+| Класс | Что это |
+| --- | --- |
+| `.pd-mob`, `.pd-mob.x3`, `.pd-mob.silhouette` | портрет существа |
+| `.pd-best`, `.pd-best-group`, `.pd-best-head`, `.pd-best-grid`, `.pd-best-cell(.unseen/.selected)`, `.pd-best-n`, `.pd-best-detail`, `.pd-best-face`, `.pd-best-text` | бестиарий |
+| `.pd-tab-item`, `.pd-tab-ico.bestiary` | значки подвкладок каталога |
+| `.pd-mob-window`, `.pd-mob-face(.champ)`, `.pd-champ-tag`, `.pd-mob-hp`, `.pd-mob-buffs` | окно существа |
+| `.pd-ghoul-fallen`, `.pd-bar.fallen`, `.pd-rise-pips`, `.pd-ebony-hidden` | гуль и мимик |
+| `.pd-buff i.mob`, `.pd-mbuff(.large)`, `.pd-buff-window` | состояния |

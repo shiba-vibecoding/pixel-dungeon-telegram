@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, createMob, createWorld, F, floorAt, hasFlag, heroById, type HeroClass, heroRangedSkill, levelAt,
-  LENGTH, type World,
+  act, addHero, createMob, createWorld, F, floorAt, hasFlag, heroAttackSkill, heroById, type HeroClass, levelAt,
+  LENGTH, WIDTH, type World,
 } from '../src/index';
 import { pacify } from './helpers';
 
@@ -12,7 +12,7 @@ function range(heroClass: HeroClass, seed = 7): { world: World; ratPos: number }
     addHero(world, { id: 'p', name: 'P', heroClass });
     const hero = heroById(world, 'p')!;
     const level = levelAt(world, 1);
-    for (const step of [1, -1, 32, -32]) {
+    for (const step of [1, -1, WIDTH, -WIDTH]) {
       const line = [1, 2, 3].map((k) => hero.pos + step * k);
       if (line.every((c) => c >= 0 && c < LENGTH && hasFlag(level.map[c]!, F.PASSABLE) && !hasFlag(level.map[c]!, F.LOS_BLOCKING))) {
         const ratPos = line[2]!;
@@ -25,76 +25,90 @@ function range(heroClass: HeroClass, seed = 7): { world: World; ratPos: number }
 }
 
 describe('thrown weapons and wands', () => {
-  it('starting kits: stand-ins for the stones, knives and bow, a wand for the mage (heroclass.ts KIT_SEAMS)', () => {
+  it("starting kits: Shattered's, as to weapons; the staff of magic missile for the mage", () => {
     const world = createWorld(1);
     for (const heroClass of ['warrior', 'mage', 'rogue', 'huntress'] as const) addHero(world, { id: heroClass, name: heroClass, heroClass });
+    expect(heroById(world, 'warrior')!.weapon).toMatchObject({ kind: 'weapon.wornShortsword' });
     expect(heroById(world, 'warrior')!.items).toEqual([
-      { kind: 'missile.dart', qty: 8, level: 0 },
+      { kind: 'missile.throwingStone', qty: 3, level: 0 },
       { kind: 'food.ration', qty: 1, level: 0 },
       { kind: 'bag.seeds', qty: 1, level: 0 },
       { kind: 'waterskin', qty: 1, level: 0 },
     ]);
-    expect(heroById(world, 'rogue')!.items[0]).toMatchObject({ kind: 'missile.dart', qty: 8 });
-    expect(heroById(world, 'huntress')!.items[0]).toMatchObject({ kind: 'missile.boomerang' });
-    expect(heroById(world, 'mage')!.items[0]).toMatchObject({ kind: 'wand.magicMissile', charges: 3 });
+    expect(heroById(world, 'rogue')!.items[0]).toMatchObject({ kind: 'missile.throwingKnife', qty: 3 });
+    expect(heroById(world, 'huntress')!.items[0]).toMatchObject({ kind: 'spiritBow' });
+    expect(heroById(world, 'huntress')!.weapon).toMatchObject({ kind: 'weapon.gloves' });
+    expect(heroById(world, 'mage')!.weapon).toMatchObject({ kind: 'weapon.magesStaff', wand: { kind: 'wand.magicMissile', charges: 4 } });
+    expect(heroById(world, 'mage')!.items.map((i) => i.kind)).toEqual(['food.ration', 'bag.seeds', 'waterskin']);
   });
 
-  it('a dart flies to the first creature in line; misses land on the floor, hits are used up', () => {
+  it('a throwing knife flies to the first creature in line: a miss lands on the floor, a hit sticks in it and the stack wears', () => {
     let hits = 0;
-    let misses = 0;
     for (let seed = 1; seed <= 12; seed++) {
       const { world, ratPos } = range('rogue', seed * 13);
       const hero = heroById(world, 'p')!;
       const result = act(world, 'p', { type: 'throw', item: 0, target: ratPos });
       expect(result.ok).toBe(true);
-      expect(hero.items[0]!.qty).toBe(7);
+      expect(hero.items[0]!.qty).toBe(2);
       const effects = result.ok ? result.effects : [];
-      expect(effects[0]).toMatchObject({ type: 'thrown', to: ratPos, item: 'missile.dart' });
+      expect(effects[0]).toMatchObject({ type: 'thrown', to: ratPos, item: 'missile.throwingKnife' });
       const shot = effects.find((e) => e.type === 'attack' && e.attacker === 'p');
-      const onFloor = floorAt(world, 1).heaps.some((h) => h.pos === ratPos && h.items.some((i) => i.kind === 'missile.dart'));
+      const onFloor = floorAt(world, 1).heaps.some((h) => h.pos === ratPos && h.items.some((i) => i.kind === 'missile.throwingKnife'));
+      const rat = floorAt(world, 1).mobs.find((m) => m.id === '#50');
       if (shot?.type === 'attack' && shot.hit) {
         hits++;
-        expect(onFloor).toBe(false);
+        // PinCushion: stuck in the rat (or, slain, at its feet); the stack in the pack wore by a use (5 uses: a fifth).
+        expect(rat ? rat.pinned?.length === 1 : onFloor).toBe(true);
+        expect(hero.items[0]!.durability).toBeCloseTo(100 - 20.001, 2);
       } else {
-        misses++;
         expect(onFloor).toBe(true);
       }
     }
     // A sleeping rat cannot dodge: the rogue hits it every time.
     expect(hits).toBe(12);
-    expect(misses).toBe(0);
   });
 
-  it('the boomerang always comes back', () => {
+  it('the spirit bow shoots arrows that never land, as strong as the huntress is seasoned', () => {
     const { world, ratPos } = range('huntress');
     const hero = heroById(world, 'p')!;
+    const result = act(world, 'p', { type: 'shoot', item: 0, target: ratPos });
+    expect(result.ok && result.effects.some((e) => e.type === 'missile' && e.to === ratPos)).toBe(true);
+    expect(result.ok && result.effects.some((e) => e.type === 'attack' && e.attacker === 'p' && e.hit)).toBe(true);
+    expect(hero.items[0]!.kind).toBe('spiritBow');
+    expect(floorAt(world, 1).heaps.some((h) => h.pos === ratPos)).toBe(false);
     expect(act(world, 'p', { type: 'throw', item: 0, target: ratPos }).ok).toBe(true);
-    expect(hero.items[0]!.kind).toBe('missile.boomerang');
-    expect(floorAt(world, 1).heaps.some((h) => h.items.some((i) => i.kind === 'missile.boomerang'))).toBe(false);
   });
 
-  it('the wand never misses, spends charges and recharges over time', () => {
+  it("the staff's magic missile never misses, spends charges and recharges over time", () => {
     const { world, ratPos } = range('mage');
     const hero = heroById(world, 'p')!;
-    const result = act(world, 'p', { type: 'zap', item: 0, target: ratPos });
-    expect(result.ok && result.effects.some((e) => e.type === 'attack' && e.hit && e.damage >= 1 && e.damage <= 5)).toBe(true);
-    expect(hero.items[0]!.charges).toBe(2);
-    act(world, 'p', { type: 'zap', item: 0, target: ratPos });
-    act(world, 'p', { type: 'zap', item: 0, target: ratPos });
-    expect(act(world, 'p', { type: 'zap', item: 0, target: ratPos })).toEqual({ ok: false, reason: 'the wand is out of charges' });
+    const wand = hero.weapon!.wand!;
+    const result = act(world, 'p', { type: 'zap', item: 'weapon', target: ratPos });
+    expect(result.ok && result.effects.some((e) => e.type === 'attack' && e.hit && e.damage >= 1 && e.damage <= 8)).toBe(true);
+    expect(wand.charges).toBe(3);
+    for (let i = 0; i < 3; i++) act(world, 'p', { type: 'zap', item: 'weapon', target: ratPos });
+    expect(act(world, 'p', { type: 'zap', item: 'weapon', target: ratPos })).toEqual({ ok: false, reason: 'the wand is out of charges' });
     floorAt(world, 1).mobs = [];
+    // Wand.Charger in the staff: 10 + 40 * 0.75^4 turns for the first charge, 10 + 40 * 0.75^3 for the next.
     for (let i = 0; i < 41; i++) act(world, 'p', { type: 'wait' });
-    expect(hero.items[0]!.charges).toBe(1);
+    expect(wand.charges).toBe(1);
+    for (let i = 0; i < 10; i++) act(world, 'p', { type: 'wait' });
+    expect(wand.charges).toBe(2);
   });
 
-  it('every class throws alike (Shattered has no class bonuses); nobody well point-blank', () => {
+  it('thrown, a weapon is half as accurate point-blank and half as accurate again from afar (adjacentAccFactor)', () => {
     const world = createWorld(2);
-    for (const heroClass of ['warrior', 'rogue', 'huntress'] as const) addHero(world, { id: heroClass, name: heroClass, heroClass });
-    const dart = { kind: 'missile.dart' as const, qty: 1, level: 0 };
-    const skill = (id: string, pointBlank = false) => heroRangedSkill(heroById(world, id)!, dart, pointBlank);
-    expect(skill('huntress')).toBe(10);
-    expect(skill('rogue')).toBe(10);
-    expect(skill('warrior')).toBe(10);
-    expect(skill('rogue', true)).toBe(5);
+    const hero = addHero(world, { id: 'p', name: 'P', heroClass: 'rogue' });
+    const knife = { kind: 'missile.throwingKnife' as const, qty: 1, level: 0 };
+    expect(heroAttackSkill(hero, hero.pos + 1, knife)).toBe(5);
+    expect(heroAttackSkill(hero, hero.pos + 3, knife)).toBe(15);
+    // Too heavy (a trident wants 17): 1.5× less accurate a point short.
+    const trident = { kind: 'missile.trident' as const, qty: 1, level: 0 };
+    expect(heroAttackSkill(hero, hero.pos + 3, trident)).toBe(Math.round(15 / 1.5 ** 7));
+    // Every class throws alike (Shattered has no class bonuses).
+    for (const heroClass of ['warrior', 'huntress'] as const) {
+      const other = addHero(world, { id: heroClass, name: heroClass, heroClass });
+      expect(heroAttackSkill(other, other.pos + 3, knife)).toBe(15);
+    }
   });
 });

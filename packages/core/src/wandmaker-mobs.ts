@@ -271,6 +271,6 @@ export function frostHurtsElemental(ctx: Ctx, ch: Char): boolean {
   if (isHero(ch) || ch.kind !== 'newbornElemental' || !isAlive(ch)) return false;
   const damage = ctx.rng.normalIntRange(Math.trunc(ch.ht / 2), Math.trunc((ch.ht * 3) / 5));
   ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: ch.id, damage });
-  hurt(ctx, ch, damage, 'frost');
+  hurt(ctx, ch, damage, 'chill');
   return true;
 }

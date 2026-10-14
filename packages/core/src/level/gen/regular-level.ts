@@ -62,7 +62,7 @@ export class RegularLevel {
 
   /** Level.createMob, as RegularLevel.createMobs asks for one: a monster of the depth (the mine has its own). */
   protected levelMob(): MobChoice {
-    return QuestHooks.createMob();
+    return QuestHooks.createMob(this.level);
   }
 
   /** RegularLevel.nTraps. */

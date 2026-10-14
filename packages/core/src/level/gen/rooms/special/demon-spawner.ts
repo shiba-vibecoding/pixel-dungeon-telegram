@@ -25,7 +25,7 @@ export class DemonSpawnerRoom extends SpecialRoom {
 
     // SEAM(mobs): DemonSpawner. Statistics.spawnersAlive counts it from the start (spawnRecorded).
     level.mobs.push({
-      kind: 'demonSpawner' as MobKind, pos: c.x + c.y * level.width, state: 'passive', spawnCooldown: 0, spawnRecorded: true,
+      kind: 'spawner', pos: c.x + c.y * level.width, state: 'passive', spawnCooldown: 0, spawnRecorded: true,
     } as MobSpawn);
 
     level.customTiles.push(demonSpawnerFloor(level, this.left + 1, this.top + 1, this.width() - 2, this.height() - 2));
@@ -65,7 +65,7 @@ function demonSpawnerFloor(level: GenLevel, x: number, y: number, w: number, h: 
       let cell = x + y * level.width;
       for (let i = 0; i < data.length; i++) {
         if (i % w === 0) cell = x + (y + Math.trunc(i / w)) * level.width;
-        if ((level.findMob(cell)?.kind as string) === 'demonSpawner') {
+        if (level.findMob(cell)?.kind === 'spawner') {
           data[i - 1] = 5 + 4 * 8;
           data[i] = 6 + 4 * 8;
           data[i + 1] = 7 + 4 * 8;

@@ -76,7 +76,7 @@ describe('a dungeon made for the party', () => {
 
   it('makes bosses much sturdier', () => {
     const goo = floorAt(party(5, 3), 5).mobs.find((m) => m.kind === 'goo')!;
-    expect(goo.ht).toBe(Math.round(80 * 2.3));
+    expect(goo.ht).toBe(Math.round(100 * 2.3));
     expect(goo.hp).toBe(goo.ht);
   });
 });

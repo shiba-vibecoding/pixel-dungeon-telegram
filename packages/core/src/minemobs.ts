@@ -556,7 +556,7 @@ function spreadDiamond(level: Level, current: number[]): number[] {
 function spireAct(ctx: Ctx, mob: Mob): void {
   const s = st(mob);
   const level = ctx.level;
-  const fov = castShadow(mob.pos, terrainBlocksSight(level.map), mobSight(mob, ctx.depth));
+  const fov = castShadow(mob.pos, terrainBlocksSight(level.map), mobSight(mob));
   const enemy = heroFor(ctx, mob);
   if (enemy) mob.enemy = enemy.id;
   // It still tracks an invisible hero.
@@ -680,7 +680,7 @@ function hitSpire(ctx: Ctx, hero: Hero, mob: Mob): number {
   const level = ctx.level;
   if (!isAlive(mob)) {
     beatBlacksmithBoss(ctx.world);
-    const fov = castShadow(mob.pos, terrainBlocksSight(level.map), mobSight(mob, ctx.depth));
+    const fov = castShadow(mob.pos, terrainBlocksSight(level.map), mobSight(mob));
     mobDied(ctx, mob, hero.id);
     const cells: number[] = [];
     for (let i = 0; i < LENGTH; i++) {
@@ -891,8 +891,9 @@ function sapperAct(ctx: Ctx, mob: Mob): boolean {
     return true;
   }
   if (mob.state !== 'hunting') return false;
-  const fov = castShadow(mob.pos, terrainBlocksSight(ctx.level.map), mobSight(mob, ctx.depth));
-  const enemy = chooseEnemy(ctx, mob, fov);
+  const fov = castShadow(mob.pos, terrainBlocksSight(ctx.level.map), mobSight(mob));
+  const chosen = chooseEnemy(ctx, mob, fov);
+  const enemy = chosen && isHero(chosen) ? chosen : undefined;
   if (!enemy || !fov[enemy.pos]) {
     // Not after anything more than a few cells from its post.
     if (s.spawnPos !== undefined && mob.target !== -1 && distance(s.spawnPos, mob.target) > 3) mob.target = mob.pos;
@@ -1245,8 +1246,9 @@ function sentryAct(ctx: Ctx, mob: Mob): void {
     spend(mob, TICK);
     return;
   }
-  const fov = castShadow(mob.pos, terrainBlocksSight(ctx.level.map), mobSight(mob, ctx.depth));
-  const enemy = chooseEnemy(ctx, mob, fov);
+  const fov = castShadow(mob.pos, terrainBlocksSight(ctx.level.map), mobSight(mob));
+  const chosen = chooseEnemy(ctx, mob, fov);
+  const enemy = chosen && isHero(chosen) ? chosen : undefined;
   const inFov = enemy !== undefined && fov[enemy.pos] === true;
   if (mob.state !== 'hunting') {
     if (inFov) notice(ctx, mob, enemy, 'hunting');

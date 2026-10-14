@@ -1,5 +1,5 @@
 import { emptyWallet, forSale, inSeason, offerBySku, SUBSCRIPTION_SECONDS, type Wallet } from '@pd/core';
-import { ADMIN_USAGE, type AdminCommand, describePayments, isAdminChat, parseAdminCommand } from './admin';
+import { ADMIN_USAGE, type AdminCommand, type AdminOps, describePayments, isAdminChat, parseAdminCommand } from './admin';
 import { invoiceText, speaksRussian } from './catalogue';
 import type { WindowLimiter } from './limits';
 import { recentCharges, type WalletChange } from './wallet';
@@ -98,7 +98,7 @@ const EN: BotText = {
   passedOn: 'Thank you, your message has been passed on. The developer will answer here within two days.',
   writeDirectly: `Please write to ${CONTACT} about it: they answer within two days.`,
   terms:
-    'Pixel-Mart sells looks for Telegram Stars: hero recolours, effects and portrait frames, and a monthly ' +
+    'Pixel-Mart sells looks for Telegram Stars: hero recolours, effects, portrait frames, camps for the home screen, and a monthly ' +
     'patronage. They change nothing in the game. Purchases are kept by your Telegram account; a patronage renews ' +
     'monthly until cancelled in Telegram. Refunds through /paysupport.',
   fullTerms: 'The full terms:',
@@ -115,7 +115,7 @@ const RU: BotText = {
   passedOn: 'Спасибо, ваше сообщение передано. Разработчик ответит здесь в течение двух дней.',
   writeDirectly: `Пожалуйста, напишите об этом ${CONTACT}: ответ — в течение двух дней.`,
   terms:
-    'В Пиксель-Марте за звёзды Telegram продаётся облик: перекраски героев, эффекты, рамки портрета и подписка ' +
+    'В Пиксель-Марте за звёзды Telegram продаётся облик: перекраски героев, эффекты, рамки портрета, привалы для главного экрана и подписка ' +
     '«Покровитель» на месяц. На игру они не влияют. Покупки привязаны к вашему аккаунту Telegram; подписка ' +
     'продлевается каждый месяц, пока вы не отмените её в Telegram. Возврат — через /paysupport.',
   fullTerms: 'Полные условия:',
@@ -156,6 +156,8 @@ export interface BotConfig {
   termsUrl?: string;
   /** How often one player's messages reach the admin; unlimited without one. */
   supportLimiter?: WindowLimiter;
+  /** What /bughunter and /outage do (the Worker's); without it they say they cannot. */
+  ops?: AdminOps;
 }
 
 /** Handles one webhook update. */
@@ -175,7 +177,7 @@ export async function handleUpdate(update: TelegramUpdate, api: BotApi, wallets:
   if (isAdminChat(message.chat.id, config.adminChatId)) {
     const command = parseAdminCommand(message.text ?? '');
     if (command) {
-      await runAdminCommand(command, message.chat.id, api, wallets, now);
+      await runAdminCommand(command, message.chat.id, api, wallets, config.ops, now);
       return;
     }
   }
@@ -246,12 +248,26 @@ async function passOn(message: Message, text: BotText, api: BotApi, wallets: Wal
   await api('sendMessage', { chat_id: message.chat.id, text: text.passedOn });
 }
 
-async function runAdminCommand(command: AdminCommand, chat: number, api: BotApi, wallets: Wallets, now: number): Promise<void> {
+async function runAdminCommand(command: AdminCommand, chat: number, api: BotApi, wallets: Wallets, ops: AdminOps | undefined, now: number): Promise<void> {
   const say = (text: string): Promise<unknown> => api('sendMessage', { chat_id: chat, text });
   switch (command.kind) {
     case 'usage':
       await say(ADMIN_USAGE);
       return;
+    case 'bughunter': {
+      if (!ops) return void (await say('Not available here.'));
+      const result = await ops.bugHunter(command.id);
+      await say(result === 'unknown' ? `No report ${command.id}.` : result === 'already' ? `Report ${command.id}: its reporter has the badge already.` : `Report ${command.id}: the reporter got the «Bug hunter» badge.`);
+      return;
+    }
+    case 'outage': {
+      if (!ops) return void (await say('Not available here.'));
+      const days = await ops.outages(command.op === 'list' ? undefined : { op: command.op, day: command.day });
+      const head = command.op === 'add' ? `Outage day ${command.day} added.` : command.op === 'remove' ? `Outage day ${command.day} taken off.` : 'Outage days:';
+      const list = days.length > 0 ? `\n${days.join('\n')}` : command.op === 'list' ? ' none' : '\nNo outage days.';
+      await say(`${head}${list}`);
+      return;
+    }
     case 'payments':
       await say(describePayments(command.user, await wallets.get(command.user), now));
       return;
