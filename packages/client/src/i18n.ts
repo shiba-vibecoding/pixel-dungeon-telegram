@@ -2609,7 +2609,7 @@ const en = {
       week: 'The best run of the week. The top 10 win a medal on Monday.',
       arena: 'The best arena run of the week. The top 10 win a medal on Monday.',
       all: 'The best runs ever played.',
-      device: 'Your best runs on this device.',
+      device: 'Your best runs on this device. Only runs checked by the server reach the boards.',
     } as Record<string, string>,
     placeOf: (n: number, total: number) => `Your place: ${n} of ${total}`,
     notYet: 'You are not on this board yet.',
@@ -2631,6 +2631,7 @@ const en = {
     continueFrom: 'From the server',
     today: 'Today',
     lv: 'lv.',
+    offBoard: 'not ranked',
     boons: {
       alchemist: ['Alchemist', 'every potion known'],
       scholar: ['Scholar', 'every scroll known'],
@@ -4513,7 +4514,7 @@ const ru: Strings = {
       week: 'Лучший забег недели. Десятка лучших получает медаль в понедельник.',
       arena: 'Лучший забег на арене за неделю. Десятка лучших получает медаль в понедельник.',
       all: 'Лучшие забеги за всё время.',
-      device: 'Ваши лучшие забеги на этом устройстве.',
+      device: 'Ваши лучшие забеги на этом устройстве. В общие таблицы попадают только забеги, проверенные сервером.',
     },
     placeOf: (n, total) => `Ваше место: ${n} из ${total}`,
     notYet: 'Вас пока нет в этой таблице.',
@@ -4535,6 +4536,7 @@ const ru: Strings = {
     continueFrom: 'С сервера',
     today: 'Сегодня',
     lv: 'ур.',
+    offBoard: 'вне рейтинга',
     boons: {
       alchemist: ['Алхимик', 'все зелья опознаны'],
       scholar: ['Книжник', 'все свитки опознаны'],

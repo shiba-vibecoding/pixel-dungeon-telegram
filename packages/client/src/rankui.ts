@@ -156,7 +156,9 @@ function mineRows(records: readonly RunRecord[], trophies: Profile['trophies']):
   for (const record of records) {
     const arena = record.mode === 'arena';
     const what = record.won ? '' : record.cause ? ` · ${record.cause}` : '';
-    const line = row(null, record, [`${shortDate(record.date)} · `, ...detail(record.heroClass, record.lvl, record.depth, arena, record.won), what], false);
+    // A run the server did not check (played before checked runs, or without the server) is on no board: it says so.
+    const unranked = record.checked ? '' : ` · ${t.ranked.offBoard}`;
+    const line = row(null, record, [`${shortDate(record.date)} · `, ...detail(record.heroClass, record.lvl, record.depth, arena, record.won), unranked, what], false);
     list.append(line);
     // A run with its score table opens into it: what the points are made of (design-system rows, the table is the end screen's).
     if (record.breakdown) {

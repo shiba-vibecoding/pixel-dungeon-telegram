@@ -3679,6 +3679,7 @@ function tick(now: number): void {
       const gold = me.stats?.gold ?? me.gold;
       const place = recordRun({
         key: `${world.run.seed}:${me.id}:${world.turn}`,
+        checked: Boolean(session.checked),
         score: scoreNow,
         ...(outcomeNow.breakdown ? { breakdown: outcomeNow.breakdown } : {}),
         name: me.name || playerName || telegramName() || t.heroLabel,

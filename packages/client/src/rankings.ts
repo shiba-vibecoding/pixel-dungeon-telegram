@@ -21,6 +21,8 @@ export interface RunRecord {
   cause: string;
   /** The arena of waves' runs are scored by arenaScore (core arena.ts) and say so in the table. */
   mode: 'solo' | 'daily' | 'coop' | 'arena';
+  /** The server checked the run (checked.ts), so it stands on the boards too; runs of before checked runs have none. */
+  checked?: boolean;
   date: number;
   /** The score's parts (core score.ts); absent in runs from before the table. */
   breakdown?: ScoreBreakdown;
