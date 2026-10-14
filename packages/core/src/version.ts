@@ -5,5 +5,5 @@
  * code 4002). test/version.test.ts fails whenever the rules' source changes
  * without RULES_VERSION going up, and says what RULES_HASH has become.
  */
-export const RULES_VERSION = 19;
+export const RULES_VERSION = 20;
 export const RULES_HASH = 'ce99e532fc54374a';
