@@ -17,7 +17,9 @@ import { ARENA_BADGES, BADGES, RETIRED, type BadgeId, badgeText, earnedBadges, m
 import { BUFF_ICONS, type BuffEntry, type BuffName } from './hud';
 import { capitalize, fill, fmt, lang, locale, t } from './i18n';
 import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
+import { labelWords } from './labels';
 import { mart } from './mart';
+import { quality } from './quality';
 import { confirmRisky, drinkRisk, enchantLossChance, equipRisk, targetEffect } from './riskyuse';
 import { showHeroWindow } from './talentui';
 import { showMetamorphosis, showSubclassPick } from './talentui';
@@ -219,7 +221,7 @@ export function sprites(scope: ParentNode): void {
   });
 }
 
-function closeButton(onClose: () => void): HTMLButtonElement {
+export function closeButton(onClose: () => void): HTMLButtonElement {
   return el('button', {
     className: 'pd-close',
     ariaLabel: t.close,
@@ -469,32 +471,45 @@ export interface MenuOptions {
   onSettings(): void;
   onMart(): void;
   onTreat(): void;
-  /** How this run counts (labels.ts): «Counts — …», shown at the top of the menu; absent in co-op. */
-  runLabel?: string;
+  /** How this run counts (labels.ts) as a chip, and the rest of the subtitle («Daily dungeon · d7»); absent in co-op. */
+  run?: { label: ReturnType<typeof labelWords>; sub: string };
   /** Sends the co-op session's log with a word from the player; absent alone. */
   onReport?: () => void;
   onExit(): void;
 }
 
+/**
+ * The run label's chip (design v23, `.pd-runtag`, run-tags.png): «counts» green, «repeat» blue, «own seed» purple, «not counted» grey;
+ * the full meaning is its title and its aria-label.
+ */
+export function runTag(label: ReturnType<typeof labelWords>): HTMLElement {
+  const ix = { counted: 0, repeat: 1, custom: 2, local: 3 }[label.kind];
+  const cls = { counted: 'ranked', repeat: 'replay', custom: 'seed', local: 'unranked' }[label.kind];
+  const dot = el('i');
+  dot.style.setProperty('--ix', String(ix));
+  const tag = el('span', { className: `pd-runtag ${cls}`, title: label.note }, dot, label.word);
+  tag.setAttribute('aria-label', label.note);
+  return tag;
+}
+
 export function showMenu(options: MenuOptions): void {
-  show(
-    windowOf(
-      { title: t.menu, onClose: options.onResume, narrow: true },
-      el(
-        'div',
-        { className: 'pd-menu-list' },
-        options.runLabel && info(options.runLabel, 'pd-note center'),
-        button(t.resume, options.onResume, 'primary'),
-        el('div', { className: 'pd-row' }, button(t.meta.journal, options.onJournal), button(t.help, options.onHelp)),
-        el('div', { className: 'pd-row' }, button(t.badges, options.onBadges), button(t.mart, options.onMart)),
-        button(t.meta.settings, options.onSettings),
-        options.onReport && button(t.reportProblem, options.onReport, 'quiet'),
-        button(t.treat, options.onTreat, 'quiet'),
-        button(t.toMenu, options.onExit, 'quiet'),
-      ),
+  const box = windowOf(
+    { title: t.menu, onClose: options.onResume, narrow: true },
+    el(
+      'div',
+      { className: 'pd-menu-list' },
+      button(t.resume, options.onResume, 'primary'),
+      el('div', { className: 'pd-row' }, button(t.meta.journal, options.onJournal), button(t.help, options.onHelp)),
+      el('div', { className: 'pd-row' }, button(t.badges, options.onBadges), button(t.mart, options.onMart)),
+      button(t.meta.settings, options.onSettings),
+      options.onReport && button(t.reportProblem, options.onReport, 'quiet'),
+      button(t.treat, options.onTreat, 'quiet'),
+      button(t.toMenu, options.onExit, 'quiet'),
     ),
-    options.onResume,
   );
+  // The subtitle: the chip, then where the run is.
+  if (options.run) box.querySelector('.pd-titles')?.append(el('span', { className: 'pd-sub pd-menu-sub' }, runTag(options.run.label), options.run.sub));
+  show(box, options.onResume);
 }
 
 /* Badges */
@@ -923,34 +938,49 @@ export interface ConfirmOptions {
   calm?: boolean;
 }
 
-/** Hold to confirm: the bar fills while a finger (or Space / Enter) stays down, and the action is done when it is full. */
-function holdButton(label: string, ms: number, done: () => void, className: string): HTMLButtonElement {
-  const node = el('button', { className: `pd-button hold ${className}`.trim(), textContent: label });
-  node.title = t.forum.verbs.holdHint;
+/**
+ * Hold to confirm (design v23: `.pd-button.hold`): while a finger (or Space / Enter) stays down the fill climbs in 12 steps over `ms`
+ * (3 with reduced motion); letting go early empties it at once; at the top the button turns gold, says «Replaced», and the action
+ * follows 300 ms later. A bare tap only makes the hint under the row blink.
+ */
+function holdButton(label: string, ms: number, done: () => void, className: string, hint: HTMLElement): HTMLButtonElement {
+  const fillBar = el('span', { className: 'pd-hold-fill' });
+  fillBar.setAttribute('aria-hidden', 'true');
+  const text = el('span', { className: 'pd-hold-text', textContent: label });
+  const node = el('button', { className: `pd-button hold ${className}`.trim() }, fillBar, text);
+  node.style.setProperty('--p', '0');
+  node.setAttribute('aria-label', label);
   node.setAttribute('aria-description', t.forum.verbs.holdHint);
-  let start = 0;
+  const steps = quality.reducedMotion ? 3 : 12;
+  let step = 0;
   let timer = 0;
+  let finished = false;
   const stop = (): void => {
+    if (finished) return;
     window.clearInterval(timer);
-    start = 0;
+    timer = 0;
+    step = 0;
     node.classList.remove('holding');
-    node.style.removeProperty('--hold');
+    node.style.setProperty('--p', '0');
+    text.textContent = label;
   };
-  const step = (): void => {
-    if (!start) return;
-    const share = Math.min(1, (performance.now() - start) / ms);
-    node.style.setProperty('--hold', String(share));
-    if (share >= 1) {
-      stop();
-      audio.play('click');
-      done();
-    }
+  const tick = (): void => {
+    step++;
+    node.style.setProperty('--p', String(step / steps));
+    if (step < steps) return;
+    window.clearInterval(timer);
+    finished = true;
+    node.classList.remove('holding');
+    node.classList.add('done');
+    text.textContent = t.forum.verbs.replaced;
+    audio.play('click');
+    window.setTimeout(done, 300);
   };
   const begin = (): void => {
-    if (start) return;
-    start = performance.now();
+    if (timer || finished) return;
     node.classList.add('holding');
-    timer = window.setInterval(step, 40);
+    text.textContent = t.forum.verbs.holding;
+    timer = window.setInterval(tick, ms / steps);
   };
   node.addEventListener('pointerdown', begin);
   for (const event of ['pointerup', 'pointerleave', 'pointercancel', 'blur'] as const) node.addEventListener(event, stop);
@@ -961,14 +991,19 @@ function holdButton(label: string, ms: number, done: () => void, className: stri
     }
   });
   node.addEventListener('keyup', stop);
-  // A bare click (a screen reader, a script) does nothing: the hold is the confirmation.
-  node.addEventListener('click', (event) => event.preventDefault());
+  // A bare click (a tap, a screen reader, a script) does nothing: the hold is the confirmation; the hint blinks once.
+  node.addEventListener('click', (event) => {
+    event.preventDefault();
+    hint.classList.remove('blink');
+    void hint.offsetWidth;
+    hint.classList.add('blink');
+  });
   return node;
 }
 
 /**
- * A question with two answers: cancel on the left, the action on the right, each a verb (the forum study's U2); more
- * answers under them (`options.extras`, the «don't ask again» of `never`). `onClose` runs on any answer first.
+ * A question with two answers (design v23, `.pd-confirm2`): a quiet cancel at the left sized to its word, the action at the right as a
+ * verb; more answers under a rule, a whole row each (`options.extras`, the «don't ask again» of `never`). `onClose` runs on any answer first.
  */
 export function showConfirm(
   title: string, text: string, yes: string, no: string, onYes: () => void, onClose: () => void,
@@ -981,24 +1016,25 @@ export function showConfirm(
     onClose();
     onYes();
   };
-  const answer = options.hold ? holdButton(yes, options.hold, doIt, tone) : button(yes, doIt, tone);
+  const hint = options.hold ? el('p', { className: 'pd-hold-hint', textContent: t.forum.holdFor((options.hold / 1000).toFixed(1)) }) : null;
+  // The hold button is the design's red primary (replacing a run is the window's one action); a plain answer is red only if it is a danger.
+  const answer = hint ? holdButton(yes, options.hold!, doIt, 'primary', hint) : button(yes, doIt, tone);
   const extras: ConfirmExtra[] = [...(options.extras ?? []), ...(never ? [{ ...never, then: true }] : [])];
   show(
     windowOf(
-      { narrow: true },
+      { narrow: true, className: 'pd-confirm2' },
       el('h2', { className: 'pd-heading center', textContent: title }),
       info(text, 'pd-info center'),
-      // Cancel at the left, the action at the right; the extra answers under them, a whole row each, so a long one is never cut off.
-      el(
+      el('div', { className: 'pd-confirm-row' }, button(no, onClose, 'quiet'), answer),
+      hint,
+      extras.length > 0 && el(
         'div',
-        { className: 'pd-confirm-actions' },
-        button(no, onClose, 'quiet'),
-        answer,
+        { className: 'pd-confirm-more' },
         ...extras.map((extra) => button(extra.label, () => {
           onClose();
           extra.onPress();
           if (extra.then) onYes();
-        }, 'quiet wide')),
+        })),
       ),
     ),
     onClose,
@@ -1062,8 +1098,8 @@ const CONTROLS: ReadonlyArray<{ sprite?: string; item?: number; w: number; h: nu
   { sprite: 'target', w: 16, h: 16, line: 0 },
   { sprite: 'tool-backpack', w: 14, h: 15, line: 1 },
   { item: S.DART, w: 16, h: 16, line: 3 },
-  { sprite: 'tool-search', w: 12, h: 12, line: 4 },
-  { sprite: 'tool-wait', w: 12, h: 12, line: 5 },
+  { sprite: 'tool-search2', w: 12, h: 12, line: 4 },
+  { sprite: 'tool-wait2', w: 12, h: 12, line: 5 },
   { sprite: 'tool-info', w: 8, h: 12, line: 6 },
   { sprite: 'menu', w: 6, h: 5 },
 ];
@@ -1141,7 +1177,7 @@ export interface EndOptions {
   /** What that cause means, and what the pack held (deathcopy.ts): a line each, under the cause. */
   notes?: readonly string[];
   /** How the run counted — «counts», «repeat», «own seed» — and what that means for the boards (labels.ts). */
-  label?: { text: string; note: string };
+  label?: ReturnType<typeof labelWords>;
   hero: { name: string; heroClass: HeroClass; lvl: number; depth: number; gold: number; kills: number };
   onRestart: () => void;
   restartLabel: string;
@@ -1177,9 +1213,10 @@ export function showRunEnd(options: EndOptions): void {
       'section',
       { className: `pd-window pd-runend${options.victory ? ' win' : ''}` },
       el('h2', { className: 'pd-display', textContent: options.title }),
+      // Under the title: how the run counted, as a chip with its meaning beside it (design v23, RunTags).
+      options.label && el('div', { className: 'pd-runtag-line' }, runTag(options.label), el('span', { textContent: options.label.note })),
       options.cause && el('p', { className: 'pd-cause', textContent: options.cause }),
       ...(options.notes ?? []).filter(Boolean).map((note) => el('p', { className: 'pd-info center pd-note', textContent: note })),
-      options.label && el('p', { className: 'pd-info center pd-note' }, el('b', { className: 'pd-run-label', textContent: capitalize(options.label.text) }), ` — ${options.label.note}`),
       options.place && !options.ranking ? el('p', { className: 'pd-info center pd-gold', textContent: options.place === 1 ? t.newRecord : t.rankPlace(options.place) }) : null,
       el(
         'div',

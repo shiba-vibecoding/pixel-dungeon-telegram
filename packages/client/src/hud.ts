@@ -593,9 +593,9 @@ export class Hud {
       return node;
     };
     this.tools = {
-      wait: tool(t.waitLabel, '', 'Space', glyph('tool-wait', 12, 12)),
-      search: tool(t.searchLabel, '', 'F', glyph('tool-search', 12, 12)),
-      examine: tool(t.examineLabel, '', 'X', glyph('tool-info', 8, 12)),
+      wait: tool(t.waitLabel, 'wait', 'Space', glyph('tool-wait2', 12, 12)),
+      search: tool(t.searchLabel, 'search', 'F', glyph('tool-search2', 12, 12)),
+      examine: tool(t.examineLabel, 'info', 'X', glyph('tool-info', 8, 12)),
       bag: tool(t.backpack, 'bag', 'I', glyph('tool-backpack', 14, 15)),
     };
     this.quicks = Array.from({ length: QUICKSLOTS }, (_, slot) => {
@@ -705,7 +705,10 @@ export class Hud {
     this.arranged = count;
     const { wait, search, examine, bag } = this.tools;
     this.examineByHold = count === 4;
-    this.toolbar.className = `pd-toolbar${count >= 6 ? ' q6' : count === 4 ? ' q4' : ''}`;
+    // Design v23 (Toolbar2): a flex row of equal buttons with 6 px between them and 6 px more after wait and before search (three groups: time, things,
+    // search and pack); with four slots the extra 6 px go (`dense`), so 360 px still gives 44 px buttons; six slots stand in a row above.
+    this.toolbar.className = `pd-toolbar tb2${count >= 6 ? ' q6' : count === 4 ? ' dense' : ''}`;
+    search.classList.toggle('gap', count < 6);
     if (count >= 6) {
       this.quickbar.replaceChildren(...this.quicks.slice(0, 6));
       this.toolbar.replaceChildren(this.quickbar, wait, examine, search, bag);

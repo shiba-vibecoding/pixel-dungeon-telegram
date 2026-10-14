@@ -159,7 +159,7 @@ function dailyBlock(options: CampScreenOptions): HTMLElement {
   const { rules } = options;
   const rulesNode = el('div', { className: 'pd-daily-rules' });
   if (rules) {
-    const hardship = el('i', { className: 'pd-ch-mini' });
+    const hardship = el('i', { className: 'pd-ch9' });
     hardship.style.setProperty('--c', String(rules.hardship.index));
     const boon = el('i', { className: 'pd-item' });
     boon.dataset.i = String(rules.boon.sprite);

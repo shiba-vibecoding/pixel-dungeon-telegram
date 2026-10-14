@@ -190,8 +190,8 @@ export function trapWarning(kind: TrapKind): { name: string; effect: string } | 
   return { name: name.charAt(0).toUpperCase() + name.slice(1), effect };
 }
 
-/** Which of the legend's families (t.forum.trapColours) a trap's colour belongs to; the spent black ones belong to none. */
-export const trapFamily = (colour: number): number => (colour === 0 ? 7 : colour >= 1 && colour <= 7 ? colour - 1 : -1);
+/** Which of the legend's families (t.forum.trapColours, in the order of Trap.RED ... Trap.BLACK) a trap's colour belongs to; the spent ones are the black last. */
+export const trapFamily = (colour: number): number => (colour >= 0 && colour <= 8 ? colour : -1);
 
 /** Level.Feeling's title and description. */
 export function feelingText(feeling: string): { title: string; desc: string } {

@@ -150,9 +150,6 @@ body:has(#ui.pd-wide) #game { cursor: var(--spr-cursor) 0 0, default; }
 .pd-confirm-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .pd-confirm-actions .pd-button { flex: 1 1 40%; min-width: 0; white-space: normal; height: auto; min-height: var(--tap-min, 44px); text-overflow: clip; overflow: visible; line-height: 1.2; padding-top: var(--space-2); padding-bottom: var(--space-2); }
 .pd-confirm-actions .pd-button.wide { flex-basis: 100%; }
-/* Hold to confirm: a bar fills along the button while it is held. */
-.pd-confirm-actions .pd-button.hold { position: relative; overflow: hidden; touch-action: none; user-select: none; }
-.pd-confirm-actions .pd-button.hold::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: calc(100% * var(--hold, 0)); background: rgba(255, 255, 255, .22); pointer-events: none; }
 
 /* Volume in five steps (menu): lit steps gold, the rest stone. */
 .pd-volume { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--tap-min, 44px); width: 100%; }
@@ -297,21 +294,6 @@ html.pd-paused *, html.pd-paused *::before, html.pd-paused *::after { animation-
 /* The stone of augmentation's rows on a narrow phone: the label gives up some width so the note beside the number fits. */
 @media (max-width: 380px) { .pd-aug-row { grid-template-columns: 52px auto minmax(0, 1fr); gap: 6px; } }
 
-/* The newcomer's guide (the journal's third tab) and the trap-colour legend. */
-.pd-guide { display: flex; flex-direction: column; gap: var(--space-3); padding-bottom: var(--space-3); }
-.pd-guide-item { display: flex; flex-direction: column; gap: var(--space-1); }
-.pd-guide-item .pd-heading { margin: 0; text-align: left; }
-.pd-trap-legend { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-.pd-trap-legend li { display: flex; align-items: flex-start; gap: var(--space-2); font: var(--text-body, 400 16px/22px var(--font-small)); color: var(--ink); }
-.pd-trap-swatch { flex: none; width: 14px; height: 14px; margin-top: 4px; background: var(--c, #888); box-shadow: inset 0 0 0 2px var(--void); clip-path: var(--notch); }
-.pd-trap-swatch[data-c="0"] { --c: #f08a28; }
-.pd-trap-swatch[data-c="1"] { --c: #f0d828; }
-.pd-trap-swatch[data-c="2"] { --c: #54c24a; }
-.pd-trap-swatch[data-c="3"] { --c: #3cc8c8; }
-.pd-trap-swatch[data-c="4"] { --c: #a060e0; }
-.pd-trap-swatch[data-c="5"] { --c: #e8e8e8; }
-.pd-trap-swatch[data-c="6"] { --c: #8a8a8a; }
-.pd-trap-swatch[data-c="7"] { --c: #e04040; }
 /* v22: the talents' and the combo's own sheets in the buff list (7 px frames at 3×, as the other buff icons), the Cleric's is in ui.css. */
 .pd-buff i.tl { background-image: var(--atlas-talent-buffs); background-size: 336px 21px; background-position: calc(var(--ix, 0) * -21px) 0; }
 .pd-buff i.cmb { background-image: var(--atlas-combo-buffs); background-size: 126px 21px; background-position: calc(var(--ix, 0) * -21px) 0; }
@@ -334,3 +316,21 @@ html.pd-paused *, html.pd-paused *::before, html.pd-paused *::after { animation-
 .pd-daily.compact { grid-template-areas: "title btn" "rules rules" "info info"; }
 /* The mis-tap question: the hint that appears under the ticked box. */
 .pd-check.small small { display: block; font: var(--text-caption, 400 15px/18px var(--font-small)); color: var(--ink-muted); }
+
+/* Design v23 wiring: the hold button is touched, not scrolled; a bare tap blinks the hint once. */
+.pd-button.hold { touch-action: none; user-select: none; -webkit-user-select: none; }
+.pd-hold-hint.blink { animation: pd-hint-blink .6s steps(2) 1; }
+@keyframes pd-hint-blink { 50% { color: var(--gold); } }
+@media (prefers-reduced-motion: reduce) { .pd-hold-hint.blink { animation: none; color: var(--gold); } }
+/* Toolbar2: six quick slots stand in a row above the four buttons (a grid, so no group gaps), with an even 6 px between everything. */
+.pd-toolbar.tb2.q6 { gap: 6px; }
+.pd-toolbar.tb2.q6 > .pd-tool { margin: 0; }
+.pd-toolbar.tb2.q6 .pd-quickbar { gap: 6px; }
+/* The camp's daily-rules chip uses the nine-icon sheet too (hostile champions and badder bosses can be the day's hardship). */
+.pd-daily-rules .pd-ch9 { --u: 1px; }
+.pd-rules { white-space: pre-line; }
+/* «Памятка»: a row's line is one line; the entry's page scrolls under its title. */
+.pd-guide-row .pd-spell-text small { -webkit-line-clamp: 1; }
+.pd-guide-window .pd-scroll { min-height: 0; }
+.pd-boss-list small { display: block; white-space: pre-line; }
+.pd-boss-list li { align-items: start; padding: 4px 6px 4px 0; }

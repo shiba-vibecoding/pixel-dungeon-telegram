@@ -202,8 +202,13 @@ describe('traps named in the question before a step', () => {
     expect(family('chilling')).toBe('белый');
     expect(family('corrosion')).toBe('серый');
     expect(family('alarm')).toBe('красный');
-    // The spent black ones are in no family.
-    expect(names.trapFamily(TRAP_COLOR.BLACK)).toBe(-1);
+    // Every trap of the game is in the family of its colour: all of the legend but the black one, which is for the spent.
+    // (The only black ones from the start are the room-made vents and flames that are never hidden.)
+    for (const kind of Object.keys(TRAPS) as TrapKind[]) {
+      if (kind !== 'toxicVent' && kind !== 'vaultFlame') expect(names.trapFamily(TRAPS[kind].color), kind).toBeLessThan(8);
+    }
+    expect(legend).toHaveLength(9);
+    expect(legend[names.trapFamily(TRAP_COLOR.BLACK)]![0]).toBe('чёрный');
   });
 });
 

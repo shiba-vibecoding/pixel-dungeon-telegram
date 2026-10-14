@@ -25,9 +25,9 @@ export function runLabel(run: RunFacts): RunLabel {
 }
 
 /** The label's word and what it means, in the player's language. */
-export function labelWords(label: RunLabel): { text: string; note: string } {
+export function labelWords(label: RunLabel): { kind: RunLabel; word: string; text: string; note: string } {
   const words = t.forum.label;
   const text = { counted: words.counted, repeat: words.repeat, custom: words.custom, local: words.local }[label];
   const note = { counted: words.countedNote, repeat: words.repeatNote, custom: words.customNote, local: words.localNote }[label];
-  return { text: capitalize(text), note };
+  return { kind: label, word: text, text: capitalize(text), note };
 }

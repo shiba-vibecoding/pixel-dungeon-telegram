@@ -55,7 +55,7 @@ import { type ArenaHud, type BuffName, CLERIC_BUFFS, COMBO_FRAMES, heroBuffs, Hu
 import { arenaBest, recordArena, showArenaEnd, showArenaReward } from './arenaui';
 import { ArenaView } from './arenaview';
 import { levelRegion } from './sprites';
-import { capitalize, fill, t } from './i18n';
+import { capitalize, fill, lang, t } from './i18n';
 import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
 import { type Camera, render } from './render';
 import type { GhostLine, ImpLine } from '@pd/core';
@@ -869,7 +869,7 @@ const BOON_ITEMS: Record<string, core.ItemKind> = {
 };
 
 /** Replacing a saved run is held down this long (the forum study's U2: nothing destructive on a single tap). */
-const HOLD_TO_REPLACE_MS = 1000;
+const HOLD_TO_REPLACE_MS = 1200;
 
 function toTitle(ask = true): void {
   session?.close();
@@ -948,8 +948,10 @@ function openJournal(onClose: () => void = hideOverlay): void {
 
 function openMenu(): void {
   const labelled = session?.mode === 'solo' ? labelWords(runLabel({ checked: !!session.checked, ranked: session.checked?.meta.ranked ?? true })) : null;
+  const here = session?.world && session.myId !== null ? heroById(session.world, session.myId)?.depth : undefined;
+  const depthText = here === undefined ? '' : lang === 'ru' ? `гл. ${here}` : `depth ${here}`;
   showMenu({
-    ...(labelled ? { runLabel: `${labelled.text} — ${labelled.note}` } : {}),
+    ...(labelled ? { run: { label: labelled, sub: [dailyRun ? t.daily : '', depthText].filter(Boolean).join(' · ') } } : {}),
     onResume: hideOverlay,
     onHelp: () => showHelp(hideOverlay),
     onBadges: () => showBadges(hideOverlay, profile?.honors ?? []),

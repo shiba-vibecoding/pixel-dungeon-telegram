@@ -9,7 +9,7 @@ import { capitalize, lang, locale, t } from './i18n';
 import { itemInfo, itemName } from './itemtext';
 import { type FxMode, quality } from './quality';
 import { type QuickCount, quickCount, setQuickCount } from './quickslot';
-import { el, info, portrait, show, sprites, windowOf } from './screens';
+import { closeButton, el, info, portrait, show, sprites, windowOf } from './screens';
 import { mobDescription } from './examine';
 import { canFullscreen, haptics, isFullscreen, openExternal, setFullscreen } from './telegram';
 import { hints } from './hints';
@@ -383,8 +383,8 @@ export function showAbout(onClose: () => void): void {
 export const CHALLENGE_MASKS: readonly number[] = CHALLENGES.map((challenge) => challenge.mask);
 
 /**
- * A challenge's picture in challenges.png (design v9: seven icons, in the order of the PD 1.9 list). The two Shattered
- * added, hostile champions and badder bosses, have none yet: their cells (7 and 8) are empty until one is drawn.
+ * A challenge's picture in sheet-challenges9.png (design v23: nine icons, 16×16, in the order of the PD 1.9 list, then Shattered's
+ * hostile champions and badder bosses).
  */
 const ICON_OF_MASK: Readonly<Record<number, number>> = { 1: 0, 2: 1, 4: 2, 8: 3, 16: 4, 32: 5, 64: 6, 128: 7, 256: 8 };
 export const challengeIcon = (mask: number): number => ICON_OF_MASK[mask] ?? 0;
@@ -409,10 +409,55 @@ export interface ChallengesOptions {
   onClose(): void;
 }
 
-/** WndChallenges: nine switches, locked until the first victory. */
+/** The challenges with a «?» beside them: Shattered's two new ones, whose rules are too long for the row. */
+const LONG_CHALLENGES: readonly number[] = [128, 256];
+/** The bosses of «Badder bosses», in the order of its text, and the bestiary entry whose portrait stands by each. */
+const BADDER_BOSSES: readonly MobKind[] = ['goo', 'tengu', 'dm300', 'king', 'yog'];
+
+/** The picture of a challenge, from the nine-icon sheet (`big`: twice the size). */
+const challengeSprite = (mask: number, big = true): HTMLElement => {
+  const icon = el('i', { className: big ? 'pd-ch9 big' : 'pd-ch9' });
+  icon.style.setProperty('--c', String(challengeIcon(mask)));
+  return icon;
+};
+
+/**
+ * «?» on a long challenge: its rules in a window of their own. «Badder bosses» is told boss by boss: the text of Challenges.STRONGER_BOSSES
+ * as the core fights it (core/src/bosses: health, the arena's traps, the cooldowns), a portrait from the bestiary and what changes.
+ */
+function showChallengeInfo(index: number, back: () => void): void {
+  const [name, desc, rules] = t.meta.challengeList[index]!;
+  const mask = CHALLENGE_MASKS[index]!;
+  if (mask !== 256) {
+    show(windowOf({ title: name, icon: challengeSprite(mask), onClose: back, narrow: true }, info(desc), info(rules, 'pd-info pd-rules')), back);
+    return;
+  }
+  // "Goo: +20% health" and then its "- ..." lines; the last boss has no health line.
+  const blocks: Array<{ head: string; lines: string[] }> = [];
+  for (const line of rules.split(String.fromCharCode(10)).map((l) => l.trim()).filter(Boolean)) {
+    if (line.startsWith('- ')) blocks[blocks.length - 1]?.lines.push(line.slice(2).replace(/\.$/, ''));
+    else blocks.push({ head: line, lines: [] });
+  }
+  const list = el('ul', { className: 'pd-boss-list' });
+  blocks.forEach((block, i) => {
+    const colon = block.head.indexOf(':');
+    const bossName = colon < 0 ? block.head : block.head.slice(0, colon);
+    const health = colon < 0 ? '' : block.head.slice(colon + 1).trim();
+    const entry = BESTIARY_ENTRIES.find((e) => e.kind === BADDER_BOSSES[i]);
+    list.append(el(
+      'li',
+      {},
+      entry ? mobFace(entry, false, false) : el('i'),
+      el('span', {}, el('b', { textContent: bossName }), el('small', { textContent: [health, ...block.lines.map((line) => `· ${line}`)].filter(Boolean).join(String.fromCharCode(10)) })),
+    ));
+  });
+  show(windowOf({ title: name, icon: challengeSprite(mask), onClose: back, narrow: true }, info(desc), el('div', { className: 'pd-scroll' }, list)), back);
+}
+
+/** WndChallenges: nine switches, locked until the first victory. The two new ones carry a «new» tag and a «?». */
 export function showChallenges(options: ChallengesOptions): void {
   let mask = options.unlocked ? options.mask : 0;
-  // How many are on, and what they do to the score (core daily.ts challengeMultiplier).
+  // How many are on, and what they do to the score: the same function the score uses (core daily.ts challengeMultiplier, 1.25^n).
   const onText = (m: number): string =>
     countChallenges(m) > 0 ? `${t.meta.challengesOn(countChallenges(m))} · ${t.ranked.scoreTimes(challengeMultiplier(m).toLocaleString(locale))}` : t.meta.challengesOn(0);
   const sub = el('span', { className: 'pd-note', textContent: onText(mask) });
@@ -420,8 +465,7 @@ export function showChallenges(options: ChallengesOptions): void {
   if (!options.unlocked) list.append(el('p', { className: 'pd-lockplate' }, el('span', { textContent: t.meta.challengesLocked })));
   t.meta.challengeList.forEach(([name, desc, rules], i) => {
     const bit = CHALLENGE_MASKS[i]!;
-    const icon = el('i', { className: 'pd-ch-icon' });
-    icon.style.setProperty('--c', String(challengeIcon(bit)));
+    const long = LONG_CHALLENGES.includes(bit);
     const row = el(
       'button',
       {
@@ -435,20 +479,29 @@ export function showChallenges(options: ChallengesOptions): void {
           options.onChange(mask);
         },
       },
-      icon,
+      challengeSprite(bit),
       el(
         'span',
         { className: 'pd-ch-text' },
-        el('span', { className: 'pd-ch-name', textContent: name }),
+        el('span', { className: 'pd-ch-name', textContent: name }, long ? el('em', { className: 'pd-new-tag', textContent: t.forum.challengeNew }) : null),
         el('span', { className: 'pd-ch-desc', textContent: desc }),
-        el('span', { className: 'pd-ch-rules', textContent: rules }),
+        long ? null : el('span', { className: 'pd-ch-rules', textContent: rules }),
       ),
       el('span', { className: 'pd-switch-box' }),
     );
     row.setAttribute('role', 'switch');
     row.setAttribute('aria-checked', String(Boolean(mask & bit)));
     if (!options.unlocked) row.setAttribute('aria-disabled', 'true');
-    list.append(row);
+    if (!long) {
+      list.append(el('div', { className: 'pd-challenge9' }, row));
+      return;
+    }
+    const more = el('button', { className: 'pd-ch-info', textContent: '?', onclick: () => {
+      click();
+      showChallengeInfo(i, () => showChallenges({ ...options, mask }));
+    } });
+    more.setAttribute('aria-label', t.forum.challengeMore(name));
+    list.append(el('div', { className: 'pd-challenge9 info' }, row, more));
   });
   const box = windowOf({ title: t.meta.challenges, onClose: options.onClose }, el('div', { className: 'pd-scroll' }, list), info(t.meta.challengesFoot, 'pd-note center'));
   box.querySelector('.pd-titles')?.append(sub);
@@ -525,9 +578,14 @@ export interface JournalOptions {
 }
 
 /** WndJournal and WndCatalogus in one window: the notes, and every potion, scroll, ring and wand. */
-export function showJournal(options: JournalOptions, tab: 'notes' | 'catalog' | 'guide' = 'notes', category = 0): void {
+export function showJournal(options: JournalOptions, tab: 'notes' | 'catalog' | 'guide' = 'notes', category = 0, entry?: string): void {
   const { world, hero } = options;
   const reopen = (nextTab: 'notes' | 'catalog' | 'guide', nextCategory = category): void => showJournal(options, nextTab, nextCategory);
+  // A guide entry has a page of its own, with the way back to the list in this tab.
+  if (tab === 'guide' && entry) {
+    showGuideEntry(entry, () => reopen('guide'), options.onClose);
+    return;
+  }
   const tabs = el('div', { className: 'pd-tabs' });
   tabs.setAttribute('role', 'tablist');
   for (const [id, label] of [['notes', t.meta.notes], ['catalog', t.meta.catalog], ['guide', t.forum.guide.tab]] as const) {
@@ -540,38 +598,148 @@ export function showJournal(options: JournalOptions, tab: 'notes' | 'catalog' | 
   const parts = tab === 'notes'
     ? [el('div', { className: 'pd-scroll' }, notesView(world, hero))]
     : tab === 'guide'
-      ? [el('div', { className: 'pd-scroll' }, guideView())]
+      ? guideList((id) => showJournal(options, 'guide', category, id))
       : catalogView(options, category, (next) => reopen('catalog', next));
   show(
-    windowOf({ title: t.meta.journal, onClose: options.onClose, className: bestiary ? 'wide pd-best-window' : 'wide' }, tabs, ...parts),
+    windowOf({ title: t.meta.journal, onClose: options.onClose, className: bestiary ? 'wide pd-best-window' : tab === 'guide' ? 'wide pd-guide-window' : 'wide' }, tabs, ...parts),
     options.onClose,
   );
 }
 
 /** The guide alone, as the camp opens it (the journal's «Памятка» tab, without the world a run has). */
-export function showGuide(onClose: () => void): void {
-  show(windowOf({ title: t.forum.guide.tab, onClose, className: 'wide' }, el('div', { className: 'pd-scroll' }, guideView())), onClose);
+export function showGuide(onClose: () => void, entry?: string): void {
+  if (entry) {
+    showGuideEntry(entry, () => showGuide(onClose), onClose);
+    return;
+  }
+  show(windowOf({ title: t.forum.guide.tab, onClose, className: 'wide pd-guide-window' }, ...guideList((id) => showGuide(onClose, id))), onClose);
 }
 
-/**
- * The newcomer's guide (the forum study): the questions asked most, answered by the game's own rules, and the colours of
- * the traps. Each answer is a title and a few lines; nothing here is hidden behind a tap.
- */
-function guideView(): HTMLElement {
-  const F = t.forum;
-  const list = el('div', { className: 'pd-guide' }, el('p', { className: 'pd-note center', textContent: F.guide.intro }));
-  for (const entry of F.guide.entries) {
-    list.append(el('section', { className: 'pd-guide-item' }, el('h3', { className: 'pd-heading', textContent: entry.title }), info(entry.text)));
+/** What the player has read of the guide, kept on this device (a gold dot marks the rest). */
+const GUIDE_READ_KEY = 'pd-guide-read';
+function guideRead(): Set<string> {
+  try {
+    const raw: unknown = JSON.parse(localStorage.getItem(GUIDE_READ_KEY) ?? '[]');
+    return new Set(Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string') : []);
+  } catch {
+    return new Set();
   }
-  // Trap colours: Trap.RED ... Trap.GREY, each a swatch and the family it marks.
-  const legend = el('ul', { className: 'pd-trap-legend' });
-  F.trapColours.forEach(([name, what], i) => {
-    const swatch = el('i', { className: 'pd-trap-swatch' });
-    swatch.dataset.c = String(i);
-    legend.append(el('li', {}, swatch, el('span', {}, el('b', { textContent: capitalize(name) }), ` — ${what}`)));
-  });
-  list.append(el('section', { className: 'pd-guide-item' }, el('h3', { className: 'pd-heading', textContent: F.trapColourTitle }), info(F.trapColourText), legend));
-  return list;
+}
+function markGuideRead(id: string): void {
+  try {
+    const read = guideRead();
+    if (read.has(id)) return;
+    read.add(id);
+    localStorage.setItem(GUIDE_READ_KEY, JSON.stringify([...read]));
+  } catch { /* private mode: the dots just stay */ }
+}
+
+/** The guide's entries: the questions asked most, and the trap colours last. */
+function guideItems(): ReadonlyArray<{ id: string; title: string; text: string }> {
+  const F = t.forum;
+  return [...F.guide.entries, { id: 'traps', title: F.trapColourTitle, text: F.trapColourText }];
+}
+
+/** An entry's picture: an item of items.png, the bestiary's mimic, the well, a challenge's icon or a trap's colour. */
+const GUIDE_ICONS: Readonly<Record<string, number>> = {
+  hunger: S.RATION, hungerEnd: S.PASTY, ankh: S.ANKH, curses: S.CURSE_INFUSE, uncurse: S.SCROLL_HOLDER, wealth: S.GOLD,
+  purity: S.DEWDROP, seeds: S.SEED_ROTBERRY, score: S.AMULET, drained: S.RAT_SKULL,
+};
+function guideIcon(id: string, big: boolean): HTMLElement {
+  const item = GUIDE_ICONS[id];
+  if (item !== undefined) {
+    const node = el('i', { className: 'pd-item' });
+    node.dataset.i = String(item);
+    node.style.setProperty('--u', big ? '3px' : '2px');
+    return node;
+  }
+  if (id === 'mimics') {
+    const entry = BESTIARY_ENTRIES.find((e) => e.kind === 'mimic');
+    if (entry) return mobFace(entry, false, false);
+  }
+  if (id === 'well') {
+    const node = el('i', { className: 'pd-guide-img' });
+    node.style.backgroundImage = 'var(--spr-guide-well)';
+    return node;
+  }
+  if (id === 'challenges') {
+    const node = el('i', { className: 'pd-ch9' });
+    node.style.setProperty('--c', '8');
+    return node;
+  }
+  const node = el('i', { className: 'pd-trapc' });
+  node.style.setProperty('--c', '1');
+  return node;
+}
+
+/** A text in sentences: a full stop, a space and a capital, a bracket or a quote begin the next. */
+function sentences(text: string): string[] {
+  return text.split(/(?<=[.!?])\s+(?=[A-ZА-ЯЁ«“(])/u).map((part) => part.trim()).filter(Boolean);
+}
+
+/** The list: a count line, then a row for each entry (icon, title with a gold dot while unread, a line, a chevron). */
+function guideList(open: (id: string) => void): HTMLElement[] {
+  const items = guideItems();
+  const read = guideRead();
+  const count = el('p', { className: 'pd-cat-count', textContent: t.forum.guide.count(items.length, items.filter((item) => read.has(item.id)).length) });
+  const list = el('ul', { className: 'pd-guide-list' });
+  for (const item of items) {
+    const chev = el('i', { className: 'pd-chev' });
+    chev.setAttribute('aria-hidden', 'true');
+    const row = el(
+      'button',
+      { className: `pd-guide-row${read.has(item.id) ? ' read' : ''}`, onclick: () => (click(), open(item.id)) },
+      el('span', { className: 'pd-guide-ico' }, guideIcon(item.id, false)),
+      el('span', { className: 'pd-spell-text' }, el('b', { textContent: item.title }), el('small', { textContent: sentences(item.text)[0] ?? '' })),
+      chev,
+    );
+    list.append(el('li', {}, row));
+  }
+  return [count, el('div', { className: 'pd-scroll' }, list)];
+}
+
+/** An entry's page: «‹ Памятка» and the cross, the big picture and the title, then the text, points and notes (opened = read). */
+function showGuideEntry(id: string, back: () => void, onClose: () => void): void {
+  const F = t.forum;
+  const item = guideItems().find((entry) => entry.id === id);
+  if (!item) return back();
+  markGuideRead(id);
+  const body = el('div', { className: 'pd-scroll pd-guide-page' });
+  if (id === 'traps') {
+    body.append(info(F.trapColourText));
+    const legend = el('ul', { className: 'pd-trap-legend' });
+    // Trap.RED ... Trap.BLACK, as the sheet shows them; the spent black one last.
+    F.trapColours.forEach(([name, what], i) => {
+      const swatch = el('i', { className: 'pd-trapc' });
+      swatch.style.setProperty('--c', String(i));
+      legend.append(el('li', { className: i === 8 ? 'spent' : '' }, swatch, el('span', {}, el('b', { textContent: capitalize(name) }), el('small', { textContent: capitalize(what) }))));
+    });
+    body.append(legend, info(F.trapColourNote, 'pd-note'));
+  } else if (id === 'purity') {
+    body.append(info(F.guide.purityLead));
+    body.append(el('div', { className: 'pd-compare' }, ...F.guide.purity.map(([name, kind, points]) => el(
+      'div',
+      {},
+      el('header', {}, el('span', {}, el('b', { textContent: name }), el('small', { textContent: kind }))),
+      el('ul', {}, ...points.map((point) => el('li', { textContent: point }))),
+    ))));
+  } else {
+    const [lead, ...rest] = sentences(item.text);
+    body.append(info(lead ?? item.text));
+    if (rest.length > 1) body.append(el('ul', { className: 'pd-guide-points' }, ...rest.map((point) => el('li', { textContent: point }))));
+    else if (rest.length === 1) body.append(info(rest[0]!));
+  }
+  const head = el('header', { className: 'pd-window-head' }, el('button', { className: 'pd-back', textContent: F.guide.tab, onclick: () => (click(), back()) }));
+  head.append(closeButton(onClose));
+  const box = el(
+    'section',
+    { className: 'pd-window wide pd-guide-window' },
+    head,
+    el('div', { className: 'pd-guide-title' }, el('span', { className: 'pd-guide-ico big' }, guideIcon(id, true)), el('h2', { className: 'pd-heading', textContent: item.title })),
+    body,
+  );
+  box.setAttribute('role', 'dialog');
+  show(box, onClose);
 }
 
 /**
