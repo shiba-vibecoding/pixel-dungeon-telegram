@@ -147,3 +147,4 @@ export { monkDescArgs, spellDescArgs, spellDescExtra } from './classes/texts';
 export type { ClassFx } from './classes/fx';
 export { HERO_CLASSES as CLASSES } from './heroclass';
 export { wearsForce } from './rings';
+export { ankhChoices, ankhOf, type LostInventory } from './ankh';

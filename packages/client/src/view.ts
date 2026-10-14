@@ -1062,11 +1062,25 @@ export class View {
           this.say(t.revived(this.name(world, effect.hero)), COLORS.positive, now);
           break;
         case 'resurrected':
-          // Up again at the stairs: no sliding across the map (GameScene, RESURRECT: TELEPORT).
-          this.puppets.delete(effect.hero);
+          // Hero.die with a blessed ankh: up where they fell (SpellSprite.ANKH, TELEPORT, «The ankh explodes with
+          // life-giving energy!»); unblessed, elsewhere on the floor: no sliding across the map (InterlevelScene.RESURRECT).
+          if (!effect.blessed) this.puppets.delete(effect.hero);
           audio.play('teleport');
-          this.say(effect.hero === myId ? t.resurrected : t.resurrectedCompanion(this.name(world, effect.hero)), COLORS.highlight, now);
+          if (effect.blessed && effect.hero === myId) this.say(t.ankh.revive, COLORS.highlight, now);
+          else this.say(effect.hero === myId ? t.resurrected : t.resurrectedCompanion(this.name(world, effect.hero)), COLORS.highlight, now);
           if (effect.hero === myId) haptic('success');
+          break;
+        case 'ankhBlessed':
+          // Ankh.AC_BLESS: DRINK, «You bless the ankh with magical water.»
+          audio.play('drink');
+          if (effect.hero === myId) this.say(t.ankh.blessed, COLORS.positive, now);
+          break;
+        case 'ankhKept':
+          break;
+        case 'lostPackFound':
+          // LostBackpack.doPickUp: DEWDROP.
+          audio.play('dewdrop');
+          if (effect.hero === myId) this.say(t.ankh.found, COLORS.positive, now);
           break;
         case 'hurt':
           if (effect.depth === this.depth) this.float(effect.who, String(effect.damage), COLORS.negative, now);

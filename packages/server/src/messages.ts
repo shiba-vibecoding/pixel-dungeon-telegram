@@ -99,6 +99,15 @@ export function sanitizeAction(raw: unknown): Action | null {
       }
       return null;
     }
+    // Ankh.AC_BLESS; WndResurrect's two choices (indices into the hero's belongings and lost backpack).
+    case 'ankhBless': {
+      const item = slot(a.item);
+      return item === null ? null : { type: 'ankhBless', item };
+    }
+    case 'ankhKeep': {
+      if (!Array.isArray(a.keep) || a.keep.length > 2 || !a.keep.every((k) => isInt(k, 0, 200))) return null;
+      return { type: 'ankhKeep', keep: [...a.keep] as number[] };
+    }
     case 'skeletonKey': {
       // SkeletonKey.AC_INSERT at a cell.
       const item = slot(a.item);

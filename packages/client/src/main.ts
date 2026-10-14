@@ -61,7 +61,7 @@ import { levelFx } from './levelfx';
 import { mineTarget, setSmithToast, type SmithEnv, smithBranch, talkWithBlacksmith } from './blacksmith-ui';
 import {
   armorTier, closeOverlay, el, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showHelp, showHero,
-  refreshBackpack, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, info, show, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice, windowOf,
+  refreshBackpack, quickAction, showHistory, showMenu, showRankings, showResurrect, showAmulet, showQuest, showRunEnd, showBadges, info, show, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice, windowOf,
 } from './screens';
 import { rankingBlock, showBoards } from './rankui';
 import { type Camp, campClasses } from './camp';
@@ -1506,6 +1506,12 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
     }
     if (effect.type === 'bossSlain' && effect.depth === bossFight?.depth) bossFight = null;
     if (effect.type === 'ghost' && effect.hero === myId) talkWithGhost(effect.line, effect.questType);
+    // WndResurrect: an unblessed ankh's revival asks which two things the hero keeps.
+    if (effect.type === 'resurrected' && effect.hero === myId && effect.blessed === false) {
+      const world = session?.world;
+      const me = world && heroById(world, myId);
+      if (world && me?.ankhChoice) showResurrect(world, me, (keep) => send({ type: 'ankhKeep', keep }, performance.now()));
+    }
     if (effect.type === 'ratKing' && effect.hero === myId) talkWithRatKing(effect.line);
     if (effect.type === 'wandmaker' && effect.hero === myId) talkWithWandmaker(effect.line, effect.questType);
     if (effect.type === 'imp' && effect.hero === myId) talkWithImp(effect.line);

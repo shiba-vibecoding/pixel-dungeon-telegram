@@ -1,5 +1,5 @@
 import {
-  escapeScore, keepable, ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
+  ankhChoices, escapeScore, keepable, ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
   knownIn, MUST_THROW, TARGETED_SPELLS,
   type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass, HERO_CLASSES,
   type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
@@ -112,6 +112,45 @@ export function show(content: HTMLElement, onClose: (() => void) | null, bare = 
   root.classList.add('open');
   root.classList.toggle('bare', bare);
   sprites(content);
+}
+
+/**
+ * WndResurrect: two things to keep, the weapon and the armour to begin with; any of the hero's belongings (or what
+ * lies in the backpack left behind) but an ankh or a bag. It wants an answer: no cross.
+ */
+export function showResurrect(world: World, hero: Hero, onKeep: (keep: number[]) => void): void {
+  const choices = ankhChoices(hero);
+  const keepable = (item: Item): boolean => item.kind !== 'ankh' && itemDef(item.kind).category !== 'bag';
+  let picked = [hero.weapon, hero.armor].map((item) => (item ? choices.indexOf(item) : -1)).filter((i) => i >= 0);
+  const grid = el('div', { className: 'pd-grid' });
+  const draw = (): void => {
+    grid.replaceChildren(...choices.map((item, i) => {
+      const node = slot(world, item, { hero });
+      if (picked.includes(i)) node.classList.add('equipped');
+      if (!keepable(item)) node.style.opacity = '0.45';
+      else node.onclick = () => {
+        audio.play('click');
+        picked = picked.includes(i) ? picked.filter((p) => p !== i) : [...picked, i].slice(-2);
+        draw();
+      };
+      return node;
+    }));
+  };
+  draw();
+  const done = (): void => {
+    hideOverlay();
+    onKeep(picked);
+  };
+  const open = (): void => show(windowOf(
+    { title: t.ankh.title, icon: slot(world, { kind: 'ankh', qty: 1, level: 0 } as Item) },
+    info(t.ankh.message),
+    grid,
+    button(t.ankh.confirm, () => {
+      if (picked.length >= 2) done();
+      else showConfirm(t.ankh.warnTitle, t.ankh.warnBody, t.ankh.warnYes, t.ankh.warnNo, done, open);
+    }, 'primary'),
+  ), null);
+  open();
 }
 
 export function hideOverlay(): void {
@@ -1641,6 +1680,10 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       }
     }
     if (category === 'food' || item.kind === 'quest.fish') use(t.eat, () => act({ type: 'use', item: index }));
+    // Ankh.AC_BLESS: with the waterskin full.
+    if (item.kind === 'ankh' && !item.blessed && hero.items.some((other) => other.kind === 'waterskin' && (other.volume ?? 0) >= 20)) {
+      use(t.ankh.bless, () => act({ type: 'ankhBless', item: index }));
+    }
     if (category === 'torch') use(t.light, () => act({ type: 'use', item: index }));
     if (category === 'tome') {
       // TengusMask.AC_WEAR: the choice of a way (talentui.ts); the old Tome of Mastery too.

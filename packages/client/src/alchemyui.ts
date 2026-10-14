@@ -638,8 +638,8 @@ function drawGuide(world: World, hero: Hero, pageIndex: number): void {
 
 /**
  * Whether the recipe book has a page (Document.ALCHEMY_GUIDE's pagesStates: found or not).
- * Seam (levels stream): the pages become things to find in the dungeon; the world will then list the ones found
- * as `world.guidePages` (their keys: 'potions', 'stones', 'energy_food'…). Until it does, the book is unlocked.
+ * The pages are found in the laboratories (AlchemyPage); the world lists them as `world.guidePages` (their keys:
+ * 'potions', 'stones', 'energy_food'…). A run from before has none listed: its book is open.
  */
 function pageFound(world: World, page: Page): boolean {
   const found = (world as { guidePages?: readonly string[] }).guidePages;

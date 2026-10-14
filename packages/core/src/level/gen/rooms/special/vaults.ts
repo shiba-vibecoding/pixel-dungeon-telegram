@@ -170,7 +170,8 @@ export class GardenRoom extends SpecialRoom {
 }
 
 /** The alchemy guide's pages, in order (Document.ALCHEMY_GUIDE): five for the sewers, four given from the prison on. */
-const ALCHEMY_PAGES = ['Potions', 'Stones', 'Energy_Food', 'Exotic_Potions', 'Exotic_Scrolls', 'Bombs', 'Weapons', 'Brews_Elixirs', 'Spells'];
+/** Document.ALCHEMY_GUIDE's pages, in order (their keys, as world.guidePages has them). */
+export const ALCHEMY_PAGES = ['potions', 'stones', 'energy_food', 'exotic_potions', 'exotic_scrolls', 'bombs', 'weapons', 'brews_elixirs', 'spells'];
 
 /**
  * LaboratoryRoom: an alchemy pot in a far corner, five energy crystals, one or two potions or stones
@@ -212,17 +213,18 @@ export class LaboratoryRoom extends SpecialRoom {
       level.drop(LaboratoryRoom.prize(level), pos);
     }
 
-    // SEAM(alchemy): no guide page is ever found yet, so every one is still missing.
-    const missingPages = [...ALCHEMY_PAGES];
+    // The pages not found yet this run (Document.ALCHEMY_GUIDE.isPageFound; a bare run's level: none found).
+    const found = Dungeon.world?.guidePages ?? [];
+    const missingPages = ALCHEMY_PAGES.filter((page) => !found.includes(page));
     // Five pages in the sewers, ten from the prison on.
     const chapterTarget = missingPages.length <= 5 ? 2 : 1;
     if (missingPages.length > 0 && chapter >= chapterTarget) {
       // One more page for each chapter past the target.
       const pagesToDrop = Math.min(missingPages.length, chapter - chapterTarget + 1);
       for (let i = 0; i < pagesToDrop; i++) {
-        missingPages.shift();
+        const page = missingPages.shift()!;
         pos = freeCell();
-        level.drop(seamItem('alchemyPage'), pos);
+        level.drop({ ...createItem('alchemyPage'), page }, pos);
         taken.add(pos);
       }
     }
