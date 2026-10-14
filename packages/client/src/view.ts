@@ -1940,6 +1940,18 @@ export class View {
           if (effect.msg === 'hornofplenty.eat') audio.play('eat');
           break;
         }
+        case 'classFx': {
+          // What the Duelist's and the Cleric's doing shows: their sounds, and the numbers floating over whom they touch.
+          if (effect.depth !== this.depth) break;
+          const fx = effect.fx;
+          if (fx.k === 'sound') audio.play(fx.name as Sound, 1, 1, this.placeOf(effect.hero, now));
+          else if (fx.k === 'text') {
+            const who = world.heroes.find((h) => h.depth === this.depth && h.pos === fx.at) ?? world.floors[this.depth]?.mobs.find((m) => m.pos === fx.at);
+            const tone = { p: COLORS.positive, w: COLORS.warning, n: COLORS.negative, i: COLORS.default }[fx.tone];
+            if (who) this.float(who.id, fx.text, fx.icon === 'shield' ? COLORS.shield : tone, now);
+          }
+          break;
+        }
         case 'stealth':
           // CloakOfShadows: Sounds.MELD as the cloak wraps the hero; the sprite fades (State.INVISIBLE, see sync).
           if (effect.on) audio.play('meld', 1, 1, this.placeOf(effect.hero, now));

@@ -21,6 +21,7 @@ import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookC
 import { artText, chargeOf } from './artifacttext';
 import { armorStatus } from './abilitytext';
 import { showTalents, startAbility } from './abilityui';
+import { weaponPrompt } from './classui';
 import { glowOf } from './gearfx';
 import { fx } from './fx';
 import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
@@ -893,7 +894,9 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
 let aim:
-  | { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' }
+  | { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast'; choice?: number }
+  /** An action of the classes that wants a target: a spell cast at a cell, a weapon's ability. */
+  | { index: -1; kind: 'class'; make: (cell: number) => Action }
   | { index: -1; kind: 'artifact'; action: ArtifactAction }
   /** A subclass's action that wants a target: a combo move, the assassin's prepared strike. */
   | { index: -1; kind: 'ability'; ability: 'combo'; move: core.ComboMove }
@@ -914,6 +917,11 @@ function artifactHost(world: World, me: Hero): ArtifactHost {
     aim: (action) => {
       hideOverlay();
       aim = { index: -1, kind: 'artifact', action };
+    },
+    aimClass: (prompt, make) => {
+      hideOverlay();
+      aim = { index: -1, kind: 'class', make };
+      toast(prompt);
     },
     pick: (title, targets, onPick, onCancel) => showBackpack({
       world, hero: me, onAction: (action) => send(action, performance.now()), onAim: () => undefined, onClose: hideOverlay,
@@ -959,6 +967,12 @@ function toggleQuickslot(slot = 0): void {
   const index = quickIndex(me, slot);
   const item = quickItem(me, slot);
   if (!item) return;
+  // MeleeWeapon.defaultAction for a Duelist: the weapon's ability.
+  if (me.heroClass === 'duelist' && (item === me.weapon || item === me.secondWep) && core.hasAbility(item)) {
+    walk.reset();
+    weaponAbilityNow(me, item === me.secondWep ? 'second' : 'weapon');
+    return;
+  }
   // Wand.actions: no zapping a wand known to be empty (one of unknown charges may be tried, and fizzle); the staff's, not at all.
   const wand = item.kind === 'weapon.magesStaff' ? item.wand : item;
   if (wand?.charges === 0 && (chargesKnown(wand) || wand !== item)) {
@@ -1592,7 +1606,13 @@ function tapCell(cell: number, quiet = false): void {
       if (problem) toast(talentReason(problem) || t.reasons[problem] || problem);
       else send(action, performance.now());
     }
-    else if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
+    else if (shot.kind === 'class') {
+      const action = shot.make(cell);
+      const problem = core.actionProblem(world, me, action);
+      if (problem) toast(talentReason(problem) || t.reasons[problem] || problem);
+      else send(action, performance.now());
+    }
+    else if (shot.kind === 'special') send({ type: 'special', target: cell, ...(shot.choice !== undefined ? { choice: shot.choice } : {}) }, performance.now());
     // A spell cast, dragon's breath breathed, a siren's song sung at the cell.
     else if (shot.kind === 'cast') {
       if (cell !== me.pos && me.items[shot.index]) send({ type: 'use', item: shot.index, cell }, performance.now());
@@ -1744,12 +1764,22 @@ function useAbilityNow(): void {
   startAbility({
     world, hero: me,
     send: (action) => send(action, performance.now()),
-    aim: (prompt) => {
-      aim = { index: -1, kind: 'special' };
+    aim: (prompt, choice) => {
+      aim = { index: -1, kind: 'special', ...(choice !== undefined ? { choice } : {}) };
       toast(prompt);
     },
     back: hideOverlay,
   });
+}
+
+/** MeleeWeapon.execute(AC_ABILITY): the weapon's ability, aimed at a cell where it asks for one. */
+function weaponAbilityNow(me: Hero, which: 'weapon' | 'second'): void {
+  const weapon = which === 'second' ? me.secondWep : me.weapon;
+  if (!weapon) return;
+  if (core.abilityAims(weapon)) {
+    aim = { index: -1, kind: 'class', make: (cell) => ({ type: 'weaponAbility', which, cell }) };
+    toast(weaponPrompt(weapon.kind));
+  } else send({ type: 'weaponAbility', which }, performance.now());
 }
 
 /** An action of the talents' and subclasses' indicator (berserk, freerun, snipe, a combo move, ambush). */
@@ -1794,9 +1824,14 @@ function backpackOptions(world: World, me: Hero): Parameters<typeof showBackpack
     world,
     hero: me,
     onAction: (action) => send(action, performance.now()),
-    onAim: (index, kind) => {
-      aim = { index, kind };
+    onAim: (index, kind, choice) => {
+      aim = { index, kind, ...(choice !== undefined ? { choice } : {}) };
     },
+    onAimClass: (prompt, make) => {
+      aim = { index: -1, kind: 'class', make };
+      toast(prompt);
+    },
+    onWeaponAbility: (which) => weaponAbilityNow(me, which),
     onClose: hideOverlay,
   };
 }
@@ -1829,9 +1864,14 @@ function openBackpack(): void {
     world,
     hero: me,
     onAction: (action) => send(action, performance.now()),
-    onAim: (index, kind) => {
-      aim = { index, kind };
+    onAim: (index, kind, choice) => {
+      aim = { index, kind, ...(choice !== undefined ? { choice } : {}) };
     },
+    onAimClass: (prompt, make) => {
+      aim = { index: -1, kind: 'class', make };
+      toast(prompt);
+    },
+    onWeaponAbility: (which) => weaponAbilityNow(me, which),
     onAimArtifact: (action) => {
       aim = { index: -1, kind: 'artifact', action };
     },

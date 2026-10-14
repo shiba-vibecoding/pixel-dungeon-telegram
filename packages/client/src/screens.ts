@@ -3,7 +3,7 @@ import {
   knownIn, MUST_THROW, TARGETED_SPELLS,
   type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass, HERO_CLASSES,
   type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
-  visiblyCursed, type World, CLASS_ARMOR_OF, heroById, isClassArmor, type SealSource, talentPointsAvailable, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
+  visiblyCursed, type World, hasAbility, CLASS_ARMOR_OF, heroById, isClassArmor, type SealSource, talentPointsAvailable, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
 } from '@pd/core';
 import { artifactActions, artifactCard, type ArtifactHost, chargeStrip, showMiscChooser } from './artifactui';
 import { artText } from './artifacttext';
@@ -1070,7 +1070,11 @@ export interface BackpackOptions {
   hero: Hero;
   onAction(action: Action): void;
   /** Throw, zap or shoot the item at a cell the player picks next (or cast it there: a spell, dragon's breath, a siren's song). */
-  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast'): void;
+  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast', choice?: number): void;
+  /** An action of the classes (a spell, a weapon's ability) aimed at a cell the player picks next. */
+  onAimClass?(prompt: string, make: (cell: number) => Action): void;
+  /** A Duelist's weapon ability, from the weapon's own window (MeleeWeapon.AC_ABILITY). */
+  onWeaponAbility?(which: 'weapon' | 'second'): void;
   /** An artifact's use aimed at a cell the player picks next (talisman, chains, rose, armband, sandals, beacon). */
   onAimArtifact?(action: ArtifactAction): void;
   onClose(): void;
@@ -1806,6 +1810,14 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         refreshBackpack(world, hero);
       }));
     }
+    // MeleeWeapon.AC_ABILITY: a Duelist's weapon has an ability of its own.
+    if (hero.heroClass === 'duelist' && hasAbility(item)) {
+      use(actionLabel(artText('items.weapon.melee.meleeweapon.ac_ability')), () => {
+        openBag = null;
+        options.onClose();
+        options.onWeaponAbility?.('weapon');
+      });
+    }
     use(t.takeOff, () => stay({ type: 'unequip' }));
   } else if (item === hero.armor && item.kind === CLASS_ARMOR_OF[hero.heroClass]) {
     // ClassArmor.execute(AC_ABILITY): the ability of the armour (it wants a cell to aim at, or none, or the beacon's choice).
@@ -1818,9 +1830,9 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
             options.onAction(action);
             options.onClose();
           },
-          aim: (prompt) => {
+          aim: (prompt, choice) => {
             options.onClose();
-            options.onAim(-1, 'special');
+            options.onAim(-1, 'special', choice);
             toast(prompt);
           },
           back: () => showBackpack(options, { worn: 'armor' }),
@@ -2229,6 +2241,11 @@ function artifactHost(options: ItemOptions, ref: ItemRef): ArtifactHost {
       openBag = null;
       options.onClose();
       options.onAimArtifact?.(action);
+    },
+    aimClass: (prompt, make) => {
+      openBag = null;
+      options.onClose();
+      options.onAimClass?.(prompt, make);
     },
     pick: (title, targets, onPick, onCancel) => showBackpack({ ...options, pick: { title, targets, onPick, onCancel: onCancel ?? back } }),
     back,
