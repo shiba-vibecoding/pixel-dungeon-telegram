@@ -199,7 +199,7 @@ export function powi(base: number, exponent: number): number {
 export function pressCell(ctx: Ctx, cell: number): void {
   const terrain = ctx.level.map[cell]!;
   if (hasFlag(terrain, F.PIT)) return;
-  if (trapAt(terrain)) triggerTrap(ctx, null, cell);
+  if (trapAt(ctx.level, cell)) triggerTrap(ctx, null, cell);
   if (ctx.level.map[cell] === T.HIGH_GRASS) trample(ctx, cell);
   if (ctx.level.map[cell] === T.DOOR) enterCell(ctx.level, cell);
   stepOnPlant(ctx, null, cell);
@@ -664,7 +664,7 @@ export function occupyCell(ctx: Ctx, ch: Char): void {
     return;
   }
   if ((ch.levitating ?? 0) > 0 || hasFlag(ctx.level.map[ch.pos]!, F.PIT)) return;
-  if (trapAt(ctx.level.map[ch.pos]!)) triggerTrap(ctx, ch, ch.pos);
+  if (trapAt(ctx.level, ch.pos)) triggerTrap(ctx, ch, ch.pos);
   if (ctx.level.map[ch.pos] === T.HIGH_GRASS) trample(ctx, ch.pos, ch);
   stepOnPlant(ctx, ch, ch.pos);
 }

@@ -298,6 +298,12 @@ export const ITEMS = {
   'seed.sungrass': { category: 'seed', sprite: S.SEED_SUNGRASS },
   'seed.earthroot': { category: 'seed', sprite: S.SEED_EARTHROOT },
   'seed.fadeleaf': { category: 'seed', sprite: S.SEED_FADELEAF },
+  // Shattered's own: stormvine, swiftthistle, blindweed, mageroyal and the rare starflower.
+  'seed.stormvine': { category: 'seed', sprite: S.SEED_STORMVINE },
+  'seed.swiftthistle': { category: 'seed', sprite: S.SEED_SWIFTTHISTLE },
+  'seed.blindweed': { category: 'seed', sprite: S.SEED_BLINDWEED },
+  'seed.mageroyal': { category: 'seed', sprite: S.SEED_MAGEROYAL },
+  'seed.starflower': { category: 'seed', sprite: S.SEED_STARFLOWER },
   /** Only from the shrub the old wandmaker is after; it brews strength. */
   'seed.rotberry': { category: 'seed', sprite: S.SEED_ROTBERRY },
   // Food (Food, Pasty, MysteryMeat), as filling as Shattered makes it (Hunger.HUNGRY is 300): a ration
@@ -366,6 +372,8 @@ export const ITEMS = {
   'bag.seeds': { category: 'bag', sprite: S.POUCH },
   'bag.scrolls': { category: 'bag', sprite: S.HOLDER },
   'bag.wands': { category: 'bag', sprite: S.HOLSTER },
+  /** PotionBandolier: Shattered's fourth bag, for potions. */
+  'bag.potions': { category: 'bag', sprite: S.BANDOLIER },
   /** Every hero's, from the start: it keeps the dew picked up, to be drunk when hurt (Waterskin; Pixel Dungeon's dew vial). */
   waterskin: { category: 'vial', sprite: S.WATERSKIN },
   /** The Warrior's broken seal, when it is not affixed to armour (BrokenSeal; on armour it is Item.seal). */
@@ -376,6 +384,8 @@ export const ITEMS = {
   'key.iron': { category: 'key', sprite: S.IRON_KEY },
   /** Opens a locked or crystal chest of the level it was found on. */
   'key.golden': { category: 'key', sprite: S.GOLDEN_KEY },
+  /** CrystalKey: opens the crystal door or the crystal chests of the level it was found on. */
+  'key.crystal': { category: 'key', sprite: S.CRYSTAL_KEY },
   /** WornKey: Goo's, it opens the locked way down from the sewers' boss level. */
   'key.skeleton': { category: 'key', sprite: S.WORN_KEY },
   /**
@@ -394,17 +404,31 @@ export const ITEMS = {
   'quest.skull': { category: 'quest', sprite: S.RAT_SKULL },
   /** Dark gold, mined from the veins of the caves for the troll blacksmith. */
   'quest.ore': { category: 'quest', sprite: S.ORE },
-  /** Left by the monks or golems the ambitious imp wants gone. */
+  /** DwarfToken: what the dwarven vault's guards and treasures hold; ten open the vault's strange door. */
   'quest.token': { category: 'quest', sprite: S.TOKEN },
+  /** EscapeCrystal: the imp's way out of the vault, holding the hero's belongings meanwhile (vault.ts). */
+  'quest.escapeCrystal': { category: 'quest', sprite: S.ESCAPE },
+  /** ImpStatue: the obsidian statuette the imp wants from the vault's treasury. */
+  'quest.impStatue': { category: 'quest', sprite: S.STATUE },
+  /** VaultBeacon: back to the vault's entry room, once. */
+  'quest.vaultBeacon': { category: 'quest', sprite: S.RETURN_BEACON },
   /** What the old wandmaker is after: corpse dust, or a phantom fish (which can be eaten, for a moment unseen). */
   'quest.dust': { category: 'quest', sprite: S.DUST },
   'quest.fish': { category: 'quest', sprite: S.PHANTOM_MEAT },
+  /** CeremonialCandle: four of them round the ritual site's marker summon a newborn fire elemental. */
+  'quest.candle': { category: 'quest', sprite: S.CANDLE },
   /** Tengu's legacy: reading it, a hero masters one of two ways. */
   'tome.mastery': { category: 'tome', sprite: S.MASTERY },
   /** Lit, it lets one see further in the dark halls for a while. */
   torch: { category: 'torch', sprite: S.TORCH },
+  /** SkeletonKey: Shattered v4's artifact, the vault's prize among others: it opens locks, locks doors and raises walls with its charge. */
+  'artifact.skeletonKey': { category: 'artifact', sprite: S.ARTIFACT_KEY },
   /** Brings its bearer back to life once, at a price: everything else in the pack, and all gold. */
   ankh: { category: 'ankh', sprite: S.ANKH },
+  /** LostBackpack: what an unblessed ankh's revival left behind. */
+  lostPack: { category: 'quest', sprite: S.BACKPACK },
+  /** AlchemyPage: a page of the alchemy guide (world.guidePages), found in the laboratories. */
+  alchemyPage: { category: 'quest', sprite: S.ALCH_PAGE },
   /** The Amulet of Yendor, at the very bottom of the dungeon. */
   'quest.amulet': { category: 'quest', sprite: S.AMULET },
 } as const satisfies Record<string, ItemDef>;
@@ -447,6 +471,16 @@ export interface Item {
   seal?: { level: number };
   /** Lloyd's beacon: where it was set, if it was. */
   returnTo?: { depth: number; pos: number };
+  /** Item.unique, where the kind does not say: the vault mirror's class items (their stand-ins), never taken out of the vault. */
+  unique?: boolean;
+  /** Ankh.blessed: blessed with a full waterskin, it revives in place. */
+  blessed?: boolean;
+  /** LostBackpack: whose belongings it holds (ankh.ts). */
+  owner?: string;
+  /** The plain cloth a hero wears while their armour lies in their lost backpack (ankh.ts). */
+  standIn?: boolean;
+  /** AlchemyPage.page: which page of the alchemy guide (its key, as in world.guidePages). */
+  page?: string;
   /**
    * Weapon.augment and Armor.augment (a stone of augmentation): a weapon for speed or for damage, armour for evasion
    * or for defence; absent, none.
@@ -658,7 +692,8 @@ export const isStackable = (kind: ItemKind): boolean => {
     category === 'seed' || category === 'bomb' || category === 'honeypot' || category === 'wipeout' || category === 'stone' ||
     category === 'spell' || category === 'brew' || category === 'elixir' || category === 'energy' || category === 'material' ||
     category === 'petal' ||
-    category === 'missile' || kind === 'quest.token' || kind === 'quest.ore';
+    category === 'missile' || kind === 'quest.token' || kind === 'quest.ore' || kind === 'quest.candle' ||
+    kind === 'quest.impStatue' || kind === 'quest.vaultBeacon';
 };
 
 /**
@@ -771,7 +806,8 @@ export function itemPrice(item: Item, known: boolean): number {
       // Honeypot.value.
       return 30 * item.qty;
     case 'bag':
-      return 50;
+      // Bag.value: the pouch 30, the holder and the bandolier 40, the holster 60.
+      return ({ 'bag.seeds': 30, 'bag.scrolls': 40, 'bag.potions': 40, 'bag.wands': 60 } as Partial<Record<ItemKind, number>>)[item.kind] ?? 50;
     case 'wipeout':
       return 100 * item.qty;
     case 'stone':
@@ -963,9 +999,12 @@ const KIND_CHANCES: Readonly<Record<
   Exclude<GeneratedCategory, 'gold' | 'food' | 'misc' | 'weapon' | 'armor' | 'missile' | 'wand' | 'artifact' | 'potion' | 'scroll' | 'stone'>,
   ReadonlyArray<readonly [ItemKind, number]>
 >> = {
+  // Generator.Category.SEED: Shattered's eleven (the rotberry only from its shrub), the starflower half as often.
+  // (Pixel Dungeon's dreamweed is no longer found; Shattered has none.)
   seed: [
-    ['seed.firebloom', 1], ['seed.icecap', 1], ['seed.sorrowmoss', 1], ['seed.dreamweed', 1], ['seed.sungrass', 1],
-    ['seed.earthroot', 1], ['seed.fadeleaf', 1],
+    ['seed.sungrass', 2], ['seed.fadeleaf', 2], ['seed.icecap', 2], ['seed.firebloom', 2], ['seed.sorrowmoss', 2],
+    ['seed.swiftthistle', 2], ['seed.blindweed', 2], ['seed.stormvine', 2], ['seed.earthroot', 2], ['seed.mageroyal', 2],
+    ['seed.starflower', 1],
   ],
   // Thorns and haggler are only dropped by DM-300 and thieves.
   // Generator.Category.RING: the twelve alike.
@@ -1171,14 +1210,19 @@ export class ItemGenerator {
 
 /** `forSale`: a shop's wares, bought rather than picked up. */
 /** hidden: unseen until a hero searches right next to it. */
-/** `goldenMimic` and `crystalMimic`: mimics looking like a locked and a crystal chest (GoldenMimic, CrystalMimic). */
+/** `goldenMimic` and `crystalMimic`: mimics looking like a locked and a crystal chest (GoldenMimic, CrystalMimic); `remains`: a pit room's. */
 export type HeapKind =
-  | 'heap' | 'chest' | 'skeleton' | 'tomb' | 'forSale' | 'mimic' | 'lockedChest' | 'crystalChest' | 'hidden' | 'goldenMimic' | 'crystalMimic';
+  | 'heap' | 'chest' | 'skeleton' | 'tomb' | 'forSale' | 'mimic' | 'lockedChest' | 'crystalChest' | 'hidden' | 'goldenMimic' | 'crystalMimic'
+  | 'remains';
 
 export interface Heap {
   pos: number;
   kind: HeapKind;
   items: Item[];
+  /** Heap.haunted: remains with something cursed among them; disturbing them raises a wraith. */
+  haunted?: boolean;
+  /** Heap.autoExplored: made by the level for show, not counted as something missed. */
+  autoExplored?: boolean;
   /** Made during play, not by the level's builder: it does not count for the floor's exploration score (Heap.autoExplored; score.ts). */
   auto?: true;
 }
@@ -1186,7 +1230,7 @@ export interface Heap {
 /** Sprites of closed containers in items.png. */
 /** A mimic looks just like a chest. */
 export const HEAP_SPRITES: Readonly<Record<Exclude<HeapKind, 'heap' | 'forSale'>, number>> = {
-  chest: S.CHEST, skeleton: S.BONES, tomb: S.TOMB, mimic: S.CHEST, lockedChest: S.LOCKED_CHEST, crystalChest: S.CRYSTAL_CHEST,
+  chest: S.CHEST, skeleton: S.BONES, tomb: S.TOMB, mimic: S.CHEST, lockedChest: S.LOCKED_CHEST, crystalChest: S.CRYSTAL_CHEST, remains: S.REMAINS,
   goldenMimic: S.LOCKED_CHEST, crystalMimic: S.CRYSTAL_CHEST,
   hidden: S.SOMETHING, // never drawn
 };

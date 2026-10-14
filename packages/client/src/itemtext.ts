@@ -8,6 +8,7 @@ import {
   MOSSY_CLUMP, SUNDIAL, CLOVER, TRAP_MECHANISM, MIMIC_TOOTH, WONDROUS_RESIN, EYE_OF_NEWT, SALT_CUBE, VIAL_OF_BLOOD, CHAOTIC_CENSER,
   FERRET_TUFT, SPYGLASS,
 } from '@pd/core';
+import { lt, plain } from './levelnames';
 import { fill, fmt, t } from './i18n';
 import { artifactInfo, artifactName, artText } from './artifacttext';
 import { abilityShort, chargeText } from './abilitytext';
@@ -316,7 +317,8 @@ export function gearInfo(hero: Hero, item: Item): string[] | null {
       `${fmt(known ? t.gear.weaponKnown : t.gear.weaponTypical, tier, stats.min, stats.max, stats.str)} ${strengthLines(known, stats.str, hero, true).join(' ')}`.trim(),
       ...statsLine(item),
       ...(item.augment === 'speed' ? [t.gear.faster] : item.augment === 'damage' ? [t.gear.stronger] : []),
-      ...(item.kind === 'weapon.pickaxe' ? [t.pickaxeInfo(!!item.bloody)] : []),
+      ...(item.kind === 'weapon.pickaxe' ? [plain(lt('items.quest.pickaxe.desc')), t.mineHint] : []),
+      ...(item.hardened ? [t.hardened] : []),
       // MagesStaff.info: the wand it holds, what it does (unless the staff's curse is known), and a battlemage's blow with it.
       ...(item.kind === 'weapon.magesStaff' && item.wand
         ? [`${t.staffHasWand(t.items[item.wand.kind])} ${visiblyCursed(item) ? t.staffCursedWand : wandStats(hero, item.wand, item)}`]
@@ -332,11 +334,14 @@ export function gearInfo(hero: Hero, item: Item): string[] | null {
       `${fmt(known ? t.gear.armorKnown : t.gear.armorTypical, stats.tier, stats.min, stats.max, stats.str)} ${strengthLines(known, stats.str, hero, false).join(' ')}`.trim(),
       ...(item.augment === 'evasion' ? [t.gear.armorEvasion] : item.augment === 'defense' ? [t.gear.armorDefense] : []),
       ...(CLASS_ARMOR.includes(item.kind) ? classArmorLines(hero, item) : []),
+      ...(item.hardened ? [t.hardened] : []),
       // Armor.info: the warrior's seal on it, and the shield it gives.
       ...(item.seal ? [t.hero.sealAttached(sealShield(hero, item))] : []),
       ...curseLines(item, worn, false, isCurseGlyph(item.glyph)),
     ];
   }
+  // Ankh.desc: blessed, it is stronger.
+  if (item.kind === 'ankh' && item.blessed) return [t.ankh.descBlessed];
   if (category === 'vial') {
     // Waterskin.info: plain water, or healing dew; full, it seems to radiate energy.
     const volume = item.volume ?? 0;

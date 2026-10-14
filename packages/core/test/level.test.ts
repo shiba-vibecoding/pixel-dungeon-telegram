@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  createRun, F, generateLevel, hasFlag, LENGTH, type Level, NEIGHBOURS4, NEIGHBOURS8, passable, T, WIDTH,
+  createRun, F, Feeling, generateLevel, hasFlag, LENGTH, type Level, NEIGHBOURS4, NEIGHBOURS8, passable, T, WIDTH,
 } from '../src/index';
 import { ascii } from './ascii';
 
@@ -22,6 +22,9 @@ function walkable(map: readonly number[]): boolean[] {
       open[i]! ||
       t === T.SECRET_DOOR ||
       t === T.LOCKED_DOOR ||
+      t === T.CRYSTAL_DOOR ||
+      // Shattered's chasm-filled traps rooms are crossed on a potion of levitation they come with.
+      t === T.CHASM ||
       (hasFlag(t, F.AVOID) && !hasFlag(t, F.PIT) && i % WIDTH > 0 && i % WIDTH < WIDTH - 1),
   );
 }
@@ -53,7 +56,7 @@ describe('sewer level generation', () => {
     for (const { seed, levels } of runs) {
       for (const level of levels) {
         const where = `seed ${seed} depth ${level.depth}`;
-        expect(level.map[level.entrance], where).toBe(T.ENTRANCE);
+        expect([T.ENTRANCE, T.ENTRANCE_SP], where).toContain(level.map[level.entrance]);
         expect(level.map[level.exit], where).toBe(T.EXIT);
         expect(level.entrance, where).not.toBe(level.exit);
       }
@@ -65,7 +68,7 @@ describe('sewer level generation', () => {
       for (const level of levels) {
         const seen = reachable(level.map, level.entrance);
         const ok = walkable(level.map);
-        const lost = ok.flatMap((w, i) => (w && !seen[i] ? [i] : []));
+        const lost = ok.flatMap((w, i) => (w && !seen[i] && level.map[i] !== T.CHASM ? [i] : []));
         if (!seen[level.exit] || lost.length > 0) {
           throw new Error(
             `seed ${seed} depth ${level.depth}: exit reached=${seen[level.exit]}, ` +
@@ -114,10 +117,10 @@ describe('sewer level generation', () => {
       const levels = Array.from({ length: 10 }, (_, i) => generateLevel(run, i + 1));
       for (const level of levels.slice(5, 9)) {
         const where = `seed ${seed} depth ${level.depth}`;
-        expect(level.map[level.entrance], where).toBe(T.ENTRANCE);
+        expect([T.ENTRANCE, T.ENTRANCE_SP], where).toContain(level.map[level.entrance]);
         expect(level.map[level.exit], where).toBe(T.EXIT);
         const seen = reachable(level.map, level.entrance);
-        const lost = walkable(level.map).flatMap((w, i) => (w && !seen[i] ? [i] : []));
+        const lost = walkable(level.map).flatMap((w, i) => (w && !seen[i] && level.map[i] !== T.CHASM ? [i] : []));
         if (!seen[level.exit] || lost.length > 0) {
           throw new Error(`${where}: exit reached=${seen[level.exit]}, ${lost.length} lost\n${ascii(level.map)}`);
         }
@@ -134,11 +137,15 @@ describe('sewer level generation', () => {
     }
   });
 
-  it('first depth has no traps, no secret doors and no feeling', () => {
+  it('first depth has only worn dart traps, no secret doors and no feeling', () => {
     for (const { levels } of runs) {
       const first = levels[0]!;
       expect(first.secretDoors).toBe(0);
-      expect(first.map.some((t) => t >= T.SECRET_TOXIC_TRAP && t <= T.SECRET_SUMMONING_TRAP && hasFlag(t, F.SECRET))).toBe(false);
+      // SewerLevel.trapClasses: on the first depth, only worn dart traps.
+      // (a traps room brings its own: TrapsRoom.levelTraps)
+      const roomOf = (pos: number) => first.rooms.find((r) => pos % WIDTH >= r.left && pos % WIDTH <= r.right && Math.trunc(pos / WIDTH) >= r.top && Math.trunc(pos / WIDTH) <= r.bottom);
+      expect((first.traps ?? []).filter((trap) => trap.kind !== 'wornDart' && trap.kind !== 'toxicVent' && roomOf(trap.pos)?.kind !== 'TrapsRoom')).toEqual([]);
+      expect(first.feeling).toBe(Feeling.NONE);
     }
   });
 });

@@ -2,6 +2,7 @@ import { type Hero, heroArtifacts } from '../actors';
 import type { Ctx } from '../floor';
 import type { Item } from '../items';
 import { dispelCloak } from './cloak';
+import { endBubble } from '../timebubble';
 import { endFreeze, frozenBy } from './hourglass';
 
 /*
@@ -26,4 +27,6 @@ export function dispelInvisibility(ctx: Ctx, hero: Hero): void {
   if (cloak) dispelCloak(ctx, hero, cloak);
   const hourglass = frozenBy(hero);
   if (hourglass) endFreeze(ctx, hero, hourglass);
+  // Swiftthistle.TimeBubble: attacking or using magic bursts it.
+  endBubble(ctx, hero);
 }

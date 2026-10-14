@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   act, type Action, addHero, adjacent, ARENA_CENTRE, ARENA_DEPTHS, arenaRemaining, arenaScore, canEnter, createItem, createWorld,
   type Effect, exploredCells, findPath, floorAt, heroById, type HeroClass, hostile, insideArena, isAlive, levelAt, LENGTH, NEIGHBOURS8,
-  restartWorld, T, type World,
+  HEIGHT, restartWorld, T, WIDTH, type World,
 } from '../src/index';
 import { buildArenaLevel } from '../src/level/arena';
 import { ascii } from './ascii';
@@ -78,10 +78,10 @@ describe('the Pit of Yendor', () => {
       for (const row of rows) expect(row[0] === '#' && row.at(-1) === '#').toBe(true);
       // Symmetric cover: the walls and statues mirror left to right.
       const solid = (t: number): boolean => t === T.WALL || t === T.STATUE;
-      for (let y = 0; y < 48; y++) {
+      for (let y = 0; y < HEIGHT; y++) {
         for (let dx = 1; dx <= 12; dx++) {
-          const x = ARENA_CENTRE % 48;
-          expect(solid(level.map[y * 48 + x + dx]!), `depth ${depth} row ${y}\n${map}`).toBe(solid(level.map[y * 48 + x - dx]!));
+          const x = ARENA_CENTRE % WIDTH;
+          expect(solid(level.map[y * WIDTH + x + dx]!), `depth ${depth} row ${y}\n${map}`).toBe(solid(level.map[y * WIDTH + x - dx]!));
         }
       }
     }
@@ -89,7 +89,7 @@ describe('the Pit of Yendor', () => {
       const world = arenaWorld(11, ['warrior', 'mage', 'rogue', 'huntress'].slice(0, n) as HeroClass[]);
       for (const hero of world.heroes) {
         expect(insideArena(hero.pos)).toBe(true);
-        expect(Math.abs((hero.pos % 48) - (ARENA_CENTRE % 48))).toBeLessThanOrEqual(1);
+        expect(Math.abs((hero.pos % WIDTH) - (ARENA_CENTRE % WIDTH))).toBeLessThanOrEqual(1);
       }
     }
   });
@@ -196,7 +196,7 @@ describe('a wave', () => {
     expect(levelAt(world, ARENA_DEPTHS[1]!).region).toBe(1);
     for (const hero of world.heroes) {
       expect(hero.depth).toBe(ARENA_DEPTHS[1]);
-      expect(Math.max(Math.abs((hero.pos % 48) - 23), Math.abs(Math.trunc(hero.pos / 48) - 23))).toBeLessThanOrEqual(2);
+      expect(Math.max(Math.abs((hero.pos % WIDTH) - (ARENA_CENTRE % WIDTH)), Math.abs(Math.trunc(hero.pos / WIDTH) - Math.trunc(ARENA_CENTRE / WIDTH)))).toBeLessThanOrEqual(2);
     }
     expect(floorAt(world, ARENA_DEPTHS[1]!).heaps.flatMap((h) => h.items).some((i) => i.kind === 'potion.healing')).toBe(true);
     expect(floorAt(world, 1).heaps.filter((h) => h.kind === 'heap')).toHaveLength(0);

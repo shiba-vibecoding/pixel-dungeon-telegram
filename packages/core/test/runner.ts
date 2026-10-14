@@ -1,6 +1,6 @@
 import {
   act, type Action, addHero, adjacent, BOTTOM_DOOR, cell, createItem, createWorld, distance, type Effect, findPath, floorAt, GATE_CELLS, hasFlag, heroById, type HeroClass,
-  canEnter, F, isAlive, isFist, levelAt, NEIGHBOURS8, PYLON_POSITIONS, swapsWithHero, T, TENGU_CELL_DOOR, TOP_DOOR, WIDTH, type World, YOG_POS,
+  canEnter, charAt, F, isAlive, isFist, levelAt, NEIGHBOURS8, PYLON_POSITIONS, swapsWithHero, T, TENGU_CELL_DOOR, TOP_DOOR, WIDTH, type World, YOG_POS,
 } from '../src/index';
 import { botAction, checkInvariants, skeletonKey, unblock } from './helpers';
 
@@ -61,7 +61,7 @@ function plan(world: World, id: string): Action {
     }
   }
   // A boss's arena: the iron key from its chest, through the arena door, and into the middle, where the boss shows.
-  const chest = floor.heaps.find((h) => h.items.some((i) => i.kind === 'key.iron' && (i.depth ?? hero.depth) === hero.depth));
+  const chest = level.arenaDoor === undefined ? undefined : floor.heaps.find((h) => h.items.some((i) => i.kind === 'key.iron' && (i.depth ?? hero.depth) === hero.depth));
   if (chest) {
     if (hero.pos === chest.pos) return { type: 'pickup' };
     const toChest = toward(world, chest.pos, id);
@@ -69,6 +69,14 @@ function plan(world: World, id: string): Action {
   }
   if (level.arenaDoor !== undefined && hero.depth === 10 && (floor.boss?.prison ?? 'start') === 'start') {
     const door = level.arenaDoor;
+    // The door still locked and its key in a companion's pack: out of their way, and let them open it.
+    const keyFor = (h: { items: Array<{ kind: string; depth?: number }> }): boolean => h.items.some((i) => i.kind === 'key.iron' && i.depth === hero.depth);
+    if (level.map[door] === T.LOCKED_DOOR && !keyFor(hero) && world.heroes.some((h) => h !== hero && h.depth === hero.depth && keyFor(h))) {
+      if (distance(hero.pos, door) >= 3) return { type: 'wait' };
+      const away = NEIGHBOURS8.map((n) => hero.pos + n)
+        .filter((c) => canEnter(level, c) && !charAt(world, hero.depth, c) && distance(c, door) > distance(hero.pos, door))[0];
+      return away === undefined ? { type: 'wait' } : { type: 'move', to: away };
+    }
     // Through the door, to the side farther from the entrance: that is the arena.
     const far = (cell: number): number => findPath(level, level.entrance, cell, new Set([door]))?.length ?? Infinity;
     const inside = [door + WIDTH, door - WIDTH, door + 1, door - 1].filter((c) => canEnter(level, c)).sort((a, b) => far(b) - far(a))[0];

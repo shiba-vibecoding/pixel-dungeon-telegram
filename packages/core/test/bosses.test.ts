@@ -4,6 +4,7 @@ import {
   floorAt, GATE_CELLS, HALLS_EXIT, heroById, isAlive, isFist, levelAt, type Mob, NEIGHBOURS8, PEDESTALS, PYLON_POSITIONS, T,
   TENGU_CELL_DOOR, THRONE, TOP_DOOR, WIDTH, type World, YOG_POS,
 } from '../src/index';
+import { trapAt } from '../src/traps';
 import { checkInvariants } from './helpers';
 
 /*
@@ -94,7 +95,7 @@ describe("Goo's lair (SewerBossLevel)", () => {
     const all: Effect[] = [];
     all.push(...strike(world, goo));
     expect(floorOf(world).boss?.locked).toBe(true);
-    expect(level.map[level.entrance]).toBeGreaterThanOrEqual(T.WATER_TILES);
+    expect(level.map[level.entrance]).toBe(T.WATER);
     expect(all.some((e) => e.type === 'bossFight' && e.state === 'start')).toBe(true);
     for (let i = 0; i < 400 && isAlive(goo); i++) all.push(...strike(world, goo));
     expect(isAlive(goo)).toBe(false);
@@ -178,7 +179,7 @@ describe("Tengu's prison (PrisonBossLevel)", () => {
     const effects = strike(world, tengu);
     expect(fx(effects, 'puff') || fx(effects, 'traps')).toBe(true);
     expect((floorOf(world).boss?.tenguTraps ?? []).length).toBeGreaterThan(0);
-    for (const trap of floorOf(world).boss!.tenguTraps!) expect(level.map[trap]).toBe(T.SECRET_POISON_TRAP);
+    for (const trap of floorOf(world).boss!.tenguTraps!) expect(trapAt(level, trap)?.kind).toBe('tenguDart');
     tengu.hp = 101;
     for (let i = 0; i < 20 && floorOf(world).boss?.prison === 'fightStart'; i++) strike(world, tengu);
     expect(floorOf(world).boss?.prison).toBe('fightPause');
@@ -281,7 +282,7 @@ describe("DM-300's caves (CavesBossLevel)", () => {
 describe("the Dwarf King's throne room (CityBossLevel)", () => {
   function inThroneRoom(seed = 3, impDone = false): World {
     const world = atBoss(20, seed);
-    if (impDone) world.impQuest = { depth: 18, given: true, done: true, prey: 'monk', reward: createItem('ring.haste') };
+    if (impDone) world.impQuest = { depth: 18, given: true, done: true, score: 0, rewardOptions: [], reward: createItem('ring.haste'), hazardFreebies: 0, mirrorUsed: false };
     hero(world).pos = BOTTOM_DOOR;
     play(world, { type: 'move', to: BOTTOM_DOOR - WIDTH });
     return world;

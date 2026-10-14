@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   act, addHero, canEnter, charAt, createItem, createMob, createWorld, type Effect, floorAt, type HeroClass, heroAttackSkill,
   heroById, heroDefenseSkill, heroSpeed, isIdentified, itemPrice, journalNotes, KIT_SEAMS, levelAt, maxShield, NEIGHBOURS8,
-  shielding, startingKit, T, visibleEnemies, WIDTH, type World,
+  setTrap, shielding, startingKit, T, visibleEnemies, WIDTH, type World,
 } from '../src/index';
 import { pacify } from './helpers';
 
@@ -209,9 +209,9 @@ describe('searching (Hero.search)', () => {
       // A spot in a room with two open cells to its right.
       hero.pos = level.map.findIndex((_, c) => open(c) && open(c + 1) && open(c + 2) && open(c - WIDTH) && open(c + WIDTH));
       const far = hero.pos + 2;
-      level.map[far] = T.SECRET_FIRE_TRAP;
+      setTrap(level, far, 'burning', false);
       act(world, 'p', { type: 'search' });
-      expect(level.map[far], heroClass).toBe(reach === 2 ? T.FIRE_TRAP : T.SECRET_FIRE_TRAP);
+      expect(level.map[far], heroClass).toBe(reach === 2 ? T.TRAP : T.SECRET_TRAP);
     }
   });
 });
@@ -354,8 +354,7 @@ describe('small things (Hero.handle)', () => {
       const result = act(world, 'p', { type: 'move', to: i % 2 === 0 ? grass : home });
       if (result.ok) effects.push(...result.effects);
     }
-    expect(level.map[grass]).toBe(T.HIGH_GRASS);
-    expect(level.furrowed).toEqual([grass]);
+    expect(level.map[grass]).toBe(T.FURROWED_GRASS);
     // Anyone else flattens furrowed grass, without loot.
     hero.heroClass = 'mage';
     act(world, 'p', { type: 'move', to: grass });

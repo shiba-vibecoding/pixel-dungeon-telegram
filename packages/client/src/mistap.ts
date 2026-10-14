@@ -1,4 +1,4 @@
-import { exploredCells, F, type Floor, gasAt, type Hero, hasFlag, type Level, trapAt, visibleCells, type World } from '@pd/core';
+import { exploredCells, type Floor, gasAt, type Hero, type Level, T, visibleCells, type World } from '@pd/core';
 
 /*
  * Mis-tap protection: on a phone a thumb lands a cell off about one time in ten, and one death in ten is such a
@@ -53,7 +53,7 @@ export function burningCells(world: World, depth: number): Set<number> {
 export function stepDanger(world: World, hero: Hero, level: Level, cell: number): Danger | null {
   if ((hero.levitating ?? 0) > 0) return null;
   const terrain = level.map[cell];
-  if (terrain !== undefined && trapAt(terrain) && !hasFlag(terrain, F.SECRET) && exploredCells(world, hero.depth)[cell]) return 'trap';
+  if (terrain === T.TRAP && exploredCells(world, hero.depth)[cell]) return 'trap';
   if (hero.burning <= 0 && visibleCells(world, hero.depth)[cell] && burns(world.floors[hero.depth], cell)) return 'fire';
   return null;
 }

@@ -97,9 +97,8 @@ export const SCROLL_STONES: Readonly<Partial<Record<ItemKind, ItemKind>>> = {
 };
 
 /**
- * Potion.SeedToPotion.types: the potion each seed brews. Shattered's seeds this port has (the plants are nobody's
- * stream yet): blindweed's invisibility goes to dreamweed, as before; mageroyal, starflower, stormvine and
- * swiftthistle (purity, experience, levitation, haste) join this table when their seeds come.
+ * Potion.SeedToPotion.types: the potion each seed brews (Pixel Dungeon's dreamweed, from older runs, brews
+ * blindweed's invisibility, as before).
  */
 export const SEED_POTIONS: Readonly<Partial<Record<ItemKind, ItemKind>>> = {
   'seed.dreamweed': 'potion.invisibility',
@@ -110,6 +109,11 @@ export const SEED_POTIONS: Readonly<Partial<Record<ItemKind, ItemKind>>> = {
   'seed.rotberry': 'potion.strength',
   'seed.sorrowmoss': 'potion.toxicGas',
   'seed.sungrass': 'potion.healing',
+  'seed.stormvine': 'potion.levitation',
+  'seed.swiftthistle': 'potion.haste',
+  'seed.blindweed': 'potion.invisibility',
+  'seed.mageroyal': 'potion.purity',
+  'seed.starflower': 'potion.experience',
 };
 
 /** Bomb.EnhanceBomb.validIngredients and bombCosts. */

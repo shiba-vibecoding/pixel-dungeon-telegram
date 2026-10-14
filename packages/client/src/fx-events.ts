@@ -2,6 +2,7 @@ import { type Effect, HEIGHT, type ItemKind, labelOf, type Level, type MobKind, 
 import { type BurstOptions, fx, type Piece } from './fx';
 import { type Puppet, STEP_MS, TILE, type View } from './view';
 import { audio } from './audio';
+import { levelFx } from './levelfx';
 import { wandFx } from './wandfx';
 import { duration, levelRegion } from './sprites';
 import { bossParticles } from './bossfx';
@@ -204,6 +205,8 @@ const BOLT_GLOW: Readonly<Record<string, readonly string[]>> = {
 /** The look of one effect; called after the view has taken it in. */
 export function effectFx(effect: Effect, view: View, world: World, myId: string, now: number): void {
   const here = (depth: number): boolean => depth === view.depth;
+  // Shattered's own effects on the levels: the traps, blobs, rays, rocks, teleports, pits (levelfx.ts).
+  levelFx.effect(effect, view, world, myId, now);
   switch (effect.type) {
     case 'attack': {
       if (!here(effect.depth)) return;
@@ -369,7 +372,7 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
     case 'pickedUp':
       if (effect.item.kind === 'gold') burst(centreOf(view, effect.hero, now), now, { count: 10, colors: GOLD, glow: true, speed: [15, 45], life: [300, 650], rise: 20, size: [1, 1] });
       return;
-    case 'teleported': case 'mirrored':
+    case 'mirrored':
       burst(centreOf(view, effect.hero, now), now, { count: 26, colors: ECTO, glow: true, speed: [10, 50], life: [400, 900], rise: 10, spread: 5 });
       return;
     case 'burst': {
@@ -445,29 +448,7 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
       if (effect.bolt === 'fire') fx.shake(1.5, 150, now);
       return;
     }
-    case 'trap':
-      if (!here(effect.depth)) return;
-      if (effect.mob) {
-        // Under a monster, where the party can see it: the same plate going off, without shaking the screen
-        // (LightningTrap: sparks and arcs; the rest a puff of dust off the plate).
-        if (!visibleCells(world, view.depth)[effect.pos]) return;
-        const at = cellCentre(effect.pos);
-        if (effect.kind === 'lightning') {
-          fx.burst(at.x, at.y, now, { count: 18, colors: BOLT_GLOW.lightning!, glow: true, speed: [40, 120], life: [200, 450], drag: 0.2, size: [1, 2] });
-          fx.flash('230, 240, 255', 0.25, 160, now);
-        } else {
-          fx.burst(at.x, at.y, now, { count: 10, colors: DUST, speed: [20, 60], life: [300, 600], gravity: 200 });
-        }
-        return;
-      }
-      if (effect.kind === 'lightning') {
-        fx.flash('230, 240, 255', 0.5, 220, now);
-        fx.shake(4, 300, now);
-      } else {
-        const at = cellCentre(effect.pos);
-        fx.burst(at.x, at.y, now, { count: 10, colors: DUST, speed: [20, 60], life: [300, 600], gravity: 200 });
-      }
-      return;
+    // A trap going off: each its own (Trap.activate), in levelfx.ts.
     case 'bones': {
       if (!here(effect.depth)) return;
       const at = cellCentre(effect.pos);
@@ -475,14 +456,7 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
       fx.shake(3, 260, now);
       return;
     }
-    case 'avalanche':
-      if (!here(effect.depth)) return;
-      for (const cell of effect.cells) {
-        const at = cellCentre(cell);
-        fx.burst(at.x, at.y - 6, now, { count: 8, colors: DUST, speed: [20, 70], life: [300, 700], gravity: 380, size: [1, 3] });
-      }
-      fx.shake(6, 600, now);
-      return;
+    // Rocks falling (RockfallTrap, the wand of avalanche): Speck.ROCK, in levelfx.ts.
     case 'ability': {
       if (!here(effect.depth)) return;
       const from = cellCentre(effect.from);
@@ -674,8 +648,11 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
     case 'mined': {
       if (!here(effect.depth)) return;
       const at = cellCentre(effect.pos);
-      fx.burst(at.x, at.y, now, { count: 14, colors: [...GOLD, ...DUST], glow: true, speed: [30, 90], life: [250, 550], gravity: 300 });
-      fx.shake(1.5, 120, now);
+      // Hero.actMine: a vein of dark gold glitters (Speck.STAR), rock and boulders crumble (Speck.ROCK), crystal splashes white.
+      const colors = effect.terrain === 'gold' ? [...GOLD, ...DUST] : effect.terrain === 'crystal' ? ['#ffffff', '#ddeeff'] : DUST;
+      fx.burst(at.x, at.y, now, { count: 14, colors, glow: effect.terrain === 'gold', speed: [30, 90], life: [250, 550], gravity: 300 });
+      // PixelScene.shake(0.5, 0.5) for gold and rock.
+      if (effect.terrain === 'gold' || effect.terrain === 'wall') fx.shake(1.5, 120, now);
       return;
     }
     case 'wraiths': case 'cursed': {
@@ -685,13 +662,7 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
       fx.flash('60, 0, 80', 0.3, 400, now);
       return;
     }
-    case 'sacrifice': {
-      if (!here(effect.depth)) return;
-      const at = cellCentre(effect.pos);
-      fx.burst(at.x, at.y, now, { count: effect.outcome === 'reward' ? 70 : 24, colors: ['#9fe0ff', '#ffffff', '#4488ee'], glow: true, speed: [10, 50], life: [700, 1500], rise: 30, drag: 0.4 });
-      if (effect.outcome === 'reward') fx.flash('100, 255, 255', 0.35, 700, now);
-      return;
-    }
+    // The sacrificial fire's flames (SacrificialParticle): levelfx.ts.
     case 'wipedOut':
       fx.flash('90, 40, 140', 0.6, 900, now);
       fx.shake(5, 700, now);
@@ -1168,7 +1139,7 @@ export function ambientFx(view: View, now: number, dt: number): void {
 export function stepFx(terrain: number, cell: number, now: number): void {
   const x = (cell % WIDTH) * TILE + TILE / 2;
   const y = Math.trunc(cell / WIDTH) * TILE + TILE - 2;
-  if (terrain >= T.WATER_TILES && terrain <= T.WATER) {
+  if (terrain === T.WATER) {
     fx.burst(x, y - 1, now, { count: 5, colors: ['#9ad4ff', '#d8f0ff', '#5fa8e0'], speed: [14, 34], life: [220, 420], gravity: 220, drag: 0.2, angle: -Math.PI / 2, cone: 1.6, size: [1, 1], spread: 3 });
   } else if (terrain === T.GRASS || terrain === T.HIGH_GRASS) {
     fx.burst(x, y - 2, now, { count: 3, colors: ['#6aa84f', '#93c47d', '#38761d'], speed: [8, 20], life: [300, 520], gravity: 120, drag: 0.3, angle: -Math.PI / 2, cone: 2.2, size: [1, 1], spread: 3 });

@@ -1,3 +1,7 @@
+import type { LimitedDrop } from './level/gen/dungeon';
+import { Random } from './level/gen/random';
+import { initSecretsForRun } from './level/gen/rooms/secret/secret';
+import { initSpecialsForRun } from './level/gen/rooms/special/special';
 import { type Deck, type DeckCategory, type ItemKind, type Labels, rollLabels } from './items';
 import { RoomType, SPECIALS } from './level/room';
 import { deriveSeed, Rng, Stream } from './rng';
@@ -5,16 +9,23 @@ import { deriveSeed, Rng, Stream } from './rng';
 /** Run-wide state that level generation reads and updates, depth by depth. */
 export interface RunState {
   seed: number;
-  /** Special room kinds in this run's preference order; used kinds move to the back. */
-  specials: RoomType[];
-  /** The deepest generated level has a weak floor, so the next one needs a pit room. */
-  weakFloorCreated: boolean;
-  /** Guaranteed potions of strength and scrolls of upgrade placed so far. */
+  /** SpecialRoom.runSpecials: the run's deck of special room kinds (Shattered's class names); used kinds go to the back. */
+  specialRooms?: string[];
+  /** SpecialRoom.pitNeededDepth: the depth below a weak floor, which needs its pit room (-1: none). */
+  pitNeededDepth?: number;
+  /** SecretRoom.runSecrets and regionSecretsThisRun: the deck of secret room kinds, and each region's secrets left. */
+  secretRooms?: string[];
+  regionSecrets?: number[];
+  /** Dungeon.LimitedDrops: how many of each limited item (and laboratory) have spawned. */
+  limited?: Partial<Record<LimitedDrop, number>>;
+  /** Guaranteed potions of strength and scrolls of upgrade placed so far (LimitedDrops' counts, kept for the party's sake). */
   strengthFound: number;
   upgradesFound: number;
   /** This run's potion colours, scroll runes and ring gems. */
   labels: Labels;
-  /** The troll blacksmith has set up his forge in the caves (absent in older runs). */
+  /** Pixel Dungeon's special room deck and weak-floor flag, unused since Shattered's rooms (kept for older saves' shape). */
+  specials?: number[];
+  weakFloorCreated?: boolean;
   blacksmithSpawned?: boolean;
   /** Shattered's decks of potions, scrolls, runestones and trinkets, as dealt so far (items.ts drawFromDeck). */
   kindDecks?: Partial<Record<DeckCategory, Deck>>;
@@ -34,17 +45,11 @@ export interface RunState {
 }
 
 export function createRun(seed: number): RunState {
-  const rng = Rng.seeded(deriveSeed(seed, Stream.RUN));
-  const specials = [...SPECIALS];
-  rng.shuffle(specials);
-  return { seed, specials, weakFloorCreated: false, strengthFound: 0, upgradesFound: 0, labels: rollLabels(seed) };
-}
-
-/** Moves a used special room kind to the back, making repeats less likely. */
-export function useSpecial(run: RunState, type: RoomType): void {
-  const index = run.specials.indexOf(type);
-  if (index >= 0) {
-    run.specials.splice(index, 1);
-    run.specials.push(type);
-  }
+  const run: RunState = { seed, strengthFound: 0, upgradesFound: 0, labels: rollLabels(seed) };
+  // SpecialRoom.initForRun and SecretRoom.initForRun (Dungeon.init), from the run's own stream.
+  Random.using(Rng.seeded(deriveSeed(seed, Stream.RUN)), () => {
+    initSpecialsForRun(run);
+    initSecretsForRun(run);
+  });
+  return run;
 }

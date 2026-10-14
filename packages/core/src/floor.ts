@@ -9,11 +9,13 @@ import type { Enchantment, Glyph, Heap, HeapKind, Item, ItemKind } from './items
 import type { WellWater } from './level/builder';
 import type { MeatOutcome } from './inventory';
 import type { PlantInfo, PlantKind } from './plants';
-import type { GhostErrand, GhostLine } from './quest';
+import type { GhostLine, GhostType } from './quest';
 import type { Burst, TrapKind } from './traps';
-import type { WandmakerLine } from './wandmaker';
+import type { WandmakerEffect } from './wandmaker';
 import type { ImpLine } from './imp';
-import type { SmithLine } from './smith';
+import type { VaultEffect, VaultFloor } from './vault-types';
+import type { BlacksmithLine, BlacksmithService } from './blacksmith';
+import type { MineEventKind } from './minemobs';
 import type { Bolt, WandNote } from './wands';
 import type { CursedEffect } from './cursed';
 import { type GasKind, smokeCells } from './gas';
@@ -22,7 +24,7 @@ import { EYE_OF_NEWT, trinketLevel } from './trinkets';
 import type { Level } from './level/generate';
 import type { AbilityKind, Talent } from './talents';
 import { LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
-import { F, hasFlag, T } from './level/terrain';
+import { discover, F, hasFlag, T } from './level/terrain';
 import type { Rng, RngState } from './rng';
 import type { World } from './world';
 import type { ClassFx } from './classes/fx';
@@ -63,11 +65,19 @@ export interface Floor {
   /** How strong a cloud is, where the kind has a strength (CorrosiveGas.strength). */
   gasStrength?: Partial<Record<GasKind, number>>;
   /** An altar room's sacrificial fire: where it burns, and how much more it hungers for (0 once it has gone out). */
-  altar?: { pos: number; volume: number };
+  altar?: { pos: number; volume: number; prize?: Item; bonusSpawns?: number };
   /** HallowedGround.HallowedTerrain: cells of consecrated ground and the turns they have left. */
   hallowed?: Record<number, number>;
   /** What this depth gave every hero (strength, upgrades): a hero who joins later gets theirs too (party.ts). */
   perHero?: ItemKind[];
+  /** ToxicGasRoom's vents (ToxicGasSeed): [cell, gas let out a turn] (roomblobs.ts). */
+  vents?: Array<[number, number]>;
+  /** GardenRoom's foliage: the cells in its light (Foliage). */
+  foliage?: number[];
+  /** The dwarven vault: its flame vents, the final room and the greater elemental's spells, with their own turn (vault.ts). */
+  vault?: VaultFloor;
+  /** SkeletonKey.KeyWall: the key's temporary walls, the terrain under each and the turns left (skeletonkey.ts). */
+  keyWalls?: Array<{ cell: number; terrain: number; left: number }>;
   /** A boss's level: the fight's state (sealed, the health bar, its phases, buffs and blobs): bosses/state.ts. */
   boss?: BossFloor;
   /** Ghouls lying crumpled, held up by another (GhoulLifeLink, mobskills.ts): they rise again in time. */
@@ -97,7 +107,7 @@ export function dropItem(floor: Floor, pos: number, item: Item): void {
   }
 }
 
-export const isWater = (terrain: number): boolean => terrain >= T.WATER_TILES && terrain <= T.WATER;
+export const isWater = (terrain: number): boolean => terrain === T.WATER;
 
 /** What players should see happen; returned by every accepted action. */
 export type Effect =
@@ -119,7 +129,11 @@ export type Effect =
   | { type: 'sealDetached'; hero: string; item: Item }
   | { type: 'revived'; hero: string }
   /** An ankh brought a hero back from death, at the stairs. */
-  | { type: 'resurrected'; hero: string }
+  | { type: 'resurrected'; hero: string; blessed?: boolean }
+  /** Ankh.AC_BLESS; WndResurrect's choice made; LostBackpack picked up. */
+  | { type: 'ankhBlessed'; hero: string }
+  | { type: 'ankhKept'; hero: string; items: Item[] }
+  | { type: 'lostPackFound'; hero: string }
   /** An enchanted weapon showed its power on a blow; an inscribed armour on one taken. */
   | { type: 'enchanted'; depth: number; pos: number; enchant: Enchantment }
   | { type: 'glyph'; depth: number; hero: string; glyph: Glyph }
@@ -245,9 +259,21 @@ export type Effect =
   /** A hero put on something cursed: it will not come off. */
   | { type: 'cursedEquip'; hero: string; item: Item }
   /** A trap went off: under a hero (`hero`), a monster (`mob`, with `hero` empty) or nothing (an item landing on it). */
-  | { type: 'trap'; depth: number; pos: number; kind: TrapKind; hero: string; mob?: string }
+  | { type: 'trap'; depth: number; pos: number; kind: TrapKind; hero: string; mob?: string; hidden?: boolean }
   /** Chasm.mobFall: a monster stepped (or was thrown) over a chasm and fell out of the level. */
   | { type: 'mobFell'; depth: number; mob: string; pos: number; kind: MobKind }
+  /** A trap let a blob loose on these cells (Blob.seed: Fire, Freezing, Electricity, ConfusionGas). */
+  | { type: 'blob'; depth: number; blob: 'fire' | 'freezing' | 'electricity' | 'confusion'; cells: number[] }
+  /** Items a trap sent elsewhere on the level (teleportation, gateway, disarming: `hero` whose weapon it was). */
+  | { type: 'itemTeleported'; depth: number; from: number; to: number; hero?: string }
+  /** A hero thrown back by a geyser (WandOfBlastWave.throwChar; a monster's is `pushed`). */
+  | { type: 'knockedBack'; depth: number; hero: string; from: number; to: number }
+  /** PitfallTrap: the floor around starts to give way (`warn`), gives way a turn later (`open`), or holds (`none`: no_pit). */
+  | { type: 'pitfall'; depth: number; cells: number[]; stage: 'warn' | 'open' | 'none' }
+  /** A monster a trap brought into the level (ScrollOfTeleportation.appear: summoning, distortion). */
+  | { type: 'appeared'; depth: number; mob: string; pos: number }
+  /** CursingTrap.curse: the hero's gear (the item, if any could be) turns cursed. */
+  | { type: 'trapCursed'; hero: string; item?: Item }
   | { type: 'thrown'; depth: number; from: number; to: number; item: ItemKind }
   /** A magic bolt: the mage's wand, or a shaman's lightning. */
   | { type: 'zapped'; depth: number; from: number; to: number; bolt?: Bolt }
@@ -279,8 +305,10 @@ export type Effect =
   | { type: 'shopkeeperFled'; depth: number; mob: string; pos: number }
   /** Tengu's arena: sealed when the fight starts, opened when it ends. */
   | { type: 'arena'; depth: number; sealed: boolean }
-  | { type: 'unlocked'; depth: number; pos: number; hero: string }
-  | { type: 'ghost'; hero: string; line: GhostLine; errand: GhostErrand }
+  | { type: 'unlocked'; depth: number; pos: number; hero: string; crystal?: boolean }
+  /** A hero went down to a depth's side level (`branch` 1) or back up from it (0). */
+  | { type: 'branched'; hero: string; depth: number; branch: number }
+  | { type: 'ghost'; hero: string; line: GhostLine; questType: GhostType }
   /** The curse binding the sad ghost took shape and turned to fight. */
   | { type: 'cursed'; depth: number; mob: string; pos: number }
   /** A word with the Rat King. */
@@ -288,11 +316,21 @@ export type Effect =
   | { type: 'well'; hero: string; water: WellWater }
   /** Something dropped into a well of transmutation came out as something else. */
   | { type: 'transmuted'; hero: string; from: Item; to: Item }
-  | { type: 'wandmaker'; hero: string; line: WandmakerLine }
+  /** The old wandmaker's words and his quest's doings (wandmaker.ts). */
+  | WandmakerEffect
+  /** The ambitious imp (imp.ts): his errand, his waiting, his thanks; «psst» and «see you». */
   | { type: 'imp'; hero: string; line: ImpLine }
-  | { type: 'smith'; hero: string; line: SmithLine }
-  /** A piece of dark gold ore mined out of a vein. */
-  | { type: 'mined'; depth: number; pos: number; hero: string }
+  /** The dwarven vault and the skeleton key (vault.ts, skeletonkey.ts). */
+  | VaultEffect
+  /** The troll blacksmith (blacksmith.ts): his errand, a reminder, his services on offer or done, «get lost». */
+  | { type: 'blacksmith'; hero: string; line: BlacksmithLine; questType: number; service?: BlacksmithService; item?: Item }
+  /**
+   * HeroAction.Mine on the blacksmith's mine: a wall, a vein of dark gold (`ore`: how much the hero now holds),
+   * a crystal or a boulder broken, and the crystals around it shattered.
+   */
+  | { type: 'mined'; depth: number; pos: number; hero: string; terrain: 'gold' | 'wall' | 'crystal' | 'boulder'; shattered?: number[]; ore?: number }
+  /** What the mine's monsters do (minemobs.ts: MineEventKind). */
+  | { type: 'mineEvent'; depth: number; what: MineEventKind; mob?: string; hero?: string; cells?: number[]; from?: number; to?: number; amount?: number }
   /** Something eaten; mystery meat may disagree with the eater. */
   | { type: 'ate'; hero: string; kind: ItemKind; outcome: MeatOutcome | null }
   | { type: 'hunger'; hero: string; state: 'hungry' | 'starving' }
@@ -300,6 +338,10 @@ export type Effect =
   | { type: 'burst'; depth: number; pos: number; kind: Burst; radius: number; silent?: boolean }
   /** DM-300 mended itself on a spent trap. */
   | { type: 'repaired'; depth: number; mob: string }
+  /** A great crab parried a blow with its claw (GreatCrab: «noticed», def_verb). */
+  | { type: 'parried'; depth: number; mob: string }
+  /** SentryRoom.Sentry: it starts charging at a hero on its floor (CHARGEUP), or stops. */
+  | { type: 'sentry'; depth: number; mob: string; charging: boolean }
   /** A dewdrop picked up, and the health it gave; one left lying, the hero being unhurt (Dewdrop.already_full). */
   | { type: 'dew'; hero: string; amount: number }
   | { type: 'dewFull'; hero: string }
@@ -493,8 +535,8 @@ export function charAt(world: World, depth: number, cell: number): Char | undefi
   );
 }
 
-/** Who a hero swaps places with: the quest givers and harmless wanderers, never a shopkeeper. */
-const SWAPPERS: ReadonlySet<string> = new Set(['ghost', 'sheep', 'wandmaker', 'imp', 'blacksmith', 'ratKing']);
+/** Who a hero swaps places with: the quest givers and harmless wanderers, never a shopkeeper nor the troll blacksmith (IMMOVABLE). */
+const SWAPPERS: ReadonlySet<string> = new Set(['ghost', 'sheep', 'wandmaker', 'imp', 'ratKing']);
 
 /**
  * Harmless folk a hero swaps places with rather than being stopped by (as in
@@ -514,7 +556,8 @@ export const heroSight = (world: World, depth: number): number => {
   // HallsBossLevel: Yog-Dzewa darkens its hall (YogDzewa.updateVisibility).
   const own = world.floors[depth]?.boss?.viewDistance;
   if (own !== undefined) return isChallenged(world, DARKNESS) ? Math.min(own, 2) : own;
-  return viewDistance(depth, isChallenged(world, DARKNESS));
+  // Shattered's levels have their own sight (Level.viewDistance: the dark feeling, the halls).
+  return world.levels[depth]?.viewDistance ?? viewDistance(depth, isChallenged(world, DARKNESS));
 };
 
 /** Field of view of one hero (Dungeon.switchLevel and Light: a torch lights up to Light.DISTANCE). */
@@ -581,12 +624,14 @@ export function canEnter(level: Level, pos: number): boolean {
   // The Cleric's wall of light is solid for as long as it stands.
   if (level.lightWall?.[pos]) return false;
   const terrain = level.map[pos]!;
+  // MagicalFireRoom.EternalFire: nothing passes through it.
+  if (level.eternalFire?.includes(pos)) return false;
   return hasFlag(terrain, F.PASSABLE) || (hasFlag(terrain, F.AVOID) && !hasFlag(terrain, F.PIT));
 }
 
 /** Ground monsters walk on: they step around traps. */
 export function isPassable(level: Level, pos: number): boolean {
-  return pos >= 0 && pos < LENGTH && hasFlag(level.map[pos]!, F.PASSABLE) && !level.lightWall?.[pos];
+  return pos >= 0 && pos < LENGTH && hasFlag(level.map[pos]!, F.PASSABLE) && !level.eternalFire?.includes(pos) && !level.lightWall?.[pos];
 }
 
 /* A door is open while someone stands in it, so it no longer blocks sight. */
@@ -621,6 +666,15 @@ export function freeCellNear(world: World, level: Level, depth: number, pos: num
     }
   }
   return pos;
+}
+
+/** Level.discover: a secret door or trap on a cell is found (the trap in sight from now on). */
+export function discoverCell(level: Level, cell: number): void {
+  const terrain = level.map[cell]!;
+  if (!hasFlag(terrain, F.SECRET)) return;
+  level.map[cell] = discover(terrain);
+  const trap = level.traps?.find((t) => t.pos === cell);
+  if (trap) trap.visible = true;
 }
 
 /**

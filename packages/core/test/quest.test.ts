@@ -1,48 +1,67 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, adjacent, canEnter, charAt, createMob, createWorld, F, floorAt, hasFlag, heroById, isSafe, levelAt, NEIGHBOURS8, RoomType,
+  act, addHero, adjacent, canEnter, charAt, createWorld, F, floorAt, hasFlag, heroById, heroView, isSafe, levelAt, NEIGHBOURS8, RoomType,
   type World,
 } from '../src/index';
-import type { GhostErrand } from '../src/quest';
+import { GHOST_FOES, type GhostType } from '../src/quest';
 import { pacify } from './helpers';
 
-/** A run whose sad ghost has appeared with the given errand, and a warrior standing next to it. */
-function withGhost(errand: GhostErrand = 'rose'): { world: World; ghostId: string } {
+/** A run whose sad ghost has appeared, given the foe of `type`, and a warrior standing next to it. */
+function withGhost(type: GhostType = 1): { world: World; ghostId: string } {
   for (let seed = 1; seed < 200; seed++) {
     const world = createWorld(seed);
     for (let depth = 1; depth <= 4; depth++) levelAt(world, depth);
     const quest = world.quest;
     if (!quest) continue;
-    quest.type = errand;
+    quest.type = type;
     const floor = floorAt(world, quest.depth);
     const ghost = floor.mobs.find((m) => m.kind === 'ghost')!;
+    pacify(world);
     floor.mobs = [ghost];
     addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
     const hero = heroById(world, 'p')!;
     const level = levelAt(world, quest.depth);
     hero.depth = quest.depth;
-    hero.pos = NEIGHBOURS8.map((n) => ghost.pos + n).find(
-      (c) => canEnter(level, c) && hasFlag(level.map[c]!, F.PASSABLE) && !charAt(world, quest.depth, c),
-    )!;
+    hero.time = floor.now;
+    hero.pos = beside(world, ghost.pos);
     return { world, ghostId: ghost.id };
   }
   throw new Error('no ghost in 200 runs');
 }
 
-describe('the sad ghost', () => {
-  it('appears once per run, on depth 2 to 4, with a reward ready', () => {
+/** A free cell next to `pos` on the hero's depth. */
+function beside(world: World, pos: number): number {
+  const depth = world.quest!.depth;
+  const level = levelAt(world, depth);
+  return NEIGHBOURS8.map((n) => pos + n).find((c) => canEnter(level, c) && hasFlag(level.map[c]!, F.PASSABLE) && !charAt(world, depth, c))!;
+}
+
+/** Talks to the ghost, wherever it has drifted. */
+function talk(world: World, ghostId: string) {
+  const hero = heroById(world, 'p')!;
+  const ghost = floorAt(world, hero.depth).mobs.find((m) => m.id === ghostId)!;
+  if (!adjacent(ghost.pos, hero.pos)) hero.pos = beside(world, ghost.pos);
+  return act(world, 'p', { type: 'attack', target: ghostId });
+}
+
+describe('the sad ghost (Ghost, Ghost.Quest)', () => {
+  it('appears once per run, on depth 2 to 4 (always by 4), its foe that of its floor, with a weapon and an armour of tier 2 to 5 ready', () => {
     let seen = 0;
     for (let seed = 1; seed <= 40; seed++) {
       const world = createWorld(seed);
       for (let depth = 1; depth <= 4; depth++) levelAt(world, depth);
       const ghosts = [1, 2, 3, 4].flatMap((d) => floorAt(world, d).mobs.filter((m) => m.kind === 'ghost').map(() => d));
-      // The original guarantees it by depth 4 unless no free cell can be found.
       expect(ghosts.length).toBeLessThanOrEqual(1);
       if (ghosts.length === 1) {
         seen++;
-        expect(world.quest!.depth).toBe(ghosts[0]);
-        expect(world.quest!.weapon.kind.startsWith('weapon.')).toBe(true);
-        expect(world.quest!.armor.kind.startsWith('armor.')).toBe(true);
+        const quest = world.quest!;
+        expect(quest.depth).toBe(ghosts[0]);
+        // Ghost.Quest.spawn: a rat on depth 2, a gnoll on 3, a crab on 4.
+        expect(quest.type).toBe(quest.depth - 1);
+        expect(quest.weapon.kind.startsWith('weapon.')).toBe(true);
+        expect(quest.armor.kind.startsWith('armor.')).toBe(true);
+        expect(quest.weapon.level).toBe(quest.armor.level);
+        expect(quest.weapon.level).toBeLessThanOrEqual(3);
       }
     }
     expect(seen).toBeGreaterThan(30);
@@ -60,112 +79,61 @@ describe('the sad ghost', () => {
     expect(cells.size).toBeGreaterThan(3);
   });
 
-  it('cannot be hurt, is no threat, and talking to it gives the quest', () => {
-    const { world, ghostId } = withGhost();
+  it('cannot be hurt, is no threat; talking to it gives the quest, and its foe comes out out of sight', () => {
+    const { world, ghostId } = withGhost(2);
     const hero = heroById(world, 'p')!;
-    const ghost = floorAt(world, hero.depth).mobs.find((m) => m.id === ghostId)!;
+    const floor = floorAt(world, hero.depth);
+    const ghost = floor.mobs.find((m) => m.id === ghostId)!;
     expect(isSafe(world, hero)).toBe(true);
-    const result = act(world, 'p', { type: 'attack', target: ghostId });
-    expect(result.ok && result.effects).toEqual([{ type: 'ghost', hero: 'p', line: 'intro', errand: 'rose' }]);
+    const result = talk(world, ghostId);
+    expect(result.ok && result.effects).toEqual([{ type: 'ghost', hero: 'p', line: 'intro', questType: 2 }]);
     expect(ghost.hp).toBe(1);
     expect(world.quest!.given).toBe(true);
-    expect(act(world, 'p', { type: 'attack', target: ghostId }).ok && world.quest!.given).toBe(true);
+    const foe = floor.mobs.find((m) => m.kind === 'gnollTrickster')!;
+    expect(foe).toBeDefined();
+    expect(heroView(world, hero)[foe.pos]).toBeFalsy();
+    // Then only a reminder, and nothing to give yet.
+    const again = talk(world, ghostId);
+    expect(again.ok && again.effects).toEqual([{ type: 'ghost', hero: 'p', line: 'remind', questType: 2 }]);
     expect(act(world, 'p', { type: 'reward', choice: 'weapon' })).toEqual({ ok: false, reason: 'nothing to give' });
   });
 
-  it('one of the level monsters drops the rose; the ghost trades it for the chosen reward', () => {
-    const { world, ghostId } = withGhost();
-    const hero = heroById(world, 'p')!;
-    act(world, 'p', { type: 'attack', target: ghostId });
-    const quest = world.quest!;
-    const floor = floorAt(world, quest.depth);
-    const level = levelAt(world, quest.depth);
-    // Rats keep coming next to the hero until one of them drops the rose.
-    Object.assign(hero, { attackSkill: 100, ht: 500, hp: 500 });
-    for (let i = 0; i < 40 && !quest.dropped; i++) {
-      const cell = NEIGHBOURS8.map((n) => hero.pos + n).find(
-        (c) => canEnter(level, c) && hasFlag(level.map[c]!, F.PASSABLE) && !charAt(world, quest.depth, c),
-      )!;
-      const rat = createMob(`#r${i}`, 'rat', cell, 'hunting', floor.now);
-      floor.mobs.push(rat);
-      for (let k = 0; k < 20 && floor.mobs.includes(rat); k++) act(world, 'p', { type: 'attack', target: rat.id });
-    }
-    expect(quest.dropped).toBe(true);
-    const rose = floor.heaps.find((h) => h.items.some((item) => item.kind === 'quest.rose'))!;
-    hero.pos = rose.pos;
-    expect(act(world, 'p', { type: 'pickup' }).ok).toBe(true);
-    // The ghost has drifted off meanwhile: catch up with it.
-    const ghost = floor.mobs.find((m) => m.id === ghostId)!;
-    hero.pos = NEIGHBOURS8.map((n) => ghost.pos + n).find(
-      (c) => canEnter(level, c) && hasFlag(level.map[c]!, F.PASSABLE) && !charAt(world, quest.depth, c),
-    )!;
-    expect(act(world, 'p', { type: 'attack', target: ghostId }).ok).toBe(true);
-    const reward = act(world, 'p', { type: 'reward', choice: 'armor' });
-    expect(reward.ok && reward.effects.at(-1)).toEqual({ type: 'ghost', hero: 'p', line: 'farewell', errand: 'rose' });
-    expect(hero.items.some((i) => i.kind === quest.armor.kind && i.level === quest.armor.level)).toBe(true);
-    expect(hero.items.some((i) => i.kind === 'quest.rose')).toBe(false);
-    expect(floor.mobs.some((m) => m.kind === 'ghost')).toBe(false);
-    expect(quest.done).toBe(true);
-  });
-
-  it('wants revenge on the fetid rat, which comes out at the first kill and leaves its skull', () => {
-    const { world, ghostId } = withGhost('rat');
-    const hero = heroById(world, 'p')!;
-    act(world, 'p', { type: 'attack', target: ghostId });
-    const quest = world.quest!;
-    const floor = floorAt(world, quest.depth);
-    const level = levelAt(world, quest.depth);
-    Object.assign(hero, { attackSkill: 1000, ht: 500, hp: 500 });
-    const cell = NEIGHBOURS8.map((n) => hero.pos + n).find((c) => canEnter(level, c) && !charAt(world, quest.depth, c))!;
-    const rat = createMob('#r', 'rat', cell, 'hunting', floor.now);
-    floor.mobs.push(rat);
-    for (let k = 0; k < 20 && floor.mobs.includes(rat); k++) act(world, 'p', { type: 'attack', target: rat.id });
-    const fetid = floor.mobs.find((m) => m.kind === 'fetidRat')!;
-    expect(fetid).toBeDefined();
-    // Bring it over and slay it: struck, it puffs out paralytic gas, which does not hold it.
-    const beside = NEIGHBOURS8.map((n) => hero.pos + n).find((c) => canEnter(level, c) && !charAt(world, quest.depth, c))!;
-    fetid.pos = beside;
-    for (let k = 0; k < 40 && floor.mobs.includes(fetid); k++) {
-      if (adjacent(fetid.pos, hero.pos)) act(world, 'p', { type: 'attack', target: fetid.id });
-      else act(world, 'p', { type: 'wait' });
-    }
-    expect(floor.mobs.includes(fetid)).toBe(false);
-    const skull = floor.heaps.find((h) => h.items.some((item) => item.kind === 'quest.skull'))!;
-    hero.items.push(skull.items.find((item) => item.kind === 'quest.skull')!);
-    const ghost = floor.mobs.find((m) => m.id === ghostId)!;
-    hero.pos = NEIGHBOURS8.map((n) => ghost.pos + n).find((c) => canEnter(level, c) && !charAt(world, quest.depth, c))!;
-    const talk = act(world, 'p', { type: 'attack', target: ghostId });
-    expect(talk.ok && talk.effects).toEqual([{ type: 'ghost', hero: 'p', line: 'reward', errand: 'rat' }]);
-    expect(act(world, 'p', { type: 'reward', choice: 'weapon' }).ok).toBe(true);
-    expect(hero.items.some((i) => i.kind === 'quest.skull')).toBe(false);
-  });
-
-  it('is bound by a curse which, once the hero agrees to face it, takes shape and fights; broken, the ghost rewards', () => {
-    const { world, ghostId } = withGhost('curse');
-    const hero = heroById(world, 'p')!;
-    const quest = world.quest!;
-    const floor = floorAt(world, quest.depth);
-    const intro = act(world, 'p', { type: 'attack', target: ghostId });
-    expect(intro.ok && intro.effects).toEqual([{ type: 'ghost', hero: 'p', line: 'intro', errand: 'curse' }]);
-    expect(quest.given).toBe(false);
-    expect(act(world, 'p', { type: 'faceCurse' }).ok).toBe(true);
-    const curse = floor.mobs.find((m) => m.kind === 'curse')!;
-    expect(curse).toMatchObject({ ht: 10 + quest.depth * 3, enemy: 'p' });
-    expect(floor.mobs.some((m) => m.kind === 'ghost')).toBe(false);
-    Object.assign(hero, { attackSkill: 1000, ht: 500, hp: 500 });
-    for (let k = 0; k < 200 && floor.mobs.includes(curse); k++) {
-      if (adjacent(curse.pos, hero.pos)) act(world, 'p', { type: 'attack', target: curse.id });
-      else act(world, 'p', { type: 'wait' });
-    }
-    expect(quest.freed).toBe(true);
-    const ghost = floor.mobs.find((m) => m.kind === 'ghost')!;
-    hero.pos = NEIGHBOURS8.map((n) => ghost.pos + n).find((c) => canEnter(levelAt(world, quest.depth), c) && !charAt(world, quest.depth, c))!;
-    const talk = act(world, 'p', { type: 'attack', target: ghost.id });
-    expect(talk.ok && talk.effects).toEqual([{ type: 'ghost', hero: 'p', line: 'reward', errand: 'curse' }]);
-    expect(act(world, 'p', { type: 'reward', choice: 'armor' }).ok).toBe(true);
-    expect(quest.done).toBe(true);
-    expect(act(world, 'p', { type: 'faceCurse' })).toEqual({ ok: false, reason: 'there is no curse to face' });
-  });
+  for (const type of [1, 2, 3] as const) {
+    it(`the ${GHOST_FOES[type]} slain, the ghost calls the hero back and gives the chosen reward, then fades`, () => {
+      const { world, ghostId } = withGhost(type);
+      const hero = heroById(world, 'p')!;
+      const quest = world.quest!;
+      const floor = floorAt(world, quest.depth);
+      talk(world, ghostId);
+      const foe = floor.mobs.find((m) => m.kind === GHOST_FOES[type])!;
+      Object.assign(hero, { attackSkill: 1000, ht: 5000, hp: 5000 });
+      // Bring it over and slay it (the great crab parries what it sees coming: a blow from behind its back, then).
+      foe.pos = beside(world, hero.pos);
+      Object.assign(foe, { state: 'hunting', enemy: 'p', enemySeen: false });
+      const effects = [];
+      for (let k = 0; k < 200 && floor.mobs.includes(foe); k++) {
+        if (type === 3) foe.enemySeen = false;
+        // (The trickster keeps its distance, as Shattered's does: it is brought back each time.)
+        if (type === 2 && !adjacent(foe.pos, hero.pos)) foe.pos = beside(world, hero.pos);
+        const r = adjacent(foe.pos, hero.pos) ? act(world, 'p', { type: 'attack', target: foe.id }) : act(world, 'p', { type: 'wait' });
+        if (r.ok) effects.push(...r.effects);
+      }
+      expect(floor.mobs.includes(foe)).toBe(false);
+      expect(effects).toContainEqual({ type: 'ghost', hero: 'p', line: 'findMe', questType: type });
+      expect(quest.processed).toBe(true);
+      const reward = talk(world, ghostId);
+      expect(reward.ok && reward.effects).toEqual([{ type: 'ghost', hero: 'p', line: 'reward', questType: type }]);
+      const choice = type === 2 ? 'weapon' : 'armor';
+      const item = quest[choice];
+      const given = act(world, 'p', { type: 'reward', choice });
+      expect(given.ok && given.effects.at(-1)).toMatchObject({ type: 'died', kind: 'ghost' });
+      expect(given.ok && given.effects).toContainEqual({ type: 'ghost', hero: 'p', line: 'farewell', questType: type });
+      expect(hero.items.some((i) => i.kind === item.kind && i.level === item.level)).toBe(true);
+      expect(floor.mobs.some((m) => m.kind === 'ghost')).toBe(false);
+      expect(quest.done).toBe(true);
+      expect(act(world, 'p', { type: 'reward', choice })).toEqual({ ok: false, reason: 'nothing to give' });
+    });
+  }
 });
 
 describe('the Rat King', () => {
@@ -192,5 +160,19 @@ describe('the Rat King', () => {
       expect(king.hp).toBe(1);
     }
     expect(kings).toBeGreaterThan(3);
+  });
+});
+
+describe("the ghost's quest and the score (Statistics.questScores[0])", () => {
+  it('the great crab blocking the hero it sees costs fifty points a blow; the foe slain earns a thousand', () => {
+    const { world, ghostId } = withGhost(3);
+    const hero = heroById(world, 'p')!;
+    const floor = floorAt(world, world.quest!.depth);
+    talk(world, ghostId);
+    const crab = floor.mobs.find((m) => m.kind === 'greatCrab')!;
+    crab.pos = beside(world, hero.pos);
+    Object.assign(crab, { state: 'hunting', enemy: 'p', enemySeen: true, paralysed: 0 });
+    act(world, 'p', { type: 'attack', target: crab.id });
+    expect(world.score?.quests[0]).toBe(-50);
   });
 });

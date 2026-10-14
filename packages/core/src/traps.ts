@@ -5,38 +5,59 @@ import { mobGearTick } from './throwing';
 import { dealMob } from './spawner';
 import { bleedTick } from './afflict';
 import { hasProp } from './props';
-import { CRIPPLE_TURNS, earnExp, hurt } from './combat';
+import { CRIPPLE_TURNS, earnExp, hurt, mobDied } from './combat';
 import { charAt, type Char, type Ctx, enterCell, exploredCells, heroesOn, isHero, isPassable, isWater, leaveCell } from './floor';
 import { distance, NEIGHBOURS8 } from './level/geometry';
+import { burstOnEternalFire } from './roomblobs';
+import { isTallGrass, trample } from './highgrass';
 import { F, hasFlag, T } from './level/terrain';
 import { clearGas, seedGas } from './gas';
 import { burnHeaps, chillPack, freezeHeaps } from './cooking';
-import { scaleMob } from './party';
 import { stepOnPlant } from './plants';
+import { activate } from './trap-effects';
+import { frostHurtsElemental } from './wandmaker-mobs';
+import type { Level } from './level/generate';
+import { type TrapInfo, type TrapKind, TRAPS } from './level/trapdefs';
 import { tenguDartTrap } from './bosses/index';
 import { tickMob } from './buffs';
 import { deathMarkTurn } from './abilities';
 import { flies, mobStatusTurn } from './status';
 
 /*
- * Traps (levels/traps): set off by stepping on them, visible or hidden; then
- * they are spent. The gas traps let out a cloud that spreads (gas.ts).
+ * Traps (levels/traps): set off by stepping on them, visible or hidden; then most are spent.
+ * What each one does is in trap-effects.ts; the gas traps let out a cloud that spreads (gas.ts).
  */
 
-export type TrapKind = 'toxic' | 'fire' | 'paralytic' | 'poison' | 'alarm' | 'lightning' | 'gripping' | 'summoning';
+export type { TrapKind } from './level/trapdefs';
 
-const TRAPS: ReadonlyMap<number, TrapKind> = new Map<number, TrapKind>([
-  [T.TOXIC_TRAP, 'toxic'], [T.SECRET_TOXIC_TRAP, 'toxic'],
-  [T.FIRE_TRAP, 'fire'], [T.SECRET_FIRE_TRAP, 'fire'],
-  [T.PARALYTIC_TRAP, 'paralytic'], [T.SECRET_PARALYTIC_TRAP, 'paralytic'],
-  [T.POISON_TRAP, 'poison'], [T.SECRET_POISON_TRAP, 'poison'],
-  [T.ALARM_TRAP, 'alarm'], [T.SECRET_ALARM_TRAP, 'alarm'],
-  [T.LIGHTNING_TRAP, 'lightning'], [T.SECRET_LIGHTNING_TRAP, 'lightning'],
-  [T.GRIPPING_TRAP, 'gripping'], [T.SECRET_GRIPPING_TRAP, 'gripping'],
-  [T.SUMMONING_TRAP, 'summoning'], [T.SECRET_SUMMONING_TRAP, 'summoning'],
-]);
+/** The active trap on a cell (a TRAP or SECRET_TRAP cell), if any. */
+export function trapAt(level: Level, pos: number): TrapInfo | undefined {
+  const terrain = level.map[pos];
+  if (terrain !== T.TRAP && terrain !== T.SECRET_TRAP) return undefined;
+  const trap = level.traps?.find((t) => t.pos === pos);
+  return trap?.active ? trap : undefined;
+}
 
-export const trapAt = (terrain: number): TrapKind | undefined => TRAPS.get(terrain);
+/** Level.setTrap: a trap laid on a cell, in sight or hidden. */
+export function setTrap(level: Level, pos: number, kind: TrapKind, visible: boolean): TrapInfo {
+  const trap: TrapInfo = { pos, kind, visible: visible || !TRAPS[kind].canBeHidden, active: true };
+  level.traps = [...(level.traps ?? []).filter((t) => t.pos !== pos), trap].sort((a, b) => a.pos - b.pos);
+  level.map[pos] = trap.visible ? T.TRAP : T.SECRET_TRAP;
+  return trap;
+}
+
+/** Trap.disarm and Level.disarmTrap: spent, the cell an inactive trap. */
+export function disarmTrap(level: Level, trap: TrapInfo): void {
+  trap.active = false;
+  level.map[trap.pos] = T.INACTIVE_TRAP;
+}
+
+/** Trap.reveal with Level.discover: a hidden trap is found. */
+export function revealTrap(level: Level, pos: number): void {
+  if (level.map[pos] === T.SECRET_TRAP) level.map[pos] = T.TRAP;
+  const trap = level.traps?.find((t) => t.pos === pos);
+  if (trap) trap.visible = true;
+}
 
 const GAS_RADIUS = 2;
 const BURNING_TURNS = 8;
@@ -75,6 +96,8 @@ export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost' | 'toxic'
   if (harm === 'frost' && hasProp(char, 'icy')) return true;
   // DM-300 breathes its own fumes unharmed.
   if (harm === 'gas' && char.kind === 'dm300') return true;
+  // A newborn fire elemental does not burn (Char.Property.FIERY).
+  if (harm === 'burning' && char.kind === 'newbornElemental') return true;
   return harm !== 'frost' && (char.kind === 'yog' || (harm === 'burning' && char.kind === 'burningFist'));
 }
 
@@ -102,8 +125,8 @@ export function burst(ctx: Ctx, pos: number, kind: Burst, radius = GAS_RADIUS, s
       elementalHarm(ctx, char);
       continue;
     }
-    // Freezing: frozen stiff, and any fire put out.
-    if (kind === 'frost' && !immuneTo(char, 'frost')) {
+    // Freezing: frozen stiff, and any fire put out (Elemental.add: a newborn fire elemental is hurt instead).
+    if (kind === 'frost' && !frostHurtsElemental(ctx, char) && !immuneTo(char, 'frost')) {
       char.paralysed = Math.max(char.paralysed ?? 0, Math.round(FROST_TURNS * ctx.rng.floatRange(1, 1.5)));
       char.burning = 0;
     }
@@ -111,6 +134,8 @@ export function burst(ctx: Ctx, pos: number, kind: Burst, radius = GAS_RADIUS, s
     if (kind === 'frost' && isHero(char) && !immuneTo(char, 'frost')) chillPack(ctx, char);
   }
   if (kind === 'frost') freezeHeaps(ctx, pos, radius);
+  // EternalFire: frost puts it out, and a potion of purity cleanses it.
+  if (kind === 'frost' || kind === 'purity') burstOnEternalFire(ctx, pos, radius);
   if (kind !== 'fire') return;
   burnHeaps(ctx, pos, radius);
   // Whatever can burn nearby burns down to embers: grass, doors, barricades, bookshelves.
@@ -137,128 +162,77 @@ function around(ctx: Ctx, pos: number, radius: number): Char[] {
 }
 
 /**
- * Level.press: a trap goes off under whoever steps on it, or under an item that lands on it
- * (`victim` null: thrown or dropped there; then only what needs no victim happens).
- * Level.mobPress sets traps off under monsters too (see mobPress): what hurts lands on them.
+ * Level.pressCell on a trap: Trap.trigger — a trap goes off under whoever steps on it, or under an
+ * item that lands on it (`victim` null). Spent at once unless it goes on working (gripping,
+ * flashing and gateway traps), and found if it was hidden; then it does what it does (activateTrap).
  */
 export function triggerTrap(ctx: Ctx, victim: Char | null, pos: number): void {
   // Tengu's cell: its hidden traps are dart traps (TenguDartTrap).
   if (tenguDartTrap(ctx, victim, pos)) return;
-  const { level, rng, depth } = ctx;
-  const kind = trapAt(level.map[pos]!);
-  if (!kind) return;
-  level.map[pos] = T.INACTIVE_TRAP;
+  const trap = trapAt(ctx.level, pos);
+  if (!trap) return;
   const mob = victim && !isHero(victim) ? victim : null;
-  // A monster only ever sets off a trap the party could see already: no need to map it for them.
-  if (!mob) exploredCells(ctx.world, depth)[pos] = true;
-  ctx.effects.push({ type: 'trap', depth, pos, kind, hero: victim && isHero(victim) ? victim.id : '', ...(mob ? { mob: mob.id } : {}) });
-  springTrap(ctx, kind, victim, pos);
+  // A monster sets off a hidden trap only as a sheep does (a hard press): then it is mapped too.
+  if (!mob || ctx.level.map[pos] === T.SECRET_TRAP) exploredCells(ctx.world, ctx.depth)[pos] = true;
+  springTrap(ctx, trap, victim);
 }
-
-/** Trap.activate: what a trap of a kind does at a cell, to whoever is there (a reclaimed trap set off by a spell too). */
-export function springTrap(ctx: Ctx, kind: TrapKind, victim: Char | null, pos: number): void {
-  const { level, rng, depth } = ctx;
-  const mob = victim && !isHero(victim) ? victim : null;
-  switch (kind) {
-    case 'poison':
-      if (victim && isHero(victim)) victim.poison = Math.max(victim.poison, 4 + Math.trunc(depth / 2));
-      // PoisonTrap on a monster: Poison.set, half as long for those that resist it (Poison.durationFactor).
-      if (mob && mob.kind !== 'bee') mob.poison = Math.ceil((POISON_RESISTANT.has(mob.kind) ? 0.5 : 1) * (4 + Math.trunc(depth / 2)));
-      break;
-    case 'toxic':
-    case 'paralytic':
-      // ToxicTrap and ParalyticTrap: a cloud, the bigger the deeper.
-      burst(ctx, pos, kind, GAS_RADIUS, false, kind === 'toxic' ? 300 + 20 * depth : 80 + 5 * depth);
-      break;
-    case 'fire':
-      // A small fire on the trap itself, catching the grass around.
-      burst(ctx, pos, 'fire', 0);
-      break;
-    case 'alarm':
-      // AlarmTrap: every other monster on the level comes to see.
-      for (const other of ctx.floor.mobs) if (other !== victim) beckon(other, pos);
-      break;
-    case 'lightning': {
-      if (!victim) break;
-      const damage = Math.max(1, rng.intBetween(Math.trunc(victim.hp / 3), Math.trunc((2 * victim.hp) / 3)));
-      ctx.effects.push({ type: 'hurt', depth, who: victim.id, damage });
-      hurt(ctx, victim, damage, 'lightning');
-      break;
-    }
-    case 'gripping': {
-      if (!victim) break;
-      const damage = Math.max(0, depth + 3 - rng.intRange(0, Math.trunc((mob ? mobStats(mob).dr : heroArmor(victim as Hero)) / 2)));
-      if (mob) {
-        // GrippingTrap on a monster: it bleeds (Bleeding.set) and is crippled.
-        mob.bleeding = damage;
-        mob.crippled = Math.max(mob.crippled ?? 0, CRIPPLE_TURNS);
-        break;
-      }
-      ctx.effects.push({ type: 'hurt', depth, who: victim.id, damage });
-      hurt(ctx, victim, damage, 'gripping');
-      break;
-    }
-    case 'summoning':
-      summonAround(ctx, pos);
-      break;
-  }
-}
-
-/** SummoningTrap.activate: one to three monsters of the depth on free cells around, on their way to it. */
-export function summonAround(ctx: Ctx, pos: number): void {
-  const { level, rng, depth } = ctx;
-  let count = 1;
-  if (rng.int(2) === 0) {
-    count++;
-    if (rng.int(2) === 0) count++;
-  }
-  const cells = NEIGHBOURS8.map((n) => pos + n).filter((c) => isPassable(level, c) && !charAt(ctx.world, depth, c));
-  for (let i = 0; i < count && cells.length > 0; i++) {
-    const cell = cells.splice(rng.index(cells.length), 1)[0]!;
-    // SummoningTrap: the level's next monsters (Level.createMob), wandering towards the trap.
-    const summoned: Mob = dealMob(ctx.world, level, rng, `#${++ctx.world.nextId}`, cell, ctx.floor.now + 1);
-    if (summoned.state !== 'passive') summoned.state = 'wandering';
-    summoned.target = pos;
-    ctx.floor.mobs.push(summoned);
-  }
-}
-
-/** Monsters that resist poison (RESISTANCES: Poison): it lasts half as long on them. */
-const POISON_RESISTANT: ReadonlySet<MobKind> = new Set<MobKind>(['spinner', 'scorpio', 'acidic', 'statue', 'tengu']);
 
 /**
- * Level.mobPress: a monster comes to stand on a cell, by its own step (Mob.move: never a flier)
- * or thrown there (pushed, a flock of sheep). Over a chasm it falls, unless it flies; a trap
- * the party can see goes off under it (hidden ones stay hidden: only a hero's weight finds them);
- * a door opens; a plant is set off.
+ * Trap.trigger without the sound (as the summoning traps and the flock set off what lies under
+ * whatever they bring): spent unless it goes on working, revealed, then activated.
+ */
+export function springTrap(ctx: Ctx, trap: TrapInfo, victim: Char | null): void {
+  const { level, depth } = ctx;
+  const pos = trap.pos;
+  const hidden = level.map[pos] === T.SECRET_TRAP;
+  if (TRAPS[trap.kind].disarmedByActivation) disarmTrap(level, trap);
+  revealTrap(level, pos);
+  const mob = victim && !isHero(victim) ? victim : null;
+  ctx.effects.push({
+    type: 'trap', depth, pos, kind: trap.kind, hero: victim && isHero(victim) ? victim.id : '', ...(mob ? { mob: mob.id } : {}),
+    ...(hidden ? { hidden } : {}),
+  });
+  activateTrap(ctx, trap, victim);
+}
+
+/** Trap.activate: what each kind does (trap-effects.ts). */
+export function activateTrap(ctx: Ctx, trap: TrapInfo, victim: Char | null): void {
+  activate(ctx, trap, victim);
+}
+
+/**
+ * Level.occupyCell for a monster: it comes to stand on a cell, by its own step (Mob.move: never a
+ * flier) or thrown there (pushed, a flock of sheep, a trap). A flier touches nothing but a door.
+ * Over a chasm it falls; a trap the party can see goes off under it (a soft press: hidden ones
+ * stay hidden, but a sheep presses hard, as a hero does); a door opens; a plant is set off.
  */
 export function mobPress(ctx: Ctx, mob: Mob): void {
   const cell = mob.pos;
   const terrain = ctx.level.map[cell]!;
-  if (hasFlag(terrain, F.PIT) && !flies(mob)) {
+  if (flies(mob)) {
+    enterCell(ctx.level, cell);
+    return;
+  }
+  if (hasFlag(terrain, F.PIT)) {
     mobFall(ctx, mob);
     return;
   }
-  if (trapAt(terrain) && !hasFlag(terrain, F.SECRET)) triggerTrap(ctx, mob, cell);
+  if (trapAt(ctx.level, cell) && (terrain === T.TRAP || mob.kind === 'sheep')) triggerTrap(ctx, mob, cell);
+  // Level.pressCell: tall grass is trampled under it.
+  if (isTallGrass(ctx.level.map[cell])) trample(ctx, cell, isAlive(mob) ? mob : null);
   enterCell(ctx.level, cell);
   stepOnPlant(ctx, isAlive(mob) ? mob : null, cell);
 }
 
 /**
- * Chasm.mobFall: the monster drops out of the level for good (Mob.destroy, not Mob.die): the
- * party still learns from it, but whatever it carried or would have dropped falls with it.
+ * Chasm.mobFall: the monster falls to its death (Mob.die(Chasm)): the party learns half as much from
+ * it, and whatever it carried or would have dropped falls through to the depth below.
  */
 export function mobFall(ctx: Ctx, mob: Mob): void {
-  const index = ctx.floor.mobs.indexOf(mob);
-  if (index < 0) return;
-  ctx.floor.mobs.splice(index, 1);
-  mob.hp = 0;
-  leaveCell(ctx.world, ctx.level, ctx.depth, mob.pos);
+  if (!ctx.floor.mobs.includes(mob)) return;
   ctx.effects.push({ type: 'mobFell', depth: ctx.depth, mob: mob.id, pos: mob.pos, kind: mob.kind });
-  const stats = mobStats(mob);
-  for (const hero of heroesOn(ctx.world, ctx.depth)) {
-    if (stats.exp > 0 && hero.lvl <= stats.maxLvl) earnExp(ctx, hero, stats.exp);
-  }
+  mob.fell = true;
+  mobDied(ctx, mob);
 }
 
 /** Hurt a monster's turn by the conditions traps leave behind; true if it loses the turn. */
@@ -336,3 +310,12 @@ export function burnCell(ctx: Ctx, cell: number): void {
     ctx.effects.push({ type: 'burnt', depth: ctx.depth, pos: cell });
   }
 }
+
+/**
+ * Trap.activate for a kind of trap at a cell, not one lying there (a reclaimed trap set off by a spell): what the
+ * trap would do, without spending one.
+ */
+export function springTrapKind(ctx: Ctx, kind: TrapKind, victim: Char | null, pos: number): void {
+  activateTrap(ctx, { pos, kind, visible: true, active: true }, victim);
+}
+export { summoning as summonAround } from './trap-effects';

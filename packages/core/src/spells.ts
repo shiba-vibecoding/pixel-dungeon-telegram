@@ -15,7 +15,7 @@ import { NEIGHBOURS8 } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import { castRay, PROJECTILE } from './ray';
 import { interfloorAllowed, readScroll, teleportChar, teleportToLocation } from './reading';
-import { springTrap, trapAt } from './traps';
+import { disarmTrap, springTrapKind, trapAt } from './traps';
 import { upgradeItem, defaultTarget, isTargetedScroll } from './scrolls';
 import { moveToDepth } from './world';
 import type { World } from './world';
@@ -178,11 +178,11 @@ export function castSpell(ctx: Ctx, hero: Hero, kind: ItemKind, use: SpellUse): 
       if (!stored) {
         // A visible trap there is disarmed, and the spell holds it (and is not used up).
         const terrain = ctx.level.map[bolt.collision]!;
-        const trap = trapAt(terrain);
+        const trap = trapAt(ctx.level, bolt.collision);
         if (trap && !hasFlag(terrain, F.SECRET)) {
-          ctx.level.map[bolt.collision] = T.INACTIVE_TRAP;
-          b.reclaimed = trap;
-          ctx.effects.push({ type: 'reclaimed', hero: hero.id, trap });
+          disarmTrap(ctx.level, trap);
+          b.reclaimed = trap.kind;
+          ctx.effects.push({ type: 'reclaimed', hero: hero.id, trap: trap.kind });
         } else {
           ctx.effects.push({ type: 'interrupted', hero: hero.id, reason: 'there is no trap there' });
         }
@@ -190,7 +190,7 @@ export function castSpell(ctx: Ctx, hero: Hero, kind: ItemKind, use: SpellUse): 
       }
       delete b.reclaimed;
       ctx.effects.push({ type: 'trap', depth: ctx.depth, pos: bolt.collision, kind: stored, hero: '' });
-      springTrap(ctx, stored, charAt(world, ctx.depth, bolt.collision) ?? null, bolt.collision);
+      springTrapKind(ctx, stored, charAt(world, ctx.depth, bolt.collision) ?? null, bolt.collision);
       return { time: 1, used: true };
     }
     case 'spell.telekineticGrab':

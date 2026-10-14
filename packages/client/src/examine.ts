@@ -1,6 +1,7 @@
 import {
-  F, GATE_CELLS, hasFlag, isFist, type Item, type Level, type Mob, type MobKind, PEDESTALS, type PlantKind, T, THRONE, trapAt, type World,
+  F, GATE_CELLS, hasFlag, isFist, type Item, type Level, type Mob, type MobKind, PEDESTALS, type PlantKind, T, THRONE, WIDTH, type World,
 } from '@pd/core';
+import { lt, plain, terrainText, trapText } from './levelnames';
 import { lang, t } from './i18n';
 import { artText } from './artifacttext';
 
@@ -224,7 +225,17 @@ export function mobName(mob: Mob, name: string = t.mobs[mob.kind]): string {
  * Mob.description and Mob.info: what the monster is, what more its kind says (a shaman's mask, a gnoll exile's mood,
  * a statue's arms, a thief's loot, a monk's focus, a brute's rage), and what champion it is.
  */
+/** Shattered's own descriptions (Mob.description) of the wandmaker's quest's characters. */
+const WANDMAKER_MOB_TEXTS: Partial<Record<MobKind, readonly string[]>> = {
+  wandmaker: ['actors.mobs.npcs.wandmaker.desc'],
+  rotHeart: ['actors.mobs.rotheart.desc'],
+  rotLasher: ['actors.mobs.rotlasher.desc'],
+  newbornElemental: ['actors.mobs.elemental$newbornfireelemental.desc', 'actors.mobs.elemental$newbornfireelemental.desc_boss'],
+};
+
 export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item) => item.kind, now = 0): string[] {
+  const wandmakerKeys = WANDMAKER_MOB_TEXTS[mob.kind];
+  if (wandmakerKeys) return wandmakerKeys.map((key) => plain(lt(key)));
   // Shattered's bosses, their fists, pylons and minions (DM300.description, Pylon.description, YogFist.description).
   const boss = t.bosses.descs;
   if (mob.kind === 'pylon') return [mob.boss?.active ? boss.pylonActive! : boss.pylon!];
@@ -296,6 +307,11 @@ const EN_PLANTS: Record<PlantKind, readonly [string, string]> = {
   icecap: ['Icecap', 'Touched, an Icecap lets out a pollen that freezes everything around.'],
   sorrowmoss: ['Sorrowmoss', 'A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.'],
   dreamweed: ['Dreamweed', 'Touched, a Dreamweed lets out a glittering cloud of confusing gas.'],
+  stormvine: ['Stormvine', 'Gravity affects the stormvine plant strangely, allowing its whispy blue tendrils to hang on the air. Anything caught in the vine is affected by this, and becomes disoriented.'],
+  swiftthistle: ['Swiftthistle', 'When trampled, swiftthistle will briefly accelerate the flow of time around it, allowing the trampler to perform several actions instantly.'],
+  blindweed: ['Blindweed', 'Upon being touched a blindweed perishes in a bright flash of light. The flash is strong enough to disorient for several seconds.'],
+  mageroyal: ['Mageroyal', "The mageroyal's prickly flowers contain a chemical which is known for its properties as a strong neutralizing agent. Anything that steps in this plant will be cleansed of many negative effects."],
+  starflower: ['Starflower', 'A rare plant, starflower is said to grant holy power to whomever touches it.'],
   sungrass: ['Sungrass', 'Sungrass is renowned for the healing properties of its sap.'],
   earthroot: ['Earthroot', 'When a creature touches an Earthroot, its roots make a kind of natural armour around it.'],
   fadeleaf: ['Fadeleaf', 'Touching a Fadeleaf will teleport any creature to a random place on the level.'],
@@ -309,6 +325,11 @@ const RU_PLANTS: Record<PlantKind, readonly [string, string]> = {
   icecap: ['Ледянка', 'Если коснуться ледянки, она выпускает пыльцу, которая замораживает всё вокруг.'],
   sorrowmoss: ['Скорбный мох', 'Скорбный мох — это цветок (а не мох) с острыми как бритва лепестками, покрытыми смертельным ядом.'],
   dreamweed: ['Дрём-трава', 'Если коснуться дрём-травы, она выпускает сверкающее облако дурманящего газа.'],
+  stormvine: ['Грозовая лоза', 'Гравитация странно действует на грозовую лозу, позволяя её тонким синим усикам парить в воздухе. Всё, что попадается в эти усики, получает похожий эффект и становится дезориентированным.'],
+  swiftthistle: ['Скорополох', 'Если наступить на скорополох, он ненадолго ускорит поток времени вокруг себя, дав возможность совершить несколько действий за один момент.'],
+  blindweed: ['Слепняк', 'При прикосновении слепняк испускает яркую вспышку света и погибает. Вспышка достаточно сильна, чтобы вывести из строя на несколько секунд.'],
+  mageroyal: ['Магороза', 'Колючие цветки магорозы содержат вещество, известное своими сильными нейтрализующими свойствами. Всё, что попадёт в это растение, будет очищено от множества негативных эффектов.'],
+  starflower: ['Звездоцвет', 'Редкое растение; говорят, звездоцвет дарует святую силу тому, кто к нему прикоснётся.'],
   sungrass: ['Солнечная трава', 'Сок солнечной травы славится своими целебными свойствами.'],
   earthroot: ['Земляной корень', 'Когда существо касается земляного корня, корни образуют вокруг него что-то вроде природной брони.'],
   fadeleaf: ['Блеклист', 'Прикосновение к блеклисту переносит любое существо в случайное место на уровне.'],
@@ -339,98 +360,79 @@ export function plantText(kind: PlantKind): { name: string; desc: string } {
   return { name, desc };
 }
 
-type Tile =
-  | 'chasm' | 'floor' | 'grass' | 'water' | 'wall' | 'door' | 'openDoor' | 'entrance' | 'exit' | 'embers' | 'lockedDoor' | 'pedestal'
-  | 'barricade' | 'highGrass' | 'lockedExit' | 'unlockedExit' | 'sign' | 'well' | 'emptyWell' | 'statue' | 'trap' | 'spentTrap'
-  | 'bookshelf' | 'alchemy';
+/**
+ * Level.tileName and tileDesc, the region's own where it has them (levelnames.ts); a trap in sight
+ * says what trap it is (WndInfoTrap: its name, «inactive» once spent, and its description).
+ */
+export function tileText(level: Level, pos: number): { name: string; desc: string } {
+  const terrain = level.map[pos]!;
+  const trap = level.traps?.find((tr) => tr.pos === pos);
+  if (trap && (terrain === T.TRAP || terrain === T.INACTIVE_TRAP)) {
+    const { name, desc } = trapText(trap.kind);
+    return { name, desc: trap.active ? desc : `${plain(lt('windows.wndinfotrap.inactive'))}
 
-const EN_TILES: Record<Tile, readonly [string, string]> = {
-  chasm: ['Chasm', 'You cannot see the bottom.'],
-  floor: ['Floor', ''],
-  grass: ['Grass', ''],
-  water: ['Water', 'If you are on fire, step into the water to put it out.'],
-  wall: ['Wall', ''],
-  door: ['Closed door', ''],
-  openDoor: ['Open door', ''],
-  entrance: ['Depth entrance', 'Stairs lead up to the depth above.'],
-  exit: ['Depth exit', 'Stairs lead down to the depth below.'],
-  embers: ['Embers', 'Embers cover the floor.'],
-  lockedDoor: ['Locked door', 'This door is locked: you need the matching key to open it.'],
-  pedestal: ['Pedestal', ''],
-  barricade: ['Barricade', 'The wooden barricade is firmly set but has dried over the years. Might it burn?'],
-  highGrass: ['High grass', 'Dense vegetation blocks the view.'],
-  lockedExit: ['Locked depth exit', 'Heavy bars block the stairs leading down.'],
-  unlockedExit: ['Unlocked depth exit', 'Stairs lead down to the depth below.'],
-  sign: ['Sign', 'You cannot read the text from here.'],
-  well: ['Well', 'Its water may hold some power.'],
-  emptyWell: ['Empty well', 'The well has run dry.'],
-  statue: ['Statue', 'Someone wanted to adorn this place, but failed, obviously.'],
-  trap: ['Trap', 'Stepping onto a hidden pressure plate will set off the trap.'],
-  spentTrap: ['Triggered trap', 'The trap has been set off before, and is not dangerous any more.'],
-  bookshelf: ['Bookshelf', ''],
-  alchemy: ['Alchemy pot', 'This pot is filled with magical water. Items can be mixed into the pot to create something new!'],
-};
+${desc}` };
+  }
+  const base = terrainText(level, terrain);
+  const custom = customText(level, pos);
+  return { name: custom?.name ?? base.name, desc: custom?.desc ?? base.desc };
+}
 
-const RU_TILES: Record<Tile, readonly [string, string]> = {
-  chasm: ['Пропасть', 'Дна не видно.'],
-  floor: ['Пол', ''],
-  grass: ['Трава', ''],
-  water: ['Вода', 'Если вы горите, шагните в воду, чтобы потушить огонь.'],
-  wall: ['Стена', ''],
-  door: ['Закрытая дверь', ''],
-  openDoor: ['Открытая дверь', ''],
-  entrance: ['Вход на уровень', 'Лестница ведёт наверх, на уровень выше.'],
-  exit: ['Выход с уровня', 'Лестница ведёт вниз, на уровень ниже.'],
-  embers: ['Угли', 'Пол покрыт углями.'],
-  lockedDoor: ['Запертая дверь', 'Дверь заперта: чтобы открыть её, нужен подходящий ключ.'],
-  pedestal: ['Пьедестал', ''],
-  barricade: ['Баррикада', 'Деревянная баррикада прочно стоит, но за годы рассохлась. Может, она горит?'],
-  highGrass: ['Высокая трава', 'Густая растительность закрывает обзор.'],
-  lockedExit: ['Запертый выход', 'Тяжёлая решётка перекрывает лестницу вниз.'],
-  unlockedExit: ['Открытый выход', 'Лестница ведёт вниз, на уровень ниже.'],
-  sign: ['Табличка', 'Отсюда не прочесть, что на ней написано.'],
-  well: ['Колодец', 'В его воде, возможно, есть какая-то сила.'],
-  emptyWell: ['Пустой колодец', 'Колодец пересох.'],
-  statue: ['Статуя', 'Кто-то хотел украсить это место, но, очевидно, не преуспел.'],
-  trap: ['Ловушка', 'Если наступить на скрытую нажимную плиту, ловушка сработает.'],
-  spentTrap: ['Сработавшая ловушка', 'Ловушка уже срабатывала и больше не опасна.'],
-  bookshelf: ['Книжная полка', ''],
-  alchemy: ['Алхимический котёл', 'Этот котёл наполнен волшебной водой. В нём можно смешать разные предметы для того, чтобы получить что-то новое!'],
-};
-
-function tileOf(terrain: number): Tile {
-  if (terrain >= T.WATER_TILES) return 'water';
-  if (trapAt(terrain) && !hasFlag(terrain, F.SECRET)) return 'trap';
-  if (hasFlag(terrain, F.PIT)) return 'chasm';
-  switch (terrain) {
-    case T.GRASS: return 'grass';
-    case T.WALL: case T.WALL_DECO: case T.SECRET_DOOR: return 'wall';
-    case T.DOOR: return 'door';
-    case T.OPEN_DOOR: return 'openDoor';
-    case T.ENTRANCE: return 'entrance';
-    case T.EXIT: return 'exit';
-    case T.EMBERS: return 'embers';
-    case T.LOCKED_DOOR: return 'lockedDoor';
-    case T.PEDESTAL: return 'pedestal';
-    case T.BARRICADE: return 'barricade';
-    case T.HIGH_GRASS: return 'highGrass';
-    case T.LOCKED_EXIT: return 'lockedExit';
-    case T.UNLOCKED_EXIT: return 'unlockedExit';
-    case T.SIGN: return 'sign';
-    case T.WELL: return 'well';
-    case T.EMPTY_WELL: return 'emptyWell';
-    case T.STATUE: case T.STATUE_SP: return 'statue';
-    case T.INACTIVE_TRAP: return 'spentTrap';
-    case T.BOOKSHELF: return 'bookshelf';
-    case T.ALCHEMY: return 'alchemy';
-    default: return 'floor';
+/**
+ * WndInfoCell.cellName and its description: the last custom tilemap drawing something on the cell (not those
+ * drawn over the characters) may name and describe it (CustomTilemap.name, desc); otherwise the terrain does.
+ */
+function customText(level: Level, pos: number): { name?: string; desc?: string } | undefined {
+  const x = pos % WIDTH;
+  const y = Math.trunc(pos / WIDTH);
+  let found: { kind: string; tx: number; ty: number; tile: number } | undefined;
+  for (const c of level.customTiles ?? []) {
+    if (c.wall || x < c.x || x >= c.x + c.w || y < c.y || y >= c.y + c.h) continue;
+    const tile = c.data?.[x - c.x + (y - c.y) * c.w] ?? -1;
+    if (tile >= 0) found = { kind: c.kind, tx: x - c.x, ty: y - c.y, tile };
+  }
+  if (!found) return undefined;
+  const text = (key: string): { name: string; desc: string } => ({ name: plain(lt(`${key}.name`)), desc: plain(lt(`${key}.desc`)) });
+  switch (found.kind) {
+    case 'Carpet':
+      // Carpet: its own name and description, but a tile laid over it (a statue, a pedestal) is the terrain's.
+      return found.tile < 80 ? text('tiles.custom.carpet') : undefined;
+    case 'RatKingRoomDeco': {
+      const key = 'levels.rooms.secret.ratkingroom$ratkingroomdeco';
+      if (level.map[pos] === T.CUSTOM_DECO) return { name: plain(lt(`${key}.statue_name`)), desc: plain(lt(`${key}.statue_desc`)) };
+      if (found.tx === 2 && found.ty === 2) return { name: plain(lt(`${key}.pillow_name`)), desc: plain(lt(`${key}.pillow_desc`)) };
+      return undefined;
+    }
+    case 'WeakFloorRoom.HiddenWell':
+      return text('levels.rooms.special.weakfloorroom$hiddenwell');
+    // The old wandmaker's rooms: the mass grave's bones, the ritual site's marker and tables.
+    case 'MassGraveRoom$MassGraveDeco':
+      return text('levels.rooms.quest.massgraveroom$massgravedeco');
+    case 'RitualSiteRoom$RitualMarker':
+      return text('levels.rooms.quest.ritualsiteroom$ritualmarker');
+    case 'RitualSiteRoom$Table':
+      return text('levels.rooms.quest.ritualsiteroom$table');
+    default:
+      return undefined;
   }
 }
 
-/** Level.tileName and tileDesc: what a cell's terrain is called, and what there is to know about it. */
-export function tileText(terrain: number): { name: string; desc: string } {
-  const [name, desc] = (lang === 'ru' ? RU_TILES : EN_TILES)[tileOf(terrain)];
-  return { name, desc };
+/**
+ * WndInfoCell: what lies over the cell, after its description (Blob.tileDesc, for the blobs seen there): the
+ * sacrificial fire, the eternal fire, a garden's foliage, toxic gas.
+ */
+export function blobTexts(world: World, depth: number, pos: number, seen: boolean): string[] {
+  const level = world.levels[depth];
+  const floor = world.floors[depth];
+  if (!level || !floor) return [];
+  const texts: string[] = [];
+  // SacrificialFire is alwaysVisible; the rest only where the party can see.
+  if (floor.altar && floor.altar.volume > 0 && floor.altar.pos === pos) texts.push(plain(lt('actors.blobs.sacrificialfire.desc')));
+  if (!seen) return texts;
+  if (level.eternalFire?.includes(pos)) texts.push(plain(lt('levels.rooms.special.magicalfireroom$eternalfire.desc')));
+  if (floor.foliage?.includes(pos)) texts.push(plain(lt('actors.blobs.foliage.desc')));
+  if (floor.gas?.toxic?.some(([cell, volume]) => cell === pos && volume > 0)) texts.push(plain(lt('actors.blobs.toxicgas.desc')));
+  return texts.filter(Boolean);
 }
 
 /**
@@ -453,12 +455,12 @@ export function bossTile(world: World, level: Level, pos: number): { name: strin
   if (level.depth === 15 && !world.arena) {
     if (GATE_CELLS.includes(pos)) return { name: tiles.gateName, desc: hasFlag(terrain, F.SOLID) ? tiles.gateDesc : tiles.gateBroken, extra };
     if (terrain === T.INACTIVE_TRAP) return { name: tiles.wiresName, desc: tiles.wiresDesc, extra };
-    if (terrain >= T.WATER_TILES && terrain <= T.WATER) return { ...tileText(terrain), extra: [tiles.waterDesc, ...extra] };
+    if (terrain === T.WATER) return { ...tileText(level, pos), extra: [tiles.waterDesc, ...extra] };
   }
   if (level.depth === 20 && !world.arena) {
     if (pos === THRONE) return { name: tiles.throneName, desc: tiles.throneDesc, extra };
     if (PEDESTALS.includes(pos)) return { name: tiles.summoningName, desc: tiles.summoningDesc, extra };
   }
-  if (extra.length > 0) return { ...tileText(terrain), extra };
+  if (extra.length > 0) return { ...tileText(level, pos), extra };
   return null;
 }

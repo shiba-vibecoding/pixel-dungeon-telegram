@@ -25,7 +25,7 @@ function solo(heroClass: 'warrior' | 'rogue' = 'warrior', seed = 31): World {
 function beside(world: World, hp = 1000, kind: MobKind = 'rat', state: Mob['state'] = 'hunting'): Mob {
   const hero = heroById(world, 'p')!;
   const level = levelAt(world, 1);
-  const pos = NEIGHBOURS8.map((n) => hero.pos + n).find((c) => canEnter(level, c) && level.map[c] !== T.DOOR && !charAt(world, 1, c))!;
+  const pos = NEIGHBOURS8.map((n) => hero.pos + n).find((c) => canEnter(level, c) && level.map[c] !== T.DOOR && level.map[c] !== T.WATER && !charAt(world, 1, c))!;
   const mob = createMob(`#m${pos}`, kind, pos, state, floorAt(world, 1).now);
   Object.assign(mob, { enemy: 'p', target: hero.pos, enemySeen: true, ht: hp, hp });
   floorAt(world, 1).mobs.push(mob);

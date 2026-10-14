@@ -70,8 +70,12 @@ export const TIPPED_DARTS: Readonly<Partial<Record<ItemKind, ItemKind>>> = {
   'seed.icecap': 'missile.chillingDart',
   'seed.firebloom': 'missile.incendiaryDart',
   'seed.sorrowmoss': 'missile.poisonDart',
-  // Swiftthistle (adrenaline), blindweed (blinding), mageroyal (cleansing) and starflower (holy) are not grown here yet;
-  // dreamweed stands in for Shattered's stormvine (its sprite).
+  'seed.swiftthistle': 'missile.adrenalineDart',
+  'seed.blindweed': 'missile.blindingDart',
+  'seed.mageroyal': 'missile.cleansingDart',
+  'seed.starflower': 'missile.holyDart',
+  'seed.stormvine': 'missile.shockingDart',
+  // Pixel Dungeon's dreamweed, still carried from older runs: stormvine's (its sprite).
   'seed.dreamweed': 'missile.shockingDart',
   'seed.earthroot': 'missile.paralyticDart',
 };

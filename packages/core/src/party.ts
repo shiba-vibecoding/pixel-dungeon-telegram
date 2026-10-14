@@ -26,6 +26,8 @@ const MOB_COUNT = 0.4;
 const RESPAWN = 0.4;
 /** ...and this many more things lying about. */
 const LOOT = 0.6;
+/** ...and this many more rooms on a depth. */
+const ROOMS = 0.25;
 
 /** A monster as sturdy as the party needs it. */
 export function scaleMob(world: World, mob: Mob): Mob {
@@ -64,6 +66,11 @@ export function mobCount(base: number, party: number): number {
 /** Turns between monsters coming back, for the party. */
 export function respawnTime(base: number, party: number): number {
   return Math.max(1, Math.round(base / (1 + RESPAWN * Math.max(0, party - 1))));
+}
+
+/** A depth's `base` standard rooms for one hero, and a quarter as many again for every other hero. */
+export function partyRooms(base: number, party: number): number {
+  return base + Math.round(base * ROOMS * Math.max(0, party - 1));
 }
 
 /** `base` random things to find for one hero, as many as the party needs. */

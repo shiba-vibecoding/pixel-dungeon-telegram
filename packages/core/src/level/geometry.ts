@@ -1,7 +1,7 @@
 /* Map dimensions, neighbourhoods and the integer rectangle used by rooms. */
 
-export const WIDTH = 48;
-export const HEIGHT = 48;
+export const WIDTH = 64;
+export const HEIGHT = 64;
 export const LENGTH = WIDTH * HEIGHT;
 /**
  * How many cells a side a level spreads over for one hero: the original's 32. The grid is

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, addHero, canEnter, charAt, createItem, createMob, createWorld, floorAt, heroById, levelAt, NEIGHBOURS8, RoomType, T,
-  type World,
+  type ItemKind, ItemGenerator, Rng, WIDTH, type World,
 } from '../src/index';
 import { pacify } from './helpers';
 
@@ -13,7 +13,7 @@ function solo(seed = 19): World {
 }
 
 /** Throws a seed onto the cell next to the hero, then steps onto the plant. */
-function plantAndStep(world: World, seed: 'seed.sungrass' | 'seed.earthroot' | 'seed.sorrowmoss' | 'seed.fadeleaf' | 'seed.icecap' | 'seed.dreamweed') {
+function plantAndStep(world: World, seed: ItemKind) {
   const hero = heroById(world, 'p')!;
   const level = levelAt(world, 1);
   const cell = NEIGHBOURS8.map((n) => hero.pos + n).find((c) => canEnter(level, c) && !charAt(world, 1, c))!;
@@ -74,17 +74,68 @@ describe('seeds and plants', () => {
     expect(heroById(world, 'p')!.dizzy).toBeGreaterThan(0);
   });
 
-  it('gardens grow sungrass', () => {
+  it('gardens grow sungrass now and then (GardenRoom: one time in three, or both bushes now and then)', () => {
     let gardens = 0;
-    for (let seed = 1; seed <= 60 && gardens < 3; seed++) {
+    let sungrass = 0;
+    for (let seed = 1; seed <= 80 && gardens < 12; seed++) {
       const world = createWorld(seed * 13);
       for (let depth = 1; depth <= 4; depth++) {
         const level = levelAt(world, depth);
-        if (!level.rooms.some((r) => r.type === RoomType.GARDEN)) continue;
+        const garden = level.rooms.find((r) => r.type === RoomType.GARDEN);
+        if (!garden) continue;
         gardens++;
-        expect(floorAt(world, depth).plants?.some((p) => p.kind === 'sungrass')).toBe(true);
+        const inside = (pos: number): boolean => pos % WIDTH > garden.left && pos % WIDTH < garden.right && Math.trunc(pos / WIDTH) > garden.top && Math.trunc(pos / WIDTH) < garden.bottom;
+        if (floorAt(world, depth).plants?.some((p) => p.kind === 'sungrass' && inside(p.pos))) sungrass++;
       }
     }
     expect(gardens).toBeGreaterThan(0);
+    expect(sungrass).toBeGreaterThan(0);
+  });
+});
+
+describe("Shattered's own plants", () => {
+  it("swiftthistle: a bubble of accelerated time, six actions that take none of the world's", () => {
+    const world = solo();
+    const hero = heroById(world, 'p')!;
+    plantAndStep(world, 'seed.swiftthistle');
+    expect(hero.timeBubble).toBeDefined();
+    const now = floorAt(world, 1).now;
+    const time = hero.time;
+    act(world, 'p', { type: 'wait' });
+    expect(hero.time).toBe(time);
+    expect(floorAt(world, 1).now).toBe(now);
+    for (let i = 0; i < 8; i++) act(world, 'p', { type: 'wait' });
+    expect(hero.timeBubble).toBeUndefined();
+    expect(hero.time).toBeGreaterThan(time);
+  });
+
+  it('blindweed blinds and cripples; mageroyal cleanses; starflower blesses; stormvine disorients', () => {
+    let world = solo();
+    let hero = heroById(world, 'p')!;
+    plantAndStep(world, 'seed.blindweed');
+    expect(hero.blind ?? 0).toBeGreaterThan(0);
+    expect(hero.crippled).toBeGreaterThan(0);
+    world = solo();
+    hero = heroById(world, 'p')!;
+    Object.assign(hero, { poison: 5, crippled: 5 });
+    plantAndStep(world, 'seed.mageroyal');
+    expect(hero.poison ?? 0).toBe(0);
+    expect(hero.crippled).toBe(0);
+    world = solo();
+    hero = heroById(world, 'p')!;
+    plantAndStep(world, 'seed.starflower');
+    expect(hero.blessed ?? 0).toBeGreaterThan(0);
+    world = solo();
+    hero = heroById(world, 'p')!;
+    plantAndStep(world, 'seed.stormvine');
+    expect(hero.dizzy).toBeGreaterThan(0);
+  });
+
+  it("the generator deals Shattered's seeds, and no dreamweed", () => {
+    const rng = Rng.seeded(5);
+    const seen = new Set<string>();
+    for (let i = 0; i < 400; i++) seen.add(new ItemGenerator(rng, 3).of('seed').kind);
+    for (const kind of ['seed.stormvine', 'seed.swiftthistle', 'seed.blindweed', 'seed.mageroyal', 'seed.starflower']) expect(seen).toContain(kind);
+    expect(seen.has('seed.dreamweed')).toBe(false);
   });
 });

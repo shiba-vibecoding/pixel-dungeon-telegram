@@ -1,7 +1,9 @@
 import { type Hero, heroBelongings, type MobKind } from './actors';
 import { heroView } from './floor';
-import { Feeling } from './level/builder';
-import { cellX, cellY } from './level/geometry';
+import { questCompleted, rewardsAvailable } from './blacksmith';
+import { lostPackOn } from './ankh';
+import { Feeling } from './level/gen/dungeon';
+import { cellX, cellY, WIDTH } from './level/geometry';
 import { RoomType } from './level/room';
 import { T } from './level/terrain';
 import type { World } from './world';
@@ -22,9 +24,9 @@ import type { World } from './world';
 
 /** Notes.Landmark, of what this dungeon has (and Pixel Dungeon's well of transmutation beside the other wells). */
 export const LANDMARKS = [
-  'chasmFloor', 'waterFloor', 'grassFloor',
+  'chasmFloor', 'waterFloor', 'grassFloor', 'darkFloor', 'largeFloor', 'trapsFloor', 'secretsFloor',
   'shop', 'alchemy', 'garden', 'wellOfHealth', 'wellOfAwareness', 'wellOfTransmutation', 'sacrificialFire', 'statue',
-  'beaconLocation',
+  'beaconLocation', 'demonSpawner', 'distantWell', 'lostPack',
   'ghost', 'ratKing', 'wandmaker', 'troll', 'imp',
 ] as const;
 export type Landmark = (typeof LANDMARKS)[number];
@@ -34,20 +36,30 @@ export interface Note {
   depth: number;
 }
 
-const FEELING_NOTES: Partial<Record<Feeling, Landmark>> = {
-  [Feeling.CHASM]: 'chasmFloor', [Feeling.WATER]: 'waterFloor', [Feeling.GRASS]: 'grassFloor',
-};
+/** Level.Feeling's landmarks (read at call time: dungeon.ts may not be loaded yet when this module is). */
+function feelingNote(feeling: Feeling): Landmark | undefined {
+  switch (feeling) {
+    case Feeling.CHASM: return 'chasmFloor';
+    case Feeling.WATER: return 'waterFloor';
+    case Feeling.GRASS: return 'grassFloor';
+    case Feeling.DARK: return 'darkFloor';
+    case Feeling.LARGE: return 'largeFloor';
+    case Feeling.TRAPS: return 'trapsFloor';
+    case Feeling.SECRETS: return 'secretsFloor';
+    default: return undefined;
+  }
+}
 
 const WELL_NOTES = { health: 'wellOfHealth', awareness: 'wellOfAwareness', transmutation: 'wellOfTransmutation' } as const;
 
 /** Mob.landmark: who is worth a note once seen. */
 const MOB_NOTES: Partial<Record<MobKind, Landmark>> = {
   shopkeeper: 'shop', impShopkeeper: 'shop', statue: 'statue', ghost: 'ghost', ratKing: 'ratKing', wandmaker: 'wandmaker',
-  blacksmith: 'troll', imp: 'imp',
+  blacksmith: 'troll', imp: 'imp', spawner: 'demonSpawner',
 };
 
 /** Notes.add: a note, once. */
-function add(world: World, landmark: Landmark, depth: number): void {
+export function addNote(world: World, landmark: Landmark, depth: number): void {
   const notes = (world.notes ??= []);
   if (!notes.some((note) => note.landmark === landmark && note.depth === depth)) notes.push({ landmark, depth });
 }
@@ -61,29 +73,38 @@ export function noteLandmarks(world: World, hero: Hero): void {
   const level = world.levels[depth];
   const floor = world.floors[depth];
   if (!level || !floor || world.arena) return;
-  const feeling = FEELING_NOTES[level.feeling];
-  if (feeling) add(world, feeling, depth);
+  const feeling = feelingNote(level.feeling);
+  if (feeling) addNote(world, feeling, depth);
   const fov = heroView(world, hero);
   for (const mob of floor.mobs) {
     const landmark = MOB_NOTES[mob.kind];
     // RatKing.landmark: only beside Goo's lair.
-    if (landmark && fov[mob.pos] && (mob.kind !== 'ratKing' || depth === 5)) add(world, landmark, depth);
+    if (landmark && fov[mob.pos] && (mob.kind !== 'ratKing' || depth === 5)) addNote(world, landmark, depth);
   }
-  for (const well of level.wells) if (fov[well.pos]) add(world, WELL_NOTES[well.water], depth);
-  if (floor.altar && floor.altar.volume > 0 && fov[floor.altar.pos]) add(world, 'sacrificialFire', depth);
-  if (level.map.some((terrain, cell) => terrain === T.ALCHEMY && fov[cell])) add(world, 'alchemy', depth);
+  for (const well of level.wells) if (fov[well.pos]) addNote(world, WELL_NOTES[well.water], depth);
+  // WeakFloorRoom.WellID: the well glimpsed below the weak floor.
+  for (const tile of level.customTiles ?? []) {
+    if (tile.kind === 'WeakFloorRoom.HiddenWell' && fov[tile.x + tile.y * WIDTH]) addNote(world, 'distantWell', depth);
+  }
+  if (floor.altar && floor.altar.volume > 0 && fov[floor.altar.pos]) addNote(world, 'sacrificialFire', depth);
+  if (level.map.some((terrain, cell) => terrain === T.ALCHEMY && fov[cell])) addNote(world, 'alchemy', depth);
   // Foliage, the garden's blob: a cell of the garden in sight.
   for (const room of level.rooms) {
     if (room.type !== RoomType.GARDEN) continue;
     if (fov.some((seen, cell) => seen && cellX(cell) > room.left && cellX(cell) < room.right && cellY(cell) > room.top && cellY(cell) < room.bottom)) {
-      add(world, 'garden', depth);
+      addNote(world, 'garden', depth);
     }
   }
   // BeaconOfReturning: where a hero's beacon is set (Lloyd's beacon, here).
   for (const other of world.heroes) {
-    for (const item of heroBelongings(other)) if (item.kind === 'artifact.beacon' && item.returnTo) add(world, 'beaconLocation', item.returnTo.depth);
+    for (const item of heroBelongings(other)) if (item.kind === 'artifact.beacon' && item.returnTo) addNote(world, 'beaconLocation', item.returnTo.depth);
   }
   prune(world);
+}
+
+/** Notes.remove(landmark, depth). */
+export function removeNote(world: World, landmark: Landmark, depth: number): void {
+  if (world.notes) world.notes = world.notes.filter((note) => note.landmark !== landmark || note.depth !== depth);
 }
 
 /** Notes.remove, for whatever is no use any more. */
@@ -105,12 +126,17 @@ function stillUseful(world: World, { landmark, depth }: Note): boolean {
     case 'sacrificialFire': return (floor?.altar?.volume ?? 0) > 0;
     // Statue.die; Shopkeeper.flee.
     case 'statue': return has('statue');
+    // DemonSpawner.die.
+    case 'demonSpawner': return has('spawner');
+    // LostBackpack.doPickUp.
+    case 'lostPack': return lostPackOn(world, depth);
     case 'shop': return has('shopkeeper') || has('impShopkeeper');
     // Ghost.Quest.complete, Wandmaker's and the Imp's quests done, the Blacksmith's rewards all given.
     case 'ghost': return !world.quest?.done;
-    case 'wandmaker': return !world.wandQuest?.done;
+    case 'wandmaker': return !(world.wandQuest?.spawned && !world.wandQuest.wand1);
     case 'imp': return !world.impQuest?.done;
-    case 'troll': return !world.smithQuest?.done;
+    // Blacksmith.landmark: until the errand is over and nothing is left to have of him.
+    case 'troll': return !world.smithQuest || !questCompleted(world.smithQuest) || rewardsAvailable(world.smithQuest);
     case 'beaconLocation':
       return world.heroes.some((hero) => heroBelongings(hero).some((item) => item.kind === 'artifact.beacon' && item.returnTo?.depth === depth));
     default:

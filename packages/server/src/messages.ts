@@ -48,15 +48,18 @@ export function sanitizeAction(raw: unknown): Action | null {
   switch (a.type) {
     case 'descend':
     case 'ascend':
+    case 'branch':
     case 'wait':
     case 'search':
-    case 'impReward':
-    case 'faceCurse':
     case 'endGame':
     case 'pickup':
     case 'buy':
-    case 'mine':
       return { type: a.type };
+    case 'mine': {
+      // HeroAction.Mine: the wall, vein, crystal or boulder beside the hero on the blacksmith's mine.
+      const at = cell(a.cell);
+      return at === null ? null : { type: 'mine', cell: at };
+    }
     case 'arenaReady':
       // «To battle!», or, pressed again, not after all.
       return a.cancel === true ? { type: 'arenaReady', cancel: true } : { type: 'arenaReady' };
@@ -78,14 +81,54 @@ export function sanitizeAction(raw: unknown): Action | null {
       const choice = oneOf(a.choice, ['weapon', 'armor'] as const);
       return choice ? { type: 'reward', choice } : null;
     }
-    case 'wandReward': {
-      const choice = oneOf(a.choice, ['battle', 'utility'] as const);
-      return choice ? { type: 'wandReward', choice } : null;
+    case 'wandReward':
+      // WndWandmaker: the first of his two wands, or the second.
+      return a.choice === 1 || a.choice === 2 ? { type: 'wandReward', choice: a.choice } : null;
+    case 'vault': {
+      // The vault: the strange mirror's item, the token door, the vault beacon, the escape crystal (one thing kept).
+      const op = oneOf(a.op, ['mirror', 'door', 'beacon', 'escape'] as const);
+      if (op === 'mirror' || op === 'door') return { type: 'vault', op };
+      if (op === 'beacon') {
+        const item = slot(a.item);
+        return item === null ? null : { type: 'vault', op, item };
+      }
+      if (op === 'escape') {
+        if (a.keep === undefined) return { type: 'vault', op };
+        const keep = itemRef(a.keep);
+        return keep === null ? null : { type: 'vault', op, keep };
+      }
+      return null;
     }
-    case 'reforge': {
-      const first = itemRef(a.first);
-      const second = itemRef(a.second);
-      return first === null || second === null ? null : { type: 'reforge', first, second };
+    // Ankh.AC_BLESS; WndResurrect's two choices (indices into the hero's belongings and lost backpack).
+    case 'ankhBless': {
+      const item = slot(a.item);
+      return item === null ? null : { type: 'ankhBless', item };
+    }
+    case 'ankhKeep': {
+      if (!Array.isArray(a.keep) || a.keep.length > 2 || !a.keep.every((k) => isInt(k, 0, 200))) return null;
+      return { type: 'ankhKeep', keep: [...a.keep] as number[] };
+    }
+    case 'skeletonKey': {
+      // SkeletonKey.AC_INSERT at a cell.
+      const item = slot(a.item);
+      const target = cell(a.target);
+      return item === null || target === null ? null : { type: 'skeletonKey', item, target };
+    }
+    case 'blacksmith': {
+      // WndBlacksmith: a service, with the items it is done on (reforge: two; harden, upgrade: one), or WndSmith's choice.
+      const service = oneOf(a.service, ['pickaxe', 'reforge', 'harden', 'upgrade', 'smith', 'pick', 'cashout'] as const);
+      if (!service) return null;
+      if (service === 'reforge') {
+        const first = itemRef(a.first);
+        const second = itemRef(a.second);
+        return first === null || second === null ? null : { type: 'blacksmith', service, first, second };
+      }
+      if (service === 'harden' || service === 'upgrade') {
+        const item = itemRef(a.item);
+        return item === null ? null : { type: 'blacksmith', service, item };
+      }
+      if (service === 'pick') return isInt(a.choice, 0, 3) ? { type: 'blacksmith', service, choice: a.choice } : null;
+      return { type: 'blacksmith', service };
     }
     case 'artifact': {
       // An artifact's action (the core's ArtifactAction): which artifact, which use, and what it is aimed at or takes.

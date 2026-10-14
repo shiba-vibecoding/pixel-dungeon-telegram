@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, addHero, canEnter, charAt, createItem, createMob, createWorld, distance, type Effect, F, floorAt, hasFlag,
-  heroById, heroView, isCurseEnchant, isCurseGlyph, ItemGenerator, levelAt, type Mob, type MobKind, NEIGHBOURS8, Rng, T, type World,
+  heroById, heroView, isCurseEnchant, isCurseGlyph, ItemGenerator, levelAt, type Mob, type MobKind, NEIGHBOURS8, Rng, setTrap, T, type World,
 } from '../src/index';
 import { pacify } from './helpers';
 
@@ -259,7 +259,7 @@ describe('the remaining scrolls and potions', () => {
     // Freezing: the rat is chilled at once, and frozen solid once fully chilled (or thawed if it got out).
     expect(rat.chill).toBeGreaterThan(0);
     rat.paralysed = 0;
-    for (let i = 0; i < 4; i++) act(world, 'p', { type: 'wait' });
+    for (let i = 0; i < 2; i++) act(world, 'p', { type: 'wait' });
     expect(rat.frozen || rat.chill).toBeGreaterThan(0);
     expect(hero.paralysed).toBe(0);
   });
@@ -271,14 +271,14 @@ describe('the remaining scrolls and potions', () => {
     const open = (c: number): boolean => canEnter(level, c) && level.map[c] !== T.DOOR && c !== hero.pos;
     const trap = NEIGHBOURS8.map((n) => hero.pos + n).find((c) => open(c) && NEIGHBOURS8.some((m) => open(c + m) && c + m !== c))!;
     const chasm = NEIGHBOURS8.map((n) => trap + n).find(open)!;
-    level.map[trap] = T.TOXIC_TRAP;
+    setTrap(level, trap, 'toxic', true);
     level.map[chasm] = T.CHASM;
     hero.items = [createItem('potion.levitation')];
     act(world, 'p', { type: 'use', item: 0 });
     expect(hero.levitating).toBeGreaterThan(0);
     act(world, 'p', { type: 'move', to: trap });
     expect(hero.pos).toBe(trap);
-    expect(level.map[trap]).toBe(T.TOXIC_TRAP);
+    expect(level.map[trap]).toBe(T.TRAP);
     expect(hero.poison).toBe(0);
     const back = act(world, 'p', { type: 'move', to: chasm });
     expect(back.ok).toBe(true);

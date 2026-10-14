@@ -81,7 +81,7 @@ export function hitSound(
 
 /* Where things land and step */
 
-const isWaterTerrain = (terrain: number): boolean => terrain >= T.WATER_TILES && terrain <= T.WATER;
+const isWaterTerrain = (terrain: number): boolean => terrain === T.WATER;
 /** Shattered's furrowed grass, if the levels stream brings it. */
 const FURROWED = (T as Readonly<Record<string, number>>).FURROWED_GRASS ?? -1;
 const isGrass = (terrain: number): boolean => terrain === T.GRASS || terrain === T.EMBERS || terrain === FURROWED;
@@ -127,7 +127,7 @@ export function woundSound(before: number, after: number, ht: number): { sound: 
  * Trap.trigger plays TRAP where it is seen, then the trap's own activate: the gas traps' GAS, the burning
  * one's BURNING, the shocking one's LIGHTNING, the alarm's ALERT (heard everywhere).
  */
-export const TRAP_SOUNDS: Readonly<Record<TrapKind, Sample | null>> = {
+export const TRAP_SOUNDS: Readonly<Partial<Record<TrapKind | 'paralytic' | 'fire' | 'lightning' | 'poison' | 'gripping', Sample | null>>> = {
   toxic: 'gas', paralytic: 'gas', fire: 'burning', lightning: 'lightning', alarm: 'alert', poison: null, gripping: null, summoning: null,
 };
 

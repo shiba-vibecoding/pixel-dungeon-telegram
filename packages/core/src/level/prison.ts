@@ -1,4 +1,5 @@
-import { Feeling, type LevelBuilder } from './builder';
+import type { LevelBuilder } from './builder';
+import { Feeling } from './gen/dungeon';
 import { LENGTH, WIDTH } from './geometry';
 import type { RegionStyle } from './regular';
 import { RoomType } from './room';
@@ -48,7 +49,7 @@ export function decoratePrison(level: LevelBuilder, stains: number, topTorches: 
   for (let attempt = 0; attempt < 100; attempt++) {
     const pos = roomEntrance.random(rng);
     if (pos !== level.entrance) {
-      map[pos] = T.SIGN;
+      map[pos] = T.EMPTY;
       return;
     }
   }

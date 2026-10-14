@@ -1,6 +1,8 @@
 /*
- * Terrain ids and their physical properties. Ids match the original game's
- * tile atlas (tiles0..4.png), so the original art can be reused unchanged.
+ * Terrain ids and their physical properties, as Shattered Pixel Dungeon has them (levels/Terrain.java).
+ * Water and chasms are single ids: how they meet their neighbours is for the client to draw
+ * (DungeonTileSheet's stitching), not part of the map. Traps are not terrain kinds either: a
+ * cell is TRAP, SECRET_TRAP or INACTIVE_TRAP, and the level's trap list says which trap lies there.
  */
 
 export const T = {
@@ -12,49 +14,53 @@ export const T = {
   DOOR: 5,
   OPEN_DOOR: 6,
   ENTRANCE: 7,
+  /** An entrance drawn on special floor (the vault's, the mine's way back). */
+  ENTRANCE_SP: 37,
   EXIT: 8,
   EMBERS: 9,
   LOCKED_DOOR: 10,
+  /** A door the skeleton key locked (Terrain.HERO_LKD_DR). */
+  HERO_LKD_DR: 38,
+  CRYSTAL_DOOR: 31,
   PEDESTAL: 11,
   WALL_DECO: 12,
   BARRICADE: 13,
   EMPTY_SP: 14,
   HIGH_GRASS: 15,
+  /** Tall grass that has been passed through: it still stands, but sheds nothing more. */
+  FURROWED_GRASS: 30,
+
   SECRET_DOOR: 16,
-  TOXIC_TRAP: 17,
-  SECRET_TOXIC_TRAP: 18,
-  FIRE_TRAP: 19,
-  SECRET_FIRE_TRAP: 20,
-  PARALYTIC_TRAP: 21,
-  SECRET_PARALYTIC_TRAP: 22,
-  INACTIVE_TRAP: 23,
-  EMPTY_DECO: 24,
-  LOCKED_EXIT: 25,
-  UNLOCKED_EXIT: 26,
-  POISON_TRAP: 27,
-  SECRET_POISON_TRAP: 28,
-  SIGN: 29,
-  ALARM_TRAP: 30,
-  SECRET_ALARM_TRAP: 31,
-  LIGHTNING_TRAP: 32,
-  SECRET_LIGHTNING_TRAP: 33,
-  WELL: 34,
-  STATUE: 35,
-  STATUE_SP: 36,
-  GRIPPING_TRAP: 37,
-  SECRET_GRIPPING_TRAP: 38,
-  SUMMONING_TRAP: 39,
-  SECRET_SUMMONING_TRAP: 40,
-  BOOKSHELF: 41,
-  ALCHEMY: 42,
-  CHASM_FLOOR: 43,
-  CHASM_FLOOR_SP: 44,
-  CHASM_WALL: 45,
-  CHASM_WATER: 46,
-  /** 16 stitched variants, WATER_TILES + (bitmask of unstitchable sides). */
-  WATER_TILES: 48,
-  WATER: 63,
+  SECRET_TRAP: 17,
+  TRAP: 18,
+  INACTIVE_TRAP: 19,
+
+  EMPTY_DECO: 20,
+  LOCKED_EXIT: 21,
+  UNLOCKED_EXIT: 22,
+  WELL: 24,
+  BOOKSHELF: 27,
+  ALCHEMY: 28,
+
+  /** Regular empty floor that is never painted over, for custom visuals. */
+  CUSTOM_DECO_EMPTY: 32,
+  /** A solid decoration drawn by a custom tilemap (it reuses the old id of signs). */
+  CUSTOM_DECO: 23,
+  /** A solid decoration that water shows through. */
+  CUSTOM_DECO_WTR: 39,
+  STATUE: 25,
+  STATUE_SP: 26,
+  /** Each region's own decoration (barrels, braziers, crystals, carts, skulls): solid. */
+  REGION_DECO: 33,
+  REGION_DECO_ALT: 34,
+  /** The blacksmith's mine: crystals and boulders, broken with the pickaxe. */
+  MINE_CRYSTAL: 35,
+  MINE_BOULDER: 36,
+
+  WATER: 29,
 } as const;
+
+export type Terrain = (typeof T)[keyof typeof T];
 
 export const F = {
   PASSABLE: 0x01,
@@ -65,62 +71,54 @@ export const F = {
   AVOID: 0x20,
   LIQUID: 0x40,
   PIT: 0x80,
-  UNSTITCHABLE: 0x100,
 } as const;
 
 export const terrainFlags: readonly number[] = (() => {
   const f = new Array<number>(256).fill(0);
-  f[T.CHASM] = F.AVOID | F.PIT | F.UNSTITCHABLE;
+  f[T.CHASM] = F.AVOID | F.PIT;
   f[T.EMPTY] = F.PASSABLE;
   f[T.GRASS] = F.PASSABLE | F.FLAMABLE;
   f[T.EMPTY_WELL] = F.PASSABLE;
-  f[T.WATER] = F.PASSABLE | F.LIQUID | F.UNSTITCHABLE;
-  f[T.WALL] = F.LOS_BLOCKING | F.SOLID | F.UNSTITCHABLE;
-  f[T.DOOR] = F.PASSABLE | F.LOS_BLOCKING | F.FLAMABLE | F.SOLID | F.UNSTITCHABLE;
-  f[T.OPEN_DOOR] = F.PASSABLE | F.FLAMABLE | F.UNSTITCHABLE;
+  f[T.WATER] = F.PASSABLE | F.LIQUID;
+  f[T.WALL] = F.LOS_BLOCKING | F.SOLID;
+  f[T.DOOR] = F.PASSABLE | F.LOS_BLOCKING | F.FLAMABLE | F.SOLID;
+  f[T.OPEN_DOOR] = F.PASSABLE | F.FLAMABLE;
   f[T.ENTRANCE] = F.PASSABLE;
+  f[T.ENTRANCE_SP] = f[T.ENTRANCE]!;
   f[T.EXIT] = F.PASSABLE;
   f[T.EMBERS] = F.PASSABLE;
-  f[T.LOCKED_DOOR] = F.LOS_BLOCKING | F.SOLID | F.UNSTITCHABLE;
-  f[T.PEDESTAL] = F.PASSABLE | F.UNSTITCHABLE;
+  f[T.LOCKED_DOOR] = F.LOS_BLOCKING | F.SOLID;
+  f[T.HERO_LKD_DR] = f[T.LOCKED_DOOR]!;
+  f[T.CRYSTAL_DOOR] = F.SOLID;
+  f[T.PEDESTAL] = F.PASSABLE;
   f[T.WALL_DECO] = f[T.WALL]!;
   f[T.BARRICADE] = F.FLAMABLE | F.SOLID | F.LOS_BLOCKING;
-  f[T.EMPTY_SP] = f[T.EMPTY]! | F.UNSTITCHABLE;
+  f[T.EMPTY_SP] = f[T.EMPTY]!;
   f[T.HIGH_GRASS] = F.PASSABLE | F.LOS_BLOCKING | F.FLAMABLE;
+  f[T.FURROWED_GRASS] = f[T.HIGH_GRASS]!;
+
+  f[T.SECRET_DOOR] = f[T.WALL]! | F.SECRET;
+  f[T.SECRET_TRAP] = f[T.EMPTY]! | F.SECRET;
+  f[T.TRAP] = F.AVOID;
+  f[T.INACTIVE_TRAP] = f[T.EMPTY]!;
+
   f[T.EMPTY_DECO] = f[T.EMPTY]!;
   f[T.LOCKED_EXIT] = F.SOLID;
   f[T.UNLOCKED_EXIT] = F.PASSABLE;
-  f[T.SIGN] = F.PASSABLE | F.FLAMABLE;
   f[T.WELL] = F.AVOID;
+  f[T.BOOKSHELF] = f[T.BARRICADE]!;
+  f[T.ALCHEMY] = F.SOLID;
+
+  f[T.CUSTOM_DECO_EMPTY] = f[T.EMPTY]!;
+  f[T.CUSTOM_DECO] = F.SOLID;
+  f[T.CUSTOM_DECO_WTR] = F.SOLID;
   f[T.STATUE] = F.SOLID;
-  f[T.STATUE_SP] = f[T.STATUE]! | F.UNSTITCHABLE;
-  f[T.BOOKSHELF] = f[T.BARRICADE]! | F.UNSTITCHABLE;
-  f[T.ALCHEMY] = F.PASSABLE;
+  f[T.STATUE_SP] = f[T.STATUE]!;
 
-  f[T.CHASM_WALL] = f[T.CHASM]!;
-  f[T.CHASM_FLOOR] = f[T.CHASM]!;
-  f[T.CHASM_FLOOR_SP] = f[T.CHASM]!;
-  f[T.CHASM_WATER] = f[T.CHASM]!;
-
-  f[T.SECRET_DOOR] = f[T.WALL]! | F.SECRET | F.UNSTITCHABLE;
-  for (const [visible, hidden] of [
-    [T.TOXIC_TRAP, T.SECRET_TOXIC_TRAP],
-    [T.FIRE_TRAP, T.SECRET_FIRE_TRAP],
-    [T.PARALYTIC_TRAP, T.SECRET_PARALYTIC_TRAP],
-    [T.POISON_TRAP, T.SECRET_POISON_TRAP],
-    [T.ALARM_TRAP, T.SECRET_ALARM_TRAP],
-    [T.LIGHTNING_TRAP, T.SECRET_LIGHTNING_TRAP],
-    [T.GRIPPING_TRAP, T.SECRET_GRIPPING_TRAP],
-    [T.SUMMONING_TRAP, T.SECRET_SUMMONING_TRAP],
-  ] as const) {
-    f[visible] = F.AVOID;
-    f[hidden] = f[T.EMPTY]! | F.SECRET;
-  }
-  f[T.INACTIVE_TRAP] = f[T.EMPTY]!;
-
-  for (let i = T.WATER_TILES; i < T.WATER_TILES + 16; i++) {
-    f[i] = f[T.WATER]!;
-  }
+  f[T.REGION_DECO] = f[T.STATUE]!;
+  f[T.REGION_DECO_ALT] = f[T.STATUE_SP]!;
+  f[T.MINE_CRYSTAL] = F.SOLID;
+  f[T.MINE_BOULDER] = F.SOLID;
   return f;
 })();
 
@@ -128,28 +126,17 @@ export function hasFlag(terrain: number, flag: number): boolean {
   return (terrainFlags[terrain]! & flag) !== 0;
 }
 
-/** The visible form of a secret door or trap once it has been found. */
+/** Terrain.discover: the visible form of a secret door or trap once it has been found. */
 export function discover(terrain: number): number {
   switch (terrain) {
     case T.SECRET_DOOR:
       return T.DOOR;
-    case T.SECRET_FIRE_TRAP:
-      return T.FIRE_TRAP;
-    case T.SECRET_PARALYTIC_TRAP:
-      return T.PARALYTIC_TRAP;
-    case T.SECRET_TOXIC_TRAP:
-      return T.TOXIC_TRAP;
-    case T.SECRET_POISON_TRAP:
-      return T.POISON_TRAP;
-    case T.SECRET_ALARM_TRAP:
-      return T.ALARM_TRAP;
-    case T.SECRET_LIGHTNING_TRAP:
-      return T.LIGHTNING_TRAP;
-    case T.SECRET_GRIPPING_TRAP:
-      return T.GRIPPING_TRAP;
-    case T.SECRET_SUMMONING_TRAP:
-      return T.SUMMONING_TRAP;
+    case T.SECRET_TRAP:
+      return T.TRAP;
     default:
       return terrain;
   }
 }
+
+/** Terrain.TRAP, SECRET_TRAP or INACTIVE_TRAP: a cell the level's trap list has a trap for. */
+export const isTrapCell = (terrain: number): boolean => terrain === T.TRAP || terrain === T.SECRET_TRAP || terrain === T.INACTIVE_TRAP;

@@ -38,16 +38,16 @@ function standByChasm(world: World, depth: number, where: (level: Level, pos: nu
 }
 
 describe('chasms', () => {
-  it('a weak floor has a locked pit room beneath it, with remains and their key', () => {
+  it('a weak floor has a pit room beneath it behind a crystal door, with remains and its key', () => {
     const { world, depth } = weakFloorRun();
     const below = levelAt(world, depth + 1);
     const pit = below.rooms.find((room) => room.type === RoomType.PIT)!;
     expect(pit).toBeDefined();
-    const doors = below.map.flatMap((t, pos) => (t === T.LOCKED_DOOR ? [pos] : []));
+    const doors = below.map.flatMap((t, pos) => (t === T.CRYSTAL_DOOR ? [pos] : []));
     expect(doors.some((pos) => cellX(pos) >= pit.left && cellX(pos) <= pit.right && cellY(pos) >= pit.top && cellY(pos) <= pit.bottom))
       .toBe(true);
     const remains = floorAt(world, depth + 1).heaps.find((heap) => heap.kind === 'skeleton' && inside(pit, heap.pos))!;
-    expect(remains.items.some((item) => item.kind === 'key.iron' && item.depth === depth + 1)).toBe(true);
+    expect(remains.items.some((item) => item.kind === 'key.crystal' && item.depth === depth + 1)).toBe(true);
     expect(remains.items.length).toBeGreaterThanOrEqual(3);
   });
 

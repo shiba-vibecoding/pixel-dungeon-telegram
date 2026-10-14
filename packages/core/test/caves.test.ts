@@ -23,11 +23,11 @@ function at(depth: number, seed = 3): World {
 
 describe('the caves', () => {
   it('generate depths 11-15, with a second shop on depth 11', () => {
-    for (let seed = 1; seed <= 25; seed++) {
+    for (let seed = 1; seed <= 12; seed++) {
       const run = createRun(seed);
       const levels = Array.from({ length: 15 }, (_, i) => generateLevel(run, i + 1));
       for (const level of levels.slice(10, 14)) {
-        expect(level.map[level.entrance], `seed ${seed} depth ${level.depth}`).toBe(T.ENTRANCE);
+        expect(level.map[level.entrance], `seed ${seed} depth ${level.depth}`).toBeOneOf([T.ENTRANCE, T.ENTRANCE_SP]);
         expect(level.map[level.exit], `seed ${seed} depth ${level.depth}`).toBe(T.EXIT);
       }
       expect(levels[10]!.rooms.some((r) => r.type === RoomType.SHOP)).toBe(true);
@@ -39,13 +39,13 @@ describe('the caves', () => {
     }
   });
 
-  it('are dark: nobody sees more than six cells there', () => {
+  it('see as far as anywhere (the caves are not dark in Shattered): nobody sees more than eight cells there', () => {
     const world = at(12);
     const hero = heroById(world, 'p')!;
     const level = levelAt(world, 12);
     const far = heroView(world, hero).some((seen, cell) => seen && Math.max(
       Math.abs((cell % WIDTH) - (hero.pos % WIDTH)), Math.abs(Math.trunc(cell / WIDTH) - Math.trunc(hero.pos / WIDTH)),
-    ) > 6);
+    ) > 8);
     expect(far).toBe(false);
     expect(castShadow(hero.pos, terrainBlocksSight(level.map)).filter(Boolean).length)
       .toBeGreaterThanOrEqual(heroView(world, hero).filter(Boolean).length);

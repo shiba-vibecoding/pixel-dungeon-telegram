@@ -19,11 +19,12 @@ import type { World } from './world';
 import { exoticChanceMultiplier } from './spawner';
 import { distanceMap, getStep, pathLength, reached } from './pathfinder';
 import { hasProp } from './props';
+import { scoreGhostHit } from './score';
 import { teleportChar } from './cursed';
 import { randomArmor, randomWeapon } from './gear';
 import { weaponRch } from './weapons';
 import { shieldUp } from './status';
-import { burst } from './traps';
+import { burst, mobPress } from './traps';
 import { looseItems } from './bags';
 import { isBossDepth } from './level/builder';
 import { adjacent, cellX, cellY, distance, LENGTH, trueDistance, NEIGHBOURS4, NEIGHBOURS8, WIDTH } from './level/geometry';
@@ -344,10 +345,16 @@ export function mobAttackProc(ctx: Ctx, mob: Mob, enemy: Char, damage: number): 
       if (ctx.rng.int(2) === 0) oozeOn(ctx, enemy);
       break;
     case 'fetidRat':
-      if (ctx.rng.int(3) === 0) oozeOn(ctx, enemy);
+      if (ctx.rng.int(3) === 0) {
+        oozeOn(ctx, enemy);
+        // The score's loss is on the hit, tied to the ooze (none in water, where it washes off).
+        if (isHero(enemy) && !isWater(ctx.level.map[enemy.pos]!)) scoreGhostHit(ctx.world, 50);
+      }
       break;
     case 'gnollTrickster': {
-      // GnollTrickster.attackProc: the more it is let hit, the worse its darts — poison, then fire.
+      // GnollTrickster.attackProc: the more it is let hit, the worse its darts — poison, then fire; each hit after the
+      // first costs the ghost's quest fifty points.
+      if ((mob.combo ?? 0) >= 1) scoreGhostHit(ctx.world, 50);
       mob.combo = (mob.combo ?? 0) + 1;
       const effect = ctx.rng.int(4) + mob.combo;
       if (effect > 2) {
@@ -489,6 +496,7 @@ export function mobDamage(ctx: Ctx, mob: Mob, damage: number, source: Char | str
         const enemy = mob.enemy ? findChar(ctx, mob.enemy) : undefined;
         if (enemy && isHero(enemy) && enemy.invisible <= 0) {
           ctx.effects.push({ type: 'mobSays', depth: ctx.depth, mob: mob.id, line: 'blocked' });
+          scoreGhostHit(ctx.world, 50);
           return 0;
         }
       }
@@ -1318,8 +1326,9 @@ function ripperHunt(ctx: Ctx, mob: Mob, enemy: Char | undefined, enemyInFov: boo
     }
     mob.pos = end;
     leaveCell(ctx.world, ctx.level, ctx.depth, from);
-    enterCell(ctx.level, end);
     mob.leapPos = -1;
+    // Level.occupyCell: a bounce may land it over a chasm (it falls), on a trap or in tall grass.
+    mobPress(ctx, mob);
     return true;
   }
   if (!enemy || !enemyInFov) return false;

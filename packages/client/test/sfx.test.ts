@@ -47,7 +47,7 @@ describe("Shattered's sounds (Assets.Sounds)", () => {
     expect(stepSound(T.GRASS, true, at(0)).sound).toBe('trample');
     expect(stepSound(T.EMBERS, false, at(0)).sound).toBe('grass');
     expect(stepSound(T.EMPTY, false, at(1))).toEqual({ sound: 'step', rate: 1.05 });
-    expect(dropSound(T.WATER_TILES + 3, at(1))).toEqual({ sound: 'water', rate: 1.45 });
+    expect(dropSound(T.WATER, at(1))).toEqual({ sound: 'water', rate: 1.45 });
     expect(dropSound(T.HIGH_GRASS, at(0))).toEqual({ sound: 'step', rate: 1.16 });
     expect(dropSound(T.GRASS, at(0)).sound).toBe('grass');
   });

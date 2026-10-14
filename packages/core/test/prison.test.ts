@@ -148,76 +148,7 @@ describe('the prison', () => {
   });
 });
 
-describe('the old wandmaker', () => {
-  it('waits by the entrance of one of depths 7-9 and trades a wand for what he is after', () => {
-    let met = 0;
-    let fish = 0;
-    for (let seed = 1; seed <= 20; seed++) {
-      const world = createWorld(seed);
-      for (let d = 1; d <= 9; d++) levelAt(world, d);
-      const quest = world.wandQuest;
-      if (!quest) continue;
-      met++;
-      expect(quest.depth).toBeGreaterThanOrEqual(7);
-      expect(quest.battle.kind.startsWith('wand.')).toBe(true);
-      expect(quest.battle.level).toBeGreaterThanOrEqual(1);
-      const floor = floorAt(world, quest.depth);
-      const wandmaker = floor.mobs.find((m) => m.kind === 'wandmaker')!;
-      floor.mobs = [wandmaker];
-      addHero(world, { id: 'p', name: 'P', heroClass: 'rogue' });
-      const hero = heroById(world, 'p')!;
-      const level = levelAt(world, quest.depth);
-      hero.depth = quest.depth;
-      hero.time = floor.now;
-      hero.pos = NEIGHBOURS8.map((n) => wandmaker.pos + n).find((c) => canEnter(level, c) && !charAt(world, quest.depth, c))!;
-
-      Object.assign(hero, { hp: 500, ht: 500 });
-      const intro = act(world, 'p', { type: 'attack', target: wandmaker.id });
-      expect(intro.ok && intro.effects).toEqual([{ type: 'wandmaker', hero: 'p', line: 'intro' }]);
-      expect(act(world, 'p', { type: 'wandReward', choice: 'battle' })).toEqual({ ok: false, reason: 'nothing to give' });
-      const back = hero.pos;
-      if (quest.wants === 'berry') {
-        // The rotberry: step on the shrub, and take its seed (the walk itself is not the point here).
-        const shrub = floor.plants!.find((p) => p.kind === 'rotberry')!;
-        hero.pos = NEIGHBOURS8.map((n) => shrub.pos + n).find((c) => canEnter(level, c) && !charAt(world, quest.depth, c))!;
-        expect(act(world, 'p', { type: 'move', to: shrub.pos }).ok).toBe(true);
-        expect(act(world, 'p', { type: 'pickup' }).ok).toBe(true);
-        expect(hero.items.some((i) => i.kind === 'seed.rotberry')).toBe(true);
-      } else if (quest.wants === 'fish') {
-        // The phantom fish hides in the water: only a search right beside it turns it up.
-        fish++;
-        const pond = floor.heaps.find((h) => h.items.some((i) => i.kind === 'quest.fish'))!;
-        if (pond.kind === 'hidden') {
-          hero.pos = pond.pos;
-          expect(act(world, 'p', { type: 'pickup' })).toEqual({ ok: false, reason: 'nothing here' });
-          hero.pos = NEIGHBOURS8.map((n) => pond.pos + n).find((c) => canEnter(level, c) && !charAt(world, quest.depth, c))!;
-          act(world, 'p', { type: 'search' });
-          expect(pond.kind).toBe('heap');
-        }
-        hero.pos = pond.pos;
-        expect(act(world, 'p', { type: 'pickup' }).ok).toBe(true);
-      } else {
-        // Fetch the dust (the walk itself is not the point here).
-        const pile = floor.heaps.find((h) => h.items.some((i) => i.kind === 'quest.dust'));
-        expect(pile?.kind).toBe('skeleton');
-        hero.pos = pile!.pos;
-        expect(act(world, 'p', { type: 'pickup' }).ok).toBe(true);
-      }
-      hero.pos = back;
-      const reward = act(world, 'p', { type: 'attack', target: wandmaker.id });
-      expect(reward.ok && reward.effects).toEqual([{ type: 'wandmaker', hero: 'p', line: 'reward' }]);
-      const wand = act(world, 'p', { type: 'wandReward', choice: 'battle' });
-      expect(wand.ok && wand.effects.at(-1)).toEqual({ type: 'wandmaker', hero: 'p', line: 'farewell' });
-      expect(hero.items.some((i) => i.kind === quest.battle.kind)).toBe(true);
-      expect(hero.items.some((i) => i.kind === 'quest.dust')).toBe(false);
-      // WndWandmaker: the wand given is known through and through.
-      expect(isIdentified(world, hero.items.find((i) => i.kind === quest.battle.kind)!)).toBe(true);
-      expect(floor.mobs.some((m) => m.kind === 'wandmaker')).toBe(false);
-    }
-    expect(met).toBeGreaterThan(15);
-    expect(fish).toBeGreaterThan(0);
-  });
-});
+// The old wandmaker is Shattered's now: see wandmaker.test.ts.
 
 describe('the shop on depth 6', () => {
   function shopWorld(seed: number): { world: World; keeper: Mob } {
@@ -235,13 +166,10 @@ describe('the shop on depth 6', () => {
       const world = createWorld(seed);
       for (let d = 1; d <= 6; d++) levelAt(world, d);
       const wares = floorAt(world, 6).heaps.filter((h) => h.kind === 'forSale');
-      // ShopRoom.generateItems: a weapon, a thrown set, leather armour, tipped darts, a stone of augmentation, a bag and
-      // the rest (as many as the room holds).
+      // ShopRoom.generateItems: the region's gear, potions and scrolls, food, bombs, a bag, an ankh, a
+      // stone of augmentation, now and then more.
       expect(wares.length, `seed ${seed}`).toBeGreaterThanOrEqual(15);
-      for (const kind of ['armor.leather', 'stone.augmentation'] as const) expect(wares.some((h) => h.items[0]!.kind === kind), `${kind} ${seed}`).toBe(true);
-      expect(wares.some((h) => itemDef(h.items[0]!.kind).category === 'weapon' && itemDef(h.items[0]!.kind).tier === 2), `seed ${seed}`).toBe(true);
-      expect(wares.some((h) => itemDef(h.items[0]!.kind).category === 'missile' && h.items[0]!.qty === 3), `seed ${seed}`).toBe(true);
-      expect(wares.some((h) => h.items[0]!.kind === 'bag.seeds'), `seed ${seed}`).toBe(true);
+      expect(wares.some((h) => h.items[0]!.kind.startsWith('bag.')), `seed ${seed}`).toBe(true);
       expect(wares.some((h) => h.items[0]!.kind === 'stone.augmentation'), `seed ${seed}`).toBe(true);
       expect(wares.some((h) => h.items[0]!.kind === 'ankh'), `seed ${seed}`).toBe(true);
       expect(floorAt(world, 6).mobs.filter((m) => m.kind === 'shopkeeper'), `seed ${seed}`).toHaveLength(1);

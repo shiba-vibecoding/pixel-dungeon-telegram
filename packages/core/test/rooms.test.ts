@@ -10,7 +10,7 @@ function reachable(world: World, depth: number): Set<number> {
   const open = (c: number): boolean =>
     hasFlag(level.map[c]!, F.PASSABLE) || hasFlag(level.map[c]!, F.AVOID) ||
     level.map[c] === T.SECRET_DOOR || level.map[c] === T.LOCKED_DOOR || level.map[c] === T.BARRICADE ||
-    level.map[c] === T.BOOKSHELF;
+    level.map[c] === T.BOOKSHELF || level.map[c] === T.CRYSTAL_DOOR || level.map[c] === T.CHASM;
   const seen = new Set([level.entrance]);
   const queue = [level.entrance];
   for (let head = 0; head < queue.length; head++) {

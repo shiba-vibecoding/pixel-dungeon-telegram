@@ -83,7 +83,7 @@ export function scry(ctx: Ctx, hero: Hero, item: Item, cell: number): number {
       explored[c] = true;
       ctx.effects.push({ type: 'discovered', depth: hero.depth, cell: c });
       noticed = true;
-      earned += was === T.SECRET_DOOR ? 100 : trapAt(level.map[c]!) ? 10 : 0;
+      earned += was === T.SECRET_DOOR ? 100 : trapAt(level, c) ? 10 : 0;
     }
     const mob = floor.mobs.find((m) => m.pos === c && isAlive(m));
     // Not the neutral folk (a mimic is no neutral), nor the hero's allies.
@@ -150,7 +150,7 @@ export function checkAwareness(ctx: Ctx, hero: Hero, item: Item): void {
   for (let y = Math.max(0, cy - 3); y <= Math.min(HEIGHT - 1, cy + 3) && !found; y++) {
     for (let x = Math.max(0, cx - 3); x <= Math.min(WIDTH - 1, cx + 3); x++) {
       const p = x + y * WIDTH;
-      if (fov[p] && hasFlag(map[p]!, F.SECRET) && map[p] !== T.SECRET_DOOR && trapAt(discover(map[p]!))) {
+      if (fov[p] && hasFlag(map[p]!, F.SECRET) && map[p] === T.SECRET_TRAP) {
         found = true;
         break;
       }

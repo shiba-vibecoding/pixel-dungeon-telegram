@@ -18,9 +18,9 @@ describe('mis-tap protection: what a step would be', () => {
   it('a trap in sight is a danger, a hidden one is not known', () => {
     const { world, hero, level, beside } = setup();
     exploredCells(world, hero.depth)[beside] = true;
-    level.map[beside] = T.SECRET_TOXIC_TRAP;
+    level.map[beside] = T.SECRET_TRAP;
     expect(stepDanger(world, hero, level, beside)).toBeNull();
-    level.map[beside] = T.TOXIC_TRAP;
+    level.map[beside] = T.TRAP;
     expect(stepDanger(world, hero, level, beside)).toBe('trap');
     // Floating over it, or an inactive trap, is no danger.
     hero.levitating = 5;
@@ -43,7 +43,7 @@ describe('mis-tap protection: what a step would be', () => {
   it('finds the first danger along a walk', () => {
     const { world, hero, level, beside } = setup();
     exploredCells(world, hero.depth)[beside] = true;
-    level.map[beside] = T.FIRE_TRAP;
+    level.map[beside] = T.TRAP;
     expect(firstDanger(world, hero, level, [hero.pos, beside])).toEqual({ index: 1, danger: 'trap' });
     expect(firstDanger(world, hero, level, [hero.pos])).toBeNull();
   });

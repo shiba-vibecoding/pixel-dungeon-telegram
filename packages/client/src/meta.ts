@@ -446,7 +446,7 @@ const enum Feature {
 
 /** A landmark's icon (Notes.LandmarkRecord.icon): journal.png's where it has one, else an item's picture. */
 const LANDMARK_ICONS: Readonly<Record<Landmark, { feature: Feature } | { item: number } | null>> = {
-  chasmFloor: null, waterFloor: null, grassFloor: null,
+  chasmFloor: null, waterFloor: null, grassFloor: null, darkFloor: null, largeFloor: null, trapsFloor: null, secretsFloor: null, demonSpawner: null, distantWell: null, lostPack: null,
   shop: { item: S.GOLD }, alchemy: { feature: Feature.Alchemy }, garden: { feature: Feature.Garden },
   wellOfHealth: { feature: Feature.WellOfHealth }, wellOfAwareness: { feature: Feature.WellOfAwareness },
   wellOfTransmutation: { feature: Feature.WellOfTransmutation }, sacrificialFire: { feature: Feature.Sacrifice },

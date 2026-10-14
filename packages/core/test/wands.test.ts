@@ -4,6 +4,7 @@ import {
   itemPrice, itemSprite, kindKnown, levelAt, type Mob, type MobKind, Rng, T, wandMaxCharges, WIDTH, type World,
 } from '../src/index';
 import { chargeWands, wandsGainExp } from '../src/wands';
+import { setTrap } from '../src/traps';
 import { chargeLimit } from '../src/regrowth';
 import { randomWand } from '../src/items';
 import { staffWith } from '../src/staff';
@@ -265,7 +266,8 @@ describe('the wand of blast wave', () => {
     expect(effects).toContainEqual(expect.objectContaining({ type: 'mobFell', mob: rat.id }));
     const other = addMob(world, 'golem', hero.pos + 2);
     other.hp = other.ht = 1000;
-    map[hero.pos + 5] = T.ALARM_TRAP;
+    map[hero.pos + 5] = T.TRAP;
+    setTrap(levelAt(world, 1), hero.pos + 5, 'alarm', true);
     wand!.charges = 2;
     effects = zap(world, other.pos);
     expect(effects).toContainEqual(expect.objectContaining({ type: 'trap', kind: 'alarm', mob: other.id }));

@@ -33,7 +33,11 @@ export type { Sample } from './sfx';
 export type Synth =
   | 'creak' | 'thud' | 'pop' | 'whoosh' | 'tick' | 'sizzle' | 'clank' | 'drip' | 'pebble' | 'sparkle' | 'knock' | 'crowd';
 
-export type Sound = Sample | Synth;
+/** A chime the levels stream plays that Shattered has no file for: the nearest synthesised sound. */
+export type LevelSound = 'chime';
+const LEVEL_SOUNDS: Readonly<Record<LevelSound, Sample | Synth>> = { chime: 'sparkle' };
+
+export type Sound = Sample | Synth | LevelSound;
 
 /** A tune in progress (or silence): its fade, the track playing and what comes next, or the music from before in its place. */
 interface Music {
@@ -504,7 +508,7 @@ class Audio {
   play(name: Sound, rate = 1, volume = 1, at?: Place, pan?: number): void {
     const ctx = this.context;
     if (!this.enabled || !ctx || !this.sfx || document.hidden || ctx.state !== 'running') return;
-    const buffer = this.buffers.get(name);
+    const buffer = this.buffers.get(name) ?? this.buffers.get(LEVEL_SOUNDS[name as LevelSound]);
     if (!buffer) return;
     const now = performance.now();
     // Not the same sound on top of itself, nor too many at once.
