@@ -7,6 +7,7 @@ import { audio } from './audio';
 import { sliderSound } from './sfx';
 import { fx } from './fx';
 import { capitalize, lang, locale, t } from './i18n';
+import { smooth } from './pace';
 import { itemInfo, itemName } from './itemtext';
 import { type FxMode, quality } from './quality';
 import { type QuickCount, quickCount, setQuickCount } from './quickslot';
@@ -214,6 +215,12 @@ export function showSettings(options: SettingsOptions): void {
     ),
     switchRow(t.meta.confirmDanger, t.meta.confirmDangerNote, confirmDanger.on, (on) => confirmDanger.set(on)),
     switchRow(t.forum.settings.risky, t.forum.settings.riskyNote, confirmRisky.on, (on) => confirmRisky.set(on)),
+    switchRow(
+      lang === 'ru' ? 'Максимальная плавность' : 'Maximum smoothness',
+      lang === 'ru' ? 'Каждый кадр с частотой экрана (до 120 Гц), даже в покое. Больше расход батареи.' : "Every frame at the screen's rate (up to 120 Hz), even standing still. Uses more battery.",
+      smooth.on,
+      (on) => smooth.set(on),
+    ),
     stepsRow(t.meta.shake, () => quality.shake, (v) => quality.setShake(v), () => fx.shake(3, 240, fx.now)),
     el(
       'div',

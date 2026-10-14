@@ -21,6 +21,28 @@ export const INPUT_MS = 800;
 /** Effects (blows, bursts, floating numbers, light on the walls) are done within this long of the last one. */
 export const EFFECT_MS = 2500;
 
+/**
+ * «Максимальная плавность» (settings): every frame the display gives is drawn, even standing still: 120 a second on a
+ * 120 Hz screen. Off by default: it costs battery and warmth for water and torches no one needs that smooth.
+ */
+export const smooth = {
+  on: (() => {
+    try {
+      return localStorage.getItem('pd-smooth') === 'on';
+    } catch {
+      return false;
+    }
+  })(),
+  set(on: boolean): void {
+    this.on = on;
+    try {
+      localStorage.setItem('pd-smooth', on ? 'on' : 'off');
+    } catch {
+      // This session only.
+    }
+  },
+};
+
 export class Pace {
   private drawn = -Infinity;
   private touched = -Infinity;
@@ -63,7 +85,7 @@ export class Pace {
     const calm = this.isCalm(now, busy);
     // A clock that went backwards (a hidden tab, a virtual clock in tests) never starves the screen.
     const since = now - this.drawn;
-    const gap = calm ? (this.away(now) ? AWAY_MS : light ? LIGHT_MS : CALM_MS) : 0;
+    const gap = smooth.on ? 0 : calm ? (this.away(now) ? AWAY_MS : light ? LIGHT_MS : CALM_MS) : 0;
     if (!this.forced && since >= 0 && since < gap) return false;
     this.forced = false;
     this.drawn = now;
