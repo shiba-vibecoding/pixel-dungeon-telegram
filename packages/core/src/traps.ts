@@ -13,7 +13,9 @@ import { clearGas, seedGas } from './gas';
 import { burnHeaps, chillPack, freezeHeaps } from './cooking';
 import { scaleMob } from './party';
 import { stepOnPlant } from './plants';
+import { tenguDartTrap } from './bosses/index';
 import { tickMob } from './buffs';
+import { deathMarkTurn } from './abilities';
 import { flies, mobStatusTurn } from './status';
 
 /*
@@ -61,6 +63,8 @@ export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost' | 'toxic'
     if (harm === 'toxic') return (b?.toxicImbue ?? 0) > 0;
     return false;
   }
+  // SpiritHawk.HawkAlly: immune to all area-bound effects (BlobImmunity): gas, fire, frost and the rest of the blobs.
+  if (char.kind === 'hawk') return true;
   // Piranha: the blobs but electricity and freezing, and burning.
   if (char.kind === 'piranha' || char.kind === 'phantomPiranha') return harm !== 'frost' && harm !== 'shock';
   if (harm === 'shock') return false;
@@ -138,6 +142,8 @@ function around(ctx: Ctx, pos: number, radius: number): Char[] {
  * Level.mobPress sets traps off under monsters too (see mobPress): what hurts lands on them.
  */
 export function triggerTrap(ctx: Ctx, victim: Char | null, pos: number): void {
+  // Tengu's cell: its hidden traps are dart traps (TenguDartTrap).
+  if (tenguDartTrap(ctx, victim, pos)) return;
   const { level, rng, depth } = ctx;
   const kind = trapAt(level.map[pos]!);
   if (!kind) return;
@@ -257,6 +263,8 @@ export function mobFall(ctx: Ctx, mob: Mob): void {
 
 /** Hurt a monster's turn by the conditions traps leave behind; true if it loses the turn. */
 export function mobConditions(ctx: Ctx, mob: Mob): boolean {
+  // DeathMarkTracker: the mark runs out, and a monster at no health dies.
+  if (deathMarkTurn(ctx, mob)) return true;
   // What gear left on it: adrenaline, a lucky blow's tracker (throwing.ts).
   if (mobGearTick(ctx, mob)) return true;
   // Shattered's conditions first: corrosion, ooze, corruption, frost and the rest (status.ts); then alchemy's
@@ -314,4 +322,17 @@ export function mobConditions(ctx: Ctx, mob: Mob): boolean {
     return true;
   }
   return false;
+}
+
+/**
+ * Fire.burn on one cell (Tengu's fire as it goes out): what lies there burns, a plant withers, and
+ * whatever can burn burns down to embers.
+ */
+export function burnCell(ctx: Ctx, cell: number): void {
+  burnHeaps(ctx, cell, 0);
+  if (ctx.floor.plants) ctx.floor.plants = ctx.floor.plants.filter((plant) => plant.pos !== cell);
+  if (hasFlag(ctx.level.map[cell]!, F.FLAMABLE)) {
+    ctx.level.map[cell] = T.EMBERS;
+    ctx.effects.push({ type: 'burnt', depth: ctx.depth, pos: cell });
+  }
 }

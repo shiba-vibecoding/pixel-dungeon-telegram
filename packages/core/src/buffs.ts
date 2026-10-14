@@ -49,6 +49,8 @@ export interface Buffs {
   barkskin?: { level: number; interval: number; next: number };
   /** ArtifactRecharge (the artifacts stream's seam; a hero's Recharging is Hero.recharging, wands.ts). */
   artifactRecharge?: number;
+  /** ArtifactRecharge.ignoreHornOfPlenty: a meal from the horn of plenty does not charge the horn itself. */
+  artifactRechargeNoHorn?: boolean;
   /** ElixirOfAquaticRejuvenation.AquaHealing: health back while standing in water, so much in all. */
   aquaHealing?: number;
   /** ElixirOfMight.HTBoost: levels left that the boost to health lasts. */
@@ -132,7 +134,7 @@ export const isFiery = (char: Char): boolean => !isHero(char) && (char.kind === 
 export function isUnholy(char: Char): boolean {
   if (isHero(char)) return false;
   const kind = baseKind(char.kind);
-  return ['skeleton', 'undead', 'wraith', 'king', 'succubus', 'eye', 'scorpio', 'yog', 'rottingFist', 'burningFist', 'larva'].includes(kind);
+  return ['skeleton', 'undead', 'wraith', 'king', 'succubus', 'eye', 'scorpio', 'yog', 'rottingFist', 'burningFist', 'larva', 'ghoul', 'soiledFist', 'rustedFist', 'brightFist', 'darkFist'].includes(kind);
 }
 
 /** Whether something harmful would be shaken off at once: a potion of cleansing's Cleanse. */
@@ -373,7 +375,10 @@ export function tickHero(ctx: Ctx, hero: Hero, time: number): void {
     'featherFall', 'cleanse'] as const) {
     if (b[key] !== undefined) {
       b[key] = b[key]! - time;
-      if (b[key]! <= 0) delete b[key];
+      if (b[key]! <= 0) {
+        delete b[key];
+        if (key === 'artifactRecharge') delete b.artifactRechargeNoHorn;
+      }
     }
   }
   if (b.cleanse) cleanseAgain(hero);
@@ -447,7 +452,7 @@ function heroTurn(ctx: Ctx, hero: Hero, b: Buffs): void {
     else if (b.wellFed % 18 === 0 && hero.hp < hero.ht) hero.hp++;
   }
   // ArtifactRecharge.act: every worn artifact charges as if a turn of its own had passed, again (uncursed ones).
-  if (has(b.artifactRecharge)) chargeArtifacts(ctx, hero, Math.min(1, b.artifactRecharge!));
+  if (has(b.artifactRecharge)) chargeArtifacts(ctx, hero, Math.min(1, b.artifactRecharge!), b.artifactRechargeNoHorn === true);
   // Foresight: every turn a search reaching far around, that finds whatever is hidden there (Hero.search).
   if (has(b.foresight)) foresee(ctx, hero);
   // Drowsy, then MagicalSleep: asleep until fully healed (a point a turn) or struck.

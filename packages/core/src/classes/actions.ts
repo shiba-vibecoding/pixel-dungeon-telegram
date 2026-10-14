@@ -4,8 +4,6 @@ import type { World } from '../world';
 import { abilityProblem, useAbility } from './duelist';
 import { type MonkAbility, monkProblem, useMonk } from './monk';
 import { cs } from './state';
-import { hasTalent, pointsIn, talentProblem } from '../talents';
-import { upgradeTalent } from './talent-effects';
 import { castProblem, castSpell, quickProblem } from './cleric';
 import { wearsForce } from '../rings';
 import { heroRings } from '../actors';
@@ -17,10 +15,8 @@ import { heroRings } from '../actors';
  */
 
 export type ClassAction =
-  /** Hero.upgradeTalent: a point into a talent (no time). */
-  | { type: 'talent'; talent: string }
   /** The ability of the weapon in hand, or the Champion's second one, aimed at a cell where it asks for one. */
-  | { type: 'ability'; which?: 'weapon' | 'second'; cell?: number }
+  | { type: 'weaponAbility'; which?: 'weapon' | 'second'; cell?: number }
   /** One of the Monk's five abilities. */
   | { type: 'monk'; ability: MonkAbility; cell?: number }
   /** MeleeWeapon.Charger.doAction: the Champion swaps her weapons (no time). */
@@ -32,15 +28,13 @@ export type ClassAction =
   /** HolyTome.setQuickSpell: the spell the quick button casts (none, or the same again, clears it). */
   | { type: 'quick'; spell: string | null };
 
-export const CLASS_ACTIONS: ReadonlySet<string> = new Set(['talent', 'ability', 'monk', 'swap', 'stance', 'cast', 'quick']);
+export const CLASS_ACTIONS: ReadonlySet<string> = new Set(['weaponAbility', 'monk', 'swap', 'stance', 'cast', 'quick']);
 export const isClassAction = (action: { type: string }): action is ClassAction => CLASS_ACTIONS.has(action.type);
 
 /** Why a class action cannot be done now, or null. */
 export function classProblem(world: World, hero: Hero, action: ClassAction): string | null {
   switch (action.type) {
-    case 'talent':
-      return typeof action.talent === 'string' ? talentProblem(hero, action.talent) : 'no such talent';
-    case 'ability':
+    case 'weaponAbility':
       return abilityProblem(world, hero, action.which ?? 'weapon', action.cell);
     case 'monk':
       return monkProblem(world, hero, action.ability, action.cell);
@@ -60,10 +54,7 @@ export function classProblem(world: World, hero: Hero, action: ClassAction): str
 /** Does a class action; returns the time it took. */
 export function performClass(ctx: Ctx, hero: Hero, action: ClassAction): number {
   switch (action.type) {
-    case 'talent':
-      upgradeTalent(ctx, hero, action.talent);
-      return 0;
-    case 'ability':
+    case 'weaponAbility':
       return useAbility(ctx, hero, action.which ?? 'weapon', action.cell);
     case 'monk':
       return useMonk(ctx, hero, action.ability, action.cell);
@@ -92,4 +83,3 @@ export function performClass(ctx: Ctx, hero: Hero, action: ClassAction): number 
   }
 }
 
-export { hasTalent, pointsIn };

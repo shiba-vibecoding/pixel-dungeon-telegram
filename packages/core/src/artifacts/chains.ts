@@ -19,7 +19,7 @@ import { artifactChargeMultiplier, artifactProc, magicImmune, onArtifactUsed, re
  */
 
 /** Monsters the chains cannot move (Char.Property.IMMOVABLE). */
-const IMMOVABLE: ReadonlySet<string> = new Set(['yog', 'rottingFist', 'burningFist', 'shopkeeper', 'impShopkeeper', 'ratKing', 'statue']);
+const IMMOVABLE: ReadonlySet<string> = new Set(['yog', 'rottingFist', 'burningFist', 'shopkeeper', 'impShopkeeper', 'ratKing', 'statue', 'pylon']);
 
 /** Where a cast would pull, and how much it would cost; or why it cannot (the listener's messages). */
 type Pull = { who: 'enemy'; mob: Mob; to: number; cost: number } | { who: 'hero'; to: number; cost: number } | { problem: string };

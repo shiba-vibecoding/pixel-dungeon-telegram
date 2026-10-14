@@ -1,6 +1,6 @@
 import {
   type Action, ARTIFACT_USES, MONK_ABILITIES, type EffectId, MISC_SLOTS, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
-  type SubClass,
+  type SubClass, COMBO_MOVES, TALENTS, type TalentId,
 } from '@pd/core';
 
 /*
@@ -18,6 +18,8 @@ const MAX_SLOT = 255;
 const MAX_CHOICE = 63;
 /** Trinity's lists of what the party has seen can be long. */
 const MAX_CLASS_CHOICE = 255;
+/** A used item's choice: a scroll of metamorphosis names a talent and one of its options (target * 8 + option). */
+const MAX_USE_CHOICE = 255;
 /** The largest choice an artifact's window offers (the toolkit's levels at most). */
 const MAX_ARTIFACT_CHOICE = 10;
 /** Monster ids are short ('#12'); anything longer is not one. */
@@ -32,6 +34,7 @@ const oneOf = <T extends string>(value: unknown, options: readonly T[]): T | nul
   (options as readonly unknown[]).includes(value) ? (value as T) : null;
 /** A backpack slot, the weapon, the armour or a worn ring (the core's ItemRef). */
 const itemRef = (value: unknown): ItemRef | null => (isItemRef(value) && (typeof value !== 'number' || slot(value) !== null) ? value : null);
+
 
 const ALL_SUBCLASSES: readonly SubClass[] = Object.values(SUBCLASSES).flat();
 
@@ -132,7 +135,7 @@ export function sanitizeAction(raw: unknown): Action | null {
         use.cell = at;
       }
       if (a.choice !== undefined) {
-        if (!isInt(a.choice, 0, MAX_CHOICE)) return null;
+        if (!isInt(a.choice, 0, MAX_USE_CHOICE)) return null;
         use.choice = a.choice;
       }
       return use;
@@ -188,6 +191,29 @@ export function sanitizeAction(raw: unknown): Action | null {
     case 'dismiss':
       // Ward.interact: the ward beside the hero dismissed.
       return typeof a.target === 'string' && a.target.length > 0 && a.target.length <= MAX_ID ? { type: 'dismiss', target: a.target } : null;
+    case 'talent': {
+      // Hero.upgradeTalent: a point in one of the talents (the rules say whether the hero has it and a point to spend).
+      const talent = typeof a.talent === 'string' && Object.hasOwn(TALENTS, a.talent) ? (a.talent as TalentId) : null;
+      return talent ? { type: 'talent', talent } : null;
+    }
+    case 'ability': {
+      // The subclasses' action indicator: the berserker's rage, the freerunner's run, the sniper's mark, a combo move, a prepared strike.
+      const target = typeof a.target === 'string' && a.target.length > 0 && a.target.length <= MAX_ID ? a.target : null;
+      switch (a.ability) {
+        case 'berserk':
+        case 'freerun':
+        case 'snipe':
+          return { type: 'ability', ability: a.ability };
+        case 'combo': {
+          const move = oneOf(a.move, COMBO_MOVES);
+          return move ? (target ? { type: 'ability', ability: 'combo', move, target } : { type: 'ability', ability: 'combo', move }) : null;
+        }
+        case 'ambush':
+          return target ? { type: 'ability', ability: 'ambush', target } : null;
+        default:
+          return null;
+      }
+    }
     case 'unequip':
       return { type: 'unequip' };
     case 'remove': {
@@ -201,27 +227,30 @@ export function sanitizeAction(raw: unknown): Action | null {
       return item === null || !subclass ? null : { type: 'master', item, subclass };
     }
     case 'special': {
-      // The class armour's ability: the cell it is aimed at, and (Trinity's) which form.
-      const action: Extract<Action, { type: 'special' }> = { type: 'special' };
+      // The class armour's ability: the cell it is aimed at, the warp beacon's choice (0 warp, 1 clear) or Trinity's form (0 to 2).
+      const action: Action = { type: 'special' };
       if (a.target !== undefined) {
         const target = cell(a.target);
         if (target === null) return null;
         action.target = target;
       }
       if (a.choice !== undefined) {
-        if (!isInt(a.choice, 0, MAX_CHOICE)) return null;
+        if (!isInt(a.choice, 0, 2)) return null;
         action.choice = a.choice;
       }
       return action;
     }
-    case 'talent':
-      // Hero.upgradeTalent: a talent's name (the core's registry knows which exist).
-      return typeof a.talent === 'string' && /^[A-Z_]{3,40}$/.test(a.talent) ? { type: 'talent', talent: a.talent } : null;
-    case 'ability': {
+    case 'transfer': {
+      // ClassArmor.AC_TRANSFER: the class armour, and the armour whose properties it takes over.
+      const to = sealSource(a.to);
+      const from = sealSource(a.from);
+      return to === null || from === null ? null : { type: 'transfer', to, from };
+    }
+    case 'weaponAbility': {
       // The Duelist's weapon ability: the weapon in hand or the second one, and the cell it asks for.
       const which = a.which === undefined ? undefined : oneOf(a.which, ['weapon', 'second'] as const);
       if (which === null) return null;
-      const out: Extract<Action, { type: 'ability' }> = { type: 'ability' };
+      const out: Extract<Action, { type: 'weaponAbility' }> = { type: 'weaponAbility' };
       if (which) out.which = which;
       if (a.cell !== undefined) {
         const at = cell(a.cell);

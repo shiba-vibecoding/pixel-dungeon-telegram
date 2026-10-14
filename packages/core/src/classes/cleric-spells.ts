@@ -13,7 +13,7 @@ import { activateStone, INVENTORY_STONES, useStone } from '../stones';
 import { readScroll } from '../reading';
 import { meleeStr } from '../weapons';
 import { pressCell } from '../wands';
-import { hasTalent, pointsIn } from '../talents';
+import { hasTalent, pointsInTalent as pointsIn } from '../talents';
 import type { World } from '../world';
 import { addShield, healWithBarrier, say, shedNegatives, tell } from './common';
 import {
@@ -52,7 +52,7 @@ function recallCost(hero: Hero): number {
 
 /** BlessSpell.affectChar. */
 function blessChar(ctx: Ctx, hero: Hero, ch: Char): void {
-  const points = pointsIn(hero, 'BLESS');
+  const points = pointsIn(hero, 'bless');
   say(ctx, hero, { k: 'spell', at: ch.pos, name: 'flareYellow' });
   if (ch === hero) {
     hero.blessed = Math.max(hero.blessed ?? 0, 2 + 4 * points);
@@ -67,7 +67,7 @@ function blessChar(ctx: Ctx, hero: Hero, ch: Char): void {
 
 /** LayOnHands.affectChar. */
 function layHands(ctx: Ctx, hero: Hero, ch: Char): void {
-  const heal = 10 + 5 * pointsIn(hero, 'LAY_ON_HANDS');
+  const heal = 10 + 5 * pointsIn(hero, 'lay_on_hands');
   if (ch === hero) {
     const barrier = Math.max(0, Math.min(3 * heal - (hero.shield ?? 0), heal));
     addShield(hero, barrier);
@@ -138,7 +138,7 @@ function wallOfLight(ctx: Ctx, hero: Hero, target: number): number {
     [-1, 1, 1, -1], [-1, 0, 1, 0], [1, 1, -1, -1], [0, -1, 0, 1], [1, -1, -1, 1], [1, 0, -1, 0], [-1, -1, 1, 1], [0, -1, 0, 1],
   ];
   const [leftX, leftY, rightX, rightY] = dirs[closestIdx]!;
-  const steps = pointsIn(hero, 'WALL_OF_LIGHT');
+  const steps = pointsIn(hero, 'wall_of_light');
   const solid = (cell: number): boolean => hasFlag(level.map[cell]!, F.SOLID);
   const spellDefn = spell('wallOfLight');
   // The cost is calculated before the walls are added.
@@ -202,7 +202,7 @@ export function wallTurn(ctx: Ctx): void {
 
 function hallow(ctx: Ctx, hero: Hero, target: number): number {
   const { level, floor } = ctx;
-  const reach = pointsIn(hero, 'HALLOWED_GROUND');
+  const reach = pointsIn(hero, 'hallowed_ground');
   // PathFinder.buildDistanceMap(target, not solid, reach).
   const dist = new Map<number, number>([[target, 0]]);
   const queue = [target];
@@ -264,7 +264,7 @@ function hallow(ctx: Ctx, hero: Hero, target: number): number {
 export function hallowedTurn(ctx: Ctx, hero: Hero): void {
   const ground = ctx.floor.hallowed;
   if (!ground) return;
-  const chance = 10 + 10 * pointsIn(hero, 'HALLOWED_GROUND');
+  const chance = 10 + 10 * pointsIn(hero, 'hallowed_ground');
   const affected: Char[] = [];
   for (const key of Object.keys(ground).map(Number).sort((a, b) => a - b)) {
     const t = ctx.level.map[key]!;
@@ -345,7 +345,7 @@ export const SPELLS_1_3: SpellDef[] = [
     },
   },
   {
-    id: 'holyIntuition', tier: 1, aim: 'item', cost: (hero) => 4 - pointsIn(hero, 'HOLY_INTUITION'), has: (hero) => hasTalent(hero, 'HOLY_INTUITION'),
+    id: 'holyIntuition', tier: 1, aim: 'item', cost: (hero) => 4 - pointsIn(hero, 'holy_intuition'), has: (hero) => hasTalent(hero, 'holy_intuition'),
     problem(_world, hero, action) {
       const item = action.item !== undefined ? hero.items[action.item] : undefined;
       return item && usableForIntuition(item) ? null : 'choose an item';
@@ -362,7 +362,7 @@ export const SPELLS_1_3: SpellDef[] = [
     },
   },
   {
-    id: 'shieldOfLight', tier: 1, aim: 'cell', flags: 'stop', cost: () => 1, has: (hero) => hasTalent(hero, 'SHIELD_OF_LIGHT'),
+    id: 'shieldOfLight', tier: 1, aim: 'cell', flags: 'stop', cost: () => 1, has: (hero) => hasTalent(hero, 'shield_of_light'),
     problem(world, hero, action) {
       const ch = charAt(world, hero.depth, action.cell!);
       return !ch || isHero(ch) || ch.ally || !fovOf(world, hero)[action.cell!] ? `${MSG}shieldoflight.no_target` : null;
@@ -386,7 +386,7 @@ export const SPELLS_1_3: SpellDef[] = [
     },
   },
   {
-    id: 'recallInscription', tier: 2, aim: 'none', has: (hero) => hasTalent(hero, 'RECALL_INSCRIPTION') && hasTimer(hero, 'recall') && cs(hero).recall !== undefined,
+    id: 'recallInscription', tier: 2, aim: 'none', has: (hero) => hasTalent(hero, 'recall_inscription') && hasTimer(hero, 'recall') && cs(hero).recall !== undefined,
     cost: (hero) => recallCost(hero),
     problem(_world, hero, action) {
       const kind = cs(hero).recall;
@@ -413,11 +413,11 @@ export const SPELLS_1_3: SpellDef[] = [
     },
   },
   {
-    id: 'sunray', tier: 2, aim: 'cell', flags: 'bolt', cost: () => 1, has: (hero) => hasTalent(hero, 'SUNRAY'),
+    id: 'sunray', tier: 2, aim: 'cell', flags: 'bolt', cost: () => 1, has: (hero) => hasTalent(hero, 'sunray'),
     problem: (world, hero, action) => cellProblem(world, hero, action.cell, MAGIC_BOLT, SELF),
     cast(ctx, hero, action) {
       const { end, who } = boltTarget(ctx.world, ctx.depth, hero, action.cell!, MAGIC_BOLT);
-      const points = pointsIn(hero, 'SUNRAY');
+      const points = pointsIn(hero, 'sunray');
       say(ctx, hero, { k: 'sound', name: 'ray' });
       say(ctx, hero, { k: 'ray', from: hero.pos, to: end, name: 'sun' });
       if (who && !isHero(who)) {
@@ -444,7 +444,7 @@ export const SPELLS_1_3: SpellDef[] = [
     },
   },
   {
-    id: 'divineSense', tier: 2, aim: 'none', cost: () => 2, has: (hero) => hasTalent(hero, 'DIVINE_SENSE'),
+    id: 'divineSense', tier: 2, aim: 'none', cost: () => 2, has: (hero) => hasTalent(hero, 'divine_sense'),
     cast(ctx, hero) {
       prolong(hero, 'divineSense', 50);
       say(ctx, hero, { k: 'sound', name: 'read' });
@@ -457,7 +457,7 @@ export const SPELLS_1_3: SpellDef[] = [
     },
   },
   {
-    id: 'bless', tier: 2, aim: 'cell', flags: 'free', cost: () => 1, has: (hero) => hasTalent(hero, 'BLESS'),
+    id: 'bless', tier: 2, aim: 'cell', flags: 'free', cost: () => 1, has: (hero) => hasTalent(hero, 'bless'),
     problem: (world, hero, action) => (!charAt(world, hero.depth, action.cell!) || !fovOf(world, hero)[action.cell!] ? `${MSG}blessspell.no_target` : null),
     cast(ctx, hero, action) {
       const ch = charAt(ctx.world, ctx.depth, action.cell!)!;
@@ -475,9 +475,9 @@ export const SPELLS_1_3: SpellDef[] = [
     },
   },
   {
-    id: 'cleanse', tier: 3, aim: 'none', cost: () => 2, has: (hero) => hasTalent(hero, 'CLEANSE'),
+    id: 'cleanse', tier: 3, aim: 'none', cost: () => 2, has: (hero) => hasTalent(hero, 'cleanse'),
     cast(ctx, hero) {
-      const points = pointsIn(hero, 'CLEANSE');
+      const points = pointsIn(hero, 'cleanse');
       const seen = heroView(ctx.world, hero);
       const affected: Char[] = [hero, ...ctx.floor.mobs.filter((m) => m.ally && isAlive(m) && seen[m.pos])];
       const ally = linkedAlly(ctx);
@@ -548,7 +548,7 @@ export const SPELLS_1_3: SpellDef[] = [
     },
   },
   {
-    id: 'layOnHands', tier: 3, aim: 'cell', flags: 'free', cost: () => 1, has: (hero) => hasTalent(hero, 'LAY_ON_HANDS'),
+    id: 'layOnHands', tier: 3, aim: 'cell', flags: 'free', cost: () => 1, has: (hero) => hasTalent(hero, 'lay_on_hands'),
     problem(world, hero, action) {
       if (distance(hero.pos, action.cell!) > 1) return `${MSG}layonhands.invalid_target`;
       return charAt(world, hero.depth, action.cell!) ? null : `${MSG}layonhands.no_target`;
@@ -569,7 +569,7 @@ export const SPELLS_1_3: SpellDef[] = [
     },
   },
   {
-    id: 'auraOfProtection', tier: 3, aim: 'none', cost: () => 2, has: (hero) => hasTalent(hero, 'AURA_OF_PROTECTION'),
+    id: 'auraOfProtection', tier: 3, aim: 'none', cost: () => 2, has: (hero) => hasTalent(hero, 'aura_of_protection'),
     cast(ctx, hero) {
       setTimer(hero, 'aura', 20);
       say(ctx, hero, { k: 'sound', name: 'read' });
@@ -579,7 +579,7 @@ export const SPELLS_1_3: SpellDef[] = [
     },
   },
   {
-    id: 'wallOfLight', tier: 3, aim: 'cell', flags: 'free', cost: (_hero, world) => (wallStanding(world, _hero.depth) ? 0 : 3), has: (hero) => hasTalent(hero, 'WALL_OF_LIGHT'),
+    id: 'wallOfLight', tier: 3, aim: 'cell', flags: 'free', cost: (_hero, world) => (wallStanding(world, _hero.depth) ? 0 : 3), has: (hero) => hasTalent(hero, 'wall_of_light'),
     problem(world, hero, action) {
       if (wallStanding(world, hero.depth)) return null;
       if (action.cell === hero.pos) return `${MSG}walloflight.invalid_target`;
@@ -601,11 +601,11 @@ export const SPELLS_1_3: SpellDef[] = [
     cast: (ctx, hero, action) => wallOfLight(ctx, hero, action.cell!),
   },
   {
-    id: 'holyLance', tier: 3, aim: 'cell', flags: 'projectile', cost: () => 4, has: (hero) => hasTalent(hero, 'HOLY_LANCE') && !hasTimer(hero, 'lance'),
+    id: 'holyLance', tier: 3, aim: 'cell', flags: 'projectile', cost: () => 4, has: (hero) => hasTalent(hero, 'holy_lance') && !hasTimer(hero, 'lance'),
     problem: (world, hero, action) => cellProblem(world, hero, action.cell, PROJECTILE, SELF),
     cast(ctx, hero, action) {
       const { end, who } = boltTarget(ctx.world, ctx.depth, hero, action.cell!, PROJECTILE);
-      const points = pointsIn(hero, 'HOLY_LANCE');
+      const points = pointsIn(hero, 'holy_lance');
       say(ctx, hero, { k: 'sound', name: 'zap' });
       say(ctx, hero, { k: 'ray', from: hero.pos, to: end, name: 'lance' });
       if (who && !isHero(who)) {
@@ -625,7 +625,7 @@ export const SPELLS_1_3: SpellDef[] = [
     },
   },
   {
-    id: 'hallowedGround', tier: 3, aim: 'cell', flags: 'stop', cost: () => 2, has: (hero) => hasTalent(hero, 'HALLOWED_GROUND'),
+    id: 'hallowedGround', tier: 3, aim: 'cell', flags: 'stop', cost: () => 2, has: (hero) => hasTalent(hero, 'hallowed_ground'),
     problem(world, hero, action) {
       const level = world.levels[hero.depth]!;
       return hasFlag(level.map[action.cell!]!, F.SOLID) || !fovOf(world, hero)[action.cell!] ? `${MSG}hallowedground.invalid_target` : null;
@@ -633,11 +633,11 @@ export const SPELLS_1_3: SpellDef[] = [
     cast: (ctx, hero, action) => hallow(ctx, hero, action.cell!),
   },
   {
-    id: 'mnemonicPrayer', tier: 3, aim: 'cell', flags: 'stop', cost: () => 1, has: (hero) => hasTalent(hero, 'MNEMONIC_PRAYER'),
+    id: 'mnemonicPrayer', tier: 3, aim: 'cell', flags: 'stop', cost: () => 1, has: (hero) => hasTalent(hero, 'mnemonic_prayer'),
     problem: (world, hero, action) => (!charAt(world, hero.depth, action.cell!) || !fovOf(world, hero)[action.cell!] ? `${MSG}mnemonicprayer.no_target` : null),
     cast(ctx, hero, action) {
       const ch = charAt(ctx.world, ctx.depth, action.cell!)!;
-      const extension = 2 + pointsIn(hero, 'MNEMONIC_PRAYER');
+      const extension = 2 + pointsIn(hero, 'mnemonic_prayer');
       mnemonic(ctx, hero, ch, extension);
       const ally = linkedAlly(ctx);
       if (ally) {

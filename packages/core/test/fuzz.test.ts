@@ -16,8 +16,8 @@ function stock(world: World, id: string, rng: Rng): void {
   const hero = heroById(world, id)!;
   const kinds = [...KINDS];
   rng.shuffle(kinds);
-  // The gear's own kinds always among them, for their actions to be tried.
-  for (const kind of ['stone.augmentation', 'spiritBow', 'missile.dart', 'seed.icecap'] as const) {
+  // The gear's own kinds always among them, for their actions to be tried (and an artifact, for its).
+  for (const kind of ['stone.augmentation', 'spiritBow', 'missile.dart', 'seed.icecap', 'artifact.beacon'] as const) {
     kinds.splice(kinds.indexOf(kind), 1);
     kinds.unshift(kind);
   }

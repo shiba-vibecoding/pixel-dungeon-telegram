@@ -13,7 +13,7 @@ import { F, hasFlag } from '../level/terrain';
 import type { World } from '../world';
 import { chargeTotal, spendCharges } from './charger';
 import { clearTimer, cs, hasTimer, prolongMark, setTimer } from './state';
-import { hasTalent, pointsIn } from '../talents';
+import { hasTalent, pointsInTalent as pointsIn } from '../talents';
 import type { ClassFx } from './fx';
 import { onAbilityUsed, onBeforeAbility, onAbilityKill } from './duelist-talents';
 
@@ -89,11 +89,11 @@ export const weaponOf = (hero: Hero, which: 'weapon' | 'second'): Item | null =>
 /** Weapon.buffedLvl for an ability: the level, and the champion's twin upgrades (MeleeWeapon.buffedLvl). */
 export function buffedLevel(hero: Hero | null, wep: Item): number {
   const own = gearLevel(wep);
-  if (!hero || !hasTalent(hero, 'TWIN_UPGRADES') || (hero.weapon !== wep && hero.secondWep !== wep)) return own;
+  if (!hero || !hasTalent(hero, 'twin_upgrades') || (hero.weapon !== wep && hero.secondWep !== wep)) return own;
   const other = hero.weapon === wep ? hero.secondWep : hero.weapon;
   if (!other || itemDef(other.kind).category !== 'weapon') return own;
   // The weaker weapon needs to be 2/1/0 tiers lower, by the talent's level.
-  if (itemDef(wep.kind).tier! + (3 - pointsIn(hero, 'TWIN_UPGRADES')) <= itemDef(other.kind).tier! && gearLevel(other) > own) return gearLevel(other);
+  if (itemDef(wep.kind).tier! + (3 - pointsIn(hero, 'twin_upgrades')) <= itemDef(other.kind).tier! && gearLevel(other) > own) return gearLevel(other);
   return own;
 }
 
@@ -567,7 +567,7 @@ export function takeSpin(hero: Hero, wep: Item | null): number {
  * second use is still unspent). True if this one was swift.
  */
 export function swiftEquip(hero: Hero): boolean {
-  const points = pointsIn(hero, 'SWIFT_EQUIP');
+  const points = pointsIn(hero, 'swift_equip');
   if (points === 0) return false;
   const state = cs(hero);
   if (!hasTimer(hero, 'swift')) {

@@ -13,7 +13,7 @@ import { hasProp } from '../props';
 import { canReach } from '../throwing';
 import type { World } from '../world';
 import { cs, hasTimer, clearTimer, setTimer } from './state';
-import { pointsIn } from '../talents';
+import { pointsInTalent as pointsIn } from '../talents';
 
 /*
  * The Monk (MonkEnergy): energy gained by defeating enemies (more for bosses), spent on five abilities of 1 to 5
@@ -33,7 +33,7 @@ export const energyCap = (hero: Hero): number => Math.max(10, 5 + Math.trunc(her
 export const energyOf = (hero: Hero): number => hero.cls?.energy ?? 0;
 
 /** MonkEnergy.abilitiesEmpowered: 100%/80%/60% of the cap at +1/+2/+3 (never, with no points). */
-export const empowered = (hero: Hero): boolean => energyOf(hero) / energyCap(hero) >= Math.fround(1.2 - 0.2 * pointsIn(hero, 'MONASTIC_VIGOR'));
+export const empowered = (hero: Hero): boolean => energyOf(hero) / energyCap(hero) >= Math.fround(1.2 - 0.2 * pointsIn(hero, 'monastic_vigor'));
 
 /** MonkEnergy.gainEnergy: bosses give 5, minibosses 3, wraiths and larvae half, the rest 1; unencumbered spirit adds a share. */
 export function gainEnergy(ctx: Ctx, hero: Hero, mob: Mob): void {
@@ -43,7 +43,7 @@ export function gainEnergy(ctx: Ctx, hero: Hero, mob: Mob): void {
   else if (hasProp(mob, 'miniboss')) gain = 3;
   else if (mob.kind === 'wraith' || mob.kind === 'larva') gain = 0.5;
   else gain = 1;
-  const points = pointsIn(hero, 'UNENCUMBERED_SPIRIT');
+  const points = pointsIn(hero, 'unencumbered_spirit');
   if (points > 0) {
     let multi = 1;
     const armorTier = armourTier(hero);
@@ -74,7 +74,7 @@ const weaponTier = (item: { kind: string }): number | undefined => (itemDef(item
 function spent(ctx: Ctx, hero: Hero, ability: MonkAbility): void {
   const state = cs(hero);
   state.energy = Math.min((state.energy ?? 0) - MONK_COST[ability], energyCap(hero));
-  const points = pointsIn(hero, 'COMBINED_ENERGY');
+  const points = pointsIn(hero, 'combined_energy');
   if (points > 0 && MONK_COST[ability] >= 5 - points) {
     if (!state.energyWep) {
       state.energyMonk = true;
@@ -98,7 +98,7 @@ function processCombinedEnergy(hero: Hero): void {
 
 /** MeleeWeapon.afterAbilityUsed's combined energy: the weapon's ability counts towards the monk's. */
 export function onCombinedEnergyWeapon(_ctx: Ctx, hero: Hero): void {
-  if (pointsIn(hero, 'COMBINED_ENERGY') === 0) return;
+  if (pointsIn(hero, 'combined_energy') === 0) return;
   const state = cs(hero);
   if (!hasTimer(hero, 'combinedEnergy') || !state.energyMonk) {
     state.energyWep = true;

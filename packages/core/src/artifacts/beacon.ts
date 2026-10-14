@@ -21,7 +21,7 @@ import { regenOn } from './seams';
  */
 
 /** Monsters a beacon's bolt cannot move (Char.Property.IMMOVABLE). */
-const IMMOVABLE: ReadonlySet<string> = new Set(['yog', 'rottingFist', 'burningFist', 'shopkeeper', 'impShopkeeper', 'ratKing', 'statue']);
+const IMMOVABLE: ReadonlySet<string> = new Set(['yog', 'rottingFist', 'burningFist', 'shopkeeper', 'impShopkeeper', 'ratKing', 'statue', 'pylon']);
 
 /** The charges a zap takes: two in the depths below the 20th. */
 const zapCost = (hero: Hero): number => (hero.depth > 20 ? 2 : 1);

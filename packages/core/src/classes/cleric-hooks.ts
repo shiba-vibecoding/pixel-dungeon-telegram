@@ -2,7 +2,7 @@ import type { Hero, Mob } from '../actors';
 import { hurt, type Hazard } from '../combat';
 import { type Char, type Ctx, isHero } from '../floor';
 import { distance } from '../level/geometry';
-import { pointsIn } from '../talents';
+import { pointsInTalent as pointsIn } from '../talents';
 import { cs, hasTimer, markTurns, marks } from './state';
 import { poweredAlly } from './cleric-allies';
 
@@ -18,7 +18,7 @@ function lightStruck(ctx: Ctx, attacker: Char, defender: Mob, damage: number): n
   if (!defender.marks?.lit) return damage;
   delete defender.marks.lit;
   const hero = cleric(ctx);
-  if (isHero(attacker) && pointsIn(attacker, 'SEARING_LIGHT') > 0) damage += 1 + 2 * pointsIn(attacker, 'SEARING_LIGHT');
+  if (isHero(attacker) && pointsIn(attacker, 'searing_light') > 0) damage += 1 + 2 * pointsIn(attacker, 'searing_light');
   if (!isHero(attacker) && hero?.subclass === 'priest') {
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: defender.id, damage: 5 + hero.lvl });
     hurt(ctx, defender, 5 + hero.lvl, hero);
@@ -42,7 +42,7 @@ export function clericDefenseDamage(ctx: Ctx, attacker: Char, defender: Char, da
   if (!isHero(attacker) && markTurns(attacker, 'power') > 0) {
     if (markTurns(attacker, 'beam') > 0 && attacker.marks?.beamObject === defender.id) {
       const hero = cleric(ctx);
-      damage *= Math.fround(1.3 + 0.05 * (hero ? pointsIn(hero, 'BEAMING_RAY') : 0));
+      damage *= Math.fround(1.3 + 0.05 * (hero ? pointsIn(hero, 'beamingRay') : 0));
     } else damage *= 1.25;
   }
   return damage;
@@ -66,10 +66,10 @@ export function clericHurt(ctx: Ctx, victim: Char, damage: number, source: Char 
   const blowless = typeof source === 'string';
   // If the harm came from a character it was already reduced in Char.attack.
   if (friend && blowless && hasTimer(hero, 'aura', ctx.floor.now) && (distance(victim.pos, hero.pos) <= 2 || linked)) {
-    damage *= Math.fround(0.9 - 0.1 * pointsIn(hero, 'AURA_OF_PROTECTION'));
+    damage *= Math.fround(0.9 - 0.1 * pointsIn(hero, 'aura_of_protection'));
   }
   if (!isHero(victim) && markTurns(victim, 'power') > 0) {
-    damage *= markTurns(victim, 'lifeLinkSpell') > 0 ? Math.fround(0.7 - 0.05 * pointsIn(hero, 'LIFE_LINK')) : 0.75;
+    damage *= markTurns(victim, 'lifeLinkSpell') > 0 ? Math.fround(0.7 - 0.05 * pointsIn(hero, 'lifeLink')) : 0.75;
   }
   return damage;
 }
@@ -110,7 +110,7 @@ export function clericShields(ctx: Ctx, victim: Char, damage: number): number {
 export function lightShield(ctx: Ctx, attacker: Mob, defender: Char, damage: number): number {
   const hero = cleric(ctx);
   if (!hero) return damage;
-  const min = 1 + pointsIn(hero, 'SHIELD_OF_LIGHT');
+  const min = 1 + pointsIn(hero, 'shield_of_light');
   if (isHero(defender)) {
     if (hasTimer(defender, 'shieldOfLight', ctx.floor.now) && cs(defender).lightFoe === attacker.id) {
       return Math.max(damage - ctx.rng.normalIntRange(min, 2 * min), 0);

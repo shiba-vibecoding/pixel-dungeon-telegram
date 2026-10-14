@@ -1,5 +1,15 @@
 import { hasGlyph } from './classes/state';
 import { wear } from './wear';
+import { talentTime, beforeHeroAct, consumeLethalMomentum } from './talents/turns';
+import { hasTalent, pointsInTalent, type TalentId, upgradeProblem } from './talents/data';
+import { upgradeTalent } from './talents';
+import { berserkProblem, doBerserk } from './talents/berserk';
+import { type ComboMove, comboProblem, useComboMove } from './talents/combo';
+import { ambush as heroAmbush, ambushProblem, doFreerun, freerunProblem, gainMomentum } from './talents/rogue';
+import { snipe, snipeProblem } from './talents/huntress';
+import { holdFastRest } from './talents/hold-fast';
+import { foresightHint, layCachedRations } from './talents/rogue';
+import { onGrassTrampled, onHeroMovedOnGrass } from './talents/nature';
 import { identifyBelongings, observeBelongings } from './ident';
 import { mobAct, populate, randomRespawnCell, reinforce, respawn, TIME_TO_RESPAWN } from './ai';
 import {
@@ -46,12 +56,12 @@ import { settleTimers } from './classes/state';
 import { greaterHasteMove, onRest } from './classes/duelist-talents';
 import { generateLevel, type Level } from './level/generate';
 import { adjacent, cellX, cellY, distance, HEIGHT, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
-import { breakStairsRoom } from './level/halls-boss';
 import { RoomType } from './level/room';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { deriveSeed, Rng, seedRng, Stream } from './rng';
 import { createRun, type RunState } from './run';
 import { isChallenged, NO_HERBALISM, underChallenges } from './challenges';
+import { bossFloorCreated, bossOccupy, bossTimedTurn, nextBossTimed, oozeTurn, type Timed } from './bosses/index';
 import { chillFactor, hungerPaused, tickHero } from './buffs';
 import { burnFuses, nextFuse } from './bombs';
 import { levelTrinkets, PETRIFIED_SEED, SALT_CUBE, trinketLevel } from './trinkets';
@@ -60,6 +70,7 @@ import {
   type ArtifactAction, artifactProblem, artifactsAct, artifactsTime, carriedOf, chaliceRegenDelay, disarmPresses, freezeTime, frozenBy,
   ghostFollows, ghostSeesBoss, ghostSays, heroPress, naturalism, performArtifact, petalsFor, talismanBlinds, talismanFound,
 } from './artifacts';
+import { abilityProblem, alliesFollow, copyReach, endEnduring, swapWithClone, useAbility } from './abilities';
 
 /*
  * The shared game world. Every change goes through act(), so a server can run
@@ -95,12 +106,27 @@ export type Action =
   | { type: 'faceCurse' }
   /** Ward.interact's «dismiss»: the ward beside the hero is gone. */
   | { type: 'dismiss'; target: string }
+  /**
+   * The armour ability of the class armour worn (ClassArmor.execute, abilities/): `target` the cell it is aimed at where it
+   * asks for one, `choice` the warp beacon's (0 warp to it, 1 clear it).
+   */
+  | { type: 'special'; target?: number; choice?: number }
   /** The Amulet of Yendor's «Let's call it a day»: the party wins here. */
   | { type: 'endGame' }
   /** Live turns: what the hero is to do from now on, a turn at a time (an empty plan stops them). */
   | { type: 'plan'; steps: PlanStep[] }
   /** An artifact's action (artifacts/): Lloyd's beacon's setting and returning among them. */
   | ArtifactAction
+  /** Hero.upgradeTalent: a free point put in a talent (no time passes). */
+  | { type: 'talent'; talent: TalentId }
+  /**
+   * The subclasses' action indicator (ActionIndicator.Action.doAction): the berserker goes berserk; the freerunner
+   * freeruns; the gladiator makes a combo move at a target; the assassin strikes from the shadows at a target (blinking
+   * to it); the sniper fires the mark's special shot.
+   */
+  | { type: 'ability'; ability: 'berserk' | 'freerun' | 'snipe' }
+  | { type: 'ability'; ability: 'combo'; move: ComboMove; target?: string }
+  | { type: 'ability'; ability: 'ambush'; target: string }
   /**
    * The arena of waves: «To battle!» once the party has rested (or, `cancel`, not ready after all), and
    * one of the three rewards after a wave.
@@ -194,6 +220,8 @@ const BLACKSMITH_STREAM = 4;
 const BONES_STREAM = 5;
 /** Sub-stream of a depth's item stream for the artifacts' pieces: the rose's petals, the hourglass's sandbags. */
 const ARTIFACT_STREAM = 6;
+/** Sub-stream of a depth's item stream for the talents' finds (cached rations). */
+const TALENT_STREAM = 7;
 /** Sub-streams of a depth's streams for a hero joining the party, by party size. */
 const JOIN_STREAM = 100;
 
@@ -233,7 +261,8 @@ export function levelAt(world: World, depth: number): Level {
     if (!world.levels[d]) {
       // A party's depths spread wider, with more rooms (party.ts); boss levels keep their layout.
       // The last shop opens only once the imp's errand is done (LastShopLevel.build).
-      const level = generateLevel(world.run, d, levelSpan(partySize(world)), world.impQuest?.done === true);
+      // SEAM(levels): the imp's shop is the Dwarf King's level's now (CityBossLevel); depth 21 becomes a halls level.
+      const level = generateLevel(world.run, d, levelSpan(partySize(world)), false);
       world.levels[d] = level;
       const mobs = populate(world, level, Rng.seeded(deriveSeed(world.run.seed, Stream.MOBS, d)));
       // What the depth gives every hero, so that a hero who joins later gets theirs (party.ts).
@@ -256,10 +285,13 @@ export function levelAt(world: World, depth: number): Level {
           (item) => underChallenges(world, item), levelTrinkets(world),
         ),
       };
+      // A boss level's own (the imp's wares on the King's level).
+      bossFloorCreated(level, world.floors[d]!, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d, IMP_STREAM)));
       if (world.bones && !world.bones.placed && world.bones.depth === d) {
         layBones(world.bones, level, world.floors[d]!, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d, BONES_STREAM)), world.run);
       }
       layArtifactPieces(world, level, world.floors[d]!, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d, ARTIFACT_STREAM)));
+      if (!quietDepth(d)) layCachedRations(world, level, world.floors[d]!, Rng.seeded(deriveSeed(world.run.seed, Stream.ITEMS, d, TALENT_STREAM)));
       const perHero: ItemKind[] = [
         ...(world.run.strengthFound > found.strength ? ['potion.strength' as const] : []),
         ...(world.run.upgradesFound > found.upgrades ? ['scroll.upgrade' as const] : []),
@@ -431,6 +463,20 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
     case 'wait':
     case 'search':
       return null;
+    case 'talent':
+      return typeof action.talent === 'string' ? upgradeProblem(hero, action.talent) : 'no such talent';
+    case 'ability': {
+      const floor = floorAt(world, hero.depth);
+      const ctx: Ctx = { world, depth: hero.depth, level, floor, rng: new Rng({ ...floor.rng }), effects: [] };
+      switch (action.ability) {
+        case 'berserk': return berserkProblem(hero);
+        case 'freerun': return freerunProblem(hero);
+        case 'snipe': return snipeProblem(ctx, hero);
+        case 'combo': return comboProblem(ctx, hero, action.move, action.target ?? '');
+        case 'ambush': return ambushProblem(ctx, hero, action.target);
+        default: return 'unknown ability';
+      }
+    }
     case 'move':
       if (hero.rooted > 0) return 'you are rooted';
       if (Number.isInteger(action.to) && adjacent(hero.pos, action.to) && level.map[action.to] === T.LOCKED_DOOR) {
@@ -454,12 +500,16 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       if (hero.charmed > 0 && hero.charmedBy === mob.id) return 'you are charmed';
       // Hero.canAttack: next to it, or within the weapon's reach (KindOfWeapon.canReach; MagesStaff.reachFactor: a
       // battlemage's staff of disintegration reaches over a cell); a word, or an ally, only face to face.
-      if (adjacent(hero.pos, mob.pos)) return null;
+      if (adjacent(hero.pos, mob.pos) || (mob.ally && copyReach(world, hero, mob))) return null;
+      // Char.canInteract with ally warp: allies up to two cells a point away can be swapped with.
+      if (mob.ally && mob.kind !== 'ward' && mob.kind !== 'lotus' && distance(hero.pos, mob.pos) <= 2 * pointsInTalent(hero, 'ally_warp')) return null;
       const reach = Math.max(heroReach(hero), staffReach(hero));
       return mob.state !== 'passive' && !mob.ally && canReach(world, level, hero, mob.pos, reach) ? null : 'too far away';
     }
     case 'dismiss':
       return dismissProblem(world, hero, action.target);
+    case 'special':
+      return abilityProblem(world, hero, action);
     case 'reward':
       return rewardProblem(world, hero, action.choice);
     case 'wandReward':
@@ -469,7 +519,8 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
     case 'reforge':
       return reforgeProblem(world, hero, action.first, action.second);
     case 'descend':
-      return hero.pos === level.exit ? null : 'not on the stairs';
+      // A boss level's way down may be several cells (its LevelTransition's area), once open.
+      return hero.pos === level.exit || (level.exits?.includes(hero.pos) && level.map[hero.pos] === T.EXIT) ? null : 'not on the stairs';
     case 'artifact': {
       const floor = floorAt(world, hero.depth);
       return artifactProblem(world, hero, action, { world, depth: hero.depth, level, floor, rng: new Rng({ ...floor.rng }), effects: [] });
@@ -497,6 +548,9 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       return 'unknown action';
   }
 }
+
+/** Why an action cannot be done now (the client asks before it sends a targeted one). */
+export const actionProblem = (world: World, hero: Hero, action: Action): string | null => problemWith(world, hero, action);
 
 /** Hero.canAttack with reach: a way within so many steps over open ground (or what is to be avoided), whoever stands there. */
 function reaches(level: Level, from: number, to: number, reach: number): boolean {
@@ -662,6 +716,7 @@ function turnTime(world: World, floor: Floor, turn: Turn): number {
     case 'hero': return turn.hero.time;
     case 'mob': return turn.mob.time;
     case 'respawn': return floor.respawn;
+    case 'boss': return turn.entry.time;
     case 'arena': return world.arena!.tick;
     case 'gas': return floor.gasAt!;
     case 'fuse': return nextFuse(floor.heaps)!;
@@ -685,6 +740,7 @@ function advanceLive(world: World, depth: number, effects: Effect[], until: numb
     }
     const hero = turn.hero;
     floor.now = Math.max(floor.now, hero.time);
+    endEnduring(ctx, hero);
     if (held(hero)) {
       spend(ctx, hero, TIME_TO_REST);
       overChasm(ctx, hero);
@@ -787,7 +843,9 @@ function stepTowards(world: World, hero: Hero, to: number): number | null {
   return path && path.length > 0 ? path[0]! : null;
 }
 
-type Turn = { kind: 'hero'; hero: Hero } | { kind: 'mob'; mob: Mob } | { kind: 'respawn' } | { kind: 'gas' } | { kind: 'arena' } | { kind: 'fuse' };
+type Turn =
+  | { kind: 'hero'; hero: Hero } | { kind: 'mob'; mob: Mob } | { kind: 'respawn' } | { kind: 'gas' } | { kind: 'arena' } | { kind: 'fuse' }
+  | { kind: 'boss'; entry: Timed };
 
 /** Who is due next on a depth; nothing happens on a depth without living heroes. */
 function nextTurn(world: World, depth: number): Turn | undefined {
@@ -811,7 +869,10 @@ function nextTurn(world: World, depth: number): Turn | undefined {
   if (floor.gasAt !== undefined && floor.gasAt < time) [turn, time] = [{ kind: 'gas' }, floor.gasAt];
   // Bomb.Fuse: a lit bomb burns down (after the hero, before the others).
   const fuse = nextFuse(floor.heaps);
-  if (fuse !== undefined && fuse < time) turn = { kind: 'fuse' };
+  if (fuse !== undefined && fuse < time) [turn, time] = [{ kind: 'fuse' }, fuse];
+  // A boss fight's buffs and blobs, after whoever is due at the same moment (an urgent one before them: VFX_PRIO).
+  const entry = nextBossTimed(floor);
+  if (entry && (entry.time < time || (entry.urgent === true && entry.time <= Math.max(time, floor.now)))) turn = { kind: 'boss', entry };
   return turn;
 }
 
@@ -874,6 +935,8 @@ function advance(world: World, depth: number, effects: Effect[]): void {
 
     const hero = turn.hero;
     floor.now = Math.max(floor.now, hero.time);
+    // Hero.act: an Endure that has run its three turns turns what it took into the blows to come.
+    endEnduring(ctx, hero);
     if (held(hero)) {
       // Paralysed (or frozen, or out of time): the turn passes; whatever the player chose waits.
       spend(ctx, hero, TIME_TO_REST);
@@ -923,6 +986,10 @@ function playTurn(ctx: Ctx, turn: Exclude<Turn, { kind: 'hero' }>): void {
       floor.gasAt! += 1;
       evolveGas(ctx);
       return;
+    case 'boss':
+      floor.now = Math.max(floor.now, turn.entry.time);
+      bossTimedTurn(ctx, turn.entry);
+      return;
     case 'fuse':
       floor.now = Math.max(floor.now, nextFuse(floor.heaps)!);
       burnFuses(ctx);
@@ -953,19 +1020,18 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   if (hero.depth === ctx.depth) altarMarksHero(ctx, hero, time);
   // The hero's buffs, the artifacts' among them, once a turn; a cursed hourglass may steal a turn.
   const lost = heroTurns(ctx, hero, from, hero.time);
+  // The talents' cooldowns and trackers count down.
+  talentTime(hero, time);
   for (const ring of heroRings(hero)) wear(ctx, hero, ring, time);
   // The hero's gear as time passes: shields fade, boomerangs come back, crystal mends (throwing.ts).
   if (hero.depth === ctx.depth) gearTick(ctx, hero, time);
 
-  // Caustic ooze burns every turn until washed off in water.
-  if (hero.ooze >= 0) {
-    hero.ooze += time;
-    while (hero.ooze >= 1 && isAlive(hero)) {
-      hero.ooze -= 1;
-      ctx.effects.push({ type: 'hurt', depth: hero.depth, who: hero.id, damage: 1 });
-      hurt(ctx, hero, 1, 'ooze');
-    }
-    if (isWater(ctx.level.map[hero.pos]!) || !isAlive(hero)) hero.ooze = -1;
+  // Ooze.act: caustic ooze eats at the hero every turn until it wears off, or is washed off in water.
+  for (let i = Math.floor(hero.time) - Math.floor(from); i > 0 && hero.ooze >= 0 && isAlive(hero); i--) {
+    oozeTurn(ctx, hero, (damage) => {
+      ctx.effects.push({ type: 'hurt', depth: hero.depth, who: hero.id, damage });
+      hurt(ctx, hero, damage, 'ooze');
+    });
   }
   hero.mindVision = Math.max(0, hero.mindVision - time);
   hero.invisible = Math.max(0, hero.invisible - time);
@@ -1041,6 +1107,7 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
 
 function perform(ctx: Ctx, hero: Hero, action: Action): void {
   const { world, level } = ctx;
+  beforeHeroAct(ctx, hero);
   if (isClassAction(action)) {
     spend(ctx, hero, performClass(ctx, hero, action));
     if (isAlive(hero)) {
@@ -1059,10 +1126,39 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
   }
   switch (action.type) {
     case 'wait':
-      // Hero.rest: resting takes a turn, whatever slows or hastens the hero (spendConstant).
+      // Hero.rest: resting takes a turn, whatever slows or hastens the hero (spendConstant); and digs in (hold fast).
       spend(ctx, hero, TIME_TO_REST, true);
       onRest(hero);
+      holdFastRest(hero, hero.sealShield !== undefined);
       break;
+
+    case 'talent':
+      // Hero.upgradeTalent: no time passes.
+      upgradeTalent(ctx, hero, action.talent);
+      break;
+
+    case 'ability': {
+      let time = 0;
+      switch (action.ability) {
+        case 'berserk': doBerserk(ctx, hero); break;
+        case 'freerun': doFreerun(ctx, hero); break;
+        case 'snipe': time = snipe(ctx, hero); break;
+        case 'combo': time = useComboMove(ctx, hero, action.move, action.target ?? ''); break;
+        case 'ambush': {
+          // Preparation: blink beside the target, then strike as any blow is struck.
+          const mob = mobById(world, hero.depth, action.target)!;
+          heroAmbush(ctx, hero, mob);
+          attack(ctx, hero, mob);
+          time = consumeLethalMomentum(hero) ? 0 : heroAttackDelay(hero);
+          break;
+        }
+      }
+      if (action.ability === 'combo' || action.ability === 'snipe' || action.ability === 'ambush') {
+        if (consumeLethalMomentum(hero)) time = 0;
+      }
+      if (time > 0 || action.ability === 'combo' || action.ability === 'ambush') spend(ctx, hero, time);
+      break;
+    }
 
     case 'search':
       // Hero.search(true): a deliberate search, which takes two turns.
@@ -1106,6 +1202,8 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
         wanderer.pos = from;
         enterCell(level, from);
       }
+      // Hero.actMove: a freerunner builds momentum with each step.
+      if (hero.pos !== from) gainMomentum(hero);
       // GreaterHaste: a move costs no time, and uses one of its moves up.
       spend(ctx, hero, greaterHasteMove(hero) ? 0 : 1 / heroSpeed(hero, footing(ctx, hero)));
       if (hero.pos === from) break;
@@ -1115,12 +1213,10 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
       if (!floating && level.map[hero.pos] === T.WELL) drinkFromWell(ctx, hero);
       heroPress(ctx, hero);
       if (!floating && level.map[hero.pos] === T.HIGH_GRASS) trample(ctx, hero.pos, hero);
-      if (level.arenaDoor !== undefined) {
-        if (hero.depth === 15) enterLair(ctx, hero);
-        else if (hero.depth === 20) enterThroneHall(ctx, hero);
-        else if (hero.depth === 25) awakenYog(ctx, hero);
-        else enterArena(ctx, hero);
-      }
+      // Level.occupyCell: rejuvenating steps turn the grass underfoot to tall grass now and then.
+      if (!floating) onHeroMovedOnGrass(ctx, hero);
+      // Level.occupyCell on a boss's level: the hero may move the fight on.
+      if (isBossDepth(hero.depth)) bossOccupy(ctx, hero);
       search(ctx, hero, false);
       break;
     }
@@ -1133,12 +1229,22 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
           ctx.effects.push({ type: 'ward', hero: hero.id, mob: mob.id });
         } else if (mob.kind === 'ghostHero' && ghostIntroduces(ctx, hero, mob)) {
           // DriedRose.GhostHero.interact: its first word, before it ever trades places.
-        } else if (allySwaps(mob) && adjacent(hero.pos, mob.pos)) {
+        } else if (mob.kind === 'shadow' && copyReach(world, hero, mob) && swapWithClone(ctx, hero, mob)) {
+          // ShadowAlly.interact with Perfect Copy: they trade places from a distance.
+          spend(ctx, hero, 1 / heroSpeed(hero));
+        } else if (allySwaps(mob) && (adjacent(hero.pos, mob.pos) || hasTalent(hero, 'ally_warp'))) {
           const from = hero.pos;
           hero.pos = mob.pos;
           mob.pos = from;
           enterCell(level, hero.pos);
-          spend(ctx, hero, 1 / heroSpeed(hero));
+          if (hasTalent(hero, 'ally_warp')) {
+            // Ally warp: the swap is instant, with a flash at both ends.
+            ctx.effects.push({ type: 'blinked', depth: ctx.depth, who: hero.id, from, to: hero.pos });
+            ctx.effects.push({ type: 'blinked', depth: ctx.depth, who: mob.id, from: hero.pos, to: from });
+          } else {
+            gainMomentum(hero);
+            spend(ctx, hero, 1 / heroSpeed(hero));
+          }
         }
         break;
       }
@@ -1148,7 +1254,8 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
         spend(ctx, hero, 1);
         break;
       }
-      if (mob.state === 'passive' && !isEnemy(mob)) {
+      // An inactive pylon is no one to talk to: a blow at it does nothing (Pylon.isInvulnerable).
+      if (mob.state === 'passive' && !isEnemy(mob) && mob.kind !== 'pylon') {
         // Not a fight: a word with the sad ghost, or business with the
         // shopkeeper; it takes no time.
         if (isShopkeeper(mob)) ctx.effects.push({ type: 'shop', hero: hero.id });
@@ -1173,13 +1280,8 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
         break;
       }
       attack(ctx, hero, mob);
-      // A berserker strikes faster the more foes surround him.
-      let delay = heroAttackDelay(hero);
-      if (hero.subclass === 'berserker') {
-        const around = NEIGHBOURS8.filter((n) => charAt(world, hero.depth, hero.pos + n)).length;
-        if (around > 1) delay *= 1 - around / 16;
-      }
-      spend(ctx, hero, delay);
+      // Hero.attackDelay: a kill with lethal momentum costs no time.
+      spend(ctx, hero, consumeLethalMomentum(hero) ? 0 : heroAttackDelay(hero));
       break;
     }
 
@@ -1244,6 +1346,10 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
       win(ctx, hero, 'amulet');
       return;
 
+    case 'special':
+      spend(ctx, hero, useAbility(ctx, hero, action, { returnTo: (depth, pos) => beaconReturn(ctx, hero, depth, pos) }));
+      break;
+
     case 'artifact':
       spend(ctx, hero, performArtifact(ctx, hero, action, {
         teleport: () => teleportHero(ctx, hero),
@@ -1305,156 +1411,6 @@ function win(ctx: Ctx, hero: Hero, ending: 'amulet' | 'surface'): void {
 }
 
 /**
- * A boss's door shuts only once every living hero is through it: a companion
- * still upstairs must never find it closed, with no key to open it again.
- */
-function wholeParty(world: World, depth: number, through: (pos: number) => boolean): boolean {
-  return world.heroes.filter(isAlive).every((hero) => hero.depth === depth && through(hero.pos));
-}
-
-/**
- * PrisonBossLevel.press: Tengu appears when the first hero sets foot in the
- * arena, and the door locks once the whole party on the depth is inside.
- */
-function enterArena(ctx: Ctx, hero: Hero): void {
-  const { level, floor, world, depth, rng } = ctx;
-  const arena = level.rooms.find((room) => room.type === RoomType.BOSS_EXIT);
-  if (!arena) return;
-  const inside = (pos: number): boolean =>
-    cellX(pos) > arena.left && cellX(pos) < arena.right && cellY(pos) > arena.top && cellY(pos) < arena.bottom;
-  if (!floor.arenaEntered) {
-    if (!inside(hero.pos)) return;
-    floor.arenaEntered = true;
-    let pos = -1;
-    for (let attempt = 0; attempt < 200 && pos === -1; attempt++) {
-      const cell = rng.intBetween(arena.left + 1, arena.right) + rng.intBetween(arena.top + 1, arena.bottom) * WIDTH;
-      if (cell !== hero.pos && isPassable(level, cell) && !charAt(world, depth, cell)) pos = cell;
-    }
-    if (pos === -1) return;
-    const tengu = scaleMob(world, createMob(`#${++world.nextId}`, 'tengu', pos, 'hunting', floor.now));
-    Object.assign(tengu, { enemy: hero.id, target: hero.pos, enemySeen: true });
-    floor.mobs.push(tengu);
-    enterCell(level, pos);
-    ctx.effects.push({ type: 'noticed', depth, mob: tengu.id });
-    ctx.effects.push({ type: 'yell', depth, mob: tengu.id, kind: 'tengu', line: 'notice', hero: hero.id });
-    ghostSeesBoss(ctx);
-  }
-  const fighting = floor.mobs.some((mob) => mob.kind === 'tengu');
-  const door = level.arenaDoor!;
-  if (fighting && level.map[door] !== T.LOCKED_DOOR && wholeParty(world, depth, inside)) {
-    level.map[door] = T.LOCKED_DOOR;
-    ctx.effects.push({ type: 'arena', depth, sealed: true });
-  }
-}
-
-/**
- * CavesBossLevel.press: DM-300 starts up somewhere out of sight as soon as a
- * hero steps out of the stairs room, and the rock closes its door once the
- * whole party is out in the cave.
- */
-function enterLair(ctx: Ctx, hero: Hero): void {
-  const { level, floor, world, depth, rng } = ctx;
-  const room = level.rooms.find((r) => r.type === RoomType.ENTRANCE);
-  if (!room) return;
-  const outside = (pos: number): boolean =>
-    cellX(pos) < room.left || cellX(pos) > room.right || cellY(pos) < room.top || cellY(pos) > room.bottom;
-  if (!floor.arenaEntered) {
-    if (!outside(hero.pos)) return;
-    floor.arenaEntered = true;
-    const seen = heroView(world, hero);
-    let pos = -1;
-    for (let attempt = 0; attempt < 500 && pos === -1; attempt++) {
-      const cell = rng.int(LENGTH);
-      if (isPassable(level, cell) && outside(cell) && !seen[cell] && !charAt(world, depth, cell)) pos = cell;
-    }
-    if (pos === -1) return;
-    const dm300 = scaleMob(world, createMob(`#${++world.nextId}`, 'dm300', pos, 'hunting', floor.now));
-    Object.assign(dm300, { enemy: hero.id, target: hero.pos });
-    floor.mobs.push(dm300);
-    enterCell(level, pos);
-    ctx.effects.push({ type: 'yell', depth, mob: dm300.id, kind: 'dm300', line: 'notice', hero: hero.id });
-    ghostSeesBoss(ctx);
-  }
-  const fighting = floor.mobs.some((mob) => mob.kind === 'dm300');
-  const door = level.arenaDoor!;
-  if (fighting && level.map[door] !== T.WALL && wholeParty(world, depth, outside)) {
-    level.map[door] = T.WALL;
-    ctx.effects.push({ type: 'arena', depth, sealed: true });
-  }
-}
-
-/**
- * CityBossLevel.press: the King of Dwarves appears in his hall, out of sight
- * if he can, when a hero steps through its door; the door locks once the
- * whole party is in.
- */
-function enterThroneHall(ctx: Ctx, hero: Hero): void {
-  const { level, floor, world, depth, rng } = ctx;
-  const door = level.arenaDoor!;
-  const inHall = (pos: number): boolean => cellY(pos) < cellY(door);
-  if (!floor.arenaEntered) {
-    if (!inHall(hero.pos)) return;
-    floor.arenaEntered = true;
-    const seen = heroView(world, hero);
-    let pos = -1;
-    for (let attempt = 0; attempt < 500 && pos === -1; attempt++) {
-      const cell = rng.int(LENGTH);
-      if (isPassable(level, cell) && inHall(cell) && !charAt(world, depth, cell) && (!seen[cell] || attempt > 20)) pos = cell;
-    }
-    if (pos === -1) return;
-    const king = scaleMob(world, createMob(`#${++world.nextId}`, 'king', pos, 'hunting', floor.now));
-    Object.assign(king, { enemy: hero.id, target: hero.pos, enemySeen: true });
-    floor.mobs.push(king);
-    enterCell(level, pos);
-    ctx.effects.push({ type: 'yell', depth, mob: king.id, kind: 'king', line: 'notice', hero: hero.id });
-    ghostSeesBoss(ctx);
-  }
-  const fighting = floor.mobs.some((mob) => mob.kind === 'king');
-  if (fighting && level.map[door] !== T.LOCKED_DOOR && wholeParty(world, depth, inHall)) {
-    level.map[door] = T.LOCKED_DOOR;
-    ctx.effects.push({ type: 'arena', depth, sealed: true });
-  }
-}
-
-/**
- * HallsBossLevel.press: the first step off the stairs breaks the walls of
- * their room, and the stairs with them; Yog-Dzewa awakens somewhere in the
- * dark, its two fists beside it.
- */
-function awakenYog(ctx: Ctx, hero: Hero): void {
-  const { level, floor, world, depth, rng } = ctx;
-  if (floor.arenaEntered || hero.pos === level.entrance) return;
-  floor.arenaEntered = true;
-  const broken = breakStairsRoom(level.map);
-  level.map[level.entrance] = T.EMPTY_SP;
-  for (const cell of [...broken, level.entrance]) ctx.effects.push({ type: 'burnt', depth, pos: cell });
-  for (const h of heroesOn(world, depth)) observe(world, h);
-  const seen = heroView(world, hero);
-  let pos = -1;
-  for (let attempt = 0; attempt < 1000 && pos === -1; attempt++) {
-    const cell = rng.int(LENGTH);
-    if (isPassable(level, cell) && !seen[cell] && !charAt(world, depth, cell)) pos = cell;
-  }
-  if (pos === -1) return;
-  const yog = scaleMob(world, createMob(`#${++world.nextId}`, 'yog', pos, 'hunting', floor.now));
-  Object.assign(yog, { enemy: hero.id, target: hero.pos });
-  floor.mobs.push(yog);
-  enterCell(level, pos);
-  // Yog.spawnFists: the rotting fist and the burning fist, right next to it.
-  const around = NEIGHBOURS8.map((n) => pos + n).filter((c) => isPassable(level, c) && !charAt(world, depth, c));
-  for (const kind of ['rottingFist', 'burningFist'] as const) {
-    if (around.length === 0) break;
-    const cell = around.splice(rng.index(around.length), 1)[0]!;
-    const fist = scaleMob(world, createMob(`#${++world.nextId}`, kind, cell, 'wandering', floor.now + 1));
-    fist.target = hero.pos;
-    floor.mobs.push(fist);
-    enterCell(level, cell);
-  }
-  ctx.effects.push({ type: 'yell', depth, mob: yog.id, kind: 'yog', line: 'notice', hero: hero.id });
-    ghostSeesBoss(ctx);
-}
-
-/**
  * HighGrass.trample: walked through, tall grass is flattened and sometimes sheds a seed or a dewdrop.
  * The huntress travels through it without trampling it: it only furrows (FURROWED_GRASS, which still
  * stands and hides, but sheds nothing more and is flattened by anyone else). Also a hard press on it (wands.ts pressCell: one thrown by a blast wave landing).
@@ -1474,8 +1430,8 @@ export function trample(ctx: Ctx, pos: number, hero?: Hero): void {
       return;
     }
   }
-  // A warden draws bark from the grass.
-  if (hero?.subclass === 'warden') hero.barkskin = Math.max(hero.barkskin, Math.trunc(hero.ht / 3));
+  // HighGrass.trample: barkskin for the huntress, berries from nature's bounty.
+  if (hero) onGrassTrampled(ctx, hero, pos);
   // HighGrass.trample: a seed one time in 25 and a dewdrop in 6; the sandals of nature worn draw strength from it,
   // and the grass gives more (seeds up to one in 9, dew up to one in 4); cursed, nothing at all; barren land, nothing.
   const nature = naturalism(hero) ?? 0;
@@ -1494,6 +1450,11 @@ export function trample(ctx: Ctx, pos: number, hero?: Hero): void {
 const isFurrowed = (level: Level, pos: number): boolean => level.map[pos] === T.HIGH_GRASS && (level.furrowed ?? []).includes(pos);
 function furrow(level: Level, pos: number): void {
   (level.furrowed ??= []).push(pos);
+}
+/** Level.set(pos, FURROWED_GRASS) for the talents and the warden: tall grass that still stands, and sheds nothing. */
+export function furrowGrass(level: Level, pos: number): void {
+  level.map[pos] = T.HIGH_GRASS;
+  if (!(level.furrowed ?? []).includes(pos)) furrow(level, pos);
 }
 function unfurrow(level: Level, pos: number): void {
   level.furrowed = (level.furrowed ?? []).filter((cell) => cell !== pos);
@@ -1565,6 +1526,12 @@ function ghostIntroduces(ctx: Ctx, hero: Hero, ghost: Mob): boolean {
  * InterlevelScene's RETURN: the hero goes straight to another depth (a scroll of passage, a beacon of returning), to
  * a cell there or, without one, its way in; the rose's ghost follows.
  */
+/** Mob.holdAllies and restoreAllies: the rose's ghost, the shadow clone and the spirit hawk come along. */
+function followHero(world: World, hero: Hero, fromDepth: number): void {
+  ghostFollows(world, hero, fromDepth);
+  alliesFollow(world, hero, fromDepth);
+}
+
 export function moveToDepth(world: World, hero: Hero, depth: number, pos?: number): void {
   const fromDepth = hero.depth;
   const fromLevel = levelAt(world, hero.depth);
@@ -1572,7 +1539,7 @@ export function moveToDepth(world: World, hero: Hero, depth: number, pos?: numbe
   const level = levelAt(world, depth);
   hero.depth = depth;
   place(world, hero, level, pos ?? level.entrance);
-  ghostFollows(world, hero, fromDepth);
+  followHero(world, hero, fromDepth);
 }
 
 /** ScrollOfTeleportation.teleportHero: somewhere out of sight on the level, if there is anywhere. */
@@ -1604,7 +1571,7 @@ function beaconReturn(ctx: Ctx, hero: Hero, depth: number, pos: number): void {
   }
   hero.depth = depth;
   place(world, hero, levelAt(world, depth), pos);
-  ghostFollows(world, hero, fromDepth);
+  followHero(world, hero, fromDepth);
   ctx.effects.push({ type: 'teleported', hero: hero.id });
   const there = levelAt(world, depth);
   if (depth === ctx.depth && trapAt(there.map[hero.pos]!) && !(hero.levitating ?? 0)) triggerTrap(ctx, hero, hero.pos);
@@ -1622,7 +1589,9 @@ function changeDepth(ctx: Ctx, hero: Hero, depth: number, arrival: 'entrance' | 
   leaveCell(world, fromLevel, fromDepth, from);
   place(world, hero, level, arrival === 'entrance' ? level.entrance : level.exit);
   // Mob.holdAllies and restoreAllies: the rose's ghost comes along.
-  ghostFollows(world, hero, fromDepth);
+  followHero(world, hero, fromDepth);
+  // GameScene.create: rogue's foresight hints at a secret room; iron stomach does not persist between floors.
+  foresightHint({ ...ctx, depth, level, floor: floorAt(world, depth) }, hero);
 }
 
 /**
@@ -1659,7 +1628,7 @@ function fall(ctx: Ctx, hero: Hero, into: number): void {
   hurt({ world, depth, level: below, floor, rng, effects }, hero, damage, 'fall');
   if (!isAlive(hero)) return;
   observe(world, hero);
-  ghostFollows(world, hero, fromDepth);
+  followHero(world, hero, fromDepth);
   reviveFallen(world, depth, effects);
 }
 

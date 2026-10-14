@@ -1,3 +1,7 @@
+import { hasTalent } from './talents/data';
+import { tbOf } from './talents/state';
+import { collect } from './inventory';
+import { dropItem } from './floor';
 import type { Hero } from './actors';
 import type { Ctx } from './floor';
 import { createItem, isCurseEnchant, type Item, itemDef, randomWeaponCurse, wandMaxCharges } from './items';
@@ -56,6 +60,15 @@ export function imbue(ctx: Ctx, hero: Hero, staffRef: ItemRef, wandIndex: number
   const wand = hero.items[wandIndex]!;
   hero.items.splice(wandIndex, 1);
   const oldCharges = staff.wand?.charges ?? 0;
+  // Wand preservation: the wand replaced comes back out, drained to +0, once (again after a level at +2).
+  const old = staff.wand;
+  if (old && hasTalent(hero, 'wand_preservation') && !tbOf(hero).preserved) {
+    tbOf(hero).preserved = 1;
+    old.level = 0;
+    delete old.resin;
+    if (!collect(hero, old)) dropItem(ctx.floor, hero.pos, old);
+    ctx.effects.push({ type: 'tmsg', hero: hero.id, key: 'wand_preservation.preserved', tone: 'p' });
+  }
   let level = Math.max(staff.level, wand.level);
   if (wand.level >= staff.level && staff.level > 0) level++;
   staff.level = level;

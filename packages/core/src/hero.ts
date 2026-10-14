@@ -4,15 +4,20 @@ import { type Hero, heroRings, isAlive, type Mob, type MobKind } from './actors'
 import { mightHTMultiplier } from './rings';
 import { hungerPaused, mightOnLevelUp } from './buffs';
 import { SALT_CUBE, trinketLevel } from './trinkets';
-import { hurt } from './combat';
+import { hurt, killHero } from './combat';
+import { talentTurn } from './talents/turns';
+import { berserkRecover } from './talents/berserk';
+import { pointsInTalent } from './talents/data';
 import { type Ctx, exploredCells, heroView } from './floor';
 import { heroGainsExp } from './ident';
 import { wandsGainExp } from './wands';
 import { isBossDepth } from './level/builder';
 import { cellX, cellY, HEIGHT, WIDTH } from './level/geometry';
+import { circleCells } from './fov';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { sealShieldTick } from './seal';
 import { classTurn } from './classes/turn';
+import { chargeClassArmor } from './classArmor';
 import type { World } from './world';
 import { artifactsAct, artifactsGainExp, chaliceRegenDelay, talismanBlinds, talismanFound } from './artifacts';
 
@@ -74,6 +79,12 @@ export function earnExp(ctx: Ctx, hero: Hero, exp: number, source?: 'potion'): v
   ctx.effects.push({ type: 'exp', hero: hero.id, amount: exp });
   // Hero.earnExp: the artifacts that charge with experience get their share of a level (a potion's too).
   artifactsGainExp(ctx, hero, percent);
+  berserkRecover(hero, percent);
+  // Hero.earnExp: rejuvenating steps' furrow count runs down with experience (not a potion's).
+  if (source !== 'potion' && hero.tal?.furrow !== undefined) {
+    hero.tal.furrow -= percent * 200;
+    if (hero.tal.furrow <= 0) delete hero.tal.furrow;
+  }
   // Hero.earnExp: a potion of experience teaches the items nothing.
   if (source !== 'potion') {
     heroGainsExp(ctx, hero, percent);
@@ -83,6 +94,8 @@ export function earnExp(ctx: Ctx, hero: Hero, exp: number, source?: 'potion'): v
   let levelUp = false;
   while (hero.exp >= maxExpFor(hero.lvl)) {
     hero.exp -= maxExpFor(hero.lvl);
+    // Wand preservation at +2: a level gained renews it.
+    if (pointsInTalent(hero, 'wand_preservation') === 2) delete hero.tal?.preserved;
     if (hero.lvl < MAX_LEVEL) {
       hero.lvl++;
       levelUp = true;
@@ -197,16 +210,13 @@ function regenerationTurn(ctx: Ctx, hero: Hero): void {
 
 /* A boss's sealed floor (LockedFloor) */
 
-/** The bosses whose fight seals their floor. */
-const BOSSES: ReadonlySet<MobKind> = new Set(['goo', 'tengu', 'dm300', 'king', 'yog']);
-
 /**
- * Level.locked: a boss's floor is sealed while its fight is on. Seam for the bosses stream, which
- * seals and unseals the floors as each boss does; here, while a boss is up and hunting.
+ * Level.locked: a boss's floor is sealed while its fight is on (the bosses' levels seal and unseal it:
+ * bosses/*.ts).
  */
 export function floorLocked(world: World, depth: number): boolean {
   if (!isBossDepth(depth) || world.arena) return false;
-  return (world.floors[depth]?.mobs ?? []).some((mob) => BOSSES.has(mob.kind) && mob.state === 'hunting');
+  return world.floors[depth]?.boss?.locked === true;
 }
 
 /** LockedFloor.left: passive healing goes on for this many turns of a boss fight, more as the boss is hurt. */
@@ -226,18 +236,23 @@ function lockedFloorTurn(ctx: Ctx, hero: Hero): void {
 export const regenOn = (world: World, hero: Hero): boolean => (hero.lockedFloor ?? LOCKED_TURNS) >= 1 || !floorLocked(world, hero.depth);
 
 /**
- * LockedFloor.addTime, from Goo.damage, Tengu.damage, DM300.damage, DwarfKing.damage, YogDzewa.damage and
- * YogFist.damage: hurting the boss keeps passive healing going (50 turns at most). Seam for the bosses
- * stream; these are Shattered's factors without the stronger bosses' challenge.
+ * LockedFloor.addTime, from Goo.damage, Tengu.damage, DM300.damage, Pylon.damage, DwarfKing.damage,
+ * YogDzewa.damage and YogFist.damage: hurting the boss keeps passive healing going (50 turns at most),
+ * by `factor` turns for every point of health it lost (each boss's own, without the stronger bosses'
+ * challenge).
  */
-export function bossHurt(ctx: Ctx, boss: Mob, damage: number): void {
-  const factor: Partial<Record<MobKind, number>> = {
-    goo: 1.5, tengu: 1, dm300: 1, king: 1 / 3, yog: 1 / 2, rottingFist: 1 / 2, burningFist: 1 / 2,
-  };
-  const f = factor[boss.kind];
-  if (f === undefined || damage <= 0) return;
+export function bossHurt(ctx: Ctx, boss: Mob, damage: number, factor: number): void {
+  if (damage <= 0) return;
   for (const hero of ctx.world.heroes) {
-    if (hero.depth === ctx.depth && hero.lockedFloor !== undefined) hero.lockedFloor = Math.min(hero.lockedFloor + damage * f, LOCKED_TURNS);
+    if (hero.depth === ctx.depth && hero.lockedFloor !== undefined) hero.lockedFloor = Math.min(hero.lockedFloor + damage * factor, LOCKED_TURNS);
+  }
+  void boss;
+}
+
+/** LockedFloor.removeTime, from Goo.act: Goo healing in its water takes passive healing's time away. */
+export function bossHealed(ctx: Ctx, time: number): void {
+  for (const hero of ctx.world.heroes) {
+    if (hero.depth === ctx.depth && hero.lockedFloor !== undefined) hero.lockedFloor = Math.max(0, hero.lockedFloor - time);
   }
 }
 
@@ -256,8 +271,12 @@ export function heroTurns(ctx: Ctx, hero: Hero, from: number, to: number): numbe
     lockedFloorTurn(ctx, hero);
     hungerTurn(ctx, hero);
     sealShieldTick(ctx, hero);
-    // The classes stream: the Duelist's Charger and trackers, the Cleric's tome, the class armour's charge.
+    // The classes stream: the Duelist's Charger and trackers, the Cleric's tome.
     classTurn(ctx, hero);
+    // ClassArmor.Charger: worn class armour gathers charge.
+    chargeClassArmor(ctx, hero);
+    // The talents' and subclasses' buffs (Berserk, Combo, Momentum, Preparation, protective shadows).
+    if (talentTurn(ctx, hero) && isAlive(hero) === false) killHero(ctx, hero, 'berserk');
     // The artifacts' buffs (Artifact.ArtifactBuff), on the hero's own depth; the time a cursed hourglass steals.
     if (hero.depth === ctx.depth) lost += artifactsAct(ctx, hero);
     // timeStasis.detach: back in time.
@@ -284,7 +303,11 @@ const HUNGER_FOR_SEARCH = 6;
 export function search(ctx: Ctx, hero: Hero, intentional: boolean): boolean {
   if (!isAlive(hero)) return false;
   // Pixel Dungeon's ring of detection, while it is still found, widens it.
-  const distance = hero.heroClass === 'rogue' ? 2 : 1;
+  // Wide search: a cell further, and at +1 in a circle.
+  const wide = pointsInTalent(hero, 'wide_search');
+  const distance = (hero.heroClass === 'rogue' ? 2 : 1) + (wide > 0 ? 1 : 0);
+  const circular = wide === 1;
+  const round = circular ? new Set(circleCells(hero.pos, distance)) : null;
   const fov = heroView(ctx.world, hero);
   const cx = cellX(hero.pos);
   const cy = cellY(hero.pos);
@@ -292,7 +315,7 @@ export function search(ctx: Ctx, hero: Hero, intentional: boolean): boolean {
   for (let y = Math.max(cy - distance, 0); y <= Math.min(cy + distance, HEIGHT - 1); y++) {
     for (let x = Math.max(cx - distance, 0); x <= Math.min(cx + distance, WIDTH - 1); x++) {
       const p = x + y * WIDTH;
-      if (!fov[p] || p === hero.pos) continue;
+      if (!fov[p] || p === hero.pos || (round && !round.has(p))) continue;
       if (hasFlag(ctx.level.map[p]!, F.SECRET)) {
         // A cursed talisman worn lets nothing be noticed in passing.
         const chance = intentional ? 1 : talismanBlinds(hero) ? 0 : ctx.level.map[p] === T.SECRET_DOOR ? 0.2 - hero.depth / 100 : 0.4 - hero.depth / 250;

@@ -1,3 +1,4 @@
+import { glyphLossStart } from './talents';
 import { armorTier } from './armor';
 import type { Hero } from './actors';
 import type { Ctx } from './floor';
@@ -227,8 +228,8 @@ export function upgradeGear(ctx: Ctx, hero: Hero, item: Item): UpgradeLoss {
         delete item.infused;
         loss = 'curse';
       }
-    } else if (level >= 4 && rng.floatMax(10) < 2 ** (level - 4)) {
-      // Seam: the runic transference talent (talents stream) raises where armour starts to lose its glyph.
+    } else if (level >= (itemDef(item.kind).category === 'armor' ? glyphLossStart(hero) : 4) && rng.floatMax(10) < 2 ** (level - 4)) {
+      // Armor.upgrade: a metamorphosed runic transference raises where armour starts to lose its glyph.
       delete item.enchant;
       delete item.glyph;
       loss = 'enchant';

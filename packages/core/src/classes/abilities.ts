@@ -1,11 +1,8 @@
 import { ipow } from '../fmath';
 import type { Hero } from '../actors';
-import { regenOn } from '../hero';
-import { armorChargeMultiplier } from '../rings';
 import { heroView, type Ctx, type Char } from '../floor';
 import type { World } from '../world';
-import { CLASS_ARMOR_OF } from '../classArmor';
-import { type AbilityId, ARMOR_ABILITIES, hasTalent, pointsIn } from '../talents';
+import { hasTalent, pointsInTalent as pointsIn } from '../talents/data';
 import { challengeProblem, doChallenge, doElementalStrike, doFeint, duelTurn, elementalProblem, eliminationActive, feintProblem } from './duelist-armor';
 import { ascendedProblem, doAscend, doPowerOfMany, doTrinity, powerCost, powerProblem, trinityCost, trinityProblem } from './cleric-armor';
 
@@ -16,8 +13,11 @@ import { ascendedProblem, doAscend, doPowerOfMany, doTrinity, powerCost, powerPr
  * the Cleric's are registered here.
  */
 
+/** The Duelist's and the Cleric's armour abilities (abilities/index.ts holds them beside the other four classes'). */
+export type ClassAbilityId = 'challenge' | 'elementalStrike' | 'feint' | 'ascendedForm' | 'trinity' | 'powerOfMany';
+
 export interface AbilityDef {
-  id: AbilityId;
+  id: ClassAbilityId;
   /** ArmorAbility.baseChargeUse. */
   cost: number;
   /** Whether the ability asks for a cell (targetingPrompt). */
@@ -28,7 +28,7 @@ export interface AbilityDef {
   perform(ctx: Ctx, hero: Hero, cell: number | undefined, choice: number | undefined): number;
 }
 
-export const ABILITY_DEFS: Readonly<Record<AbilityId, AbilityDef>> = {
+export const ABILITY_DEFS: Readonly<Record<ClassAbilityId, AbilityDef>> = {
   challenge: { id: 'challenge', cost: 50, aims: true, problem: challengeProblem, perform: doChallenge },
   elementalStrike: { id: 'elementalStrike', cost: 25, aims: true, problem: elementalProblem, perform: doElementalStrike },
   feint: { id: 'feint', cost: 35, aims: true, problem: feintProblem, perform: doFeint },
@@ -43,24 +43,23 @@ export const ABILITY_DEFS: Readonly<Record<AbilityId, AbilityDef>> = {
   },
 };
 
-export const abilityDef = (hero: Hero): AbilityDef | undefined => (hero.armorAbility ? ABILITY_DEFS[hero.armorAbility as AbilityId] : undefined);
+export const isClassAbility = (id: string | undefined): id is ClassAbilityId => id !== undefined && Object.hasOwn(ABILITY_DEFS, id);
 
-/** The abilities a class may choose among (HeroClass.armorAbilities), when the classes stream has them. */
-export const abilitiesOf = (hero: Hero): readonly AbilityId[] => ARMOR_ABILITIES[hero.heroClass] ?? [];
+export const abilityDef = (hero: Hero): AbilityDef | undefined => (isClassAbility(hero.ability) ? ABILITY_DEFS[hero.ability] : undefined);
 
-/** ClassArmor.charge: percent, from 0 to 100; absent in older saves until first used (50). */
-export const armorCharge = (hero: Hero): number => (hero.armor.charge ??= 50);
+/** ClassArmor.charge: percent, from 0 to 100. */
+export const armorCharge = (hero: Hero): number => hero.armor.charge ?? 0;
 
 /** ArmorAbility.chargeUse: less with heroic energy (12%/23%/32%/40%), and the elimination match's cheaper challenge (16%...50%). */
 export function chargeUse(hero: Hero, def: AbilityDef, choice?: number, world?: World): number {
   let use = def.costOf ? def.costOf(hero, choice, world) : def.cost;
-  switch (pointsIn(hero, 'HEROIC_ENERGY')) {
+  switch (pointsIn(hero, 'heroicEnergy')) {
     case 1: use *= Math.fround(0.88); break;
     case 2: use *= Math.fround(0.77); break;
     case 3: use *= Math.fround(0.68); break;
     case 4: use *= Math.fround(0.6); break;
   }
-  if (def.id === 'challenge' && eliminationActive(hero)) use *= ipow(0.84, pointsIn(hero, 'ELIMINATION_MATCH'));
+  if (def.id === 'challenge' && eliminationActive(hero)) use *= ipow(0.84, pointsIn(hero, 'eliminationMatch'));
   return Math.fround(use);
 }
 
@@ -69,15 +68,13 @@ export function spendArmorCharge(hero: Hero, amount: number): void {
   hero.armor.charge = armorCharge(hero) - amount;
 }
 
-/** ClassArmor.Charger.act: 500 turns to full, faster with rings of energy; not while a sealed floor stops healing. */
+/** What the class armour's abilities do each turn (the charge itself is classArmor.ts chargeClassArmor). */
 export function classArmorTurn(ctx: Ctx, hero: Hero): void {
   duelTurn(ctx, hero);
-  if (!hero.armorAbility || !abilityDef(hero) || hero.armor.charge === undefined || hero.armor.kind !== CLASS_ARMOR_OF[hero.heroClass]) return;
-  if (regenOn(ctx.world, hero)) hero.armor.charge = Math.min(100, hero.armor.charge + Math.fround(Math.fround(100 / 500) * armorChargeMultiplier(hero)));
 }
 
 /** Why the class armour's ability cannot be used now (ClassArmor.execute, then the ability's own refusals), or null. */
-export function abilityProblem(world: World, hero: Hero, cell: number | undefined, choice?: number): string | null {
+export function classAbilityProblem(world: World, hero: Hero, cell: number | undefined, choice?: number): string | null {
   const def = abilityDef(hero);
   if (!def) return 'art:items.armor.classarmor.no_ability';
   if (def.aims && (cell === undefined || !Number.isInteger(cell) || cell < 0)) return 'choose a target';
@@ -88,7 +85,7 @@ export function abilityProblem(world: World, hero: Hero, cell: number | undefine
 }
 
 /** Uses the ability; returns the time it took. */
-export function performAbility(ctx: Ctx, hero: Hero, cell: number | undefined, choice?: number): number {
+export function performClassAbility(ctx: Ctx, hero: Hero, cell: number | undefined, choice?: number): number {
   const def = abilityDef(hero)!;
   return def.perform(ctx, hero, cell, choice);
 }

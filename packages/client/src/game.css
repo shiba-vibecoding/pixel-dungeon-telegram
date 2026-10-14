@@ -212,6 +212,18 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* The journal's notes (the hero stream): a landmark journal.png has no icon for takes an item's picture; a floor's feeling, none. */
 .pd-jicon.item { background: none; display: grid; place-items: center; }
 .pd-jicon.blank { background: none; }
+
+/* BossHealthBar: the boss's name and health under the HUD's band, a blood-red bar that drips at the boss's last stand. */
+.pd-bossbar { display: flex; align-items: center; gap: 6px; margin: 4px 8px 0; }
+.pd-bossbar[hidden] { display: none; }
+.pd-bossbar .pd-icon { width: 16px; height: 16px; flex: none; }
+.pd-bossbar .pd-boss-name { font: var(--text-hud, 400 20px/20px var(--font-small)); color: #ff6a4a; text-shadow: var(--text-outline); white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.pd-bossbar .pd-bar.boss { flex: 1; height: 16px; }
+.pd-bossbar .pd-bar.boss::before { background: linear-gradient(to bottom, #ff6a5a 0 25%, #c81e1e 25% 70%, #7a0e0e 70% 100%); }
+.pd-bossbar .pd-bar.boss.shield::after { background: rgba(140, 200, 255, 0.45); }
+.pd-bossbar.bleeding .pd-bar.boss::before { animation: pd-boss-bleed 0.8s steps(2) infinite; }
+.pd-bossbar .pd-bar.boss .pd-bar-text { font-size: 16px; line-height: 16px; }
+@keyframes pd-boss-bleed { 50% { filter: brightness(1.35); } }
 /* The bestiary (mobs stream): a monster not seen yet is its dark shape. */
 .pd-portrait.silhouette canvas { filter: brightness(0) opacity(0.45); }
 .pd-catalog .pd-portrait canvas { max-width: 32px; max-height: 32px; image-rendering: pixelated; }
@@ -222,6 +234,29 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* A choice an item asks for (alchemyui.ts showChoice): the option's picture before its words, long words wrapping. */
 .pd-button.pd-choice { display: flex; align-items: center; justify-content: center; gap: 6px; white-space: normal; text-align: left; }
 .pd-button.pd-choice .pd-sitem { --u: 2px; }
+
+/* ---------- Talents: the action indicator (ActionIndicator) ---------- */
+.pd-actionind {
+  position: absolute; left: calc(var(--safe-l, 0px) + 8px); top: 42%; z-index: var(--z-hud, 10);
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
+}
+.pd-actionind[hidden] { display: none; }
+.pd-actionbtn {
+  position: relative; width: 48px; height: 48px; display: grid; place-items: center; padding: 0; background: var(--stone-800);
+  clip-path: var(--notch); box-shadow: inset 0 0 0 2px var(--gold-deep), inset 0 0 0 4px var(--void); cursor: pointer;
+}
+.pd-actionbtn .pd-hicon { --u: 2px; }
+.pd-actionbtn b {
+  position: absolute; right: 3px; bottom: 1px; font: var(--text-caption, 400 15px/16px var(--font-small)); color: var(--good, #8f8);
+  text-shadow: 1px 1px 0 var(--void);
+}
+.pd-actionbtn:active { background: var(--stone-900); }
+.pd-actionbtn.berserk { box-shadow: inset 0 0 0 2px #c02020, inset 0 0 0 4px var(--void); }
+@media (prefers-reduced-motion: no-preference) {
+  .pd-actionbtn { animation: pd-blink 1.6s steps(1) infinite; }
+}
+.pd-choice.dim { opacity: .55; }
+#ui .pd-actionind .pd-actionbtn { pointer-events: auto; }
 
 /* Buffs that share one Shattered icon come pre-tinted from buffs-tints.png (design v19; hud.ts BUFF_TINTS): 7 px frames at 3×, as the other buff icons. */
 .pd-buff i.pd-tbuff { width: 21px; height: 21px; background-image: var(--atlas-buff-tints); background-size: calc(18 * 21px) 21px; background-position: calc(var(--ix, 0) * -21px) 0; }

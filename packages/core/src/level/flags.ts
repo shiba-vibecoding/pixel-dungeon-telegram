@@ -76,3 +76,12 @@ export function passable(map: readonly number[]): boolean[] {
   }
   return result;
 }
+
+/**
+ * Level.set during play: a cell's terrain changes (Goo's lair floods, a fist boils water away), and
+ * the water and chasm tiles take the shape of their new surroundings.
+ */
+export function setTerrain(map: number[], cell: number, terrain: number): void {
+  map[cell] = terrain;
+  stitchTerrain(map);
+}

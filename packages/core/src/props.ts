@@ -25,6 +25,12 @@ const PROPERTIES: Partial<Record<MobKind, readonly Property[]>> = {
   rottingFist: ['boss', 'demonic', 'acidic'],
   burningFist: ['boss', 'demonic', 'fiery'],
   larva: ['demonic', 'bossMinion'],
+  // Shattered's bosses' own (YogFist's four others, Pylon).
+  soiledFist: ['boss', 'demonic'],
+  rustedFist: ['boss', 'demonic', 'large', 'inorganic'],
+  brightFist: ['boss', 'demonic', 'electric'],
+  darkFist: ['boss', 'demonic'],
+  pylon: ['miniboss', 'bossMinion', 'inorganic', 'electric', 'immovable', 'static'],
   fetidRat: ['miniboss', 'demonic'],
   gnollTrickster: ['miniboss'],
   greatCrab: ['miniboss'],
@@ -71,13 +77,21 @@ const PROPERTIES: Partial<Record<MobKind, readonly Property[]>> = {
   ward: ['immovable', 'inorganic'],
   guardian: ['inorganic'],
   lotus: ['immovable', 'static'],
+  shadow: ['inorganic'],
+  ninjaLog: ['inorganic'],
 };
 
 /** Char.properties; a hero has none; a giant champion is large (Char.properties with ChampionEnemy.Giant). */
 export function propertiesOf(char: Char): readonly Property[] {
   if (!('kind' in char)) return [];
   const own = PROPERTIES[char.kind] ?? [];
-  return char.champion === 'giant' && !own.includes('large') ? [...own, 'large'] : own;
+  // A giant champion is large; a boss's summons (the King's court, Yog's larvae: Property.BOSS_MINION); the King on
+  // his throne (IMMOVABLE in phase two).
+  const extra: Property[] = [];
+  if (char.champion === 'giant' && !own.includes('large')) extra.push('large');
+  if (char.bossMinion && !own.includes('bossMinion')) extra.push('bossMinion');
+  if (char.kind === 'king' && char.boss?.phase === 2) extra.push('immovable');
+  return extra.length > 0 ? [...own, ...extra] : own;
 }
 
 /** Char.hasProp. */

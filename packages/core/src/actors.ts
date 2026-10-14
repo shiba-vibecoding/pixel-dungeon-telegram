@@ -19,9 +19,17 @@ import type { Rng } from './rng';
 import { adjacent } from './level/geometry';
 import { T } from './level/terrain';
 import type { Action, PlanStep } from './world';
+import type { BossMob } from './bosses/state';
 import type { Awareness, PendingScroll } from './artifacts';
 import type { WealthCounters } from './rings';
 import { type ClassState, hasTimer, type MobMarks } from './classes/state';
+import { type AbilityKind, pointsInTalent, type TalentBook } from './talents/data';
+import { holdFastArmor } from './talents/hold-fast';
+import { freerunning, momentumEvasion, momentumSpeed } from './talents/rogue';
+import { consumeLethalMomentum } from './talents/turns';
+import type { TalentBuffs } from './talents/state';
+import type { AbilityState } from './abilities/state';
+import { natureBowSpeed, natureSpeed } from './abilities/huntress';
 
 /*
  * Heroes and monsters as plain data: the hero's numbers as Shattered Pixel
@@ -39,9 +47,9 @@ export { HUNGRY, isHungry, isStarving, STARVING } from './hero';
 export type SubClass =
   | 'gladiator' | 'berserker' | 'battlemage' | 'warlock' | 'freerunner' | 'assassin' | 'sniper' | 'warden' | 'champion' | 'monk' | 'priest' | 'paladin';
 export const SUBCLASSES: Readonly<Record<HeroClass, readonly [SubClass, SubClass]>> = {
-  warrior: ['gladiator', 'berserker'],
+  warrior: ['berserker', 'gladiator'],
   mage: ['battlemage', 'warlock'],
-  rogue: ['freerunner', 'assassin'],
+  rogue: ['assassin', 'freerunner'],
   huntress: ['sniper', 'warden'],
   duelist: ['champion', 'monk'],
   cleric: ['priest', 'paladin'],
@@ -74,8 +82,11 @@ export interface Hero {
   plan?: PlanStep[];
   /** Regeneration.partialRegen: health regained towards the next point. */
   regen: number;
-  /** Caustic ooze from Goo: time since it last burned, or -1 when clean. Water washes it off. */
+  /** Caustic ooze from Goo: 0 while it eats at the hero, -1 when clean. Water washes it off. */
   ooze: number;
+  /** Ooze.left and Ooze.acted: turns before it wears off, and whether it has hurt yet (bosses/goo.ts). */
+  oozeLeft?: number;
+  oozeActed?: boolean;
   /** The weapon in hand; none after a monk's disarming blow, until the hero takes one up again. */
   weapon: Item | null;
   armor: Item;
@@ -110,12 +121,13 @@ export interface Hero {
   charmShrug?: boolean;
   /** Turns left of staggering about (dreamweed's confusion gas). */
   dizzy: number;
-  /** The way the hero has mastered, once they have read the Tome of Mastery. */
+  /** The way the hero has mastered, once they have put on Tengu's mask (HeroSubClass). */
   subclass: SubClass | null;
-  /** Gladiator: hits in a row, and until when the next one keeps the combo going. */
-  combo: number;
-  comboUntil: number;
-  /** Warden: bark from trampled grass and plants, adding to armour and wearing off a point a turn. */
+  /** Shattered's talents (talents/): the points in each, tier by tier; absent in older saves (started by talentBook). */
+  talents?: TalentBook;
+  /** The talents' trackers and the subclasses' buffs: berserk rage, combo, momentum, preparation, the sniper's mark... */
+  tal?: TalentBuffs;
+  /** Pixel Dungeon's barkskin from mystery meat (a frozen carpaccio), adding to armour and wearing off a point a turn. */
   barkskin: number;
   /** Sungrass: the spot it heals the hero on, while they stay there (-1 when not), and time towards the next healing. */
   sungrass?: number;
@@ -204,16 +216,13 @@ export interface Hero {
   kinetic?: number;
   /** Turns left of a wayward weapon's poor aim (Wayward.WaywardBuff). */
   wayward?: number;
-  /*
-   * The classes stream: talents, the armour ability, the Champion's second weapon and what the Duelist and the
-   * Cleric keep (classes/state.ts).
-   */
-  /** Hero.talents: points in each talent, by its name (talents.ts). */
-  talents?: Record<string, number>;
-  /** Hero.armorAbility: the ability chosen for the class armour (classes/abilities.ts). */
-  armorAbility?: string;
+  /** Hero.armorAbility: the ability the Dwarf King's crown gave the class armour (abilities/). */
+  ability?: AbilityKind;
+  /** The ability's trackers: Endure, the leap's double jump, Nature's Power, the warp beacon... (abilities/state.ts). */
+  abil?: AbilityState;
   /** Belongings.secondWep: the Champion's second weapon. */
   secondWep?: Item | null;
+  /** What the Duelist and the Cleric keep (classes/state.ts). */
   cls?: ClassState;
 }
 
@@ -284,8 +293,6 @@ export function createHero(player: PlayerInfo, depth: number, pos: number, time:
     charmedBy: null,
     dizzy: 0,
     subclass: null,
-    combo: 0,
-    comboUntil: 0,
     barkskin: 0,
     hunger: 0,
     hungerTime: 0,
@@ -297,7 +304,8 @@ export function createHero(player: PlayerInfo, depth: number, pos: number, time:
 /** Hero.STARTING_STR. */
 export const STARTING_STR = 10;
 
-export const isAlive = (char: { hp: number }): boolean => char.hp > 0;
+/** Char.isAlive: health left, or marked for death (DeathMark: a monster at no health lives until the mark ends). */
+export const isAlive = (char: { hp: number; deathMark?: unknown }): boolean => char.hp > 0 || char.deathMark !== undefined;
 
 /* Belongings: the equipment slots of a hero */
 
@@ -323,11 +331,14 @@ export const heroBelongings = (hero: Hero): Item[] => [...heroEquipped(hero), ..
 /** Ring.getBonus: what the worn rings of a kind add (rings.ts). */
 export { ringBonus } from './rings';
 
-/** Hero.STR: rings of might add to it (RingOfMight.strengthBonus). (Shattered's Weakness takes nothing from strength: a weakened blow is two thirds as hard, combat.ts.) */
-export const heroStr = (hero: Hero): number => hero.str + mightStrength(hero);
+/** Hero.STR: rings of might add to it (RingOfMight.strengthBonus), so does the strongman talent and a warden's surge. (Shattered's Weakness takes nothing from strength: a weakened blow is two thirds as hard, combat.ts.) */
+export const heroStr = (hero: Hero): number => hero.str + mightStrength(hero) + strongmanBonus(hero) + ((hero.tal?.surge ?? -1) >= 0 ? 1 : 0);
 
-/** Fury.LEVEL: below this share of health, a berserker flies into a fury. */
-export const FURY_LEVEL = 0.4;
+/** Hero.STR with the strongman talent: a share of the base strength more (3% + 5% a point), rounded down. */
+const strongmanBonus = (hero: Hero): number => {
+  const points = pointsInTalent(hero, 'strongman');
+  return points > 0 ? Math.floor(f32(hero.str * f32(0.03 + 0.05 * points))) : 0;
+};
 
 /** The numbers of the weapon in hand, or of bare fists (RingOfForce.damageRoll: as a weapon of the strength's tier with a ring of force, else 1 to STR-8). */
 export function heroWeapon(hero: Hero): WeaponStats {
@@ -358,8 +369,8 @@ function accuracyFactor(hero: Hero, weapon: Item, targetPos?: number): number {
   const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
   let factor = encumbrance > 0 ? f32(acc / dpow(1.5, encumbrance)) : acc;
   if ((category === 'missile' || category === 'bow') && targetPos !== undefined) {
-    // Seam: the point blank talent (talents stream) adds a quarter a point.
-    factor = f32(factor * (adjacent(hero.pos, targetPos) ? 0.5 : 1.5));
+    // MissileWeapon.adjacentAccFactor: half as accurate point-blank (a quarter better a point of point blank), and half again from afar.
+    factor = f32(factor * (adjacent(hero.pos, targetPos) ? f32(0.5 + 0.25 * pointsInTalent(hero, 'point_blank')) : 1.5));
   }
   return factor;
 }
@@ -371,7 +382,10 @@ const blessing = (hero: Hero): number => ((hero.blessed ?? 0) > 0 ? 1.25 : 1);
 export function heroAttackSkill(hero: Hero, targetPos?: number, weapon: Strike = hero.weapon): number {
   const accuracy = f32(accuracyMultiplier(hero) * blessing(hero));
   if (!weapon) return Math.max(1, jround(f32(hero.attackSkill * accuracy)));
-  return Math.max(1, jround(f32(f32(hero.attackSkill * accuracy) * accuracyFactor(hero, weapon, targetPos))));
+  // Hero.attackSkill: freerunning with projectile momentum, a thrown weapon is more accurate (half again a point).
+  const thrownBy = itemDef(weapon.kind).category;
+  const momentum = (thrownBy === 'missile' || thrownBy === 'bow') && freerunning(hero) ? f32(1 + pointsInTalent(hero, 'projectile_momentum') / 2) : 1;
+  return Math.max(1, jround(f32(f32(f32(hero.attackSkill * accuracy) * momentum) * accuracyFactor(hero, weapon, targetPos))));
 }
 
 /**
@@ -385,8 +399,8 @@ export function heroDefenseSkill(hero: Hero): number {
   if (hasGlyph(hero, 'stone')) return 0;
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
   if (encumbrance > 0) evasion = f32(evasion / dpow(1.5, encumbrance));
-  // Seam (talents stream): Momentum's evasion. Here the 1.9 freerunner still doubles it, unburdened and fed.
-  if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) evasion = f32(evasion * 2);
+  // Momentum.evasionBonus: freerunning, half the hero's level more, and evasive armor's share of strength to spare.
+  evasion = f32(evasion + momentumEvasion(hero, Math.max(0, -encumbrance)));
   // FerretTuft.evasionMultiplier.
   const tuft = trinketLevel(hero, 'trinket.ferretTuft');
   if (tuft >= 0) evasion = f32(evasion * FERRET_TUFT.evasionMultiplier(tuft));
@@ -409,6 +423,8 @@ export function heroDrRoll(hero: Hero, rng: Rng): number {
     if (str < meleeStr(hero.weapon)) parry -= 2 * (meleeStr(hero.weapon) - str);
     if (parry > 0) dr += parry;
   }
+  // HoldFast.armorBonus: resting on a spot.
+  dr += holdFastArmor(hero, rng);
   const bark = Math.ceil(hero.barkskin ?? 0);
   if (bark > 0) dr += rng.normalIntRange(0, bark);
   // Barkskin (a potion of earthen armour): up to its level more.
@@ -463,8 +479,10 @@ export function heroDamageRoll(hero: Hero, rng: Rng, surprised = false, weapon: 
     // RingOfForce.armedDamageBonus: rings of force add to a weapon's blow as well.
     damage += forceArmedBonus(hero);
   }
-  // Fury: a berserker badly hurt hits half as hard again (seam: Shattered's Berserk is the talents stream's).
-  if (hero.subclass === 'berserker' && hero.hp > 0 && hero.hp <= hero.ht * FURY_LEVEL) damage = Math.trunc(damage * 1.5);
+  // MissileWeapon.damageRoll: freerunning with projectile momentum, a thrown weapon hits harder (15% a point).
+  if (weapon && itemDef(weapon.kind).category === 'missile' && freerunning(hero)) {
+    damage = Math.round(f32(damage * f32(1 + f32(0.15 * pointsInTalent(hero, 'projectile_momentum')))));
+  }
   return Math.max(0, damage);
 }
 
@@ -478,6 +496,9 @@ export function heroAttackDelay(hero: Hero, weapon: Strike = hero.weapon): numbe
   let delay = augmentDelay(weapon, category === 'weapon' ? weaponDly(weapon.kind) : 1);
   const encumbrance = strikeStr(hero, weapon) - heroStr(hero);
   if (encumbrance > 0) delay = f32(delay * dpow(1.2, encumbrance));
+  // Hero.attackDelay: a lethal momentum makes the blow cost nothing (consumed by the caller, once it knows it struck).
+  // SpiritBow.speedMultiplier under Nature's Power: a third to a half more.
+  if (category === 'bow') return f32(delay / (attackSpeedMultiplier(hero) + natureBowSpeed(hero)));
   // Scimitar.SwordDance: 0.6 faster (Weapon.speedMultiplier adds it to the furor ring's).
   return f32(delay / (attackSpeedMultiplier(hero) + (hero.cls && hasTimer(hero, 'dance') ? 0.6 : 0)));
 }
@@ -509,14 +530,14 @@ export interface Footing {
 export function heroSpeed(hero: Hero, footing?: Footing): number {
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
   let speed = hero.crippled > 0 ? 0.5 : 1;
-  if (hero.subclass === 'freerunner' && !isStarving(hero) && encumbrance <= 0) speed *= 1.6;
   if (encumbrance > 0) speed = f32(speed / dpow(1.2, encumbrance));
   const level = gearLevel(hero.armor);
   if (footing && hasGlyph(hero, 'swiftness') && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));
   if (footing && hasGlyph(hero, 'flow') && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
   if (footing && hasGlyph(hero, 'bulk') && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
   // RingOfHaste.speedMultiplier; stamina, haste (buffs.ts).
-  return f32(speed * speedMultiplier(hero) * buffSpeed(hero));
+  // Nature's Power: twice as fast, and more with Growing Power; momentum (freerunner) quickens the step.
+  return f32(speed * speedMultiplier(hero) * buffSpeed(hero) * natureSpeed(hero) * momentumSpeed(hero));
 }
 
 /** A hero's armour at its most (Armor.DRMax, with the weapon's parrying and the bark at theirs), for what wants one figure. */
@@ -547,6 +568,8 @@ export type MobKind =
   | 'afterImage'
   /** PowerOfMany.LightAlly: the Cleric's ally of solid light, a copy of one of the heroes (it takes after its hero's level). */
   | 'lightAlly'
+  /** The armour abilities' allies: ShadowClone.ShadowAlly, SpiritHawk.HawkAlly, SmokeBomb.NinjaLog. */
+  | 'shadow' | 'hawk' | 'ninjaLog'
   /* Shattered's roster (MobSpawner): the sewers' snakes and slimes, */
   | 'snake' | 'slime' | 'causticSlime' | 'gnollExile' | 'hermitCrab'
   /* the prison's DM-100s, guards and necromancers (and their skeletons), */
@@ -560,7 +583,9 @@ export type MobKind =
   /* and anywhere: tormented spirits, mimics of three more kinds, armoured statues, phantom piranhas; */
   | 'tormentedSpirit' | 'goldenMimic' | 'crystalMimic' | 'ebonyMimic' | 'armoredStatue' | 'phantomPiranha'
   /* the sad ghost's foes besides the fetid rat (Ghost.Quest). */
-  | 'gnollTrickster' | 'greatCrab';
+  | 'gnollTrickster' | 'greatCrab'
+  // Shattered's bosses' own: DM-300's pylons, Yog-Dzewa's other four fists (the King's ghouls are the city's).
+  | 'pylon' | 'soiledFist' | 'rustedFist' | 'brightFist' | 'darkFist';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
 export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
 
@@ -615,7 +640,8 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   fetidRat: { name: 'fetid rat', ht: 20, attack: 12, defense: 5, damage: [1, 4], dr: 1, dr2: 2, exp: 4, maxLvl: 5, speed: 1 },
   gnollTrickster: { name: 'gnoll trickster', ht: 20, attack: 16, defense: 5, damage: [1, 6], dr: 2, exp: 5, maxLvl: 8, speed: 1 },
   greatCrab: { name: 'great crab', ht: 25, attack: 12, defense: 0, damage: [1, 7], dr: 4, exp: 6, maxLvl: 9, speed: 1 },
-  goo: { name: 'Goo', ht: 80, attack: 15, defense: 12, damage: [2, 12], dr: 2, exp: 10, maxLvl: 30, speed: 1 },
+  // Goo (Shattered): its accuracy, damage and evasion change as it is hurt and pumps up (bosses/goo.ts).
+  goo: { name: 'Goo', ht: 100, attack: 10, defense: 8, damage: [1, 8], dr: 2, exp: 10, maxLvl: 29, speed: 1 },
   ghost: { name: 'sad ghost', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 0.5, flying: true },
   shopkeeper: { name: 'shopkeeper', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** ImpShopkeeper: an imp keeps the last shop, in the demon halls. */
@@ -632,7 +658,7 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   /** Necromancer: no blow of its own (Char.damageRoll, attackSkill), its skeleton fights for it. */
   necromancer: { name: 'necromancer', ht: 40, attack: 0, defense: 14, damage: [1, 1], dr: 5, exp: 7, maxLvl: 14, speed: 1 },
   spectralNecromancer: { name: 'spectral necromancer', ht: 40, attack: 0, defense: 14, damage: [1, 1], dr: 5, exp: 7, maxLvl: 14, speed: 1 },
-  tengu: { name: 'Tengu', ht: 120, attack: 20, defense: 20, damage: [8, 15], dr: 5, exp: 20, maxLvl: 30, speed: 1 },
+  tengu: { name: 'Tengu', ht: 200, attack: 20, defense: 15, damage: [6, 12], dr: 5, exp: 20, maxLvl: 29, speed: 1 },
   // The caves (depths 11-14).
   bat: { name: 'vampire bat', ht: 30, attack: 16, defense: 15, damage: [5, 18], dr: 4, exp: 7, maxLvl: 15, speed: 2, flying: true },
   brute: { name: 'gnoll brute', ht: 40, attack: 20, defense: 15, damage: [5, 25], dr: 8, exp: 8, maxLvl: 16, speed: 1 },
@@ -645,7 +671,9 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   spinner: { name: 'cave spinner', ht: 50, attack: 22, defense: 17, damage: [10, 20], dr: 6, exp: 9, maxLvl: 17, speed: 1 },
   dm200: { name: 'DM-200', ht: 80, attack: 20, defense: 12, damage: [10, 25], dr: 8, exp: 9, maxLvl: 17, speed: 1 },
   dm201: { name: 'DM-201', ht: 120, attack: 20, defense: 12, damage: [15, 25], dr: 8, exp: 9, maxLvl: 17, speed: 1 },
-  dm300: { name: 'DM-300', ht: 200, attack: 28, defense: 18, damage: [18, 24], dr: 10, exp: 30, maxLvl: 30, speed: 1 },
+  dm300: { name: 'DM-300', ht: 300, attack: 20, defense: 15, damage: [15, 25], dr: 10, exp: 30, maxLvl: 29, speed: 1 },
+  /** Pylon: DM-300's power source in a corner of its arena, harmless until switched on. */
+  pylon: { name: 'power pylon', ht: 50, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 1, maxLvl: -2, speed: 1 },
   // The dwarven city (depths 16-19).
   ghoul: { name: 'dwarven ghoul', ht: 45, attack: 24, defense: 20, damage: [16, 22], dr: 4, exp: 5, maxLvl: 20, speed: 1 },
   /** Elemental.FireElemental, and its frost, shock and chaos kin. */
@@ -657,7 +685,7 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   senior: { name: 'senior monk', ht: 70, attack: 30, defense: 30, damage: [16, 25], dr: 2, exp: 11, maxLvl: 21, speed: 1, attackDelay: 0.5 },
   warlock: { name: 'dwarf warlock', ht: 70, attack: 25, defense: 18, damage: [12, 18], dr: 8, exp: 11, maxLvl: 21, speed: 1 },
   golem: { name: 'golem', ht: 120, attack: 28, defense: 15, damage: [25, 30], dr: 12, exp: 12, maxLvl: 22, speed: 1 },
-  king: { name: 'King of Dwarves', ht: 300, attack: 32, defense: 25, damage: [20, 38], dr: 14, exp: 40, maxLvl: 30, speed: 1 },
+  king: { name: 'King of Dwarves', ht: 300, attack: 26, defense: 22, damage: [15, 25], dr: 10, exp: 40, maxLvl: 29, speed: 1 },
   undead: { name: 'undead dwarf', ht: 28, attack: 16, defense: 15, damage: [12, 16], dr: 5, exp: 0, maxLvl: 30, speed: 1 },
   // The demon halls (depths 21-24).
   succubus: { name: 'succubus', ht: 80, attack: 40, defense: 25, damage: [25, 30], dr: 10, exp: 12, maxLvl: 25, speed: 1 },
@@ -668,10 +696,16 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   ripper: { name: 'ripper demon', ht: 60, attack: 30, defense: 22, damage: [15, 25], dr: 4, exp: 9, maxLvl: -2, speed: 1, attackDelay: 0.5 },
   /** DemonSpawner: never strikes nor moves, and dodges nothing. */
   spawner: { name: 'demon spawner', ht: 120, attack: 0, defense: 0, damage: [1, 1], dr: 12, exp: 15, maxLvl: 29, speed: 1 },
-  yog: { name: 'Yog-Dzewa', ht: 300, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 50, maxLvl: 30, speed: 1 },
-  rottingFist: { name: 'rotting fist', ht: 300, attack: 36, defense: 25, damage: [24, 36], dr: 15, exp: 0, maxLvl: 30, speed: 1 },
-  burningFist: { name: 'burning fist', ht: 200, attack: 36, defense: 25, damage: [20, 32], dr: 15, exp: 0, maxLvl: 30, speed: 1 },
-  larva: { name: "god's larva", ht: 25, attack: 30, defense: 20, damage: [15, 20], dr: 8, exp: 0, maxLvl: 30, speed: 1 },
+  yog: { name: 'Yog-Dzewa', ht: 1000, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 50, maxLvl: 29, speed: 1 },
+  // YogFist: six kinds, two of a pair never together (bosses/yog.ts); no experience (maxLvl -2).
+  rottingFist: { name: 'rotting fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  burningFist: { name: 'burning fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  soiledFist: { name: 'soiled fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  rustedFist: { name: 'rusted fist', ht: 300, attack: 36, defense: 20, damage: [22, 44], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  brightFist: { name: 'bright fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  darkFist: { name: 'dark fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  /** YogDzewa.Larva. */
+  larva: { name: "god's larva", ht: 20, attack: 30, defense: 12, damage: [15, 25], dr: 4, exp: 5, maxLvl: -2, speed: 1 },
   // Anywhere: as strong as the depth they are on (see mobStats).
   mimic: { name: 'mimic', ht: 6, attack: 6, defense: 2, damage: [1, 2], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 1 },
   goldenMimic: { name: 'golden mimic', ht: 6, attack: 6, defense: 2, damage: [1, 2], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 1 },
@@ -707,6 +741,12 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   lotus: { name: 'golden lotus', ht: 25, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** DriedRose.GhostHero: the sad ghost come back as a companion (its numbers come from its rose and its hero, see mobStats). */
   ghostHero: { name: 'sad ghost', ht: 40, attack: 10, defense: 5, damage: [1, 5], dr: 0, exp: 0, maxLvl: 0, speed: 1, flying: true },
+  /** ShadowClone.ShadowAlly: 80 health, the hero's own accuracy and evasion (see mobStats and abilities/allies.ts). */
+  shadow: { name: 'shadow clone', ht: 80, attack: 15, defense: 5, damage: [10, 20], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** SpiritHawk.HawkAlly: ten health, quick and flying, living a hundred turns. */
+  hawk: { name: 'spirit hawk', ht: 10, attack: 60, defense: 60, damage: [5, 10], dr: 0, exp: 0, maxLvl: 0, speed: 2, flying: true },
+  /** SmokeBomb.NinjaLog: a decoy left behind (20 health a point of Body Replacement), which never acts. */
+  ninjaLog: { name: 'ninja log', ht: 20, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
 };
 
 /** Weapon.defenseFactor (a shield's, a greatsword's...): the armour a statue's weapon adds to its own. */
@@ -716,9 +756,15 @@ export const weaponDefenseFactor = (weapon: Item): number => weaponDefense(weapo
  * A monster's numbers: the table's, or as strong as the depth it is on — an animated statue with its
  * weapon (Statue), an armoured one twice as sturdy (ArmoredStatue), a mimic as its level (Mimic.adjustStats,
  * a golden one a third stronger), a piranha (Piranha), a wraith (Wraith.adjustStats, a tormented spirit's
- * half as good again).
+ * half as good again); a boss's summoned minion teaches
+ * nothing and leaves nothing (maxLvl -2).
  */
 export function mobStats(mob: Mob): MobStats {
+  const stats = ownStats(mob);
+  return mob.bossMinion ? { ...stats, maxLvl: -2 } : stats;
+}
+
+function ownStats(mob: Mob): MobStats {
   const depth = mob.level ?? 1;
   if (mob.kind === 'ghostHero' && mob.ghostGear) {
     // GhostHero: as accurate as the hero (lvl + 9) and as nimble (lvl + 4), striking with its weapon or bare-handed.
@@ -749,6 +795,12 @@ export function mobStats(mob: Mob): MobStats {
   }
   // LightAlly: equal to the hero's own accuracy and evasion at its level.
   if (mob.kind === 'lightAlly') return { ...MOBS.lightAlly, attack: depth + 9, defense: depth + 4 };
+  if (mob.kind === 'shadow') {
+    // ShadowAlly: the hero's own accuracy and evasion at its level (set when it was made).
+    const defense = mob.shadow?.defense ?? 5;
+    return { ...MOBS.shadow, ht: mob.ht, attack: defense + 5, defense };
+  }
+  if (mob.kind === 'ninjaLog') return { ...MOBS.ninjaLog, ht: mob.ht };
   if (mob.kind === 'guardian') {
     // EarthGuardian: half the hero's evasion, and as accurate as the hero; damageRoll grows with the depth.
     const defense = mob.guardian?.defense ?? 0;
@@ -786,7 +838,9 @@ export const isMimic = (kind: MobKind): boolean => kind === 'mimic' || kind === 
  */
 export function mobSpeed(mob: Mob): number {
   // Char.speed: Haste three times as fast (a crystal mimic on the run), Adrenaline twice, and alchemy's buffs (dread, stamina).
-  const speed = MOBS[mob.kind].speed * ((mob.haste ?? 0) > 0 ? 3 : 1) * ((mob.adrenaline ?? 0) > 0 ? 2 : 1) * buffSpeed(mob);
+  const speed = MOBS[mob.kind].speed * ((mob.haste ?? 0) > 0 ? 3 : 1) * ((mob.adrenaline ?? 0) > 0 ? 2 : 1) * buffSpeed(mob)
+    // DM300.speed: supercharged, twice as fast (bosses/dm300.ts).
+    * (mob.kind === 'dm300' && mob.boss?.supercharged ? 2 : 1);
   return (mob.kind === 'thief' || mob.kind === 'bandit') && mob.item ? (5 * speed) / 6 : speed;
 }
 
@@ -864,6 +918,10 @@ export interface Mob {
   bleeding?: number;
   /** A mirror image: whose twin it is, and the skill and strength it took from them. */
   image?: { owner: string; attack: number; damage: number };
+  /** A boss's own state (Goo's pumping up, Tengu's abilities, DM-300's charge, the King's phases...): bosses/state.ts. */
+  boss?: BossMob;
+  /** Property.BOSS_MINION: summoned by a boss (the King's court, Yog's larvae); teaches nothing (maxLvl -2). */
+  bossMinion?: boolean;
   /** Shattered's buffs from alchemy (buffs.ts): dread, aggression, a magical sleep and the like. */
   buffs?: Buffs;
   /** The hero an ally from alchemy follows (a prismatic image, an enthralled monster, a summoned elemental). */
@@ -872,6 +930,8 @@ export interface Mob {
   pinned?: Item[];
   /** Turns left of acting twice as fast (Adrenaline). */
   adrenaline?: number;
+  /** SuckerPunchTracker: a sucker punch has struck it already. */
+  suckered?: boolean;
   /** A lucky blow landed (Lucky.LuckProc): should it die before it acts again, it drops something (at this ring level). */
   luck?: number;
 
@@ -924,6 +984,15 @@ export interface Mob {
   robbed?: 'stolen' | 'tried';
   /** What the Duelist's and the Cleric's abilities and spells have left on it (classes/state.ts). */
   marks?: MobMarks;
+  /**
+   * DeathMark.DeathMarkTracker (abilities/rogue.ts): the time the mark ends, and the health it had when marked.
+   * Marked, it takes a quarter more harm and is not dead at no health (Char.isAlive: deathMarked) until the mark ends.
+   */
+  deathMark?: { until: number; hp: number };
+  /** ShadowClone.ShadowAlly, SpiritHawk.HawkAlly, SmokeBomb.NinjaLog: the abilities' allies' own state (abilities/allies.ts). */
+  shadow?: { defense: number };
+  hawk?: { remaining: number; dodges: number };
+  ninja?: { points: number };
 
   /* Shattered's monsters (mobs.ts, mobskills.ts, champions.ts). */
   /** Necromancer's skeleton: its master (Adrenaline, from a zap of its master: adrenaline below). */
@@ -1004,6 +1073,8 @@ export type ChampionKind = 'blazing' | 'projecting' | 'antiMagic' | 'giant' | 'b
  */
 export function beckon(mob: Mob, pos: number): void {
   if (mob.state === 'passive' || mob.kind === 'spawner' || ((mob.kind === 'statue' || mob.kind === 'armoredStatue') && mob.state === 'sleeping')) return;
+  // Pylon.beckon and YogDzewa.beckon: they never come.
+  if (mob.kind === 'pylon' || mob.kind === 'yog') return;
   if (mob.kind === 'gnollExile' && !mob.provoked) {
     if ((mob.seenCooldown ?? 0) <= 0) mob.target = pos;
     return;

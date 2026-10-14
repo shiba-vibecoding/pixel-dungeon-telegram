@@ -2,7 +2,7 @@ import type { Hero } from '../actors';
 import { regenOn } from '../hero';
 import type { Ctx } from '../floor';
 import { cs } from './state';
-import { pointsIn } from '../talents';
+import { pointsInTalent as pointsIn } from '../talents';
 
 /*
  * MeleeWeapon.Charger: the Duelist's weapon charges. Every weapon's ability costs one (a few cost none under
@@ -41,8 +41,8 @@ export function chargerTurn(ctx: Ctx, hero: Hero): void {
       if (state.brawl) gain = Math.fround(gain * 0.5);
       state.partial = (state.partial ?? 0) + gain;
     }
-    // WEAPON_RECHARGING: "points > 0 && Recharging || ArtifactRecharge" as Shattered writes it.
-    const points = pointsIn(hero, 'WEAPON_RECHARGING');
+    // weapon_recharging: "points > 0 && Recharging || ArtifactRecharge" as Shattered writes it.
+    const points = pointsIn(hero, 'weapon_recharging');
     const recharging = (hero.recharging ?? 0) > 0;
     const artifactRecharge = (hero.buffs?.artifactRecharge ?? 0) > 0;
     if ((points > 0 && recharging) || artifactRecharge) {

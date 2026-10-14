@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, addHero, canEnter, charAt, createItem, createMob, createWorld, floorAt, heroById, heroReach, levelAt, NEIGHBOURS8, T, type ItemKind,
-  type Mob, type World,
+  type Hero, initSubclassTalents, type Mob, talentBook, type TalentId, type World,
 } from '../src/index';
 import { CLASS_ARMOR_OF } from '../src/classArmor';
 import { cs, hasTimer, markTurns } from '../src/classes/state';
 import { doAscend } from '../src/classes/cleric-armor';
 import { ringBonus } from '../src/rings';
 import { pacify } from './helpers';
+
+/** Points in a talent, as the hero's book has them (the subclass and the ability must be set first). */
+function grant(hero: Hero, id: TalentId, points: number): void {
+  initSubclassTalents(hero);
+  const book = talentBook(hero);
+  for (const tier of book.tiers) if (tier[id] !== undefined) tier[id] = points;
+}
 
 function cleric(seed = 9): World {
   const world = pacify(createWorld(seed));
@@ -40,7 +47,7 @@ function armoured(world: World, ability: 'ascendedForm' | 'trinity' | 'powerOfMa
   const hero = heroById(world, 'p')!;
   hero.armor = createItem(CLASS_ARMOR_OF.cleric);
   hero.armor.charge = 100;
-  hero.armorAbility = ability;
+  hero.ability = ability;
 }
 
 describe("the Cleric's holy tome (HolyTome)", () => {
@@ -212,7 +219,7 @@ describe("Trinity (Trinity) and its three forms", () => {
     const world = cleric();
     armoured(world, 'trinity');
     const hero = heroById(world, 'p')!;
-    hero.talents = { SPIRIT_FORM: 2 };
+    grant(hero, 'spiritForm', 2);
     cs(hero).trinity = { spirit: 'ring.haste' };
     expect(ringBonus(hero, 'ring.haste')).toBe(0);
     expect(act(world, 'p', { type: 'special', choice: 2 }).ok).toBe(true);
@@ -244,7 +251,8 @@ describe("the Cleric's tier-three spells", () => {
   it('hallowed ground: the cells around are blessed for a while; the hero standing there is shielded', () => {
     const world = cleric();
     const hero = heroById(world, 'p')!;
-    hero.talents = { HALLOWED_GROUND: 1 };
+    hero.subclass = 'priest';
+    grant(hero, 'hallowed_ground', 1);
     hero.artifact!.charge = 10;
     expect(act(world, 'p', { type: 'cast', spell: 'hallowedGround', cell: hero.pos }).ok).toBe(true);
     const ground = floorAt(world, 1).hallowed!;
@@ -258,7 +266,8 @@ describe("the Cleric's tier-three spells", () => {
   it('wall of light: a wall nothing can walk through, which fades; a second cast costs nothing', () => {
     const world = cleric();
     const hero = heroById(world, 'p')!;
-    hero.talents = { WALL_OF_LIGHT: 1 };
+    hero.subclass = 'paladin';
+    grant(hero, 'wall_of_light', 1);
     hero.artifact!.charge = 10;
     const level = levelAt(world, 1);
     const cell = NEIGHBOURS8.map((n) => hero.pos + n * 3).find((c) => canEnter(level, c))!;

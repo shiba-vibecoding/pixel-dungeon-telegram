@@ -67,7 +67,7 @@ describe("weapon abilities (MeleeWeapon.duelistAbility)", () => {
     const b = rat(world, freeBeside(world, hero.pos, 1) === charAt(world, 1, 0)?.pos ? 0 : 0, 1e6);
     void b;
     const time = hero.time;
-    const result = act(world, 'p', { type: 'ability', cell: mobOf(world, a)!.pos });
+    const result = act(world, 'p', { type: 'weaponAbility', cell: mobOf(world, a)!.pos });
     expect(result.ok).toBe(true);
     expect(mobOf(world, a)).toBeUndefined();
     expect(charges(hero)).toBe(1);
@@ -80,16 +80,16 @@ describe("weapon abilities (MeleeWeapon.duelistAbility)", () => {
     const hero = heroById(world, 'p')!;
     const id = rat(world, freeBeside(world, hero.pos));
     cs(hero).charges = 0;
-    expect(act(world, 'p', { type: 'ability', cell: mobOf(world, id)!.pos })).toMatchObject({ ok: false, reason: expect.stringContaining('no_charge') });
+    expect(act(world, 'p', { type: 'weaponAbility', cell: mobOf(world, id)!.pos })).toMatchObject({ ok: false, reason: expect.stringContaining('no_charge') });
     cs(hero).charges = 2;
-    expect(act(world, 'p', { type: 'ability', cell: hero.pos })).toMatchObject({ ok: false });
+    expect(act(world, 'p', { type: 'weaponAbility', cell: hero.pos })).toMatchObject({ ok: false });
   });
 
   it('heavy blow: a foe taken by surprise takes more, and one left standing is dazed', () => {
     const world = duelist('weapon.mace');
     const hero = heroById(world, 'p')!;
     const id = rat(world, freeBeside(world, hero.pos), 1e6, 'sleeping');
-    const result = act(world, 'p', { type: 'ability', cell: mobOf(world, id)!.pos });
+    const result = act(world, 'p', { type: 'weaponAbility', cell: mobOf(world, id)!.pos });
     expect(result.ok).toBe(true);
     expect(mobOf(world, id)!.marks?.t?.daze).toBeGreaterThan(0);
   });
@@ -103,7 +103,7 @@ describe("weapon abilities (MeleeWeapon.duelistAbility)", () => {
     if (!canEnter(level, far) || far === hero.pos) return;
     const id = rat(world, far, 1e6);
     const before = hero.pos;
-    const result = act(world, 'p', { type: 'ability', cell: far });
+    const result = act(world, 'p', { type: 'weaponAbility', cell: far });
     if (result.ok) {
       expect(hero.pos).not.toBe(before);
       expect(mobOf(world, id)!.hp).toBeLessThan(1e6);
@@ -114,7 +114,7 @@ describe("weapon abilities (MeleeWeapon.duelistAbility)", () => {
     const world = duelist('weapon.dagger');
     const hero = heroById(world, 'p')!;
     const to = freeBeside(world, freeBeside(world, hero.pos));
-    const result = act(world, 'p', { type: 'ability', cell: to });
+    const result = act(world, 'p', { type: 'weaponAbility', cell: to });
     if (result.ok) {
       expect(hero.pos).toBe(to);
       expect(hero.invisible).toBeGreaterThan(0);
@@ -125,7 +125,7 @@ describe("weapon abilities (MeleeWeapon.duelistAbility)", () => {
     for (const [kind, timer] of [['weapon.quarterstaff', 'defensive'], ['weapon.scimitar', 'dance'], ['weapon.roundShield', 'guard']] as const) {
       const world = duelist(kind);
       const hero = heroById(world, 'p')!;
-      expect(act(world, 'p', { type: 'ability' }).ok).toBe(true);
+      expect(act(world, 'p', { type: 'weaponAbility' }).ok).toBe(true);
       expect(hasTimer(hero, timer), kind).toBe(true);
       expect(charges(hero)).toBe(1);
     }
@@ -135,8 +135,8 @@ describe("weapon abilities (MeleeWeapon.duelistAbility)", () => {
     const world = duelist('weapon.flail');
     const hero = heroById(world, 'p')!;
     cs(hero).charges = 3;
-    act(world, 'p', { type: 'ability' });
-    act(world, 'p', { type: 'ability' });
+    act(world, 'p', { type: 'weaponAbility' });
+    act(world, 'p', { type: 'weaponAbility' });
     expect(charges(hero)).toBe(2);
     expect(cs(hero).spins).toBe(2);
     const id = rat(world, freeBeside(world, hero.pos));
@@ -145,16 +145,16 @@ describe("weapon abilities (MeleeWeapon.duelistAbility)", () => {
     expect(cs(hero).spins).toBeUndefined();
 
     const bow = duelist('weapon.crossbow');
-    act(bow, 'p', { type: 'ability' });
+    act(bow, 'p', { type: 'weaponAbility' });
     expect(cs(heroById(bow, 'p')!).charged).toBe(true);
-    expect(act(bow, 'p', { type: 'ability' }).ok).toBe(false);
+    expect(act(bow, 'p', { type: 'weaponAbility' }).ok).toBe(false);
   });
 
   it('whip: strikes every enemy it can reach, for no extra damage', () => {
     const world = duelist('weapon.whip');
     const hero = heroById(world, 'p')!;
     const a = rat(world, freeBeside(world, hero.pos));
-    const result = act(world, 'p', { type: 'ability' });
+    const result = act(world, 'p', { type: 'weaponAbility' });
     expect(result.ok).toBe(true);
     expect(mobOf(world, a)!.hp).toBeLessThan(1e6);
   });
@@ -163,7 +163,7 @@ describe("weapon abilities (MeleeWeapon.duelistAbility)", () => {
     const world = duelist('weapon.sickle');
     const hero = heroById(world, 'p')!;
     const id = rat(world, freeBeside(world, hero.pos));
-    expect(act(world, 'p', { type: 'ability', cell: mobOf(world, id)!.pos }).ok).toBe(true);
+    expect(act(world, 'p', { type: 'weaponAbility', cell: mobOf(world, id)!.pos }).ok).toBe(true);
     expect(mobOf(world, id)!.bleeding).toBeGreaterThan(0);
   });
 
@@ -178,7 +178,7 @@ describe("the armour abilities (Challenge, Elemental Strike, Feint)", () => {
   function armoured(choice: number, weapon: ItemKind = 'weapon.rapier'): World {
     const world = duelist(weapon);
     const hero = heroById(world, 'p')!;
-    hero.items.push(createItem('kit.armor'));
+    hero.items.push(createItem('crown.king'));
     expect(act(world, 'p', { type: 'use', item: hero.items.length - 1 }).ok).toBe(false);
     expect(act(world, 'p', { type: 'use', item: hero.items.length - 1, choice }).ok).toBe(true);
     return world;
@@ -187,7 +187,7 @@ describe("the armour abilities (Challenge, Elemental Strike, Feint)", () => {
   it('the armour kit makes her choose one of three, and the armour starts half charged', () => {
     const world = armoured(2);
     const hero = heroById(world, 'p')!;
-    expect(hero.armorAbility).toBe('feint');
+    expect(hero.ability).toBe('feint');
     expect(hero.armor.kind).toBe('armor.duelist');
     expect(hero.armor.charge).toBeLessThan(51);
   });
@@ -203,7 +203,7 @@ describe("the armour abilities (Challenge, Elemental Strike, Feint)", () => {
     const result = act(world, 'p', { type: 'special', target: dest });
     expect(result.ok).toBe(true);
     expect(hero.pos).toBe(dest);
-    expect(Math.round(hero.armor.charge!)).toBe(16);
+    expect(Math.round(hero.armor.charge!)).toBe(15);
     // It stood through the turn and faded before the hero's next.
     expect(result.ok && result.effects.some((e) => e.type === 'faded')).toBe(true);
     expect(floorAt(world, 1).mobs.some((m) => m.kind === 'afterImage')).toBe(false);
@@ -231,7 +231,7 @@ describe("the armour abilities (Challenge, Elemental Strike, Feint)", () => {
     const result = act(world, 'p', { type: 'special', target: mobOf(world, a)!.pos });
     expect(result.ok).toBe(true);
     expect(mobOf(world, a)!.hp).toBeLessThan(1e6);
-    expect(Math.round(hero.armor.charge!)).toBe(26);
+    expect(Math.round(hero.armor.charge!)).toBe(25);
   });
 });
 

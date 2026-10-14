@@ -5,7 +5,7 @@ import { appear, teleportToLocation } from '../reading';
 import { distance, LENGTH, NEIGHBOURS8 } from '../level/geometry';
 import { F, hasFlag } from '../level/terrain';
 import { canEnter } from '../floor';
-import { hasTalent, pointsIn } from '../talents';
+import { hasTalent, pointsInTalent as pointsIn } from '../talents';
 import { isEnemy } from '../enchant';
 import { say, tell } from './common';
 import {
@@ -41,9 +41,9 @@ const foeInSight = (ctx: Ctx, hero: Hero, ch: Mob): boolean => !ch.ally && isAli
 export const T4_SPELLS: SpellDef[] = [
   {
     id: 'divineIntervention', tier: 4, aim: 'none', cost: () => 5,
-    has: (hero) => hasTalent(hero, 'DIVINE_INTERVENTION') && ascendedOf(hero) !== undefined && !ascendedOf(hero)!.divine,
+    has: (hero) => hasTalent(hero, 'divineIntervention') && ascendedOf(hero) !== undefined && !ascendedOf(hero)!.divine,
     cast(ctx, hero) {
-      const points = pointsIn(hero, 'DIVINE_INTERVENTION');
+      const points = pointsIn(hero, 'divineIntervention');
       say(ctx, hero, { k: 'sound', name: 'chargeup' });
       say(ctx, hero, { k: 'operate' });
       for (const ally of ctx.floor.mobs) {
@@ -64,13 +64,13 @@ export const T4_SPELLS: SpellDef[] = [
   },
   {
     id: 'judgement', tier: 4, aim: 'none', cost: () => 3,
-    has: (hero) => hasTalent(hero, 'JUDGEMENT') && ascendedOf(hero) !== undefined,
+    has: (hero) => hasTalent(hero, 'judgement') && ascendedOf(hero) !== undefined,
     cast(ctx, hero) {
       const ascend = ascendedOf(hero)!;
       say(ctx, hero, { k: 'strike', at: hero.pos });
       say(ctx, hero, { k: 'flash', color: 0x80ffffff });
       say(ctx, hero, { k: 'sound', name: 'blast' });
-      let base = 5 + 5 * pointsIn(hero, 'JUDGEMENT');
+      let base = 5 + 5 * pointsIn(hero, 'judgement');
       base += Math.round((base * ascend.spellCasts) / 3);
       for (const mob of [...ctx.floor.mobs]) {
         if (foeInSight(ctx, hero, mob)) {
@@ -86,12 +86,12 @@ export const T4_SPELLS: SpellDef[] = [
   {
     id: 'flash', tier: 4, aim: 'cell', flags: 'free',
     cost: (hero) => 2 + (ascendedOf(hero)?.flashCasts ?? 0),
-    has: (hero) => hasTalent(hero, 'FLASH') && ascendedOf(hero) !== undefined,
+    has: (hero) => hasTalent(hero, 'flash') && ascendedOf(hero) !== undefined,
     problem(world, hero, action) {
       const level = world.levels[hero.depth]!;
       const cell = action.cell!;
       const known = exploredCells(world, hero.depth)[cell] === true;
-      return hasFlag(level.map[cell]!, F.SOLID) || !known || distance(hero.pos, cell) > 2 + pointsIn(hero, 'FLASH') ? `${MSG}flash.invalid_target` : null;
+      return hasFlag(level.map[cell]!, F.SOLID) || !known || distance(hero.pos, cell) > 2 + pointsIn(hero, 'flash') ? `${MSG}flash.invalid_target` : null;
     },
     cast(ctx, hero, action) {
       if (!teleportToLocation(ctx, hero, action.cell!)) return 0;
@@ -101,7 +101,7 @@ export const T4_SPELLS: SpellDef[] = [
     },
   },
   {
-    id: 'bodyForm', tier: 4, aim: 'choice', cost: () => 2, has: (hero) => hasTalent(hero, 'BODY_FORM'),
+    id: 'bodyForm', tier: 4, aim: 'choice', cost: () => 2, has: (hero) => hasTalent(hero, 'bodyForm'),
     problem: (world, hero, action) => bodyProblem(world, hero, action.choice),
     cast(ctx, hero, action) {
       chooseForm(ctx, hero, 'body', action.choice!);
@@ -110,7 +110,7 @@ export const T4_SPELLS: SpellDef[] = [
     },
   },
   {
-    id: 'mindForm', tier: 4, aim: 'choice', cost: () => 3, has: (hero) => hasTalent(hero, 'MIND_FORM'),
+    id: 'mindForm', tier: 4, aim: 'choice', cost: () => 3, has: (hero) => hasTalent(hero, 'mindForm'),
     problem: (world, hero, action) => mindProblem(world, hero, action.choice),
     cast(ctx, hero, action) {
       chooseForm(ctx, hero, 'mind', action.choice!);
@@ -119,7 +119,7 @@ export const T4_SPELLS: SpellDef[] = [
     },
   },
   {
-    id: 'spiritForm', tier: 4, aim: 'choice', cost: () => 4, has: (hero) => hasTalent(hero, 'SPIRIT_FORM'),
+    id: 'spiritForm', tier: 4, aim: 'choice', cost: () => 4, has: (hero) => hasTalent(hero, 'spiritForm'),
     problem: (world, hero, action) => spiritProblem(world, hero, action.choice),
     cast(ctx, hero, action) {
       chooseForm(ctx, hero, 'spirit', action.choice!);
@@ -129,7 +129,7 @@ export const T4_SPELLS: SpellDef[] = [
   },
   {
     id: 'beamingRay', tier: 4, aim: 'cell', flags: 'stop', cost: () => 1,
-    has: (hero, world) => hasTalent(hero, 'BEAMING_RAY') && (poweredAlly({ floor: world.floors[hero.depth]! }) !== undefined || stasisAlly(hero) !== undefined),
+    has: (hero, world) => hasTalent(hero, 'beamingRay') && (poweredAlly({ floor: world.floors[hero.depth]! }) !== undefined || stasisAlly(hero) !== undefined),
     problem(world, hero, action) {
       const cell = action.cell!;
       const floor = world.floors[hero.depth]!;
@@ -145,7 +145,7 @@ export const T4_SPELLS: SpellDef[] = [
       if (tele === -1) return `${MSG}beamingray.no_space`;
       const mover = ally === hero ? stasis : ally;
       if (!mover) return `${MSG}beamingray.no_space`;
-      let range = 4 * pointsIn(hero, 'BEAMING_RAY');
+      let range = 4 * pointsIn(hero, 'beamingRay');
       if (!isHero(mover) && ['yog', 'shopkeeper', 'wandmaker', 'blacksmith', 'imp', 'ghost', 'ratKing'].includes(mover.kind)) range = Math.trunc(range / 2);
       return distance(mover.pos, tele) > range ? `${MSG}beamingray.out_of_range` : null;
     },
@@ -206,9 +206,9 @@ export const T4_SPELLS: SpellDef[] = [
   },
   {
     id: 'lifeLink', tier: 4, aim: 'none', cost: () => 2,
-    has: (hero, world) => hasTalent(hero, 'LIFE_LINK') && (poweredAlly({ floor: world.floors[hero.depth]! }) !== undefined || stasisAlly(hero) !== undefined),
+    has: (hero, world) => hasTalent(hero, 'lifeLink') && (poweredAlly({ floor: world.floors[hero.depth]! }) !== undefined || stasisAlly(hero) !== undefined),
     cast(ctx, hero) {
-      const duration = Math.round(6.67 + 3.33 * pointsIn(hero, 'LIFE_LINK'));
+      const duration = Math.round(6.67 + 3.33 * pointsIn(hero, 'lifeLink'));
       let ally: Mob | undefined = poweredAlly(ctx);
       if (ally) {
         say(ctx, hero, { k: 'strike', at: ally.pos });
@@ -233,7 +233,7 @@ export const T4_SPELLS: SpellDef[] = [
   },
   {
     id: 'stasis', tier: 4, aim: 'none', cost: (hero) => (hasTimer(hero, 'stasis') ? 0 : 2),
-    has: (hero, world) => hasTalent(hero, 'STASIS') && (poweredAlly({ floor: world.floors[hero.depth]! }) !== undefined || hasTimer(hero, 'stasis')),
+    has: (hero, world) => hasTalent(hero, 'stasis') && (poweredAlly({ floor: world.floors[hero.depth]! }) !== undefined || hasTimer(hero, 'stasis')),
     cast(ctx, hero) {
       spellCast(ctx, hero, spell('stasis'));
       if (hasTimer(hero, 'stasis')) {
@@ -249,7 +249,7 @@ export const T4_SPELLS: SpellDef[] = [
       leaveCell(ctx.world, ctx.level, ctx.depth, ally.pos);
       ctx.effects.push({ type: 'faded', depth: ctx.depth, mob: ally.id, pos: ally.pos });
       cs(hero).stasis = { ally };
-      setTimer(hero, 'stasis', 30 + 30 * pointsIn(hero, 'STASIS'));
+      setTimer(hero, 'stasis', 30 + 30 * pointsIn(hero, 'stasis'));
       say(ctx, hero, { k: 'sound', name: 'teleport' });
       if (hasTimer(hero, 'lifeLink') && cs(hero).linkObject === ally.id) {
         clearTimer(hero, 'lifeLink');

@@ -260,7 +260,7 @@ export function chargeArtifacts(ctx: Ctx, hero: Hero, amount: number, ignoreHorn
   }
   // The holy tome carried (light reading) charges a little too.
   const carried = hero.items.find((item) => item.kind === 'artifact.tome');
-  if (carried && hasTalent(hero, 'LIGHT_READING')) chargeTome(hero, carried, amount);
+  if (carried && hasTalent(hero, 'light_reading')) chargeTome(hero, carried, amount);
 }
 
 /** Artifact.charge, by kind. */

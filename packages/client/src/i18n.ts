@@ -2,6 +2,8 @@ import type { EmoteKind, Enchantment, Glyph, HeroClass, ItemKind, Landmark, MobK
 import type { BuffName } from './hud';
 import { ART_EN, ART_RU } from './i18n-artifacts';
 import { CLS_EN, CLS_RU } from './i18n-classes';
+import { TAL_EN, TAL_RU } from './i18n-talents';
+import { ABIL_EN, ABIL_RU } from './i18n-abilities';
 
 /* Interface text in Russian and English; the language follows Telegram or the browser. */
 
@@ -15,9 +17,9 @@ const RU_GENDERS: Partial<Record<ItemKind, 1 | 2>> = { 'weapon.mace': 1, 'weapon
 
 /** The Russian gender of a wearable's name, plural included: «палочка», «кольцо», «доспехи воина». */
 function brokenGender(kind: ItemKind): 0 | 1 | 2 | 3 {
-  if (kind.startsWith('wand.') || kind === 'armor.mage') return 1;
-  if (kind.startsWith('ring.') || kind === 'armor.rogue') return 2;
-  if (kind === 'armor.warrior') return 3;
+  // (The class armours are «латная броня», «мантия», «одежда» героя, and «плащ».)
+  if (kind.startsWith('wand.') || kind === 'armor.mage' || kind === 'armor.rogue' || kind === 'armor.warrior') return 1;
+  if (kind.startsWith('ring.')) return 2;
   return RU_GENDERS[kind] ?? 0;
 }
 /** String.format for Shattered's texts: %s and %d in turn, or %1$d, %2$s by number. */
@@ -974,6 +976,17 @@ const ALCH_RU: typeof ALCH_EN = {
 };
 /* (end of the generated alchemy strings) */
 
+/** The names of the talents' and subclasses' buffs, from Shattered's own texts (i18n-talents.ts). */
+const talentBuffNames = (table: Record<string, string>) => ({
+  berserk: table['actors.buffs.berserk.angered']!, berserking: table['actors.buffs.berserk.berserk']!, exhausted: table['actors.buffs.berserk.recovering']!,
+  comboChain: table['actors.buffs.combo.name']!, momentum: table['actors.buffs.momentum.momentum']!, freerunning: table['actors.buffs.momentum.running']!,
+  preparation: table['actors.buffs.preparation.name']!, sniperMark: table['actors.buffs.snipersmark.name']!, holdFast: table['actors.buffs.holdfast.name']!,
+  trackerBlow: table['actors.hero.talent$provokedangertracker.name']!, cooldown: table['actors.hero.talent$improvisedprojectilecooldown.name']!,
+  wandEmpower: table['actors.buffs.wandempower.name']!, enhancedRings: table['actors.hero.talent.enhanced_rings.title']!,
+  surge: table['actors.hero.talent.strongman.title']!, revealedArea: table['actors.hero.talent.seer_shot.title']!,
+  parry: table['actors.buffs.combo$combomove.parry.name']!, followup: table['actors.hero.talent$followupstriketracker.name']!,
+});
+
 /** The artifacts' names, from Shattered's own texts (i18n-artifacts.ts). */
 const artNames = (table: Record<string, string>) => ({
   cloak: table['cloakofshadows.name']!, horn: table['hornofplenty.name']!, chalice: table['chaliceofblood.name']!,
@@ -1168,10 +1181,87 @@ const en = {
     duelist: CLS_EN['actors.hero.heroclass.duelist_desc_short']!,
     cleric: CLS_EN['actors.hero.heroclass.cleric_desc_short']!,
   } as Record<HeroClass, string>,
+  /**
+   * Shattered's five boss fights (bosses/*.ts in the core): each boss's lines by the key the core sends ('notice',
+   * 'gluuurp', 'wave_1'...; %s the hero), their statuses and warnings, the names and descriptions of their
+   * minions and fixtures. Shattered's own texts (actors, items, levels .properties).
+   */
+  bosses: {
+    lines: {
+      goo: { notice: 'GLURP-GLURP!', defeated: 'glurp... glurp...', '!!!': '!!!', pumpup: 'Goo is pumping itself up!', enraged: 'enraged', gluuurp: 'GLUUUURP!' },
+      tengu: { notice_gotcha: 'Gotcha, %s!', interesting: "Let's make this interesting...", notice_have: 'I have you now, %s!', defeated: 'Free at last...' },
+      dm300: {
+        notice: 'UNAUTHORIZED PERSONNEL DETECTED!', shield: 'DM-300 pulls power from the exposed wires and shields itself!',
+        charging: 'SUSTAINING DAMAGE! ACTIVATING POWER PYLON!', charging_hint: 'DM-300 is invulnerable while it is being energized by a pylon!',
+        supercharged: 'DESTROY! DESTROY! DESTROY!', charge_lost: 'PYLON DESTROYED! REVERTING TO LOCAL POWER!',
+        pylons_destroyed: 'ALERT! INSTABILITY DETECTED IN POWER GRID!', defeated: 'CRITICAL DAMAGE! ATTEMPTING SHUTDO-',
+      },
+      king: {
+        notice: "How dare you! You have no idea what you're interfering with!", lifelink_1: 'I have need of your essence, slave!',
+        lifelink_2: 'Bleed for me, slave!', teleport_1: 'Deal with them, slave!', teleport_2: 'Keep them busy, slave!',
+        wave_1: 'Enough! Arise my slaves!', wave_2: 'More! Bleed for your king!', wave_3: 'Useless! KILL THEM NOW!',
+        enraged: 'You cannot kill me %s. I. AM. IMMORTAL!', losing: "No! You can't do this... you have no idea what lies below...",
+        defeated: "You've... Doomed us all...",
+      },
+      yog: { notice: 'I. SEE. YOU.', darkness: 'The darkness pulls in closer...', hope: 'YOUR. HOPE. IS. AN. ILLUSION!', defeated: '...' },
+      fist: { invuln_warn: 'The fist is invulnerable while near to the eye!' },
+      brightFist: { teleport: 'The fist teleports away in a flash of light that seriously blinds you!' },
+      darkFist: { teleport: 'The fist teleports away in a blast of darkness that extinguishes your light source!' },
+    } as Record<string, Record<string, string>>,
+    invulnerable: 'invulnerable',
+    deferred: 'deferred %d',
+    bleeding: 'bleeding',
+    oozeName: 'caustic ooze',
+    oozeDesc: 'This sticky acid clings to flesh, slowly melting it away.\n\nOoze will deal consistent damage over time, but can be immediately washed off in water.\n\nTurns of ooze remaining: %s.',
+    oozed: 'Caustic ooze eats your flesh. Wash it away!',
+    lifeLink: 'life link',
+    descs: {
+      goo: "Little is known about The Goo. It's quite possible that it is not even a creature, but rather a conglomerate of vile substances from the sewers that somehow gained basic intelligence. Regardless, dark magic is certainly what has allowed Goo to exist.\n\nIts gelatinous nature has let it absorb lots of dark energy, you feel a chill just from being near. If Goo is able to attack with this energy you won't live for long.",
+      tengu: 'A famous and enigmatic assassin, named for the mask grafted to his face.\n\nTengu is held down with large clasps on his wrists and knees, though he seems to have gotten rid of his chains long ago.\n\nHe will try to use traps, deceptive magic, and precise attacks to eliminate the only thing stopping his escape: you.',
+      dm300: "The DM-300 is the largest and most powerful 'defense machine' that the dwarves ever built. Such an awesome machine is difficult to manufacture, so the dwarves only ever made a few to guard the entrances to their underground metropolis.\n\nIt is equipped with vents to jet its toxic exhaust fumes and a high power drill that it can use both to attack and disrupt the earth. DM-300 can also connect to an energy grid, further enhancing its power.",
+      dm300Supercharged: 'DM-300 is currently charged full of electrical energy. In this form DM-300 cannot be damaged and moves at double speed! Additionally, its drill now spins fast enough for it to tunnel through solid rock, though it moves much more slowly when doing this.\n\nAttacking DM-300 directly is pointless while it is supercharged, but something in the area must be providing it with this energy, destroying that may weaken it.',
+      pylon: 'A power pylon, meant to help regulate the electricity which powers the machinery in this area.\n\nThe pylon is currently inactive and immune to damage.',
+      pylonActive: "A power pylon, meant to help regulate the electricity which powers the machinery in this area. The pylon is currently surging with electrical energy, this must be what's supercharging DM-300!\n\nIn this state pylons are vulnerable, but will arc electricity to nearby cells in a clockwise pattern. Due to their heavy metal construction, pylons are resistant to large amounts of damage.",
+      king: 'Many years ago one of the highest wizards in the dwarven court uncovered secrets which gave him tremendous power over life and death. He soon put this power to use, subjugating and corrupting his peers, his king, and eventually every dwarven citizen. Now he is king, ruler over a legion of undead subjects.\n\nThe King of Dwarves is an aggressive foe, who will attempt to surround and overwhelm his enemies with his horde of undead minions.',
+      ghoul: 'As dwarven society slowly began to collapse, and the current king of the dwarves seized absolute power, those who were weak or who resisted him were not treated well. As the king grew more adept at wielding dark magic, he bent these dwarves to his will, and now they make up the footsoldiers of his army.\n\nGhouls are not especially strong on their own, but always travel in groups and are much harder to kill in large numbers.',
+      yog: "Yog-Dzewa is an Old God; a great monstrosity which reaches into mortal worlds and devours them to fuel its endless growth. The dwarves must have attracted the attention of this cosmic horror while toying with dark magics, and have been trying to keep it contained ever since.\n\nYog-Dzewa originates from a dimension of raw magical chaos, and cannot bring its true form into this world. Instead it has created avatars and summoned demonic minions to do its bidding here.\n\nThis giant eye is the focal point of Yog-Dzewa's power in this world. While the eye itself is immobile, it is capable of shooting powerful beams of demonic magic and summoning a variety of minions to aid it.",
+      larva: 'These tiny spawn of Yog-Dzewa are simple minions that are easy to produce. While individually weak, they are summoned quickly and can become overwhelming in large numbers.',
+      fist: "This fist is an aspect of Yog-Dzewa's power. Fists are linked to the power of Yog-Dzewa, and will be protected from all damage when they are close to the eye.",
+      burningFist: 'This fist is formed out of chaotic fiery magic. As it moves it will constantly set terrain around it ablaze. It is also capable of shooting blasts of fiery power, which spread flames where they impact.\n\nThe fist\'s ability to spread flames is suppressed when near water, but its heat is so great that any water around it will evaporate after a short while!',
+      soiledFist: 'This fist is formed out of chaotic earthen magic. As it moves it will constantly cause vegetation to sprout around it. It can also shoot concentrated earthen blasts that will ensnare its target in rapidly growing vines and roots!\n\nThe fist derives power from this plant life, and will resist damage based on the amount of tall or furrowed vegetation near it!',
+      rottingFist: "This fist is formed out of living corruption. It is a towering mass of decaying flesh that can spread caustic ooze in melee and toxic gas at range. Even worse, the fist's great mass causes it to bleed instead of taking damage directly.\n\nWater can be used to wash the ooze off, but the fist is also capable of absorbing water to heal itself! Additionally, damaging the fist while it is bleeding will cause the bleed to refresh, but not stack!",
+      rustedFist: 'This fist is formed out of living metal. It is a towering mass of shifting metal that has powerful melee attacks, and can cripple its targets at range. Because of its tremendous mass, the fist will take any damage dealt to it over time, instead of immediately.\n\nThe fist is inflexible however, and cannot move into tight passageways. Additionally, while it may take damage slowly, the deferred damage will continue to increase if the fist is hit multiple times.',
+      brightFist: 'This fist is formed out of pure light energy. It is capable of shooting powerful rays of searing light every turn! These beams will temporarily blind you in addition to dealing heavy damage. The fist is also capable of briefly engulfing the arena in blinding light in order to escape!\n\nThe fist has no special abilities which it can use in melee range however.',
+      darkFist: 'This fist is formed out of pure dark energy. It is capable of shooting powerful blasts of dark magic every turn! These blasts will weaken your light source in addition to dealing heavy damage. The fist is also capable of briefly engulfing the arena in darkness in order to escape!\n\nThe fist has no special abilities which it can use in melee range however.',
+    } as Record<string, string>,
+    tiles: {
+      wiresName: 'Exposed wiring',
+      wiresDesc: 'The ground is partially dug up here, showing some large exposed wires. They must be connecting the various electrical machines together.\n\nThe wires must have some current running through them. If DM-300 steps here it may be able to draw power from them.',
+      energyDesc: 'The ground here is sparking with electricity, and is harmful to step on. The sparks seem to be gravitating in a certain direction... perhaps they lead to the power source?',
+      gateName: 'Metal gate',
+      gateDesc: 'A large metal gate that blocks the path into the dwarven metropolis. The metal box in the center is producing a loud humming noise, it must be connected to the circuitry and machines nearby. Perhaps destroying DM-300 will open the gate?',
+      gateBroken: 'The gate must have been connected to DM-300 in some way, as it exploded when DM-300 was defeated. Now only broken pieces remain.',
+      waterDesc: 'With all the electricity around here water might not always be safe...',
+      throneName: 'Throne',
+      throneDesc: 'This impressively large throne is the seat of the dwarven empire, now taken over by a power-mad necromancer.\n\nThere seems to be some magical or mechanical parts to the throne, Dwarf King may have additional power when sitting on it.',
+      summoningName: 'Summoning pedestal',
+      summoningDesc: 'This pedestal has a large opening in the center, which is practically radiating with dark energy.\n\nDwarf King uses these pedestals as focal points for his necromantic magic, and can summon minions to them. The pedestal must charge for a few turns before the minion appears, and the type of minion being summoned is telegraphed by the building magical power.',
+      dartTrap: 'Tengu has clearly been preparing for a fight. This trap will activate a hidden dart blower which will shoot a poison dart at the nearest thing that isn\'t Tengu.\n\nThe trap is so well made that the trigger mechanism is impossible to detect without magical aid. However the trap is visible for a moment when it is being set.',
+      fireBlob: 'Tengu has thrown a fine powder that seems to be catching into steam here, it\'s about to ignite!',
+      shockBlob: 'Electrical energy is building here, anything standing on this tile will be shocked next turn!',
+      bombBlob: "A cloud of superheated smoke is billowing here. Watch out, it's going to explode!",
+      bombName: 'Smoke Bomb',
+      bombDesc: "Tengu has thrown a strange looking smoke bomb here, which is billowing a thick hot smoke. It's making a loud ticking noise, as if its counting down to an explosion!\n\nThe bomb has anchored itself to the ground, so you can't pick it up.",
+      shockerName: 'Shocker',
+      shockerDesc: "Tengu has thrown a curious machine here, which seems to be made of DM-100 parts. The machine is constantly arcing electricity around it, but it seems to be going in a predictable pattern.\n\nWith all the electricity arcing around it, there's no way you can pick this up.",
+    },
+  },
   mobs: {
     rat: 'marsupial rat', gnoll: 'gnoll scout', crab: 'sewer crab', goo: 'Goo', ghost: 'sad ghost', ghostHero: ART_EN['driedrose$ghosthero.name']!, skeleton: 'skeleton',
     thief: 'crazy thief', swarm: 'swarm of flies', shaman: 'gnoll shaman', bat: 'vampire bat', brute: 'gnoll brute',
     tengu: 'Tengu', shopkeeper: 'shopkeeper', wandmaker: 'old wandmaker', spinner: 'cave spinner', dm300: 'DM-300',
+    shadow: ABIL_EN['actors.hero.abilities.rogue.shadowclone$shadowally.name']!, hawk: ABIL_EN['actors.hero.abilities.huntress.spirithawk$hawkally.name']!,
+    ninjaLog: ABIL_EN['actors.hero.abilities.rogue.smokebomb$ninjalog.name']!,
     elemental: 'fire elemental', monk: 'dwarf monk', warlock: 'dwarf warlock', golem: 'golem', king: 'King of Dwarves',
     undead: 'undead dwarf', succubus: 'succubus', eye: 'evil eye', scorpio: 'scorpio', yog: 'Yog-Dzewa',
     rottingFist: 'rotting fist', burningFist: 'burning fist', larva: "god's larva", mimic: 'mimic', statue: 'animated statue',
@@ -1186,6 +1276,7 @@ const en = {
     shockElemental: 'shock elemental', chaosElemental: 'chaos elemental', ripper: 'ripper demon', spawner: 'demon spawner',
     goldenMimic: 'golden mimic', crystalMimic: 'crystal mimic', ebonyMimic: 'ebony mimic', armoredStatue: 'armored statue',
     phantomPiranha: 'phantom piranha',
+    pylon: 'power pylon', soiledFist: 'soiled fist', rustedFist: 'rusted fist', brightFist: 'bright fist', darkFist: 'dark fist',
     ward: 'ward', guardian: 'earthen guardian', lotus: 'Golden Lotus',
   } as Record<MobKind, string>,
   /** Shattered's monsters' words (mobfx.ts): Messages of their kinds, of ChampionEnemy, of the curses they lay. */
@@ -1313,7 +1404,7 @@ const en = {
   nothingFound: 'You search but find nothing.',
   revived: (name: string) => `${name} is back on their feet.`,
   tooDeep: 'The way down is still being built. To be continued!',
-  oozed: 'Caustic ooze eats your flesh. Wash it off in water!',
+  oozed: 'Caustic ooze eats your flesh. Wash it away!',
   gooPumps: 'Goo is pumping itself up!',
   gooPumpsTip: 'Goo is about to strike hard: step away from it!',
   gooNotice: 'GLURP-GLURP!',
@@ -1369,14 +1460,14 @@ const en = {
 
   items: {
     gold: 'gold',
-    'armor.warrior': 'warrior suit of armor',
-    'armor.mage': 'mage robe',
-    'armor.rogue': 'rogue garb',
-    'armor.huntress': 'huntress cloak',
+    'armor.warrior': ABIL_EN['items.armor.warriorarmor.name']!,
+    'armor.mage': ABIL_EN['items.armor.magearmor.name']!,
+    'armor.rogue': ABIL_EN['items.armor.roguearmor.name']!,
+    'armor.huntress': ABIL_EN['items.armor.huntressarmor.name']!,
     'armor.duelist': CLS_EN['items.armor.duelistarmor.name']!,
     'armor.cleric': CLS_EN['items.armor.clericarmor.name']!,
     'artifact.tome': CLS_EN['items.artifacts.holytome.name']!,
-    'kit.armor': 'armor kit',
+    'crown.king': ABIL_EN['items.kingscrown.name']!,
     'wand.magicMissile': 'Wand of Magic Missile',
     'wand.lightning': 'Wand of Lightning',
     'wand.disintegration': 'Wand of Disintegration',
@@ -1393,7 +1484,8 @@ const en = {
     'weapon.magesStaff': "mage's staff",
     'key.iron': 'iron key',
     'key.golden': 'golden key',
-    'key.skeleton': 'skeleton key',
+    'key.skeleton': 'worn key',
+    'mask.tengu': "Tengu's mask",
     ankh: 'Ankh',
     'quest.rose': 'dried rose',
     'quest.skull': 'giant rat skull',
@@ -1416,6 +1508,8 @@ const en = {
     'ring.tenacity': ART_EN['items.rings.ringoftenacity.name']!,
     'ring.wealth': ART_EN['items.rings.ringofwealth.name']!,
     'tome.mastery': 'Tome of Mastery',
+    'food.supply': "supply ration",
+    'food.berry': "dungeon berry",
     'seed.firebloom': 'seed of Firebloom',
     'seed.icecap': 'seed of Icecap',
     'seed.sorrowmoss': 'seed of Sorrowmoss',
@@ -1637,7 +1731,7 @@ const en = {
     'missile.holyDart': "holy dart",
   } as Record<ItemKind, string>,
   itemInfo: {
-    'kit.armor': 'With this kit of small tools and materials, the armour you wear becomes the armour of your class: as good as before, and with a special ability.',
+    'crown.king': ABIL_EN['items.kingscrown.desc']!,
     ankh: 'The ancient symbol of immortality. Die while carrying it and you rise again at the stairs, whole, '
       + 'but everything else in your pack is lost, and all your gold.',
     'wand.magicMissile': 'This fairly plain wand launches missiles of pure magical energy. While the wand itself lacks any special effects, it has more available charges and can briefly empower other wands when upgraded.',
@@ -1673,7 +1767,10 @@ const en = {
     'ring.sharpshooting': ART_EN['items.rings.ringofsharpshooting.desc']!,
     'ring.tenacity': ART_EN['items.rings.ringoftenacity.desc']!,
     'ring.wealth': ART_EN['items.rings.ringofwealth.desc']!,
+    'mask.tengu': "This mask fell off Tengu's face as he died, you can feel great magical power emanating from it. Was the mask Tengu's source of strength?\n\nWhen worn, the tremendous power of the mask will be transferred into you, enabling you to choose a subclass for your hero.\n\nWhich subclass will you choose?",
     'tome.mastery': 'This worn leather book is not that thick, but you feel somehow that you can gather a lot from it. Reading it takes a while: choose one of the two ways of your class.',
+    'food.supply': "This ration was left in the dungeon by and for members of the thieves guild. It's specifically designed to be eaten on the go, and aid with general skullduggery.\n\nWhile it doesn't fill you up as much as a regular ration, it can be eaten quickly, provides a little direct healing, and will restore a charge to the Rogue's cloak of shadows.",
+    'food.berry': "This small berry was found by the Huntress among the dungeon's vegetation. It can be eaten quickly, restores a small amount of satiety, and might contain a usable seed!",
     'seed.firebloom': 'Throw it where you want a Firebloom to grow: whoever touches it bursts into flames.',
     'seed.icecap': 'Throw it where you want an Icecap to grow: touched, it freezes everyone around.',
     'seed.sorrowmoss': 'Throw it where you want a Sorrowmoss to grow: whoever touches it is poisoned.',
@@ -1963,20 +2060,9 @@ const en = {
     busy: 'I\'m busy. Get lost!',
   },
   mine: 'Mine',
-  applyKit: 'Apply it to your armour',
-  classArmorInfo: {
-    warrior: 'A warrior can make a heroic leap in it, stunning everyone around where he lands.',
-    mage: 'A mage can cast molten earth in it: every enemy in sight burns and is held fast.',
-    rogue: 'A rogue can throw a smoke bomb in it: whoever saw him loses him, and he is elsewhere.',
-    huntress: 'A huntress can loose spectral blades in it: one at every enemy in sight.',
-    duelist: CLS_EN['items.armor.duelistarmor.desc']!,
-    cleric: CLS_EN['items.armor.clericarmor.desc']!,
-  } as Record<HeroClass, string>,
-  specialCost: 'Each use costs a third of your health.',
-  specials: {
-    warrior: 'Heroic leap', mage: 'Molten earth', rogue: 'Smoke bomb', huntress: 'Spectral blades', duelist: 'Armour ability', cleric: 'Armour ability',
-  } as Record<HeroClass, string>,
-  classArmorMade: (name: string) => `Your armour becomes the ${name}!`,
+  /** KingsCrown: its action, and what the armour says as it changes. */
+  wearCrown: ABIL_EN['items.kingscrown.ac_wear']!,
+  crownUsed: ABIL_EN['items.kingscrown.upgraded']!,
   augment: 'Augment',
   augmented: (name: string) => `Your ${name} is augmented.`,
   corrupted: (mob: string) => `The ${mob} rises again, on your side.`,
@@ -2289,6 +2375,9 @@ const en = {
     // Alchemy's buffs (their Shattered names).
     haste: ALCH_EN.buff_haste, stamina: ALCH_EN.buff_stamina, magicalSight: ALCH_EN.buff_magicalSight, magicImmune: ALCH_EN.buff_magicImmune, foresight: ALCH_EN.buff_foresight, fireImbue: ALCH_EN.buff_fireImbue, frostImbue: ALCH_EN.buff_frostImbue, toxicImbue: ALCH_EN.buff_toxicImbue, featherFall: ALCH_EN.buff_featherFall, cleanse: ALCH_EN.buff_cleanse, drowsy: ALCH_EN.buff_drowsy, magicalSleep: ALCH_EN.buff_magicalSleep, potionHealing: ALCH_EN.buff_healing, arcaneArmor: ALCH_EN.buff_arcaneArmor, aquaHealing: ALCH_EN.buff_aquaHealing, htBoost: ALCH_EN.buff_htBoost, wellFed: ALCH_EN.buff_wellFed, prismaticGuard: ALCH_EN.buff_prismaticGuard, challengeArena: ALCH_EN.buff_challenge,
     stealth: 'Cloaked', timeFreeze: 'Time Freeze', thorns: 'Thorns',
+    // The talents' and subclasses' buffs (their Shattered names, talenttext.ts).
+    ...talentBuffNames(TAL_EN),
+    endure: ABIL_EN['actors.hero.abilities.warrior.endure$enduretracker.name']!, naturesPower: ABIL_EN['actors.hero.abilities.huntress.naturespower$naturespowertracker.name']!,
     degrade: 'Degraded',
   } as Record<BuffName, string>,
   causes: {
@@ -2960,14 +3049,86 @@ const ru: Strings = {
     duelist: CLS_RU['actors.hero.heroclass.duelist_desc_short']!,
     cleric: CLS_RU['actors.hero.heroclass.cleric_desc_short']!,
   },
+  bosses: {
+    lines: {
+      goo: { notice: 'БУЛЬК-БУЛЬК!', defeated: 'бульк... бульк...', '!!!': '!!!', pumpup: 'Слизень накачивается жижей!', enraged: 'в ярости', gluuurp: 'БУУУУЛЬК!' },
+      tengu: { notice_gotcha: 'Ну вот я и поймал тебя, %s!', interesting: 'Давай-ка сделаем битву интереснее...', notice_have: 'Словил я наконец тебя, %s!', defeated: 'Наконец-то свободен...' },
+      dm300: {
+        notice: 'ОБНАРУЖЕН НЕАВТОРИЗОВАННЫЙ ПЕРСОНАЛ!', shield: 'DM-300 подключается к току от открытых проводов и создает себе щит!',
+        charging: 'ПОЛУЧАЮ ПОВРЕЖДЕНИЯ! АКТИВИРУЮ ВЫСОКОВОЛЬТНУЮ ОПОРУ!', charging_hint: 'DM-300 неуязвим, пока он подпитывается от высоковольтной опоры!',
+        supercharged: 'УНИЧТОЖИТЬ! УНИЧТОЖИТЬ! УНИЧТОЖИТЬ!', charge_lost: 'ОПОРА УНИЧТОЖЕНА! ПЕРЕХОЖУ НА ЛОКАЛЬНОЕ ПИТАНИЕ!',
+        pylons_destroyed: 'ТРЕВОГА! ОБНАРУЖЕНА НЕСТАБИЛЬНОСТЬ ЭЛЕКТРОСЕТИ!', defeated: 'КРИТИЧЕСКИЕ ПОВРЕЖДЕНИЯ! ПОПЫТКА ОТКЛЮЧЕ-',
+      },
+      king: {
+        notice: 'Как ты смеешь! Ты не имеешь никакого представления, с чем связался!', lifelink_1: 'Мне нужна твоя жизненная сила, раб!',
+        lifelink_2: 'Кровь за короля, раб!', teleport_1: 'Займись ими, раб!', teleport_2: 'Не оставляй их без дела, раб!',
+        wave_1: 'Довольно! Восстаньте, мои рабы!', wave_2: 'Еще! Кровь за короля!', wave_3: 'Тщетно! УБЕЙТЕ ИХ!',
+        enraged: 'Ты не можешь убить меня, %s. Я БЕССМЕРТЕН!', losing: 'Нет! Ты не можешь этого сделать... ты и понятия не имеешь, что там, в глубине...',
+        defeated: 'Ты... обрек нас всех...',
+      },
+      yog: { notice: 'Я. ВИЖУ. ТЕБЯ.', darkness: 'Темнота сгущается вокруг вас...', hope: 'ТВОЯ. НАДЕЖДА. ЭТО. ИЛЛЮЗИЯ!', defeated: '...' },
+      fist: { invuln_warn: 'Длань неуязвима, пока находится возле глаза!' },
+      brightFist: { teleport: 'Длань телепортируется подальше, создавая световую вспышку, которая сильно ослепляет вас!' },
+      darkFist: { teleport: 'Длань телепортируется подальше, создавая тёмную вспышку, которая тушит ваш источник света!' },
+    },
+    invulnerable: 'неуязвимый',
+    deferred: 'отложено %d',
+    bleeding: 'кровотечение',
+    oozeName: 'едкая слизь',
+    oozeDesc: 'Этот липкий яд въедается в кожу, медленно растворяя её.\n\nСлизь наносит постоянный урон каждый ход, но её легко можно смыть водой.\n\nХодов осталось: %s.',
+    oozed: 'Ядовитая слизь разъедает вашу плоть. Надо её смыть!',
+    lifeLink: 'узы жизни',
+    descs: {
+      goo: 'Мало что известно о Слизне. Возможно, это даже не существо, а сборище мерзких субстанций из канализации, каким-то образом развивших примитивный интеллект. В любом случае, темная магия - вот причина существования Слизня.\n\nЕго желейная субстанция позволяет ему поглощать так много темной энергии, что вы чувствуете озноб, просто находясь рядом. Если Слизень атакует вас этой энергией, долго вам не прожить.',
+      tengu: 'Знаменитый и загадочный убийца, названный по имени той маски, что скрывает его лицо.\n\nТенгу скован большими кандалами на запястьях и ногах, хотя, видимо, от самих цепей он уже давно освободился.\n\nОн попытается использовать ловушки, иллюзии и смертоносные атаки, чтобы убрать единственное препятствие на пути к свободе: вас.',
+      dm300: "DM-300 - самое крупное и сильное 'оборонное оборудование', когда-либо созданное дворфами. Такую великолепную машину чрезвычайно трудно создать, так что дворфы сделали их всего несколько штук для стражи входов в их подземную столицу.\n\nМашина оснащена выхлопной трубой для выброса токсичных газов и сверхмощной дрелью, которой она может и атаковать, и разрывать грунт. DM-300 также способен подключаться к сети питания, что еще более повышает его силу.",
+      dm300Supercharged: 'В данный момент, DM-300 полностью заряжен электроэнергией. В таком состоянии DM-300 невозможно нанести урон, и он передвигается с двойной скоростью! Кроме того, его дрель теперь вертится достаточно быстро, чтобы пробить тоннели сквозь скальной массив, хотя двигаться при этом будет намного медленнее.\n\nПока DM-300 сверх-заряжен, нет смысла атаковать его напрямую, но что-то в этом месте, очевидно, снабжает его энергией, и если найти это и разрушить, возможно, это его ослабит.',
+      pylon: 'Высоковольтная опора для управления электричеством, снабжающим местное оборудование.\n\nВ данный момент опора неактивна и невосприимчива к урону.',
+      pylonActive: 'Высоковольтная опора для управления электричеством, снабжающим местное оборудование. Опора потрескивает от напряжения - наверняка именно от нее заряжается DM-300!\n\nВ таком состоянии опора уязвима, но выпускает разряды электричества по соседним квадратам по часовой стрелке. Обладая тяжелой металлической конструкцией, опоры выносят большое количество урона.',
+      king: 'Много лет тому назад, один из высочайших придворных чародеев дворфов открыл тайны, которые наделили его чрезвычайной властью над жизнью и смертью. В скором он использовал эту власть, подчинил и растлил своих сверстников, своего короля, и, в итоге, всех граждан-дворфов. Ныне он - король, повелитель легиона подчиненных ему нежитей.\n\nКороль дворфов - очень агрессивный противник, он постарается сразить своих врагов ордой подчиненной ему нежити.',
+      ghoul: 'Когда дворфское общество начало постепенно распадаться, а нынешний король дворфов захватил абсолютную власть, с теми, кто были слабы или сопротивлялись ему, обращались не особо ласково. Когда король преуспел в искусстве темной магии, они подчинил этих дворфов своей воле, а теперь они стали пехотинцами его армии.\n\nВурдалаки, сами по себе, не особо сильны, но они всегда бродят группами и их непросто убить, когда их много.',
+      yog: 'Йог-Джева - древний бог; великое чудовище, досягающее до миров смертных и пожирающее их для поддержания своего бесконечного роста. Дворфы, видимо, привлекли внимание этого космического ужаса, когда игрались с темной магией, и с тех пор старались как-то ограничить его влияние.\n\nЙог-Джева обитает в измерении безформенного магического хаоса и не способен воплотить свой истинный облик в настоящем миру. Вместо этого, божество создало своих аватаров и демонических слуг, которые подчиняются его приказам.\n\nЭтот огромный глаз является точкой фокуса силы Йог-Джева в нашем мире. Сам глаз неподвижен, но он способен излучать мощнейшие лучи демонической магии и призывать разные виды слуг на помощь.',
+      larva: 'Эти маленькие отродья Йог-Джевы - простые приспешники, которых легко производить. В одиночку они слабые, но они быстро призываются и могут стать непреодолимыми в большом количестве.',
+      fist: 'Эта длань является аспектом мощи Йог-Джевы. Длани подвязаны к силе Йог-Джевы, и будут защищены от любого урона, когда находятся возле глаза.',
+      burningFist: 'Эта длань сформирована из хаотичной огненной магии. Пока она передвигается, она постоянно воспламеняет свое окружение. Она также способна стрелять зарядами огненной мощи, которые распространяют пламя на тех местах, куда они попадают.\n\nСпособность длани воспламенять окружение подавлена вблизи воды, но жар, исходящий от нее, заставит воду испариться за короткое время!',
+      soiledFist: 'Эта длань сформирована из хаотической магии земли. Когда она движется, вокруг нее произрастает вегетация. Она также способна стрелять концентрированными земельными зарядами, которые связывают цель быстрорастущими вьюнками и корнями!\n\nЭта длань получает свою силу из этой флоры и выдержит урон в соответствии с тем, сколько высокой или бороздчатой вегетации находится близко от нее!',
+      rottingFist: 'Эта длань сформирована из живой порчи. Это огромная масса разлагающейся плоти, способная разбрасывать едкую слизь в ближнем, и отравляющий газ в дальнем бою. Что еще хуже, вместо того, чтобы получать урон напрямую, она получает лишь эффект кровотечения.\n\nС помощью воды можно смыть слизь, однако длань способна поглощать воду и, таким образом, исцелять себя! Кроме того, когда она получает урон во время кровотечения, старый эффект обновляется, но новый притом не накладывается!',
+      rustedFist: 'Эта длань сформирована из живого металла. Это взгромоздение движущейся массы металла способно мощно атаковать в ближнем бою и калечит свои цели в дальнем. Из-за огромной массы эта длань способна распределить нанесенный ей урон по времени.\n\nЭта длань, однако, негибкая и не помещается в узкие проходы. Кроме того, что она, конечно, несет урон не сразу, отложенный урон увеличивается, если длань терпит попадание несколько раз.',
+      brightFist: 'Эта длань сформирована из чистой световой энергии. Она способна каждый ход излучать мощные лучи слепящего света! Эти лучи временно ослепляют и, кроме того, наносят тяжелый урон. Длань также способна на короткое время заливать арену слепящим светом, чтобы скрыться.\n\nУ этой длани, однако, нет особых способностей, которые она могла бы применить в ближнем бою.',
+      darkFist: 'Эта длань сформирована из чистой темной энергии. Она способна каждый ход излучать мощные лучи темной магии! Эти лучи ослабляют ваш источник света и причиняют тяжелый урон. Длань также способна на короткое время заливать арену темнотой, чтобы скрыться.\n\nУ этой длани, однако, нет особых способностей, которые она могла бы применить в ближнем бою.',
+    },
+    tiles: {
+      wiresName: 'Обнаженные провода',
+      wiresDesc: 'Почва здесь частично взрыта, видны какие-то крупные обнаженные провода. Вероятно, они соединяют различное электрическое оборудование.\n\nПохоже, по этим проводам проходит ток. Если DM-300 наступит сюда, то сможет зарядиться тут электрической энергией.',
+      energyDesc: 'Почва на этом месте искрится от электрического тока, наступать сюда вредно. Искры, похоже, устремляются в определенном направлении... возможно, они приведут к источнику энергии?',
+      gateName: 'Металлические ворота',
+      gateDesc: 'Большие металлические ворота, которые закрывают путь в столицу дворфов. Металлическая коробка в центре громко жужжит - она явно подключена к проводке и к оборудованию неподалёку. Быть может ворота откроются, если уничтожить DM-300?',
+      gateBroken: 'Ворота, похоже, были каким-то образом подключены к DM-300, ведь они взорвались одновременно с уничтожением машины. Теперь от них остались лишь обломки.',
+      waterDesc: 'Учитывая все электричество вокруг, вода наверняка будет небезопасной...',
+      throneName: 'Престол',
+      throneDesc: 'Впечатляюще большой престол - седалище империи дворфов, ныне захваченное одержимым жаждой власти некромантом.\n\nПохоже, в этом престоле имеются какие-то магические или механические элементы. Сидя на нём, король дворфов обретает новые силы.',
+      summoningName: 'Призывающий пьедестал',
+      summoningDesc: 'У этого пьедестала в середине имеется большое отверстие, излучающее темную энергию.\n\nКороль Дворфов использует эти пьедесталы в качестве фокусных точек для своей некромантии и может призвать на них своих слуг. Перед тем, как на нем появится слуга, пьедестал должен заряжаться несколько ходов, а тип слуги, который появится на нем, определяется вызывающей его магической силой.',
+      dartTrap: 'Тенгу явно готовился к этому бою. Эта ловушка активирует скрытый механизм, который выстрелит отравленным дротиком в ближайшую цель. Механизм настроен на Тенгу и будет игнорировать своего хозяина.\n\nЛовушка сделана настолько хорошо, что спусковой механизм невозможно обнаружить без магической помощи. Однако ловушка видна в тот момент, когда она устанавливается.',
+      fireBlob: 'Тенгу распылил здесь какой-то порошок, который собирается воспламениться!',
+      shockBlob: 'Воздух здесь искрится от электрических разрядов. Похоже, что на следующий ход здесь ударит молния!',
+      bombBlob: 'Здесь клубится облако обжигающего дыма. Осторожнее, оно скоро взорвётся!',
+      bombName: 'Дымовая шашка',
+      bombDesc: 'Тенгу бросил сюда странно выглядящую шашку, которая испускает густой горячий дым. Она громко тикает, как будто отсчитывая время для взрыва!\n\nШашка, похоже, приклеилась к полу, поэтому вы не сможете подобрать её.',
+      shockerName: 'Шокер',
+      shockerDesc: 'Тенгу бросил сюда любопытное устройство, явно собранное из частей роботов DM-100. Устройство постоянно искрится от электрического заряда, но передвигается только по заданному пути.\n\nУчитывая, что это устройство столь наэлектризовано, вы никак не можете его подобрать.',
+    },
+  },
   // Names as in the Russian localisation of the original.
   mobs: {
-    rat: 'сумчатая крыса', gnoll: 'гнолл-разведчик', crab: 'сточный краб', goo: 'Жижа', ghost: 'печальное привидение', ghostHero: 'печальное привидение',
+    rat: 'сумчатая крыса', gnoll: 'гнолл-разведчик', crab: 'сточный краб', goo: 'Слизень', ghost: 'печальное привидение', ghostHero: 'печальное привидение',
+    shadow: ABIL_RU['actors.hero.abilities.rogue.shadowclone$shadowally.name']!, hawk: ABIL_RU['actors.hero.abilities.huntress.spirithawk$hawkally.name']!,
+    ninjaLog: ABIL_RU['actors.hero.abilities.rogue.smokebomb$ninjalog.name']!,
     skeleton: 'скелет', thief: 'безумный вор', swarm: 'рой мух', shaman: 'гнолл-шаман', bat: 'летучая мышь-вампир',
     brute: 'гнолл-громила', tengu: 'Тенгу', shopkeeper: 'торговец', wandmaker: 'старый мастер палочек',
     spinner: 'пещерный прядильщик', dm300: 'DM-300', elemental: 'огненный элементаль', monk: 'дворф-монах',
-    warlock: 'дворф-чернокнижник', golem: 'голем', king: 'Король гномов', undead: 'мёртвый гном', succubus: 'суккуб',
-    eye: 'злобоглаз', scorpio: 'скорпид', yog: 'Йог-Дзева', rottingFist: 'гниющий кулак', burningFist: 'горящий кулак',
+    warlock: 'дворф-чернокнижник', golem: 'голем', king: 'Король Дворфов', undead: 'мёртвый гном', succubus: 'суккуб',
+    eye: 'злобоглаз', scorpio: 'скорпид', yog: 'Йог-Джева', rottingFist: 'гнилостная длань', burningFist: 'пылающая длань',
     larva: 'личинка бога', mimic: 'мимик', statue: 'живая статуя', piranha: 'гигантская пиранья', imp: 'амбициозный бес',
     sheep: 'овца', blacksmith: 'тролль-кузнец', mirror: 'зеркальный образ', prismatic: 'радужная копия', afterImage: 'послеобраз', lightAlly: 'светлый союзник', albino: 'крыса-альбинос', bandit: 'безумный бандит',
     shielded: 'бронированный громила', senior: 'монах-наставник', acidic: 'кислотный скорпид', fetidRat: 'вонючая крыса',
@@ -2981,6 +3142,7 @@ const ru: Strings = {
     ripper: 'демон-потрошитель', spawner: 'рассадник демонов', goldenMimic: 'золотой мимик', crystalMimic: 'хрустальный мимик',
     ebonyMimic: 'эбонитовый мимик', armoredStatue: 'бронированная статуя', phantomPiranha: 'призрачная пиранья',
     ward: 'страж', guardian: 'земляной страж', lotus: 'Золотой Лотос',
+    pylon: 'высоковольтная опора', soiledFist: 'земляная длань', rustedFist: 'ржавая длань', brightFist: 'яркая длань', darkFist: 'тёмная длань',
   },
   /** Shattered's monsters' words (mobfx.ts): Messages of their kinds, of ChampionEnemy, of the curses they lay. */
   mobLines: {
@@ -3071,7 +3233,7 @@ const ru: Strings = {
     'Нажмите на героя или на лупу, чтобы искать потайные двери и ловушки.',
     'Песочные часы — пропустить ход; удерживайте их, чтобы отдыхать до исцеления.',
     'Знак вопроса, а затем касание карты расскажут о монстре, предмете или месте. Эта справка — в меню.',
-    'Встаньте на лестницу, чтобы спуститься глубже. На пятом этаже ждёт Жижа, на десятом — Тенгу, на пятнадцатом — DM-300, на двадцатом — Король гномов, на двадцать пятом — Йог-Дзева; под ним лежит Амулет Йендора.',
+    'Встаньте на лестницу, чтобы спуститься глубже. На пятом этаже ждёт Слизень, на десятом — Тенгу, на пятнадцатом — DM-300, на двадцатом — Король Дворфов, на двадцать пятом — Йог-Джева; под ним лежит Амулет Йендора.',
     'Нажмите на пропасть рядом, чтобы прыгнуть: вы упадёте на глубину ниже, ударившись. Анкх из лавки один раз вернёт вас к жизни.',
     'Сведите или разведите два пальца (или колесо мыши, + и −), чтобы отдалить карту или рассмотреть детали; проведите пальцем, чтобы осмотреться, — шаг вернёт вид к герою.',
   ],
@@ -3102,16 +3264,16 @@ const ru: Strings = {
   nothingFound: 'Вы ищете, но ничего не находите.',
   revived: (name) => `${name} снова в строю.`,
   tooDeep: 'Дальше путь ещё строится. Продолжение следует!',
-  oozed: 'Слизь разъедает плоть. Смойте её водой!',
-  gooPumps: 'Жижа начинает накачиваться!',
-  gooPumpsTip: 'Жижа сейчас ударит со всей силы: отойдите от неё!',
+  oozed: 'Ядовитая слизь разъедает вашу плоть. Надо её смыть!',
+  gooPumps: 'Слизень накачивается жижей!',
+  gooPumpsTip: 'Слизень сейчас ударит со всей силы: отойдите от него!',
   gooNotice: 'ХЛЮП-ХЛЮП!',
   gooDeath: 'хлюп... хлюп...',
   bossSlain: {
-    goo: 'Жижа повержена! Выход открыт.', tengu: 'Тенгу повержен! Путь наружу открыт.',
+    goo: 'Слизень повержен! Выход открыт.', tengu: 'Тенгу повержен! Путь наружу открыт.',
     dm300: 'DM-300 уничтожен! Путь наружу открыт.',
-    king: 'Король гномов повержен! Путь наружу открыт.',
-    yog: 'Йог-Дзева повержен! Путь вниз открыт.',
+    king: 'Король Дворфов повержен! Путь наружу открыт.',
+    yog: 'Йог-Джева повержен! Путь вниз открыт.',
   },
   dm300Notice: 'Обнаружен посторонний.',
   dm300Death: 'Задание провалено. Отключаюсь.',
@@ -3155,14 +3317,14 @@ const ru: Strings = {
   // Names as in the Russian localisation of the original.
   items: {
     gold: 'золото',
-    'armor.warrior': 'доспехи воина',
-    'armor.mage': 'мантия мага',
-    'armor.rogue': 'одеяние разбойника',
-    'armor.huntress': 'плащ охотницы',
+    'armor.warrior': ABIL_RU['items.armor.warriorarmor.name']!,
+    'armor.mage': ABIL_RU['items.armor.magearmor.name']!,
+    'armor.rogue': ABIL_RU['items.armor.roguearmor.name']!,
+    'armor.huntress': ABIL_RU['items.armor.huntressarmor.name']!,
     'armor.duelist': CLS_RU['items.armor.duelistarmor.name']!,
     'armor.cleric': CLS_RU['items.armor.clericarmor.name']!,
     'artifact.tome': CLS_RU['items.artifacts.holytome.name']!,
-    'kit.armor': 'набор для брони',
+    'crown.king': ABIL_RU['items.kingscrown.name']!,
     'wand.magicMissile': 'Палочка Магической стрелы',
     'wand.lightning': 'Палочка Молний',
     'wand.disintegration': 'Палочка Дезинтеграции',
@@ -3179,7 +3341,8 @@ const ru: Strings = {
     'weapon.magesStaff': 'посох Мага',
     'key.iron': 'железный ключ',
     'key.golden': 'золотой ключ',
-    'key.skeleton': 'ключ-скелет',
+    'key.skeleton': 'изношенный ключ',
+    'mask.tengu': 'маска Тенгу',
     ankh: 'Анкх',
     'quest.rose': 'сухая роза',
     'quest.skull': 'череп гигантской крысы',
@@ -3202,6 +3365,8 @@ const ru: Strings = {
     'ring.tenacity': ART_RU['items.rings.ringoftenacity.name']!,
     'ring.wealth': ART_RU['items.rings.ringofwealth.name']!,
     'tome.mastery': 'Книга Мастерства',
+    'food.supply': "паёк",
+    'food.berry': "подземельная ягода",
     'seed.firebloom': 'семя огнецвета',
     'seed.icecap': 'семя ледянки',
     'seed.sorrowmoss': 'семя скорбного мха',
@@ -3423,7 +3588,7 @@ const ru: Strings = {
     'missile.holyDart': "освященный дротик",
   },
   itemInfo: {
-    'kit.armor': 'С этим набором инструментов и материалов надетый доспех становится доспехом вашего класса: не хуже прежнего, да ещё с особым умением.',
+    'crown.king': ABIL_RU['items.kingscrown.desc']!,
     ankh: 'Древний символ бессмертия. Если вы погибнете, имея его при себе, то воскреснете у лестницы целым и '
       + 'невредимым — но всё остальное в рюкзаке пропадёт, как и всё золото.',
     'wand.magicMissile': 'Довольно простая палочка, стреляющая стрелами чистой магической энергии. Хоть палочка и не обладает какими-либо особыми эффектами, она имеет довольно много доступных зарядов и может на некоторое время усилить другие палочки после улучшения.',
@@ -3459,7 +3624,10 @@ const ru: Strings = {
     'ring.sharpshooting': ART_RU['items.rings.ringofsharpshooting.desc']!,
     'ring.tenacity': ART_RU['items.rings.ringoftenacity.desc']!,
     'ring.wealth': ART_RU['items.rings.ringofwealth.desc']!,
+    'mask.tengu': 'Эта маска упала с лица Тенгу после его смерти, и вы чувствуете огромную магическую силу, исходящую от неё. Была ли маска источником силы Тенгу?\n\nПри ношении маска передаст вам свою огромную силу, что позволит вам выбрать подкласс своего героя.\n\nКакой подкласс вы выберете?',
     'tome.mastery': 'Эта потёртая кожаная книга не так уж толста, но вы чувствуете, что можете многое из неё почерпнуть. Чтение займёт время: выберите один из двух путей своего класса.',
+    'food.supply': "Этот паёк был оставлен в подземелье членами гильдии воров для её же участников. Он был специально разработан для перекуса на ходу и для помощи в тёмных делах.\n\nХотя он и не насытит вас так же, как и обычный рацион, паёк может быть съеден моментально. Он восстановит немного здоровья и один заряд Плаща Теней Разбойника.",
+    'food.berry': "Это небольшая ягода, найденная охотницей среди растительности. Ее можно очень быстро съесть, она восполняет небольшое количество сытости, а также может содержать полезное семя!",
     'seed.firebloom': 'Бросьте туда, где должен вырасти огнецвет: тот, кто его коснётся, вспыхнет.',
     'seed.icecap': 'Бросьте туда, где должна вырасти ледянка: от прикосновения она замораживает всех вокруг.',
     'seed.sorrowmoss': 'Бросьте туда, где должен вырасти скорбный мох: тот, кто его коснётся, отравится.',
@@ -3747,21 +3915,8 @@ const ru: Strings = {
     busy: 'Я занят. Проваливай!',
   },
   mine: 'Добыть руду',
-  applyKit: 'Применить к доспеху',
-  classArmorInfo: {
-    warrior: 'В них воин может совершить героический прыжок, оглушая всех вокруг места приземления.',
-    mage: 'В ней маг может вызвать расплавленную землю: все враги в поле зрения горят и не могут сойти с места.',
-    rogue: 'В нём разбойник может бросить дымовую шашку: видевшие его теряют его из виду, а он уже в другом месте.',
-    huntress: 'В нём охотница может выпустить призрачные клинки — по одному в каждого врага в поле зрения.',
-    duelist: CLS_RU['items.armor.duelistarmor.desc']!,
-    cleric: CLS_RU['items.armor.clericarmor.desc']!,
-  },
-  specialCost: 'Каждое применение отнимает треть здоровья.',
-  specials: {
-    warrior: 'Героический прыжок', mage: 'Расплавленная земля', rogue: 'Дымовая шашка', huntress: 'Призрачные клинки', duelist: 'Способность брони',
-    cleric: 'Способность брони',
-  },
-  classArmorMade: (name) => `Ваш доспех становится таким: ${name}!`,
+  wearCrown: ABIL_RU['items.kingscrown.ac_wear']!,
+  crownUsed: ABIL_RU['items.kingscrown.upgraded']!,
   augment: 'Применить',
   augmented: (name) => `${name}: камень Баланса подействовал.`,
   corrupted: (mob) => `${mob} восстаёт снова — на вашей стороне.`,
@@ -4066,7 +4221,10 @@ const ru: Strings = {
     // Alchemy's buffs (their Shattered names).
     haste: ALCH_RU.buff_haste, stamina: ALCH_RU.buff_stamina, magicalSight: ALCH_RU.buff_magicalSight, magicImmune: ALCH_RU.buff_magicImmune, foresight: ALCH_RU.buff_foresight, fireImbue: ALCH_RU.buff_fireImbue, frostImbue: ALCH_RU.buff_frostImbue, toxicImbue: ALCH_RU.buff_toxicImbue, featherFall: ALCH_RU.buff_featherFall, cleanse: ALCH_RU.buff_cleanse, drowsy: ALCH_RU.buff_drowsy, magicalSleep: ALCH_RU.buff_magicalSleep, potionHealing: ALCH_RU.buff_healing, arcaneArmor: ALCH_RU.buff_arcaneArmor, aquaHealing: ALCH_RU.buff_aquaHealing, htBoost: ALCH_RU.buff_htBoost, wellFed: ALCH_RU.buff_wellFed, prismaticGuard: ALCH_RU.buff_prismaticGuard, challengeArena: ALCH_RU.buff_challenge,
     stealth: ART_RU['cloakofshadows$cloakstealth.name']!, timeFreeze: ART_RU['timekeepershourglass$timefreeze.name']!,
+    endure: ABIL_RU['actors.hero.abilities.warrior.endure$enduretracker.name']!, naturesPower: ABIL_RU['actors.hero.abilities.huntress.naturespower$naturespowertracker.name']!,
     thorns: ART_RU['capeofthorns$thorns.name']!,
+    // The talents' and subclasses' buffs (their Shattered names, talenttext.ts).
+    ...talentBuffNames(TAL_RU),
     degrade: 'Потрёпан',
   },
   causes: {

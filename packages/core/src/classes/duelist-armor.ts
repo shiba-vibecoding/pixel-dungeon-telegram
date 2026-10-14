@@ -14,7 +14,7 @@ import { adjacent, cellX, cellY, distance, LENGTH, NEIGHBOURS8 } from '../level/
 import { canEnter } from '../floor';
 import { F, hasFlag, T } from '../level/terrain';
 import { hasProp, isImmune } from '../props';
-import { pointsIn } from '../talents';
+import { pointsInTalent as pointsIn, type TalentId } from '../talents';
 import { weaponProc } from '../enchant';
 import { heroDamageRoll } from '../actors';
 import type { World } from '../world';
@@ -77,7 +77,7 @@ function duelPlace(world: World, hero: Hero, target: Mob): { place: number; prob
   for (const h of world.heroes) if (h !== hero && h.depth === hero.depth) others.add(h.pos);
   const reachable = distances(world, hero, target.pos, others);
   let place = hero.pos;
-  const points = pointsIn(hero, 'CLOSE_THE_GAP');
+  const points = pointsIn(hero, 'closeTheGap');
   if (points > 0 && hero.rooted <= 0) {
     const near = distances(world, hero, hero.pos, new Set(), 1 + points);
     for (const cell of near.keys()) {
@@ -163,7 +163,7 @@ function endDuel(ctx: Ctx, hero: Hero, won: boolean): void {
   if (foe?.marks) delete foe.marks.duel;
   if (won) {
     fx(ctx, hero, { k: 'sound', name: 'boss' });
-    const points = pointsIn(hero, 'INVIGORATING_VICTORY');
+    const points = pointsIn(hero, 'invigoratingVictory');
     if (points > 0) {
       // Heals for 30%/50%/65%/75% of the harm taken plus 5/10/15/20, by the talent's points.
       let heal = Math.round(duel.taken * (1 - ipow(Math.fround(0.707), points))) + 5 * points;
@@ -177,7 +177,7 @@ function endDuel(ctx: Ctx, hero: Hero, won: boolean): void {
   }
   if (isAlive(hero)) {
     fx(ctx, hero, { k: 'flash', color: 0x80ffffff });
-    if (pointsIn(hero, 'ELIMINATION_MATCH') > 0) setTimer(hero, 'elimination', 3);
+    if (pointsIn(hero, 'eliminationMatch') > 0) setTimer(hero, 'elimination', 3);
   }
   releaseSpectators(ctx);
 }
@@ -252,16 +252,16 @@ export function afterImageStruck(ctx: Ctx, attacker: Mob, image: Mob): void {
   attacker.enemySeen = false;
   if (attacker.state === 'hunting') attacker.state = 'wandering';
   prolongMark(attacker, 'feint', 1);
-  const points = (id: string): number => pointsIn(hero, id);
-  if (points('FEIGNED_RETREAT') > 0) {
+  const points = (id: TalentId): number => pointsIn(hero, id);
+  if (points('feignedRetreat') > 0) {
     const b = (hero.buffs ??= {});
-    b.haste = Math.max(b.haste ?? 0, 2 * points('FEIGNED_RETREAT'));
+    b.haste = Math.max(b.haste ?? 0, 2 * points('feignedRetreat'));
   }
-  if (points('EXPOSE_WEAKNESS') > 0) {
-    attacker.vulnerable = Math.max(attacker.vulnerable ?? 0, 2 * points('EXPOSE_WEAKNESS'));
-    attacker.weakened = Math.max(attacker.weakened ?? 0, 2 * points('EXPOSE_WEAKNESS'));
+  if (points('exposeWeakness') > 0) {
+    attacker.vulnerable = Math.max(attacker.vulnerable ?? 0, 2 * points('exposeWeakness'));
+    attacker.weakened = Math.max(attacker.weakened ?? 0, 2 * points('exposeWeakness'));
   }
-  if (points('COUNTER_ABILITY') > 0) setTimer(hero, 'counter', 3);
+  if (points('counterAbility') > 0) setTimer(hero, 'counter', 3);
 }
 
 /* Elemental Strike */
@@ -277,7 +277,7 @@ export function doElementalStrike(ctx: Ctx, hero: Hero, cell: number | undefined
   const { world, level } = ctx;
   const def = abilityDef(hero)!;
   spendArmorCharge(hero, chargeUse(hero, def));
-  const reach = pointsIn(hero, 'ELEMENTAL_REACH');
+  const reach = pointsIn(hero, 'elementalReach');
   const aim = ballistica({ world, depth: ctx.depth, level }, hero.pos, cell!, WONT_STOP);
   const dist = Math.min(aim.dist, 4 + reach);
   const area = cone({ world, depth: ctx.depth, level }, aim, dist, 65 + 10 * reach, STOP_SOLID | STOP_TARGET);
@@ -294,10 +294,10 @@ export function doElementalStrike(ctx: Ctx, hero: Hero, cell: number | undefined
 
   const inCone = (): Mob[] => ctx.floor.mobs.filter((m) => hostile(m) && cells.has(m.pos));
   const targetsHit = inCone().length;
-  const power = 1 + 0.3 * pointsIn(hero, 'STRIKING_FORCE');
+  const power = 1 + 0.3 * pointsIn(hero, 'strikingForce');
 
   preAttack(ctx, hero, enchant, targetsHit, power);
-  if (pointsIn(hero, 'DIRECTED_POWER') > 0) cs(hero).directed = 0.3 * targetsHit * pointsIn(hero, 'DIRECTED_POWER');
+  if (pointsIn(hero, 'directedPower') > 0) cs(hero).directed = 0.3 * targetsHit * pointsIn(hero, 'directedPower');
   let oldPos = -1;
   if (enemy) {
     oldPos = enemy.pos;

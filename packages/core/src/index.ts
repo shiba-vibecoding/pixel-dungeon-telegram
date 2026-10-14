@@ -4,7 +4,7 @@ export * from './level/terrain';
 export * from './level/geometry';
 export { RoomType, DoorType } from './level/room';
 export { Feeling, HeapType, type ItemSpawn, type ItemSpec, isBossDepth, LAST_SHOP_DEPTH } from './level/builder';
-export { generateLevel, type Level, type RoomInfo } from './level/generate';
+export { type BossArt, type BossLevelInfo, generateLevel, type Level, type RoomInfo } from './level/generate';
 export { discoverable, passable } from './level/flags';
 export * from './actors';
 export { HERO_CLASSES, KIT_SEAMS, startingKit, type StartingKit } from './heroclass';
@@ -27,7 +27,14 @@ export {
   canTarget, isEnchantable, isItemRef, isTargetedScroll, isUnidentified, isUpgradable, itemAt, type ItemRef, scrollTargets, type TargetedScroll,
 } from './scrolls';
 export { type ImpQuest, TOKENS_WANTED } from './imp';
-export { CLASS_ARMOR, CLASS_ARMOR_OF } from './classArmor';
+export {
+  abilitiesOf, CLASS_ARMOR, CLASS_ARMOR_OF, isClassArmor, MAX_CHARGE as CLASS_ARMOR_MAX_CHARGE, START_CHARGE as CLASS_ARMOR_START_CHARGE,
+} from './classArmor';
+// The armour abilities and the tier 4 talents (abilities/, talents.ts).
+export {
+  ABILITIES, abilityAim, copyReach, staffWand as staffWandOf, type Aim, type AbilityInfo, CLASS_ABILITIES, chargeUse as abilityChargeUse, hawkSight, natureActive, wornClassArmor,
+} from './abilities';
+export * from './talents';
 export { BAGS, hasRoom, inBag, slotsUsed } from './bags';
 export * from './world';
 export * from './bones';
@@ -51,6 +58,14 @@ export * from './verify';
 export * from './badges';
 export * from './daily';
 export * from './spd-sprites';
+export { BOSS_KINDS, type BossFloor, type BossMob, isFist, type PrisonState, type Timed } from './bosses/index';
+export { type BossFx, CIRCLE8 } from './bosses/common';
+export { SUMMONS } from './bosses/king';
+export { FIST_ORDER } from './bosses/yog';
+export { GATE_CELLS, PYLON_POSITIONS } from './level/caves-boss';
+export { BOTTOM_DOOR, PEDESTALS, THRONE, TOP_DOOR } from './level/city-boss';
+export { AMULET_POS, HALLS_EXIT, YOG_POS } from './level/halls-boss';
+export { TENGU_CELL_DOOR } from './level/prison-boss';
 // Shattered's alchemy: the pot and its recipes, buffs, potions, scrolls, runestones, spells, bombs, trinkets.
 export {
   atPot, availableEnergy, BOMB_RECIPES, brewProblem, energizeProblem, goesInWhole, type Ingredient, type RecipeId, type RecipeOffer,
@@ -92,15 +107,28 @@ export { type MobBolt } from './mobskills';
 export { type MobLine } from './floor';
 export { hasProp, type Property, propertiesOf } from './props';
 export { CHAMPION_ENEMIES } from './challenges';
+// Shattered's talents and subclasses (talents/).
+export {
+  bonusTalentPoints, CLASS_OF_TALENT, initSubclassTalents, CLASS_TALENTS, hasTalent, pointsInTalent, SUBCLASS_TALENTS, TALENT_TIERS, TALENTS, talentBook,
+  type TalentBook, type TalentDef, type TalentId, talentPointsAvailable, talentPointsFree, talentPointsSpent, talentsOfTier, tierOfTalent,
+  tierPoints, TIER_LEVELS, upgradeProblem,
+} from './talents/data';
+export { type TalentBuffs, type BerserkBuff, type ComboBuff, type MomentumBuff, tbOf } from './talents/state';
+export { COMBO_MOVES, COMBO_REQ, type ComboMove, canUseMove, comboOf, highestMove, canStrike } from './talents/combo';
+export { berserkDamageFactor, berserkOf, canBerserk, currentShieldBoost, maxPower, maxShieldBoost } from './talents/berserk';
+export { ambushRange, blinkDistance, freerunning, koThreshold, momentumOf, prepBonus, prepLevel, prepTurns } from './talents/rogue';
+export { bowOf, markedMob, MARK_TURNS } from './talents/huntress';
+export { holdFastDecay } from './talents/hold-fast';
+export { METAMORPH_OPTIONS, type MetamorphTarget, metamorphOptions, metamorphTargets } from './talents/metamorph';
+export { eatingTime, idSpeedFactor, talentUse } from './talents';
 
-// The classes stream: the Duelist and the Cleric (talents, weapon abilities, the Monk, the holy tome and its spells, armour abilities).
-export * from './talents';
+// The classes stream: the Duelist and the Cleric (weapon abilities, the Monk, the holy tome and its spells; their talents are in talents/).
 export { type ClassAction, classProblem, isClassAction } from './classes/actions';
 export { MONK_ABILITIES, MONK_AIMS, MONK_COST, type MonkAbility, energyCap as monkEnergyCap, energyOf as monkEnergy, empowered as monkEmpowered } from './classes/monk';
 export { abilityAims, abilityBoost, abilityInfoArgs, abilityKind, hasAbility, weaponOf } from './classes/duelist';
 export { chargeCap as duelistChargeCap, charges as duelistCharges } from './classes/charger';
 export { allSpells, type CastAction, type SpellDef, type SpellId, spellDef, spellsOf, tomeOf } from './classes/cleric';
 export { cs as classState, hasTimer, timerLeft, markTurns } from './classes/state';
-export { abilityDef, ABILITY_DEFS, armorCharge, chargeUse as abilityChargeUse } from './classes/abilities';
+export { discoveredOf, trinityOptions } from './classes/trinity';
 export type { ClassFx } from './classes/fx';
 export { HERO_CLASSES as CLASSES } from './heroclass';

@@ -1,5 +1,8 @@
-import { F, hasFlag, type Item, type Mob, type MobKind, type PlantKind, T, trapAt } from '@pd/core';
+import {
+  F, GATE_CELLS, hasFlag, isFist, type Item, type Level, type Mob, type MobKind, PEDESTALS, type PlantKind, T, THRONE, trapAt, type World,
+} from '@pd/core';
 import { lang, t } from './i18n';
+import { artText } from './artifacttext';
 
 /*
  * What the examine tool tells about a cell (Toolbar's info button, Mob.description,
@@ -221,7 +224,13 @@ export function mobName(mob: Mob, name: string = t.mobs[mob.kind]): string {
  * Mob.description and Mob.info: what the monster is, what more its kind says (a shaman's mask, a gnoll exile's mood,
  * a statue's arms, a thief's loot, a monk's focus, a brute's rage), and what champion it is.
  */
-export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item) => item.kind): string[] {
+export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item) => item.kind, now = 0): string[] {
+  // Shattered's bosses, their fists, pylons and minions (DM300.description, Pylon.description, YogFist.description).
+  const boss = t.bosses.descs;
+  if (mob.kind === 'pylon') return [mob.boss?.active ? boss.pylonActive! : boss.pylon!];
+  if (mob.kind === 'dm300') return mob.boss?.supercharged ? [boss.dm300!, boss.dm300Supercharged!] : [boss.dm300!];
+  if (isFist(mob)) return [boss.fist!, boss[mob.kind] ?? ''];
+  if (boss[mob.kind]) return [boss[mob.kind]!];
   // Shattered's wands' creatures: what they can do, as strong as the wand that made them.
   if (mob.kind === 'ward') {
     const { tier, level } = mob.ward ?? { tier: 1, level: 0 };
@@ -234,6 +243,13 @@ export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item)
   if (mob.kind === 'lotus') {
     const level = mob.lotus?.level ?? 0;
     return [t.lotusInfo(level, Math.round(Math.min(1, 0.4 + 0.04 * level) * 100))];
+  }
+  // The armour abilities' allies, in Shattered's words: the hawk says how long it has left.
+  if (mob.kind === 'shadow') return [artText('actors.hero.abilities.rogue.shadowclone$shadowally.desc')];
+  if (mob.kind === 'ninjaLog') return [artText('actors.hero.abilities.rogue.smokebomb$ninjalog.desc')];
+  if (mob.kind === 'hawk') {
+    const left = Math.max(0, Math.floor(mob.hawk?.remaining ?? 0));
+    return [artText('actors.hero.abilities.huntress.spirithawk$hawkally.desc'), artText('actors.hero.abilities.huntress.spirithawk$hawkally.desc_remaining', [left])];
   }
   const table = lang === 'ru' ? RU_MOBS : EN_MOBS;
   const x = MOB_EXTRAS[lang === 'ru' ? 'ru' : 'en'];
@@ -256,6 +272,8 @@ export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item)
     const [name, desc] = x.champions[mob.champion];
     lines.push(`${capital(name)}: ${desc}`);
   }
+  // Death Mark: the mark and the turns it has left.
+  if (mob.deathMark) lines.push(artText('actors.hero.abilities.rogue.deathmark$deathmarktracker.desc', [Math.max(0, Math.ceil(mob.deathMark.until - now))]));
   return lines;
 }
 
@@ -401,4 +419,34 @@ function tileOf(terrain: number): Tile {
 export function tileText(terrain: number): { name: string; desc: string } {
   const [name, desc] = (lang === 'ru' ? RU_TILES : EN_TILES)[tileOf(terrain)];
   return { name, desc };
+}
+
+/**
+ * The boss levels' own tiles (CavesBossLevel and CityBossLevel's tileName and tileDesc, the custom tiles'
+ * name and desc) and what a fight leaves on a cell (Tengu's blobs, bombs and shockers, the pylons' energy).
+ */
+export function bossTile(world: World, level: Level, pos: number): { name: string; desc: string; extra: string[] } | null {
+  const tiles = t.bosses.tiles;
+  const floor = world.floors[level.depth];
+  const extra: string[] = [];
+  const boss = floor?.boss;
+  if (boss?.fire?.some(([c]) => c === pos)) extra.push(tiles.fireBlob);
+  if (boss?.shock?.some(([c]) => c === pos)) extra.push(tiles.shockBlob);
+  if (boss?.energy?.includes(pos)) extra.push(tiles.energyDesc);
+  for (const entry of boss?.timed ?? []) {
+    if (entry.kind === 'bomb' && entry.pos === pos) return { name: tiles.bombName, desc: tiles.bombDesc, extra: [tiles.bombBlob, ...extra] };
+    if (entry.kind === 'shocker' && entry.pos === pos) return { name: tiles.shockerName, desc: tiles.shockerDesc, extra };
+  }
+  const terrain = level.map[pos]!;
+  if (level.depth === 15 && !world.arena) {
+    if (GATE_CELLS.includes(pos)) return { name: tiles.gateName, desc: hasFlag(terrain, F.SOLID) ? tiles.gateDesc : tiles.gateBroken, extra };
+    if (terrain === T.INACTIVE_TRAP) return { name: tiles.wiresName, desc: tiles.wiresDesc, extra };
+    if (terrain >= T.WATER_TILES && terrain <= T.WATER) return { ...tileText(terrain), extra: [tiles.waterDesc, ...extra] };
+  }
+  if (level.depth === 20 && !world.arena) {
+    if (pos === THRONE) return { name: tiles.throneName, desc: tiles.throneDesc, extra };
+    if (PEDESTALS.includes(pos)) return { name: tiles.summoningName, desc: tiles.summoningDesc, extra };
+  }
+  if (extra.length > 0) return { ...tileText(terrain), extra };
+  return null;
 }

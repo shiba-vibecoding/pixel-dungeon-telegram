@@ -1,4 +1,7 @@
 import { hasGlyph } from './classes/state';
+import { pointsInTalent } from './talents/data';
+import { berserkEnchantFactor } from './talents/berserk';
+import { abilityProcBonus } from './abilities';
 import { rollMob } from './spawner';
 import {
   baseKind, beckon, createMob, enchantLevel, type Hero, heroAttackDelay, heroDefenseSkill, isAlive, isShopkeeper, isStarving, type Mob, type MobKind,
@@ -49,15 +52,16 @@ export const ADRENALINE_TURNS = 10;
  * 1 for the rest. Seam: a berserker's rage, the runic blade's slash, smite, the elemental strike, the spirit blades and
  * striking wave talents (classes, talents, abilities) would raise it.
  */
-export const procMultiplier = (char: Char): number => (isHero(char) ? enchantPowerMultiplier(char) + classProcBonus(char) : 1);
+export const procMultiplier = (char: Char): number =>
+  (isHero(char) ? berserkEnchantFactor(char, enchantPowerMultiplier(char) + abilityProcBonus(char) + classProcBonus(char)) : 1);
 
 /* Who is who (Char.Property; a seam for the mobs stream's own) */
 
 const BOSSES: ReadonlySet<MobKind> = new Set(['goo', 'tengu', 'dm300', 'king', 'yog']);
 const MINIBOSSES: ReadonlySet<MobKind> = new Set(['fetidRat', 'curse']);
-const INORGANIC: ReadonlySet<MobKind> = new Set(['dm300', 'golem', 'statue', 'wraith', 'curse']);
-const UNDEAD: ReadonlySet<MobKind> = new Set(['skeleton', 'wraith', 'undead', 'king']);
-const DEMONIC: ReadonlySet<MobKind> = new Set(['succubus', 'eye', 'scorpio', 'yog', 'larva', 'rottingFist', 'burningFist']);
+const INORGANIC: ReadonlySet<MobKind> = new Set(['dm300', 'golem', 'statue', 'wraith', 'curse', 'rustedFist', 'pylon']);
+const UNDEAD: ReadonlySet<MobKind> = new Set(['skeleton', 'wraith', 'undead', 'king', 'ghoul']);
+const DEMONIC: ReadonlySet<MobKind> = new Set(['succubus', 'eye', 'scorpio', 'yog', 'larva', 'rottingFist', 'burningFist', 'soiledFist', 'rustedFist', 'brightFist', 'darkFist']);
 /** Those who know no fear (Terror among their immunities), and those no magic drives amok. */
 const FEARLESS: ReadonlySet<MobKind> = new Set(['yog', 'rottingFist', 'burningFist', 'golem', 'monk', 'brute', 'eye', 'curse', 'wraith']);
 const UNSHAKEABLE: ReadonlySet<MobKind> = new Set(['yog', 'golem', 'monk']);
@@ -199,6 +203,11 @@ export function weaponProc(ctx: Ctx, hero: Hero, mob: Mob, damage: number, weapo
   if (!weapon) return damage;
   if (isMissile(weapon.kind) && hero.weapon?.kind === 'weapon.crossbow' && isDart(weapon.kind) && hero.weapon.enchant) {
     damage = enchantProc(ctx, hero, mob, damage, hero.weapon, hero.weapon.enchant, blow);
+  }
+  // MissileWeapon.proc: shared enchantment, the spirit bow's enchantment now and then on a thrown weapon (one time in three a point).
+  if (itemDef(weapon.kind).category === 'missile' && pointsInTalent(hero, 'shared_enchantment') > 0 && ctx.rng.int(3) < pointsInTalent(hero, 'shared_enchantment')) {
+    const bow = hero.items.find((item) => itemDef(item.kind).category === 'bow');
+    if (bow?.enchant && isAlive(mob)) damage = enchantProc(ctx, hero, mob, damage, bow, bow.enchant, blow);
   }
   if (!weapon.enchant || !isAlive(mob)) return damage;
   return enchantProc(ctx, hero, mob, damage, weapon, weapon.enchant, blow);

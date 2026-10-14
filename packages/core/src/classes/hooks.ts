@@ -8,7 +8,7 @@ import { augmentDamage } from '../weapons';
 import { bodyForm, cs, hasTimer, marks, setTimer } from './state';
 import { directCharge, tomeOf } from './cleric-core';
 import type { ItemKind } from '../items';
-import { pointsIn } from '../talents';
+import { pointsInTalent as pointsIn } from '../talents';
 import { onFoodEaten as duelistFoodEaten, onPotionUsed as duelistPotionUsed, takeEmpower, accuracyFactor, afterAttack, combinedLethality, evasionFactor, onAttackProc, onAbilityKill, aggressiveBarrierOnAttack } from './duelist-talents';
 import { addComboHit, chargedShot, crossbowCharged, takeSpin } from './duelist';
 import { hurt } from '../combat';
@@ -149,16 +149,16 @@ export function harvestKill(ctx: Ctx, mob: Mob): void {
 
 /** Food.eatingTime: the meals of the Duelist and the Cleric take two turns less (TIME_TO_EAT is 3). */
 export function classEatingTime(hero: Hero): number {
-  return pointsIn(hero, 'FOCUSED_MEAL') > 0 || pointsIn(hero, 'ENLIGHTENING_MEAL') > 0 ? 1 : 3;
+  return pointsIn(hero, 'focused_meal') > 0 || pointsIn(hero, 'enlightening_meal') > 0 ? 1 : 3;
 }
 
 /** Talent.onFoodEaten, for the meals of the Duelist and the Cleric. */
 export function classFoodEaten(ctx: Ctx, hero: Hero): void {
   duelistFoodEaten(ctx, hero);
   if (hero.heroClass !== 'cleric') return;
-  // SATIATED_SPELLS: the next spell cast shields the Cleric; ENLIGHTENING_MEAL: the tome charges by 2/3 or all of one.
-  if (pointsIn(hero, 'SATIATED_SPELLS') > 0) (cs(hero).holy ??= {}).satiated = 1;
-  const enlightening = pointsIn(hero, 'ENLIGHTENING_MEAL');
+  // satiated_spells: the next spell cast shields the Cleric; enlightening_meal: the tome charges by 2/3 or all of one.
+  if (pointsIn(hero, 'satiated_spells') > 0) (cs(hero).holy ??= {}).satiated = 1;
+  const enlightening = pointsIn(hero, 'enlightening_meal');
   const tome = tomeOf(hero);
   if (enlightening > 0 && tome) {
     directCharge(tome, (1 + enlightening) / 3);
@@ -168,7 +168,7 @@ export function classFoodEaten(ctx: Ctx, hero: Hero): void {
 
 /** Talent.onScrollUsed: recall inscription remembers the scroll read (not an upgrade) for a while. */
 export function classScrollUsed(_ctx: Ctx, hero: Hero, kind: ItemKind): void {
-  const points = pointsIn(hero, 'RECALL_INSCRIPTION');
+  const points = pointsIn(hero, 'recall_inscription');
   if (hero.heroClass !== 'cleric' || points === 0 || kind === 'scroll.upgrade') return;
   cs(hero).recall = kind;
   setTimer(hero, 'recall', points === 2 ? 300 : 10);
@@ -176,7 +176,7 @@ export function classScrollUsed(_ctx: Ctx, hero: Hero, kind: ItemKind): void {
 
 /** Talent.onRunestoneUsed. */
 export function classStoneUsed(_ctx: Ctx, hero: Hero, kind: ItemKind): void {
-  const points = pointsIn(hero, 'RECALL_INSCRIPTION');
+  const points = pointsIn(hero, 'recall_inscription');
   if (hero.heroClass !== 'cleric' || points === 0) return;
   cs(hero).recall = kind;
   setTimer(hero, 'recall', points === 2 ? 300 : 10);

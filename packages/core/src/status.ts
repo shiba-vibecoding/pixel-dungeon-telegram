@@ -6,6 +6,7 @@ import { type Char, type Ctx, isHero, isWater } from './floor';
 import { F, hasFlag } from './level/terrain';
 import { isImmune, resistance } from './props';
 import { mobPress } from './traps';
+import { onShieldBroken } from './talents/combat';
 
 /*
  * The conditions Shattered's wands put creatures under (actors/buffs): Chill
@@ -107,11 +108,16 @@ export function damageTaken(ctx: Ctx, victim: Char, damage: number, by: Char | n
     if (victim.charmed <= 0) delete victim.charmedBy;
   }
   if (!isHero(victim) && victim.doomed) damage = Math.round(damage * 1.67);
+  // Char.damage: a monster marked for death (Death Mark) takes a quarter more, unless it is an ally.
+  if (!isHero(victim) && victim.deathMark && !victim.ally) damage = Math.trunc(damage * 1.25);
   if ((victim.shield ?? 0) > 0 && damage > 0) {
     const absorbed = Math.min(victim.shield!, damage);
     victim.shield! -= absorbed;
     damage -= absorbed;
-    if (victim.shield! <= 0) delete victim.shield;
+    if (victim.shield! <= 0) {
+      delete victim.shield;
+      if (isHero(victim)) onShieldBroken(victim);
+    }
   }
   return damage;
 }
@@ -119,6 +125,8 @@ export function damageTaken(ctx: Ctx, victim: Char, damage: number, by: Char | n
 /** Barrier.act: a shield fades by a point once enough of a turn's share (a twentieth of it, a point at most) has gathered. */
 function fadeShield(char: Char): void {
   if (!char.shield) return;
+  // A boss's barrier fades on the floor's clock, or holds (bosses/index.ts: DM-300's charge, the King's DKBarrior).
+  if (!isHero(char) && char.boss !== undefined) return;
   char.shieldDecay = (char.shieldDecay ?? 0) + Math.min(1, char.shield / 20);
   if (char.shieldDecay >= 1) {
     char.shield--;

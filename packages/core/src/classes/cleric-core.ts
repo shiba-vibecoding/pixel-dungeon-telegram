@@ -11,7 +11,7 @@ import { energyArtifactMultiplier } from '../rings';
 import { charAt, type Char, type Ctx, isHero } from '../floor';
 import type { Item } from '../items';
 import { regenOn } from '../hero';
-import { hasTalent, pointsIn } from '../talents';
+import { hasTalent, pointsInTalent as pointsIn } from '../talents';
 import type { World } from '../world';
 import type { ClassAction } from './actions';
 import { addShield, tell } from './common';
@@ -61,7 +61,7 @@ export const isTome = (item: Item | null | undefined): item is Item => item?.kin
 export function tomeOf(hero: Hero): Item | undefined {
   const worn = [hero.artifact, hero.misc].find(isTome);
   if (worn) return worn;
-  return hasTalent(hero, 'LIGHT_READING') ? hero.items.find(isTome) : undefined;
+  return hasTalent(hero, 'light_reading') ? hero.items.find(isTome) : undefined;
 }
 
 export const isWornTome = (hero: Hero, item: Item): boolean => hero.artifact === item || hero.misc === item;
@@ -103,7 +103,7 @@ export function directCharge(tome: Item, amount: number): void {
 /** HolyTome.charge (the artifact charging: a boost): a quarter of it, less when only carried. */
 export function chargeTome(hero: Hero, tome: Item, amount: number): void {
   if (tome.cursed || isMagicImmune(hero) || (tome.charge ?? 0) >= chargeCap(tome)) return;
-  if (!isWornTome(hero, tome)) amount *= Math.fround((0.75 * pointsIn(hero, 'LIGHT_READING')) / 3);
+  if (!isWornTome(hero, tome)) amount *= Math.fround((0.75 * pointsIn(hero, 'light_reading')) / 3);
   tome.partial = (tome.partial ?? 0) + 0.25 * amount;
   while (tome.partial >= 1) {
     tome.charge = (tome.charge ?? 0) + 1;
@@ -127,7 +127,7 @@ export function tomeTurn(ctx: Ctx, hero: Hero): void {
       let turns = 45 - missing;
       turns /= energyArtifactMultiplier(hero);
       let gain = Math.fround(1 / turns);
-      if (!isWornTome(hero, tome)) gain *= Math.fround((0.75 * pointsIn(hero, 'LIGHT_READING')) / 3);
+      if (!isWornTome(hero, tome)) gain *= Math.fround((0.75 * pointsIn(hero, 'light_reading')) / 3);
       tome.partial = (tome.partial ?? 0) + gain;
     }
     while ((tome.partial ?? 0) >= 1) {
@@ -152,8 +152,8 @@ export function spellCast(ctx: Ctx, hero: Hero, spell: SpellDef): void {
   const tome = tomeOf(hero)!;
   dispelInvisibility(ctx, hero);
   const state = cs(hero);
-  if (hasTalent(hero, 'SATIATED_SPELLS') && state.holy?.satiated) {
-    const amount = 1 + 2 * pointsIn(hero, 'SATIATED_SPELLS');
+  if (hasTalent(hero, 'satiated_spells') && state.holy?.satiated) {
+    const amount = 1 + 2 * pointsIn(hero, 'satiated_spells');
     addShield(hero, amount);
     const ally = poweredAlly(ctx);
     if (ally && markTurns(ally, 'lifeLinkSpell') > 0) addShield(ally, amount);

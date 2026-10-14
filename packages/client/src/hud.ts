@@ -1,8 +1,12 @@
-import { FURY_LEVEL, prismaticMaxHp, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING, stealthCloak } from '@pd/core';
+import {
+  prismaticMaxHp, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, type MobKind, shielding,
+  STARVING, stealthCloak, talentPointsAvailable, berserkOf, comboOf, momentumOf, prepTurns,
+} from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
 import { AVATAR, durabilityBar, markWear, setAvatar, sprites } from './screens';
 import { QUICKSLOTS } from './quickslot';
+import { hasFreePoints } from './talentui';
 import { BUFF_TINTS } from './shfx';
 import type { LogLine } from './view';
 
@@ -37,6 +41,13 @@ export const BUFF_ICONS = {
   prismaticGuard: 1020, challengeArena: 1054,
   // The artifacts': the cloak's stealth (INVISIBLE, dimmed), the hourglass's time freeze and stasis (TIME), the cape's THORNS, the talisman's FORESIGHT.
   stealth: 1012, timeFreeze: 1007, thorns: 1031,
+  // The talents' and subclasses' (their BuffIndicator icons): rage, the combo, momentum, preparation, the sniper's mark, hold fast,
+  // trackers that add to the next blow (WEAPON), cooldowns (TIME), empowered wands (WAND), enhanced rings and a surge (UPGRADE).
+  berserk: 1040, berserking: 1040, exhausted: 1040, comboChain: 1017, momentum: 1051, freerunning: 1051, preparation: 1042, sniperMark: 1027,
+  holdFast: 1020, trackerBlow: 1045, cooldown: 1007, wandEmpower: 1072, enhancedRings: 1050, surge: 1050, revealedArea: 1000,
+  parry: 1061, followup: 1057,
+  // The armour abilities': Endure's stored blows (BuffIndicator.ARMOR) and Nature's Power (NATURE_POWER).
+  endure: 1020, naturesPower: 1058,
   // The monsters' curses (mobs stream): BuffIndicator.VULNERABLE, HEX, DEGRADE.
   degrade: 1048,
 } as const;
@@ -78,8 +89,7 @@ export function heroBuffs(me: Hero): BuffEntry[] {
     ...((me.marked ?? 0) > 0 ? [{ name: 'sacrifice' as const, turns: turns(me.marked!) }] : []),
     ...(me.sungrass !== undefined && me.sungrass === me.pos ? [{ name: 'healing' as const }] : []),
     ...(me.earthroot && me.earthroot.pos === me.pos ? [{ name: 'bark' as const }] : []),
-    ...(me.subclass === 'gladiator' && me.combo >= 3 && me.time <= me.comboUntil ? [{ name: 'combo' as const }] : []),
-    ...(me.subclass === 'berserker' && me.hp > 0 && me.hp <= me.ht * FURY_LEVEL ? [{ name: 'fury' as const }] : []),
+    ...talentBuffs(me),
     ...(me.barkskin > 0 ? [{ name: 'barkskin' as const, turns: turns(me.barkskin) }] : []),
     // Shattered's wands' conditions (core status.ts).
     ...((me.chill ?? 0) > 0 ? [{ name: 'chill' as const, turns: turns(me.chill!) }] : []),
@@ -105,8 +115,56 @@ export function heroBuffs(me: Hero): BuffEntry[] {
     ...alchemyBuffs(me),
     ...artifactBuffs(me),
     ...((me.degraded ?? 0) > 0 ? [{ name: 'degrade' as const, turns: turns(me.degraded!) }] : []),
+    ...abilityBuffs(me),
   ];
   return list.map(tinted);
+}
+
+/** The talents' trackers and the subclasses' buffs on a hero (core talents/), with what BuffIndicator shows beside each. */
+function talentBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
+  const list: Array<{ name: BuffName; turns?: number }> = [];
+  const b = me.tal;
+  if (!b) return list;
+  const rage = berserkOf(me);
+  if (rage) {
+    if (rage.state === 'berserk') list.push({ name: 'berserking', turns: rage.shield });
+    else if (rage.state === 'recovering') list.push({ name: 'exhausted', turns: rage.levelRecovery > 0 ? Math.ceil(rage.levelRecovery) : rage.turnRecovery });
+    else list.push({ name: 'berserk', turns: Math.floor(rage.power * 100) });
+  }
+  const combo = comboOf(me);
+  if (combo) list.push({ name: 'comboChain', turns: combo.count });
+  if (b.parry) list.push({ name: 'parry' });
+  const momentum = momentumOf(me);
+  if (momentum) {
+    if (momentum.freerunTurns > 0) list.push({ name: 'freerunning', turns: momentum.freerunTurns });
+    else if (momentum.freerunCooldown > 0) list.push({ name: 'momentum', turns: momentum.freerunCooldown });
+    else if (momentum.stacks > 0) list.push({ name: 'momentum', turns: momentum.stacks });
+  }
+  if (prepTurns(me) !== undefined) list.push({ name: 'preparation', turns: Math.min(9, prepTurns(me)!) });
+  if (b.sniper) list.push({ name: 'sniperMark', turns: Math.ceil(b.sniper.left) });
+  if (b.holdFast !== undefined && b.holdFast === me.pos) list.push({ name: 'holdFast' });
+  for (const key of ['provoked', 'lingering', 'empowered'] as const) if (b[key] !== undefined) list.push({ name: 'trackerBlow', turns: Math.ceil(b[key]!) });
+  if (b.followup) list.push({ name: 'followup', turns: Math.ceil(b.followup.left) });
+  for (const key of ['improvised', 'rejuvenating', 'seerShot'] as const) if (b[key] !== undefined) list.push({ name: 'cooldown', turns: Math.ceil(b[key]!) });
+  if (b.wandEmpower) list.push({ name: 'wandEmpower', turns: b.wandEmpower.left });
+  if (b.scrollEmpower) list.push({ name: 'wandEmpower', turns: b.scrollEmpower });
+  if (b.enhancedRings !== undefined) list.push({ name: 'enhancedRings', turns: Math.ceil(b.enhancedRings) });
+  if (b.surge !== undefined) list.push({ name: 'surge', turns: Math.ceil(b.surge) });
+  if (b.revealed) list.push({ name: 'revealedArea', turns: Math.ceil(b.revealed.left) });
+  return list;
+}
+
+/**
+ * The armour abilities' buffs: Endure's blows to pay back (shown once the stance is over: the damage stored), Nature's Power
+ * (turns left).
+ */
+function abilityBuffs(me: Hero): BuffEntry[] {
+  const endure = me.abil?.endure;
+  const nature = me.abil?.nature;
+  return [
+    ...(endure && !endure.enduring && me.time < endure.until ? [{ name: 'endure' as const, turns: endure.damageBonus }] : []),
+    ...(nature && me.time < nature.until ? [{ name: 'naturesPower' as const, turns: Math.ceil(nature.until - me.time) }] : []),
+  ];
 }
 
 /**
@@ -240,6 +298,8 @@ export interface HudState {
   looks: Record<string, Look>;
   /** In the arena of waves: its board and readiness instead of the depth. */
   arena?: ArenaHud | null;
+  /** BossHealthBar: the boss of the fight on my depth, its health and shield; bleeding at its last stand. */
+  boss?: { kind: MobKind; hp: number; ht: number; shield: number; bleed: boolean } | null;
 }
 
 /** «осталось {n}»: the text with the number in bold, as the design writes it. */
@@ -325,6 +385,8 @@ export class Hud {
   readonly root: HTMLElement;
   private readonly band: HTMLElement;
   private readonly avatar: HTMLElement;
+  /** ShTalents' gold plus on the hero button while there are talent points to spend. */
+  private readonly talentBadge: HTMLElement;
   private readonly level: HTMLElement;
   private readonly hp: HTMLElement;
   private readonly hpText: HTMLElement;
@@ -335,6 +397,11 @@ export class Hud {
   private readonly depthStat: HTMLElement;
   /** The arena's board and «To battle!» (hidden in the dungeon). */
   private readonly waveboard: HTMLElement;
+  /** BossHealthBar: the boss's name over its health and shield. */
+  private readonly bossBox: HTMLElement;
+  private readonly bossName: HTMLElement;
+  private readonly bossHp: HTMLElement;
+  private readonly bossText: HTMLElement;
   private readonly fightBox: HTMLElement;
   private readonly fightButton: HTMLButtonElement;
   private readonly fightNote: HTMLElement;
@@ -383,6 +450,8 @@ export class Hud {
 
     const avatarButton = el('button', 'pd-avatar');
     avatarButton.ariaLabel = t.heroLabel;
+    this.talentBadge = el('i', 'pd-talent-badge');
+    this.talentBadge.hidden = true;
     this.avatar = el('i');
     avatarButton.append(this.avatar);
     avatarButton.onclick = tap(() => handlers.hero());
@@ -416,7 +485,7 @@ export class Hud {
     this.main = el(
         'div',
         'pd-hud-main',
-        el('div', 'pd-avatar-wrap', avatarButton, this.level),
+        el('div', 'pd-avatar-wrap', avatarButton, this.level, this.talentBadge),
         el(
           'div',
           'pd-hud-bars',
@@ -436,7 +505,13 @@ export class Hud {
         ),
         menu,
       );
-    this.band = el('header', 'pd-hud', this.main, this.waveboard, this.buffBox, this.mates, this.notice);
+    this.bossName = el('span', 'pd-boss-name');
+    this.bossText = el('span', 'pd-bar-text');
+    this.bossHp = el('div', 'pd-bar boss', this.bossText);
+    this.bossBox = el('div', 'pd-bossbar', icon('skull'), this.bossName, this.bossHp);
+    this.bossBox.setAttribute('role', 'status');
+    this.bossBox.hidden = true;
+    this.band = el('header', 'pd-hud', this.main, this.bossBox, this.waveboard, this.buffBox, this.mates, this.notice);
 
     this.more = el('button', 'pd-log-more', t.history);
     this.more.onclick = tap(() => handlers.history());
@@ -682,6 +757,11 @@ export class Hud {
       portrait.className = `pd-avatar${frame ? ` framed frame-${frame}` : ''}`;
     }
     if (this.changed('lvl', String(me.lvl))) this.level.textContent = String(me.lvl);
+    const free = !dead && hasFreePoints(me);
+    if (this.changed('talent', String(free))) {
+      this.talentBadge.hidden = !free;
+      this.talentBadge.parentElement?.classList.toggle('talent', free);
+    }
     const hp = Math.max(0, me.hp);
     // StatusPane: the shield (the warrior's seal) over the health bar, and «hp+shield/ht».
     const shield = shielding(me);
@@ -709,6 +789,18 @@ export class Hud {
     this.depthStat.style.display = state.arena ? 'none' : '';
     this.updateArena(state.arena ?? null, dead);
     if (this.changed('keys', String(state.keys))) this.keys.data = String(state.keys);
+    const boss = state.boss;
+    if (this.changed('boss', boss ? `${boss.kind}:${boss.hp}/${boss.ht}:${boss.shield}:${boss.bleed}` : '')) {
+      this.bossBox.hidden = !boss;
+      if (boss) {
+        this.bossName.textContent = t.mobs[boss.kind];
+        this.bossHp.style.setProperty('--v', String(Math.max(0, boss.hp) / boss.ht));
+        this.bossHp.style.setProperty('--shield', String(Math.min(1, boss.shield / boss.ht)));
+        this.bossHp.classList.toggle('shield', boss.shield > 0);
+        this.bossBox.classList.toggle('bleeding', boss.bleed);
+        this.bossText.textContent = boss.shield > 0 ? `${boss.hp}+${boss.shield}/${boss.ht}` : `${boss.hp}/${boss.ht}`;
+      }
+    }
     this.avatar.parentElement!.classList.toggle('dead', dead);
 
     const buffKey = state.buffs.map((b) => `${b.name}${b.tint ?? ''}:${b.turns !== undefined && b.turns <= 3 ? 'f' : ''}`).join(',');

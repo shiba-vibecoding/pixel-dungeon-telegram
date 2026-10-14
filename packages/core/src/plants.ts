@@ -1,4 +1,10 @@
 import { type Hero, isAlive, MOBS } from './actors';
+import { buffsOf, healOverTime, setBarkskin } from './buffs';
+import { isBossDepth } from './level/builder';
+import { levelAt, moveToDepth } from './world';
+import { heroView } from './floor';
+import { onPlantTriggered } from './talents/nature';
+import { tbOf } from './talents/state';
 import { randomRespawnCell } from './ai';
 import { charAt, type Char, type Ctx, dropItem, enterCell, type Floor, heroesOn, isHero, leaveCell } from './floor';
 import { createItem, ItemGenerator, type ItemKind } from './items';
@@ -80,12 +86,10 @@ export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number, activate = 
   ctx.floor.plants = ctx.floor.plants!.filter((p) => p !== found);
   ctx.effects.push({ type: 'plantTriggered', depth: ctx.depth, pos, kind: found.kind, who: who?.id ?? '' });
   const { world, depth, level, rng } = ctx;
-  // Plant.activate and wither: a warden draws bark from it, and now and then a seed or a dewdrop.
-  if (who && isHero(who) && who.subclass === 'warden') {
-    who.barkskin = Math.max(who.barkskin, Math.trunc(who.ht / 3));
-    if (rng.int(5) === 0) dropItem(ctx.floor, pos, new ItemGenerator(rng, depth).of('seed'));
-    if (rng.int(5) === 0) dropItem(ctx.floor, pos, createItem('dew'));
-  }
+  // Plant.trigger: the barkskin talent for whoever steps on it, nature's aid for a hero who sees it go off.
+  for (const hero of heroesOn(world, depth)) onPlantTriggered(ctx, hero, hero === who, heroView(world, hero)[pos] === true);
+  // The warden's plants: her own effect in place of the plant's harm (Plant.activate with HeroSubClass.WARDEN).
+  const warden = who && isHero(who) && who.subclass === 'warden' ? who : null;
   // Plant.wither: within a lotus's reach, the plant may leave its seed behind (never a rotberry's).
   const preserved = seedPreservation(ctx, pos);
   if (preserved > 0 && rng.float() < preserved) {
@@ -94,11 +98,15 @@ export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number, activate = 
   }
   switch (found.kind) {
     case 'firebloom':
+      // Firebloom: the warden is imbued with fire for 30% of its time.
+      if (warden) buffsOf(warden).fireImbue = Math.max(buffsOf(warden).fireImbue ?? 0, 15);
       burst(ctx, pos, 'fire', 0);
       break;
     case 'icecap':
-      // Everyone around freezes in place, and fires go out.
+      // Everyone around freezes in place, and fires go out (the warden is imbued with frost, and unfrozen by it).
+      if (warden) buffsOf(warden).frostImbue = Math.max(buffsOf(warden).frostImbue ?? 0, 15);
       for (const char of near(ctx, pos, 1)) {
+        if (char === warden) continue;
         char.paralysed = Math.max(char.paralysed ?? 0, FROZEN_TURNS);
         char.burning = 0;
         if (isHero(char)) chillPack(ctx, char);
@@ -106,22 +114,37 @@ export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number, activate = 
       freezeHeaps(ctx, pos, 1);
       break;
     case 'sorrowmoss':
-      if (who) who.poison = Math.max(who.poison ?? 0, 4 + Math.trunc(depth / 2));
+      // Sorrowmoss: the warden is imbued with toxins (and immune to the poison).
+      if (warden) buffsOf(warden).toxicImbue = Math.max(buffsOf(warden).toxicImbue ?? 0, 15);
+      else if (who) who.poison = Math.max(who.poison ?? 0, 4 + Math.trunc(depth / 2));
       break;
     case 'dreamweed':
       // A cloud of confusion gas: everyone in it staggers about for a while.
-      for (const char of near(ctx, pos, 2)) char.dizzy = Math.max(char.dizzy ?? 0, DIZZY_TURNS);
+      // (Stormvine's place: the warden floats instead, for half its time.)
+      if (warden) warden.levitating = Math.max(warden.levitating ?? 0, 10);
+      for (const char of near(ctx, pos, 2)) if (char !== warden) char.dizzy = Math.max(char.dizzy ?? 0, DIZZY_TURNS);
       break;
     case 'sungrass':
-      if (who && isHero(who)) {
+      // Sungrass: the warden is healed over time, fully.
+      if (warden) healOverTime(warden, warden.ht, 0, 1);
+      else if (who && isHero(who)) {
         who.sungrass = pos;
         who.sungrassTime = 0;
       }
       break;
     case 'earthroot':
-      if (who && isHero(who)) who.earthroot = { pos, level: who.ht };
+      // Earthroot: the warden gets barkskin of her level and five more, for five turns a point.
+      if (warden) setBarkskin(warden, warden.lvl + 5, 5);
+      else if (who && isHero(who)) who.earthroot = { pos, level: who.ht };
       break;
     case 'fadeleaf': {
+      // Fadeleaf: the warden goes up a level, to its exit (where the passage is allowed).
+      if (warden && depth > 1 && !isBossDepth(depth) && !warden.items.some((item) => item.kind === 'quest.amulet')) {
+        const above = levelAt(world, depth - 1);
+        moveToDepth(world, warden, depth - 1, above.exit);
+        ctx.effects.push({ type: 'teleported', hero: warden.id });
+        break;
+      }
       // The one who stepped on it is carried off somewhere else on the level.
       if (!who) break;
       const to = randomRespawnCell(rng, world, level, (cell) => cell !== who.pos);
@@ -142,8 +165,13 @@ export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number, activate = 
       break;
     case 'rotberry':
       // Its berries taste like sweet, sweet death: a cloud of toxic gas, roots for whoever stepped on it, and its seed.
-      burst(ctx, pos, 'toxic', 2, false, 100);
-      if (who && isHero(who)) who.rooted = Math.max(who.rooted, 3);
+      // Rotberry: the warden gets a surge of strength instead of the gas.
+      if (warden) {
+        tbOf(warden).surge = 200;
+      } else {
+        burst(ctx, pos, 'toxic', 2, false, 100);
+        if (who && isHero(who)) who.rooted = Math.max(who.rooted, 3);
+      }
       dropItem(ctx.floor, pos, createItem('seed.rotberry'));
       break;
   }

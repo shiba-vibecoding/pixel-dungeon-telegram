@@ -306,6 +306,10 @@ export const ITEMS = {
   'food.ration': { category: 'food', sprite: S.RATION, energy: 300 },
   'food.pasty': { category: 'food', sprite: S.PASTY, energy: 450 },
   'food.meat': { category: 'food', sprite: S.MEAT, energy: 150 },
+  // The talents' food: the rogue's cached rations (SupplyRation: 200 energy and 5 health, a charge for the cloak) and the
+  // huntress's berries (Berry: 100 energy; two of them grow a seed).
+  'food.supply': { category: 'food', sprite: S.SUPPLY_RATION, energy: 200 },
+  'food.berry': { category: 'food', sprite: S.BERRY, energy: 100 },
   // Mystery meat cooked by fire or frozen by frost (ChargrilledMeat, FrozenCarpaccio), and the
   // shops' smaller ration (SmallRation, Pixel Dungeon's overpriced one): half a ration each.
   'food.steak': { category: 'food', sprite: S.STEAK, energy: 150 },
@@ -372,8 +376,18 @@ export const ITEMS = {
   'key.iron': { category: 'key', sprite: S.IRON_KEY },
   /** Opens a locked or crystal chest of the level it was found on. */
   'key.golden': { category: 'key', sprite: S.GOLDEN_KEY },
-  /** SkeletonKey: dropped by a boss, it opens the locked way down from its level. */
+  /** WornKey: Goo's, it opens the locked way down from the sewers' boss level. */
   'key.skeleton': { category: 'key', sprite: S.WORN_KEY },
+  /**
+   * TengusMask: Tengu's, worn to choose a way to master (as the Tome of Mastery here). SEAM(talents): the
+   * talents stream gives it its subclass choice.
+   */
+  'mask.tengu': { category: 'tome', sprite: S.MASK },
+  /**
+   * KingsCrown: the Dwarf King's, it turns the armour worn into class armour (as the armour kit here).
+   * SEAM(abilities): the abilities stream gives it the choice of an armour ability.
+   */
+  'crown.king': { category: 'kit', sprite: S.CROWN },
   /** The sad ghost's dried rose. */
   'quest.rose': { category: 'quest', sprite: S.ARTIFACT_ROSE1 },
   /** The fetid rat's, for the sad ghost. */
@@ -389,8 +403,6 @@ export const ITEMS = {
   'tome.mastery': { category: 'tome', sprite: S.MASTERY },
   /** Lit, it lets one see further in the dark halls for a while. */
   torch: { category: 'torch', sprite: S.TORCH },
-  /** The King of Dwarves' legacy: it turns the armour worn into the hero's class armour. */
-  'kit.armor': { category: 'kit', sprite: S.KIT },
   /** Brings its bearer back to life once, at a price: everything else in the pack, and all gold. */
   ankh: { category: 'ankh', sprite: S.ANKH },
   /** The Amulet of Yendor, at the very bottom of the dungeon. */
@@ -682,7 +694,7 @@ const SCROLL_PRICES: Partial<Record<ItemKind, number>> = {
   'scroll.terror': 40, 'scroll.transmutation': 50,
 };
 const FOOD_PRICES: Partial<Record<ItemKind, number>> = {
-  'food.ration': 10, 'food.pasty': 20, 'food.meat': 5, 'food.steak': 5, 'food.carpaccio': 10, 'food.overpriced': 20,
+  'food.ration': 10, 'food.supply': 10, 'food.berry': 5, 'food.pasty': 20, 'food.meat': 5, 'food.steak': 5, 'food.carpaccio': 10, 'food.overpriced': 20,
   'food.stewed': 8, 'food.meatPie': 40, 'food.blandfruit': 20, 'food.chunks': 10,
 };
 /** Spells made several at a time are worth that share of their whole batch (e.g. 60 * quantity/OUT_QUANTITY). */
@@ -708,6 +720,9 @@ function unitValue(kind: ItemKind, known: boolean): number {
 }
 
 /** Item.price; unknown potions and scrolls fetch a plain price. 0 for what cannot be sold. */
+/** The four class armours (classArmor.ts's CLASS_ARMOR), which no shop will buy. */
+const CLASS_ARMOR_KINDS: ReadonlySet<string> = new Set(['armor.warrior', 'armor.mage', 'armor.rogue', 'armor.huntress']);
+
 export function itemPrice(item: Item, known: boolean): number {
   const def = itemDef(item.kind);
   // RatSkull.price: a hunting trophy, of a sort.
@@ -728,8 +743,8 @@ export function itemPrice(item: Item, known: boolean): number {
       if (item.kind === 'weapon.pickaxe' || item.kind === 'weapon.magesStaff') return 0;
       return weaponValue(item);
     case 'armor':
-      // Armor.value: the warrior's sealed armour is not for sale.
-      if (item.seal) return 0;
+      // Armor.value: the warrior's sealed armour is not for sale; nor is class armour (ClassArmor.value: 0).
+      if (item.seal || CLASS_ARMOR_KINDS.has(item.kind)) return 0;
       return armorValue(item);
     case 'potion':
     case 'scroll':
@@ -1260,7 +1275,7 @@ function shopRare(generator: ItemGenerator, rng: Rng): Item | null {
 }
 
 /** Rolls what a painter asked for. */
-function rollSpec(spec: ItemSpec, generator: ItemGenerator, rng: Rng, depth: number): Item | null {
+export function rollSpec(spec: ItemSpec, generator: ItemGenerator, rng: Rng, depth: number): Item | null {
   switch (spec.roll) {
     case 'random':
       return generator.random();

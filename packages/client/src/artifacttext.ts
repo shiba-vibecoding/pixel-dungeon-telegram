@@ -4,6 +4,7 @@ import {
 } from '@pd/core';
 import { ART_EN, ART_RU } from './i18n-artifacts';
 import { CLS_EN, CLS_RU } from './i18n-classes';
+import { ABIL_EN, ABIL_RU } from './i18n-abilities';
 import { lang } from './i18n';
 
 /*
@@ -21,11 +22,14 @@ export const ARTIFACT_CLASS: Readonly<Record<ArtifactKind, string>> = {
   'artifact.beacon': 'lloydsbeacon', 'artifact.tome': 'holytome',
 };
 
-/** The holy tome's lines (the classes stream's texts, i18n-classes.ts), keyed like the artifacts' own. */
-const tomeTexts = (all: Record<string, string>): Record<string, string> =>
-  Object.fromEntries(Object.entries(all).filter(([key]) => key.startsWith('items.artifacts.holytome')).map(([key, text]) => [key.slice('items.artifacts.'.length), text]));
+/** The classes' texts (i18n-classes.ts): the holy tome's lines keyed like the artifacts' own, and the rest by their full keys. */
+const tomeTexts = (all: Record<string, string>): Record<string, string> => ({
+  ...all,
+  ...Object.fromEntries(Object.entries(all).filter(([key]) => key.startsWith('items.artifacts.holytome')).map(([key, text]) => [key.slice('items.artifacts.'.length), text])),
+});
 
-const table: Record<string, string> = lang === 'ru' ? { ...ART_RU, ...tomeTexts(CLS_RU) } : { ...ART_EN, ...tomeTexts(CLS_EN) };
+// (The armour abilities' lines are looked up the same way, by their full keys: i18n-abilities.ts.)
+const table: Record<string, string> = lang === 'ru' ? { ...ART_RU, ...ABIL_RU, ...tomeTexts(CLS_RU) } : { ...ART_EN, ...ABIL_EN, ...tomeTexts(CLS_EN) };
 
 /** Messages.format: %d, %s, %1$d, %2$s… filled in order or by number; %% is a percent sign. */
 export function format(text: string, args: ReadonlyArray<string | number> = []): string {

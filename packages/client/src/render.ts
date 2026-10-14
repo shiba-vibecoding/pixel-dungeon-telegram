@@ -1,3 +1,4 @@
+import { drawSpell } from './spellfx';
 import { drawAura, drawBeams } from './mobfx';
 import { HEIGHT, type Level, LENGTH, S, T, WIDTH } from '@pd/core';
 import { type Assets, frameAt, ICONS, levelRegion } from './sprites';
@@ -224,6 +225,9 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
   if (puppet.alpha !== undefined) ctx.globalAlpha = puppet.alpha;
+  // ScrollOfTeleportation.appear: faded in from nothing over 0.4 s; ShadowSprite.resetColor: a shade at 0.8.
+  if (puppet.appearAt !== undefined) ctx.globalAlpha *= Math.min(1, Math.max(0, (now - puppet.appearAt) / 400));
+  if (puppet.kind === 'shadow') ctx.globalAlpha *= 0.8;
   // The rose's ghost is seen through (design v19: 0.82), with its blue light under it (drawGhostLight).
   if (puppet.kind === 'ghostHero' && !puppet.invisible && puppet.alpha === undefined) ctx.globalAlpha = 0.82;
   // timeFreeze.fx: while the hero freezes time, everything else stands still and grey (State.PARALYSED).
@@ -255,6 +259,8 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
     ctx.translate(dx, dy);
   }
   ctx.drawImage(image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+  // ShadowSprite.resetColor: brightness 0, the clone is a silhouette of darkness.
+  if (puppet.kind === 'shadow') tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, '#000000', 1);
   if (puppet.sprite.brightness !== undefined) {
     // CharSprite.brightness: darker, its own pixels only.
     ctx.globalCompositeOperation = 'source-atop';
@@ -264,6 +270,7 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   }
   if (puppet.alive) {
     // IceBlock: tinted (0.83, 1.17, 1.33) at 0.6. DarkBlock: brightness 0.4. WardSprite.resetColor: a ward dims as it shoots.
+    if (puppet.marked) tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, '#ff2020', 0.2 + 0.15 * Math.sin(now / 120));
     if (puppet.frozen) tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, 'rgb(212, 255, 255)', 0.6);
     else if (puppet.darkened) tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, '#000000', 0.6);
     else if (puppet.dim !== undefined && puppet.dim < 1) tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, '#000000', 1 - puppet.dim);
@@ -356,6 +363,12 @@ export interface Scene {
   under?: (ctx: CanvasRenderingContext2D) => void;
   /** Drawn over what lies on the floor, under the characters: glints, coins in the air (motion.ts). */
   over?: (ctx: CanvasRenderingContext2D) => void;
+  /** A boss level's ground art and the fight's marks on the floor, right over the tiles (bossfx.ts). */
+  ground?: (ctx: CanvasRenderingContext2D) => void;
+  /** Over the characters: a boss level's walls and overhangs, lightning, beams (bossfx.ts). */
+  top?: (ctx: CanvasRenderingContext2D) => void;
+  /** Words over cells at screen scale (a bomb's «3...»): world pixels, the text, its age (ms). */
+  marks?: ReadonlyArray<{ x: number; y: number; text: string; age: number }>;
 }
 
 export function render(
@@ -389,6 +402,7 @@ export function render(
     }
   }
   ctx.drawImage(baked, 0, 0);
+  scene.ground?.(ctx);
 
   // Items on the floor, remembered (and dimmed by the fog) once seen.
   for (const plant of scene.plants ?? []) {
@@ -563,6 +577,7 @@ export function render(
     if (puppet.kind === 'ghostHero' && puppet.alive) drawGhostLight(ctx, x, y, now);
     drawPuppet(ctx, puppet, x, y, now, view.timeFrozen);
   }
+  scene.top?.(ctx);
 
   for (const { puppet, x, y } of shown) {
     if (!puppet.alive) continue;
@@ -634,8 +649,30 @@ export function render(
         ctx.rotate(k * Math.PI * 4);
       }
       ctx.drawImage(assets.items, (p.sprite % 16) * 16, Math.floor(p.sprite / 16) * 16, 16, 16, -8, -8, 16, 16);
+      if (p.tint) {
+        // The spectral blades: MissileSprite.hardlight (0.6, 1, 1) at alpha 0.8, a pale glow over the shuriken.
+        ctx.translate(-8, -8);
+        tintSprite(ctx, assets.items, (p.sprite % 16) * 16, Math.floor(p.sprite / 16) * 16, 16, 16, p.tint, 0.55);
+      }
       ctx.restore();
     }
+  }
+
+  // SpellSprite: an icon that swells in over a creature's head, stays, and fades.
+  view.spells = view.spells.filter((spell) => now - spell.start < 1400);
+  for (const spell of view.spells) {
+    const puppet = view.puppets.get(spell.id);
+    if (!puppet) continue;
+    const { x, y } = view.position(puppet, now);
+    const age = (now - spell.start) / 1000;
+    const alpha = age < 0.2 ? age / 0.2 : age < 1 ? 1 : Math.max(0, 1 - (age - 1) / 0.4);
+    const scale = age < 0.2 ? age / 0.2 : 1;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(snap(x + TILE / 2), snap(y + TILE - puppet.sprite.sheet.h - 8));
+    ctx.scale(scale, scale);
+    ctx.drawImage(assets.spells, spell.frame * 16, 0, 16, 16, -8, -8, 16, 16);
+    ctx.restore();
   }
 
   drawBeams(ctx, view, now);
@@ -712,6 +749,16 @@ export function render(
   }
   ctx.globalAlpha = 1;
 
+  // SpellSprites over characters (spellfx.ts): food, charge, rage, haste.
+  for (const spell of view.spellSprites) {
+    const puppet = view.puppets.get(spell.hero);
+    if (!puppet) continue;
+    const at = view.position(puppet, now);
+    const top = at.y + TILE - puppet.sprite.sheet.h;
+    drawSpell(ctx, spell, (at.x + TILE / 2 - camera.x) * camera.zoom, (top - camera.y) * camera.zoom, camera.zoom, now);
+  }
+  ctx.globalAlpha = 1;
+
   // Numbers and words rising over characters (PD.fx.number): damage red, healing green, words in their colour.
   for (const floater of view.floaters) {
     const sx = (floater.x - camera.x) * camera.zoom;
@@ -720,6 +767,9 @@ export function render(
     const scale = floater.scale ?? 1;
     const kind = floater.word ? 'word' : numeric ? (scale >= 2 ? 'kill' : scale > 1 ? 'big' : 'damage') : /^\+\d+$/.test(floater.text) ? 'heal' : 'word';
     floatNumber(ctx, floater.text, kind, floater.color, sx, sy, now - floater.start, px);
+  }
+  for (const mark of scene.marks ?? []) {
+    floatNumber(ctx, mark.text, 'word', '#ff8800', (mark.x - camera.x) * camera.zoom, (mark.y - TILE / 2 - camera.y) * camera.zoom, mark.age, px);
   }
   ctx.globalAlpha = 1;
 

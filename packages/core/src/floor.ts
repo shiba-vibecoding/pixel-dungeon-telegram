@@ -20,12 +20,17 @@ import { type GasKind, smokeCells } from './gas';
 import { MAGICAL_SIGHT_DISTANCE } from './buffs';
 import { EYE_OF_NEWT, trinketLevel } from './trinkets';
 import type { Level } from './level/generate';
+import type { AbilityKind, Talent } from './talents';
 import { LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import type { Rng, RngState } from './rng';
 import type { World } from './world';
 import type { ClassFx } from './classes/fx';
+import type { BossFloor } from './bosses/state';
+import type { BossFx } from './bosses/common';
 import { awareCells } from './artifacts/talisman';
+import { pointsInTalent } from './talents/data';
+import { hawkVision } from './abilities/allies';
 
 /*
  * The live part of a depth: its monsters, its clock and its random stream.
@@ -63,6 +68,8 @@ export interface Floor {
   hallowed?: Record<number, number>;
   /** What this depth gave every hero (strength, upgrades): a hero who joins later gets theirs too (party.ts). */
   perHero?: ItemKind[];
+  /** A boss's level: the fight's state (sealed, the health bar, its phases, buffs and blobs): bosses/state.ts. */
+  boss?: BossFloor;
   /** Ghouls lying crumpled, held up by another (GhoulLifeLink, mobskills.ts): they rise again in time. */
   downed?: DownedGhoul[];
 }
@@ -149,9 +156,19 @@ export type Effect =
   /** A scroll of enchantment gave an item its power; a scroll of upgrade drove one out. */
   | { type: 'imbued'; hero: string; item: Item }
   | { type: 'disenchanted'; hero: string; item: Item }
-  /** The armour kit made a hero's armour into class armour; a class armour's special ability was used. */
-  | { type: 'classArmor'; hero: string; item: Item }
-  | { type: 'special'; hero: string; ability: 'leap' | 'moltenEarth' | 'smokeBomb' | 'blades'; from: number; to: number }
+  /** The Dwarf King's crown made a hero's armour into class armour with an ability; the crown's magic moved to another armour. */
+  | { type: 'classArmor'; hero: string; item: Item; ability: AbilityKind }
+  | { type: 'classArmorMoved'; hero: string; item: Item }
+  /**
+   * An armour ability used (abilities/): from where, to where (the target, or the hero's own cell); `cells` what the
+   * animation needs (a cone's tips, the blades' targets, Endure's stored damage), `wand` the staff's wand for the blast.
+   */
+  | { type: 'ability'; depth: number; hero: string; ability: AbilityKind | 'perfectCopy'; from: number; to: number; cells?: number[]; wand?: ItemKind; bolt?: Bolt; mob?: string }
+  /** A point of talent spent. */
+  /** A warp beacon's telefrag at a cell. */
+  | { type: 'telefrag'; depth: number; pos: number }
+  /** Death Mark put on a monster, or ended (`died`: it dies as it ends). */
+  | { type: 'deathMarked'; depth: number; mob: string; on: boolean; died?: boolean }
   /** A dwarf monk knocked the weapon out of a hero's hands; it lies at their feet. */
   | { type: 'disarmed'; depth: number; hero: string; mob: string; item: Item }
   /** A hero jumped into a chasm on `depth` and landed on the depth below. */
@@ -162,8 +179,20 @@ export type Effect =
   | { type: 'hurt'; depth: number; who: string; damage: number }
   | { type: 'oozed'; hero: string }
   | { type: 'pumped'; depth: number; mob: string }
-  /** A boss speaks up; `hero` is whom it noticed. */
-  | { type: 'yell'; depth: number; mob: string; kind: MobKind; line: 'notice' | 'death' | 'summon'; hero?: string }
+  /**
+   * A boss speaks up (Mob.yell): `line` is the key of its line in Shattered's texts for its kind ('notice',
+   * 'defeated', 'gluuurp', 'interesting', 'charging', 'wave_1'...); `hero` is whom it noticed.
+   */
+  | { type: 'yell'; depth: number; mob: string; kind: MobKind; line: string; hero?: string }
+  /** A boss's status over its head ('!!!', 'invulnerable', 'enraged') or a line in the log ('pumpup', 'shield'...). */
+  | { type: 'bossLine'; depth: number; mob: string; kind: MobKind; line: string; as: 'status' | 'log' | 'warn' | 'negative' }
+  /** A boss fight's visual and sound (bosses/common.ts BossFx). */
+  | { type: 'bossFx'; depth: number; fx: BossFx; mob?: string; pos?: number; to?: number; cells?: number[]; value?: number }
+  /**
+   * A boss fight's course, for the music and the screens: it starts (the boss noticed the hero, the floor sealed),
+   * changes phase, reaches its finale (BossHealthBar.bleed) and ends (the boss slain, or the floor unsealed).
+   */
+  | { type: 'bossFight'; depth: number; mob: string; kind: MobKind; state: 'start' | 'phase' | 'finale' | 'end'; phase?: number }
   /** A warlock's shadow bolt left the hero weakened. */
   | { type: 'weakened'; hero: string }
   /** A seed took root; a plant was set off by someone stepping on it. */
@@ -206,6 +235,8 @@ export type Effect =
   /** A wand of unknown charges zapped with none left (Wand.zapper): it fizzles, and its level is known. */
   | { type: 'fizzled'; hero: string; item: Item }
   | { type: 'healed'; hero: string; amount: number }
+  /** A monster healed (showStatusWithIcon HEALING): Goo in its water, the rotting fist, a boss's minion. */
+  | { type: 'healedMob'; depth: number; mob: string; amount: number }
   | { type: 'strength'; hero: string }
   | { type: 'upgraded'; hero: string; item: Item }
   | { type: 'teleported'; hero: string }
@@ -393,6 +424,26 @@ export type Effect =
   /** A queued action that became impossible before the hero's turn came. */
   | { type: 'interrupted'; hero: string; reason: string }
   /*
+   * Talents and subclasses (talents/): a point put in a talent; a SpellSprite over the hero; recharging's sparks
+   * (ScrollOfRecharging.charge); the berserker going berserk (with the shield it gave); a combo move made and the combo
+   * spent; a leap (enhanced combo); freerunning begun; the sniper's special shot; an empowered zap or blow (a strong
+   * hit); a line for the log by its key in the talents' texts; a talent swapped by metamorphosis.
+   */
+  | { type: 'talent'; hero: string; talent: string; points: number }
+  | { type: 'spell'; hero: string; sprite: 'food' | 'map' | 'charge' | 'berserk' | 'ankh' | 'haste' | 'vision' | 'purity'; tint?: [number, number, number] }
+  | { type: 'charged'; hero: string }
+  | { type: 'berserk'; hero: string; amount: number }
+  | { type: 'comboMove'; hero: string; move: 'clobber' | 'slam' | 'parry' | 'crush' | 'fury' }
+  | { type: 'comboEnd'; hero: string }
+  | { type: 'leapt'; depth: number; who: string; from: number; to: number }
+  | { type: 'freerun'; hero: string; stacks: number }
+  | { type: 'snipe'; hero: string; kind: 'none' | 'speed' | 'damage' }
+  | { type: 'hit'; hero: string }
+  | { type: 'tmsg'; hero: string; key: string; tone: 'i' | 'p' | 'w' | 'n'; args?: Array<string | number> }
+  | { type: 'metamorphed'; hero: string; from: string; to: string }
+  /** A prepared strike executed a weakened foe (Preparation: assassinated). */
+  | { type: 'assassinated'; depth: number; mob: string }
+  /**
    * Shattered's monsters (mobskills.ts): a spell or missile of theirs, a word or a sound of theirs, a curse on a
    * hero, health regained, lightning arcing, a summoning begun (or given up: pos -1) and done, a ghoul crumpled, a
    * teleport, a golem gathering itself, an eye charging, a ripper about to leap, a thief or a crystal mimic gone,
@@ -459,7 +510,12 @@ export function swapsWithHero(char: Char | undefined): boolean {
 }
 
 /** Level.viewDistance for heroes on a depth: shorter under the DARKNESS challenge. */
-export const heroSight = (world: World, depth: number): number => viewDistance(depth, isChallenged(world, DARKNESS));
+export const heroSight = (world: World, depth: number): number => {
+  // HallsBossLevel: Yog-Dzewa darkens its hall (YogDzewa.updateVisibility).
+  const own = world.floors[depth]?.boss?.viewDistance;
+  if (own !== undefined) return isChallenged(world, DARKNESS) ? Math.min(own, 2) : own;
+  return viewDistance(depth, isChallenged(world, DARKNESS));
+};
 
 /** Field of view of one hero (Dungeon.switchLevel and Light: a torch lights up to Light.DISTANCE). */
 export function heroView(world: World, hero: Hero): boolean[] {
@@ -468,8 +524,14 @@ export function heroView(world: World, hero: Hero): boolean[] {
     : hero.light > 0 ? Math.max(heroSight(world, hero.depth), LIGHT_DISTANCE) : heroSight(world, hero.depth);
   const newt = trinketLevel(hero, 'trinket.eyeOfNewt');
   if (newt >= 0 && distance > 1) distance = Math.max(1, Math.round(distance * EYE_OF_NEWT.visionRangeMultiplier(newt)));
+  // Level.updateFieldOfView: farsight, a quarter further a point.
+  const far = pointsInTalent(hero, 'farsight');
+  if (far > 0) distance = Math.round(Math.fround(distance * Math.fround(1 + 0.25 * far)));
   // A smoke screen blocks sight (SmokeScreen.onBuildFlagMaps).
-  const terrain = terrainBlocksSight(world.levels[hero.depth]!.map);
+  const blocks = terrainBlocksSight(world.levels[hero.depth]!.map);
+  // The warden sees through tall and furrowed grass as if it were empty space.
+  const map = world.levels[hero.depth]!.map;
+  const terrain = hero.subclass === 'warden' ? (cell: number): boolean => blocks(cell) && map[cell] !== T.HIGH_GRASS : blocks;
   const smoke = smokeCells(world.floors[hero.depth]);
   const fov = castShadow(hero.pos, smoke.size === 0 ? terrain : (cell) => terrain(cell) || smoke.has(cell), distance);
   // MagicalSight: everything there is to see within twelve cells, through walls (Level.updateFieldOfView's sense).
@@ -485,6 +547,11 @@ export function heroView(world: World, hero: Hero): boolean[] {
   }
   // Dungeon.observe: what the talisman of foresight shows is seen, and the cells around it.
   awareCells(world, hero, fov);
+  // Heightened senses: creatures within a few cells are sensed through walls (Level.updateFieldOfView's mind vision),
+  // and seer shot's revealed area is seen.
+  senseCells(world, hero, fov);
+  // The spirit hawk shares its whole field of vision with its hunter (Dungeon.observe).
+  hawkVision(world, hero, fov);
   return fov;
 }
 
@@ -554,4 +621,26 @@ export function freeCellNear(world: World, level: Level, depth: number, pos: num
     }
   }
   return pos;
+}
+
+/**
+ * Level.updateFieldOfView: heightened senses lets the hero sense creatures within 1 + a point cells through walls (the
+ * cells around each are seen), and seer shot's revealed area (RevealedArea) shows the cells around where the shot flew.
+ */
+function senseCells(world: World, hero: Hero, fov: boolean[]): void {
+  const mark = (at: number): void => {
+    for (const n of NEIGHBOURS8.concat(0)) {
+      const c = at + n;
+      if (c >= 0 && c < LENGTH && Math.abs((c % WIDTH) - (at % WIDTH)) <= 1) fov[c] = true;
+    }
+  };
+  const senses = pointsInTalent(hero, 'heightened_senses');
+  if (senses > 0) {
+    const range = 1 + senses;
+    for (const mob of world.floors[hero.depth]?.mobs ?? []) {
+      if (isAlive(mob) && mob.kind !== 'mimic' && Math.max(Math.abs((mob.pos % WIDTH) - (hero.pos % WIDTH)), Math.abs(Math.trunc(mob.pos / WIDTH) - Math.trunc(hero.pos / WIDTH))) <= range) mark(mob.pos);
+    }
+  }
+  const area = hero.tal?.revealed;
+  if (area && area.depth === hero.depth) mark(area.pos);
 }

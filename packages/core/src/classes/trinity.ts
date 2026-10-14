@@ -17,7 +17,7 @@ import {
 import { adjacent, distance, LENGTH, NEIGHBOURS8 } from '../level/geometry';
 import { throwMissile } from '../throwing';
 import { zap } from '../wands';
-import { pointsIn } from '../talents';
+import { pointsInTalent as pointsIn } from '../talents';
 import type { World } from '../world';
 import { ABILITY_DEFS, chargeUse, spendArmorCharge } from './abilities';
 import { say, tell } from './common';
@@ -106,12 +106,12 @@ export function chooseForm(ctx: Ctx, hero: Hero, form: Form, choice: number): vo
 /* Durations and levels of the forms (BodyForm, MindForm, SpiritForm) */
 
 /** BodyForm.duration. */
-export const bodyDuration = (hero: Hero): number => Math.round(13.33 + 6.67 * pointsIn(hero, 'BODY_FORM'));
+export const bodyDuration = (hero: Hero): number => Math.round(13.33 + 6.67 * pointsIn(hero, 'bodyForm'));
 /** MindForm.itemLevel and effectLevel. */
-export const mindLevel = (hero: Hero): number => 2 + pointsIn(hero, 'MIND_FORM');
+export const mindLevel = (hero: Hero): number => 2 + pointsIn(hero, 'mindForm');
 /** SpiritForm.ringLevel and artifactLevel. */
-export const ringLevel = (hero: Hero): number => pointsIn(hero, 'SPIRIT_FORM');
-export const artifactLevel = (hero: Hero): number => 2 + 2 * pointsIn(hero, 'SPIRIT_FORM');
+export const ringLevel = (hero: Hero): number => pointsIn(hero, 'spiritForm');
+export const artifactLevel = (hero: Hero): number => 2 + 2 * pointsIn(hero, 'spiritForm');
 /** SpiritFormBuff.DURATION. */
 export const SPIRIT_TURNS = 20;
 
