@@ -18,6 +18,7 @@ import { BUFF_ICONS, type BuffEntry, type BuffName } from './hud';
 import { capitalize, fill, fmt, locale, t } from './i18n';
 import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
 import { mart } from './mart';
+import { confirmRisky, drinkRisk, enchantLossChance, equipRisk, targetEffect } from './riskyuse';
 import { showHeroWindow } from './talentui';
 import { showMetamorphosis, showSubclassPick } from './talentui';
 import { subclassName, tal } from './talenttext';
@@ -429,6 +430,8 @@ export interface MenuOptions {
   onSettings(): void;
   onMart(): void;
   onTreat(): void;
+  /** How this run counts (labels.ts): «Counts — …», shown at the top of the menu; absent in co-op. */
+  runLabel?: string;
   /** Sends the co-op session's log with a word from the player; absent alone. */
   onReport?: () => void;
   onExit(): void;
@@ -441,6 +444,7 @@ export function showMenu(options: MenuOptions): void {
       el(
         'div',
         { className: 'pd-menu-list' },
+        options.runLabel && info(options.runLabel, 'pd-note center'),
         button(t.resume, options.onResume, 'primary'),
         el('div', { className: 'pd-row' }, button(t.meta.journal, options.onJournal), button(t.help, options.onHelp)),
         el('div', { className: 'pd-row' }, button(t.badges, options.onBadges), button(t.mart, options.onMart)),
@@ -656,8 +660,8 @@ export function showTrade(options: TradeOptions): void {
       steal.onSteal();
       options.onClose();
     } else {
-      showConfirm(capitalize(itemName(world, item)), artText('windows.wndtradeitem.steal_warn'), artText('windows.wndtradeitem.steal_warn_yes'),
-        artText('windows.wndtradeitem.steal_warn_no'), () => {
+      showConfirm(capitalize(itemName(world, item)), artText('windows.wndtradeitem.steal_warn'), t.forum.verbs.steal,
+        t.forum.verbs.cancel, () => {
           steal.onSteal();
           options.onClose();
         }, options.onClose);
@@ -829,31 +833,98 @@ export function showSign(text: string, onClose: () => void): void {
   };
 }
 
-/** Chasm.heroJump's WndOptions: a question with a yes and a no; the yes is dangerous here. */
+/** An extra answer under the two of a confirmation. `then`: the confirmed action follows (a «don't ask again» does the action too). */
+export interface ConfirmExtra {
+  label: string;
+  onPress: () => void;
+  then?: boolean;
+}
+
+export interface ConfirmOptions {
+  /** More answers under the others, such as «Throw it instead». */
+  extras?: readonly ConfirmExtra[];
+  /** The action wants a hold of this many ms (a run being replaced): a tap fills a bar and does nothing else. */
+  hold?: number;
+  /** The action is no danger: a plain button rather than a red one. */
+  calm?: boolean;
+}
+
+/** Hold to confirm: the bar fills while a finger (or Space / Enter) stays down, and the action is done when it is full. */
+function holdButton(label: string, ms: number, done: () => void, className: string): HTMLButtonElement {
+  const node = el('button', { className: `pd-button hold ${className}`.trim(), textContent: label });
+  node.title = t.forum.verbs.holdHint;
+  node.setAttribute('aria-description', t.forum.verbs.holdHint);
+  let start = 0;
+  let timer = 0;
+  const stop = (): void => {
+    window.clearInterval(timer);
+    start = 0;
+    node.classList.remove('holding');
+    node.style.removeProperty('--hold');
+  };
+  const step = (): void => {
+    if (!start) return;
+    const share = Math.min(1, (performance.now() - start) / ms);
+    node.style.setProperty('--hold', String(share));
+    if (share >= 1) {
+      stop();
+      audio.play('click');
+      done();
+    }
+  };
+  const begin = (): void => {
+    if (start) return;
+    start = performance.now();
+    node.classList.add('holding');
+    timer = window.setInterval(step, 40);
+  };
+  node.addEventListener('pointerdown', begin);
+  for (const event of ['pointerup', 'pointerleave', 'pointercancel', 'blur'] as const) node.addEventListener(event, stop);
+  node.addEventListener('keydown', (event) => {
+    if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      begin();
+    }
+  });
+  node.addEventListener('keyup', stop);
+  // A bare click (a screen reader, a script) does nothing: the hold is the confirmation.
+  node.addEventListener('click', (event) => event.preventDefault());
+  return node;
+}
+
+/**
+ * A question with two answers: cancel on the left, the action on the right, each a verb (the forum study's U2); more
+ * answers under them (`options.extras`, the «don't ask again» of `never`). `onClose` runs on any answer first.
+ */
 export function showConfirm(
   title: string, text: string, yes: string, no: string, onYes: () => void, onClose: () => void,
   /** A third answer under the others: «don't ask again». */
   never?: { label: string; onPress: () => void },
+  options: ConfirmOptions = {},
 ): void {
+  const tone = options.calm ? 'primary' : 'danger';
+  const doIt = (): void => {
+    onClose();
+    onYes();
+  };
+  const answer = options.hold ? holdButton(yes, options.hold, doIt, tone) : button(yes, doIt, tone);
+  const extras: ConfirmExtra[] = [...(options.extras ?? []), ...(never ? [{ ...never, then: true }] : [])];
   show(
     windowOf(
       { narrow: true },
       el('h2', { className: 'pd-heading center', textContent: title }),
       info(text, 'pd-info center'),
-      // One above the other, so a long answer is never cut off.
+      // Cancel at the left, the action at the right; the extra answers under them, a whole row each, so a long one is never cut off.
       el(
         'div',
         { className: 'pd-confirm-actions' },
-        button(yes, () => {
-          onClose();
-          onYes();
-        }, 'danger'),
         button(no, onClose, 'quiet'),
-        ...(never ? [button(never.label, () => {
+        answer,
+        ...extras.map((extra) => button(extra.label, () => {
           onClose();
-          never.onPress();
-          onYes();
-        }, 'quiet')] : []),
+          extra.onPress();
+          if (extra.then) onYes();
+        }, 'quiet wide')),
       ),
     ),
     onClose,
@@ -941,6 +1012,10 @@ export interface EndOptions {
   title: string;
   /** What befell the hero: where and by what. */
   cause: string;
+  /** What that cause means, and what the pack held (deathcopy.ts): a line each, under the cause. */
+  notes?: readonly string[];
+  /** How the run counted — «counts», «repeat», «own seed» — and what that means for the boards (labels.ts). */
+  label?: { text: string; note: string };
   hero: { name: string; heroClass: HeroClass; lvl: number; depth: number; gold: number; kills: number };
   onRestart: () => void;
   restartLabel: string;
@@ -977,6 +1052,8 @@ export function showRunEnd(options: EndOptions): void {
       { className: `pd-window pd-runend${options.victory ? ' win' : ''}` },
       el('h2', { className: 'pd-display', textContent: options.title }),
       options.cause && el('p', { className: 'pd-cause', textContent: options.cause }),
+      ...(options.notes ?? []).filter(Boolean).map((note) => el('p', { className: 'pd-info center pd-note', textContent: note })),
+      options.label && el('p', { className: 'pd-info center pd-note' }, el('b', { className: 'pd-run-label', textContent: capitalize(options.label.text) }), ` — ${options.label.note}`),
       options.place && !options.ranking ? el('p', { className: 'pd-info center pd-gold', textContent: options.place === 1 ? t.newRecord : t.rankPlace(options.place) }) : null,
       el(
         'div',
@@ -1109,6 +1186,47 @@ export function refreshBackpack(world: World, hero: Hero): void {
     return;
   }
   showBackpack({ ...openBag.options, world, hero }, openBag.choice);
+}
+
+/**
+ * The window that is open now, as far as it can be put back (the forum study's U4): the backpack with its choice and
+ * filter, or a target being picked (the item and the button of its panel that asked) — a pending pick is never lost to a
+ * turn of the phone, a reload of the Mini App or a window that went away. A question asked in the middle of either
+ * (put on? upgrade?) is part of it. Null: no such window.
+ */
+export type WindowState =
+  | { w: 'bag'; choice: BagChoice | null; filter: BagFilter }
+  | { w: 'pick'; index: number; button: number };
+
+/** The item panel's last pressed button, and the one that opened the pick now. */
+let lastUse: { index: number; button: number } | null = null;
+let pickOrigin: { index: number; button: number } | null = null;
+
+export function windowState(): WindowState | null {
+  if (!overlayOpen()) return null;
+  if (root.querySelector('.pd-window.bag.targeting')) return pickOrigin && pickOrigin.button >= 0 ? { w: 'pick', ...pickOrigin } : null;
+  if (root.querySelector('.pd-window.bag') && openBag) return { w: 'bag', choice: openBag.choice, filter: openBag.filter };
+  return null;
+}
+
+/** Puts a window back as it was (windowState); false if the item it is about is not what it was. */
+export function reopenWindow(state: WindowState, options: BackpackOptions, kind?: ItemKind): boolean {
+  if (state.w === 'pick') {
+    const item = options.hero.items[state.index];
+    if (!item || (kind && item.kind !== kind)) return false;
+    showBackpack(options, { index: state.index });
+    const { main, more } = itemActions({ ...options, item, index: state.index });
+    const node = [...main, ...more][state.button];
+    if (node instanceof HTMLButtonElement) node.click();
+    return true;
+  }
+  if (state.choice && !chosenItem(options.hero, state.choice)) state = { ...state, choice: null };
+  showBackpack(options, state.choice);
+  if (openBag && state.filter !== 'all') {
+    openBag.filter = state.filter;
+    showBackpack(options, state.choice);
+  }
+  return true;
 }
 
 /** The item a choice points at, if it is still there. */
@@ -1378,16 +1496,27 @@ function dragAndDrop(box: HTMLElement, options: BackpackOptions): void {
     window.setTimeout(() => node.removeEventListener('click', swallow, { capture: true }), 50);
     if (!action) return;
     audio.play('click');
+    const back = (): void => showBackpack(options);
     if (action.type === 'use') {
-      // Reading a scroll: the dungeon answers, the backpack closes.
-      openBag = null;
-      options.onAction(action);
-      options.onClose();
+      // Reading a scroll: asked first, then the dungeon answers and the backpack closes.
+      const kind = options.hero.items[action.item]?.kind;
+      const go = (): void => {
+        openBag = null;
+        options.onAction(action);
+        options.onClose();
+      };
+      if (kind && action.on !== undefined) askTarget(options, kind, action.on, go, back);
+      else go();
       return;
     }
-    if (openBag) openBag.choice = null;
-    options.onAction(action);
-    refreshBackpack(options.world, options.hero);
+    const done = (): void => {
+      if (openBag) openBag.choice = null;
+      options.onAction(action);
+      refreshBackpack(options.world, options.hero);
+    };
+    const moved = action.type === 'equip' ? options.hero.items[action.item] : undefined;
+    if (moved) askEquip(options, moved, done, back);
+    else done();
   };
   box.addEventListener('pointerup', release);
   box.addEventListener('pointercancel', (event) => {
@@ -1531,6 +1660,50 @@ function firstAction(options: ItemOptions): void {
   if (first instanceof HTMLButtonElement) first.click();
 }
 
+/**
+ * Putting on what is not known not to be cursed asks first (riskyuse.ts, the forum study's U1): about three in ten are,
+ * and a cursed thing will not come off. `go` puts it on; `back` is where a no returns to.
+ */
+function askEquip(options: BackpackOptions, item: Item, go: () => void, back: () => void): void {
+  if (!confirmRisky.on || !equipRisk(item)) {
+    go();
+    return;
+  }
+  const F = t.forum.ask;
+  openBag = null;
+  showConfirm(
+    F.putOnTitle(itemName(options.world, item)), F.putOnText(t.items['stone.detectMagic'], t.items['scroll.removeCurse']), F.putOn, F.cancel, go, back,
+    { label: F.putOnNever, onPress: () => confirmRisky.set(false) }, { calm: true },
+  );
+}
+
+/**
+ * «Upgrade X?» before a scroll, stone or spell does for good what it does to the item picked (the forum study's U3): the
+ * scroll stays in the pack until the answer is yes. Nothing is sent to the dungeon before it, so a cancel (or a window
+ * lost to a turn of the phone) spends nothing: the core takes a scroll only with the action that reads it.
+ * `again` is where a no returns to; `magic` names the enchantment already chosen.
+ */
+function askTarget(options: BackpackOptions, kind: ItemKind, on: ItemRef, go: () => void, again: () => void, magic = ''): void {
+  const { world, hero } = options;
+  const effect = targetEffect(kind);
+  const target = itemAt(hero, on);
+  if (!effect || !target) {
+    go();
+    return;
+  }
+  const F = t.forum.target;
+  const name = itemName(world, target);
+  openBag = null;
+  const loss = effect === 'upgrade' ? enchantLossChance(target) : 0;
+  const [title, text, yes] = {
+    upgrade: [F.upgradeTitle(name), F.upgradeText + (loss > 0 ? F.upgradeLoss(loss) : ''), F.upgrade],
+    enchant: [F.enchantTitle(name), magic ? F.enchantText(magic) : F.enchantPlain, F.enchant],
+    transmute: [F.transmuteTitle(name), F.transmuteText, F.transmute],
+    curse: [F.curseTitle(name), F.curseText, F.curse],
+  }[effect];
+  showConfirm(title, text, yes, t.forum.ask.cancel, go, again, undefined, { calm: true });
+}
+
 /** The old item window, kept for what still opens an item on its own: now the backpack with it chosen. */
 function showItem(options: ItemOptions): void {
   const choice: BagChoice = options.index !== null ? { index: options.index } : options.slot !== undefined ? { slot: options.slot } : { worn: options.item === options.hero.armor ? 'armor' : 'weapon' };
@@ -1588,7 +1761,11 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
   const more: HTMLElement[] = [];
   const danger: HTMLElement[] = [];
   const use = (label: string, onClick: () => void, icon?: 'steal'): void => {
-    const node = button(label, onClick, main.length === 0 ? 'primary' : '');
+    // Which button of the item's panel was pressed, for a window that must come back (windowState).
+    const node: HTMLButtonElement = button(label, () => {
+      lastUse = options.index === null ? null : { index: options.index, button: [...main, ...more].indexOf(node) };
+      onClick();
+    }, main.length === 0 ? 'primary' : '');
     // The thieves' armband's «Steal» wears its picture (design v19: icon-steal.png).
     if (icon) node.prepend(el('i', { className: `pd-${icon}` }));
     (main.length === 0 ? main : more).push(node);
@@ -1598,6 +1775,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     const back = (): void => showBackpack(options, { index });
     /** WndBag's selector for what an item acts on, then what follows. */
     const pickThen = (title: string, targets: readonly ItemRef[], then: (on: ItemRef) => void): void => {
+      pickOrigin = lastUse;
       openBag = null;
       showBackpack({ ...options, pick: { title, targets, onPick: then, onCancel: back } });
     };
@@ -1606,6 +1784,9 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       openBag = null;
       showChoice(world, title, text, on, choices, back);
     };
+    /** The pick of a target, then «Upgrade X?» (askTarget): a no goes back to the pick; the scroll is spent by the yes alone. */
+    const pickSure = (kind: ItemKind, title: string, then: (on: ItemRef) => void): void =>
+      pickFor(kind, title, (on) => askTarget(options, item.kind, on, () => then(on), () => pickSure(kind, title, then)));
     if (category === 'potion' || category === 'brew' || category === 'elixir') {
       // Potion.actions: known harmful potions (and brews) are thrown first; drinking one asks first.
       const mustThrow = category === 'brew' ? item.kind !== 'brew.unstable' : known && MUST_THROW.has(item.kind);
@@ -1622,6 +1803,16 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         act({ type: 'use', item: index });
       };
       const throwIt = (): void => aimWith('throw', index);
+      // An unknown potion with an enemy in sight asks first (riskyuse.ts): drink, cancel, or throw it instead.
+      const drinkAsked = (): void => {
+        if (!confirmRisky.on || !drinkRisk(world, hero, item)) return drink();
+        const F = t.forum.ask;
+        openBag = null;
+        showConfirm(
+          F.drinkTitle(itemName(world, item)), F.drinkText, F.drink, F.cancel, drink, back,
+          { label: F.drinkNever, onPress: () => confirmRisky.set(false) }, { calm: true, extras: [{ label: F.throwInstead, onPress: throwIt }] },
+        );
+      };
       if (mustThrow) {
         use(t.throwItem, throwIt);
         if (category === 'potion') {
@@ -1631,7 +1822,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
           }));
         }
       } else {
-        use(t.drink, drink);
+        use(t.drink, drinkAsked);
         // A known potion that is better drunk asks before it is thrown away (Potion.doThrow's beneficial warning).
         const beneficial = known && category !== 'brew' && !CAN_THROW.has(item.kind);
         use(t.throwItem, beneficial ? () => {
@@ -1666,16 +1857,16 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       if (known && isTargetedScroll(item.kind)) {
         use(t.readOn, () => pickFor(item.kind, pickTitleOf(item.kind), (on) => {
           const target = itemAt(hero, on);
-          // ScrollOfEnchantment: then one of three enchantments (WndEnchantSelect).
+          // ScrollOfEnchantment: then one of three enchantments (WndEnchantSelect), and the question once one is chosen.
           if (item.kind === 'scroll.enchantment' && target) {
             const armor = itemDef(target.kind).category === 'armor';
             const name = plainName(world, { ...target, enchant: undefined, glyph: undefined });
-            return choose(t.alch.enchantTitle, '', target, enchantOptions(world, hero, target).map((magic, choice) => ({
-              label: capitalize(armor ? t.glyphName(name, magic as never) : t.enchantName(name, magic as never, target.kind)),
-              onPick: () => act({ type: 'use', item: index, on, choice }),
-            })));
+            return choose(t.alch.enchantTitle, '', target, enchantOptions(world, hero, target).map((magic, choice) => {
+              const label = capitalize(armor ? t.glyphName(name, magic as never) : t.enchantName(name, magic as never, target.kind));
+              return { label, onPick: () => askTarget(options, item.kind, on, () => act({ type: 'use', item: index, on, choice }), back, label) };
+            }));
           }
-          act({ type: 'use', item: index, on });
+          askTarget(options, item.kind, on, () => act({ type: 'use', item: index, on }), () => showBackpack(options, { index }));
         }));
       } else if (known && item.kind === 'scroll.sirensSong') {
         use(t.read, () => aimWith('cast', index));
@@ -1691,7 +1882,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     }
     if (category === 'stone') {
       if (INVENTORY_STONES.has(item.kind)) {
-        use(t.alchUi.use, () => pickFor(item.kind, pickTitleOf(item.kind), (on) => {
+        use(t.alchUi.use, () => pickSure(item.kind, pickTitleOf(item.kind), (on) => {
           const target = itemAt(hero, on);
           if (!target) return;
           if (item.kind === 'stone.augmentation') {
@@ -1738,7 +1929,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         ]));
       } else if (isTargetedScroll(item.kind)) {
         const title = item.kind === 'spell.recycle' ? t.alch.recycleTitle : item.kind === 'spell.curseInfusion' ? t.alch.curseInfusionTitle : t.alch.infuseTitle;
-        use(t.alchUi.cast, () => pickFor(item.kind, title, (on) => act({ type: 'use', item: index, on })));
+        use(t.alchUi.cast, () => pickSure(item.kind, title, (on) => act({ type: 'use', item: index, on })));
       } else {
         use(t.alchUi.cast, () => act({ type: 'use', item: index }));
       }
@@ -1768,7 +1959,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     }
     if (category === 'ring' || category === 'artifact') {
       // KindofMisc.doEquip: every slot taken, the player says which to take off for it.
-      use(t.putOn, () => {
+      use(t.putOn, () => askEquip(options, item, () => {
         const choices = miscChoices(hero, item);
         if (choices.length === 0) {
           stay({ type: 'equip', item: index }, null);
@@ -1778,14 +1969,14 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
           showBackpack(options);
           stay({ type: 'equip', item: index, replace }, null);
         }, () => showBackpack(options, { index }));
-      });
+      }, back));
     }
     if (category === 'weapon' || category === 'armor') {
       const worn: BagChoice = { worn: category === 'armor' ? 'armor' : 'weapon' };
-      use(t.equip, () => {
+      use(t.equip, () => askEquip(options, item, () => {
         stay({ type: 'equip', item: index }, worn);
         if (category === 'armor') offerSealTransfer(options, index);
-      });
+      }, back));
     }
     // ClassArmor.actions from the pack: the crown's magic can be moved to another armour (the ability wants it worn).
     if (isClassArmor(item) && item.kind === CLASS_ARMOR_OF[hero.heroClass]) {

@@ -100,7 +100,7 @@ function dailyInfo(options: CampScreenOptions): HTMLElement {
   }
   const next = el('span', { className: 'timer' });
   const resets = el('span', { className: 'timer' });
-  node.append(next, resets);
+  node.append(next, resets, el('span', { className: 'timer', textContent: t.forum.label.hint }));
   const opened = Date.now();
   const closes = boardCloses('daily', opened);
   resets.textContent = t.ranked.dailyResets(new Date(closes).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }));

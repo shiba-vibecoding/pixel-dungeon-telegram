@@ -14,6 +14,7 @@ import { mobDescription } from './examine';
 import { canFullscreen, haptics, isFullscreen, openExternal, setFullscreen } from './telegram';
 import { hints } from './hints';
 import { confirmDanger } from './mistap';
+import { confirmRisky } from './riskyuse';
 import { BEST_GROUPS, BESTIARY_ENTRIES, type BestEntry, type BestGroup, portraitCell, REGION_DEPTHS, slainLabel } from './bestiary';
 
 /*
@@ -211,6 +212,7 @@ export function showSettings(options: SettingsOptions): void {
       fxNote,
     ),
     switchRow(t.meta.confirmDanger, t.meta.confirmDangerNote, confirmDanger.on, (on) => confirmDanger.set(on)),
+    switchRow(t.forum.settings.risky, t.forum.settings.riskyNote, confirmRisky.on, (on) => confirmRisky.set(on)),
     stepsRow(t.meta.shake, () => quality.shake, (v) => quality.setShake(v), () => fx.shake(3, 240, fx.now)),
     el(
       'div',
@@ -507,12 +509,12 @@ export interface JournalOptions {
 }
 
 /** WndJournal and WndCatalogus in one window: the notes, and every potion, scroll, ring and wand. */
-export function showJournal(options: JournalOptions, tab: 'notes' | 'catalog' = 'notes', category = 0): void {
+export function showJournal(options: JournalOptions, tab: 'notes' | 'catalog' | 'guide' = 'notes', category = 0): void {
   const { world, hero } = options;
-  const reopen = (nextTab: 'notes' | 'catalog', nextCategory = category): void => showJournal(options, nextTab, nextCategory);
+  const reopen = (nextTab: 'notes' | 'catalog' | 'guide', nextCategory = category): void => showJournal(options, nextTab, nextCategory);
   const tabs = el('div', { className: 'pd-tabs' });
   tabs.setAttribute('role', 'tablist');
-  for (const [id, label] of [['notes', t.meta.notes], ['catalog', t.meta.catalog]] as const) {
+  for (const [id, label] of [['notes', t.meta.notes], ['catalog', t.meta.catalog], ['guide', t.forum.guide.tab]] as const) {
     const node = el('button', { className: 'pd-tab', textContent: label, onclick: () => (click(), reopen(id)) });
     node.setAttribute('role', 'tab');
     node.setAttribute('aria-selected', String(id === tab));
@@ -521,11 +523,34 @@ export function showJournal(options: JournalOptions, tab: 'notes' | 'catalog' = 
   const bestiary = tab === 'catalog' && category === CATALOG.length;
   const parts = tab === 'notes'
     ? [el('div', { className: 'pd-scroll' }, notesView(world, hero))]
-    : catalogView(options, category, (next) => reopen('catalog', next));
+    : tab === 'guide'
+      ? [el('div', { className: 'pd-scroll' }, guideView())]
+      : catalogView(options, category, (next) => reopen('catalog', next));
   show(
     windowOf({ title: t.meta.journal, onClose: options.onClose, className: bestiary ? 'wide pd-best-window' : 'wide' }, tabs, ...parts),
     options.onClose,
   );
+}
+
+/**
+ * The newcomer's guide (the forum study): the questions asked most, answered by the game's own rules, and the colours of
+ * the traps. Each answer is a title and a few lines; nothing here is hidden behind a tap.
+ */
+function guideView(): HTMLElement {
+  const F = t.forum;
+  const list = el('div', { className: 'pd-guide' }, el('p', { className: 'pd-note center', textContent: F.guide.intro }));
+  for (const entry of F.guide.entries) {
+    list.append(el('section', { className: 'pd-guide-item' }, el('h3', { className: 'pd-heading', textContent: entry.title }), info(entry.text)));
+  }
+  // Trap colours: Trap.RED ... Trap.GREY, each a swatch and the family it marks.
+  const legend = el('ul', { className: 'pd-trap-legend' });
+  F.trapColours.forEach(([name, what], i) => {
+    const swatch = el('i', { className: 'pd-trap-swatch' });
+    swatch.dataset.c = String(i);
+    legend.append(el('li', {}, swatch, el('span', {}, el('b', { textContent: capitalize(name) }), ` — ${what}`)));
+  });
+  list.append(el('section', { className: 'pd-guide-item' }, el('h3', { className: 'pd-heading', textContent: F.trapColourTitle }), info(F.trapColourText), legend));
+  return list;
 }
 
 /**

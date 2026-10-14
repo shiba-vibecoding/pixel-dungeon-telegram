@@ -11,6 +11,10 @@ interface WebApp {
   expand(): void;
   isVersionAtLeast?(version: string): boolean;
   disableVerticalSwipes?(): void;
+  enableVerticalSwipes?(): void;
+  /** Bot API 6.2: Telegram asks before the app is closed. */
+  enableClosingConfirmation?(): void;
+  disableClosingConfirmation?(): void;
   setHeaderColor?(color: string): void;
   setBackgroundColor?(color: string): void;
   setBottomBarColor?(color: string): void;
@@ -65,7 +69,6 @@ export function initTelegram(background: string): void {
   webApp.ready();
   webApp.expand();
   const at = (version: string): boolean => webApp.isVersionAtLeast?.(version) ?? false;
-  if (at('7.7')) webApp.disableVerticalSwipes?.();
   if (at('6.1')) {
     webApp.setHeaderColor?.(background);
     webApp.setBackgroundColor?.(background);
@@ -74,6 +77,27 @@ export function initTelegram(background: string): void {
   // Bot API 8.0: on a phone the game takes the whole screen however it was opened (BotFather's full-screen
   // setting reaches only the profile's «Open» button), unless the player turned that off in the settings.
   if (at('8.0') && /^(ios|android)/.test(webApp.platform) && wantsFullscreen()) webApp.requestFullscreen?.();
+}
+
+/*
+ * During a run a swipe down must not close the Mini App, and closing it asks first (the forum study's U4: a thumb
+ * sliding down the map ended runs). Outside a run both are off, so the title and the lists behave as Telegram's own do.
+ */
+let guarded = false;
+
+/** Whether a run is under way: swipes disabled and the closing confirmation on while it is; both undone when it is not. */
+export function guardRun(on: boolean): void {
+  if (!webApp || !inTelegram || guarded === on) return;
+  guarded = on;
+  const at = (version: string): boolean => webApp.isVersionAtLeast?.(version) ?? false;
+  if (at('7.7')) {
+    if (on) webApp.disableVerticalSwipes?.();
+    else webApp.enableVerticalSwipes?.();
+  }
+  if (at('6.2')) {
+    if (on) webApp.enableClosingConfirmation?.();
+    else webApp.disableClosingConfirmation?.();
+  }
 }
 
 /** The player's choice about the whole screen, kept on this device: on unless turned off. */

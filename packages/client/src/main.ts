@@ -9,7 +9,11 @@ import {
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
-import { loop } from './lifecycle';
+import { loop, onResume } from './lifecycle';
+import { labelWords, runLabel } from './labels';
+import { equipRisk } from './riskyuse';
+import { causeName, causeNote, packLine, packWorth } from './deathcopy';
+import { clearMemo, loadMemo, type Memo, memoValid, saveMemo } from './windowmemo';
 import { reloadForUpdate } from './update';
 import { preloadMapFx } from './shfx';
 import { preloadMobFx } from './mobfx';
@@ -56,12 +60,12 @@ import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
 import { type Camera, render } from './render';
 import type { GhostLine, ImpLine } from '@pd/core';
 import { LevelTiles } from './tiles';
-import { feelingLine, lt, plain, spawnerWarning } from './levelnames';
+import { feelingLine, lt, plain, spawnerWarning, trapWarning } from './levelnames';
 import { levelFx } from './levelfx';
 import { mineTarget, setSmithToast, type SmithEnv, smithBranch, talkWithBlacksmith } from './blacksmith-ui';
 import {
   armorTier, closeOverlay, el, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showHelp, showHero,
-  refreshBackpack, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, info, show, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice, windowOf,
+  refreshBackpack, reopenWindow, windowState, type WindowState, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, info, show, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice, windowOf,
 } from './screens';
 import { rankingBlock, showBoards } from './rankui';
 import { type Camp, campClasses } from './camp';
@@ -92,7 +96,7 @@ import { type BoardKind, type Profile, type RunMeta, type RunSlot, runApi, type 
 import { loadAssets } from './sprites';
 import { CoopMarks } from './coop-marks';
 import {
-  backButton, haptic, initData, initTelegram, inTelegram, launchedForDaily, onLayoutChange, platform,
+  backButton, guardRun, haptic, initData, initTelegram, inTelegram, launchedForDaily, onLayoutChange, platform,
   shareArena, shareDaily, telegramName, appLink, canShareMessage, canShareStory, shareMessage, shareStory, requestWriteAccess,
   homeScreenStatus, addToHomeScreen,
 } from './telegram';
@@ -511,12 +515,19 @@ function enterGame(next: Session, roomId: string | null, welcome = t.welcome): v
   view.log = [];
   view.say(welcome);
   hideOverlay();
-  // The very first game opens with how to play.
-  if (!stored('pd-seen-help')) {
+  // A window that was open when the Mini App went away (a reload, a turn of the phone) comes back if the game allows it.
+  const kept = loadMemo();
+  const restored = !!kept && restoreWindow(kept as Memo<WindowState>);
+  if (kept && !restored) clearMemo();
+  // The very first game opens with how to play (not over a window that came back).
+  if (!restored && !stored('pd-seen-help')) {
     store('pd-seen-help', '1');
     showHelp(hideOverlay);
   }
 }
+
+/** The pack as the last frame left it: what an ankh's rising takes is said from this. */
+let packSeen = { items: 0, gold: 0 };
 
 /** The current run is the daily dungeon, whose results go to the leaderboard. */
 let dailyRun = false;
@@ -856,6 +867,9 @@ const BOON_ITEMS: Record<string, core.ItemKind> = {
   alchemist: 'potion.healing', scholar: 'scroll.identify', purse: 'gold', supplies: 'food.ration', whetstone: 'stone.augmentation', cartographer: 'scroll.mapping',
 };
 
+/** Replacing a saved run is held down this long (the forum study's U2: nothing destructive on a single tap). */
+const HOLD_TO_REPLACE_MS = 1000;
+
 function toTitle(ask = true): void {
   session?.close();
   session = null;
@@ -895,8 +909,8 @@ function toTitle(ask = true): void {
     onContinue: () => startSolo('continue'),
     // A new game over a saved one asks first: the saved run is lost.
     onSolo: () =>
-      saved ? showConfirm(t.meta.newRunTitle, t.meta.newRunText, t.meta.newRunYes, t.meta.cancel, () => startSolo('new'), toTitle)
-      : stale ? showConfirm(t.meta.newRunTitle, t.meta.staleRunText(stale.depth, t.classes[stale.heroClass]), t.meta.newRunYes, t.meta.cancel, () => startSolo('new'), toTitle)
+      saved ? showConfirm(t.meta.newRunTitle, t.meta.newRunText, t.meta.newRunYes, t.meta.cancel, () => startSolo('new'), toTitle, undefined, { hold: HOLD_TO_REPLACE_MS })
+      : stale ? showConfirm(t.meta.newRunTitle, t.meta.staleRunText(stale.depth, t.classes[stale.heroClass]), t.meta.newRunYes, t.meta.cancel, () => startSolo('new'), toTitle, undefined, { hold: HOLD_TO_REPLACE_MS })
       : startSolo('new'),
     onDaily: () => startSolo('daily'),
     onDailyBoard: api ? () => openBoards('daily') : undefined,
@@ -931,7 +945,9 @@ function openJournal(onClose: () => void = hideOverlay): void {
 }
 
 function openMenu(): void {
+  const labelled = session?.mode === 'solo' ? labelWords(runLabel({ checked: !!session.checked, ranked: session.checked?.meta.ranked ?? true })) : null;
   showMenu({
+    ...(labelled ? { runLabel: `${labelled.text} — ${labelled.note}` } : {}),
     onResume: hideOverlay,
     onHelp: () => showHelp(hideOverlay),
     onBadges: () => showBadges(hideOverlay, profile?.honors ?? []),
@@ -1927,8 +1943,12 @@ function tapCell(cell: number, quiet = false): void {
     walk.queue = [];
     held.code = '';
     const trap = peril.danger === 'trap';
+    // A trap is named, and what it does is said in Shattered's own words (the forum study's U5).
+    const kind = trap ? level.traps?.find((known) => known.pos === way[0])?.kind : undefined;
+    const warn = kind ? trapWarning(kind) : null;
     showConfirm(
-      trap ? t.danger.trap : t.danger.fire, trap ? t.danger.trapQuestion : t.danger.fireQuestion, t.danger.yes, t.danger.no,
+      warn?.name ?? (trap ? t.danger.trap : t.danger.fire), warn ? t.forum.trapAsk(warn.effect) : trap ? t.danger.trapQuestion : t.danger.fireQuestion,
+      t.danger.yes, t.danger.no,
       () => {
         const now = session?.world && heroById(session.world, session.myId);
         if (now && isAlive(now) && now.pos === me.pos) walk.queue = way;
@@ -2144,23 +2164,73 @@ function openBackpack(): void {
   aim = null;
   newLoot = false;
   tutorial.did('backpack');
-  showBackpack({
-    world,
-    hero: me,
-    onAction: (action) => send(action, performance.now()),
-    onAim: (index, kind, choice) => {
-      aim = { index, kind, ...(choice !== undefined ? { choice } : {}) };
-    },
-    onAimClass: (prompt, make) => {
-      aim = { index: -1, kind: 'class', make };
-      toast(prompt);
-    },
-    onWeaponAbility: (which) => weaponAbilityNow(me, which),
+  showBackpack(fullBackpack(world, me));
+}
+
+/** The backpack as the map's button opens it: the aims of artifacts too (also to put it back, see restoreWindow). */
+function fullBackpack(world: World, me: Hero): Parameters<typeof showBackpack>[0] {
+  return {
+    ...backpackOptions(world, me),
     onAimArtifact: (action) => {
       aim = { index: -1, kind: 'artifact', action };
     },
-    onClose: hideOverlay,
-  });
+  };
+}
+
+/* Windows that come back (windowmemo.ts) */
+
+/** The run the window is open in: its seed, and the server's id for it when it is a checked one. */
+const runKey = (world: World): string => `${world.run.seed}:${session?.checked?.meta.id ?? ''}`;
+
+/** The window last seen open, kept while it is: it comes back after a turn of the phone, a resize or a return to the game. */
+let lastWindow: Memo<WindowState> | null = null;
+
+/** Puts a kept window back, if the game still allows it (the same run and turn, the hero alive, the item what it was). */
+function restoreWindow(memo: Memo<WindowState>): boolean {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me || overlayOpen() || !memoValid(memo, runKey(world), world.turn, isAlive(me), world.over)) return false;
+  walk.reset();
+  aim = null;
+  return reopenWindow(memo.state, fullBackpack(world, me), memo.kind as core.ItemKind | undefined);
+}
+
+/** Every frame: the open backpack or pick is noted on the device; a closed one is forgotten. */
+function syncWindowMemo(): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me) return;
+  if (world.over || !isAlive(me) || !overlayOpen()) {
+    if (lastWindow) clearMemo();
+    lastWindow = null;
+    return;
+  }
+  // Another window in the middle of the pick (a question): the pick it belongs to is kept.
+  const state = windowState();
+  if (!state) return;
+  const index = state.w === 'pick' ? state.index : state.choice && 'index' in state.choice ? state.choice.index : -1;
+  const kind = me.items[index]?.kind;
+  if (lastWindow && lastWindow.turn === world.turn && JSON.stringify(lastWindow.state) === JSON.stringify(state)) return;
+  lastWindow = { run: runKey(world), turn: world.turn, ...(kind ? { kind } : {}), state };
+  saveMemo(lastWindow);
+}
+
+/** The game is back in view or its size changed: a window that was open and is gone is opened again. */
+function recoverWindow(): void {
+  if (!session || !lastWindow || overlayOpen()) return;
+  const memo = lastWindow;
+  if (!restoreWindow(memo)) lastWindow = null;
+}
+onResume(recoverWindow);
+addEventListener('orientationchange', () => setTimeout(recoverWindow, 50));
+addEventListener('resize', () => setTimeout(recoverWindow, 50));
+addEventListener('pageshow', recoverWindow);
+
+/** A run is under way: alive, not over (Telegram then keeps swipes off and asks before closing). */
+function runUnderway(): boolean {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  return !!me && isAlive(me) && !world.over;
 }
 
 /* Zoom and looking around: pinch or wheel to zoom, drag to look about (as GameScene's camera). */
@@ -2378,10 +2448,12 @@ function learnFromSight(world: World, me: Hero, level: Level, visible: readonly 
       if (mob.kind === 'shopkeeper') hints.first('shop', () => portrait(mob.kind));
     } else if (mob.state !== 'sleeping') {
       // (Its words are of classic turns; under live turns the world's own hint has said how fights go.)
-      if (!world.live) hints.first('monster', () => portrait(mob.kind));
+      if (core.isMimic(mob.kind)) hints.first('mimic', () => portrait(mob.kind));
+      else if (!world.live) hints.first('monster', () => portrait(mob.kind));
     }
   }
   if (me.hp > 0 && me.hp < me.ht * 0.4) hints.first('lowHealth');
+  if (me.depth >= 3) hints.first('score');
   for (const heap of floor?.heaps ?? []) {
     if (!visible[heap.pos] || heap.kind === 'hidden') continue;
     if (heap.kind === 'heap') hints.first('floorItem', itemPicture(itemSprite(heap.items[0]!, world.run.labels)));
@@ -2416,6 +2488,11 @@ function learnFromEffect(world: World, me: Hero, effect: Effect): void {
   if (effect.type === 'pickedUp' && effect.hero === mine) {
     const category = itemDef(effect.item.kind).category;
     if (HINT_CATEGORIES.has(category)) hints.first(category as HintId, itemPicture(itemSprite(effect.item, world.run.labels)));
+    // The forum study's newcomer hints: a thing that may be cursed, the ring of wealth, what lifts curses and gases.
+    const picture = itemPicture(itemSprite(effect.item, world.run.labels));
+    if (equipRisk(effect.item)) hints.first('curse', picture);
+    if (effect.item.kind === 'ring.wealth') hints.first('wealth', picture);
+    if (['scroll.removeCurse', 'potion.purity', 'potion.cleansing'].includes(effect.item.kind)) hints.first('cleanse', picture);
   }
   if ((effect.type === 'dew' || effect.type === 'dewCollected') && effect.hero === mine) hints.first('dew');
   if (effect.type === 'attack' && effect.target === mine && effect.hit && effect.damage > 0) hints.first('attacked');
@@ -2935,6 +3012,8 @@ function frame(now: number, resumed = false): void {
   if (crashed) return;
   try {
     tick(now);
+    guardRun(runUnderway());
+    syncWindowMemo();
     loopFailures = 0;
   } catch (error) {
     // A frame that fails now and then is only reported; one that fails again and again leaves the game stuck: the error screen.
@@ -3155,7 +3234,14 @@ function tick(now: number): void {
     scenery.effects(effects, me.depth, vnow);
     handleMyEffects(effects, session.myId);
     if (world.arena) handleArenaEffects(effects, world, me, vnow);
+    // The ankh brought the hero back, but not the pack (combat.ts resurrect): say what stayed behind (deathcopy.ts).
+    if (effects.some((e) => e.type === 'resurrected' && e.hero === mine)) {
+      toast(t.forum.death.ankhLost(packSeen.items, packSeen.gold), { tone: 'warn' });
+      view.say(t.forum.death.ankhLost(packSeen.items, packSeen.gold), '#ff8800');
+    }
   }
+  // What the pack holds, for the next frame's resurrection to say what it took.
+  packSeen = packWorth(me);
   // An online session learns my class with its first snapshot: wear the look for it.
   if (!session.looks[session.myId] && session.mode === 'solo') putOnLook();
   view.looks = session.looks;
@@ -3479,7 +3565,7 @@ function tick(now: number): void {
     // Scored as the server scores it (core verify.ts runOutcome: Shattered's score, the parts in `breakdown`).
     const outcomeNow = core.runOutcome(world, me);
     const scoreNow = outcomeNow.score;
-    const killer = me.killedBy && (t.causes[me.killedBy] ?? t.mobs[me.killedBy as MobKind] ?? t.classes[me.killedBy as HeroClass] ?? me.killedBy);
+    const killer = causeName(me.killedBy);
     const shareText = dailyRun ? t.shareText(scoreNow, deepestNow) : t.shareTextRun(scoreNow, deepestNow);
     const share = shareChoices(async () => {
       const reply = answer ? await answer : null;
@@ -3492,7 +3578,7 @@ function tick(now: number): void {
     window.setTimeout(() => {
       if (!session?.world?.over) return;
       if (!victory) haptic('error');
-      const cause = me.killedBy && (t.causes[me.killedBy] ?? t.mobs[me.killedBy as MobKind] ?? t.classes[me.killedBy as HeroClass] ?? me.killedBy);
+      const cause = causeName(me.killedBy);
       // Rankings: the run takes its place among this device's best.
       const deepest = Object.keys(world.levels).length;
       const gold = me.stats?.gold ?? me.gold;
@@ -3517,6 +3603,9 @@ function tick(now: number): void {
         victory,
         title: victory ? (world.ending === 'surface' ? t.happyEnd : t.victory) : solo ? t.youDied : t.partyFell,
         cause: victory ? (world.ending === 'surface' ? t.happyEndText : t.victoryText) : [t.soloFell(me.depth), cause ? t.killedBy(cause) : ''].filter(Boolean).join(' '),
+        // What the cause means when it was no monster's blow, and what the pack held (deathcopy.ts).
+        ...(!victory ? { notes: [causeNote(me.killedBy), solo ? packLine(me) : ''] } : {}),
+        ...(solo ? { label: labelWords(runLabel({ checked: !!session.checked, ranked: session.checked?.meta.ranked ?? true })) } : {}),
         hero: { name: me.name || playerName || telegramName() || t.heroLabel, heroClass: me.heroClass, lvl: me.lvl, depth: me.depth, gold: me.gold, kills: me.kills },
         restartLabel: victory ? t.newRun : solo ? t.tryAgain : t.restartRun,
         onRestart: () => {

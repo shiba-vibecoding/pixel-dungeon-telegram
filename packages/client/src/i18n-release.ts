@@ -72,11 +72,12 @@ export const REL_EN = {
     title: 'Board rules',
     help: 'Board rules',
     items: [
-      ['score', 'Score', 'As in the original: gold collected + level × deepest depth × 100. A win with the Amulet doubles it. Each challenge adds a quarter.'],
+      ['score', 'Score', 'As in Shattered: level × deepest depth × 65, the gold and the worth of the pack, how much of each floor was explored, the bosses beaten and the quests done. A win doubles it; carrying the Amulet out, ×2.5. Each challenge on multiplies it by 1.25.'],
       ['places', 'Places', 'Day: the top three win a cup. Week: the top ten win a medal. Prizes arrive by mail when the board closes.'],
       ['close', 'When it closes', 'Day — at midnight UTC. Week — on the night to Monday, also at 00:00 UTC. The timer is under the board’s note.'],
       ['tie', 'Equal scores', 'Whoever’s run ended earlier is higher (by the server’s clock).'],
       ['check', 'What counts', 'Only runs checked by the server, and the first run of the day’s dungeon. A run cut off by lost connection counts once it is back; one begun offline does not count.'],
+      ['label', 'Counts, repeat, own seed', 'The day’s attempt is spent when the run starts: leaving, or erasing the save, does not give it back. A run is marked “counts” (the first run of the day’s dungeon, and ordinary runs the server checks), “repeat” (the day’s dungeon played again: practice) or “own seed” (a seed you chose yourself). A run on your own seed counts for no record and no board.'],
     ] as ReadonlyArray<readonly [string, string, string]>,
   },
   mart: {
@@ -180,11 +181,12 @@ export const REL_RU: Strings = {
     title: 'Правила доски',
     help: 'Правила доски',
     items: [
-      ['score', 'Очки', 'Как в оригинале: собранное золото + уровень × наибольшая глубина × 100. Победа с амулетом удваивает очки. Каждое испытание добавляет четверть.'],
+      ['score', 'Очки', 'Как в Shattered: уровень × наибольшая глубина × 65, золото и цена вещей в рюкзаке, исследованность этажей, побеждённые боссы и выполненные задания. Победа удваивает счёт, выход наверх с Амулетом — ×2,5. Каждое включённое испытание умножает его на 1,25.'],
       ['places', 'Места', 'День: тройка лучших получает кубок. Неделя: десятка лучших — медаль. Награды приходят в почту, когда доска закрывается.'],
       ['close', 'Когда закрывается', 'День — в полночь по UTC (03:00 по Москве). Неделя — в ночь на понедельник, тоже в 00:00 UTC. Таймер — под пояснением доски.'],
       ['tie', 'Равные очки', 'Выше тот, чей забег закончился раньше (по часам сервера).'],
       ['check', 'Что засчитывается', 'Только забеги, проверенные сервером, и первый забег подземелья дня. Забег, оборванный потерей связи, засчитается, когда она вернётся; начатый без связи — нет.'],
+      ['label', 'Зачёт, повтор, свой сид', 'Попытка дня тратится, когда забег начался: выход из игры или удаление сохранения её не возвращают. Забег помечен: «зачёт» (первый забег подземелья дня и обычные забеги, проверенные сервером), «повтор» (подземелье дня, сыгранное ещё раз: тренировка) или «свой сид» (сид, который вы задали сами). Забег на своём сиде не идёт ни в рекорды, ни в доски.'],
     ] as ReadonlyArray<readonly [string, string, string]>,
   },
   mart: {

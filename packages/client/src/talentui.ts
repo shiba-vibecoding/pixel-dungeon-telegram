@@ -273,8 +273,8 @@ export function showSubclassPick(host: TalentHost, maskIndex: number, back: () =
           showConfirm(
             capitalize(subclassName(way)),
             tal('windows.wndchoosesubclass.are_you_sure'),
-            tal('windows.wndchoosesubclass.yes'),
-            tal('windows.wndchoosesubclass.no'),
+            t.forum.verbs.choose,
+            t.forum.verbs.later,
             () => {
               hideOverlay();
               host.act({ type: 'master', item: maskIndex, subclass: way });

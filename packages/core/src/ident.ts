@@ -1,7 +1,7 @@
 import { type Hero, heroBelongings, heroEquipped, heroRings } from './actors';
 import { intuitionSpeed } from './classes/duelist-talents';
 import type { Ctx } from './floor';
-import { itemDef, type Item, type ItemKind, knownIn, labelKind } from './items';
+import { isCurseEnchant, isCurseGlyph, itemDef, type Item, type ItemKind, knownIn, labelKind } from './items';
 import type { World } from './world';
 import { idSpeedFactor as talentSpeedFactor } from './talents';
 
@@ -160,4 +160,29 @@ export function observeBelongings(world: World, hero: Hero): ItemKind[] {
   }
   for (const item of hero.items) delete item.curseUnknown;
   return learned;
+}
+
+/**
+ * ScrollOfRemoveCurse.uncurse on one item: its curse is lifted and known to be, a curse enchantment or glyph goes with
+ * it (and a curse infusion's strength). True if anything was lifted.
+ */
+export function liftCurse(item: Item): boolean {
+  let lifted = !!item.cursed;
+  delete item.curseUnknown;
+  delete item.cursed;
+  if (isCurseEnchant(item.enchant)) {
+    delete item.enchant;
+    lifted = true;
+  }
+  if (isCurseGlyph(item.glyph)) {
+    delete item.glyph;
+    lifted = true;
+  }
+  if (lifted) delete item.infused;
+  return lifted;
+}
+
+/** Belongings.uncurseEquipped (WaterOfHealth.affectHero): the curse lifted from everything worn. */
+export function uncurseEquipped(hero: Hero): void {
+  for (const item of heroEquipped(hero)) liftCurse(item);
 }

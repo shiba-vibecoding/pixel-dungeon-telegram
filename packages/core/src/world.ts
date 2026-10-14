@@ -10,7 +10,7 @@ import { snipe, snipeProblem } from './talents/huntress';
 import { holdFastRest } from './talents/hold-fast';
 import { foresightHint, layCachedRations } from './talents/rogue';
 import { onGrassTrampled, onHeroMovedOnGrass } from './talents/nature';
-import { identifyBelongings, observeBelongings } from './ident';
+import { identifyBelongings, observeBelongings, uncurseEquipped } from './ident';
 import { mobAct, populate, randomRespawnCell, reinforce, respawn, TIME_TO_RESPAWN } from './ai';
 import {
   createHero, createMob, type Footing, type Hero, heroAttackDelay, heroBelongings, heroReach, heroRings, heroSpeed, isAlive, isShopkeeper,
@@ -1601,6 +1601,8 @@ function drinkFromWell(ctx: Ctx, hero: Hero): void {
     hero.hunger = 0;
     hero.weakened = 0;
     hero.crippled = 0;
+    // WaterOfHealth.affectHero: Belongings.uncurseEquipped.
+    uncurseEquipped(hero);
   } else {
     // WaterOfAwareness: what the hero wears is known through and through, and the curses of all they carry (Belongings.observe).
     for (const kind of observeBelongings(world, hero)) ctx.effects.push({ type: 'identified', hero: hero.id, kind });

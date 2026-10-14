@@ -179,6 +179,20 @@ export function trapText(kind: TrapKind): { name: string; desc: string } {
   return { name: lt(`${trapKey(kind)}.name`), desc: plain(lt(`${trapKey(kind)}.desc`)) };
 }
 
+/**
+ * The question before a step onto a trap in sight (mistap.ts): its name and what it does, the first paragraph of
+ * Shattered's description (the rest tells where it is found and how it breaks); empty where the texts have none.
+ */
+export function trapWarning(kind: TrapKind): { name: string; effect: string } | null {
+  const { name, desc } = trapText(kind);
+  const effect = desc.split('\n\n')[0]!.trim();
+  if (!name || !effect) return null;
+  return { name: name.charAt(0).toUpperCase() + name.slice(1), effect };
+}
+
+/** Which of the legend's families (t.forum.trapColours) a trap's colour belongs to; the spent black ones belong to none. */
+export const trapFamily = (colour: number): number => (colour === 0 ? 7 : colour >= 1 && colour <= 7 ? colour - 1 : -1);
+
 /** Level.Feeling's title and description. */
 export function feelingText(feeling: string): { title: string; desc: string } {
   const key = feeling.toLowerCase();

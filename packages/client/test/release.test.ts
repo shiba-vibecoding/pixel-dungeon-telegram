@@ -33,7 +33,7 @@ describe('the news data', () => {
     const shape = (value: unknown): unknown =>
       Array.isArray(value) ? value.map(shape) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, shape(v)])) : typeof value;
     expect(shape(REL_RU)).toEqual(shape(REL_EN));
-    expect(REL_RU.rules.items).toHaveLength(5);
+    expect(REL_RU.rules.items).toHaveLength(6);
   });
 });
 

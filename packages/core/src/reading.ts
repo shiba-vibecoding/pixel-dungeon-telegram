@@ -1,4 +1,4 @@
-import { COMMON_ENCHANTMENTS, COMMON_GLYPHS, isCurseEnchant, isCurseGlyph, RARE_ENCHANTMENTS, RARE_GLYPHS, UNCOMMON_ENCHANTMENTS, UNCOMMON_GLYPHS } from './items';
+import { COMMON_ENCHANTMENTS, COMMON_GLYPHS, RARE_ENCHANTMENTS, RARE_GLYPHS, UNCOMMON_ENCHANTMENTS, UNCOMMON_GLYPHS } from './items';
 import { dpow } from './fmath';
 import { isEnchantable } from './scrolls';
 import { isDart } from './missiles';
@@ -14,7 +14,7 @@ import { hurt } from './combat';
 import { fearless } from './enchant';
 import { charAt, type Ctx, enterCell, exploredCells, heroView, isPassable, leaveCell } from './floor';
 import { castShadow, terrainBlocksSight } from './fov';
-import { identify, learn } from './ident';
+import { identify, learn, liftCurse } from './ident';
 import {
   type Enchantment, type Glyph, type Item, itemDef, type ItemKind, ITEMS, knownIn, randomEnchantment, randomGlyph, REGULAR_OF,
 } from './items';
@@ -92,21 +92,7 @@ export function readScroll(ctx: Ctx, hero: Hero, kind: ItemKind, target: Item | 
       }
       // ScrollOfRemoveCurse.uncurse: the curse is known, and lifted, a curse enchantment or glyph (and a curse
       // infusion's strength) with it.
-      if (target) {
-        let lifted = !!target.cursed;
-        delete target.curseUnknown;
-        delete target.cursed;
-        if (isCurseEnchant(target.enchant)) {
-          delete target.enchant;
-          lifted = true;
-        }
-        if (isCurseGlyph(target.glyph)) {
-          delete target.glyph;
-          lifted = true;
-        }
-        if (lifted) delete target.infused;
-        ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'removeCurse', count: lifted ? 1 : 0 });
-      }
+      if (target) ctx.effects.push({ type: 'scroll', hero: hero.id, kind: 'removeCurse', count: liftCurse(target) ? 1 : 0 });
       return;
     }
     case 'scroll.transmutation':

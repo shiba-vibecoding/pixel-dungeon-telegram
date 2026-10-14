@@ -3,6 +3,7 @@ import type { BuffName } from './hud';
 import { ART_EN, ART_RU } from './i18n-artifacts';
 import { CLS_EN, CLS_RU } from './i18n-classes';
 import { TAL_EN, TAL_RU } from './i18n-talents';
+import { FORUM_EN, FORUM_RU } from './i18n-forum';
 import { REL_EN, REL_RU } from './i18n-release';
 import { ABIL_EN, ABIL_RU } from './i18n-abilities';
 
@@ -450,8 +451,8 @@ const ALCH_EN = {
   energizeAll: "Turn all into %d energy",
   energizeIt: "Turn into %d energy",
   trinketWarn: "Are you sure you want to energize your trinket? You'll get 5 energy back but the trinket will be permanently lost!",
-  trinketYes: "Yes, energize it",
-  trinketNo: "No, nevermind",
+  trinketYes: "Energize",
+  trinketNo: "Cancel",
   catalystTitle: "create a trinket",
   catalystText: "The water begins to glow as you add the catalyst. There are a few nearby items you could imbue with energy to turn into a magical trinket.",
   seedToPotion: "Random Potion",
@@ -735,8 +736,8 @@ const ALCH_RU: typeof ALCH_EN = {
   energizeAll: "Превратить всё в %d энергии",
   energizeIt: "Превратить в %d энергии",
   trinketWarn: "Вы уверены, что хотите расщепить свой аксессуар? Вы получите 5 энергии, но уничтожите свой аксессуар навсегда!",
-  trinketYes: "Да, расщепить его",
-  trinketNo: "Нет, не надо",
+  trinketYes: "Расщепить",
+  trinketNo: "Отмена",
   catalystTitle: "создать аксессуар",
   catalystText: "Как только вы добавляете катализатор, вода в котле начинает сиять. Выберите один из предметов, чтобы наполнить его энергией и превратить в магический аксессуар.",
   seedToPotion: "Случайное Зелье",
@@ -1002,6 +1003,8 @@ const ART_NAMES_RU = artNames(ART_RU);
 const en = {
   /** The release screens: what's new, the pioneer, the problem report, offline, the board's rules, the camps in the Mart (i18n-release.ts). */
   rel: REL_EN,
+  /** The forum study's questions, verbs, guide and labels (i18n-forum.ts). */
+  forum: FORUM_EN,
   /** Shattered's alchemy: the pot, its items' messages, buffs and the alchemy guide (ALCH_EN). */
   alch: ALCH_EN,
   /** The alchemy pot's window and the choices alchemy's items ask for (ShAlchemy in the design system). */
@@ -1460,14 +1463,14 @@ const en = {
   fell: (depth: number) => `You fall through to depth ${depth} and land hard.`,
   chasm: 'Chasm',
   jumpQuestion: 'Do you really want to jump into the chasm? You can probably die.',
-  jumpYes: "Yes, I know what I'm doing",
-  jumpNo: 'No, I changed my mind',
+  jumpYes: 'Jump',
+  jumpNo: 'Stay',
   /** Mis-tap protection (mistap.ts): the question before a step onto a trap in sight or into flames in sight. */
   danger: {
     trap: 'Trap', fire: 'Fire',
     trapQuestion: 'There is a trap on that cell. Do you really want to step onto it?',
     fireQuestion: 'That cell is on fire. Do you really want to step into the flames?',
-    yes: 'Step there anyway', no: 'No, stay put', never: "Yes, and don't ask again",
+    yes: 'Step', no: 'Stay put', never: "Step, and don't ask again",
     fireAhead: 'Flames bar the way. Tap the spot again to step in.',
   },
   enterPrison: 'The sewers give way to an old prison. Its inmates have long since gone mad.',
@@ -2518,9 +2521,9 @@ const en = {
     resetYes: 'Erase everything',
     cancel: 'Cancel',
     challenges: 'Challenges',
-    challengesOn: (n: number) => `${n} of 7 on`,
-    challengesLocked: 'They open after your first victory, once you take the Amulet of Yendor.',
-    challengesFoot: 'Chosen before a new game; they last the whole run. Each one multiplies the score by 1.25.',
+    challengesOn: (n: number) => `${n} of 8 on`,
+    challengesLocked: 'They open after your first victory, once you take the Amulet of Yendor. The daily dungeon has its own challenge, on from the start.',
+    challengesFoot: 'Chosen before a new game; they last the whole run. Each one multiplies the score by 1.25: ×1.25 for one, ×1.55 for two, ×1.95 for three, up to ×5.95 for all eight.',
     challengeList: [
       ['On diet', 'No food turns up; gold lies in its place.'],
       ['Faith is my armor', 'No armor turns up; gold lies in its place.'],
@@ -2644,7 +2647,7 @@ const en = {
     dailyChipDone: 'played',
     ofTotal: (n: number) => `of ${n}`,
     practice2: 'Practice',
-    dailyOpenNote: 'The same dungeon for everyone; one attempt goes to the board.',
+    dailyOpenNote: 'The same dungeon for everyone; one attempt goes to the board, and it is spent when the run starts.',
     /** The day's rules, each in a line: «Hardship — name: what it does», «Boon — name: what it gives». */
     dailyHardship: (name: string, info: string) => `Hardship · ${name}: ${info}`,
     dailyBoon: (name: string, info: string) => `Boon · ${name}: ${info}`,
@@ -2835,8 +2838,8 @@ const en = {
   staffImbueUnknown: (level: number) => `You don't know this wand's level, but this imbue will result in at least a +${level} staff.`,
   staffImbueCursed: 'If you imbue a cursed wand, then your staff will become cursed as well!',
   staffImbueLost: 'The wand currently imbued in your staff will be lost.',
-  staffImbueYes: "Yes, I'm sure",
-  staffImbueNo: 'No, I changed my mind',
+  staffImbueYes: 'Imbue',
+  staffImbueNo: 'Cancel',
   /** What a wand says (Wand and its kinds' messages, by the core's WandNote). */
   wandNotes: {
     fizzles: () => 'Your wand fizzles; it must not have enough charge.',
@@ -2875,8 +2878,8 @@ const en = {
   corruptedInfo: 'Corrupted, it fights for you now, wasting away a little every turn.',
   dismissTitle: 'Dismiss this ward?',
   dismissInfo: 'You can dispel this ward if you no longer want your wand to maintain it. Doing so immediately destroys the ward.',
-  dismissYes: 'yes',
-  dismissNo: 'no',
+  dismissYes: 'Dismiss',
+  dismissNo: 'Keep',
   allyEvents: { corrupted: 'corrupted', doomed: 'doomed' } as Record<string, string>,
   debuffNames: {
     weakened: 'weakened', vulnerable: 'vulnerable', crippled: 'crippled', blind: 'blinded', terror: 'terrified', amok: 'amok', slowed: 'slowed',
@@ -2893,8 +2896,8 @@ const en = {
     detached: 'You detach the seal from your armor.',
     sealAttached: (n: number) => `The Warrior's broken seal is attached to this armor. When he is about to be injured below half health, it will grant him ${n} shielding.`,
     sealTransfer: "The Warrior's broken seal must be affixed to his currently worn armor in order to benefit him. Would you like to automatically detach the seal from the armor you are removing and affix it to the armor you are equipping?",
-    yes: 'Yes',
-    no: 'No',
+    yes: 'Move the seal',
+    no: 'Leave it',
     shieldName: 'Warrior Shield',
     shieldActive: (shield: number, cooldown: number) =>
       `The Warrior's broken seal is currently helping him persevere, granting him shielding on top of his health. There is a cooldown after the shielding initially triggers before it can be used again.\n\nThis shield does not decay over time, but will end if no enemies are nearby for a few turns. When it ends, any unused shielding will reduce the cooldown, up to a max of 50%.\n\nShield remaining: ${shield}.\n\nCurrent Cooldown: ${cooldown}.`,
@@ -2931,6 +2934,7 @@ type Strings = typeof en;
 
 const ru: Strings = {
   rel: REL_RU,
+  forum: FORUM_RU,
   alch: ALCH_RU,
   alchUi: {
     brew: 'Сварить',
@@ -3372,13 +3376,13 @@ const ru: Strings = {
   fell: (depth) => `Вы падаете на глубину ${depth} и больно ударяетесь.`,
   chasm: 'Пропасть',
   jumpQuestion: 'Вы действительно хотите прыгнуть в пропасть? Можно и разбиться насмерть.',
-  jumpYes: 'Да, я знаю, что делаю',
-  jumpNo: 'Нет, я передумал',
+  jumpYes: 'Прыгнуть',
+  jumpNo: 'Остаться',
   danger: {
     trap: 'Ловушка', fire: 'Огонь',
     trapQuestion: 'На этой клетке ловушка. Вы действительно хотите на неё наступить?',
     fireQuestion: 'Эта клетка горит. Вы действительно хотите шагнуть в огонь?',
-    yes: 'Всё равно шагнуть', no: 'Нет, остаться', never: 'Да, больше не спрашивать',
+    yes: 'Шагнуть', no: 'Остаться', never: 'Шагнуть и не спрашивать',
     fireAhead: 'Путь преграждает огонь. Коснитесь места ещё раз, чтобы шагнуть в него.',
   },
   enterPrison: 'Канализация сменяется старой тюрьмой. Её узники давно обезумели.',
@@ -4410,9 +4414,9 @@ const ru: Strings = {
     resetYes: 'Стереть всё',
     cancel: 'Отмена',
     challenges: 'Испытания',
-    challengesOn: (n: number) => `Включено: ${n} из 7`,
-    challengesLocked: 'Откроются после первой победы, когда вы добудете Амулет Йендора.',
-    challengesFoot: 'Выбираются перед новой игрой и действуют весь забег. Каждое умножает очки на 1,25.',
+    challengesOn: (n: number) => `Включено: ${n} из 8`,
+    challengesLocked: 'Откроются после первой победы, когда вы добудете Амулет Йендора. В подземелье дня своё испытание включено сразу.',
+    challengesFoot: 'Выбираются перед новой игрой и действуют весь забег. Каждое умножает очки на 1,25: ×1,25 за одно, ×1,55 за два, ×1,95 за три, до ×5,95 за все восемь.',
     challengeList: [
       ['На диете', 'Еда не встречается — на её месте золото.'],
       ['Вера — мой доспех', 'Броня не встречается — на её месте золото.'],
@@ -4532,7 +4536,7 @@ const ru: Strings = {
     dailyChipDone: 'сыграно',
     ofTotal: (n) => `из ${n}`,
     practice2: 'Тренировка',
-    dailyOpenNote: 'У всех одно подземелье; в таблицу идёт одна попытка.',
+    dailyOpenNote: 'У всех одно подземелье; в таблицу идёт одна попытка, и она тратится, когда забег начался.',
     dailyHardship: (name, info) => `Помеха · ${name}: ${info}`,
     dailyBoon: (name, info) => `Дар · ${name}: ${info}`,
     dailyNext: (left) => `До следующего подземелья дня: ${left}`,
@@ -4716,8 +4720,8 @@ const ru: Strings = {
   staffImbueUnknown: (level) => `Вы не знаете уровня этой палочки, но в результате уровень посоха будет не ниже +${level}.`,
   staffImbueCursed: 'Если вы наделите свой посох силой проклятой палочки, то и ваш посох станет проклятым!',
   staffImbueLost: 'Палочка, силой которой сейчас наделён ваш посох, будет потеряна.',
-  staffImbueYes: 'Да, я уверен',
-  staffImbueNo: 'Нет, я передумал',
+  staffImbueYes: 'Вложить',
+  staffImbueNo: 'Отмена',
   wandNotes: {
     fizzles: () => 'Ваша палочка искрит. Видимо, у нее кончились заряды.',
     selfTarget: () => 'Нельзя выбрать себя в качестве цели!',
@@ -4753,8 +4757,8 @@ const ru: Strings = {
   corruptedInfo: 'Подчинённый порчей, он теперь сражается за вас, понемногу угасая каждый ход.',
   dismissTitle: 'Отозвать этого стража?',
   dismissInfo: 'Вы можете уничтожить этого стража, если больше не хотите, чтобы ваша палочка тратила энергию на его поддержку.',
-  dismissYes: 'Да',
-  dismissNo: 'Нет',
+  dismissYes: 'Отозвать',
+  dismissNo: 'Оставить',
   allyEvents: { corrupted: 'подчинён', doomed: 'обречён' },
   debuffNames: {
     weakened: 'ослаблен', vulnerable: 'уязвим', crippled: 'покалечен', blind: 'ослеплён', terror: 'в ужасе', amok: 'в буйстве', slowed: 'замедлен',
@@ -4770,8 +4774,8 @@ const ru: Strings = {
     detached: 'Вы открепили печать от брони.',
     sealAttached: (n) => `Сломанная печать Воина прикреплена к этой броне. Когда он будет ранен ниже половины здоровья, она даст ему ${n} щита.`,
     sealTransfer: 'Сломанная печать Воина должна быть прикреплена к его доспехам, которые он носит в данный момент, чтобы принести ему пользу. Хотите ли вы автоматически снять печать с доспехов, которые вы снимаете, и прикрепить ее к доспехам, которые вы экипируете?',
-    yes: 'Да',
-    no: 'Нет',
+    yes: 'Перенести печать',
+    no: 'Оставить',
     shieldName: 'Щит Воина',
     shieldActive: (shield, cooldown) =>
       `Сломанная печать Воина сейчас укрепляет его, даруя ему щит поверх собственного здоровья. Щит нельзя сразу же получить повторно – требуется время на перезарядку.\n\nЭтот щит не уменьшается со временем, но закончится, если рядом в течение нескольких ходов не будет врагов. Когда он заканчивается, весь оставшийся щит уменьшит перезарядку, вплоть до 50%.\n\nЩита осталось: ${shield}.\n\nТекущая перезарядка: ${cooldown}.`,

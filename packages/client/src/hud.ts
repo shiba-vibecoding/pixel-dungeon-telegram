@@ -602,7 +602,7 @@ export class Hud {
       this.corner.append(this.menu);
       this.panel.append(this.main, this.buffBox);
       this.column.append(this.panel, this.mates, this.notice);
-      this.islandLeft.append(this.tools.wait, this.tools.search, this.tools.examine);
+      this.islandLeft.append(this.tools.wait, this.tools.examine, this.tools.search);
       this.islandRight.append(...this.quicks, this.tools.bag);
       this.corner.append(this.dangerBox);
       this.band.remove();
@@ -629,8 +629,10 @@ export class Hud {
   private quicksShown = 4;
 
   /**
-   * The narrow toolbar for 2, 4 or 6 quick slots (design v19, ShQuickslots): 2 beside wait, search, examine and the pack;
+   * The narrow toolbar for 2, 4 or 6 quick slots (design v19, ShQuickslots): 2 beside wait, examine, search and the pack;
    * 4 in one row of seven (examining is a long press of search); 6 in a row of their own above the four buttons.
+   * Wait (the hourglass) and search (the magnifier) are never neighbours (the forum study's U2): a turn spent standing still
+   * must not be taken for a search, nor the reverse; examine, or the quick slots, stand between them.
    */
   private arrangeToolbar(count: number): void {
     this.quicksShown = count;
@@ -641,13 +643,13 @@ export class Hud {
     this.toolbar.className = `pd-toolbar${count >= 6 ? ' q6' : count === 4 ? ' q4' : ''}`;
     if (count >= 6) {
       this.quickbar.replaceChildren(...this.quicks.slice(0, 6));
-      this.toolbar.replaceChildren(this.quickbar, wait, search, examine, bag);
+      this.toolbar.replaceChildren(this.quickbar, wait, examine, search, bag);
     } else if (count === 4) {
       this.quickbar.replaceChildren();
-      this.toolbar.replaceChildren(wait, search, ...this.quicks.slice(0, 4), bag);
+      this.toolbar.replaceChildren(wait, ...this.quicks.slice(0, 4), search, bag);
     } else {
       this.quickbar.replaceChildren();
-      this.toolbar.replaceChildren(wait, search, examine, ...this.quicks.slice(0, count), bag);
+      this.toolbar.replaceChildren(wait, examine, ...this.quicks.slice(0, count), search, bag);
     }
     this.toolbar.style.setProperty('--tools', String(4 + count));
   }
