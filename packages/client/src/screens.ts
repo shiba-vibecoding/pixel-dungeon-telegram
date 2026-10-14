@@ -1212,21 +1212,27 @@ export function showRunEnd(options: EndOptions): void {
     el(
       'section',
       { className: `pd-window pd-runend${options.victory ? ' win' : ''}` },
-      el('h2', { className: 'pd-display', textContent: options.title }),
-      // Under the title: how the run counted, as a chip with its meaning beside it (design v23, RunTags).
-      options.label && el('div', { className: 'pd-runtag-line' }, runTag(options.label), el('span', { textContent: options.label.note })),
-      options.cause && el('p', { className: 'pd-cause', textContent: options.cause }),
-      ...(options.notes ?? []).filter(Boolean).map((note) => el('p', { className: 'pd-info center pd-note', textContent: note })),
-      options.place && !options.ranking ? el('p', { className: 'pd-info center pd-gold', textContent: options.place === 1 ? t.newRecord : t.rankPlace(options.place) }) : null,
+      // Everything above the buttons scrolls on a short screen (the score table makes this window taller than a phone),
+      // so «Again», «Boards» and «Menu» always stay in reach.
       el(
         'div',
-        { className: 'pd-runend-hero' },
-        el('div', { className: 'pd-avatar' }, avatar),
-        el('div', { className: 'pd-info', textContent: `${hero.name} · ${t.classes[hero.heroClass]}` }),
+        { className: 'pd-scroll' },
+        el('h2', { className: 'pd-display', textContent: options.title }),
+        // Under the title: how the run counted, as a chip with its meaning beside it (design v23, RunTags).
+        options.label && el('div', { className: 'pd-runtag-line' }, runTag(options.label), el('span', { textContent: options.label.note })),
+        options.cause && el('p', { className: 'pd-cause', textContent: options.cause }),
+        ...(options.notes ?? []).filter(Boolean).map((note) => el('p', { className: 'pd-info center pd-note', textContent: note })),
+        options.place && !options.ranking ? el('p', { className: 'pd-info center pd-gold', textContent: options.place === 1 ? t.newRecord : t.rankPlace(options.place) }) : null,
+        el(
+          'div',
+          { className: 'pd-runend-hero' },
+          el('div', { className: 'pd-avatar' }, avatar),
+          el('div', { className: 'pd-info', textContent: `${hero.name} · ${t.classes[hero.heroClass]}` }),
+        ),
+        stats(rows),
+        options.breakdown ? scoreTable(options.breakdown) : null,
+        options.ranking,
       ),
-      stats(rows),
-      options.breakdown ? scoreTable(options.breakdown) : null,
-      options.ranking,
       actions(
         [button(options.restartLabel, options.onRestart, 'primary')],
         [...(options.share?.length ? [shareButton(options.share)] : []), ...(options.onBoards ? [button(t.ranked.title, options.onBoards)] : [])],

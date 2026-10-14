@@ -728,6 +728,7 @@ button.pd-slot:active, .pd-slot.pressed { background: var(--stone-900); }
 
 /* ---------- Конец забега, окно героя, торговля ---------- */
 .pd-runend { align-items: stretch; text-align: center; }
+.pd-runend > .pd-scroll { display: flex; flex-direction: column; gap: var(--space-3); }
 .pd-runend .pd-display { font: var(--text-display, 400 36px/40px var(--font-ui)); color: var(--bad); text-shadow: 0 calc(2 * var(--u)) 0 var(--void); }
 .pd-runend.win .pd-display { color: var(--gold); }
 .pd-runend .pd-cause { font: var(--text-body, 400 18px/24px var(--font-ui)); color: var(--ink); }
