@@ -1,3 +1,4 @@
+import type { LostInventory } from './ankh';
 import { hasGlyph } from './classes/state';
 import { effectiveLevel } from './wear';
 import { dpow } from './fmath';
@@ -175,6 +176,10 @@ export interface Hero {
   stasis?: number;
   /** Swiftthistle.TimeBubble: turns of accelerated time left, and the cells pressed meanwhile (timebubble.ts). */
   timeBubble?: { left: number; presses: number[] };
+  /** LostInventory (ankh.ts): what an unblessed ankh's revival left behind in the backpack. */
+  lostInventory?: LostInventory;
+  /** WndResurrect: just revived, the hero may still choose the two things they keep. */
+  ankhChoice?: boolean;
   /** CursedWand's lingering effects: a supernova building up, gravity gone wild, the ground about to give way. */
   supernova?: { pos: number; turns: number; harmsAllies: boolean };
   gravity?: { turns: number; positiveOnly: boolean; next?: number };

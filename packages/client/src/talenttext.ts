@@ -3,6 +3,7 @@ import { talentLevels as armorTalentLevels, talentTitle as armorTalentTitle } fr
 import { fill, lang } from './i18n';
 import { TAL_EN, TAL_RU } from './i18n-talents';
 import { CLS_EN, CLS_RU } from './i18n-classes';
+import { CLERIC_BUFF_KEYS, TALENT_BUFF_KEYS } from './i18n-v22';
 
 /*
  * The talents' and subclasses' texts, Shattered's own (i18n-talents.ts): names, descriptions cut into levels, the lines of
@@ -118,11 +119,12 @@ export function talentBuffInfo(hero: Hero, name: string, turns?: number): string
         : tal('actors.buffs.scrollempower.desc', 2, hero.tal?.scrollEmpower ?? 0);
     case 'trackerBlow':
       return tal('actors.hero.talent$provokedangertracker.desc', turns ?? 0);
-    case 'followup':
-      return tal('actors.hero.talent$followupstriketracker.desc', turns ?? 0);
-    case 'cooldown':
-      return tal('actors.hero.talent$improvisedprojectilecooldown.desc', turns ?? 0);
     default:
+      // Design v22: each talent's own status (Shattered's tracker or cooldown) and the Cleric's.
+      if (Object.hasOwn(TALENT_BUFF_KEYS, name)) return tal(`actors.hero.talent$${TALENT_BUFF_KEYS[name as keyof typeof TALENT_BUFF_KEYS]}.desc`, turns ?? 0);
+      if (name === 'wallOfLight') return tal('actors.hero.spells.walloflight$lightwall.desc');
+      if (name === 'hallowedGround') return tal('actors.hero.spells.hallowedground$hallowedterrain.desc');
+      if (name === 'ascended' || name === 'powerOfMany') return tal(`${CLERIC_BUFF_KEYS[name]}.desc`, turns ?? 0);
       return '';
   }
 }

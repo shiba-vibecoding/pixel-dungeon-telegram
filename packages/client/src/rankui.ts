@@ -3,7 +3,7 @@ import { audio } from './audio';
 import type { BoardEntry, BoardKind, BoardView, Profile, RunApi, SyncAnswer } from './checked';
 import { locale, t } from './i18n';
 import type { RunRecord } from './rankings';
-import { AVATAR, button, el, info, scoreTable, show, sprites, windowOf } from './screens';
+import { AVATAR, button, el, info, scoreCard, scoreTable, show, sprites, windowOf } from './screens';
 import { type RankIcon, rankIcon, trophyKind } from './trophyicons';
 
 /*
@@ -160,7 +160,18 @@ function mineRows(records: readonly RunRecord[], trophies: Profile['trophies']):
     list.append(line);
     // A run with its score table opens into it: what the points are made of (design-system rows, the table is the end screen's).
     if (record.breakdown) {
-      const more = el('div', { className: 'pd-rank-more' }, scoreTable(record.breakdown));
+      // Design v22: the run opens into a small card (parts as icons, the multipliers, the total); a tap on the card opens the whole table.
+      const card = scoreCard(record.breakdown, `${t.classes[record.heroClass]} · ${t.ranked.lv}${record.lvl}${record.won ? ' · ★' : ''}`, shortDate(record.date));
+      const full = scoreTable(record.breakdown);
+      full.hidden = true;
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+      card.onclick = (event) => {
+        event.stopPropagation();
+        audio.play('click');
+        full.hidden = !full.hidden;
+      };
+      const more = el('div', { className: 'pd-rank-more' }, card, full);
       more.hidden = true;
       line.classList.add('more');
       line.tabIndex = 0;

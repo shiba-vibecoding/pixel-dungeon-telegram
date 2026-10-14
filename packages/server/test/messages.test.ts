@@ -28,6 +28,10 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'vault', op: 'escape' })).toEqual({ type: 'vault', op: 'escape' });
     expect(sanitizeAction({ type: 'vault', op: 'beacon', item: 2 })).toEqual({ type: 'vault', op: 'beacon', item: 2 });
     expect(sanitizeAction({ type: 'vault', op: 'steal' })).toBeNull();
+    expect(sanitizeAction({ type: 'ankhBless', item: 2, x: 1 })).toEqual({ type: 'ankhBless', item: 2 });
+    expect(sanitizeAction({ type: 'ankhKeep', keep: [0, 5], x: 1 })).toEqual({ type: 'ankhKeep', keep: [0, 5] });
+    expect(sanitizeAction({ type: 'ankhKeep', keep: [0, 1, 2] })).toBeNull();
+    expect(sanitizeAction({ type: 'ankhKeep', keep: ['a'] })).toBeNull();
     expect(sanitizeAction({ type: 'skeletonKey', item: 0, target: 200 })).toEqual({ type: 'skeletonKey', item: 0, target: 200 });
     expect(sanitizeAction({ type: 'skeletonKey', item: 0, target: -1 })).toBeNull();
     expect(sanitizeAction({ type: 'blacksmith', service: 'pickaxe' })).toEqual({ type: 'blacksmith', service: 'pickaxe' });

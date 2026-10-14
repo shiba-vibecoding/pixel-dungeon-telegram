@@ -1,18 +1,10 @@
-import { type Hero, itemDef, type MobKind, type HeroClass } from '@pd/core';
+import type { Hero, HeroClass, MobKind } from '@pd/core';
 import { t } from './i18n';
 
 /*
  * The words of the death window (the forum study's U6): what killed the hero, what that means when it was not a
  * monster (hunger, bleeding, deferred damage, a trap), and what the pack held, or what the ankh took from it.
  */
-
-/** The categories the ankh leaves with the hero (combat.ts resurrect): keys, quest items and tomes. */
-const KEPT = new Set(['key', 'quest', 'tome']);
-
-/** What a hero carries that the ankh takes: the stacks in the pack, and the gold. */
-export function packWorth(hero: Hero): { items: number; gold: number } {
-  return { items: hero.items.filter((item) => !KEPT.has(itemDef(item.kind).category)).length, gold: hero.gold };
-}
 
 /** The name of what killed the hero, in the player's words: a hazard, a monster, a class, or the raw word if it is none. */
 export function causeName(killedBy: string | null | undefined): string {
@@ -26,8 +18,22 @@ export function causeNote(killedBy: string | null | undefined): string {
   return (killedBy && t.forum.death.notes[killedBy]) || '';
 }
 
-/** What the window says about the pack at the end: what it held, and that no ankh stood in the way. */
+/** The things a hero's lost backpack holds (ankh.ts LostInventory), and none if there is none. */
+export function lostPackItems(hero: Hero): number {
+  const lost = hero.lostInventory;
+  return lost ? [lost.weapon, lost.armor, lost.artifact, lost.misc, lost.ring].filter(Boolean).length + lost.items.length : 0;
+}
+
+/**
+ * What the window says of the pack at the end: what it held, where an earlier ankh's lost backpack still lies (it was
+ * never picked up), and that no ankh stood in the way.
+ */
 export function packLine(hero: Hero): string {
-  const { items, gold } = packWorth(hero);
-  return items > 0 || gold > 0 ? `${t.forum.death.carried(items, gold)} ${t.forum.death.noAnkh}` : t.forum.death.noAnkh;
+  const lost = hero.lostInventory;
+  const parts = [
+    hero.items.length > 0 || hero.gold > 0 ? t.forum.death.carried(hero.items.length, hero.gold) : '',
+    lost ? t.forum.death.packAt(lost.depth, lostPackItems(hero)) : '',
+    t.forum.death.noAnkh,
+  ];
+  return parts.filter(Boolean).join(' ');
 }

@@ -1,3 +1,4 @@
+import { pickUpLostPack } from './ankh';
 import { applyLiquidMetal, liquidMetalProblem } from './alchemy';
 import { mend, wear } from './wear';
 import { chargesKnown, identify, isIdentified, learn } from './ident';
@@ -978,6 +979,15 @@ function pickUp(ctx: Ctx, hero: Hero): void {
     } else if (outdatedCopy(hero, item)) {
       // MissileWeapon.doPickUp: a copy of a set upgraded since crumbles to dust.
       ctx.effects.push({ type: 'dust', hero: hero.id, item });
+    } else if (item.kind === 'alchemyPage') {
+      // DocumentPage.doPickUp: the page goes into the alchemy guide, not the pack.
+      const pages = (ctx.world.guidePages ??= []);
+      if (item.page && !pages.includes(item.page)) pages.push(item.page);
+      ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
+    } else if (item.kind === 'lostPack') {
+      // LostBackpack.doPickUp: its owner's belongings come back; anyone else leaves it.
+      if (pickUpLostPack(ctx, hero, item)) ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
+      else left.push(item);
     } else if (item.kind === 'petal' || item.kind === 'sandbag') {
       // DriedRose.Petal and sandBag.doPickUp: into the artifact, or left where they lie.
       if (artifactPiece(ctx, hero, item)) ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });

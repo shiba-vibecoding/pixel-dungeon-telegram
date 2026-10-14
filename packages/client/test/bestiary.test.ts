@@ -20,13 +20,15 @@ const sheet = (): Array<[string, number, number | string, string, string]> =>
   JSON.parse(readFileSync(new URL('../public/assets/mobs/bestiary.json', import.meta.url), 'utf8'));
 const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
-describe("the bestiary of design v21 against Shattered's own texts", () => {
-  it('lists the sheet in its order, 66 cells in 24 pixels', () => {
+describe("the bestiary of design v22 against Shattered's own texts", () => {
+  it('lists the sheet in its order, 69 cells in 24 pixels', () => {
     const rows = sheet();
-    expect(rows).toHaveLength(66);
+    expect(rows).toHaveLength(69);
     expect(rows.map((row) => row[0])).toEqual(bestiary.SHEET_KEYS);
-    // 11 to a row, 6 rows: the sheet is 264 x 144.
+    // 11 to a row, 7 rows: the sheet is 264 x 168; the quest's three are the first of the seventh row.
     expect(bestiary.portraitCell(65)).toEqual({ mx: 10, my: 5 });
+    expect(bestiary.portraitCell(66)).toEqual({ mx: 0, my: 6 });
+    expect(bestiary.portraitCell(68)).toEqual({ mx: 2, my: 6 });
     expect(bestiary.portraitCell(11)).toEqual({ mx: 0, my: 1 });
   });
 
@@ -41,13 +43,14 @@ describe("the bestiary of design v21 against Shattered's own texts", () => {
     });
   });
 
-  it('every entry has a cell on the sheet but the quest\'s, a group, and no monster twice', () => {
+  it('every entry has a cell on the sheet and a group, no monster twice, and the quest group holds the ghost\'s three', () => {
     const kinds = bestiary.BESTIARY_ENTRIES.map((entry) => entry.kind as MobKind);
     expect(new Set(kinds).size).toBe(kinds.length);
     for (const entry of bestiary.BESTIARY_ENTRIES) {
       expect(bestiary.BEST_GROUPS).toContain(entry.group);
-      expect(entry.n === null).toBe(entry.group === 'quest');
+      expect(entry.n).not.toBeNull();
     }
+    expect(bestiary.BESTIARY_ENTRIES.filter((entry) => entry.group === 'quest').map((entry) => [entry.kind, entry.n])).toEqual([['fetidRat', 66], ['gnollTrickster', 67], ['greatCrab', 68]]);
     // The two the design draws and the core lacks (the trap guardian, the sentry) stay out.
     expect(kinds).toHaveLength(64 + 3);
   });

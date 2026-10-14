@@ -425,6 +425,10 @@ export const ITEMS = {
   'artifact.skeletonKey': { category: 'artifact', sprite: S.ARTIFACT_KEY },
   /** Brings its bearer back to life once, at a price: everything else in the pack, and all gold. */
   ankh: { category: 'ankh', sprite: S.ANKH },
+  /** LostBackpack: what an unblessed ankh's revival left behind. */
+  lostPack: { category: 'quest', sprite: S.BACKPACK },
+  /** AlchemyPage: a page of the alchemy guide (world.guidePages), found in the laboratories. */
+  alchemyPage: { category: 'quest', sprite: S.ALCH_PAGE },
   /** The Amulet of Yendor, at the very bottom of the dungeon. */
   'quest.amulet': { category: 'quest', sprite: S.AMULET },
 } as const satisfies Record<string, ItemDef>;
@@ -469,6 +473,14 @@ export interface Item {
   returnTo?: { depth: number; pos: number };
   /** Item.unique, where the kind does not say: the vault mirror's class items (their stand-ins), never taken out of the vault. */
   unique?: boolean;
+  /** Ankh.blessed: blessed with a full waterskin, it revives in place. */
+  blessed?: boolean;
+  /** LostBackpack: whose belongings it holds (ankh.ts). */
+  owner?: string;
+  /** The plain cloth a hero wears while their armour lies in their lost backpack (ankh.ts). */
+  standIn?: boolean;
+  /** AlchemyPage.page: which page of the alchemy guide (its key, as in world.guidePages). */
+  page?: string;
   /**
    * Weapon.augment and Armor.augment (a stone of augmentation): a weapon for speed or for damage, armour for evasion
    * or for defence; absent, none.

@@ -22,8 +22,6 @@ export type SeamItem =
   | 'potionOfDivineInspiration'
   | 'scrollOfTransmutation'
   | 'scrollOfMetamorphosis'
-  /** SEAM(alchemy): the alchemy guide's pages; nothing stands in. */
-  | 'alchemyPage'
   /** SEAM(alchemy): the scroll of retribution; Pixel Dungeon's psionic blast, which it replaced, stands in. */
   | 'scrollOfRetribution'
   /** SEAM(mobs): Honeypot.ShatteredPot, the broken pot a golden bee guards; nothing stands in. */
@@ -102,9 +100,6 @@ export function seamItem(name: SeamItem): Item | null {
       return createItem('seed.blindweed');
     case 'swiftthistleSeed':
       return createItem('seed.swiftthistle');
-    // The alchemy guide's pages: their own item (inventory: picked up, the page is found).
-    case 'alchemyPage':
-      return null;
   }
 }
 

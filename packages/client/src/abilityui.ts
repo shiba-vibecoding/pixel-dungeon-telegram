@@ -1,12 +1,15 @@
 import {
   ABILITIES, ABILITY_TALENTS, type AbilityKind, abilityAim, type Action, CLASS_ABILITIES, type Hero, type Item, pointsInTalent, type Talent, TALENTS,
-  talentIcon, talentPointsAvailable, talentsOf, type World,
+  talentIcon, talentPointsAvailable, talentsOf, type World, itemSprite, type ItemKind, spellDef, type SpellId,
 } from '@pd/core';
+import { audio } from './audio';
+import { t } from './i18n';
 import { artText } from './artifacttext';
 import { ABILITY_GLOW, abilityDesc, abilityName, abilityShort, AT, capital, chargeText, talentLevels, talentTitle } from './abilitytext';
 import { itemName } from './itemtext';
 import { button, el, info, itemIcon, show, windowOf } from './screens';
-import { optionName } from './classui';
+import { cast, costTag, optionName, SPELL_ICON } from './classui';
+import { hicon, sitem } from './talentui';
 
 /*
  * The windows of the armour abilities, after the design system's ShPicks and ShTalents: the crown's pick of an ability (three cards
@@ -239,26 +242,68 @@ function showTrinity(use: AbilityUse): void {
   const { world, hero } = use;
   const set = hero.cls?.trinity ?? {};
   const forms = ['body', 'mind', 'spirit'] as const;
-  const rows = forms.flatMap((form, choice) => {
+  const V = t.v22;
+  // Design v22 (ClericTome, Trinity): a card for each form with the item it is set to and «Change» (the tome's spell of that form asks for another);
+  // the chosen card is framed in its colour, and «Take the form» uses it.
+  let chosen = forms.findIndex((form) => set[form]);
+  const cards: HTMLElement[] = [];
+  const takeButton = button(V.take, () => {
+    const form = forms[chosen];
+    const option = form && set[form];
+    if (!form || !option) return;
+    use.back();
+    if (form === 'mind' || (form === 'spirit' && AIMED_SPIRIT.has(option))) use.aim(artText('actors.hero.abilities.armorability.prompt'), chosen);
+    else use.send({ type: 'special', choice: chosen });
+  }, 'primary');
+  const select = (n: number): void => {
+    chosen = n;
+    cards.forEach((card, i) => {
+      card.classList.toggle('selected', i === n);
+      card.setAttribute('aria-checked', String(i === n));
+    });
+    takeButton.disabled = !set[forms[n]!];
+  };
+  forms.forEach((form, n) => {
+    const spell = spellDef(`${form}Form` as SpellId)!;
     const option = set[form];
-    if (!option) return [];
-    const label = capital(artText(`actors.hero.abilities.cleric.trinity$wndusetrinity.${form}`, [capital(optionName(world, option))]));
-    const run = (): void => {
-      if (form === 'mind' || (form === 'spirit' && AIMED_SPIRIT.has(option))) {
-        use.back();
-        use.aim(artText('actors.hero.abilities.armorability.prompt'), choice);
-      } else {
-        use.back();
-        use.send({ type: 'special', choice });
-      }
+    const picked = option?.startsWith('enchant:') ? 'weapon.sword' : option?.startsWith('glyph:') ? 'armor.mail' : option;
+    const change = button(V.change, () => undefined, 'small quiet');
+    change.onclick = (event) => {
+      event.stopPropagation();
+      audio.play('click');
+      cast({ world, hero, act: use.send, aim: () => undefined, back: () => showTrinity(use) }, spell);
     };
-    return [button(label, run)];
+    const card = el(
+      'article',
+      { className: `pd-form ${form}${n === chosen ? ' selected' : ''}` },
+      el(
+        'header',
+        { className: 'pd-form-head' },
+        el('span', { className: 'pd-form-ico' }, hicon(SPELL_ICON[spell.id]!)),
+        el('span', { className: 'pd-form-title' }, el('b', { textContent: V.forms[n]! }), el('small', { textContent: V.formOf[n]! })),
+        costTag(spell.cost(hero, world)),
+      ),
+      el(
+        'div',
+        { className: 'pd-form-pick' },
+        el('span', { className: 'pd-slot' }, picked ? sitem(itemSprite({ kind: picked as ItemKind, qty: 1, level: 0 }, world.run.labels)) : null),
+        el('span', { className: 'pd-form-item' }, el('b', { textContent: option ? capital(optionName(world, option)) : V.formNone })),
+        change,
+      ),
+    );
+    card.setAttribute('role', 'radio');
+    card.setAttribute('aria-checked', String(n === chosen));
+    card.onclick = () => select(n);
+    cards.push(card);
   });
+  takeButton.disabled = !set[forms[chosen] ?? 'body'];
+  const any = forms.some((form) => set[form]);
   show(
     windowOf(
-      { title: capital(abilityName('trinity')), icon: el('div', { className: 'pd-slot' }, abilityIcon('trinity', 3)), narrow: true },
-      info(artText('actors.hero.abilities.cleric.trinity$wndusetrinity.text')),
-      rows.length ? el('div', { className: 'pd-confirm-actions' }, ...rows) : info(artText('actors.hero.abilities.cleric.trinity.no_imbue')),
+      { title: capital(abilityName('trinity')), icon: el('div', { className: 'pd-slot' }, abilityIcon('trinity', 3)), onClose: use.back, className: 'pd-hero-window pd-trinity' },
+      el('div', { className: 'pd-forms' }, ...cards),
+      info(any ? V.trinityNote : artText('actors.hero.abilities.cleric.trinity.no_imbue'), 'pd-note'),
+      el('div', { className: 'pd-actions' }, takeButton),
     ),
     use.back,
   );

@@ -1,7 +1,7 @@
 import {
   adjacent, cellX, cellY, type Effect, F, terrainFlags, type Enchantment, heroById, isAlive, isTippedDart, itemDef, type ItemKind, itemSprite, LENGTH, type MobKind,
   type TrapKind, visibleCells, WIDTH, type World, type HeroClass,
-  type Look, S, isInvisible, frozenBy,
+  type Look, S, isInvisible, frozenBy, markTurns,
 } from '@pd/core';
 import { artText, capital } from './artifacttext';
 import { audio, type Sound } from './audio';
@@ -184,6 +184,11 @@ export interface Puppet {
   rest?: AnimName;
   aura?: { color: string; rays: number };
   alpha?: number;
+  /** The Duelist's afterimage: since when it fades (render.ts: 0.6, then 0.12 less every 0.6 s). */
+  afterAt?: number;
+  /** Power of Many's light ally: a flat warm silhouette with a halo; an ally it empowers glows. */
+  light?: boolean;
+  glow?: boolean;
   /** A ghoul lying crumpled (GhoulLifeLink): the ghoul that holds it up, the turns left until it rises and the turns it began with. */
   downed?: { host: string; turns: number; of: number };
   /** An ebony mimic still hidden (design v21: ebony-hidden.png), and when it showed itself. */
@@ -387,8 +392,6 @@ export class View {
   }> = [];
   /** Shattered's Chains effects: the ethereal chains thrown out from a cell to a cell (effects/Chains.java). */
   chains: Array<{ from: number; to: number; start: number; duration: number }> = [];
-  /** SpellSprite: an icon over a creature that swells in, stays and fades (effects/SpellSprite.java). */
-  spells: Array<{ id: string; frame: number; start: number; tint?: string }> = [];
   /** A leap about to be seen (the hero's new cell is not yet drawn), and creatures to fade in once they are drawn. */
   private readonly jumps = new Map<string, { duration: number; height: number }>();
   private readonly appearing = new Map<string, number>();
@@ -415,7 +418,6 @@ export class View {
     this.beams = [];
     this.stateIcons = [];
     this.chains = [];
-    this.spells = [];
     this.spellSprites = [];
     this.jumps.clear();
     this.appearing.clear();
@@ -612,6 +614,12 @@ export class View {
         this.puppets.get(mob.id)!.row = itemDef(twin.armor.kind).tier ?? 0;
         this.puppets.get(mob.id)!.prismatic = mob.kind === 'prismatic';
         this.puppets.get(mob.id)!.ally = mob.kind === 'prismatic';
+        // The afterimage is drawn at 0.6 and fades in steps over 3 s, not the mirror's 0.4.
+        if (mob.kind === 'afterImage') {
+          const afterimage = this.puppets.get(mob.id)!;
+          afterimage.invisible = false;
+          afterimage.afterAt ??= now;
+        }
         continue;
       }
       if (mob.kind === 'lightAlly') {
@@ -620,6 +628,8 @@ export class View {
         const shape = looks[Number(mob.marks?.cls ?? 0) % looks.length]!;
         place(mob.id, 'mirror', this.assets.heroes[shape], false, mob.pos, mob.hp, mob.ht, false, false, true);
         this.puppets.get(mob.id)!.sprite = heroSprite(this.assets, shape);
+        this.puppets.get(mob.id)!.invisible = false;
+        this.puppets.get(mob.id)!.light = true;
         continue;
       }
       // DM-300 supercharged and a pylon switched on look otherwise (DM300Sprite, PylonSprite).
@@ -636,6 +646,8 @@ export class View {
       // ShadowSprite is drawn with the class armour's row of the hero sheets (6); a spirit hawk flies.
       if (mob.kind === 'shadow') puppet.row = 6;
       puppet.marked = mob.deathMark !== undefined;
+      // Power of Many: the ally it empowers glows.
+      puppet.glow = mob.ally === true && markTurns(mob, 'power') > 0;
       puppet.ally = mob.ally === true && mob.kind !== 'ward' && mob.kind !== 'lotus';
       puppet.levitating = mob.kind === 'hawk' || (mob.levitating ?? 0) > 0;
       puppet.burning = (mob.burning ?? 0) > 0;
@@ -841,7 +853,7 @@ export class View {
         if (effect.cells) {
           // EndureTracker.endEnduring: the scream, CHALLENGE, and the berserk icon over the hero.
           audio.play('challenge', 1, 1, at);
-          this.spells.push({ id: hero, frame: 3, start: now });
+          this.spellSprites.push({ hero, frame: SPELL_FRAMES.berserk, start: now });
           this.float(hero, String(effect.cells[0]), COLORS.warning, now);
         } else {
           this.busy(hero, now);
@@ -1062,11 +1074,25 @@ export class View {
           this.say(t.revived(this.name(world, effect.hero)), COLORS.positive, now);
           break;
         case 'resurrected':
-          // Up again at the stairs: no sliding across the map (GameScene, RESURRECT: TELEPORT).
-          this.puppets.delete(effect.hero);
+          // Hero.die with a blessed ankh: up where they fell (SpellSprite.ANKH, TELEPORT, «The ankh explodes with
+          // life-giving energy!»); unblessed, elsewhere on the floor: no sliding across the map (InterlevelScene.RESURRECT).
+          if (!effect.blessed) this.puppets.delete(effect.hero);
           audio.play('teleport');
-          this.say(effect.hero === myId ? t.resurrected : t.resurrectedCompanion(this.name(world, effect.hero)), COLORS.highlight, now);
+          if (effect.blessed && effect.hero === myId) this.say(t.ankh.revive, COLORS.highlight, now);
+          else this.say(effect.hero === myId ? t.resurrected : t.resurrectedCompanion(this.name(world, effect.hero)), COLORS.highlight, now);
           if (effect.hero === myId) haptic('success');
+          break;
+        case 'ankhBlessed':
+          // Ankh.AC_BLESS: DRINK, «You bless the ankh with magical water.»
+          audio.play('drink');
+          if (effect.hero === myId) this.say(t.ankh.blessed, COLORS.positive, now);
+          break;
+        case 'ankhKept':
+          break;
+        case 'lostPackFound':
+          // LostBackpack.doPickUp: DEWDROP.
+          audio.play('dewdrop');
+          if (effect.hero === myId) this.say(t.ankh.found, COLORS.positive, now);
           break;
         case 'hurt':
           if (effect.depth === this.depth) this.float(effect.who, String(effect.damage), COLORS.negative, now);
@@ -2071,6 +2097,8 @@ export class View {
         case 'unstable':
           break;
         case 'masteryPotion':
+          // PotionOfMastery: SpellSprite.MASTERY over the hero (the frame of PD 1.9 on the one sheet).
+          if (this.puppets.has(effect.hero)) this.spellSprites.push({ hero: effect.hero, frame: SPELL_FRAMES.mastery, start: now });
           if (effect.hero === myId) {
             audio.play('mastery');
             this.say(itemDef(effect.item.kind).category === 'armor' ? t.alch.armorEasier : t.alch.weaponEasier, COLORS.positive, now);

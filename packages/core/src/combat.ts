@@ -1,4 +1,5 @@
 import { scoreGhostHit } from './score';
+import { ankhRevives } from './ankh';
 import { familiarise, identifyBelongings } from './ident';
 import { earnExp } from './hero';
 import { bossAfterDamage, bossBeforeDamage, bossDied, bossHoldsOn, bossRules } from './bosses/index';
@@ -855,11 +856,8 @@ export function killHero(ctx: Ctx, hero: Hero, cause: Hazard): void {
 }
 
 function heroDied(ctx: Ctx, hero: Hero): void {
-  if (hero.items.some((item) => item.kind === 'ankh')) {
-    resurrect(ctx, hero);
-    ghostSeesHero(ctx, hero, 'blessed_ankh');
-    return;
-  }
+  // Hero.die: an ankh brings the hero back (ankh.ts).
+  if (ankhRevives(ctx, hero)) return;
   ghostSeesHero(ctx, hero, 'player_killed');
   sacrifice(ctx, hero);
   hero.hp = 0;
@@ -873,29 +871,6 @@ function heroDied(ctx: Ctx, hero: Hero): void {
   }
 }
 
-/**
- * Hero.resurrect, with an ankh: back on their feet at the stairs (or where
- * they fell, on a boss's level), whole and
- * rid of every ailment, but with nothing left in the pack except keys and
- * quest items, no gold, and no experience towards the next level.
- */
-function resurrect(ctx: Ctx, hero: Hero): void {
-  const { world, level, depth } = ctx;
-  hero.items = hero.items.filter((item) => ['key', 'quest', 'tome'].includes(itemDef(item.kind).category));
-  Object.assign(hero, {
-    hp: hero.ht, gold: 0, exp: 0, killedBy: null, intent: null, ooze: -1, poison: 0, burning: 0, paralysed: 0, rooted: 0,
-    slowed: 0, weakened: 0, crippled: 0, charmed: 0, charmedBy: null, hunger: 0, deferred: 0, blind: 0, bleeding: 0, dizzy: 0,
-    levitating: 0,
-  });
-  // On a boss's level the hero gets up where they fell: the stairs may be sealed off from the fight.
-  if (!isBossDepth(depth)) {
-    leaveCell(world, level, depth, hero.pos);
-    hero.pos = freeCellNear(world, level, depth, level.entrance);
-    enterCell(level, hero.pos);
-  }
-  observe(world, hero);
-  ctx.effects.push({ type: 'resurrected', hero: hero.id });
-}
 
 /** Hero.earnExp, now in hero.ts. */
 export { earnExp };

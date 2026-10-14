@@ -225,11 +225,13 @@ describe('the death window', () => {
     expect(death.causeNote('rat')).toBe('');
   });
 
-  it('counts what the ankh takes: the stacks in the pack but not the keys, and the gold', () => {
+  it('says what the pack held, and where an ankh’s lost backpack still lies', () => {
     const { hero } = setup();
-    hero.items = [createItem('potion.healing'), createItem('key.iron'), createItem('scroll.upgrade')];
+    hero.items = [createItem('potion.healing'), createItem('scroll.upgrade')];
     hero.gold = 120;
-    expect(death.packWorth(hero)).toEqual({ items: 2, gold: 120 });
     expect(death.packLine(hero)).toContain('120');
+    hero.lostInventory = { depth: 4, pos: 10, weapon: createItem('weapon.sword'), armor: null, artifact: null, misc: null, ring: null, items: [createItem('ring.haste'), createItem('wand.fireblast')] };
+    expect(death.lostPackItems(hero)).toBe(3);
+    expect(death.packLine(hero)).toContain('4');
   });
 });

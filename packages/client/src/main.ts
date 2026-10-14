@@ -12,7 +12,7 @@ import './ui.css';
 import { loop, onResume } from './lifecycle';
 import { labelWords, runLabel } from './labels';
 import { equipRisk } from './riskyuse';
-import { causeName, causeNote, packLine, packWorth } from './deathcopy';
+import { causeName, causeNote, packLine } from './deathcopy';
 import { clearMemo, loadMemo, type Memo, memoValid, saveMemo } from './windowmemo';
 import { reloadForUpdate } from './update';
 import { preloadMapFx } from './shfx';
@@ -28,7 +28,7 @@ import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookC
 import { artText, chargeOf } from './artifacttext';
 import { armorStatus } from './abilitytext';
 import { showTalents, startAbility } from './abilityui';
-import { showMonk, weaponPrompt } from './classui';
+import { cast, optionName, quickSpellOf, showMonk, showWarden, wardenNote, weaponPrompt } from './classui';
 import { glowOf } from './gearfx';
 import { fx } from './fx';
 import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
@@ -51,7 +51,7 @@ import { stepSound } from './sfx';
 import {
   aheadOf, DangerMeter, fadeFor, type FightSeen, MUSIC_BOSSES, placeTune, sameTune, TITLE, VICTORY, withDanger,
 } from './soundtrack';
-import { type ArenaHud, type BuffName, heroBuffs, Hud, type HudStatus, MOB_BUFFS, type QuickState } from './hud';
+import { type ArenaHud, type BuffName, CLERIC_BUFFS, COMBO_FRAMES, heroBuffs, Hud, type HudStatus, MOB_BUFFS, type QuickState, TALENT_BUFFS } from './hud';
 import { arenaBest, recordArena, showArenaEnd, showArenaReward } from './arenaui';
 import { ArenaView } from './arenaview';
 import { levelRegion } from './sprites';
@@ -60,14 +60,15 @@ import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
 import { type Camera, render } from './render';
 import type { GhostLine, ImpLine } from '@pd/core';
 import { LevelTiles } from './tiles';
-import { feelingLine, lt, plain, spawnerWarning, trapWarning } from './levelnames';
+import { feelingLine, lt, plain, spawnerWarning, trapText, trapWarning } from './levelnames';
 import { levelFx } from './levelfx';
 import { mineTarget, setSmithToast, type SmithEnv, smithBranch, talkWithBlacksmith } from './blacksmith-ui';
 import {
-  armorTier, closeOverlay, el, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showHelp, showHero,
-  refreshBackpack, reopenWindow, windowState, type WindowState, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, info, show, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice, windowOf,
+  armorTier, closeOverlay, el, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showDangerConfirm, showHelp, showHero,
+  refreshBackpack, reopenWindow, windowState, type WindowState, quickAction, showHistory, showMenu, showRankings, showResurrect, showAmulet, showQuest, showRunEnd, showBadges, info, show, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice, windowOf,
 } from './screens';
 import { rankingBlock, showBoards } from './rankui';
+import { WARDEN_PLANTS } from './i18n-v22';
 import { type Camp, campClasses } from './camp';
 import { type DailyRulesView, showCamp } from './campui';
 import { showMail, unclaimed } from './mailui';
@@ -525,9 +526,6 @@ function enterGame(next: Session, roomId: string | null, welcome = t.welcome): v
     showHelp(hideOverlay);
   }
 }
-
-/** The pack as the last frame left it: what an ankh's rising takes is said from this. */
-let packSeen = { items: 0, gold: 0 };
 
 /** The current run is the daily dungeon, whose results go to the leaderboard. */
 let dailyRun = false;
@@ -1006,7 +1004,7 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
 let aim:
   | { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key'; choice?: number }
   /** An action of the classes that wants a target: a spell cast at a cell, a weapon's ability. */
-  | { index: -1; kind: 'class'; make: (cell: number) => Action }
+  | { index: -1; kind: 'class'; make: (cell: number) => Action; /** The action indicator's button that asked (its frame blinks while aiming). */ from?: 'weapon' }
   | { index: -1; kind: 'artifact'; action: ArtifactAction }
   /** A subclass's action that wants a target: a combo move, the assassin's prepared strike. */
   | { index: -1; kind: 'ability'; ability: 'combo'; move: core.ComboMove }
@@ -1522,6 +1520,12 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
     }
     if (effect.type === 'bossSlain' && effect.depth === bossFight?.depth) bossFight = null;
     if (effect.type === 'ghost' && effect.hero === myId) talkWithGhost(effect.line, effect.questType);
+    // WndResurrect: an unblessed ankh's revival asks which two things the hero keeps.
+    if (effect.type === 'resurrected' && effect.hero === myId && effect.blessed === false) {
+      const world = session?.world;
+      const me = world && heroById(world, myId);
+      if (world && me?.ankhChoice) showResurrect(world, me, (keep) => send({ type: 'ankhKeep', keep }, performance.now()));
+    }
     if (effect.type === 'ratKing' && effect.hero === myId) talkWithRatKing(effect.line);
     if (effect.type === 'wandmaker' && effect.hero === myId) talkWithWandmaker(effect.line, effect.questType);
     if (effect.type === 'imp' && effect.hero === myId) talkWithImp(effect.line);
@@ -1942,19 +1946,18 @@ function tapCell(cell: number, quiet = false): void {
     }
     walk.queue = [];
     held.code = '';
-    const trap = peril.danger === 'trap';
-    // A trap is named, and what it does is said in Shattered's own words (the forum study's U5).
-    const kind = trap ? level.traps?.find((known) => known.pos === way[0])?.kind : undefined;
-    const warn = kind ? trapWarning(kind) : null;
-    showConfirm(
-      warn?.name ?? (trap ? t.danger.trap : t.danger.fire), warn ? t.forum.trapAsk(warn.effect) : trap ? t.danger.trapQuestion : t.danger.fireQuestion,
-      t.danger.yes, t.danger.no,
+    // Design v22 (MisclickConfirm): the trap's own name and what it does, or the flames, with «Don't ask again».
+    const trap = peril.danger === 'trap' ? core.trapAt(level, way[0]!) : undefined;
+    const trapWords = trap ? trapText(trap.kind) : undefined;
+    showDangerConfirm(
+      peril.danger,
+      peril.danger === 'trap' ? { name: trapWords?.name ?? t.danger.trap, text: (trap && trapWarning(trap.kind)?.effect) || trapWords?.desc || t.danger.trapQuestion } : { text: t.v22.fireNote },
       () => {
         const now = session?.world && heroById(session.world, session.myId);
         if (now && isAlive(now) && now.pos === me.pos) walk.queue = way;
       },
+      () => confirmDanger.set(false),
       hideOverlay,
-      { label: t.danger.never, onPress: () => confirmDanger.set(false) },
     );
     return;
   }
@@ -2008,6 +2011,11 @@ function showBuff(name: BuffName, turns?: number): void {
           // The armour abilities': Endure's stored blows, Nature's Power.
           : name === 'endure' && me?.abil?.endure ? artText('actors.hero.abilities.warrior.endure$enduretracker.desc', [me.abil.endure.damageBonus, me.abil.endure.hitsLeft])
           : name === 'naturesPower' ? artText('actors.hero.abilities.huntress.naturespower$naturespowertracker.desc', [turns ?? 0])
+          // Trinity's body and spirit forms name what they lend (BodyForm.BodyFormBuff.desc, SpiritForm.SpiritFormBuff.desc).
+          : name === 'bodyForm' && me?.cls?.bodyEffect && session?.world
+            ? artText('actors.hero.spells.bodyform$bodyformbuff.desc', [optionName(session.world, me.cls.bodyEffect), turns ?? 0])
+          : name === 'spiritForm' && me?.cls?.spiritRing && session?.world
+            ? artText('actors.hero.spells.spiritform$spiritformbuff.desc', [itemName(session.world, me.cls.spiritRing), turns ?? 0])
           // The talents' and subclasses': Shattered's descriptions.
           : (me && talentBuffInfo(me, name, turns)) || null;
   // The monsters' curses (design v21, .pd-buff-window): their icon, Shattered's words and the turns left.
@@ -2021,6 +2029,24 @@ function showBuff(name: BuffName, turns?: number): void {
       windowOf(
         { title: capitalize(t.buffs[name]), icon, onClose: hideOverlay, narrow: true, className: 'pd-buff-window' },
         ...t.mobBuffDesc[key].split('\n\n').map((line) => info(fill(line, turns ?? 0))),
+      ),
+      hideOverlay,
+    );
+    return;
+  }
+  // The Cleric's statuses, the talents' and the combo's have icons of their own (design v22): the curses' window, with the turns left.
+  const sheet: readonly [string, number] | null = CLERIC_BUFFS[name] !== undefined ? ['pd-cbuff', CLERIC_BUFFS[name]!]
+    : TALENT_BUFFS[name] !== undefined ? ['pd-tlbuff', TALENT_BUFFS[name]!]
+    : name === 'comboChain' && me && core.comboOf(me) ? ['pd-cmbuff', COMBO_FRAMES.indexOf(core.highestMove(core.comboOf(me)!) ?? 'none')] : null;
+  if (sheet && long) {
+    walk.reset();
+    const icon = el('i', { className: `${sheet[0]} large` });
+    icon.style.setProperty('--ix', String(sheet[1]));
+    show(
+      windowOf(
+        { title: capitalize(t.buffs[name]), icon, onClose: hideOverlay, narrow: true, className: 'pd-buff-window' },
+        ...long.split('\n\n').map((line) => info(line)),
+        turns ? info(t.turnsLeft(turns), 'pd-note') : null,
       ),
       hideOverlay,
     );
@@ -2064,7 +2090,7 @@ function weaponAbilityNow(me: Hero, which: 'weapon' | 'second'): void {
   const weapon = which === 'second' ? me.secondWep : me.weapon;
   if (!weapon) return;
   if (core.abilityAims(weapon)) {
-    aim = { index: -1, kind: 'class', make: (cell) => ({ type: 'weaponAbility', which, cell }) };
+    aim = { index: -1, kind: 'class', make: (cell) => ({ type: 'weaponAbility', which, cell }), from: 'weapon' };
     toast(weaponPrompt(weapon.kind));
   } else send({ type: 'weaponAbility', which }, performance.now());
 }
@@ -2103,6 +2129,30 @@ function useAction(kind: ActionKind): void {
         },
       });
       break;
+    // The Duelist's weapon ability: the button again while aiming cancels it (design v22, ActionStates).
+    case 'weapon':
+      if (aim && aim.kind === 'class' && aim.from === 'weapon') aim = null;
+      else weaponAbilityNow(me, 'weapon');
+      break;
+    // The Cleric's quick spell (HolyTome.quickSpell): cast without opening the tome.
+    case 'quick': {
+      const spell = quickSpellOf(world, me);
+      if (spell) {
+        cast({
+          world, hero: me, back: hideOverlay,
+          act: (action) => {
+            hideOverlay();
+            send(action, performance.now());
+          },
+          aim: (prompt, make) => {
+            hideOverlay();
+            aim = { index: -1, kind: 'class', make };
+            toast(prompt);
+          },
+        }, spell);
+      }
+      break;
+    }
     case 'swap': send({ type: 'swap' }, performance.now()); break;
     case 'stance': send({ type: 'stance' }, performance.now()); break;
   }
@@ -2116,7 +2166,7 @@ function openHero(): void {
   aim = null;
   showHero({
     hero: me, world, act: (action) => send(action, performance.now()), tab: newTalents ? 'talents' : 'stats',
-    buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
+    buffs: heroBuffs(me, world), onClose: hideOverlay, skin: session?.looks[me.id]?.skin, onWarden: () => showWarden(openHero),
     looks: looksRows(me.heroClass, (shelf) => showMart({ heroClass: me.heroClass, shelf, onClose: openHero })),
   });
   newTalents = false;
@@ -2652,7 +2702,26 @@ function examineCell(pos: number): void {
   const well = level.map[pos] === T.WELL ? level.wells.find((w) => w.pos === pos) : undefined;
   // Level.tileDesc: and what covers it (Web.tileDesc).
   const webbed = seen && world.floors[me.depth]?.gas?.web?.some(([cell]) => cell === pos);
+  // A Warden is told what the plant gives her (design v22, WardenPlants): the plant's description, and under it the note.
+  if (plant && me.subclass === 'warden' && Object.hasOwn(WARDEN_PLANTS, plant.kind)) {
+    show(
+      windowOf(
+        { title: capitalize(name), icon: el('div', { className: 'pd-slot' }, wardenPlantIcon(plant.kind)), onClose: hideOverlay, narrow: true, className: 'pd-plant-window' },
+        info(desc),
+        wardenNote(plant.kind as keyof typeof WARDEN_PLANTS),
+      ),
+      hideOverlay,
+    );
+    return;
+  }
   showInfo(name, [well ? wellText(well.water) : desc, ...(webbed ? [t.webHere] : []), ...blobTexts(world, me.depth, pos, seen === true)], hideOverlay);
+}
+
+/** A plant's picture (warden-plants.png) for a window's head. */
+function wardenPlantIcon(kind: string): HTMLElement {
+  const icon = el('i', { className: 'pd-wplant' });
+  icon.style.setProperty('--ix', String(WARDEN_PLANTS[kind as keyof typeof WARDEN_PLANTS] ?? 0));
+  return icon;
 }
 
 function startResting(): void {
@@ -3234,14 +3303,9 @@ function tick(now: number): void {
     scenery.effects(effects, me.depth, vnow);
     handleMyEffects(effects, session.myId);
     if (world.arena) handleArenaEffects(effects, world, me, vnow);
-    // The ankh brought the hero back, but not the pack (combat.ts resurrect): say what stayed behind (deathcopy.ts).
-    if (effects.some((e) => e.type === 'resurrected' && e.hero === mine)) {
-      toast(t.forum.death.ankhLost(packSeen.items, packSeen.gold), { tone: 'warn' });
-      view.say(t.forum.death.ankhLost(packSeen.items, packSeen.gold), '#ff8800');
-    }
+    // An unblessed ankh got the hero up elsewhere: say where the rest of their things are (ankh.ts; deathcopy.ts).
+    if (effects.some((e) => e.type === 'resurrected' && e.hero === mine && e.blessed === false)) view.say(t.forum.death.packLeft, '#ff8800');
   }
-  // What the pack holds, for the next frame's resurrection to say what it took.
-  packSeen = packWorth(me);
   // An online session learns my class with its first snapshot: wear the look for it.
   if (!session.looks[session.myId] && session.mode === 'solo') putOnLook();
   view.looks = session.looks;
@@ -3498,7 +3562,7 @@ function tick(now: number): void {
     : waitingFor.length > 0 ? { kind: 'waiting', text: t.waitingShort, names: waitingFor }
     : holdingFelt ? { kind: 'waiting', text: t.partyWaitsForYou }
     : null;
-  actionInd.update(world, me);
+  actionInd.update(world, me, aim && aim.kind === 'class' ? aim.from : undefined);
   hud.update(
     {
       me,
@@ -3506,7 +3570,7 @@ function tick(now: number): void {
       online: session.online,
       status,
       log: view.log,
-      buffs: heroBuffs(me),
+      buffs: heroBuffs(me, world),
       examining,
       newLoot,
       looks: session.looks,

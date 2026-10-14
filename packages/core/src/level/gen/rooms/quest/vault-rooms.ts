@@ -216,7 +216,8 @@ export class VaultEntranceRoom extends VaultRoom {
 /**
  * VaultMirror.createReward: the hero class's own item, better (on a stream of its own, as some classes
  * draw and some do not). SEAM(gear/wands/artifacts): the warrior's broken seal +1 with a glyph; the
- * mage's staff +3 (magic missile), enchanted; the rogue's cloak of shadows +8; the huntress's spirit bow, enchanted. The
+ * mage's staff +3 (magic missile), enchanted; the rogue's cloak of shadows +8; the huntress's spirit bow, enchanted; the
+ * duelist's mirror sword (a greatsword +3, enchanted); the cleric's holy tome +8. The
  * seal, the cloak and the bow are one of a kind (Item.unique): never taken out of the vault; the staff's
  * wand may be (EscapeCrystal).
  */
@@ -241,8 +242,8 @@ export function mirrorReward(heroClass: HeroClass): Item {
         reward = { ...createItem('spiritBow'), enchant: randomEnchantment(Random.rng), unique: true };
         break;
       case 'duelist':
-        // SEAM(gear): Shattered's MirrorSword +3, enchanted; the duelist's rapier stands in.
-        reward = { ...createItem('weapon.rapier', 1, 3), enchant: randomEnchantment(Random.rng) };
+        // VaultMirror.MirrorSword: a greatsword +3, enchanted, one of a kind (never taken out of the vault).
+        reward = { ...createItem('weapon.greatsword', 1, 3), enchant: randomEnchantment(Random.rng), unique: true };
         break;
       case 'cleric':
         // The cleric's holy tome +8.

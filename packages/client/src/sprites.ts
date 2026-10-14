@@ -54,8 +54,6 @@ export interface Assets {
   spd: Record<SpdSheet, HTMLImageElement>;
   /** Shattered's effects.png (Effects.get): the chains among them. */
   effects: HTMLImageElement;
-  /** Shattered's spell_icons.png (SpellSprite): 16 by 16 icons that swell in over a creature. */
-  spells: HTMLImageElement;
 }
 
 const anim = (fps: number, frames: number[], loop = false): Animation => ({ fps, frames, loop });
@@ -443,7 +441,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     'undead', 'tiles4', 'water4',
     'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'warrior', 'mage', 'rogue', 'ranger', 'duelist', 'cleric', 'ghost',
     'shopkeeper', 'wandmaker', 'spd/ghost', 'spd/effects',
-    'icons', 'items', 'plants', 'spd/wards', 'spd/guardian', 'spd/lotus', 'spd/spirit_hawk', 'spd/ninja_log', 'spd/spell_icons',
+    'icons', 'items', 'plants', 'spd/wards', 'spd/guardian', 'spd/lotus', 'spd/spirit_hawk', 'spd/ninja_log',
     // Shattered's bosses and their levels' custom tiles.
     'spd/goo', 'spd/tengu', 'spd/dm300', 'spd/pylon', 'spd/king', 'spd/yog', 'spd/yog_fists', 'spd/larva',
     'spd/sewer_boss', 'spd/prison_exit', 'spd/caves_boss', 'spd/city_boss', 'spd/halls_special',
@@ -530,7 +528,6 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     items: images.items,
     plants: images.plants,
     effects: images['spd/effects'],
-    spells: images['spd/spell_icons'],
   };
 }
 

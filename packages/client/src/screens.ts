@@ -1,5 +1,5 @@
 import {
-  escapeScore, keepable, ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
+  ankhChoices, escapeScore, keepable, ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
   knownIn, MUST_THROW, TARGETED_SPELLS,
   type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass, HERO_CLASSES,
   type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
@@ -15,7 +15,7 @@ import { type ChoiceOption, showChoice } from './alchemyui';
 import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse, WEAPON_SLOT } from './quickslot';
 import { ARENA_BADGES, BADGES, RETIRED, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
 import { BUFF_ICONS, type BuffEntry, type BuffName } from './hud';
-import { capitalize, fill, fmt, locale, t } from './i18n';
+import { capitalize, fill, fmt, lang, locale, t } from './i18n';
 import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
 import { mart } from './mart';
 import { confirmRisky, drinkRisk, enchantLossChance, equipRisk, targetEffect } from './riskyuse';
@@ -113,6 +113,45 @@ export function show(content: HTMLElement, onClose: (() => void) | null, bare = 
   root.classList.add('open');
   root.classList.toggle('bare', bare);
   sprites(content);
+}
+
+/**
+ * WndResurrect: two things to keep, the weapon and the armour to begin with; any of the hero's belongings (or what
+ * lies in the backpack left behind) but an ankh or a bag. It wants an answer: no cross.
+ */
+export function showResurrect(world: World, hero: Hero, onKeep: (keep: number[]) => void): void {
+  const choices = ankhChoices(hero);
+  const keepable = (item: Item): boolean => item.kind !== 'ankh' && itemDef(item.kind).category !== 'bag';
+  let picked = [hero.weapon, hero.armor].map((item) => (item ? choices.indexOf(item) : -1)).filter((i) => i >= 0);
+  const grid = el('div', { className: 'pd-grid' });
+  const draw = (): void => {
+    grid.replaceChildren(...choices.map((item, i) => {
+      const node = slot(world, item, { hero });
+      if (picked.includes(i)) node.classList.add('equipped');
+      if (!keepable(item)) node.style.opacity = '0.45';
+      else node.onclick = () => {
+        audio.play('click');
+        picked = picked.includes(i) ? picked.filter((p) => p !== i) : [...picked, i].slice(-2);
+        draw();
+      };
+      return node;
+    }));
+  };
+  draw();
+  const done = (): void => {
+    hideOverlay();
+    onKeep(picked);
+  };
+  const open = (): void => show(windowOf(
+    { title: t.ankh.title, icon: slot(world, { kind: 'ankh', qty: 1, level: 0 } as Item) },
+    info(t.ankh.message),
+    grid,
+    button(t.ankh.confirm, () => {
+      if (picked.length >= 2) done();
+      else showConfirm(t.ankh.warnTitle, t.ankh.warnBody, t.ankh.warnYes, t.ankh.warnNo, done, open);
+    }, 'primary'),
+  ), null);
+  open();
 }
 
 export function hideOverlay(): void {
@@ -546,6 +585,8 @@ export interface HeroOptions {
   buffs: readonly BuffEntry[];
   /** The armour ability's tier 4 talents (abilityui.ts), if the hero has an ability. */
   onTalents?(): void;
+  /** The Warden's plants (classui.ts showWarden). */
+  onWarden?(): void;
   onClose(): void;
 }
 
@@ -557,35 +598,39 @@ export function stats(rows: ReadonlyArray<readonly [string, string, string?]>): 
   );
 }
 
+/** The five parts of a score, in Shattered's order, with the cap that gilds each (HIGHLIGHT). */
+const SCORE_PARTS = ['progress', 'treasure', 'explore', 'bosses', 'quests'] as const;
+
 /**
- * WndScoreBreakdown: Progression, Treasure, Exploration, Bosses, Quests, then the multipliers (shown when above 1) and the total.
- * A part at its cap is gold. Under it, a fold with what each part counts, in Shattered's own words.
+ * WndScoreBreakdown (design v22, ScoreTable): the five parts, each with its icon, what it counts and « / cap »; a part at its cap is framed in
+ * gold with a «maximum» plate. Then the multipliers (shown when above 1) and the total. Under it, a fold with what each part counts, in
+ * Shattered's own words.
  */
 export function scoreTable(b: ScoreBreakdown): HTMLElement {
   const n = (value: number): string => value.toLocaleString(locale);
-  const x = (value: number): string => `${Number(value.toFixed(2)).toLocaleString(locale)}×`;
+  const x = (value: number): string => `×${Number(value.toFixed(2)).toLocaleString(locale)}`;
   const s = t.scoring;
-  const rows: Array<{ label: string; value: string; tone?: string; from?: string }> = [
-    { label: s.progress[0], value: n(b.progress), ...(b.progress >= HIGHLIGHT.progress ? { tone: 'gold' } : {}) },
-    {
-      label: s.treasure[0], value: n(b.treasure), from: s.treasureFrom(b.gold, n(b.items)),
-      ...(b.treasure >= HIGHLIGHT.treasure ? { tone: 'gold' } : {}),
-    },
-    {
-      label: s.explore[0], value: n(b.explore), from: b.floors > 0 ? s.exploreFrom(b.clean, b.floors) : '',
-      ...(b.explore >= HIGHLIGHT.explore ? { tone: 'gold' } : {}),
-    },
-    { label: s.bosses[0], value: n(b.bosses), ...(b.bosses >= HIGHLIGHT.bosses ? { tone: 'gold' } : {}) },
-    { label: s.quests[0], value: n(b.quests), ...(b.quests >= HIGHLIGHT.quests ? { tone: 'gold' } : {}) },
-  ];
-  if (b.winMultiplier > 1) rows.push({ label: s.win, value: x(b.winMultiplier) });
-  if (b.chalMultiplier > 1) rows.push({ label: s.challenge, value: x(b.chalMultiplier) });
-  rows.push({ label: s.total, value: n(b.total), tone: 'ally' });
+  const rows = SCORE_PARTS.map((part, i) => {
+    const max = b[part] >= HIGHLIGHT[part];
+    const from = part === 'treasure' ? s.treasureFrom(b.gold, n(b.items)) : part === 'explore' && b.floors > 0 ? s.exploreFrom(b.clean, b.floors) : t.v22.scoreShort[i]!;
+    const icon = el('i', { className: 'pd-spart' });
+    icon.style.setProperty('--ix', String(i));
+    return el(
+      'div',
+      { className: `pd-score-row${max ? ' max' : ''}` },
+      icon,
+      el('span', { className: 'pd-score-name' }, el('b', { textContent: s[part][0] }), el('small', { textContent: from })),
+      el('span', { className: 'pd-score-val' }, max ? el('span', { className: 'pd-max', textContent: t.v22.max }) : null, el('b', { textContent: n(b[part]) }), el('small', { textContent: `/ ${n(HIGHLIGHT[part])}` })),
+    );
+  });
+  const mul = (label: string, value: number): HTMLElement => el('div', { className: 'pd-score-mul' }, el('span', { textContent: label }), el('b', { textContent: x(value) }));
   const table = el(
-    'dl',
-    { className: 'pd-stats pd-score' },
-    ...rows.map((row) =>
-      el('div', {}, el('dt', {}, row.label, row.from ? el('small', { textContent: row.from }) : null), el('dd', { className: row.tone ?? '', textContent: row.value }))),
+    'div',
+    { className: 'pd-score' },
+    ...rows,
+    b.winMultiplier > 1 ? mul(s.win, b.winMultiplier) : null,
+    b.chalMultiplier > 1 ? mul(s.challenge, b.chalMultiplier) : null,
+    el('div', { className: 'pd-score-total' }, el('span', { textContent: s.total }), el('b', { textContent: n(b.total) })),
   );
   const notes = el(
     'details',
@@ -594,6 +639,34 @@ export function scoreTable(b: ScoreBreakdown): HTMLElement {
     ...[s.progress, s.treasure, s.explore, s.bosses, s.quests].map(([label, text]) => el('p', {}, el('b', { textContent: `${label}. ` }), text)),
   );
   return el('div', { className: 'pd-score-table' }, table, notes);
+}
+
+/**
+ * The small card of a run in «Mine» (design v22): its title and date, the five parts as icons with thousands (a part at its cap framed in gold),
+ * the multipliers and the total. A tap on it opens the whole table.
+ */
+export function scoreCard(b: ScoreBreakdown, title: string, date: string): HTMLElement {
+  const n = (value: number): string => value.toLocaleString(locale);
+  const x = (value: number): string => `×${Number(value.toFixed(2)).toLocaleString(locale)}`;
+  const k = lang === 'ru' ? 'к' : 'k';
+  const mini = el(
+    'ul',
+    { className: 'pd-score-mini' },
+    ...SCORE_PARTS.map((part, i) => {
+      const icon = el('i', { className: 'pd-spart' });
+      icon.style.setProperty('--ix', String(i));
+      const node = el('li', { className: b[part] >= HIGHLIGHT[part] ? 'max' : '', title: t.scoring[part][0] }, icon, el('span', { textContent: `${Math.round(b[part] / 1000)}${k}` }));
+      return node;
+    }),
+  );
+  const mults = [b.winMultiplier > 1 ? x(b.winMultiplier) : '', b.chalMultiplier > 1 ? x(b.chalMultiplier) : ''].filter(Boolean).join(' · ');
+  return el(
+    'article',
+    { className: 'pd-score-card' },
+    el('header', {}, el('b', { textContent: title }), el('time', { textContent: date })),
+    mini,
+    el('footer', {}, el('span', { textContent: mults }), el('b', { textContent: n(b.total) })),
+  );
 }
 
 /** WndHero: the hero's numbers and what currently ails or helps them. */
@@ -619,6 +692,7 @@ export function showHero(options: HeroOptions): void {
       ]),
       // The armour ability's tier 4 talents, with a gold plus while there are points to put in them.
       hero.ability && options.onTalents && button(`${abilityLabel(hero.ability)} · ${AT.talentsShort}`, options.onTalents, talentPointsAvailable(hero, 4) > 0 ? 'primary' : ''),
+      hero.subclass === 'warden' && options.onWarden ? button(t.v22.wardenButton, options.onWarden) : null,
       el('h3', { className: 'pd-heading', textContent: t.conditions }),
       ...(buffs.length > 0 ? buffs : [info(t.noConditions, 'pd-note')]),
       options.looks && el('h3', { className: 'pd-subhead', textContent: t.looksTitle }),
@@ -925,6 +999,58 @@ export function showConfirm(
           extra.onPress();
           if (extra.then) onYes();
         }, 'quiet wide')),
+      ),
+    ),
+    onClose,
+  );
+}
+
+/**
+ * Mis-tap protection's question (design v22, MisclickConfirm): the narrow window of the chasm's question with a picture on top (the trap on
+ * its tile, or the flame), what it will do in a line, and «Don't ask again»; ticked, it says where the settings bring the question back.
+ * «Step» goes on (and, ticked, turns the question off for good); «No» stays put.
+ */
+export function showDangerConfirm(
+  danger: 'trap' | 'fire', what: { name?: string; text: string }, onStep: () => void, onNever: () => void, onClose: () => void,
+): void {
+  const V = t.v22;
+  const art = danger === 'trap' ? el('i', { className: 'pd-confirm-ico trap' }) : el('i', { className: 'pd-tbuff2 large' });
+  if (danger === 'fire') {
+    // large_buffs.png, frame 2: burning.
+    art.style.setProperty('--ix', '2');
+    art.style.setProperty('--iy', '0');
+  }
+  let ticked = false;
+  const note = el('small', { textContent: V.dontAskNote });
+  note.hidden = true;
+  const check = el('button', { className: 'pd-check small', type: 'button' }, el('i'), el('span', {}, el('b', { textContent: V.dontAsk }), note));
+  check.setAttribute('role', 'checkbox');
+  check.setAttribute('aria-checked', 'false');
+  check.onclick = () => {
+    audio.play('click');
+    ticked = !ticked;
+    check.setAttribute('aria-checked', String(ticked));
+    note.hidden = !ticked;
+  };
+  const text = el('p', { className: 'pd-info center' });
+  if (what.name) text.append(el('b', { textContent: `${what.name}.` }), ' ');
+  text.append(what.text);
+  show(
+    windowOf(
+      { narrow: true, className: 'pd-confirm' },
+      el('div', { className: 'pd-confirm-art' }, art),
+      el('h2', { className: 'pd-heading center', textContent: danger === 'trap' ? V.trapQ : V.fireQ }),
+      text,
+      check,
+      el(
+        'div',
+        { className: 'pd-row' },
+        button(V.stay, onClose, 'quiet'),
+        button(V.step, () => {
+          onClose();
+          if (ticked) onNever();
+          onStep();
+        }, 'primary'),
       ),
     ),
     onClose,
@@ -1832,6 +1958,10 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
       }
     }
     if (category === 'food' || item.kind === 'quest.fish') use(t.eat, () => act({ type: 'use', item: index }));
+    // Ankh.AC_BLESS: with the waterskin full.
+    if (item.kind === 'ankh' && !item.blessed && hero.items.some((other) => other.kind === 'waterskin' && (other.volume ?? 0) >= 20)) {
+      use(t.ankh.bless, () => act({ type: 'ankhBless', item: index }));
+    }
     if (category === 'torch') use(t.light, () => act({ type: 'use', item: index }));
     if (category === 'tome') {
       // TengusMask.AC_WEAR: the choice of a way (talentui.ts); the old Tome of Mastery too.

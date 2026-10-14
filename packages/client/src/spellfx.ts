@@ -1,6 +1,7 @@
 /*
  * SpellSprite (effects/SpellSprite.java): a small icon that fades in over a character, stays a moment, fades out: food eaten,
- * a charge, rage, haste, sight. The frames are Shattered's spell_icons.png (16 px); `tint` is hardlight(r, g, b).
+ * a charge, rage, haste, sight. The frames are one sheet (design v22, heroes/spell-sprites.png, 16 px): Shattered's eight and the book of PD 1.9's mastery;
+ * `tint` is hardlight(r, g, b).
  */
 
 const SIZE = 16;
@@ -9,8 +10,8 @@ const STATIC = 800;
 const FADE_OUT = 400;
 export const SPELL_LIFE = FADE_IN + STATIC + FADE_OUT;
 
-/** The frames of spell_icons.png (SpellSprite.FOOD...PURITY). */
-export const SPELL_FRAMES = { food: 0, map: 1, charge: 2, berserk: 3, ankh: 4, haste: 5, vision: 6, purity: 7 } as const;
+/** The frames of spell-sprites.png (SpellSprite.FOOD...PURITY, then PD 1.9's MASTERY). */
+export const SPELL_FRAMES = { food: 0, map: 1, charge: 2, berserk: 3, ankh: 4, haste: 5, vision: 6, purity: 7, mastery: 8 } as const;
 export type SpellName = keyof typeof SPELL_FRAMES;
 
 export interface Spell {
@@ -26,7 +27,7 @@ const tinted = new Map<string, HTMLCanvasElement>();
 function sheet(): HTMLImageElement | null {
   if (!image) {
     image = new Image();
-    image.src = new URL(`${import.meta.env.BASE_URL}assets/spd/spell_icons.png`, document.baseURI).href;
+    image.src = new URL(`${import.meta.env.BASE_URL}assets/heroes/spell-sprites.png`, document.baseURI).href;
   }
   return image.complete && image.naturalWidth > 0 ? image : null;
 }

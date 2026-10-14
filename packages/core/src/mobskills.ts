@@ -24,7 +24,7 @@ import { teleportChar } from './cursed';
 import { randomArmor, randomWeapon } from './gear';
 import { weaponRch } from './weapons';
 import { shieldUp } from './status';
-import { burst } from './traps';
+import { burst, mobPress } from './traps';
 import { looseItems } from './bags';
 import { isBossDepth } from './level/builder';
 import { adjacent, cellX, cellY, distance, LENGTH, trueDistance, NEIGHBOURS4, NEIGHBOURS8, WIDTH } from './level/geometry';
@@ -1326,8 +1326,9 @@ function ripperHunt(ctx: Ctx, mob: Mob, enemy: Char | undefined, enemyInFov: boo
     }
     mob.pos = end;
     leaveCell(ctx.world, ctx.level, ctx.depth, from);
-    enterCell(ctx.level, end);
     mob.leapPos = -1;
+    // Level.occupyCell: a bounce may land it over a chasm (it falls), on a trap or in tall grass.
+    mobPress(ctx, mob);
     return true;
   }
   if (!enemy || !enemyInFov) return false;

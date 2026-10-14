@@ -5,6 +5,7 @@ import { CLS_EN, CLS_RU } from './i18n-classes';
 import { TAL_EN, TAL_RU } from './i18n-talents';
 import { FORUM_EN, FORUM_RU } from './i18n-forum';
 import { REL_EN, REL_RU } from './i18n-release';
+import { V22_BUFFS_EN, V22_BUFFS_RU, V22_EN, V22_RU } from './i18n-v22';
 import { ABIL_EN, ABIL_RU } from './i18n-abilities';
 
 /* Interface text in Russian and English; the language follows Telegram or the browser. */
@@ -983,10 +984,10 @@ const talentBuffNames = (table: Record<string, string>) => ({
   berserk: table['actors.buffs.berserk.angered']!, berserking: table['actors.buffs.berserk.berserk']!, exhausted: table['actors.buffs.berserk.recovering']!,
   comboChain: table['actors.buffs.combo.name']!, momentum: table['actors.buffs.momentum.momentum']!, freerunning: table['actors.buffs.momentum.running']!,
   preparation: table['actors.buffs.preparation.name']!, sniperMark: table['actors.buffs.snipersmark.name']!, holdFast: table['actors.buffs.holdfast.name']!,
-  trackerBlow: table['actors.hero.talent$provokedangertracker.name']!, cooldown: table['actors.hero.talent$improvisedprojectilecooldown.name']!,
+  trackerBlow: table['actors.hero.talent$provokedangertracker.name']!,
   wandEmpower: table['actors.buffs.wandempower.name']!, enhancedRings: table['actors.hero.talent.enhanced_rings.title']!,
   surge: table['actors.hero.talent.strongman.title']!, revealedArea: table['actors.hero.talent.seer_shot.title']!,
-  parry: table['actors.buffs.combo$combomove.parry.name']!, followup: table['actors.hero.talent$followupstriketracker.name']!,
+  parry: table['actors.buffs.combo$combomove.parry.name']!,
 });
 
 /** The artifacts' names, from Shattered's own texts (i18n-artifacts.ts). */
@@ -1514,7 +1515,9 @@ const en = {
     'artifact.skeletonKey': 'skeleton key',
     'key.skeleton': 'worn key',
     'mask.tengu': "Tengu's mask",
-    ankh: 'Ankh',
+    ankh: 'ankh',
+    lostPack: 'lost backpack',
+    alchemyPage: 'alchemy guide page',
     'quest.rose': 'dried rose',
     'quest.skull': 'giant rat skull',
     'quest.dust': 'corpse dust',
@@ -1764,8 +1767,9 @@ const en = {
   } as Record<ItemKind, string>,
   itemInfo: {
     'crown.king': ABIL_EN['items.kingscrown.desc']!,
-    ankh: 'The ancient symbol of immortality. Die while carrying it and you rise again at the stairs, whole, '
-      + 'but everything else in your pack is lost, and all your gold.',
+    ankh: 'This ancient symbol of immortality grants the ability to return to life after death. Most items will be dropped where you died, but can be reclaimed if you return to it. Using a full waterskin, the ankh can be blessed with extra strength.',
+    lostPack: 'This is your lost inventory. Collect it to reclaim all the items you lost!',
+    alchemyPage: "A torn page from an alchemy guide. Pick it up to add it to your journal's alchemy guide.",
     'wand.magicMissile': 'This fairly plain wand launches missiles of pure magical energy. While the wand itself lacks any special effects, it has more available charges and can briefly empower other wands when upgraded.',
     'wand.lightning': 'This wand is made out of solid metal, making it surprisingly heavy. Two prongs curve together at the tip, and electricity arcs between them.',
     'wand.disintegration': 'This wand is made from a solid smooth chunk of obsidian, with a deep purple light running up its side, ending at the tip. It glows with destructive energy, waiting to shoot forward.',
@@ -2325,7 +2329,17 @@ const en = {
   noSmell: 'You have stopped sensing any smells!',
   fellCompanion: (name: string) => `${name} jumps into the chasm!`,
   baa: ['Baa!', 'Baa?', 'Baa.', 'Baa...'],
-  resurrected: 'The ankh crumbles to dust, and you rise again!',
+  resurrected: 'You rise again, elsewhere on this floor, your belongings left where you fell.',
+  /** Ankh (Shattered): blessing it, its blessed revival, its description blessed, WndResurrect. */
+  ankh: {
+    bless: 'Bless', blessed: 'You bless the ankh with magical water.', revive: 'The ankh explodes with life-giving energy!',
+    descBlessed: 'This ancient symbol of immortality grants the ability to return to life after death. The ankh has been blessed and is now much stronger. The Ankh will sacrifice itself to save you in a moment of deadly peril.',
+    title: 'Resurrection',
+    message: "As you perish you can feel your ankh guiding your spirit back toward this world. It's giving you another chance to conquer the dungeon!\n\nYou can bring two of your items with you, but the rest will be left where you perished. Which items will you choose?",
+    confirm: 'Preserve these items', warnTitle: 'Missing Items',
+    warnBody: "You haven't selected two items. Are you sure you want to resurrect without two items?",
+    warnYes: "Yes, I'm sure", warnNo: 'No, let me reconsider', found: 'You reclaim your lost belongings.',
+  },
   resurrectedCompanion: (name: string) => `${name} rises again, saved by an ankh!`,
   mapped: 'The layout of the level is revealed!',
   challenge: 'A thunderous roar echoes through the dungeon!',
@@ -2377,6 +2391,8 @@ const en = {
   goldLabel: 'Gold',
   slain: 'Foes slain',
   scoreLabel: 'Score',
+  /** Design v22 (i18n-v22.ts): the tome, the action buttons, the Warden's plants, the score table's short lines, the mis-tap question. */
+  v22: V22_EN,
   /* The score table (WndScoreBreakdown): Shattered's own words. */
   scoring: {
     title: 'Score Breakdown',
@@ -2418,6 +2434,7 @@ const en = {
     stealth: 'Cloaked', timeFreeze: 'Time Freeze', thorns: 'Thorns',
     // The talents' and subclasses' buffs (their Shattered names, talenttext.ts).
     ...talentBuffNames(TAL_EN),
+    ...V22_BUFFS_EN,
     endure: ABIL_EN['actors.hero.abilities.warrior.endure$enduretracker.name']!, naturesPower: ABIL_EN['actors.hero.abilities.huntress.naturespower$naturespowertracker.name']!,
     degrade: 'Degraded',
   } as Record<BuffName, string>,
@@ -2918,7 +2935,7 @@ const en = {
     notesDesc: 'As you journey through the dungeon, you will automatically record noteworthy things here.',
     floorHeader: (n: number) => `Floor ${n}`,
     landmarks: {
-      chasmFloor: 'chasm floor', waterFloor: 'water floor', grassFloor: 'grass floor', distantWell: 'distant well', darkFloor: 'dark floor', largeFloor: 'large floor', trapsFloor: 'trapped floor', secretsFloor: 'secretive floor', demonSpawner: 'demon spawner',
+      chasmFloor: 'chasm floor', waterFloor: 'water floor', grassFloor: 'grass floor', distantWell: 'distant well', lostPack: 'lost backpack', darkFloor: 'dark floor', largeFloor: 'large floor', trapsFloor: 'trapped floor', secretsFloor: 'secretive floor', demonSpawner: 'demon spawner',
       shop: 'shop', alchemy: 'alchemy pot', garden: 'garden', wellOfHealth: 'well of health', wellOfAwareness: 'well of awareness',
       wellOfTransmutation: 'well of transmutation', sacrificialFire: 'sacrificial fire', statue: 'animated statue',
       beaconLocation: "lloyd's beacon", ghost: 'sad ghost', ratKing: 'rat king', wandmaker: 'old wandmaker', troll: 'troll blacksmith',
@@ -3423,7 +3440,9 @@ const ru: Strings = {
     'artifact.skeletonKey': 'костяной ключ',
     'key.skeleton': 'изношенный ключ',
     'mask.tengu': 'маска Тенгу',
-    ankh: 'Анкх',
+    ankh: 'анх',
+    lostPack: 'потерянный рюкзак',
+    alchemyPage: 'страница руководства по алхимии',
     'quest.rose': 'сухая роза',
     'quest.skull': 'череп гигантской крысы',
     'quest.dust': 'трупная пыль',
@@ -3673,8 +3692,9 @@ const ru: Strings = {
   },
   itemInfo: {
     'crown.king': ABIL_RU['items.kingscrown.desc']!,
-    ankh: 'Древний символ бессмертия. Если вы погибнете, имея его при себе, то воскреснете у лестницы целым и '
-      + 'невредимым — но всё остальное в рюкзаке пропадёт, как и всё золото.',
+    ankh: 'Этот древний символ дарует возможность возродиться после смерти. Большинство ваших предметов будет сохранено на месте смерти, и их можно будет подобрать, когда вы вернётесь на это место. Используя полный бурдюк с водой, можно освятить анх, придав ему дополнительные силы.',
+    lostPack: 'Этот рюкзак — не что иное, как ваш утерянный инвентарь! Возьмите его, чтобы вернуть все утерянные предметы.',
+    alchemyPage: 'Вырванная страница руководства по алхимии. Подберите её, чтобы добавить в руководство по алхимии в журнале.',
     'wand.magicMissile': 'Довольно простая палочка, стреляющая стрелами чистой магической энергии. Хоть палочка и не обладает какими-либо особыми эффектами, она имеет довольно много доступных зарядов и может на некоторое время усилить другие палочки после улучшения.',
     'wand.lightning': 'Эта палочка сделана из цельного металла, из-за чего она довольно тяжёлая. На навершии есть два зубца, между которыми проскакивают электрические дуги.',
     'wand.disintegration': 'Эта палочка сделана из цельного куска обсидиана, внутри которого течет фиолетовый свет, заканчивающийся у навершия. Она мерцает разрушительной энергией, ожидая, когда ей воспользуются.',
@@ -4228,7 +4248,16 @@ const ru: Strings = {
   noSmell: 'Вы перестали чувствовать запахи!',
   fellCompanion: (name) => `${name} прыгает в пропасть!`,
   baa: ['Бе-е!', 'Бе-е?', 'Бе-е.', 'Бе-е...'],
-  resurrected: 'Анкх рассыпается в прах, и вы встаёте вновь!',
+  resurrected: 'Вы встаёте вновь в другом месте этого этажа; ваши вещи остались там, где вы погибли.',
+  ankh: {
+    bless: 'Освятить', blessed: 'Вы освящаете анх волшебной водой.', revive: 'Анх взрывается дарующей жизнь энергией!',
+    descBlessed: 'Древний символ бессмертия даёт возможность возродиться после смерти. Анх освящён и обладает большей силой. Анх пожертвует собой, чтобы спасти вас от смерти.',
+    title: 'Воскрешение',
+    message: "Когда вы погибаете, вы чувствуете, как ваш анх направляет ваш дух обратно в этот мир. Это даёт вам ещё один шанс покорить подземелье!\n\nВы можете взять с собой два предмета, но остальные останутся там, где вы погибли. Какие предметы вы выберете?",
+    confirm: 'Сохранить эти предметы', warnTitle: 'Отсутствуют предметы',
+    warnBody: 'Вы не выбрали два предмета. Вы уверены, что хотите воскреснуть без двух предметов?',
+    warnYes: 'Да, я уверен', warnNo: 'Нет, дай подумаю', found: 'Вы возвращаете свои потерянные вещи.',
+  },
   resurrectedCompanion: (name) => `${name} встаёт вновь, спасённый анкхом!`,
   mapped: 'План уровня раскрыт!',
   challenge: 'По подземелью разносится оглушительный рёв!',
@@ -4276,6 +4305,7 @@ const ru: Strings = {
   goldLabel: 'Золото',
   slain: 'Побеждено врагов',
   scoreLabel: 'Очки',
+  v22: V22_RU,
   /* The score table (WndScoreBreakdown): Shattered's own words. */
   scoring: {
     title: 'Распределение очков',
@@ -4318,6 +4348,7 @@ const ru: Strings = {
     thorns: ART_RU['capeofthorns$thorns.name']!,
     // The talents' and subclasses' buffs (their Shattered names, talenttext.ts).
     ...talentBuffNames(TAL_RU),
+    ...V22_BUFFS_RU,
     degrade: 'Потрёпан',
   },
   causes: {
@@ -4796,7 +4827,7 @@ const ru: Strings = {
     notesDesc: 'Путешествуя по подземелью, вы будете автоматически записывать сюда примечательные вещи.',
     floorHeader: (n) => `Этаж ${n}`,
     landmarks: {
-      chasmFloor: 'этаж над пропастью', waterFloor: 'затопленный этаж', grassFloor: 'заросший этаж', distantWell: 'отдалённый колодец', darkFloor: 'тёмный этаж', largeFloor: 'большой этаж',
+      chasmFloor: 'этаж над пропастью', waterFloor: 'затопленный этаж', grassFloor: 'заросший этаж', distantWell: 'отдалённый колодец', lostPack: 'потерянный рюкзак', darkFloor: 'тёмный этаж', largeFloor: 'большой этаж',
       trapsFloor: 'этаж с ловушками', secretsFloor: 'этаж с тайниками', demonSpawner: 'рассадник демонов',
       shop: 'магазин', alchemy: 'алхимический котел', garden: 'тайный сад', wellOfHealth: 'источник жизни', wellOfAwareness: 'источник мудрости',
       wellOfTransmutation: 'источник превращений', sacrificialFire: 'жертвенный огонь', statue: 'живая статуя',

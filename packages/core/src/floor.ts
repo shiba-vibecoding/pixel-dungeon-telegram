@@ -129,7 +129,11 @@ export type Effect =
   | { type: 'sealDetached'; hero: string; item: Item }
   | { type: 'revived'; hero: string }
   /** An ankh brought a hero back from death, at the stairs. */
-  | { type: 'resurrected'; hero: string }
+  | { type: 'resurrected'; hero: string; blessed?: boolean }
+  /** Ankh.AC_BLESS; WndResurrect's choice made; LostBackpack picked up. */
+  | { type: 'ankhBlessed'; hero: string }
+  | { type: 'ankhKept'; hero: string; items: Item[] }
+  | { type: 'lostPackFound'; hero: string }
   /** An enchanted weapon showed its power on a blow; an inscribed armour on one taken. */
   | { type: 'enchanted'; depth: number; pos: number; enchant: Enchantment }
   | { type: 'glyph'; depth: number; hero: string; glyph: Glyph }

@@ -340,6 +340,8 @@ export function gearInfo(hero: Hero, item: Item): string[] | null {
       ...curseLines(item, worn, false, isCurseGlyph(item.glyph)),
     ];
   }
+  // Ankh.desc: blessed, it is stronger.
+  if (item.kind === 'ankh' && item.blessed) return [t.ankh.descBlessed];
   if (category === 'vial') {
     // Waterskin.info: plain water, or healing dew; full, it seems to radiate energy.
     const volume = item.volume ?? 0;

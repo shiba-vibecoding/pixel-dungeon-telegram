@@ -52,6 +52,7 @@ import {
   spawnVaultFloor, talkToVaultNpc, VAULT_NPCS, type VaultAction, vaultAction, vaultActionProblem, vaultStep, vaultTurn, vaultTurnAt,
 } from './vault';
 import { type SkeletonKeyAction, skeletonKeyProblem, useSkeletonKey } from './skeletonkey';
+import { ankhBlessProblem, ankhKeep, ankhKeepProblem, blessAnkh } from './ankh';
 import { type BlacksmithAction, blacksmithProblem, type BlacksmithQuest, blacksmithService, talkToBlacksmith } from './blacksmith';
 import { mineInteract } from './minemobs';
 import { talkToWandmaker, type WandQuest, wandFromWandmaker, wandRewardProblem } from './wandmaker';
@@ -116,6 +117,9 @@ export type Action =
   | VaultAction
   /** The skeleton key used on a cell (skeletonkey.ts). */
   | SkeletonKeyAction
+  /** Ankh.AC_BLESS (the ankh's pack slot); WndResurrect: the two things kept (indices into ankhChoices). */
+  | { type: 'ankhBless'; item: number }
+  | { type: 'ankhKeep'; keep: number[] }
   /** The troll blacksmith's services (WndBlacksmith): his pickaxe back, reforge, harden, upgrade, smith and choose, cash out. */
   | BlacksmithAction
   /** The old wandmaker's reward: the first of his two wands or the second (WndWandmaker). */
@@ -214,6 +218,8 @@ export interface World {
   arena?: ArenaState;
   /** The journal's notes of what the party has come across (journal.ts; absent until the first). */
   notes?: Note[];
+  /** Document.ALCHEMY_GUIDE: the alchemy guide's pages found this run (absent in older runs: the whole guide is open). */
+  guidePages?: string[];
   /**
    * The level of a depth laid aside while its other is in play (the depth's side level while the hero is on
    * the depth, the depth while the hero is down its side level), with its floor and what was seen of it.
@@ -257,7 +263,7 @@ const JOIN_STREAM = 100;
 export function createWorld(seed: number, challenges = 0, mode: GameMode = 'dungeon', live = false): World {
   return {
     run: createRun(seed), levels: {}, floors: {}, heroes: [], explored: {}, turn: 0, nextId: 0, over: false, victory: false,
-    challenges, known: [], quest: null, wandQuest: null, impQuest: null, smithQuest: null,
+    challenges, known: [], guidePages: [], quest: null, wandQuest: null, impQuest: null, smithQuest: null,
     ...(mode === 'arena' ? { mode, arena: newArena() } : {}),
     ...(live ? { live } : {}),
   };
@@ -605,6 +611,10 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       return vaultActionProblem(world, hero, action);
     case 'skeletonKey':
       return skeletonKeyProblem(world, hero, action);
+    case 'ankhBless':
+      return ankhBlessProblem(hero, action.item);
+    case 'ankhKeep':
+      return ankhKeepProblem(hero, action.keep);
     case 'blacksmith':
       return blacksmithProblem(world, hero, action);
     case 'descend':
@@ -1223,6 +1233,8 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
 
 function perform(ctx: Ctx, hero: Hero, action: Action): void {
   const { world, level } = ctx;
+  // WndResurrect is gone once the hero does anything else.
+  if (action.type !== 'ankhKeep') delete hero.ankhChoice;
   beforeHeroAct(ctx, hero);
   if (isClassAction(action)) {
     spend(ctx, hero, performClass(ctx, hero, action));
@@ -1448,6 +1460,16 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
 
     case 'skeletonKey':
       spend(ctx, hero, useSkeletonKey(ctx, hero, action));
+      break;
+
+    case 'ankhBless':
+      blessAnkh(ctx, hero, action.item);
+      spend(ctx, hero, 1);
+      break;
+
+    // WndResurrect: choosing takes no time.
+    case 'ankhKeep':
+      ankhKeep(ctx, hero, action.keep);
       break;
 
     // WndBlacksmith: his services take no time.

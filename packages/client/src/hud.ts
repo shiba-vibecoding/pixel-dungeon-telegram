@@ -1,6 +1,6 @@
 import {
   prismaticMaxHp, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, type MobKind, shielding,
-  STARVING, stealthCloak, talentPointsAvailable, berserkOf, comboOf, momentumOf, prepTurns,
+  STARVING, stealthCloak, talentPointsAvailable, berserkOf, comboOf, momentumOf, prepTurns, highestMove, hasTimer, timerLeft, markTurns, type World,
 } from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
@@ -44,14 +44,30 @@ export const BUFF_ICONS = {
   // The talents' and subclasses' (their BuffIndicator icons): rage, the combo, momentum, preparation, the sniper's mark, hold fast,
   // trackers that add to the next blow (WEAPON), cooldowns (TIME), empowered wands (WAND), enhanced rings and a surge (UPGRADE).
   berserk: 1040, berserking: 1040, exhausted: 1040, comboChain: 1017, momentum: 1051, freerunning: 1051, preparation: 1042, sniperMark: 1027,
-  holdFast: 1020, trackerBlow: 1045, cooldown: 1007, wandEmpower: 1072, enhancedRings: 1050, surge: 1050, revealedArea: 1000,
-  parry: 1061, followup: 1057,
+  holdFast: 1020, trackerBlow: 1045, wandEmpower: 1072, enhancedRings: 1050, surge: 1050, revealedArea: 1000,
+  parry: 1061,
+  // Design v22: the Cleric's seven statuses and the talents' sixteen have sheets of their own (CLERIC_BUFFS, TALENT_BUFFS); the frame here is only a fallback.
+  ascended: 1000, powerOfMany: 1000, bodyForm: 1000, mindForm: 1000, spiritForm: 1000, wallOfLight: 1000, hallowedGround: 1000,
+  improvised: 1007, rejuvenating: 1007, seerShot: 1007, patientStrike: 1007, aggressiveBarrier: 1007, lethalHaste: 1007, swiftEquip: 1007, swiftEquip2: 1007,
+  searingLight: 1007, liquidAgility: 1007, deadlyFollowup: 1007, preciseAssault: 1007, followupStrike: 1007, provokedAnger: 1007, lingeringMagic: 1007, satiatedSpells: 1007,
   // The armour abilities': Endure's stored blows (BuffIndicator.ARMOR) and Nature's Power (NATURE_POWER).
   endure: 1020, naturesPower: 1058,
   // The monsters' curses (mobs stream): BuffIndicator.VULNERABLE, HEX, DEGRADE.
   degrade: 1048,
 } as const;
 export type BuffName = keyof typeof BUFF_ICONS;
+
+/** cleric-buffs.png (design v22), 7 px frames: the Cleric's statuses. */
+export const CLERIC_BUFFS: Readonly<Partial<Record<BuffName, number>>> = {
+  ascended: 0, powerOfMany: 1, bodyForm: 2, mindForm: 3, spiritForm: 4, wallOfLight: 5, hallowedGround: 6,
+};
+/** talent-buffs.png (design v22): each talent's status in the colour Talent.java gives it. */
+export const TALENT_BUFFS: Readonly<Partial<Record<BuffName, number>>> = {
+  improvised: 0, rejuvenating: 1, seerShot: 2, patientStrike: 3, aggressiveBarrier: 4, lethalHaste: 5, swiftEquip: 6, swiftEquip2: 7,
+  searingLight: 8, liquidAgility: 9, deadlyFollowup: 10, preciseAssault: 11, followupStrike: 12, provokedAnger: 13, lingeringMagic: 14, satiatedSpells: 15,
+};
+/** combo-buffs.png: BuffIndicator.COMBO (frame 17) tinted by the best move there is: none, clobber, slam, parry, crush, fury. */
+export const COMBO_FRAMES = ['none', 'clobber', 'slam', 'parry', 'crush', 'fury'] as const;
 
 /** The monsters' curses have icons of their own in the design's mob-buffs.png (v21): 7×7 in the list, 16×16 in the window. */
 export const MOB_BUFFS: Readonly<Partial<Record<BuffName, number>>> = { vulnerable: 0, hexed: 1, degrade: 2 };
@@ -60,15 +76,34 @@ export const MOB_BUFFS: Readonly<Partial<Record<BuffName, number>>> = { vulnerab
 export interface BuffEntry {
   name: BuffName;
   turns?: number;
+  /** The combo's frame in combo-buffs.png: the best move it can make (COMBO_FRAMES). */
+  frame?: number;
   /** An index of buffs-tints.png (design v19): the buffs that share one Shattered icon each have a sheet colour of their own. */
   tint?: number;
+}
+
+/**
+ * The picture of a buff: its own sheet where the design has one (the monsters' curses, the Cleric's statuses, the talents', the combo's), a
+ * pre-tinted frame of buffs-tints.png (v19), or a frame of Shattered's buffs.png.
+ */
+export function buffGlyph(buff: BuffEntry): HTMLElement {
+  const sheet = MOB_BUFFS[buff.name] !== undefined ? (['mob', MOB_BUFFS[buff.name]!] as const)
+    : CLERIC_BUFFS[buff.name] !== undefined ? (['cleric', CLERIC_BUFFS[buff.name]!] as const)
+    : TALENT_BUFFS[buff.name] !== undefined ? (['tl', TALENT_BUFFS[buff.name]!] as const)
+    : buff.frame !== undefined ? (['cmb', buff.frame] as const) : null;
+  const node = el('i', sheet ? sheet[0] : buff.tint !== undefined ? 'pd-tbuff' : '');
+  if (sheet) node.style.setProperty('--ix', String(sheet[1]));
+  else if (buff.tint !== undefined) node.dataset.tb = String(buff.tint);
+  else node.dataset.b = String(BUFF_ICONS[buff.name]);
+  node.dataset.buff = buff.name;
+  return node;
 }
 
 /** Puts a buff's sheet colour on it, if it has one. */
 const tinted = (buff: BuffEntry): BuffEntry => (buff.tint === undefined && BUFF_TINTS[buff.name] !== undefined ? { ...buff, tint: BUFF_TINTS[buff.name]! } : buff);
 
 /** What ails or helps a hero, with the turns it has left where that is known (BuffIndicator). */
-export function heroBuffs(me: Hero): BuffEntry[] {
+export function heroBuffs(me: Hero, world?: World): BuffEntry[] {
   const turns = (left: number): number => Math.ceil(left);
   const list: BuffEntry[] = [
     ...(me.mindVision > 0 ? [{ name: 'mindVision' as const, turns: turns(me.mindVision) }] : []),
@@ -93,6 +128,7 @@ export function heroBuffs(me: Hero): BuffEntry[] {
     ...(me.sungrass !== undefined && me.sungrass === me.pos ? [{ name: 'healing' as const }] : []),
     ...(me.earthroot && me.earthroot.pos === me.pos ? [{ name: 'bark' as const }] : []),
     ...talentBuffs(me),
+    ...classBuffs(me, world),
     ...(me.barkskin > 0 ? [{ name: 'barkskin' as const, turns: turns(me.barkskin) }] : []),
     // Shattered's wands' conditions (core status.ts).
     ...((me.chill ?? 0) > 0 ? [{ name: 'chill' as const, turns: turns(me.chill!) }] : []),
@@ -124,8 +160,8 @@ export function heroBuffs(me: Hero): BuffEntry[] {
 }
 
 /** The talents' trackers and the subclasses' buffs on a hero (core talents/), with what BuffIndicator shows beside each. */
-function talentBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
-  const list: Array<{ name: BuffName; turns?: number }> = [];
+function talentBuffs(me: Hero): BuffEntry[] {
+  const list: BuffEntry[] = [];
   const b = me.tal;
   if (!b) return list;
   const rage = berserkOf(me);
@@ -135,7 +171,7 @@ function talentBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
     else list.push({ name: 'berserk', turns: Math.floor(rage.power * 100) });
   }
   const combo = comboOf(me);
-  if (combo) list.push({ name: 'comboChain', turns: combo.count });
+  if (combo) list.push({ name: 'comboChain', turns: combo.count, frame: COMBO_FRAMES.indexOf(highestMove(combo) ?? 'none') });
   if (b.parry) list.push({ name: 'parry' });
   const momentum = momentumOf(me);
   if (momentum) {
@@ -146,14 +182,43 @@ function talentBuffs(me: Hero): Array<{ name: BuffName; turns?: number }> {
   if (prepTurns(me) !== undefined) list.push({ name: 'preparation', turns: Math.min(9, prepTurns(me)!) });
   if (b.sniper) list.push({ name: 'sniperMark', turns: Math.ceil(b.sniper.left) });
   if (b.holdFast !== undefined && b.holdFast === me.pos) list.push({ name: 'holdFast' });
-  for (const key of ['provoked', 'lingering', 'empowered'] as const) if (b[key] !== undefined) list.push({ name: 'trackerBlow', turns: Math.ceil(b[key]!) });
-  if (b.followup) list.push({ name: 'followup', turns: Math.ceil(b.followup.left) });
-  for (const key of ['improvised', 'rejuvenating', 'seerShot'] as const) if (b[key] !== undefined) list.push({ name: 'cooldown', turns: Math.ceil(b[key]!) });
+  if (b.provoked !== undefined) list.push({ name: 'provokedAnger', turns: Math.ceil(b.provoked) });
+  if (b.lingering !== undefined) list.push({ name: 'lingeringMagic', turns: Math.ceil(b.lingering) });
+  if (b.empowered !== undefined) list.push({ name: 'trackerBlow', turns: Math.ceil(b.empowered) });
+  if (b.followup) list.push({ name: 'followupStrike', turns: Math.ceil(b.followup.left) });
+  for (const key of ['improvised', 'rejuvenating', 'seerShot'] as const) if (b[key] !== undefined) list.push({ name: key, turns: Math.ceil(b[key]!) });
   if (b.wandEmpower) list.push({ name: 'wandEmpower', turns: b.wandEmpower.left });
   if (b.scrollEmpower) list.push({ name: 'wandEmpower', turns: b.scrollEmpower });
   if (b.enhancedRings !== undefined) list.push({ name: 'enhancedRings', turns: Math.ceil(b.enhancedRings) });
   if (b.surge !== undefined) list.push({ name: 'surge', turns: Math.ceil(b.surge) });
   if (b.revealed) list.push({ name: 'revealedArea', turns: Math.ceil(b.revealed.left) });
+  return list;
+}
+
+/**
+ * The Duelist's and the Cleric's statuses (core classes/state.ts keeps them as timers on the hero's clock): the Duelist's talents'
+ * trackers and cooldowns, and the Cleric's forms, power of many, the wall of light and the hallowed ground under her.
+ */
+function classBuffs(me: Hero, world?: World): BuffEntry[] {
+  const c = me.cls;
+  if (!c) return [];
+  const list: BuffEntry[] = [];
+  const left = (key: string): number => Math.ceil(timerLeft(me, key));
+  if (c.patient === me.pos) list.push({ name: 'patientStrike' });
+  if (hasTimer(me, 'aggressive')) list.push({ name: 'aggressiveBarrier', turns: left('aggressive') });
+  if ((c.greaterHaste ?? 0) > 0) list.push({ name: 'lethalHaste', turns: c.greaterHaste! });
+  if (hasTimer(me, 'swift')) list.push({ name: c.swiftSecond ? 'swiftEquip2' : 'swiftEquip', turns: left('swift') });
+  if (hasTimer(me, 'liqEva') || hasTimer(me, 'liqAcc')) list.push({ name: 'liquidAgility', turns: Math.max(left('liqEva'), left('liqAcc')) });
+  if (hasTimer(me, 'followup') && c.followup !== undefined) list.push({ name: 'deadlyFollowup', turns: left('followup') });
+  if (hasTimer(me, 'precise')) list.push({ name: 'preciseAssault', turns: left('precise') });
+  if (c.holy?.satiated) list.push({ name: 'satiatedSpells' });
+  if (c.ascend) list.push({ name: 'ascended', turns: Math.ceil(c.ascend.left) });
+  const powered = world?.floors[me.depth]?.mobs.find((mob) => mob.hp > 0 && markTurns(mob, 'power') > 0);
+  if (powered) list.push({ name: 'powerOfMany', turns: markTurns(powered, 'power') });
+  if (c.bodyEffect && hasTimer(me, 'bodyForm')) list.push({ name: 'bodyForm', turns: left('bodyForm') });
+  if (hasTimer(me, 'spirit')) list.push({ name: 'spiritForm', turns: left('spirit') });
+  if (world && Object.keys(world.levels[me.depth]?.lightWall ?? {}).length > 0) list.push({ name: 'wallOfLight' });
+  if (world?.floors[me.depth]?.hallowed?.[me.pos]) list.push({ name: 'hallowedGround' });
   return list;
 }
 
@@ -808,16 +873,11 @@ export class Hud {
     }
     this.avatar.parentElement!.classList.toggle('dead', dead);
 
-    const buffKey = state.buffs.map((b) => `${b.name}${b.tint ?? ''}:${b.turns !== undefined && b.turns <= 3 ? 'f' : ''}`).join(',');
+    const buffKey = state.buffs.map((b) => `${b.name}${b.tint ?? ''}${b.frame ?? ''}:${b.turns !== undefined && b.turns <= 3 ? 'f' : ''}`).join(',');
     if (this.changed('buffs', buffKey)) {
       this.buffBox.replaceChildren(
         ...state.buffs.map((buff) => {
-          const mobIx = MOB_BUFFS[buff.name];
-          const glyphNode = el('i', mobIx !== undefined ? 'mob' : buff.tint !== undefined ? 'pd-tbuff' : '');
-          if (mobIx !== undefined) glyphNode.style.setProperty('--ix', String(mobIx));
-          else if (buff.tint !== undefined) glyphNode.dataset.tb = String(buff.tint);
-          else glyphNode.dataset.b = String(BUFF_ICONS[buff.name]);
-          glyphNode.dataset.buff = buff.name;
+          const glyphNode = buffGlyph(buff);
           const node = el('button', `pd-buff${buff.turns !== undefined && buff.turns <= 3 ? ' fading' : ''}`, glyphNode);
           node.ariaLabel = t.buffs[buff.name];
           node.onclick = () => this.handlers.buff(buff.name, buff.turns);
