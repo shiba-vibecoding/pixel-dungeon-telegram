@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0c13">
+<title>Демо · HD-2D · Three.js</title>
+<!-- Pixel Dungeon TS, prototype B: the room as a Three.js diorama, HD-2D style. Not part of the game. -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+<script src="scene.js"></script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const S = window.PDScene;
+try {
+  await S.load();
+  const { W, H, T } = S;
+  const rad = (d) => (d * Math.PI) / 180;
+
+  /* ---- renderer ---- */
+  const pr = Math.min(window.devicePixelRatio || 1, 2);
+  let vw = window.innerWidth, vh = window.innerHeight;
+  const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(pr);
+  renderer.setSize(vw, vh);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.domElement.className = 'pd-view';
+  document.body.appendChild(renderer.domElement);
+
+  let lightOn = true, postOn = true;
+  const hud = S.hud({
+    title: 'HD-2D · Three.js r' + THREE.REVISION,
+    other: { href: 'pixi.html', label: '← 2D-свет (Pixi)' },
+    hint: 'тап — идти · драг — сдвиг · щипок / колесо — зум · наклон телефона / мышь — параллакс',
+    toggles: [
+      { id: 'light', on: 'свет вкл', off: 'свет выкл', value: true, change: (v) => { lightOn = v; applyLight(); } },
+      { id: 'post', on: 'пост вкл', off: 'пост выкл', value: true, change: (v) => { postOn = v; } },
+    ],
+  });
+  hud.setInfo((renderer.capabilities.isWebGL2 ? 'WebGL2' : 'WebGL1') + ' · ' + pr + 'x');
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x07080d);
+  scene.fog = new THREE.Fog(0x07080d, 60, 120);
+
+  const FOV = 28;
+  const camera = new THREE.PerspectiveCamera(FOV, vw / vh, 8, 160);
+
+  /* ---- textures: all nearest-neighbour ---- */
+  const pix = (src, repeatX, repeatY) => {
+    const t = new THREE.Texture(src);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.magFilter = THREE.NearestFilter;
+    t.minFilter = THREE.NearestFilter;
+    t.generateMipmaps = false;
+    t.anisotropy = 1;
+    if (repeatX) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeatX, repeatY); }
+    t.needsUpdate = true;
+    return t;
+  };
+  const tileTexCache = new Map();
+  const tileTex = (idx, rx, ry, oy) => {
+    const key = idx + ':' + (rx || 1) + ':' + (ry || 1) + ':' + (oy || 0);
+    let t = tileTexCache.get(key);
+    if (!t) {
+      t = pix(S.tileCanvas(idx));
+      if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.offset.set(0, oy || 0); }
+      tileTexCache.set(key, t);
+    }
+    return t;
+  };
+  const soft = (size, stops) => { const t = new THREE.CanvasTexture(S.radialCanvas(size, stops)); t.colorSpace = THREE.SRGBColorSpace; return t; };
+
+  /* ---- the diorama ---- */
+  const WALL_H = 1.1;
+  const diorama = new THREE.Group();
+  scene.add(diorama);
+
+  // A slab of floor with water on top; the baked floor (water cells left clear) lies over it.
+  const waterT = pix(S.img.water, (W * T) / 32, (H * T) / 32);
+  const sideZ = new THREE.MeshLambertMaterial({ map: tileTex(48, W, 1, 0), color: 0x555a6e });
+  const sideX = new THREE.MeshLambertMaterial({ map: tileTex(48, H, 1, 0), color: 0x555a6e });
+  const slabTop = new THREE.MeshLambertMaterial({ map: waterT });
+  const bottom = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(W, 0.7, H), [sideX, sideX, slabTop, bottom, sideZ, sideZ]);
+  slab.position.set(W / 2, -0.35, H / 2);
+  slab.receiveShadow = true;
+  diorama.add(slab);
+
+  const groundT = pix(S.groundCanvas);
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(W, H).rotateX(-Math.PI / 2),
+    new THREE.MeshLambertMaterial({ map: groundT, transparent: true, alphaTest: 0.02 }),
+  );
+  floor.position.set(W / 2, 0.01, H / 2);
+  floor.receiveShadow = true;
+  diorama.add(floor);
+
+  // Walls: boxes with the sewers' wall face on their sides, the flat brick (darker) on top.
+  const topMat = new THREE.MeshLambertMaterial({ map: tileTex(48), color: 0x80869e });
+  const faceMats = new Map();
+  const faceMat = (idx, h) => {
+    const key = idx + ':' + h;
+    let m = faceMats.get(key);
+    if (!m) { m = new THREE.MeshLambertMaterial({ map: tileTex(idx, 1, Math.min(1, h / WALL_H), 1 - Math.min(1, h / WALL_H)) }); faceMats.set(key, m); }
+    return m;
+  };
+  const doorMatClosed = tileTex(S.TILE.DOOR), doorMatOpen = tileTex(S.TILE.DOOR_OPEN);
+  const doorMat = new THREE.MeshLambertMaterial({ map: doorMatClosed });
+  const pillars = new Set(['6,3', '6,4', '4,6', '5,6']);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const ch = S.kind(x, y);
+      if (!(S.isWall(x, y) || ch === 'D')) continue;
+      const h = y === H - 1 ? 0.36 : pillars.has(x + ',' + y) ? 0.82 : WALL_H;
+      const side = faceMat(ch === 'P' ? S.TILE.FACE_PIPE : S.TILE.FACE, h);
+      const plain = faceMat(S.TILE.FACE, h);
+      const mats = [plain, plain, topMat, topMat, ch === 'D' ? doorMat : side, plain];
+      const m = new THREE.Mesh(new THREE.BoxGeometry(1, h, 1), mats);
+      m.position.set(x + 0.5, h / 2, y + 0.5);
+      m.castShadow = true; m.receiveShadow = true;
+      diorama.add(m);
+    }
+  }
+
+  // Plants from terrain_features, standing up as billboards.
+  const planted = [];
+  const featBase = pix(S.img.features);
+  S.decor.forEach((d) => {
+    const t = featBase.clone();
+    t.repeat.set(16 / S.img.features.width, 16 / S.img.features.height);
+    t.offset.set(((d.tile % 16) * 16) / S.img.features.width, 1 - ((Math.floor(d.tile / 16) + 1) * 16) / S.img.features.height);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9).translate(0, 0.45, 0),
+      new THREE.MeshLambertMaterial({ map: t, alphaTest: 0.5, side: THREE.DoubleSide }));
+    m.position.set(d.x + 0.5, 0, d.y + 0.62);
+    m.castShadow = true;
+    diorama.add(m);
+    planted.push(m);
+  });
+
+  /* ---- actors: pixel-art billboards standing on the floor ---- */
+  const frameTexs = new Map();
+  const baseTexs = new Map();
+  const frameTex = (sheet, frame, flip) => {
+    const key = sheet + ':' + frame + ':' + (flip ? 1 : 0);
+    let t = frameTexs.get(key);
+    if (!t) {
+      const r = S.frameRect(sheet, frame);
+      let base = baseTexs.get(r.img);
+      if (!base) { base = pix(r.img); baseTexs.set(r.img, base); }
+      t = base.clone();
+      const iw = r.img.width, ih = r.img.height;
+      t.repeat.set((flip ? -r.w : r.w) / iw, r.h / ih);
+      t.offset.set((flip ? r.sx + r.w : r.sx) / iw, 1 - (r.sy + r.h) / ih);
+      frameTexs.set(key, t);
+    }
+    return t;
+  };
+  const blobTex = soft(64, [[0, 'rgba(0,0,0,0.7)'], [0.55, 'rgba(0,0,0,0.35)'], [1, 'rgba(0,0,0,0)']]);
+  const views = S.actors.map((a) => {
+    const w = a.def.w / T, h = a.def.h / T;
+    const mat = new THREE.MeshLambertMaterial({ map: frameTex(a.sheet, 0, false), alphaTest: 0.5, side: THREE.DoubleSide, emissive: 0xffffff, emissiveIntensity: 0 });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h).translate(0, h / 2, 0), mat);
+    mesh.scale.y = 1.12;
+    mesh.castShadow = true;
+    const blob = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.5).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false }));
+    blob.position.y = 0.025;
+    blob.renderOrder = 1;
+    scene.add(mesh, blob);
+    return { a, mesh, blob, mat };
+  });
+
+  /* ---- the torch: a flat flame on the wall face, a real point light with flicker and shadows ---- */
+  const torchFrames = [];
+  for (let i = 0; i < S.TORCH_FRAMES; i++) {
+    const t = pix(S.img.ambient);
+    t.repeat.set(16 / S.img.ambient.width, 16 / S.img.ambient.height);
+    t.offset.set((i * 16) / S.img.ambient.width, 1 - 16 / S.img.ambient.height);
+    torchFrames.push(t);
+  }
+  const torchMat = new THREE.MeshBasicMaterial({ map: torchFrames[0], alphaTest: 0.1, toneMapped: false, color: new THREE.Color(2.6, 2.2, 1.8) });
+  const torchMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), torchMat);
+  torchMesh.position.set(8.5, 0.62, 1.012);
+  scene.add(torchMesh);
+
+  const ambient = new THREE.AmbientLight(0x6878b8, 2.7);
+  scene.add(ambient);
+  const torchLight = new THREE.PointLight(0xff9448, 13, 0, 1.2);
+  torchLight.position.set(8.5, 0.7, 1.45);
+  torchLight.castShadow = true;
+  torchLight.shadow.mapSize.set(1024, 1024);
+  torchLight.shadow.camera.near = 0.25;
+  torchLight.shadow.camera.far = 24;
+  torchLight.shadow.bias = -0.0006;
+  torchLight.shadow.normalBias = 0.025;
+  scene.add(torchLight);
+  const heroLight = new THREE.PointLight(0xffe0b0, 5, 8, 1.6);
+  scene.add(heroLight);
+
+  function applyLight() {
+    ambient.intensity = lightOn ? 2.7 : 3.6;
+    ambient.color.set(lightOn ? 0x6878b8 : 0xd8dcf0);
+    torchLight.visible = lightOn;
+    torchLight.castShadow = lightOn;
+    heroLight.visible = lightOn;
+    blobs(lightOn ? 0.7 : 1);
+  }
+  function blobs() {}
+
+  /* ---- particles: mist, drips, sparks, ripples ---- */
+  const spriteMat = (map, opts) => new THREE.SpriteMaterial(Object.assign({ map, transparent: true, depthWrite: false, fog: false }, opts));
+  const mistTex = soft(128, [[0, 'rgba(190,205,235,0.5)'], [0.5, 'rgba(190,205,235,0.2)'], [1, 'rgba(190,205,235,0)']]);
+  const mistSprites = S.mist.map((m) => {
+    const s = new THREE.Sprite(spriteMat(mistTex, { color: 0x8c9bc0, opacity: 0.1 }));
+    s.scale.set(m.r * 2.2, m.r * 1.4, 1);
+    scene.add(s);
+    return s;
+  });
+  const dotTex = soft(32, [[0, 'rgba(255,255,255,1)'], [0.5, 'rgba(255,255,255,0.6)'], [1, 'rgba(255,255,255,0)']]);
+  const pool = (n, make) => Array.from({ length: n }, () => { const s = make(); s.visible = false; scene.add(s); return s; });
+  const dropSprites = pool(6, () => new THREE.Sprite(spriteMat(dotTex, { color: 0xbfe4ff })));
+  const sparkSprites = pool(24, () => new THREE.Sprite(spriteMat(dotTex, { color: 0xffb450, blending: THREE.AdditiveBlending, toneMapped: false })));
+  const ringCanvas = document.createElement('canvas');
+  ringCanvas.width = ringCanvas.height = 64;
+  { const g = ringCanvas.getContext('2d'); g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(32, 32, 27, 0, 7); g.stroke(); }
+  const ringTex = new THREE.CanvasTexture(ringCanvas);
+  const rippleMeshes = pool(10, () => new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ map: ringTex, transparent: true, depthWrite: false, color: 0xcfe9ff })));
+  // The flame's glow (additive, blooms with the pass).
+  const flameGlow = new THREE.Sprite(spriteMat(soft(128, [[0, 'rgba(255,190,100,0.9)'], [0.3, 'rgba(255,140,50,0.35)'], [1, 'rgba(255,100,20,0)']]),
+    { blending: THREE.AdditiveBlending, toneMapped: false, opacity: 0.7 }));
+  flameGlow.position.set(8.5, 0.7, 1.06);
+  flameGlow.scale.set(1.3, 1.3, 1);
+  scene.add(flameGlow);
+
+  /* ---- floating numbers ---- */
+  const textTexs = new Map();
+  const textTex = (text, color) => {
+    const key = text + color;
+    let t = textTexs.get(key);
+    if (!t) {
+      const c = document.createElement('canvas');
+      c.width = 128; c.height = 64;
+      const g = c.getContext('2d');
+      g.font = '800 44px ui-monospace, Consolas, monospace';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineWidth = 8; g.strokeStyle = '#000'; g.lineJoin = 'round';
+      g.strokeText(text, 64, 34); g.fillStyle = color; g.fillText(text, 64, 34);
+      t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      textTexs.set(key, t);
+    }
+    return t;
+  };
+  const floatSprites = new Map();
+
+  /* ---- camera: a tilted, narrow-FOV view, panned and zoomed by touch; parallax follows the device or the mouse ---- */
+  const PITCH = rad(40);
+  const view = { tx: W / 2, tz: H / 2 + 0.3, zoom: 1 };
+  const tilt = { y: 0, p: 0, ty: 0, tp: 0 };
+  let baseDist = 40;
+  function fit() {
+    const tanV = Math.tan(rad(FOV / 2)), tanH = tanV * camera.aspect;
+    const dw = (W + 0.8) / (2 * tanH);
+    const dh = (H * Math.sin(PITCH) + WALL_H * Math.cos(PITCH) + 2.2) / (2 * tanV);
+    baseDist = Math.max(dw, dh);
+  }
+  function placeCamera() {
+    const dist = Math.max(14, baseDist / view.zoom), pitch = PITCH + tilt.p, yaw = tilt.y;
+    camera.position.set(view.tx + dist * Math.sin(yaw) * Math.cos(pitch), dist * Math.sin(pitch), view.tz + dist * Math.cos(yaw) * Math.cos(pitch));
+    camera.lookAt(view.tx, 0, view.tz);
+    camera.updateMatrixWorld(true);
+  }
+  fit();
+  placeCamera();
+
+  const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), tmp = new THREE.Vector3();
+  const ground = (px, py) => {
+    ray.setFromCamera(new THREE.Vector2((px / vw) * 2 - 1, -((py / vh) * 2 - 1)), camera);
+    return ray.ray.intersectPlane(plane, tmp) ? tmp.clone() : null;
+  };
+  let anchor = null;
+  const clampView = () => { view.tx = Math.max(-3, Math.min(W + 3, view.tx)); view.tz = Math.max(-3, Math.min(H + 3, view.tz)); };
+
+  // Device tilt (Android: at once; iOS: after a tap grants it) and the mouse.
+  let tiltBase = null, tiltAsked = false;
+  const onOrient = (e) => {
+    if (e.gamma == null || e.beta == null) return;
+    if (!tiltBase) tiltBase = { g: e.gamma, b: e.beta };
+    const cl = (v) => Math.max(-1, Math.min(1, v));
+    tilt.ty = cl((e.gamma - tiltBase.g) / 25) * 0.14;
+    tilt.tp = cl((e.beta - tiltBase.b) / 25) * -0.08;
+  };
+  const askTilt = () => {
+    if (tiltAsked || typeof DeviceOrientationEvent === 'undefined') return;
+    tiltAsked = true;
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().then((r) => { if (r === 'granted') window.addEventListener('deviceorientation', onOrient); }).catch(() => {});
+    } else window.addEventListener('deviceorientation', onOrient);
+  };
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') askTilt();
+
+  S.gestures(renderer.domElement, {
+    dragStart: (x, y) => { anchor = ground(x, y); },
+    drag: (x, y) => {
+      const p = ground(x, y);
+      if (!p || !anchor) return;
+      view.tx += anchor.x - p.x; view.tz += anchor.z - p.z;
+      clampView(); placeCamera();
+    },
+    pinch: (ratio, cx, cy) => {
+      const before = ground(cx, cy);
+      view.zoom = Math.max(0.45, Math.min(3.2, view.zoom * ratio));
+      placeCamera();
+      const after = ground(cx, cy);
+      if (before && after) { view.tx += before.x - after.x; view.tz += before.z - after.z; clampView(); placeCamera(); }
+    },
+    tap: (x, y) => {
+      askTilt();
+      const p = ground(x, y);
+      if (p) S.tapCell(Math.floor(p.x), Math.floor(p.z));
+    },
+    hover: (x, y) => { if (!tiltBase) { tilt.ty = ((x / vw) - 0.5) * 2 * 0.11; tilt.tp = ((y / vh) - 0.5) * 2 * -0.05; } },
+  });
+
+  /* ---- post: bloom, then a tilt-shift blur (sharp round the hero) with a vignette ---- */
+  const rt = new THREE.WebGLRenderTarget(vw * pr, vh * pr, { type: THREE.HalfFloatType, samples: (navigator.maxTouchPoints > 0 ? 2 : 4) });
+  const composer = new EffectComposer(renderer, rt);
+  composer.setPixelRatio(pr);
+  composer.setSize(vw, vh);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(vw / 2, vh / 2), 0.4, 0.5, 1.3);
+  composer.addPass(bloom);
+  const tiltShift = new ShaderPass({
+    uniforms: { tDiffuse: { value: null }, resolution: { value: new THREE.Vector2(vw * pr, vh * pr) }, focus: { value: 0.45 }, amount: { value: 3.2 * pr }, vig: { value: 0.5 } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `
+      uniform sampler2D tDiffuse; uniform vec2 resolution; uniform float focus, amount, vig; varying vec2 vUv;
+      void main() {
+        float d = abs(vUv.y - focus);
+        float b = smoothstep(0.1, 0.55, d) * amount * 3.0;
+        vec4 sum = texture2D(tDiffuse, vUv); float n = 1.0;
+        for (int i = 0; i < 14; i++) {
+          float a = float(i) * 2.399963, r = sqrt((float(i) + 0.5) / 14.0);
+          sum += texture2D(tDiffuse, vUv + vec2(cos(a), sin(a)) * r * b / resolution); n += 1.0;
+        }
+        vec4 c = sum / n;
+        float v = smoothstep(1.0, 0.3, length((vUv - 0.5) * vec2(1.0, 1.2)));
+        c.rgb *= mix(1.0, v, vig);
+        gl_FragColor = c;
+      }`,
+  });
+  composer.addPass(tiltShift);
+  composer.addPass(new OutputPass());
+
+  function resize() {
+    vw = window.innerWidth; vh = window.innerHeight;
+    renderer.setSize(vw, vh);
+    composer.setSize(vw, vh);
+    tiltShift.uniforms.resolution.value.set(vw * pr, vh * pr);
+    camera.aspect = vw / vh;
+    camera.updateProjectionMatrix();
+    fit(); placeCamera();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  applyLight();
+
+  /* ---- one frame ---- */
+  const hide = (list, from) => { for (let i = from; i < list.length; i++) list[i].visible = false; };
+  const projected = new THREE.Vector3();
+  function draw(dt) {
+    let i;
+    // Camera parallax eases toward its target.
+    const k = Math.min(1, dt / 120);
+    tilt.y += (tilt.ty - tilt.y) * k; tilt.p += (tilt.tp - tilt.p) * k;
+    if (Math.abs(tilt.ty - tilt.y) > 1e-4 || Math.abs(tilt.tp - tilt.p) > 1e-4 || tilt.y !== 0 || tilt.p !== 0) placeCamera();
+
+    // Actors.
+    for (i = 0; i < views.length; i++) {
+      const v = views[i], a = v.a;
+      v.mat.map = frameTex(a.sheet, a.frame, a.flip);
+      v.mat.emissiveIntensity = a.flash * 0.9;
+      v.mesh.position.set(a.x, 0, a.y + 0.12);
+      v.mesh.rotation.y = tilt.y;
+      v.blob.position.x = a.x; v.blob.position.z = a.y + 0.12;
+    }
+    planted.forEach((m) => { m.rotation.y = tilt.y; });
+    doorMat.map = S.doorOpen ? doorMatOpen : doorMatClosed;
+
+    // Water scrolls, as in the game.
+    waterT.offset.y = (S.time / 200 / 32) % 1;
+
+    // Torch: frame, flicker (the light and its glow), sparks.
+    const tf = S.torch;
+    torchMat.map = torchFrames[tf.frame];
+    torchLight.intensity = 13 * tf.f * tf.f;
+    torchLight.position.set(8.5 + (tf.noise - 1) * 0.15, 0.7, 1.45);
+    flameGlow.material.opacity = 0.4 * tf.f;
+    flameGlow.visible = postOn || lightOn;
+    heroLight.position.set(S.hero.x, 1.7, S.hero.y + 0.9);
+    for (i = 0; i < S.sparks.length && i < sparkSprites.length; i++) {
+      const s = S.sparks[i], sp = sparkSprites[i];
+      sp.visible = true; sp.position.set(s.x, s.h, 1.05); sp.scale.setScalar(0.07);
+      sp.material.opacity = 1 - s.age / s.life;
+    }
+    hide(sparkSprites, S.sparks.length);
+
+    // Drips, ripples, mist.
+    for (i = 0; i < S.drops.length && i < dropSprites.length; i++) {
+      const d = S.drops[i], sp = dropSprites[i];
+      sp.visible = true; sp.position.set(d.x, d.h + 0.02, d.y + 0.03); sp.scale.set(0.05, 0.1, 1);
+    }
+    hide(dropSprites, S.drops.length);
+    for (i = 0; i < S.ripples.length && i < rippleMeshes.length; i++) {
+      const r = S.ripples[i], m = rippleMeshes[i], p = r.age / r.life;
+      m.visible = true; m.position.set(r.x, 0.03, r.y);
+      m.scale.setScalar((0.12 + p * (r.tap ? 0.55 : 0.4)) * 2);
+      m.material.opacity = (1 - p) * (r.tap ? 0.7 : 0.9);
+      m.material.color.set(r.tap ? 0xffffff : 0xcfe9ff);
+    }
+    hide(rippleMeshes, S.ripples.length);
+    for (i = 0; i < S.mist.length; i++) {
+      const m = S.mist[i], s = mistSprites[i];
+      s.position.set(m.x, 0.28 + 0.06 * Math.sin(S.time / 1300 + m.ph), m.y);
+      s.material.opacity = 0.11 * m.a * (0.7 + 0.3 * Math.sin(S.time / 1500 + m.ph));
+    }
+
+    // Floating damage numbers.
+    const alive = new Set(S.floaters);
+    floatSprites.forEach((sp, f) => { if (!alive.has(f)) { scene.remove(sp); sp.material.dispose(); floatSprites.delete(f); } });
+    S.floaters.forEach((f) => {
+      let sp = floatSprites.get(f);
+      if (!sp) {
+        sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTex(f.text, f.color), transparent: true, depthTest: false, depthWrite: false, toneMapped: false }));
+        sp.renderOrder = 20;
+        scene.add(sp);
+        floatSprites.set(f, sp);
+      }
+      const p = f.age / f.life;
+      sp.position.set(f.x, 1.25 + p * 0.8, f.y + 0.5);
+      sp.material.opacity = p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4;
+      const grow = 1 + Math.max(0, 0.3 - p);
+      sp.scale.set(1.5 * grow, 0.75 * grow, 1);
+    });
+
+    // Tilt-shift focus follows the hero.
+    projected.set(S.hero.x, 0.4, S.hero.y).project(camera);
+    tiltShift.uniforms.focus.value += ((projected.y * 0.5 + 0.5) - tiltShift.uniforms.focus.value) * Math.min(1, dt / 200);
+
+    if (postOn) composer.render(dt / 1000);
+    else renderer.render(scene, camera);
+  }
+
+  S.run(draw);
+  draw(16);
+  window.__three = { renderer, scene, camera, view };
+} catch (err) {
+  S.fatal(err);
+}
+</script>
+</body>
+</html>

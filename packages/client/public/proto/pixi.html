@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0c13">
+<title>Демо · PixiJS 8 · 2D-свет</title>
+<!-- Pixel Dungeon TS, prototype A: PixiJS 8 (WebGPU, WebGL fallback) with a 2D light map. Not part of the game. -->
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@8.17.1/dist/pixi.min.js"></script>
+<script src="scene.js"></script>
+</head>
+<body>
+<script>
+(async function () {
+  'use strict';
+  var S = PDScene;
+  try {
+    await S.load();
+
+    var T = 16, W = S.W, H = S.H;
+    var dpr = Math.min(window.devicePixelRatio || 1, 3);
+    var vw = window.innerWidth, vh = window.innerHeight;
+
+    /* ---- renderer: WebGPU if the browser has it, else WebGL ---- */
+    var renderer = await PIXI.autoDetectRenderer({
+      preference: 'webgpu', width: vw, height: vh, resolution: dpr, autoDensity: true,
+      antialias: false, backgroundColor: 0x0a0c13,
+    });
+    var backend = renderer.name === 'webgpu' ? 'WebGPU' : 'WebGL';
+    renderer.canvas.className = 'pd-view';
+    document.body.appendChild(renderer.canvas);
+
+    var lightOn = true, bloomOn = true;
+    var hud = S.hud({
+      title: 'PixiJS ' + PIXI.VERSION + ' · ' + backend,
+      other: { href: 'hd2d.html', label: 'HD-2D (Three.js) →' },
+      toggles: [
+        { id: 'light', on: 'свет вкл', off: 'свет выкл', value: true, change: function (v) { lightOn = v; } },
+        { id: 'bloom', on: 'блум вкл', off: 'блум выкл', value: true, change: function (v) { bloomOn = v; } },
+      ],
+    });
+    hud.setInfo(backend + (renderer.name !== 'webgpu' ? ' (WebGPU нет)' : '') + ' · ' + dpr + 'x');
+
+    /* ---- textures (all nearest-neighbour) ---- */
+    var sources = new Map();
+    function source(img) {
+      var t = sources.get(img);
+      if (!t) { t = PIXI.Texture.from(img); t.source.scaleMode = 'nearest'; sources.set(img, t); }
+      return t;
+    }
+    var frames = new Map();
+    function frameTex(sheet, frame, white) {
+      var key = sheet + ':' + frame + (white ? 'w' : '');
+      var t = frames.get(key);
+      if (!t) {
+        var r = S.frameRect(sheet, frame);
+        var base = source(white ? S.whiteCanvas(S.SHEETS[sheet].img) : r.img);
+        t = new PIXI.Texture({ source: base.source, frame: new PIXI.Rectangle(r.sx, r.sy, r.w, r.h) });
+        frames.set(key, t);
+      }
+      return t;
+    }
+    var torchTex = [];
+    for (var i = 0; i < S.TORCH_FRAMES; i++) {
+      torchTex.push(new PIXI.Texture({ source: source(S.img.ambient).source, frame: new PIXI.Rectangle(i * 16, 0, 16, 16) }));
+    }
+    var tileTex = {};
+    function tile(idx) { return tileTex[idx] || (tileTex[idx] = (function () { var t = PIXI.Texture.from(S.tileCanvas(idx)); t.source.scaleMode = 'nearest'; return t; })()); }
+    var soft = function (size, stops) { var t = PIXI.Texture.from(S.radialCanvas(size, stops)); t.source.scaleMode = 'linear'; return t; };
+
+    /* ---- the world: three containers sharing one camera ---- */
+    var world = new PIXI.Container();      // lit by the light map
+    var worldTop = new PIXI.Container();   // above the light map: what shines (the torch, its glow, sparks)
+    var lightWorld = new PIXI.Container(); // drawn only into the light map
+    var stage = new PIXI.Container();
+
+    var waterTex = PIXI.Texture.from(S.img.water);
+    waterTex.source.scaleMode = 'nearest';
+    var water = new PIXI.TilingSprite({ texture: waterTex, width: W * T, height: H * T });
+    world.addChild(water);
+    var groundTex = PIXI.Texture.from(S.groundCanvas);
+    groundTex.source.scaleMode = 'nearest';
+    world.addChild(new PIXI.Sprite(groundTex));
+    var door = new PIXI.Sprite(tile(S.TILE.DOOR));
+    door.position.set(S.doorCell.x * T, S.doorCell.y * T);
+    world.addChild(door);
+
+    var fxFloor = new PIXI.Graphics();
+    world.addChild(fxFloor);
+
+    var shadowTex = soft(32, [[0, 'rgba(0,0,0,0.55)'], [0.6, 'rgba(0,0,0,0.3)'], [1, 'rgba(0,0,0,0)']]);
+    var actors = new PIXI.Container();
+    actors.sortableChildren = true;
+    world.addChild(actors);
+    var views = S.actors.map(function (a) {
+      var c = new PIXI.Container();
+      var sh = new PIXI.Sprite(shadowTex); sh.anchor.set(0.5, 0.5); sh.width = 14; sh.height = 6; sh.position.y = -1;
+      var body = new PIXI.Sprite(frameTex(a.sheet, 0)); body.anchor.set(0.5, 1);
+      var fl = new PIXI.Sprite(frameTex(a.sheet, 0, true)); fl.anchor.set(0.5, 1); fl.alpha = 0;
+      c.addChild(sh, body, fl);
+      actors.addChild(c);
+      return { a: a, c: c, body: body, fl: fl };
+    });
+
+    var mistTex = soft(128, [[0, 'rgba(185,200,228,0.55)'], [0.5, 'rgba(185,200,228,0.22)'], [1, 'rgba(185,200,228,0)']]);
+    var mistLayer = new PIXI.Container();
+    world.addChild(mistLayer);
+    var mistSprites = S.mist.map(function (m) {
+      var s = new PIXI.Sprite(mistTex); s.anchor.set(0.5); s.width = s.height = m.r * 2 * T;
+      mistLayer.addChild(s);
+      return s;
+    });
+
+    /* torch: the sprite itself above the light map, plus a halo and a blurred copy (the bloom) */
+    var torchPos = { x: 8 * T + 8, y: 0 * T + 8 };
+    var torchSpr = new PIXI.Sprite(torchTex[0]); torchSpr.anchor.set(0.5); torchSpr.position.set(torchPos.x, torchPos.y);
+    var glowTex = soft(128, [[0, 'rgba(255,190,100,0.9)'], [0.25, 'rgba(255,140,50,0.4)'], [1, 'rgba(255,100,20,0)']]);
+    var halo = new PIXI.Sprite(glowTex); halo.anchor.set(0.5); halo.blendMode = 'add'; halo.position.set(torchPos.x, torchPos.y - 2); halo.width = halo.height = 3.6 * T;
+    var bloomCopy = new PIXI.Sprite(torchTex[0]); bloomCopy.anchor.set(0.5); bloomCopy.position.set(torchPos.x, torchPos.y);
+    bloomCopy.blendMode = 'add'; bloomCopy.scale.set(1.5);
+    bloomCopy.filters = [new PIXI.BlurFilter({ strength: 5, quality: 3 })];
+    var bloomLayer = new PIXI.Container();
+    bloomLayer.addChild(halo, bloomCopy);
+    var fxTop = new PIXI.Graphics();
+    worldTop.addChild(torchSpr, bloomLayer, fxTop);
+
+    /* ---- the light map: dark ambient, then each light as a fan of triangles to its raycast edge ---- */
+    var RAYS = 192;
+    var AMBIENT = 0x1d2340;
+    function makeLight(tex) {
+      var verts = new Float32Array((RAYS + 1) * 2), uvs = new Float32Array((RAYS + 1) * 2), idx = new Uint32Array(RAYS * 3);
+      uvs[0] = 0.5; uvs[1] = 0.5;
+      for (var k = 0; k < RAYS; k++) { idx[k * 3] = 0; idx[k * 3 + 1] = 1 + k; idx[k * 3 + 2] = 1 + ((k + 1) % RAYS); }
+      var mesh = new PIXI.MeshSimple({ texture: tex, vertices: verts, uvs: uvs, indices: idx });
+      mesh.blendMode = 'add';
+      return { mesh: mesh, dist: new Float32Array(RAYS) };
+    }
+    function updateLight(L, x, y, R, strength) {
+      S.castLight(x, y, R, RAYS, L.dist);
+      var pos = L.mesh.geometry.getBuffer('aPosition'), uv = L.mesh.geometry.getBuffer('aUV');
+      var p = pos.data, u = uv.data;
+      for (var k = 0; k < RAYS; k++) {
+        var a = (k / RAYS) * Math.PI * 2, c = Math.cos(a) * L.dist[k], s = Math.sin(a) * L.dist[k];
+        p[2 + k * 2] = c * T; p[3 + k * 2] = s * T;
+        u[2 + k * 2] = 0.5 + c / (2 * R); u[3 + k * 2] = 0.5 + s / (2 * R);
+      }
+      pos.update(); uv.update();
+      L.mesh.position.set(x * T, y * T);
+      L.mesh.alpha = strength;
+    }
+    var torchLight = makeLight(soft(256, [[0, 'rgb(255,214,160)'], [0.2, 'rgb(236,150,80)'], [0.55, 'rgb(120,60,30)'], [1, 'rgb(0,0,0)']]));
+    var heroLight = makeLight(soft(256, [[0, 'rgb(150,160,185)'], [0.4, 'rgb(80,90,115)'], [1, 'rgb(0,0,0)']]));
+    var ambientRect = new PIXI.Graphics();
+    ambientRect.rect(-4000, -4000, 8000, 8000).fill(AMBIENT);
+    lightWorld.addChild(ambientRect, torchLight.mesh, heroLight.mesh);
+
+    var lres = 0.5;
+    var lightRT = PIXI.RenderTexture.create({ width: vw, height: vh, resolution: lres });
+    lightRT.source.scaleMode = 'linear';
+    var lightSprite = new PIXI.Sprite(lightRT);
+    lightSprite.blendMode = 'multiply';
+
+    var floatLayer = new PIXI.Container();
+    stage.addChild(world, lightSprite, worldTop, floatLayer);
+
+    /* ---- camera (art pixels, snapped to whole device pixels so the art stays crisp) ---- */
+    var cam = { x: (W * T) / 2, y: (H * T) / 2, zoom: 1 };
+    function baseScale() { return Math.min(vw / (W * T + 8), vh / (H * T + 40)); }
+    function scale() { return Math.max(1, Math.round(baseScale() * cam.zoom * dpr)) / dpr; }
+    function clampCam() { cam.x = Math.max(0, Math.min(W * T, cam.x)); cam.y = Math.max(0, Math.min(H * T, cam.y)); }
+    var cs = 1, cpx = 0, cpy = 0;
+    function applyCam() {
+      clampCam();
+      cs = scale();
+      cpx = Math.round((vw / 2 - cam.x * cs) * dpr) / dpr;
+      cpy = Math.round((vh / 2 - cam.y * cs) * dpr) / dpr;
+      [world, worldTop, lightWorld].forEach(function (c) { c.scale.set(cs); c.position.set(cpx, cpy); });
+    }
+    var toWorld = function (sx, sy) { return { x: (sx - cpx) / cs, y: (sy - cpy) / cs }; };
+    applyCam();
+
+    S.gestures(renderer.canvas, {
+      dragStart: function () {},
+      drag: function (x, y, dx, dy) { cam.x -= dx / cs; cam.y -= dy / cs; applyCam(); },
+      pinch: function (ratio, cx, cy, dcx, dcy) {
+        var before = toWorld(cx, cy);
+        cam.zoom = Math.max(0.35, Math.min(5, cam.zoom * ratio));
+        cam.x -= dcx / cs; cam.y -= dcy / cs;
+        var s = scale();
+        cam.x = before.x - (cx - vw / 2) / s;
+        cam.y = before.y - (cy - vh / 2) / s;
+        applyCam();
+      },
+      tap: function (x, y) { var w = toWorld(x, y); S.tapCell(Math.floor(w.x / T), Math.floor(w.y / T)); },
+    });
+
+    function resize() {
+      vw = window.innerWidth; vh = window.innerHeight;
+      renderer.resize(vw, vh);
+      lightRT.resize(vw, vh);
+      applyCam();
+    }
+    window.addEventListener('resize', resize);
+
+    /* ---- floating numbers: screen-space text, so they stay sharp at any zoom ---- */
+    var texts = new Map();
+    function syncFloaters() {
+      var alive = new Set(S.floaters);
+      texts.forEach(function (t, f) { if (!alive.has(f)) { t.destroy(); texts.delete(f); } });
+      S.floaters.forEach(function (f) {
+        var t = texts.get(f);
+        if (!t) {
+          t = new PIXI.Text({ text: f.text, style: { fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 18, fontWeight: '800', fill: f.color, stroke: { color: '#000000', width: 4 } } });
+          t.anchor.set(0.5, 1);
+          floatLayer.addChild(t);
+          texts.set(f, t);
+        }
+        var p = f.age / f.life;
+        t.position.set(cpx + f.x * T * cs, cpy + (f.y - p * 0.8) * T * cs);
+        t.alpha = p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4;
+        t.scale.set(1 + Math.max(0, 0.3 - p) * 1.5);
+      });
+    }
+
+    /* ---- one frame ---- */
+    function draw() {
+      var i, a, p;
+      // Actors.
+      for (i = 0; i < views.length; i++) {
+        var v = views[i]; a = v.a;
+        v.body.texture = frameTex(a.sheet, a.frame);
+        v.body.scale.x = a.flip ? -1 : 1;
+        v.fl.texture = frameTex(a.sheet, a.frame, true);
+        v.fl.scale.x = v.body.scale.x;
+        v.fl.alpha = a.flash * 0.9;
+        var fy = Math.round(a.y * T + 8);
+        v.c.position.set(Math.round(a.x * T), fy);
+        v.c.zIndex = fy;
+      }
+      door.texture = tile(S.doorOpen ? S.TILE.DOOR_OPEN : S.TILE.DOOR);
+      // Water scrolls down 5 px a second, as in the game.
+      water.tilePosition.y = (S.time / 200) % 32;
+
+      // Mist.
+      for (i = 0; i < S.mist.length; i++) {
+        var m = S.mist[i], ms = mistSprites[i];
+        ms.position.set(m.x * T, m.y * T);
+        ms.alpha = 0.16 * m.a * (0.7 + 0.3 * Math.sin(S.time / 1500 + m.ph));
+      }
+
+      // Ripples and drops on the floor.
+      fxFloor.clear();
+      for (i = 0; i < S.ripples.length; i++) {
+        var r = S.ripples[i]; p = r.age / r.life;
+        var rx = 2 + p * (r.tap ? 9 : 6);
+        fxFloor.ellipse(r.x * T, r.y * T, rx, rx * 0.55).stroke({ width: 1, color: r.tap ? 0xffffff : 0xcfe9ff, alpha: (1 - p) * (r.tap ? 0.7 : 0.9) });
+      }
+      for (i = 0; i < S.drops.length; i++) {
+        var d = S.drops[i];
+        fxFloor.rect(Math.round(d.x * T), Math.round(d.y * T - d.h * T), 1, 2).fill({ color: 0xbfe4ff, alpha: 0.95 });
+      }
+
+      // Torch: flame frame and flicker; sparks.
+      var tf = S.torch;
+      torchSpr.texture = torchTex[tf.frame];
+      bloomCopy.texture = torchTex[tf.frame];
+      halo.alpha = 0.8 * tf.f; bloomCopy.alpha = 0.85 * tf.f;
+      halo.width = halo.height = 3.8 * T * tf.f;
+      bloomLayer.visible = lightOn && bloomOn;
+      fxTop.clear();
+      for (i = 0; i < S.sparks.length; i++) {
+        var sp = S.sparks[i];
+        fxTop.rect(Math.round(sp.x * T), Math.round(sp.y * T - sp.h * T), 1, 1).fill({ color: 0xffc060, alpha: 1 - sp.age / sp.life });
+      }
+
+      syncFloaters();
+
+      // The light map: ambient + torch (flickering, casting shadows) + a soft glow round the hero.
+      lightSprite.visible = lightOn;
+      if (lightOn) {
+        updateLight(torchLight, tf.lx, tf.ly, 8.5 * tf.f, 1);
+        updateLight(heroLight, S.hero.x, S.hero.y, 4.2, 0.85);
+        lightWorld.scale.set(cs); lightWorld.position.set(cpx, cpy);
+        renderer.render({ container: lightWorld, target: lightRT, clear: true });
+      }
+      renderer.render({ container: stage });
+    }
+
+    S.run(draw);
+    draw();
+    window.__pixi = { renderer: renderer, stage: stage, cam: cam, backend: backend };
+  } catch (err) {
+    S.fatal(err);
+  }
+})();
+</script>
+</body>
+</html>
