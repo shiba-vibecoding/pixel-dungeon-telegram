@@ -1,4 +1,5 @@
-import { berserkOf, comboOf, type Hero, momentumOf, pointsInTalent, type SubClass, type TalentId } from '@pd/core';
+import { berserkOf, comboOf, type Hero, momentumOf, pointsInTalent, type SubClass, type TalentId, TALENTS } from '@pd/core';
+import { talentLevels as armorTalentLevels, talentTitle as armorTalentTitle } from './abilitytext';
 import { fill, lang } from './i18n';
 import { TAL_EN, TAL_RU } from './i18n-talents';
 
@@ -16,7 +17,9 @@ export function tal(key: string, ...args: Array<string | number>): string {
 }
 
 /** Talent.title. */
-export const talentTitle = (id: TalentId | string): string => tal(`actors.hero.talent.${id}.title`) || String(id);
+/** (The fourth tier's, the armour abilities', are the abilities' texts.) */
+const isArmorTalent = (id: string): boolean => Object.hasOwn(TALENTS, id) && TALENTS[id as TalentId].tier === 4;
+export const talentTitle = (id: TalentId | string): string => (isArmorTalent(id) ? armorTalentTitle(id as TalentId) : tal(`actors.hero.talent.${id}.title`) || String(id));
 
 /** Talent.desc(metamorphed): the description, and the metamorphosis note when it was swapped in. */
 export function talentDesc(id: TalentId | string, metamorphed = false): string {
@@ -27,6 +30,10 @@ export function talentDesc(id: TalentId | string, metamorphed = false): string {
 
 /** A talent's description cut at «_+N:_» into what each point gives; text before the first (a lead) is returned as `lead`. */
 export function talentLevels(id: TalentId | string, max: number): { lead: string; levels: string[] } {
+  if (isArmorTalent(id)) {
+    const { intro, levels } = armorTalentLevels(id as TalentId);
+    return { lead: intro, levels: Array.from({ length: max }, (_, i) => levels[i] ?? '') };
+  }
   const text = tal(`actors.hero.talent.${id}.desc`);
   const parts = text.split(/_\+(\d):_\s*/);
   const lead = parts[0]!.trim();

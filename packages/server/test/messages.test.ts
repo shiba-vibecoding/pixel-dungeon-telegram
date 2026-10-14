@@ -48,6 +48,18 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'transfer', to: 'weapon', from: 4 })).toBeNull();
     expect(sanitizeAction({ type: 'talent', talent: 'bodySlam' })).toEqual({ type: 'talent', talent: 'bodySlam' });
     expect(sanitizeAction({ type: 'talent', talent: 'nonsense' })).toBeNull();
+    // The talents of every tier, and nothing off the table (a prototype's names too).
+    expect(sanitizeAction({ type: 'talent', talent: 'hearty_meal', x: 1 })).toEqual({ type: 'talent', talent: 'hearty_meal' });
+    expect(sanitizeAction({ type: 'talent', talent: 'toString' })).toBeNull();
+    expect(sanitizeAction({ type: 'talent', talent: 7 })).toBeNull();
+    // The subclasses' indicator.
+    expect(sanitizeAction({ type: 'ability', ability: 'berserk', x: 1 })).toEqual({ type: 'ability', ability: 'berserk' });
+    expect(sanitizeAction({ type: 'ability', ability: 'combo', move: 'parry' })).toEqual({ type: 'ability', ability: 'combo', move: 'parry' });
+    expect(sanitizeAction({ type: 'ability', ability: 'combo', move: 'parry', target: '#m1' })).toEqual({ type: 'ability', ability: 'combo', move: 'parry', target: '#m1' });
+    expect(sanitizeAction({ type: 'ability', ability: 'combo', move: 'nonsense' })).toBeNull();
+    expect(sanitizeAction({ type: 'ability', ability: 'ambush' })).toBeNull();
+    expect(sanitizeAction({ type: 'ability', ability: 'ambush', target: '#m1' })).toEqual({ type: 'ability', ability: 'ambush', target: '#m1' });
+    expect(sanitizeAction({ type: 'ability', ability: 'fly' })).toBeNull();
     expect(sanitizeAction({ type: 'use', item: 3, choice: 2 })).toEqual({ type: 'use', item: 3, choice: 2 });
     // Artifacts (the core's ArtifactAction): worn by slot or carried by index, a use, and what it aims at or takes.
     expect(sanitizeAction({ type: 'artifact', item: 5, use: 'return', mode: 'x' })).toEqual({ type: 'artifact', item: 5, use: 'return' });

@@ -1,6 +1,6 @@
 import {
   type Action, canUseMove, COMBO_MOVES, COMBO_REQ, type ComboMove, comboOf, type Hero, type HeroClass, itemDef, metamorphOptions, metamorphTargets, METAMORPH_OPTIONS, type MetamorphTarget, SUBCLASSES,
-  type SubClass, SUBCLASS_TALENTS, talentBook, talentPointsAvailable, talentPointsSpent, TALENTS, type TalentId, TIER_LEVELS, tierPoints,
+  type SubClass, SUBCLASS_TALENTS, talentBook, talentPointsAvailable, talentPointsSpent, TALENTS, talentIcon, type TalentId, TIER_LEVELS, tierPoints,
   pointsInTalent, upgradeProblem, type World,
 } from '@pd/core';
 import { audio } from './audio';
@@ -8,6 +8,7 @@ import { capitalize, lang, t } from './i18n';
 import {
   AVATAR, button, el, hideOverlay, show, showConfirm, showInfo, windowOf,
 } from './screens';
+import { abilityName } from './abilitytext';
 import { emphasized, subclassDesc, subclassName, subclassShort, tal, talentDesc, talentLevels, talentTitle } from './talenttext';
 
 /*
@@ -151,7 +152,7 @@ export function talentsPane(host: TalentHost, onPick: (id: TalentId) => void, on
     const last = TIER_LEVELS[tier + 1]! - 1;
     const talents = Object.entries(book.tiers[tier - 1]!) as Array<[TalentId, number]>;
     const available = talentPointsAvailable(hero, tier);
-    const locked = tier === 4 || (tier === 3 && !hero.subclass) || (tier === 2 && hero.lvl < first - 1) || (tier === 3 && hero.lvl < first - 1);
+    const locked = (tier === 4 && !hero.ability) || (tier === 3 && !hero.subclass) || (tier === 2 && hero.lvl < first - 1) || (tier === 3 && hero.lvl < first - 1);
     const spent = talentPointsSpent(hero, tier);
     const counter = el('span', { className: `pd-tier-points${available > 0 ? ' free' : ''}` });
     if (!locked) {
@@ -172,7 +173,7 @@ export function talentsPane(host: TalentHost, onPick: (id: TalentId) => void, on
         const def = TALENTS[id];
         if (!def) continue;
         const can = upgradeProblem(hero, id) === null;
-        const node = el('button', { className: `pd-talent${points === 0 ? ' zero' : ''}${points >= def.max ? ' max' : ''}${can ? ' can' : ''}${cardOf === id ? ' selected' : ''}` }, ticon(def.icon), pips(points, def.max));
+        const node = el('button', { className: `pd-talent${points === 0 ? ' zero' : ''}${points >= def.max ? ' max' : ''}${can ? ' can' : ''}${cardOf === id ? ' selected' : ''}` }, ticon(talentIcon(id, hero.heroClass)), pips(points, def.max));
         node.ariaLabel = `${talentTitle(id)}, ${UI.of(points, def.max)}`;
         node.onclick = () => {
           audio.play('click');
@@ -201,7 +202,7 @@ export function showCard(host: TalentHost, id: TalentId, back: () => void, pick?
   const have = points ?? talentBook(hero).tiers.map((tier) => tier[id]).find((value) => value !== undefined) ?? 0;
   const { lead, levels } = talentLevels(id, def.max);
   const tier = def.tier;
-  const owner = tier === 3 && hero.subclass && SUBCLASS_TALENTS[hero.subclass].includes(id) ? capitalize(subclassName(hero.subclass)) : UI.tierClass;
+  const owner = tier === 4 && hero.ability ? capitalize(abilityName(hero.ability)) : tier === 3 && hero.subclass && SUBCLASS_TALENTS[hero.subclass].includes(id) ? capitalize(subclassName(hero.subclass)) : UI.tierClass;
   cardOf = id;
   const list = el(
     'ol',
@@ -232,7 +233,7 @@ export function showCard(host: TalentHost, id: TalentId, back: () => void, pick?
       {
         title: capitalize(talentTitle(id)),
         sub: `${UI.tier(tier)} · ${owner}`,
-        icon: el('div', { className: 'pd-slot' }, ticon(def.icon)),
+        icon: el('div', { className: 'pd-slot' }, ticon(talentIcon(id, hero.heroClass))),
         narrow: true,
         className: 'pd-talent-card',
         onClose: close,
