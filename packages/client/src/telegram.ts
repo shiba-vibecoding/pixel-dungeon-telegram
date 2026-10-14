@@ -47,6 +47,7 @@ interface WebApp {
 export interface CloudStorage {
   setItem(key: string, value: string, callback?: (error: string | null, stored?: boolean) => void): void;
   getItems(keys: string[], callback: (error: string | null, values?: Record<string, string>) => void): void;
+  removeItems?(keys: string[], callback?: (error: string | null, removed?: boolean) => void): void;
 }
 
 const webApp = (globalThis as { Telegram?: { WebApp?: WebApp } }).Telegram?.WebApp;

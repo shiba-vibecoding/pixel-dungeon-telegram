@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { type Action, dayOf, MAX_CHALLENGES, type HeroClass, HERO_CLASSES, isPatron, RULES_VERSION, type Wallet } from '@pd/core';
-import { BOARD_KINDS, type BoardKind, boardName, boardOfRun, boardsFor } from './boards';
+import { BOARD_KINDS, type BoardKind, boardName, boardObject, boardOfRun, boardsFor } from './boards';
 import { CORS, json, jsonBody } from './http';
 import type { Env } from './index';
 import { secretDailySeed } from './daily-seed';
@@ -8,11 +8,12 @@ import { outageDays } from './outages';
 import { type DailyEntry, publicId } from './leaderboard';
 import { claimAll, claimLetter, collectMail, type Lookup, noteEntered, readAll } from './mail';
 import { newsSeenAfter, parseVersion } from './news';
-import { grantPioneer } from './pioneer';
+import { grantPioneer, parseReleaseAt } from './pioneer';
 import { giveHonor, MAX_PROBLEM_BYTES, parseProblem, takeProblemSlot } from './problem';
 import { readBody } from './secret';
 import { sanitizeAction } from './messages';
-import { EntryWriter, fromEntries, toEntries } from './run-store';
+import { loadPlayer } from './season';
+import { EntryWriter, toEntries } from './run-store';
 import { describe, ended, MAX_SYNC_ACTIONS, parseSlot, PlayerLogic, type RunSlot, type RunSummary, streakNow } from './runs';
 import { notifierStub } from './notifier';
 import { verifyInitData, WEEK_SECONDS } from './telegram-auth';
@@ -58,7 +59,7 @@ async function who(body: Record<string, unknown>, env: Env): Promise<Who | null>
 }
 
 const playerStub = (env: Env, key: string): DurableObjectStub<Player> => env.PLAYER.get(env.PLAYER.idFromName(key));
-const boardStub = (env: Env, name: string): DurableObjectStub => env.DAILY.get(env.DAILY.idFromName(name));
+const boardStub = (env: Env, name: string): DurableObjectStub => env.DAILY.get(env.DAILY.idFromName(boardObject(name)));
 /** The key a board's public ids are made with: a server secret, so they cannot be worked back to accounts. */
 const boardKey = (env: Env): string => env.BOT_TOKEN ?? 'development';
 
@@ -157,13 +158,13 @@ export class Player extends DurableObject<Env> {
     if (!this.logic) {
       const entries = await this.ctx.storage.list<string>();
       this.writer.loaded(entries);
-      const { profile, runs } = fromEntries(entries);
-      // A player the server has never kept: the moment they came is noted (pioneer.ts). Those kept before have none.
-      if (!entries.has('profile')) {
-        profile.born = Date.now();
-        this.fresh = true;
-      }
+      // A player the server has never kept: the moment they came is noted (pioneer.ts). A player of an earlier season
+      // is started afresh (season.ts), and that is written out at once, runs under way and all.
+      const loaded = loadPlayer(entries, Date.now());
+      const { profile, runs } = loaded;
+      this.fresh = loaded.born;
       this.logic = new PlayerLogic(profile, runs);
+      if (loaded.wiped) await this.persist(new Set(), new Map());
     }
     return this.logic;
   }
@@ -355,8 +356,7 @@ export class Player extends DurableObject<Env> {
     // Boards finished since last asked become letters (mail.ts); the trophies are claimed from them.
     let changed = await collectMail(p, now, this.standing(player.key));
     // «Первопроходец»: one letter for whoever played before the update (pioneer.ts).
-    const releaseAt = Date.parse(this.env.RELEASE_AT ?? '');
-    if (grantPioneer(p, Object.values(logic.runs), now, Number.isFinite(releaseAt) ? releaseAt : null)) changed = true;
+    if (grantPioneer(p, Object.values(logic.runs), now, parseReleaseAt(this.env.RELEASE_AT))) changed = true;
     if (this.fresh) {
       this.fresh = false;
       changed = true;

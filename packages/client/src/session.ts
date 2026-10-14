@@ -92,7 +92,7 @@ const SYNC_MAX = 300;
 /** How long the end of a run waits for the server's word on it. */
 const FINISH_WAIT_MS = 10_000;
 
-const SAVE_VERSION = 31;
+const SAVE_VERSION = 32;
 
 interface SoloSave {
   version: number;

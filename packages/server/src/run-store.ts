@@ -9,7 +9,7 @@ import { emptyProfile, type Profile, RUN_SLOTS, type Run, type RunSlot } from '.
  */
 
 /** The shape of stored runs; a run of another is dropped (SAVE_VERSION in the client, STATE_FORMAT in rooms). */
-export const RUN_FORMAT = 31;
+export const RUN_FORMAT = 32;
 
 const PROFILE = 'profile';
 const runKey = (slot: RunSlot): string => `run:${slot}`;

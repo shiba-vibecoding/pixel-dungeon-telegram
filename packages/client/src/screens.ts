@@ -1,5 +1,5 @@
 import {
-  ankhChoices, escapeScore, keepable, ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
+  ankhChoices, escapeScore, isChallenged, NO_ARMOR, keepable, ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
   knownIn, MUST_THROW, TARGETED_SPELLS,
   type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass, HERO_CLASSES,
   type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
@@ -2470,8 +2470,9 @@ function showAugmentStone(options: ItemOptions, stone: number, on: ItemRef, targ
     const item = as(augment);
     const same = augment === current;
     if (armour) {
-      const had = armorStats(now);
-      const has = armorStats(item);
+      const noArmor = isChallenged(world, NO_ARMOR);
+      const had = armorStats(now, noArmor);
+      const has = armorStats(item, noArmor);
       const evasion = armorEvasionBonus(item);
       return [
         { label: t.weaponsUi.armorRow, value: `${has.min}–${has.max}`, tone: same ? '' : tone(has.max - had.max), note: same || has.max === had.max ? '' : signed(has.max - had.max) },

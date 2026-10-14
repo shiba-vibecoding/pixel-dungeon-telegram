@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { SEASON } from '../src/boards';
 import { streakReminder, weeklyResult } from '../src/reminders';
 
 const at = (iso: string): number => Date.parse(iso);
 
 describe('the bot’s reminders', () => {
-  const sub = { chat: 1, ru: true, streak: 5, last: '2026-10-12' };
+  const sub = { chat: 1, ru: true, streak: 5, last: '2026-10-12', season: SEASON };
 
   it('remind of a streak at risk: kept yesterday, not today, once a day, and only a streak worth keeping', () => {
     const now = at('2026-10-13T17:00:00Z');

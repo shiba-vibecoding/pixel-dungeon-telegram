@@ -12,11 +12,32 @@ import { PIONEER_ID, pioneerLetter } from './mail';
  * asking again, or from another device, brings nothing new. A player who comes after the release is born
  * after it and has runs of the new rules only: nothing.
  *
+ * The Shattered update wiped the world (season.ts): a profile of the old season is started afresh when the
+ * player's object loads, and the wipe itself sends the letter to whoever had played anything (and marks everyone
+ * else as settled, `pioneer` set, so that a profile's age alone never makes a pioneer). What is left here is the
+ * rest: a profile made after the deploy but before RELEASE_AT, and the old-rules runs a wiped profile no longer has.
+ *
  * Pure logic over the profile; player.ts asks when the profile is read.
  */
 
 /** The rules a run must have been begun under to be a new player's: the first of Shattered's. */
 export const PIONEER_BEFORE_RULES = 18;
+
+/**
+ * The release moment from wrangler.jsonc's RELEASE_AT var (an ISO date or date-time, UTC: "2026-10-27T09:00:00Z"; a
+ * date alone is its midnight UTC). Unset or empty: null, which is fine. A value that is not a date is null too, and
+ * is said so in the log, so that a typo costs nothing worse than the early-joiners' cup.
+ */
+export function parseReleaseAt(value: string | undefined): number | null {
+  const text = (value ?? '').trim();
+  if (!text) return null;
+  const at = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T00:00:00Z` : /(Z|[+-]\d{2}:?\d{2})$/i.test(text) ? text : `${text}Z`);
+  if (!Number.isFinite(at)) {
+    console.error(`RELEASE_AT is not a date: ${text.slice(0, 40)}`);
+    return null;
+  }
+  return at;
+}
 
 /** What the grant looks at. */
 export interface PioneerProfile extends MailProfile {
