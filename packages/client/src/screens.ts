@@ -12,7 +12,7 @@ import { type AbilityHost, classArmorCard, showAbilityPick, showTalents, startAb
 import { audio } from './audio';
 import { type ChoiceOption, showChoice } from './alchemyui';
 import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse, WEAPON_SLOT } from './quickslot';
-import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
+import { ARENA_BADGES, BADGES, RETIRED, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
 import { BUFF_ICONS, type BuffEntry, type BuffName } from './hud';
 import { capitalize, fill, fmt, locale, t } from './i18n';
 import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
@@ -475,7 +475,7 @@ export function showBadges(onClose: () => void, honors: readonly string[] = []):
   };
   const grid = el('div', { className: 'pd-grid c6' });
   // The arena's badges are left out: the arena of waves is no longer offered.
-  for (const badge of BADGES.filter((b) => b.image < ARENA_BADGES)) {
+  for (const badge of BADGES.filter((b) => b.image < ARENA_BADGES && (!RETIRED.has(b.id) || earned.has(b.id)))) {
     const icon = el('i', { className: `pd-badge${earned.has(badge.id) ? '' : ' dim'}` });
     icon.dataset.i = String(badge.image);
     const node = el('button', { className: `pd-slot${fresh.has(badge.id) ? ' new' : ''}`, ariaLabel: badgeText(badge.id) }, icon);
