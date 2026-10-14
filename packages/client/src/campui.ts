@@ -298,10 +298,23 @@ export function showCamp(options: CampScreenOptions): CampScreen {
   show(root, null, true);
   audio.ambience('camp');
 
-  // The hero's feet stand 16 px above the sheet: a low screen lifts the scene, a tall one lowers it (its extended sky fills the top).
+  // The hero by the fire stands in the middle of the room between the name card and the sheet, as big as that room allows:
+  // the scene's pixel is a whole number of screen pixels, 4 at the least (a short window), 10 at the most.
   const fit = (): void => {
-    const lift = sheet.getBoundingClientRect().top - root.getBoundingClientRect().top;
-    camp.shift(Math.min(camp.ext, Math.round(lift - 16 - 129 * 4)));
+    const box = root.getBoundingClientRect();
+    const above = top.getBoundingClientRect().bottom - box.top;
+    const below = sheet.getBoundingClientRect().top - box.top;
+    const room = Math.max(0, below - above);
+    // The fire and the hero span some 64 scene pixels across (camp.ts FIRE at 24, HERO at 50): they fit the width with a margin.
+    const scale = Math.max(4, Math.min(10, Math.floor(room / 56), Math.floor(box.width / 66)));
+    camp.setScale(scale);
+    camp.resize();
+    // Their middle (scene x 38) at the middle of the screen, not the scene's own (x 47).
+    const left = `calc(50% + ${9 * scale}px)`;
+    camp.canvas.style.left = left;
+    camp.layer.style.left = left;
+    // Scene row 112 is the middle of the hero and the fire (camp.ts HERO, FIRE).
+    camp.shift(Math.min(camp.ext, Math.round((above + below) / 2 - 112 * scale)));
   };
   const refit = (): void => {
     camp.resize();

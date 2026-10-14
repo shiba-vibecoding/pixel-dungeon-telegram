@@ -197,7 +197,7 @@ export class Camp {
   /** The extended backgrounds (fill), by scene and season, made once for the size they were made at. */
   private readonly extCache = new Map<string, HTMLCanvasElement>();
   private lastShift = 0;
-  private readonly scale: number;
+  private scale: number;
   private scene: CampScene;
   private season: Season;
   private hero: number;
@@ -276,6 +276,17 @@ export class Camp {
    */
   get ext(): number {
     return this.options.fill ? -this.crop[1] * this.scale : 0;
+  }
+
+  /** The scene's pixel size on screen: the home screen picks it from the room it has (campui.ts), so the hero is big. */
+  setScale(scale: number): void {
+    if (scale === this.scale || !(scale > 0)) return;
+    this.scale = scale;
+    this.extCache.clear();
+    this.size();
+    this.layout();
+    this.resize();
+    this.shift(this.lastShift);
   }
 
   /** A filled scene to the size its element has now (a turn of the phone, the keyboard, a window resized). */
