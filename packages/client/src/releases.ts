@@ -27,6 +27,8 @@ export interface Release {
   title?: Words;
   kick?: Words;
   sub?: Words;
+  /** A major update: a notice shown plainly above the main items (here: the world started afresh). */
+  notice?: Words;
   /** A major update: the four things that are new, with their icons. */
   main?: ReadonlyArray<{ icon: MainIcon; title: Words; text: Words }>;
   changes: readonly Change[];
@@ -43,6 +45,10 @@ export const RELEASES: readonly Release[] = [
     kick: { ru: 'Большое обновление', en: 'Major update' },
     title: { ru: 'Shattered', en: 'Shattered' },
     sub: { ru: 'Игра выросла до Shattered Pixel Dungeon v4', en: 'The game grew into Shattered Pixel Dungeon v4' },
+    notice: {
+      ru: 'Мир начался с чистого листа: забеги, рекорды, доски, серии, значки и кубки обнулены. Кубок «Первопроходец» получили все, кто спускался до обновления.',
+      en: 'The world started afresh: runs, records, boards, streaks, badges and trophies are reset. Everyone who went down the dungeon before the update got the «Pioneer» cup.',
+    },
     main: [
       {
         icon: 'classes',
@@ -66,6 +72,8 @@ export const RELEASES: readonly Release[] = [
       },
     ],
     changes: [
+      now('Мир начался с чистого листа: идущие забеги, рекорды, история, серии и заморозки, значки, кубки и все доски (дня, недели, за всё время) обнулены. Имя, облик, язык и настройки остались.', 'The world started afresh: runs under way, records, history, streaks and freezes, badges, trophies and every board (day, week, all-time) are reset. Your name, look, language and settings stay.'),
+      add('Кубок «Первопроходец» всем, кто спускался в подземелье до обновления: он лежит в почте.', 'The «Pioneer» cup for everyone who went down the dungeon before the update: it waits in the mail.'),
       add('Дуэлянтка и Клирик: рапира с выпадом и священный том с заклинаниями.', 'The Duelist and the Cleric: a rapier with a lunge and a holy tome with spells.'),
       add('Таланты четырёх ярусов у каждого класса, очки талантов за уровни и окно талантов.', 'Talents on four tiers for every class, talent points for levels, and a talents window.'),
       add('Путь мастерства на третьем ярусе: у каждого класса свои подклассы.', 'A path of mastery on the third tier: every class has its own subclasses.'),
@@ -79,14 +87,12 @@ export const RELEASES: readonly Release[] = [
       add('Привал: живой главный экран с костром, вашим героем и почтой; свайп меняет класс.', 'The camp: a live home screen with a fire, your hero and the mail; a swipe changes the class.'),
       add('Почта: кубки дня и медали недели приходят письмами.', 'Mail: the day’s cups and the week’s medals arrive as letters.'),
       add('Обучение по шагам для новых игроков.', 'A step-by-step tutorial for new players.'),
-      add('Кубок «Первопроходец» всем, кто спускался в подземелье до обновления.', 'The «Pioneer» cup for everyone who went down the dungeon before the update.'),
       add('«Сообщить о проблеме» в настройках и на экране ошибки; за подтверждённую ошибку — значок «Охотник за багами».', '«Report a problem» in the settings and on the error screen; a confirmed bug earns the «Bug hunter» badge.'),
       add('Игра без связи: забег идёт дальше и засчитается, когда связь вернётся.', 'Play without a connection: the run goes on and counts once the connection is back.'),
       add('Правила доски: «?» в рейтинге объясняет очки, места, закрытие и равные очки.', 'Board rules: the «?» in the rankings explains the score, the places, the close and ties.'),
       add('Звуки и музыка Shattered.', 'Shattered’s sounds and music.'),
       now('Пиксель-Март: пять полок, привалы с открытками и примеркой на 10 секунд.', 'Pixel Mart: five shelves, camps with postcards and a 10-second try-on.'),
       now('Под призовым местом на доске видна награда, а доска показывает, когда закроется.', 'Prize places on the boards show their reward, and the board shows when it closes.'),
-      now('Забег, начатый в прежней версии, может не продолжиться: рекорды, значки и кубки остаются.', 'A run begun in an earlier version may not be able to go on: records, badges and trophies stay.'),
       fix('Сбой сервера больше не обрывает серию и не тратит заморозку.', 'A server outage no longer breaks a streak or spends a freeze.'),
       fix('Когда Telegram свёрнут, игра перестаёт рисовать и не греет телефон.', 'With Telegram minimised, the game stops drawing and no longer warms the phone.'),
     ],

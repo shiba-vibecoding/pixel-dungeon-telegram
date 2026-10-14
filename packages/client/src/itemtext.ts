@@ -1,5 +1,5 @@
 import {
-  armorStats, augmentDamage, bowMax, bowMin, bowStr, buffedLevel, chargeLimit, chargesKnown, chargesPerCast, cursedKnown, durabilityOf, isBroken,
+  armorStats, augmentDamage, isChallenged, NO_ARMOR, bowMax, bowMin, bowStr, buffedLevel, chargeLimit, chargesKnown, chargesPerCast, cursedKnown, durabilityOf, isBroken,
   isCurseEnchant, isCurseGlyph, isIdentified, isTippedDart, kindKnown, levelKnown, maxCharges, maxDurability, CLASS_ARMOR, CLASS_ARMOR_OF, type Hero,
   type HeroClass, type Item, itemDef, type ItemKind, itemSprite, missileStats, SCROLL_RUNES, sealShield, sharpshootingBonus, sharpshootingDurability, usesLeft,
   visiblyCursed, visiblyUpgraded,
@@ -304,7 +304,8 @@ function classArmorLines(hero: Hero, item: Item): string[] {
 }
 
 /** MeleeWeapon.info, Armor.info, MissileWeapon.info and SpiritBow.info, without the enchantment (the card shows it apart). */
-export function gearInfo(hero: Hero, item: Item): string[] | null {
+/** `noArmor`: the «Faith is my armor» challenge, which changes what armour absorbs (Armor.DRMax and DRMin). */
+export function gearInfo(hero: Hero, item: Item, noArmor = false): string[] | null {
   const category = itemDef(item.kind).category;
   const known = levelKnown(item);
   const shown = known ? item : typical(item);
@@ -328,7 +329,7 @@ export function gearInfo(hero: Hero, item: Item): string[] | null {
     ];
   }
   if (category === 'armor') {
-    const stats = armorStats(shown);
+    const stats = armorStats(shown, noArmor);
     return [
       CLASS_ARMOR.includes(item.kind) ? artText(`items.armor.${CLASS_OF[item.kind]}armor.desc`) : t.itemInfo[item.base ?? item.kind] ?? '',
       `${fmt(known ? t.gear.armorKnown : t.gear.armorTypical, stats.tier, stats.min, stats.max, stats.str)} ${strengthLines(known, stats.str, hero, false).join(' ')}`.trim(),
@@ -380,7 +381,7 @@ export function gearInfo(hero: Hero, item: Item): string[] | null {
 export function itemInfo(world: World, hero: Hero, item: Item): string[] {
   const category = itemDef(item.kind).category;
   // MeleeWeapon.info, Armor.info, MissileWeapon.info, SpiritBow.info (gearInfo).
-  const gear = gearInfo(hero, item);
+  const gear = gearInfo(hero, item, isChallenged(world, NO_ARMOR));
   if (gear) return gear;
   if (category === 'wand') {
     // Wand.info: what it is, what it does, its curse (once known) or that it is free of one, a battlemage's staff of it.

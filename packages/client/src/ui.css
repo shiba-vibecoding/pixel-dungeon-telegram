@@ -2046,6 +2046,7 @@ button.pd-slot:active, .pd-slot.pressed { background: var(--stone-900); }
 .pd-news-banner b { font: var(--text-display, 400 36px/40px var(--font-ui)); color: var(--gold); text-shadow: 0 3px 0 var(--void), 3px 0 0 var(--void), -3px 0 0 var(--void), 0 -3px 0 var(--void); font-weight: 400; }
 .pd-news-kick { font: var(--text-caption, 400 15px/18px var(--font-small)); color: var(--ink); text-shadow: 0 2px 0 var(--void), 2px 0 0 var(--void), -2px 0 0 var(--void); }
 .pd-news-sub { margin: 0; text-align: center; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+.pd-news-notice { margin: 0; padding: 8px 10px; background: var(--stone-800); clip-path: var(--notch); text-align: center; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--gold); }
 .pd-news-big { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .pd-news-big li { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 8px; background: var(--stone-800); clip-path: var(--notch); font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
 .pd-news-big b { display: block; font: var(--text-body, 400 18px/22px var(--font-ui)); color: var(--gold); font-weight: 400; }

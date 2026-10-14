@@ -1,4 +1,5 @@
 import { dayOf } from '@pd/core';
+import { SEASON } from './boards';
 
 /* What the bot's reminders say and when (notifier.ts sends them). Pure logic. */
 
@@ -11,6 +12,8 @@ export interface Subscriber {
   /** The last day a reminder went out, and the last week whose result did. */
   sent?: string;
   week?: string;
+  /** The season that streak belongs to (boards.ts); a streak of an earlier season was wiped with the world and is not reminded of. */
+  season?: number;
 }
 
 export type Job = { chat: number; text: string; button: string; start: string };
@@ -25,7 +28,7 @@ export const subKey = (chat: number): string => `s:${chat}`;
 export function streakReminder(sub: Subscriber, now: number): Job | null {
   const today = dayOf(now);
   const yesterday = dayOf(now - 86_400_000);
-  if (sub.streak < 2 || sub.last !== yesterday || sub.sent === today) return null;
+  if ((sub.season ?? 1) < SEASON || sub.streak < 2 || sub.last !== yesterday || sub.sent === today) return null;
   return {
     chat: sub.chat,
     text: sub.ru

@@ -101,6 +101,8 @@ export interface Profile {
   mail: Letter[];
   /** The step tutorial has been seen through or skipped, on any device. */
   coachDone: boolean;
+  /** The season the profile is of (boards.ts SEASON; absent: season 1, before the Shattered update): see season.ts. */
+  season?: number;
   /** When the profile was made (ms); absent in one kept from before it was noted (pioneer.ts). */
   born?: number;
   /** When the «Первопроходец» letter was made, once and for good (pioneer.ts). */

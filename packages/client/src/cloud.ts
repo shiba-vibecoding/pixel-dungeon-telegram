@@ -1,3 +1,4 @@
+import { SEASON_KEY, seasonStale } from './season';
 import { cloudStorage } from './telegram';
 
 /*
@@ -17,7 +18,7 @@ const SETTINGS = [
   'pd-sound', 'pd-sound-volume', 'pd-music-volume', 'pd-haptics', 'pd-fx', 'pd-shake', 'pd-lang', 'pd-hints', 'pd-hints-seen',
   'pd-intro-seen', 'pd-seen-help', 'pd-moved', 'pd-class', 'pd-name', 'pd-challenges', 'pd-look', 'pd-live-arena',
 ] as const;
-const KEYS: readonly string[] = [...JOINED, ...SETTINGS];
+const KEYS: readonly string[] = [...JOINED, ...SETTINGS, SEASON_KEY];
 /** CloudStorage keeps up to 4096 characters a value. */
 const MAX_VALUE = 4096;
 
@@ -51,6 +52,13 @@ export function pullCloud(): Promise<void> {
     cloud.getItems([...KEYS], (error, values) => {
       clearTimeout(timer);
       if (!error && values) {
+        // The cloud still holds the old world's badges and rankings (season.ts): not joined back in, and removed.
+        const stale = seasonStale(values[SEASON_KEY]);
+        if (stale) {
+          const old = JOINED.filter((key) => values[key] !== undefined);
+          if (old.length > 0) cloud.removeItems?.([...old], () => undefined);
+          for (const key of old) delete values[key];
+        }
         for (const key of KEYS) {
           const remote = values[key];
           if (!remote) continue;

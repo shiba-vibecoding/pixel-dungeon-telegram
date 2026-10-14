@@ -1,5 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { dayOf, weekOf } from '@pd/core';
+import { boardObject, SEASON } from './boards';
 import { CORS, json, jsonBody } from './http';
 import type { Env } from './index';
 import { botApi } from './payments';
@@ -38,7 +39,7 @@ export class Notifier extends DurableObject<Env> {
         return json({ on: Boolean(body.on) });
       case '/streak':
         // From the player's object when a daily dungeon begins; nothing is kept for those who did not ask.
-        if (sub) await this.ctx.storage.put(key, { ...sub, streak: Number(body.streak) || 0, last: typeof body.last === 'string' ? body.last : sub.last });
+        if (sub) await this.ctx.storage.put(key, { ...sub, streak: Number(body.streak) || 0, last: typeof body.last === 'string' ? body.last : sub.last, season: SEASON });
         return json({ ok: true });
       default:
         return json({ error: 'not found' }, 404);
@@ -63,7 +64,7 @@ export class Notifier extends DurableObject<Env> {
     if (monday && hour === WEEKLY_HOUR) {
       const week = weekOf(now - 7 * 86_400_000);
       const name = `week:${week}`;
-      const response = await this.env.DAILY.get(this.env.DAILY.idFromName(name)).fetch(`https://board/?name=${encodeURIComponent(name)}&owners=1&top=0`);
+      const response = await this.env.DAILY.get(this.env.DAILY.idFromName(boardObject(name))).fetch(`https://board/?name=${encodeURIComponent(name)}&owners=1&top=0`);
       const { owners = {}, total = 0 } = (await response.json()) as { owners?: Record<string, number>; total?: number };
       for (const [key, sub] of subs) {
         const place = owners[`tg${sub.chat}`];

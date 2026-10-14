@@ -22,7 +22,7 @@ export interface Delivery {
 }
 
 /** Bumped whenever the saved world format changes; older rooms are brought up to date by MIGRATIONS, or start afresh. */
-export const STATE_FORMAT = 31;
+export const STATE_FORMAT = 32;
 
 /**
  * How a room saved in an older format is brought up to date: each step takes a world of format
