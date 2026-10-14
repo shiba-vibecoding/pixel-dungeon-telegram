@@ -1,0 +1,28 @@
+<!-- @dsCard group="После форума" height=760 width=1200 subtitle="Новый порядок панели: Ждать · Осмотреть или быстрые слоты · Искать · Рюкзак. Группы разделены 12 px вместо 6, кнопки одной ширины; с 4 слотами зазор везде 6 px — на 360 px кнопки по 44 px, не меньше. 6 слотов — отдельным рядом сверху. Справа — «Ждать» и «Искать» до и после: тёплый циферблат и голубое стекло лупы" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Новая панель</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 8px; flex: none; }
+  .cap { margin: 0; height: 20px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .cap b { color: var(--gold); font-weight: 400; }
+  .phone { position: relative; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get('lang') || 'ru', en = L === 'en';
+  function phone(w, h, cap) { var c = document.createElement('div'); c.className = 'col'; c.innerHTML = '<p class="cap">' + (cap || '') + '</p>'; var p = document.createElement('div'); p.className = 'phone pd-phone'; p.style.width = w + 'px'; p.style.height = h + 'px'; c.appendChild(p); document.getElementById('row').appendChild(c); return p; }
+  function game(p) { var g = document.createElement('div'); g.style.cssText = 'position:absolute;inset:0'; p.appendChild(g); PD.demo.game(g); return g; }
+  function gm(p, o) { o = o || {}; o.mates = false; o.noMobs = true; o.depth = o.depth || 12; PD.demo.game(p, o); return p; }
+  var row = document.getElementById('row'); row.style.cssText = 'display:grid;grid-template-columns:auto auto;gap:24px;padding:16px;align-items:start'; var T = PD.demo.v23[L].tools;
+  var bars = [[0, en ? 'No quickslots — Examine in the middle' : 'Без слотов — в середине «Осмотреть»'], [1, en ? '1 quickslot' : '1 слот'], [2, en ? '2 quickslots' : '2 слота'], [4, en ? '4 quickslots · 360 px — 44 px each' : '4 слота · 360 px — по 44 px'], [6, en ? '6 quickslots — a row above' : '6 слотов — ряд сверху']];
+  var left = bars.map(function (b) { return '<div style="display:flex;flex-direction:column;gap:6px"><span class="cap">' + b[1] + '</span><div style="position:relative;width:' + (b[0] === 4 ? 360 : 390) + 'px;height:' + (b[0] === 6 ? 136 : 76) + 'px;--safe-b:0px">' + PD.demo.toolbar2(L, b[0], { newIcons: true }) + '</div></div>'; }).join('');
+  var ic = function (k, nu) { return '<span style="display:inline-grid;place-items:center;width:64px;height:64px;background:var(--stone-600);clip-path:var(--notch)"><i class="pd-icon" style="--w:12;--h:12;width:36px;height:36px;background-image:var(--spr-tool-' + k + (nu ? '2' : '') + ')"></i></span>'; };
+  var right = '<div style="display:flex;flex-direction:column;gap:10px"><span class="cap">' + (en ? 'Wait and Search: before / after' : '«Ждать» и «Искать»: было / стало') + '</span><div style="display:flex;gap:8px;align-items:center">' + ic('wait') + ic('search') + '<span class="cap" style="width:40px;text-align:center">→</span>' + ic('wait', 1) + ic('search', 1) + '</div><p class="cap" style="max-width:340px;height:auto">' + (en ? 'They no longer stand side by side, and now differ by colour too: a warm clock face against blue glass with a long handle.' : 'Теперь они не рядом и отличаются ещё и цветом: тёплый циферблат против голубого стекла с длинной ручкой.') + '</p></div>';
+  row.innerHTML = '<div style="display:flex;flex-direction:column;gap:14px">' + left + '</div>' + right; PD.sprite(row);
+</script>
+</body>
+</html>

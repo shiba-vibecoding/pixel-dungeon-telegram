@@ -669,7 +669,7 @@
     var grid = L.items.map(function (it) { return bagSlot(it, cls(it), ''); }).join('');
     for (var e = L.items.length; e < 20; e++) grid += '<div class="pd-slot empty' + (tgt || filter !== 'all' ? ' dim' : '') + '"></div>';
     var pick;
-    if (!sel) pick = '<div class="pd-pick empty"><p class="pd-info">' + L.hint + '</p><div class="pd-hold-hint"><span class="pd-hold-demo"><span class="pd-hold-label">' + L.holdLabel + '</span><span class="pd-slot holding"><i class="pd-item" data-i="57"></i></span></span><span>' + L.hold + '</span></div></div>';
+    if (!sel) pick = '<div class="pd-pick empty"><p class="pd-info">' + L.hint + '</p><div class="pd-hold-hint"><span class="pd-hold-demo"><span class="pd-hold-text">' + L.holdLabel + '</span><span class="pd-slot holding"><i class="pd-item" data-i="57"></i></span></span><span>' + L.hold + '</span></div></div>';
     else if (tgt) pick = '<div class="pd-pick"><div class="pd-pick-head"><div class="pd-slot"><i class="pd-item" data-i="44"></i></div><div class="pd-titles"><h3 class="pd-heading">' + sel.n + '</h3></div></div><p class="pd-info">' + L.targetInfo + '</p><p class="pd-note">' + L.targetNote + '</p></div>';
     else {
       var a = sel.a, acts = '';
@@ -2004,6 +2004,109 @@
     }
     requestAnimationFrame(frame);
   };
+
+
+  /* ===================== v23: подтверждения, панель, «Памятка», метка забега, 9 испытаний ===================== */
+  var V23 = {
+    ru: {
+      drop: ['Выбросить свиток?', 'Свиток улучшения останется лежать здесь.', 'Оставить', 'Выбросить'],
+      replace: ['Начать новую игру?', 'Сохранённый забег пропадёт: <b>Воин · ур.\u00a07 · гл.\u00a09</b>.', 'Отмена', 'Заменить', 'Держите…', 'Заменено', 'Продолжить забег', 'удерживайте 1,2 с'],
+      leave: ['Выйти из забега?', 'Подземелье дня: попытка одна. Забег сохранится, но таблица закроется в 00:00 UTC.', 'Остаться', 'Выйти', 'Сохранить и закрыть', 'Сдаться, показать итоги'],
+      hold: 'удержание 1,2 с',
+      tools: { wait: 'Ждать', info: 'Осмотреть', search: 'Искать', pack: 'Рюкзак', quick: 'Быстрый слот' },
+      guide: 'Памятка', guideSub: '14 советов', back: 'Памятка', read: 'прочитано',
+      entries: [['hunger', 'Голод', 'Ешьте, когда «голоден»; при «истощении» тают силы.'], ['ankh', 'Анх', 'Спасёт от смерти один раз. Благословите — сохранит вещи.'], ['curses', 'Проклятия', 'Проклятую вещь не снять, пока не снимете проклятие.'], ['wealth', 'Золото и лавки', 'Золото — в лавках и в счёт; продавайте лишнее.'], ['mimics', 'Мимики', 'Сундук может укусить. Осмотрите его, прежде чем открыть.'], ['purity', 'Чистота и очищение', 'Зелье чистоты чистит воздух, очищение — вас.'], ['well', 'Колодцы', 'Здоровье, знание или превращение — один раз.'], ['seeds', 'Семена', 'Посадите или бросьте: растение сработает под ногами.'], ['score', 'Счёт', 'Пять частей: прогресс, сокровища, исследование, боссы, задания.'], ['challenges', 'Испытания', 'Открываются после победы, каждое — +25% к счёту.'], ['traps', 'Цвета ловушек', 'Цвет говорит, что будет: огонь, яд, холод…'], ['search', 'Тайники', 'Ищите у тупиков: там бывают двери и ловушки.'], ['identify', 'Опознание', 'Пользуйтесь — и узнаете. Свиток опознает сразу.'], ['upgrade', 'Улучшения', 'Свитки улучшения — в одну-две вещи, не во все.']],
+      traps: { title: 'Цвета ловушек', lead: 'Узор ловушки меняется, цвет — нет. По цвету понятно, чем она грозит.', fam: [['Красные', 'Тревога и стражи, яма, обезоруживание'], ['Оранжевые', 'Огонь и взрывы'], ['Жёлтые', 'Молния и гроза'], ['Зелёные', 'Яд, газ, слизь, слабость'], ['Бирюзовые', 'Перенос: телепорт, шлюз, искажение, путаница'], ['Фиолетовые', 'Тёмная магия: проклятие, распад'], ['Белые', 'Холод и овцы'], ['Серые', 'Механика: дротики, камни, вспышка, гибель'], ['Чёрные', 'Уже сработала — безопасно']], note: 'Сработавшая ловушка чернеет. Известную можно перепрыгнуть или обойти.' },
+      purity: { title: 'Чистота и очищение', lead: 'Два зелья с похожими именами делают разное.', cols: [['Зелье чистоты', 'Обычное', ['Разгоняет газы и облака вокруг', 'Пейте — короткая защита от газа', 'Бросьте в облако — оно исчезнет']], ['Зелье очищения', 'Экзотическое', ['Снимает с вас все вредные эффекты', 'Бросьте в союзника — очистит его', 'Варится из зелья чистоты']]], note: 'Проклятие вещи ни одно не снимает — для этого свиток рассеяния.' },
+      hungerPage: { title: 'Голод', lead: 'Голод растёт каждый ход.', items: ['«Голоден» — пора есть, вреда пока нет.', '«Истощение» — каждый ход теряете здоровье.', 'Паёк кормит надолго, мясо можно поджарить.'], note: 'На испытании «На диете» еда утоляет голод втрое слабее.' },
+      tags: { ranked: ['зачёт', 'Забег идёт в рейтинг'], replay: ['повтор', 'Повтор подземелья дня — не в рейтинг'], seed: ['свой сид', 'Свой сид — не в рейтинг'], unranked: ['без зачёта', 'Без проверки сервером — не в рейтинг'] },
+      died: 'Вы погибли', cause: 'Убиты гноллом-громилой на глубине 9', menu: 'Меню', cont: 'Продолжить', help: 'Справка', main: 'Главное меню', sound: 'Звук', depth: 'Подземелье дня · гл.\u00a07', seedSub: 'Сид PIXEL-42 · гл.\u00a04',
+      chT: 'Испытания', chOn: function (n) { return n + ' из 9 · счёт ×' + (Math.pow(1.25, n).toFixed(2).replace('.', ',')); }, chFoot: 'Выбираются перед новой игрой и действуют весь забег. Каждое — +25% к счёту.',
+      ch: [['На диете', 'Еда утоляет голод втрое слабее.'], ['Вера — мой доспех', 'Броня, кроме тканевой, защищает слабее, улучшения почти не помогают.'], ['Фармакофобия', 'Зелья исцеления и всё из них отравляют вместо лечения.'], ['Бесплодная земля', 'Нет росы и растений, семена не прорастают.'], ['Разум роя', 'Заметив вас, враги зовут соседей.'], ['Во тьму', 'Видно совсем близко; на каждом этаже лежит факел.'], ['Запретные руны', 'Свитков улучшения вдвое меньше.'], ['Вражеские чемпионы', 'Часть врагов — чемпионы: от 1 из 8 на 1-й глубине до 1 из 6 на 21-й.'], ['Злые боссы', 'Боссы крепче и злее, у каждого новые приёмы.']],
+      bossesT: 'Злые боссы', bosses: [['Жижа', '+20% здоровья, в воде лечится всё быстрее, раздувается за 1 ход.'], ['Тэнгу', '+25% здоровья, ловушки смертоноснее, приёмы чаще.'], ['DM-300', '+33% здоровья, пилоны крепче, работают три.'], ['Король дворфов', '+50% здоровья, слуг больше, приёмы сильнее.'], ['Йог-Дзева', '+33% здоровья, кулаки по два, глаз стреляет чаще.']], info: 'Подробнее' },
+    en: {
+      drop: ['Drop the scroll?', 'The scroll of upgrade stays on the floor here.', 'Keep', 'Drop'],
+      replace: ['Start a new game?', 'The saved run will be lost: <b>Warrior · lv\u00a07 · depth\u00a09</b>.', 'Cancel', 'Replace', 'Hold on…', 'Replaced', 'Continue the saved run', 'hold for 1.2 s'],
+      leave: ['Leave the run?', 'Daily dungeon: one attempt. The run is saved, but the board closes at 00:00 UTC.', 'Stay', 'Leave', 'Save and close', 'Give up, see results'],
+      hold: 'hold 1.2 s',
+      tools: { wait: 'Wait', info: 'Examine', search: 'Search', pack: 'Backpack', quick: 'Quickslot' },
+      guide: 'Tips', guideSub: '14 tips', back: 'Tips', read: 'read',
+      entries: [['hunger', 'Hunger', 'Eat when «hungry»; «starving» drains your health.'], ['ankh', 'Ankh', 'Saves you from death once. Bless it to keep your items.'], ['curses', 'Curses', 'A cursed item cannot be taken off until the curse is lifted.'], ['wealth', 'Gold and shops', 'Gold buys things and counts for score; sell what you don’t need.'], ['mimics', 'Mimics', 'A chest may bite. Examine it before opening.'], ['purity', 'Purity and cleansing', 'Purity clears the air, cleansing clears you.'], ['well', 'Wells', 'Health, knowledge or transmutation — once.'], ['seeds', 'Seeds', 'Plant or throw: the plant triggers underfoot.'], ['score', 'Score', 'Five parts: progress, treasure, exploration, bosses, quests.'], ['challenges', 'Challenges', 'Unlock after a win; each adds 25% to the score.'], ['traps', 'Trap colours', 'The colour tells what happens: fire, poison, cold…'], ['search', 'Secrets', 'Search near dead ends: doors and traps hide there.'], ['identify', 'Identifying', 'Use it and you’ll know. A scroll identifies at once.'], ['upgrade', 'Upgrades', 'Put upgrades into one or two items, not all.']],
+      traps: { title: 'Trap colours', lead: 'A trap’s pattern varies, its colour doesn’t. The colour tells you what it does.', fam: [['Red', 'Alarm and guardians, pitfall, disarming'], ['Orange', 'Fire and explosions'], ['Yellow', 'Lightning and storms'], ['Green', 'Poison, gas, ooze, weakness'], ['Teal', 'Moving you: teleport, gateway, distortion, confusion'], ['Violet', 'Dark magic: curses, disintegration'], ['White', 'Cold and sheep'], ['Grey', 'Mechanical: darts, rocks, flash, grim'], ['Black', 'Already triggered — safe']], note: 'A triggered trap turns black. A known trap can be jumped over or walked around.' },
+      purity: { title: 'Purity and cleansing', lead: 'Two potions with similar names do different things.', cols: [['Potion of purity', 'Regular', ['Clears gases and clouds around', 'Drink it — brief gas immunity', 'Throw it into a cloud to clear it']], ['Potion of cleansing', 'Exotic', ['Removes all harmful effects from you', 'Throw at an ally to cleanse them', 'Brewed from a potion of purity']]], note: 'Neither lifts an item’s curse — use a scroll of remove curse.' },
+      hungerPage: { title: 'Hunger', lead: 'Hunger grows every turn.', items: ['«Hungry» — time to eat, no harm yet.', '«Starving» — you lose health every turn.', 'A ration lasts long; meat can be cooked.'], note: 'With «On diet», food is a third as filling.' },
+      tags: { ranked: ['ranked', 'This run counts for the boards'], replay: ['replay', 'A replay of the daily — not ranked'], seed: ['own seed', 'A custom seed — not ranked'], unranked: ['unranked', 'Not checked by the server — not ranked'] },
+      died: 'You died', cause: 'Killed by a gnoll brute on depth 9', menu: 'Menu', cont: 'Continue', help: 'Help', main: 'Main menu', sound: 'Sound', depth: 'Daily dungeon · depth\u00a07', seedSub: 'Seed PIXEL-42 · depth\u00a04',
+      chT: 'Challenges', chOn: function (n) { return n + ' of 9 on · score ×' + Math.pow(1.25, n).toFixed(2); }, chFoot: 'Chosen before a new game, they last the whole run. Each adds 25% to the score.',
+      ch: [['On diet', 'Food is a third as filling.'], ['Faith is my armor', 'Armor other than cloth protects less; upgrades barely help.'], ['Pharmacophobia', 'Healing potions and all made from them poison instead.'], ['Barren land', 'No dew and no plants; seeds won’t grow.'], ['Swarm intelligence', 'Spotting you, enemies call their neighbours.'], ['Into darkness', 'You see very close; a torch lies on every floor.'], ['Forbidden runes', 'Half the scrolls of upgrade.'], ['Hostile champions', 'Some enemies are champions: 1 in 8 on depth 1 up to 1 in 6 on 21.'], ['Badder bosses', 'Bosses are tougher and meaner, each with new moves.']],
+      bossesT: 'Badder bosses', bosses: [['Goo', '+20% health, heals faster in water, pumps up in 1 turn.'], ['Tengu', '+25% health, deadlier traps, more frequent abilities.'], ['DM-300', '+33% health, tougher pylons, three activate.'], ['Dwarf King', '+50% health, more minions, stronger abilities.'], ['Yog-Dzewa', '+33% health, fists come in pairs, the eye fires more.']], info: 'More' }
+  };
+  PD.demo.v23 = V23;
+  /* подтверждение: два действия в ряд (отмена слева, действие справа, глаголами), дополнительные ответы — строками на всю ширину */
+  PD.demo.win.confirm = function (lang, kind, o) {
+    o = o || {}; var L = V23[lang || 'ru'], D = L[kind], act;
+    if (kind === 'replace') { var st = o.hold || 'idle', p = st === 'idle' ? 0 : st === 'done' ? 1 : (o.p == null ? .5 : o.p);
+      act = '<button class="pd-button primary hold' + (st === 'holding' ? ' holding' : st === 'done' ? ' done' : '') + '" style="--p:' + p + '" aria-label="' + D[3] + '"><span class="pd-hold-fill" aria-hidden="true"></span><span class="pd-hold-text">' + (st === 'holding' ? D[4] : st === 'done' ? D[5] : D[3]) + '</span></button>'; }
+    else act = '<button class="pd-button ' + (kind === 'drop' ? 'danger' : 'primary') + '">' + D[3] + '</button>';
+    var extra = kind === 'replace' ? [D[6]] : kind === 'leave' ? [D[4], D[5]] : [];
+    return '<section class="pd-window narrow pd-confirm2" role="alertdialog" aria-label="' + D[0] + '"><h2 class="pd-heading center">' + D[0] + '</h2><p class="pd-info center">' + D[1] + '</p>' +
+      '<div class="pd-confirm-row"><button class="pd-button quiet">' + D[2] + '</button>' + act + '</div>' + (kind === 'replace' && (o.hold || 'idle') !== 'done' ? '<p class="pd-hold-hint">' + D[7] + '</p>' : '') +
+      (extra.length ? '<div class="pd-confirm-more">' + extra.map(function (e) { return '<button class="pd-button">' + e + '</button>'; }).join('') + '</div>' : '') + '</section>';
+  };
+  /* панель: Ждать / Осмотреть или быстрые слоты / Искать / Рюкзак; n — число быстрых слотов (0 — Осмотреть) */
+  PD.demo.toolbar2 = function (lang, n, o) {
+    o = o || {}; var T = V23[lang || 'ru'].tools, nu = !!o.newIcons;
+    var tool = function (k, w, h, label, cls) { return '<button class="pd-tool ' + k + (cls ? ' ' + cls : '') + '" aria-label="' + label + '"><i class="pd-icon" style="--w:' + w + ';--h:' + h + ';background-image:var(--spr-tool-' + (nu && (k === 'wait' || k === 'search') ? k + '2' : k === 'pack' ? 'backpack' : k) + ')"></i></button>'; };
+    var Q = ['<i class="pd-item" data-i="31"></i><span class="pd-qty">8</span>', '<i class="pd-sitem" data-s="251"></i><span class="pd-charge" style="--v:.7"></span>', '<i class="pd-sitem" data-s="353"></i><span class="pd-qty">2</span>', '<i class="pd-sitem" data-s="209"></i><span class="pd-qty">2/3</span>', '<i class="pd-sitem" data-s="164"></i><span class="pd-qty">5</span>', ''];
+    var q = function (i) { return '<button class="pd-tool quick' + (Q[i] ? '' : ' empty') + '" aria-label="' + T.quick + ' ' + (i + 1) + '">' + Q[i] + '</button>'; }, mid = '';
+    if (n >= 6) { for (var i = 0; i < 6; i++) mid += q(i); return '<nav class="pd-toolbar tb2 q6" aria-label="Действия"><div class="pd-quickbar">' + mid + '</div>' + tool('wait', 12, 12, T.wait) + tool('info', 8, 12, T.info) + tool('search', 12, 12, T.search) + tool('pack', 14, 15, T.pack, 'bag') + '</nav>'; }
+    if (!n) mid = tool('info', 8, 12, T.info); else for (var j = 0; j < n; j++) mid += q(j);
+    return '<nav class="pd-toolbar tb2' + (n >= 4 ? ' dense' : '') + '" aria-label="Действия">' + tool('wait', 12, 12, T.wait) + mid + tool('search', 12, 12, T.search, 'gap') + tool('pack', 14, 15, T.pack, 'bag') + '</nav>';
+  };
+  /* «Памятка» в журнале */
+  var GICO = { hunger: 's:433', ankh: 's:48', curses: 's:306', wealth: 's:18', mimics: 'm:mimic', purity: 's:362', well: 'w', seeds: 's:387', score: 'p:0', challenges: 'c:8', traps: 't:1', search: 'tool', identify: 's:305', upgrade: 's:304' };
+  function gIcon(k, big) { var v = GICO[k], u = big ? 3 : 2;
+    if (v[0] === 's') { var n = +v.slice(2); return '<i class="pd-sitem" style="--u:' + u + 'px;--ix:' + (n % 16) + ';--iy:' + Math.floor(n / 16) + '"></i>'; }
+    if (v[0] === 'm') return PD.demo.mobIcon('mimic', big ? 'x3' : '');
+    if (v === 'w') return '<i class="pd-guide-img" style="background-image:var(--spr-guide-well)"></i>';
+    if (v[0] === 'p') return '<i class="pd-spart"></i>';
+    if (v[0] === 'c') return '<i class="pd-ch9" style="--c:8"></i>';
+    if (v[0] === 't') return '<i class="pd-trapc" style="--c:1"></i>';
+    return '<i class="pd-guide-img" style="background-image:var(--spr-tool-search);background-size:24px 24px"></i>'; }
+  PD.demo.win.guide = function (lang, o) {
+    o = o || {}; var L = V23[lang || 'ru'], read = o.read || ['hunger', 'ankh', 'traps'];
+    var tabs = '<div class="pd-tabs" role="tablist"><button class="pd-tab" role="tab" aria-selected="false">' + WT[lang || 'ru'].jTab + '</button><button class="pd-tab" role="tab" aria-selected="false">' + WT[lang || 'ru'].catTab + '</button><button class="pd-tab" role="tab" aria-selected="true">' + L.guide + '</button></div>';
+    return '<section class="pd-window wide pd-guide-window" role="dialog" aria-label="' + WT[lang || 'ru'].jT + '"><header class="pd-window-head"><div class="pd-titles"><h2 class="pd-heading">' + WT[lang || 'ru'].jT + '</h2></div><button class="pd-close" aria-label="×"></button></header>' + tabs +
+      '<div class="pd-cat-count">' + L.guideSub + ' · ' + L.read + ' ' + read.length + '</div><div class="pd-scroll"><ul class="pd-guide-list">' + L.entries.map(function (e) { var r = read.indexOf(e[0]) > -1;
+        return '<li><button class="pd-guide-row' + (r ? ' read' : '') + '"><span class="pd-guide-ico">' + gIcon(e[0]) + '</span><span class="pd-spell-text"><b>' + e[1] + '</b><small>' + e[2] + '</small></span><i class="pd-chev" aria-hidden="true"></i></button></li>'; }).join('') + '</ul></div></section>';
+  };
+  PD.demo.win.guideEntry = function (lang, k) {
+    var L = V23[lang || 'ru'], E = L.entries.filter(function (e) { return e[0] === k; })[0], body = '';
+    if (k === 'traps') { var T = L.traps; body = '<p class="pd-info">' + T.lead + '</p><ul class="pd-trap-legend">' + T.fam.map(function (f, i) { return '<li' + (i === 8 ? ' class="spent"' : '') + '><i class="pd-trapc" style="--c:' + i + '"></i><span><b>' + f[0] + '</b><small>' + f[1] + '</small></span></li>'; }).join('') + '</ul><p class="pd-note">' + T.note + '</p>'; }
+    else if (k === 'purity') { var P2 = L.purity; body = '<p class="pd-info">' + P2.lead + '</p><div class="pd-compare">' + P2.cols.map(function (c, i) { return '<div><header><i class="pd-sitem" style="--u:2px;--ix:' + [362, 378][i] % 16 + ';--iy:' + Math.floor([362, 378][i] / 16) + '"></i><span><b>' + c[0] + '</b><small>' + c[1] + '</small></span></header><ul>' + c[2].map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></div>'; }).join('') + '</div><p class="pd-note">' + P2.note + '</p>'; }
+    else { var H = L.hungerPage; body = '<p class="pd-info">' + H.lead + '</p><ul class="pd-guide-points">' + H.items.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul><p class="pd-note">' + H.note + '</p>'; }
+    return '<section class="pd-window wide pd-guide-window" role="dialog" aria-label="' + E[1] + '"><header class="pd-window-head"><button class="pd-back" aria-label="' + L.back + '">' + L.back + '</button><button class="pd-close" aria-label="×"></button></header>' +
+      '<div class="pd-guide-title"><span class="pd-guide-ico big">' + gIcon(k, true) + '</span><h2 class="pd-heading">' + E[1] + '</h2></div><div class="pd-scroll pd-guide-page">' + body + '</div></section>';
+  };
+  /* метка забега */
+  PD.demo.runTag = function (lang, k) { var T = V23[lang || 'ru'].tags[k], i = ['ranked', 'replay', 'seed', 'unranked'].indexOf(k); return '<span class="pd-runtag ' + k + '" title="' + T[1] + '" aria-label="' + T[1] + '"><i style="--ix:' + i + '"></i>' + T[0] + '</span>'; };
+  PD.demo.win.died = function (lang, k) { var L = V23[lang || 'ru'];
+    return '<section class="pd-window pd-runend" role="dialog" aria-label="' + L.died + '"><h2 class="pd-display">' + L.died + '</h2><div class="pd-runtag-line">' + PD.demo.runTag(lang, k) + '<span>' + V23[lang || 'ru'].tags[k][1] + '</span></div><p class="pd-cause">' + L.cause + '</p>' +
+      '<dl class="pd-stats"><div><dt>' + (lang === 'en' ? 'Depth' : 'Глубина') + '</dt><dd>9</dd></div><div><dt>' + (lang === 'en' ? 'Gold' : 'Золото') + '</dt><dd class="gold">1 284</dd></div><div><dt>' + (lang === 'en' ? 'Score' : 'Счёт') + '</dt><dd>38 320</dd></div></dl>' +
+      '<div class="pd-actions"><button class="pd-button primary">' + (lang === 'en' ? 'Share' : 'Поделиться') + '</button><button class="pd-button">' + (lang === 'en' ? 'New game' : 'Новая игра') + '</button><button class="pd-button quiet">' + L.main + '</button></div></section>'; };
+  PD.demo.win.gameMenu = function (lang, k) { var L = V23[lang || 'ru'];
+    return '<section class="pd-window narrow" role="dialog" aria-label="' + L.menu + '"><header class="pd-window-head"><div class="pd-titles"><h2 class="pd-heading">' + L.menu + '</h2><span class="pd-sub pd-menu-sub">' + PD.demo.runTag(lang, k) + (k === 'seed' ? L.seedSub : L.depth) + '</span></div><button class="pd-close" aria-label="×"></button></header>' +
+      '<div class="pd-menu-list"><button class="pd-button primary">' + L.cont + '</button><button class="pd-button">' + L.help + '</button><button class="pd-switch" role="switch" aria-checked="true"><span class="pd-info">' + L.sound + '</span><span class="pd-switch-box"></span></button><div style="margin-top:4px;padding-top:12px;border-top:2px solid var(--stone-500)"><button class="pd-button" style="width:100%">' + L.main + '</button></div></div></section>'; };
+  /* 9 испытаний Shattered */
+  PD.demo.win.challenges9 = function (lang, o) {
+    o = o || {}; var L = V23[lang || 'ru'], on = o.on || [];
+    return '<section class="pd-window" role="dialog" aria-label="' + L.chT + '"><header class="pd-window-head"><div class="pd-titles"><h2 class="pd-heading">' + L.chT + '</h2><span class="pd-sub">' + L.chOn(on.length) + '</span></div><button class="pd-close" aria-label="×"></button></header><div class="pd-scroll" style="display:flex;flex-direction:column;gap:var(--space-3)">' +
+      '<div class="pd-challenges">' + L.ch.map(function (c, i) { var a = on.indexOf(i) >= 0; return '<div class="pd-challenge9' + (i > 6 ? ' info' : '') + '"><button class="pd-challenge" role="switch" aria-checked="' + a + '"><i class="pd-ch9 big" style="--c:' + i + '"></i><span class="pd-ch-text"><span class="pd-ch-name">' + c[0] + (i > 6 ? ' <em class="pd-new-tag">' + (lang === 'en' ? 'new' : 'новое') + '</em>' : '') + '</span><span class="pd-ch-desc">' + c[1] + '</span></span><span class="pd-switch-box"></span></button>' + (i > 6 ? '<button class="pd-ch-info" aria-label="' + L.info + ': ' + c[0] + '">?</button>' : '') + '</div>'; }).join('') + '</div>' +
+      '<p class="pd-note">' + L.chFoot + '</p></div></section>';
+  };
+  PD.demo.win.challengeInfo = function (lang) { var L = V23[lang || 'ru'];
+    return '<section class="pd-window narrow" role="dialog" aria-label="' + L.bossesT + '"><header class="pd-window-head"><i class="pd-ch9 big" style="--c:8"></i><div class="pd-titles"><h2 class="pd-heading">' + L.bossesT + '</h2></div><button class="pd-close" aria-label="×"></button></header><p class="pd-info">' + L.ch[8][1] + '</p><ul class="pd-boss-list">' +
+      L.bosses.map(function (b, i) { return '<li>' + PD.demo.mobIcon(['goo', 'tengu', 'dm300', 'dwarfking', 'yog'][i]) + '<span><b>' + b[0] + '</b><small>' + b[1] + '</small></span></li>'; }).join('') + '</ul></section>'; };
 
   /* окно поверх экрана макета: box — .phone; html — строка окна */
   PD.demo.overlay = function (box, html) { var o = document.createElement('div'); o.className = 'pd-overlay static'; o.innerHTML = html; box.appendChild(o); PD.sprite(o); return o; };

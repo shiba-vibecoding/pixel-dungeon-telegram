@@ -1947,3 +1947,49 @@ const camp = PD.camp(root, { scene: worn.camp ?? 'outdoor', season: seasonOf(new
 | `.pd-warden-window`, `.pd-warden-list`, `.pd-wplant`, `.pd-weffect`, `.pd-warden-note` | Хранительница |
 | `.pd-score`, `.pd-score-row`, `.pd-spart`, `.pd-max`, `.pd-score-total`, `.pd-score-card`, `.pd-score-mini` | счёт |
 | `.pd-confirm`, `.pd-confirm-art`, `.pd-confirm-ico`, `.pd-check.small` | защита от промаха |
+
+
+## После форума (v23)
+
+### Подтверждения
+
+```html
+<section class="pd-window narrow pd-confirm2" role="alertdialog">
+  <h2 class="pd-heading center">Начать новую игру?</h2>
+  <p class="pd-info center">Сохранённый забег пропадёт: <b>Воин · ур.&nbsp;7 · гл.&nbsp;9</b>.</p>
+  <div class="pd-confirm-row">
+    <button class="pd-button quiet">Отмена</button>
+    <button class="pd-button primary hold" style="--p:0"><span class="pd-hold-fill"></span><span class="pd-hold-text">Заменить</span></button>
+  </div>
+  <p class="pd-hold-hint">удерживайте 1,2 с</p>
+  <div class="pd-confirm-more"><button class="pd-button">Продолжить забег</button></div>
+</section>
+```
+
+Удержание: на `pointerdown` — `.holding` и «Держите…», каждые 100 мс `--p += 1/12`; `pointerup` / `pointerleave` до конца — `--p: 0` и обычная подпись; 12-я ступень — `.done`, «Заменено», действие. `.pd-hold-label` занят подсказкой жестов — у кнопки `.pd-hold-text`.
+
+Все прежние «Да/Нет» — глаголами. Пропасть: «Остаться» / «Прыгнуть».
+
+### Панель
+
+`.pd-toolbar.tb2` (флекс): `.pd-tool.wait`, середина (`.pd-tool.info` или `.pd-tool.quick` × n), `.pd-tool.search.gap`, `.pd-tool.bag`. С 4 слотами — `.dense`. С 6 — `.q6` с `.pd-quickbar` сверху. Значки — `--spr-tool-wait2`, `--spr-tool-search2`.
+
+### «Памятка»
+
+Третья вкладка журнала. Список — `.pd-guide-list > li > .pd-guide-row(.read)` с `.pd-guide-ico`, `.pd-spell-text`, `.pd-chev`. Страница — `.pd-window-head` с `.pd-back`, `.pd-guide-title`, `.pd-scroll.pd-guide-page`. Ловушки — `.pd-trap-legend li > .pd-trapc[--c] + span > b + small`. Сравнение — `.pd-compare > div > header + ul`.
+
+### Метка забега
+
+`<span class="pd-runtag ranked" title="Забег идёт в рейтинг"><i style="--ix:0"></i>зачёт</span>` — `--ix`: 0 зачёт, 1 повтор, 2 свой сид, 3 без зачёта.
+
+### Испытания
+
+`.pd-ch9(.big)[--c]` — новый лист на 9 кадров. Строка — `.pd-challenge9(.info) > .pd-challenge + .pd-ch-info`. Старый `.pd-ch-icon` / `.pd-ch-mini` (7 кадров) оставлен для v11–v22; переходите на `.pd-ch9`.
+
+| Класс | Что это |
+| --- | --- |
+| `.pd-confirm2`, `.pd-confirm-row`, `.pd-confirm-more`, `.pd-button.hold(.holding/.done/.anim)`, `.pd-hold-fill`, `.pd-hold-text`, `.pd-hold-hint` | подтверждения |
+| `.pd-toolbar.tb2(.dense/.q6)`, `.pd-tool.wait/.gap` | панель |
+| `.pd-guide-window`, `.pd-guide-list`, `.pd-guide-row(.read)`, `.pd-guide-ico(.big)`, `.pd-guide-img`, `.pd-chev`, `.pd-back`, `.pd-guide-title`, `.pd-guide-page`, `.pd-guide-points`, `.pd-trap-legend`, `.pd-trapc`, `.pd-compare` | «Памятка» |
+| `.pd-runtag(.ranked/.replay/.seed/.unranked)`, `.pd-runtag-line`, `.pd-menu-sub` | метка забега |
+| `.pd-ch9(.big)`, `.pd-challenge9(.info)`, `.pd-ch-info`, `.pd-new-tag`, `.pd-boss-list` | испытания |
