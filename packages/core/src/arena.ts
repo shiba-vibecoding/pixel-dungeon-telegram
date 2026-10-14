@@ -99,7 +99,7 @@ export function equivalentDepth(wave: number): number {
   if (wave < WAVES_PER_TIER) return [1, 1, 1, 2, 3][Math.max(0, wave)]!;
   const depth = tierOf(wave) * WAVES_PER_TIER + 1 + ((Math.max(1, wave) - 1) % WAVES_PER_TIER);
   // The last shop (21) has no monsters of its own: the halls' first waves bring the next depth's.
-  return isBossDepth(depth) ? depth - 1 : depth === LAST_SHOP_DEPTH ? depth + 1 : depth;
+  return isBossDepth(depth) ? depth - 1 : depth;
 }
 
 /** Monsters a wave brings, for the party: one fewer in the first three, while the heroes are green. */

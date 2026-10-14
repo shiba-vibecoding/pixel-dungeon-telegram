@@ -1,4 +1,5 @@
 import { createMob, type Hero, isAlive, type Mob } from '../actors';
+import { disarmTrap, setTrap, trapAt } from '../traps';
 import { attack, drRollOf, hurt, killMob } from '../combat';
 import { burnCell } from '../traps';
 import { ballistica, PROJECTILE, WONT_STOP } from '../ballistica';
@@ -6,7 +7,6 @@ import { charAt, type Char, type Ctx, dropItem, heroesOn, isHero, observe } from
 import type { Item } from '../items';
 import { adjacent, distance, LENGTH, WIDTH } from '../level/geometry';
 import { F, hasFlag, T } from '../level/terrain';
-import { stitchTerrain } from '../level/flags';
 import {
   ARENA, insideRect, PAUSE_SAFE_AREA, randomTenguCellPos, setMapArena, setMapEnd, setMapPause,
   START_HALLWAY, TENGU_CELL, TENGU_CELL_CENTER, TENGU_CELL_DOOR,
@@ -197,7 +197,6 @@ function cleanMapState(ctx: Ctx): void {
   delete boss.shock;
   delete boss.tenguTraps;
   boss.timed = boss.timed.filter((entry) => entry.kind !== 'blobs');
-  stitchTerrain(level.map);
   world.explored[ctx.depth] = new Array<boolean>(LENGTH).fill(false);
   for (const hero of heroesOn(world, ctx.depth)) observe(world, hero);
 }
@@ -249,7 +248,7 @@ function placeTrapsInTenguCell(ctx: Ctx, tengu: Mob, hero: Hero, fill: number): 
     const pos = left + (i % 7) + (top + Math.trunc(i / 7)) * WIDTH;
     if (boss.shock?.some(([c]) => c === pos) || (ctx.floor.plants ?? []).some((p) => p.pos === pos) || charAt(ctx.world, ctx.depth, pos)) continue;
     // A hidden trap (SECRET_TRAP with a TenguDartTrap).
-    ctx.level.map[pos] = T.SECRET_POISON_TRAP;
+    setTrap(ctx.level, pos, 'tenguDart', false);
     traps.push(pos);
   }
   boss.tenguTraps = traps;
@@ -264,9 +263,11 @@ function placeTrapsInTenguCell(ctx: Ctx, tengu: Mob, hero: Hero, fill: number): 
 export function tenguDartTrap(ctx: Ctx, victim: Char | null, pos: number): boolean {
   const traps = ctx.floor.boss?.tenguTraps;
   if (!traps?.includes(pos)) return false;
-  ctx.level.map[pos] = T.INACTIVE_TRAP;
+  const trap = trapAt(ctx.level, pos);
+  if (trap) disarmTrap(ctx.level, trap);
+  else ctx.level.map[pos] = T.INACTIVE_TRAP;
   traps.splice(traps.indexOf(pos), 1);
-  ctx.effects.push({ type: 'trap', depth: ctx.depth, pos, kind: 'poison', hero: victim && isHero(victim) ? victim.id : '' });
+  ctx.effects.push({ type: 'trap', depth: ctx.depth, pos, kind: 'tenguDart', hero: victim && isHero(victim) ? victim.id : '' });
   let target: Char | undefined = victim && !(!isHero(victim) && victim.kind === 'tengu') ? victim : undefined;
   if (!target) {
     const range = Math.max(6, 12) + 0.5;

@@ -147,10 +147,8 @@ export interface FightSeen {
 export function ghostQuestActive(world: World, hero: Hero): boolean {
   const quest = world.quest;
   if (!quest || !quest.given || quest.done || quest.depth !== hero.depth) return false;
-  const errand = quest.type ?? 'rose';
-  if (errand === 'curse') return !quest.freed;
-  if (errand === 'rat') return !quest.dropped || (world.floors[hero.depth]?.mobs.some((mob) => mob.kind === 'fetidRat' && isAlive(mob)) ?? false);
-  return !quest.dropped;
+  // Ghost.Quest.active: its foe is still to be slain.
+  return !quest.processed;
 }
 
 /**
@@ -160,8 +158,10 @@ export function ghostQuestActive(world: World, hero: Hero): boolean {
  */
 export function wandQuestActive(world: World, hero: Hero): boolean {
   const quest = world.wandQuest;
-  if (!quest || !quest.given || quest.done || quest.depth !== hero.depth) return false;
-  return (quest.wants ?? 'dust') === 'dust' && hero.items.some((item) => item.kind === 'quest.dust');
+  if (!quest || !quest.given || !quest.wand1 || quest.depth !== hero.depth) return false;
+  if (quest.type === 1) return hero.items.some((item) => item.kind === 'quest.dust');
+  if (quest.type === 3) return world.floors[hero.depth]?.mobs.some((mob) => mob.kind === 'rotHeart' && isAlive(mob)) ?? false;
+  return quest.ritualPos !== undefined;
 }
 
 const bossOn = (floor: Floor | undefined): Mob | undefined =>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, createItem, createWorld, floorAt, heroById, isWater, levelAt, NEIGHBOURS8, RoomType, T, type World,
+  act, addHero, canEnter, charAt, createItem, createWorld, floorAt, heroById, isWater, levelAt, NEIGHBOURS8, RoomType, T, type World,
   WIDTH,
 } from '../src/index';
 
@@ -20,7 +20,8 @@ function withRoom(type: RoomType, also: (world: World, depth: number) => boolean
 function heroAt(world: World, depth: number, pos: number): void {
   addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
   const hero = heroById(world, 'p')!;
-  Object.assign(hero, { depth, pos, time: floorAt(world, depth).now, attackSkill: 1000, hp: 1000, ht: 1000, items: [] });
+  Object.assign(hero, { depth, pos, time: floorAt(world, depth).now, attackSkill: 1000, hp: 1000, ht: 1000, items: [], str: 20 });
+  hero.weapon = createItem('weapon.warHammer', 1, 10);
   for (const mob of floorAt(world, depth).mobs) if (mob.kind !== 'statue' && mob.kind !== 'piranha') mob.state = 'passive';
 }
 
@@ -71,7 +72,7 @@ describe('statue, pool and vault rooms', () => {
     expect(statue.item!.level).toBeGreaterThanOrEqual(0);
     expect(statue.ht).toBe(15 + depth * 5);
     const level = levelAt(world, depth);
-    const beside = NEIGHBOURS8.map((n) => statue.pos + n).find((c) => level.map[c] === T.EMPTY)!;
+    const beside = NEIGHBOURS8.map((n) => statue.pos + n).find((c) => canEnter(level, c) && !charAt(world, depth, c))!;
     heroAt(world, depth, beside);
     for (let i = 0; i < 5; i++) act(world, 'p', { type: 'wait' });
     expect(statue.state).toBe('sleeping');
@@ -125,27 +126,23 @@ describe('statue, pool and vault rooms', () => {
     }
   });
 
-  it('a vault holds a wand or a ring; its chests open only with the golden key', () => {
-    const kinds = new Set<string>();
-    for (const wanted of ['lockedChest', 'crystalChest']) {
-      // (The vault's chest, not one with the trinket catalyst or an artifact in it.)
-      const vaultChest = (heap: { kind: string; items: Array<{ kind: string }> }): boolean =>
-        heap.kind === wanted && heap.items.every((item) => item.kind.startsWith('wand.') || item.kind.startsWith('ring.'));
-      const { world, depth } = withRoom(RoomType.VAULT, (w, d) => floorAt(w, d).heaps.some(vaultChest));
-      const floor = floorAt(world, depth);
-      const locked = floor.heaps.find(vaultChest)!;
-      kinds.add(locked.kind);
-      for (const item of locked.items) expect(item.kind.startsWith('wand.') || item.kind.startsWith('ring.')).toBe(true);
-      heroAt(world, depth, locked.pos);
-      expect(act(world, 'p', { type: 'pickup' })).toEqual({ ok: false, reason: 'the chest is locked' });
-      const hero = heroById(world, 'p')!;
-      hero.items = [{ ...createItem('key.golden'), depth }];
-      expect(act(world, 'p', { type: 'pickup' }).ok).toBe(true);
-      expect(hero.items.some((item) => item.kind === 'key.golden')).toBe(false);
-      expect(hero.items.length).toBeGreaterThan(0);
-      // Its golden key lies somewhere on the level.
-      expect(floor.heaps.some((heap) => heap.items.some((item) => item.kind === 'key.golden'))).toBe(true);
-    }
-    expect(kinds.size).toBe(2);
+  it('a crystal vault holds a wand, a ring or an artifact in each crystal chest; its crystal key opens one', () => {
+    const { world, depth } = withRoom(RoomType.VAULT, (w, d) => floorAt(w, d).heaps.some((heap) => heap.kind === 'crystalChest'));
+    const floor = floorAt(world, depth);
+    const level = levelAt(world, depth);
+    const chest = floor.heaps.find((heap) => heap.kind === 'crystalChest')!;
+    expect(level.map[chest.pos]).toBe(T.PEDESTAL);
+    for (const item of chest.items) expect(/^(wand|ring|artifact)./.test(item.kind)).toBe(true);
+    heroAt(world, depth, chest.pos);
+    expect(act(world, 'p', { type: 'pickup' })).toEqual({ ok: false, reason: 'the chest is locked' });
+    const hero = heroById(world, 'p')!;
+    hero.items = [{ ...createItem('key.crystal'), depth }];
+    expect(act(world, 'p', { type: 'pickup' }).ok).toBe(true);
+    expect(hero.items.some((item) => item.kind === 'key.crystal')).toBe(false);
+    expect(hero.items.length).toBeGreaterThan(0);
+    // Its crystal key, and the iron key to the vault's door, lie somewhere on the level.
+    const keys = floor.heaps.flatMap((heap) => heap.items).map((item) => item.kind);
+    expect(keys).toContain('key.crystal');
+    expect(keys).toContain('key.iron');
   });
 });

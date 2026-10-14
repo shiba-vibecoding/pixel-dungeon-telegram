@@ -95,7 +95,7 @@ function valid(ctx: Ctx, effect: CursedEffect, user: Hero, origin: Item | null, 
       return origin !== null && itemDef(origin.kind).category === 'wand';
     case 'randomPlant': {
       const terrain = ctx.level.map[bolt.collisionPos]!;
-      return terrain !== T.ALCHEMY && !hasFlag(terrain, F.PIT) && !trapAt(terrain) && !isChallenged(ctx.world, NO_HERBALISM);
+      return terrain !== T.ALCHEMY && !hasFlag(terrain, F.PIT) && !trapAt(ctx.level, bolt.collisionPos) && !isChallenged(ctx.world, NO_HERBALISM);
     }
     case 'healthTransfer':
       return target !== undefined;
@@ -496,7 +496,7 @@ export function freezing(ctx: Ctx, cell: number): void {
   if (ch && isAlive(ch)) {
     if ((ch.frozen ?? 0) > 0) ch.frozen = (ch.frozen ?? 0) + 2;
     else {
-      const add = Math.min(ctx.level.map[cell]! >= T.WATER_TILES ? 5 : 3, Math.max(0, 10 - (ch.chill ?? 0)));
+      const add = Math.min(ctx.level.map[cell] === T.WATER ? 5 : 3, Math.max(0, 10 - (ch.chill ?? 0)));
       if (add > 0) chill(ch, add);
       if ((ch.chill ?? 0) >= 10) freeze(ctx, ch, FROST_TURNS);
     }

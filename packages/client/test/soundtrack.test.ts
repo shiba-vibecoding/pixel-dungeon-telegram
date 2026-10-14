@@ -63,7 +63,7 @@ describe("Shattered's music: Level.playLevelMusic", () => {
 
   it("the sad ghost's quest under way: the sewers' tense track, until its boss is beaten", () => {
     const { world, hero } = standOn(3);
-    const quest: NonNullable<World['quest']> = { depth: 3, type: 'curse', given: true, dropped: false, killsLeft: 8, done: false, weapon: createItem('weapon.sword'), armor: createItem('armor.leather') };
+    const quest: NonNullable<World['quest']> = { depth: 3, type: 1, given: true, processed: false, done: false, weapon: createItem('weapon.sword'), armor: createItem('armor.leather') };
     world.quest = quest;
     expect(tuneAt(world, hero)).toEqual(tense(0));
     // Elsewhere in the sewers, the region's tracks (Ghost.Quest.active: on its own depth).
@@ -71,15 +71,8 @@ describe("Shattered's music: Level.playLevelMusic", () => {
     world.floors[2] = { mobs: [] } as unknown as Floor;
     expect(tuneAt(world, hero)).toEqual(regionTracks(0));
     hero.depth = 3;
-    quest.freed = true;
-    expect(tuneAt(world, hero)).toEqual(regionTracks(0));
-    // The fetid rat: tense until it has come out and been killed.
-    world.quest = { ...quest, type: 'rat', freed: false };
-    expect(tuneAt(world, hero)).toEqual(tense(0));
-    world.quest.dropped = true;
-    world.floors[3]!.mobs.push(createMob('#9', 'fetidRat', 40, 'hunting', 0));
-    expect(tuneAt(world, hero)).toEqual(tense(0));
-    world.floors[3]!.mobs[0]!.hp = 0;
+    // Its foe slain: the region's tracks again.
+    quest.processed = true;
     expect(tuneAt(world, hero)).toEqual(regionTracks(0));
     // Not yet given: nothing changes.
     world.quest = { ...quest, given: false };
@@ -88,11 +81,11 @@ describe("Shattered's music: Level.playLevelMusic", () => {
 
   it("the wandmaker's corpse dust carried: the prison's tense track", () => {
     const { world, hero } = standOn(8);
-    world.wandQuest = { depth: 8, given: true, done: false, battle: createItem('wand.fireblast'), utility: createItem('wand.warding'), wants: 'dust' };
+    world.wandQuest = { depth: 8, type: 1, spawned: true, given: true, wand1: createItem('wand.fireblast'), wand2: createItem('wand.warding') };
     expect(tuneAt(world, hero)).toEqual(regionTracks(1));
     hero.items.push(createItem('quest.dust'));
     expect(tuneAt(world, hero)).toEqual(tense(1));
-    world.wandQuest.done = true;
+    world.wandQuest!.wand1 = null;
     expect(tuneAt(world, hero)).toEqual(regionTracks(1));
   });
 

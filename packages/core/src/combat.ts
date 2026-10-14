@@ -1,3 +1,4 @@
+import { scoreGhostHit } from './score';
 import { familiarise, identifyBelongings } from './ident';
 import { earnExp } from './hero';
 import { bossAfterDamage, bossBeforeDamage, bossDied, bossHoldsOn, bossRules } from './bosses/index';
@@ -26,8 +27,9 @@ import { afterImageStruck, duelFoeDied, noteDuelDamage } from './classes/duelist
 import { clericHurt, clericShields, lightShield } from './classes/cleric-hooks';
 import { classArmorProc, classDamageTaken, classWeaponProc, heroBlow, heroEvasion, markHarvest, meleeStrike } from './classes/hooks';
 import { earthrootAbsorbs } from './plants';
-import { impQuestKill } from './imp';
-import { curseBroken, questKill } from './quest';
+import { ghostFoeSlain } from './quest';
+import { mineAttackProc, mineBeforeAttack, mineDamage, mineDefense, mineMobDied } from './minemobs';
+import { burnsAway, lasherCripples, rotHeartStruck, wandmakerAttack, wandmakerMobDied } from './wandmaker-mobs';
 import { sacrifice } from './altar';
 import { F, hasFlag, T } from './level/terrain';
 import { burst, mobPress } from './traps';
@@ -76,6 +78,9 @@ function attackSkill(ctx: Ctx, char: Char, target: Char, weapon?: Item | null): 
  */
 function defenseSkill(char: Char, attacker?: Char, surprised?: boolean): number {
   if (isHero(char)) return heroDefenseSkill(char);
+  // CrystalGuardian.defenseSkill: knocked down, it cannot dodge.
+  const mine = mineDefense(char);
+  if (mine !== undefined) return mine;
   // Mob.surprisedBy: the hero, unseen by it or invisible, with a weapon that can surprise (Hero.canSurpriseAttack).
   const caught = surprised ?? (attacker !== undefined && isHero(attacker) && surprises(attacker, char, attacker.weapon));
   // Mob.defenseSkill: none caught off guard, paralysed, or an ally struck by its hero.
@@ -186,6 +191,8 @@ export function hitRoll(
   // HawkAlly.defenseSkill: a spirit hawk dodges outright the blows Swift Spirit has given it.
   if (!isHero(defender) && defender.kind === 'hawk' && hawkDodges(ctx.world, defender)) return false;
   const defense = defenseSkill(defender, attacker, surprised);
+  // GreatCrab.defenseSkill: each blow of the hero's it blocks costs the ghost's quest fifty points.
+  if (!isHero(defender) && defender.kind === 'greatCrab' && isHero(attacker) && defense >= INFINITE_EVASION) scoreGhostHit(ctx.world, 50);
   if (evasion.infinite || defense >= INFINITE_EVASION) return false;
   if (skill >= INFINITE_ACCURACY || accMulti === Infinity) return true;
   const acuRoll = ctx.rng.floatMax(skill) * rollFactor(attacker) * evasionAndAccuracyFactor(attacker) * accMulti;
@@ -212,6 +219,10 @@ const GRIM_RESISTANT: ReadonlySet<string> = new Set(['goo', 'tengu', 'dm300', 'k
  * or corrupting blow does what it does).
  */
 export function attack(ctx: Ctx, attacker: Char, defender: Char, override: AttackOverride = {}): boolean {
+  // RotLasher.attack, DustWraith.attack: what going for the hero costs the wandmaker's quest.
+  if (!isHero(attacker)) wandmakerAttack(ctx, attacker, defender);
+  // The blacksmith's mine: an invulnerable gnoll geomancer or downed guardian; a guardian's blow costing the quest's score.
+  if (mineBeforeAttack(ctx, attacker, defender)) return false;
   const strike = isHero(attacker) ? (override.weapon ?? override.ability ?? (override.unarmed ? null : meleeStrike(attacker))) : null;
   const thrown = isHero(attacker) && override.weapon !== undefined;
   // Feint.AfterImage.defenseSkill: a blow at the decoy loses the attacker the hero.
@@ -281,6 +292,8 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     // Mob.defenseProc of the struck monster's kind, before its armour (a swarm splits, a thief drops a coin...).
     if (defender.kind === 'swarm') split(ctx, defender, damage);
     damage = mobDefenseProc(ctx, defender, attacker, damage);
+    // RotHeart.defenseProc: struck, it lets out toxic gas.
+    if (defender.kind === 'rotHeart') rotHeartStruck(ctx, defender);
     // Mob.defenseProc: a soul-marked monster struck by a hero gives some of it back as health.
     if (isHero(attacker) && (defender.soulMarked ?? 0) > 0) soulSiphon(ctx, attacker, defender, damage);
   }
@@ -312,6 +325,9 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
       if (steal(ctx, attacker, defender)) attacker.state = 'fleeing';
     }
     damage = mobAttackProc(ctx, attacker, defender, damage);
+    // A fungal sentry's poison, a gnoll guard's warning (minemobs.ts); RotLasher.attackProc: its lash cripples.
+    mineAttackProc(ctx, attacker, defender, damage);
+    if (attacker.kind === 'rotLasher') lasherCripples(ctx, defender);
     championAttackProc(ctx, attacker, defender, (char) => igniteChar(ctx, char));
     // HawkAlly.attackProc: its talons blind and cripple.
     if (attacker.kind === 'hawk') hawkProc(ctx, allyOwner(ctx.world, attacker), defender);
@@ -540,6 +556,13 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   if (isHero(victim) && typeof source === 'string') damage = Math.round(endureAdjust(victim, ctx.floor.now, damage));
   // WandOfRegrowth.Lotus.damage: nothing harms it.
   if (!isHero(victim) && victim.kind === 'lotus') return;
+  // RotHeart.damage, RotLasher.damage: fire takes them away at once.
+  if (!isHero(victim) && source === 'burning' && burnsAway(ctx, victim)) return;
+  // The blacksmith's mine: a downed guardian mends instead of dying, the geomancer's armour and thirds, a guard armoured by its sapper.
+  if (!isHero(victim)) {
+    damage = mineDamage(ctx, victim, damage, source);
+    if (damage < 0) return;
+  }
   // A boss's own Char.damage: invulnerable, deferring, linked... (bosses/*.ts).
   if (!isHero(victim) && bossRules(victim)) {
     const through = bossBeforeDamage(ctx, victim, damage, source);
@@ -655,7 +678,7 @@ export function finishOff(ctx: Ctx, mob: Mob, by?: string): void {
   mobDied(ctx, mob, by);
 }
 
-function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
+export function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   duelFoeDied(ctx, mob);
   const killer = by ? ctx.world.heroes.find((h) => h.id === by) : undefined;
   // Mob.die: a kill by the hero may free the next act (lethal momentum).
@@ -669,11 +692,6 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   ctx.floor.mobs.splice(index, 1);
   leaveCell(ctx.world, ctx.level, ctx.depth, mob.pos);
   ctx.effects.push({ type: 'died', depth: ctx.depth, who: mob.id, pos: mob.pos, kind: mob.kind, ...(by ? { by } : {}) });
-  // The curse, broken, is the ghost again: nothing to learn from it, nothing left behind.
-  if (mob.kind === 'curse') {
-    curseBroken(ctx, mob);
-    return;
-  }
   // GhostHero.die: the rose's ghost bids farewell, and its rose empties.
   if (mob.kind === 'ghostHero') {
     ghostDied(ctx, mob);
@@ -705,8 +723,9 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
     }
   }
 
-  questKill(ctx, mob);
-  impQuestKill(ctx, mob);
+  // The quests' foes: the sad ghost's, the blacksmith's mine's bosses, the old wandmaker's.
+  ghostFoeSlain(ctx, mob, by);
+  mineMobDied(ctx, mob);
 
   // Mob.rollToDropLoot (not for an ally): a thief's goods, the fetid rat's skull, a mimic's treasure, the loot;
   // then a lucky blow's prize (Lucky.LuckProc); then the thrown weapons stuck in it fall (PinCushion).
@@ -716,6 +735,8 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
     ctx.effects.push({ type: 'lucky', depth: ctx.depth, pos: mob.pos });
   }
   for (const item of mob.pinned ?? []) landItem(ctx, mob.pos, item);
+  // RotHeart.die, NewbornFireElemental.die: what the old wandmaker is after.
+  wandmakerMobDied(ctx, mob);
 
   // Skeleton.die: not when it fell.
   if (baseKind(mob.kind) === 'skeleton' && !mob.fell) explode(ctx, mob);
@@ -760,8 +781,6 @@ function dropRemains(ctx: Ctx, mob: Mob): void {
   if (mob.armor) landItem(ctx, mob.pos, mob.armor);
   delete mob.item;
   delete mob.armor;
-  // FetidRat.die: its skull, for the sad ghost.
-  if (mob.kind === 'fetidRat') dropItem(ctx.floor, mob.pos, createItem('quest.skull'));
   for (const item of mob.loot ?? []) landItem(ctx, mob.pos, item);
   delete mob.loot;
   const heroes = heroesOn(ctx.world, ctx.depth);

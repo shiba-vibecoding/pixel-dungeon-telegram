@@ -457,7 +457,7 @@ export function throwChar(ctx: Ctx, char: Char, path: readonly number[], pathDis
   }
   if (!isAlive(char)) return;
   if (isHero(char)) {
-    if (!(char.levitating ?? 0) && trapAt(ctx.level.map[to]!)) triggerTrap(ctx, char, to);
+    if (!(char.levitating ?? 0) && trapAt(ctx.level, to)) triggerTrap(ctx, char, to);
   } else {
     mobPress(ctx, char as Mob);
   }

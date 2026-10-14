@@ -68,7 +68,7 @@ function randomAction(world: World, id: string, rng: Rng): Action {
       }
     }
     case 11: return hero.pos === level.exit ? { type: 'descend' } : { type: 'move', to: hero.pos + rng.element(NEIGHBOURS8)! };
-    case 12: return { type: 'faceCurse' };
+    case 12: return { type: 'branch' };
     case 13: return { type: 'remove', slot: rng.oneOf(['artifact', 'misc', 'ring'] as const) };
     case 14: return { type: 'sell', item };
     default: return { type: 'wait' };

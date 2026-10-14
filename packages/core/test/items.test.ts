@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, createItem, createWorld, F, floorAt, hasFlag, heroById, isAlive, type ItemKind, ITEMS, itemDef, REGULAR_OF,
-  levelAt, RoomType, weaponStats, type World,
+  act, addHero, canEnter, charAt, createItem, createWorld, F, floorAt, hasFlag, heroById, isAlive, type ItemKind, ITEMS, itemDef, REGULAR_OF,
+  levelAt, NEIGHBOURS8, RoomType, T, weaponStats, type World,
   WIDTH,
 } from '../src/index';
 import { pacify } from './helpers';
@@ -23,7 +23,8 @@ describe('items on the levels', () => {
         const heaps = floorAt(world, depth).heaps;
         expect(heaps.reduce((n, heap) => n + heap.items.length, 0)).toBeGreaterThanOrEqual(3);
         for (const heap of heaps) {
-          expect(hasFlag(level.map[heap.pos]!, F.PASSABLE), `heap at ${heap.pos}`).toBe(true);
+          // A secret hoard's gold lies among its traps (SecretHoardRoom).
+          expect(hasFlag(level.map[heap.pos]!, F.PASSABLE) || level.map[heap.pos] === T.TRAP, `heap at ${heap.pos}`).toBe(true);
           for (const item of heap.items) {
             expect(ITEMS[item.kind]).toBeDefined();
             expect(item.qty).toBeGreaterThan(0);
@@ -147,7 +148,8 @@ describe('the backpack', () => {
     hero.hp = hero.ht = 500;
     const mob = floorAt(world, 1).mobs.find((m) => m.kind === 'rat')!;
     mob.state = 'hunting';
-    mob.pos = hero.pos + 2;
+    const level = levelAt(world, 1);
+    mob.pos = NEIGHBOURS8.map((n) => hero.pos + n).find((c) => canEnter(level, c) && !charAt(world, 1, c))!;
     hero.items.push(createItem('scroll.lullaby'));
     const result = act(world, 'p', { type: 'use', item: hero.items.length - 1 });
     expect(result.ok).toBe(true);

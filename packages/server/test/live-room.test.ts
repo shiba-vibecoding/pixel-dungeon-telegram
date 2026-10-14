@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyEvent, canEnter, charAt, createMob, floorAt, heroById, LIVE_CALM_MS, levelAt, NEIGHBOURS8, type ServerMessage, type World } from '@pd/core';
+import { applyEvent, canEnter, charAt, createMob, F, floorAt, hasFlag, heroById, LIVE_CALM_MS, levelAt, NEIGHBOURS8, type ServerMessage, T, type World } from '@pd/core';
 import { pacify } from '../../core/test/helpers';
 import { type Delivery, LIVE_TURN_TIMEOUT, RoomLogic } from '../src/room-logic';
 import { sanitizeAction } from '../src/messages';
@@ -40,6 +40,11 @@ function party(seed: number): { room: RoomLogic; world: World; replicas: Record<
   route(room.connect(bob, 0), replicas);
   world.explored[1] = levelAt(world, 1).map.map(() => true);
   for (const r of Object.values(replicas)) r.world!.explored[1] = world.explored[1].slice();
+  // Everyone in sight of everyone about the entrance: no tall grass in the way.
+  for (const w of [world, ...Object.values(replicas).map((r) => r.world!)]) {
+    const level = levelAt(w, 1);
+    level.map = level.map.map((t) => (t === T.HIGH_GRASS || t === T.FURROWED_GRASS ? T.GRASS : t));
+  }
   return { room, world, replicas };
 }
 
@@ -47,7 +52,9 @@ function party(seed: number): { room: RoomLogic; world: World; replicas: Record<
 function ratAfter(world: World, replicas: Record<string, Replica>, heroId: string): void {
   const hero = heroById(world, heroId)!;
   const level = levelAt(world, 1);
-  const n = NEIGHBOURS8.find((d) => canEnter(level, hero.pos + d) && canEnter(level, hero.pos + 2 * d) && !charAt(world, 1, hero.pos + d) && !charAt(world, 1, hero.pos + 2 * d))!;
+  // In plain sight: no tall grass in between.
+  const clear = (c: number): boolean => canEnter(level, c) && !charAt(world, 1, c) && !hasFlag(level.map[c]!, F.LOS_BLOCKING);
+  const n = NEIGHBOURS8.find((d) => clear(hero.pos + d) && clear(hero.pos + 2 * d))!;
   for (const w of [world, ...Object.values(replicas).map((r) => r.world!)]) {
     const rat = createMob('r1', 'rat', hero.pos + 2 * n, 'hunting', 1);
     rat.enemy = heroId;
@@ -95,8 +102,9 @@ describe('a live room', () => {
     expect(world.turn).toBeGreaterThan(turn);
     // Gone, Bob is not waited for at all.
     route(room.disconnect('bob', 20_000), replicas);
-    route(room.receive('alice', { type: 'act', action: { type: 'wait' } }, 20_001), replicas);
     const now = world.turn;
+    // (Played at once, or at the next beat.)
+    route(room.receive('alice', { type: 'act', action: { type: 'wait' } }, 20_001), replicas);
     route(room.pump(21_000), replicas);
     expect(world.turn).toBeGreaterThan(now);
     expect(replicas.alice.world).toEqual(world);

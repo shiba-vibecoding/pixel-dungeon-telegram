@@ -3,7 +3,7 @@ import {
   HEAP_SPRITES,
   type Hero, type Item, type Level,
   BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, HERO_CLASSES, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
-  ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
+  type PlanStep, PLANT_KINDS, T,
   visibleCells, chargesKnown, staffReach, WIDTH,
   type World, charAt, swapsWithHero, canReach, copyReach, heroReach, isClassArmor, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
 } from '@pd/core';
@@ -16,7 +16,7 @@ import { preloadMobFx } from './mobfx';
 import './game.css';
 import { showChampion, showFallenGhoul, showHiddenMimic } from './mobwin';
 import { burningCells, confirmDanger, firstDanger } from './mistap';
-import { bossTile, mobDescription, mobName, plantText, tileText, wellText } from './examine';
+import { blobTexts, bossTile, mobDescription, mobName, plantText, tileText, wellText } from './examine';
 import {
   chooseQuickslot, isPlaceholder, quickArtifact, quickClassArmor, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
 } from './quickslot';
@@ -53,9 +53,14 @@ import { ArenaView } from './arenaview';
 import { levelRegion } from './sprites';
 import { capitalize, fill, t } from './i18n';
 import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
-import { bakeLevel, type Camera, patchLevel, render } from './render';
+import { type Camera, render } from './render';
+import type { GhostLine, ImpLine } from '@pd/core';
+import { LevelTiles } from './tiles';
+import { feelingLine, lt, plain, spawnerWarning } from './levelnames';
+import { levelFx } from './levelfx';
+import { mineTarget, setSmithToast, type SmithEnv, smithBranch, talkWithBlacksmith } from './blacksmith-ui';
 import {
-  armorTier, closeOverlay, el, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showReforge, showHelp, showHero,
+  armorTier, closeOverlay, el, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showHelp, showHero,
   refreshBackpack, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, info, show, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice, windowOf,
 } from './screens';
 import { rankingBlock, showBoards } from './rankui';
@@ -958,6 +963,10 @@ const walk = {
   open: null as number | null,
   /** Pick up what lies at the end of the walk. */
   pickup: false,
+  /** The blacksmith's mine: the rock to mine once the walk has brought the hero beside it (HeroAction.Mine). */
+  mine: null as number | null,
+  /** A way to a depth's side level or back (a branch transition) at the end of the walk. */
+  branch: false,
   /** Resting until healed (a long press on the hourglass), stopped by any danger. */
   resting: false,
   lastSent: 0,
@@ -969,6 +978,8 @@ const walk = {
     this.resting = false;
     this.goal = null;
     this.open = null;
+    this.mine = null;
+    this.branch = false;
   },
 };
 
@@ -977,7 +988,7 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
 let aim:
-  | { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast'; choice?: number }
+  | { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key'; choice?: number }
   /** An action of the classes that wants a target: a spell cast at a cell, a weapon's ability. */
   | { index: -1; kind: 'class'; make: (cell: number) => Action }
   | { index: -1; kind: 'artifact'; action: ArtifactAction }
@@ -1302,6 +1313,21 @@ function step(world: World, now: number, visible: readonly boolean[]): void {
     }
   }
 
+  if (walk.mine !== null) {
+    const cell = walk.mine;
+    walk.mine = null;
+    if (adjacent(me.pos, cell)) {
+      send({ type: 'mine', cell }, now);
+      return;
+    }
+  }
+
+  if (walk.branch) {
+    walk.branch = false;
+    takeBranch();
+    return;
+  }
+
   if (walk.pickup) {
     walk.pickup = false;
     if (heapAt(world, me.depth, me.pos)) {
@@ -1478,11 +1504,18 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
       if (seen && course.state === 'finale') seen.finale = true;
       if (seen && course.state === 'end') Object.assign(seen, { fighting: false, finale: false, slain: course.kind ?? 'boss' });
     }
-    if (effect.type === 'ghost' && effect.hero === myId) talkWithGhost(effect.line, effect.errand);
+    if (effect.type === 'bossSlain' && effect.depth === bossFight?.depth) bossFight = null;
+    if (effect.type === 'ghost' && effect.hero === myId) talkWithGhost(effect.line, effect.questType);
     if (effect.type === 'ratKing' && effect.hero === myId) talkWithRatKing(effect.line);
-    if (effect.type === 'wandmaker' && effect.hero === myId) talkWithWandmaker(effect.line);
+    if (effect.type === 'wandmaker' && effect.hero === myId) talkWithWandmaker(effect.line, effect.questType);
     if (effect.type === 'imp' && effect.hero === myId) talkWithImp(effect.line);
-    if (effect.type === 'smith' && effect.hero === myId) talkWithSmith(effect.line);
+    if ((effect.type === 'vaultDoor' || effect.type === 'vaultMirror' || effect.type === 'vaultLeft' || effect.type === 'vaultWarning') && effect.hero === myId) {
+      vaultWindow(effect);
+    }
+    if (effect.type === 'blacksmith' && effect.hero === myId) {
+      const env = smithEnv();
+      if (env) talkWithBlacksmith(env, effect.line, effect.questType);
+    }
     if (effect.type === 'shop' && effect.hero === myId) openShop();
     // Hero.earnExp: a level with a talent point to spend (+1 Talent Point!); the hero window opens on the talents next.
     if (effect.type === 'mastered' && effect.hero === myId && me && hasFreePoints(me)) newTalents = true;
@@ -1520,6 +1553,8 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
       }
     }
     if (effect.type === 'fell' && effect.hero === myId) justFell = true;
+    // Off to a depth's side level or back: the walk was for the level left.
+    if (effect.type === 'branched' && effect.hero === myId) walk.reset();
     // Hero.interrupt: an item breaking stops whatever the hero was doing.
     if (effect.type === 'worn' && effect.hero === myId && effect.state === 'broken') walk.reset();
     // What flies into the backpack is motion.ts's: from wherever it lay. The find shows a moment under the HUD.
@@ -1551,29 +1586,39 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
   }
 }
 
-function talkWithGhost(line: 'intro' | 'remind' | 'reward' | 'farewell', errand: 'rose' | 'rat' | 'curse'): void {
+/**
+ * Ghost.interact and WndSadGhost: the ghost's story of its foe (rat_1, gnoll_1, crab_1), the reminder
+ * (rat_2 ...), its «find me» when the foe falls, and, the foe slain, its thanks with the weapon and the
+ * armour to choose from; then its farewell.
+ */
+function talkWithGhost(line: GhostLine, type: 1 | 2 | 3): void {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
   if (!world || !me) return;
   audio.play('ghost');
+  const foe = (['rat', 'gnoll', 'crab'] as const)[type - 1]!;
+  if (line === 'findMe') {
+    view.say(lt('actors.mobs.npcs.ghost.find_me'), '#ff4444');
+    return;
+  }
+  if (line === 'farewell') {
+    view.say(lt('windows.wndsadghost.farewell'), '#ffffff');
+    return;
+  }
   walk.reset();
   const quest = world.quest;
-  // Each errand has its own words; the curse is only taken on if the hero says yes.
   const text =
-    line === 'farewell' ? t.ghost.farewell
-    : errand === 'rat' ? t.ghostRat[line]
-    : errand === 'curse' ? (line === 'reward' ? t.ghostCurse.reward(t.classes[me.heroClass]) : t.ghostCurse.intro)
-    : t.ghost[line];
+    line === 'intro' ? lt(`actors.mobs.npcs.ghost.${foe}_1`, capitalize(me.name || t.heroDefault))
+    : line === 'remind' ? lt(`actors.mobs.npcs.ghost.${foe}_2`)
+    : `${lt(`windows.wndsadghost.${foe}`)}\n\n${lt('windows.wndsadghost.give_item')}`;
   showQuest({
     world,
     hero: me,
     who: 'ghost',
+    ...(line === 'reward' ? { title: lt(`windows.wndsadghost.${foe}_title`), icon: (['fetidRat', 'gnollTrickster', 'greatCrab'] as const)[type - 1] } : {}),
     text,
     offers: line === 'reward' && quest ? [quest.weapon, quest.armor] : [],
     onChoose: (index) => send({ type: 'reward', choice: index === 0 ? 'weapon' : 'armor' }, performance.now()),
-    ...(errand === 'curse' && line === 'intro'
-      ? { answers: [{ label: t.ghostCurse.yes, onAnswer: () => send({ type: 'faceCurse' }, performance.now()) }, { label: t.ghostCurse.no, onAnswer: () => undefined }] }
-      : {}),
     onClose: hideOverlay,
   });
 }
@@ -1587,70 +1632,120 @@ function talkWithRatKing(line: 'notSleeping' | 'busy'): void {
   showQuest({ world, hero: me, who: 'ratKing', text: t.ratKing[line], onClose: hideOverlay });
 }
 
-function talkWithWandmaker(line: 'intro' | 'remind' | 'reward' | 'farewell'): void {
+/**
+ * Wandmaker.interact and WndWandmaker: his errand in two windows (a greeting for the hero's class, then what
+ * he is after), a reminder, or, with it in the pack, his two wands to choose from; his farewell as he leaves.
+ */
+function talkWithWandmaker(line: core.WandmakerLine, type: core.WandmakerType): void {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
   if (!world || !me) return;
+  const name = capitalize(me.name || t.heroDefault);
+  const errand = (['dust', 'ember', 'berry'] as const)[type - 1]!;
+  const key = 'actors.mobs.npcs.wandmaker';
+  if (line === 'farewell') {
+    view.say(lt('windows.wndwandmaker.farewell', name), '#ffffff');
+    return;
+  }
   walk.reset();
+  const speak = (text: string, onClose: () => void): void => showQuest({ world, hero: me, who: 'wandmaker', text, onClose });
+  if (line === 'intro') {
+    speak(`${lt(`${key}.intro_${me.heroClass}`, name)}${lt(`${key}.intro_1`)}`, () => speak(`${lt(`${key}.intro_${errand}`)}${lt(`${key}.intro_2`)}`, hideOverlay));
+    return;
+  }
+  if (line === 'reminder') {
+    speak(lt(`${key}.reminder_${errand}`, name), hideOverlay);
+    return;
+  }
   const quest = world.wandQuest;
+  const wanted = me.items.find((item) => item.kind === core.WANDMAKER_WANTS[type]);
   showQuest({
     world,
     hero: me,
     who: 'wandmaker',
-    // He may be after a rotberry seed rather than corpse dust.
-    text: quest?.wants === 'berry' && line === 'intro' ? t.wandmaker.introBerry
-      : quest?.wants === 'berry' && line === 'remind' ? t.wandmaker.remindBerry
-      : quest?.wants === 'fish' && line === 'intro' ? t.wandmaker.introFish
-      : quest?.wants === 'fish' && line === 'remind' ? t.wandmaker.remindFish
-      : t.wandmaker[line],
-    offers: line === 'reward' && quest ? [quest.battle, quest.utility] : [],
-    onChoose: (index) => send({ type: 'wandReward', choice: index === 0 ? 'battle' : 'utility' }, performance.now()),
+    ...(wanted ? { title: capitalize(itemName(world, wanted)) } : {}),
+    text: lt(`windows.wndwandmaker.${errand}`),
+    offers: quest?.wand1 && quest.wand2 ? [quest.wand1, quest.wand2] : [],
+    onChoose: (index) => send({ type: 'wandReward', choice: index === 0 ? 1 : 2 }, performance.now()),
     onClose: hideOverlay,
   });
 }
 
-function talkWithSmith(line: SmithLine): void {
+/** What the blacksmith's windows need (blacksmith-ui.ts): the world, my hero, and a way to act. */
+function smithEnv(): SmithEnv | null {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
-  const quest = world?.smithQuest;
-  if (!world || !me || !quest) return;
+  if (!world || !me) return null;
   walk.reset();
-  const text =
-    line === 'intro' ? t.smith.intro[quest.wants]
-    : line === 'noGold' ? t.smith.noGold(ORE_WANTED)
-    : t.smith[line];
-  // Done with the errand: his services are on offer at once.
-  if (line === 'completed' || line === 'reforge') {
-    showReforge({
-      world, hero: me, text,
-      onReforge: (first, second) => send({ type: 'reforge', first, second }, performance.now()),
-      onClose: hideOverlay,
-    });
+  setSmithToast((text) => view.say(text, '#ff8800'));
+  return { world, hero: me, send: (action) => send(action, performance.now()), close: hideOverlay };
+}
+
+/**
+ * Imp.interact: his errand (two pages), the reminder, his thanks as well as the heist went; his «psst»
+ * to a hero coming into sight before he asks, and his «see you» as he leaves.
+ */
+function talkWithImp(line: ImpLine): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me) return;
+  const IMP = 'actors.mobs.npcs.imp';
+  const name = capitalize(me.name || t.heroDefault);
+  if (line === 'hey' || line === 'cya') {
+    view.say(plain(lt(`${IMP}.${line}`, name)), '#ffff44');
     return;
   }
-  showQuest({ world, hero: me, who: 'blacksmith', text, onClose: hideOverlay });
-}
-
-function talkWithImp(line: 'intro' | 'remind' | 'reward' | 'farewell'): void {
-  const world = session?.world;
-  const me = world && heroById(world, session!.myId);
-  const quest = world?.impQuest;
-  if (!world || !me || !quest) return;
   walk.reset();
   const text =
-    line === 'intro' ? t.imp.intro[quest.prey]
-    : line === 'remind' ? t.imp.remind[quest.prey]
-    : line === 'reward' ? t.imp.reward
-    : t.imp.farewell(t.classes[me.heroClass]);
-  showQuest({
-    world,
-    hero: me,
-    who: 'imp',
-    text,
-    offers: line === 'reward' ? [quest.reward] : [],
-    onChoose: () => send({ type: 'impReward' }, performance.now()),
-    onClose: hideOverlay,
-  });
+    line === 'intro' ? `${lt(`${IMP}.quest_intro_1`)}
+
+${lt(`${IMP}.quest_intro_2`)}`
+    : line === 'inProgress' ? lt(`${IMP}.quest_in_progress`)
+    : lt(`${IMP}.quest_${line === 'completedBad' ? 'completed_bad' : line === 'completedGood' ? 'completed_good' : 'completed_great'}`);
+  showQuest({ world, hero: me, who: 'imp', text: plain(text), offers: [], onClose: hideOverlay });
+}
+
+/**
+ * The vault's fixtures and its way out: the token door (VaultTokenDoor.interact), the strange mirror
+ * (VaultMirror.interact: its scene, then «Take the Item»), the imp's warnings by the final room, and the
+ * escape crystal's word on how the heist went.
+ */
+function vaultWindow(effect: Extract<Effect, { type: 'vaultDoor' | 'vaultMirror' | 'vaultLeft' | 'vaultWarning' }>): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me) return;
+  walk.reset();
+  if (effect.type === 'vaultDoor') {
+    const DOOR = 'actors.mobs.npcs.vaulttokendoor';
+    if (effect.tokens >= 10) {
+      showConfirm(capitalize(lt(`${DOOR}.name`)), plain(lt(`${DOOR}.enough_tokens`)), lt(`${DOOR}.open`), lt(`${DOOR}.not_yet`),
+        () => send({ type: 'vault', op: 'door' }, performance.now()), hideOverlay);
+    } else {
+      view.say(plain(lt(`${DOOR}.${effect.tokens > 0 ? 'too_few_tokens' : 'no_tokens'}`)), '#ffff44');
+    }
+  } else if (effect.type === 'vaultMirror') {
+    const MIRROR = 'actors.mobs.npcs.vaultmirror';
+    if (!effect.reward) {
+      view.say(plain(lt(`${MIRROR}.scene_nothing`)), '#ffffff');
+      return;
+    }
+    showQuest({
+      world, hero: me, who: 'vaultMirror', title: capitalize(lt(`${MIRROR}.name`)),
+      text: `${plain(lt(`${MIRROR}.approach`))}
+
+${plain(lt(`${MIRROR}.scene_${me.heroClass}`))}
+
+${plain(lt(`${MIRROR}.scene_final`))}`,
+      offers: [effect.reward],
+      onChoose: () => send({ type: 'vault', op: 'mirror' }, performance.now()),
+      onClose: hideOverlay,
+    });
+  } else if (effect.type === 'vaultWarning') {
+    const ROOM = 'levels.rooms.quest.vault.vaultfinalroom';
+    view.say(plain(lt(`${ROOM}.${effect.line === 'final' ? 'final_warning' : `imp_warning_${effect.line}`}`)), '#ffff44');
+  } else {
+    view.say(plain(lt(`items.quest.escapecrystal.${core.escapeMessage(effect.score)}`)), '#ffff44');
+  }
 }
 
 /* Input */
@@ -1696,6 +1791,7 @@ function tapCell(cell: number, quiet = false): void {
       else send(action, performance.now());
     }
     else if (shot.kind === 'special') send({ type: 'special', target: cell, ...(shot.choice !== undefined ? { choice: shot.choice } : {}) }, performance.now());
+    else if (shot.kind === 'key') send({ type: 'skeletonKey', item: shot.index, target: cell }, performance.now());
     // A spell cast, dragon's breath breathed, a siren's song sung at the cell.
     else if (shot.kind === 'cast') {
       if (cell !== me.pos && me.items[shot.index]) send({ type: 'use', item: shot.index, cell }, performance.now());
@@ -1714,9 +1810,11 @@ function tapCell(cell: number, quiet = false): void {
     if (heapAt(world, me.depth, me.pos)) takeHere(world, me, performance.now());
     // Hero.handle on the hero's own cell: standing in tall grass or on a plant, it is trampled where the hero stands.
     else if (core.canSelfTrample(world, me)) send({ type: 'move', to: me.pos }, performance.now());
+    // A way to the depth's side level (the blacksmith's mine) or back up from it.
+    else if (branchAt(level, me.pos)) takeBranch();
     else if (!world.arena && isExitCell(level, me.pos)) useStairs(world, 'descend', performance.now());
     else if (!world.arena && me.pos === level.entrance && (me.depth > 1 || hasAmulet(me))) useStairs(world, 'ascend', performance.now());
-    else if (me.pos === level.entrance && heapAt(world, me.depth, me.pos) === undefined && me.depth === 1 && level.map[me.pos] === T.ENTRANCE) {
+    else if (me.pos === level.entrance && heapAt(world, me.depth, me.pos) === undefined && me.depth === 1 && (level.map[me.pos] === T.ENTRANCE || level.map[me.pos] === T.ENTRANCE_SP)) {
       // Hero.actAscend without the Amulet: the way out stays shut.
       toast(t.wayUpSealed);
     }
@@ -1747,10 +1845,29 @@ function tapCell(cell: number, quiet = false): void {
       return;
     }
   }
-  // A vein of dark gold beside the hero, with the blacksmith's pickaxe at hand: mine it.
-  const pickaxe = me.weapon?.kind === 'weapon.pickaxe' || me.items.some((i) => i.kind === 'weapon.pickaxe');
-  if (level.map[cell] === T.WALL_DECO && adjacent(me.pos, cell) && pickaxe && me.depth >= 11 && me.depth <= 15) {
-    send({ type: 'mine' }, performance.now());
+  // Hero.handle on the blacksmith's mine, with his pickaxe: rock, a vein, a crystal or a boulder is mined
+  // (HeroAction.Mine), from beside it; from afar, the hero walks up to it first.
+  const mining = mineTarget(world, me, level, cell);
+  if (mining === 'mine') {
+    send({ type: 'mine', cell }, performance.now());
+    return;
+  }
+  if (mining === 'walk') {
+    const known = exploredCells(world, me.depth);
+    let best: number[] | null = null;
+    for (const n of core.NEIGHBOURS8) {
+      const to = cell + n;
+      if (!known[to] || !core.canEnter(level, to)) continue;
+      const way = findPath(level, me.pos, to, occupiedCells(world, me.depth), known, floating);
+      if (way && (!best || way.length < best.length)) best = way;
+    }
+    if (best && best.length > 0) {
+      walk.queue = best;
+      walk.mine = cell;
+      if (!quiet) feedback.aim(cell, false, vnow);
+    } else if (!quiet) {
+      feedback.refuse(cell, vnow);
+    }
     return;
   }
   // Chasm.heroJump: a chasm right beside the hero asks whether to jump in; floating, one drifts over it.
@@ -1829,6 +1946,29 @@ function tapCell(cell: number, quiet = false): void {
   if (world.arena || enemiesInSight.length > 0) return;
   if (isExitCell(level, cell)) walk.stairs = 'descend';
   else if (cell === level.entrance && (me.depth > 1 || hasAmulet(me))) walk.stairs = 'ascend';
+  else if (branchAt(level, cell)) walk.branch = true;
+}
+
+/** A way to the depth's side level, or back up from it, on a cell (LevelTransition BRANCH_EXIT or BRANCH_ENTRANCE). */
+const branchAt = (level: Level, cell: number): boolean =>
+  (level.transitions ?? []).some((tr) => tr.cell === cell && (tr.type === 'branchExit' || tr.type === 'branchEntrance'));
+
+/** Level.activateTransition for a branch: the blacksmith asks his questions first (blacksmith-ui.ts); any other way is taken at once. */
+function takeBranch(): void {
+  const env = smithEnv();
+  if (!env) return;
+  if (!branchAt(levelAt(env.world, env.hero.depth), env.hero.pos)) return;
+  if (smithBranch(env)) return;
+  // CityLevel.activateTransition: the imp's vault — his spell keeps the hero's gear; he asks first.
+  const quest = env.world.impQuest;
+  const level = levelAt(env.world, env.hero.depth);
+  if (quest?.given && !quest.done && !level.branch && quest.depth === env.hero.depth) {
+    const IMP = 'actors.mobs.npcs.imp';
+    showConfirm(capitalize(lt(`${IMP}.name`)), plain(lt(`${IMP}.enter_text`)), lt(`${IMP}.enter_yes`), lt(`${IMP}.enter_no`),
+      () => env.send({ type: 'branch' }), hideOverlay);
+    return;
+  }
+  env.send({ type: 'branch' });
 }
 
 /** A tap on a buff icon (BuffIndicator): its name and turns; Shattered's longer ones (the seal's shield, a sealed floor, hunger) in a window. */
@@ -2251,7 +2391,7 @@ function learnFromSight(world: World, me: Hero, level: Level, visible: readonly 
     if (!visible[cell]) continue;
     const terrain = level.map[cell]!;
     // A trap one can see: a hidden one says nothing.
-    if (trapAt(terrain) && !hasFlag(terrain, F.SECRET)) hints.first('trap');
+    if (terrain === T.TRAP) hints.first('trap');
     if (terrain === T.LOCKED_DOOR) hints.first('lockedDoor');
     if (terrain === T.WELL) hints.first('well');
     if (terrain === T.ALCHEMY) hints.first('alchemy');
@@ -2431,11 +2571,11 @@ function examineCell(pos: number): void {
     showInfo(own.name, [own.desc, ...own.extra], hideOverlay);
     return;
   }
-  const { name, desc } = plant ? plantText(plant.kind) : tileText(level.map[pos]!);
+  const { name, desc } = plant ? plantText(plant.kind) : tileText(level, pos);
   const well = level.map[pos] === T.WELL ? level.wells.find((w) => w.pos === pos) : undefined;
   // Level.tileDesc: and what covers it (Web.tileDesc).
   const webbed = seen && world.floors[me.depth]?.gas?.web?.some(([cell]) => cell === pos);
-  showInfo(name, [well ? wellText(well.water) : desc, ...(webbed ? [t.webHere] : [])], hideOverlay);
+  showInfo(name, [well ? wellText(well.water) : desc, ...(webbed ? [t.webHere] : []), ...blobTexts(world, me.depth, pos, seen === true)], hideOverlay);
 }
 
 function startResting(): void {
@@ -2600,10 +2740,9 @@ resize();
 /** Stands in for the hero while an online session is still connecting. */
 const placeholderHero: Hero = createHero({ id: '', name: '', heroClass: 'warrior' }, 1, 0, 0);
 
-let baked: HTMLCanvasElement | null = null;
+/** Shattered's tile layers of the level in view (tiles.ts), and for which depth and world they were baked. */
+let tiles: LevelTiles | null = null;
 let bakedKey = '';
-/** The map the baked tiles show, and for which depth and world. */
-let bakedMap = new Uint8Array(0);
 let bakedFor = '';
 let visible: boolean[] = [];
 let busySince = 0;
@@ -2613,7 +2752,9 @@ const backdrop = (() => {
   const world = createWorld(20240501);
   const level = levelAt(world, 1);
   const all = new Array<boolean>(level.map.length).fill(true);
-  return { level, baked: bakeLevel(level, assets), all, view: new View(assets) };
+  const tiles = new LevelTiles(level, assets.env, world.run.seed);
+  tiles.bake(world.floors[1]?.plants ?? []);
+  return { level, tiles, all, view: new View(assets) };
 })();
 
 /** What I picked up, waiting for its moment to set off (motion.ts). */
@@ -2723,7 +2864,7 @@ function drawBackdrop(now: number): void {
   camera.x = Math.round(middle.x - canvas.width / camera.zoom / 2 + Math.sin(now / 9000) * 60);
   camera.y = Math.round(middle.y - canvas.height / camera.zoom / 2 + Math.cos(now / 11000) * 40);
   render(
-    ctx, { level, baked: backdrop.baked, visible: all, explored: all, heaps: [], seeAll: false },
+    ctx, { level, tiles: backdrop.tiles, visible: all, explored: all, heaps: [], seeAll: false },
     backdrop.view, '', assets, camera, now,
   );
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -2935,8 +3076,12 @@ function tick(now: number): void {
         if (me.depth === 16 && lastPlace.depth === 15) view.say(t.enterCity, '#ffff44');
         if (me.depth === 21 && lastPlace.depth === 20) view.say(t.enterHalls, '#ffff44');
         if (me.depth === 26 && lastPlace.depth === 25) view.say(t.enterLast, '#ffff44');
-        const feeling = t.feelings[level.feeling];
-        if (feeling && me.depth > lastPlace.depth) view.say(feeling, '#ffff44');
+        // GameScene on a new deepest floor: demon spawners left alive above are felt (GLog.n).
+        const spawners = me.depth > lastPlace.depth && me.depth === (world.reached ?? me.depth) ? spawnerWarning(world, me.depth) : '';
+        if (spawners) view.say(spawners, '#ff4444');
+        // GameScene: GLog.w(Dungeon.level.feeling.desc()) on every arrival.
+        const feeling = feelingLine(level);
+        if (feeling) view.say(feeling, '#ff8800');
       }
       justFell = false;
     } else if (me.pos !== lastPlace.pos) {
@@ -2951,18 +3096,6 @@ function tick(now: number): void {
       if (terrain === T.EMBERS) audio.play('sizzle', 1.3, 0.12);
       // And what the step stirs where it left: dust, a splash, a few blades of grass.
       stepFx(level.map[lastPlace.pos] ?? terrain, lastPlace.pos, vnow);
-      // Stepping onto a sign reads it.
-      // Below the last shop the signs burst into flames as one reads them (Sign.read).
-      const tip = t.signs[me.depth - 1] ?? t.signBurns;
-      if (terrain === T.SIGN && tip) {
-        if (walk.queue.length > 0 || held.code) {
-          // Passed over on the way somewhere: read in passing, into the log, and the walk goes on.
-          view.say(`${t.signTitle} ${tip}`, '#ffff44');
-        } else {
-          walk.reset();
-          showSign(tip, hideOverlay);
-        }
-      }
     }
   }
   // Setting out: the sewers' card.
@@ -2977,12 +3110,13 @@ function tick(now: number): void {
   if (key !== bakedKey) {
     // The tiles are baked once per depth; after that only the cells that changed are redrawn.
     const where = `${me.depth}:${session.generation}`;
-    if (!baked || bakedFor !== where) {
-      baked = bakeLevel(level, assets);
-      bakedMap = Uint8Array.from(level.map);
+    const plantsHere = world.floors[me.depth]?.plants ?? [];
+    if (!tiles || bakedFor !== where || tiles.level !== level || tiles.customStale) {
+      tiles = new LevelTiles(level, assets.env, world.run.seed);
+      tiles.bake(plantsHere);
       bakedFor = where;
     } else {
-      patchLevel(baked, bakedMap, level, assets);
+      tiles.patch(plantsHere);
     }
     visible = visibleCells(world, me.depth);
     bakedKey = key;
@@ -3033,6 +3167,7 @@ function tick(now: number): void {
   ambientFx(view, vnow, dt);
   mobAmbient(view, vnow, dt);
   regionFx(level, visible, vnow, dt);
+  levelFx.frame(world, me.depth, visible, view, vnow);
   blobFx(world.floors[me.depth]?.gas ?? {}, visible, vnow, dt);
 
   const mine = view.puppets.get(me.id);
@@ -3155,7 +3290,7 @@ function tick(now: number): void {
   const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
   const explored = exploredCells(world, me.depth);
   const scene = {
-    level, baked: baked!, visible, explored, heaps, plants, gas, webs, seeAll: me.mindVision > 0,
+    level, tiles: tiles!, visible, explored, heaps, gas, webs, seeAll: me.mindVision > 0,
       ...((world.floors[me.depth]?.altar?.volume ?? 0) > 0 ? { altar: world.floors[me.depth]!.altar!.pos } : {}),
     focus: { x: at.x + TILE / 2, y: at.y + TILE / 2 },
     lights: world.arena ? [...lightsFor(level, visible, view, vnow), ...arenaView.lights(level, visible, vnow)] : lightsFor(level, visible, view, vnow),

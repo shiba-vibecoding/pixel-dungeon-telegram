@@ -141,7 +141,8 @@ describe('the talents of the subclasses', () => {
     hero.items.push(createItem('seed.sungrass', 1));
     const seed = hero.items.findIndex((item) => item.kind === 'seed.sungrass');
     act(world, 'p', { type: 'throw', item: seed, target: hero.pos + 3 });
-    expect(level.map[hero.pos + 4] === T.HIGH_GRASS || level.map[hero.pos + 2] === T.HIGH_GRASS).toBe(true);
+    const tall = (c: number): boolean => level.map[c] === T.HIGH_GRASS || level.map[c] === T.FURROWED_GRASS;
+    expect(tall(hero.pos + 4) || tall(hero.pos + 2)).toBe(true);
     level.map[hero.pos + 1] = T.HIGH_GRASS;
     expect(heroView(world, hero)[hero.pos + 2]).toBe(true);
     expect(charAt(world, 1, hero.pos + 2)).toBeUndefined();

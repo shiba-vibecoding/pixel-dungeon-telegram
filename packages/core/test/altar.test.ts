@@ -24,16 +24,19 @@ function atAltar(): { world: World; depth: number; fire: number } {
 }
 
 describe('the altar and its sacrificial fire', () => {
-  it('burns on a pedestal in the middle of the room, hungry for 5 + 5 x depth', () => {
+  it('burns on a pedestal in the middle of the room, hungry for 6 + 4 x depth, a cursed weapon its prize', () => {
     const { world, depth, fire } = atAltar();
     expect(levelAt(world, depth).map[fire]).toBe(T.PEDESTAL);
-    expect(floorAt(world, depth).altar!.volume).toBe(5 + depth * 5);
+    expect(floorAt(world, depth).altar!.volume).toBe(6 + depth * 4);
+    const prize = floorAt(world, depth).altar!.prize!;
+    expect(prize.cursed).toBe(true);
   });
 
-  it('marks whoever stands in it; marked monsters slain are offerings, and when it has had enough it leaves a scroll of wipe out', () => {
+  it('marks whoever stands by it; marked monsters slain are offerings, and when it has had enough it leaves its prize', () => {
     const { world, depth, fire } = atAltar();
     const floor = floorAt(world, depth);
     floor.altar!.volume = 3;
+    const prize = floor.altar!.prize!;
     for (let i = 0; i < 6 && floor.altar!.volume > 0; i++) {
       const rat = createMob(`#r${i}`, 'rat', fire, 'hunting', floor.now);
       Object.assign(rat, { enemy: 'p', enemySeen: true });
@@ -43,7 +46,7 @@ describe('the altar and its sacrificial fire', () => {
       for (let k = 0; k < 20 && floor.mobs.includes(rat); k++) act(world, 'p', { type: 'attack', target: rat.id });
     }
     expect(floor.altar!.volume).toBe(0);
-    expect(floor.heaps.find((h) => h.pos === fire)?.items.some((i) => i.kind === 'wipeOut')).toBe(true);
+    expect(floor.heaps.find((h) => h.pos === fire)?.items).toContainEqual(prize);
   });
 
   it('the scroll of wipe out kills every monster on the level but the quest givers, and frees what was for sale', () => {

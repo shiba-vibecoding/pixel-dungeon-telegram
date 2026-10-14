@@ -15,7 +15,9 @@ import { isBossDepth } from './level/builder';
 import { cellX, cellY, HEIGHT, WIDTH } from './level/geometry';
 import { circleCells } from './fov';
 import { discover, F, hasFlag, T } from './level/terrain';
+import { TRAPS } from './level/trapdefs';
 import { sealShieldTick } from './seal';
+import { dustSpawnerTurn } from './wandmaker';
 import { classTurn } from './classes/turn';
 import { chargeClassArmor } from './classArmor';
 import type { World } from './world';
@@ -271,6 +273,8 @@ export function heroTurns(ctx: Ctx, hero: Hero, from: number, to: number): numbe
     lockedFloorTurn(ctx, hero);
     hungerTurn(ctx, hero);
     sealShieldTick(ctx, hero);
+    // CorpseDust.DustGhostSpawner: the dust's curse raising wraiths.
+    dustSpawnerTurn(ctx, hero);
     // The classes stream: the Duelist's Charger and trackers, the Cleric's tome.
     classTurn(ctx, hero);
     // ClassArmor.Charger: worn class armour gathers charge.
@@ -316,13 +320,17 @@ export function search(ctx: Ctx, hero: Hero, intentional: boolean): boolean {
     for (let x = Math.max(cx - distance, 0); x <= Math.min(cx + distance, WIDTH - 1); x++) {
       const p = x + y * WIDTH;
       if (!fov[p] || p === hero.pos || (round && !round.has(p))) continue;
-      if (hasFlag(ctx.level.map[p]!, F.SECRET)) {
+      // Tengu's darts are not found by searching (Trap.canBeSearched).
+      const trap = ctx.level.map[p] === T.SECRET_TRAP ? ctx.level.traps?.find((tr) => tr.pos === p) : undefined;
+      if (hasFlag(ctx.level.map[p]!, F.SECRET) && (!trap || TRAPS[trap.kind].canBeSearched)) {
         // A cursed talisman worn lets nothing be noticed in passing.
         const chance = intentional ? 1 : talismanBlinds(hero) ? 0 : ctx.level.map[p] === T.SECRET_DOOR ? 0.2 - hero.depth / 100 : 0.4 - hero.depth / 250;
         if (ctx.rng.float() < chance) {
           // Foresight.charge: a find charges the talisman, a door more than a trap.
           talismanFound(hero, ctx.level.map[p] === T.SECRET_DOOR);
           ctx.level.map[p] = discover(ctx.level.map[p]!);
+          // Level.discover: a trap found is in sight from now on.
+          if (trap) trap.visible = true;
           exploredCells(ctx.world, hero.depth)[p] = true;
           ctx.effects.push({ type: 'discovered', depth: hero.depth, cell: p });
           found = true;

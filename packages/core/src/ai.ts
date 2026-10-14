@@ -14,6 +14,10 @@ import { altarCallsMob } from './altar';
 import { type Item, itemDef, ItemGenerator, randomEnchantment, randomGlyph } from './items';
 import { identify } from './ident';
 import { isBossDepth, LAST_SHOP_DEPTH } from './level/builder';
+import { spawnLevelMobs } from './levelspawn';
+import { sentryAct } from './roommobs';
+import { mineCanAttack, mineCanStand, mineDoAttack, mineMayWake, mineMobAct, mineMoved, mineRespawn, mineWanderTarget } from './minemobs';
+import { newbornCanAttack, newbornDoAttack, wandmakerMobAct } from './wandmaker-mobs';
 import type { Level, RoomInfo } from './level/generate';
 import { adjacent, cellX, cellY, distance, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { RoomType } from './level/room';
@@ -123,7 +127,7 @@ function hostileTo(mob: Mob, other: Char): boolean {
  * sight (by the way there, those it can strike first, a hero when as near), or the nearest hero at all. An ally
  * goes for the monsters (chooseFoe).
  */
-function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Char | undefined {
+export function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Char | undefined {
   if (mob.ally) return chooseFoe(ctx, mob, fov);
   // Invisible heroes cannot be picked out.
   const heroes = heroesOn(ctx.world, ctx.depth).filter((hero) => !isInvisible(hero));
@@ -283,6 +287,13 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     mob.greeted = true;
     ctx.effects.push({ type: 'greeting', depth: ctx.depth, mob: mob.id });
   }
+  // The levels' room characters: the sentry watching its floor (SentryRoom.Sentry); the blacksmith's mine's
+  // crystal spire, gnoll geomancer and the like (minemobs.ts).
+  if (mob.kind === 'sentry') {
+    sentryAct(ctx, mob);
+    return;
+  }
+  if (mineMobAct(ctx, mob)) return;
   if (minding(mob)) {
     spend(mob, TICK);
     return;
@@ -314,6 +325,8 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     spend(mob, TICK);
     return;
   }
+  // The wandmaker's quest: the rot heart and its lashers; a newborn fire elemental's charged blast.
+  if (wandmakerMobAct(ctx, mob)) return;
   growChampion(mob, ctx.floor.now);
   // Dizzy, it staggers about instead of doing anything useful.
   if ((mob.dizzy ?? 0) > 0) {
@@ -431,7 +444,8 @@ function sleeping(ctx: Ctx, mob: Mob, enemy: Char | undefined, enemyInFov: boole
         closest = other;
       }
     }
-    if (closest && ctx.rng.floatMax(lowest) < 1) {
+    // CrystalGuardian.Sleeping: only by someone it could reach; the gnoll geomancer sleeps until mined.
+    if (closest && ctx.rng.floatMax(lowest) < 1 && (!isHero(closest) || mineMayWake(ctx, mob, closest))) {
       awaken(ctx, mob, closest === enemy || isHero(closest) ? closest : enemy, enemyInFov);
       return;
     }
@@ -513,6 +527,9 @@ function continueWandering(ctx: Ctx, mob: Mob, fov: boolean[]): void {
  * nearer the heroes.
  */
 function wanderDestination(ctx: Ctx, mob: Mob): number {
+  // A gnoll guard keeps by its sapper, a sapper to its post (minemobs.ts).
+  const mine = mineWanderTarget(ctx, mob);
+  if (mine !== undefined) return mine;
   const first = randomDestination(ctx, mob);
   if (mob.kind !== 'fetidRat' && mob.kind !== 'gnollTrickster' && mob.kind !== 'greatCrab') return first;
   const second = randomDestination(ctx, mob);
@@ -759,7 +776,7 @@ export function getFurther(ctx: Ctx, mob: Mob, threat: number, _fov?: boolean[])
 }
 
 /** Mob.Wandering.noticeEnemy: it has seen someone, and is after them. */
-function notice(ctx: Ctx, mob: Mob, enemy: Char, state: MobState): void {
+export function notice(ctx: Ctx, mob: Mob, enemy: Char, state: MobState): void {
   mob.enemySeen = true;
   mob.state = state;
   mob.target = enemy.pos;
@@ -778,6 +795,11 @@ export function canAttack(ctx: Ctx, mob: Mob, enemy: Char): boolean {
   if (mob.kind === 'lotus') return false;
   const own = bossRules(mob)?.canAttack;
   if (own) return own(ctx, mob, enemy);
+  if (isHero(enemy)) {
+    const mine = mineCanAttack(ctx, mob, enemy);
+    if (mine !== undefined) return mine;
+    if (mob.kind === 'newbornElemental') return newbornCanAttack(ctx, mob, enemy);
+  }
   const special = canAttackSpecial(ctx, mob, enemy);
   if (special !== undefined) return special;
   return adjacent(mob.pos, enemy.pos) || canAttackWithExtraReach(ctx, mob, enemy);
@@ -797,6 +819,13 @@ function doAttack(ctx: Ctx, mob: Mob, enemy: Char): void {
   if (mob.kind === 'ward') {
     wardZap(ctx, mob, enemy);
     return;
+  }
+  if (isHero(enemy)) {
+    if (mineDoAttack(ctx, mob, enemy)) return;
+    if (mob.kind === 'newbornElemental') {
+      newbornDoAttack(ctx, mob, enemy);
+      return;
+    }
   }
   if (attackSpecial(ctx, mob, enemy)) return;
   meleeAttack(ctx, mob, enemy);
@@ -942,6 +971,8 @@ export function moveMob(ctx: Ctx, mob: Mob, to: number, press = true, travelling
     mobPress(ctx, mob);
     if (!isAlive(mob)) return;
   }
+  // A crystal guardian breaks the crystal it steps into, and is slow where it is cramped (minemobs.ts).
+  mineMoved(ctx, mob);
 }
 
 /**
@@ -991,6 +1022,8 @@ function passableMap(ctx: Ctx, mob: Mob): Uint8Array {
  */
 function canStand(ctx: Ctx, mob: Mob | undefined, cell: number, avoid = false): boolean {
   if (mob?.kind === 'piranha' || mob?.kind === 'phantomPiranha') return isPassable(ctx.level, cell) && isWater(ctx.level.map[cell]!);
+  // The mine's crystals: a wisp floats through them, a guardian stomps them (minemobs.ts).
+  if (mob && mineCanStand(ctx, mob, cell)) return true;
   return isPassable(ctx.level, cell) || (avoid && cell >= 0 && cell < LENGTH && hasFlag(ctx.level.map[cell]!, F.AVOID));
 }
 
@@ -1058,6 +1091,8 @@ const nextMobId = (world: World): string => `#${++world.nextId}`;
  * a demon spawner of the halls. Boss levels hold only their boss, shops their keeper.
  */
 export function populate(world: World, level: Level, rng: Rng): Mob[] {
+  // Shattered's regular levels come with their monsters (RegularLevel.createMobs and the rooms').
+  if (level.spawn) return spawnLevelMobs(world, level);
   // The Amulet's hall is empty but for the Amulet.
   if (level.depth >= 26) return [];
   if (isBossDepth(level.depth)) {

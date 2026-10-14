@@ -1,6 +1,5 @@
 import { deriveSeed, Rng, Stream } from '../rng';
-import { Feeling } from './builder';
-import { stitchTerrain } from './flags';
+import { Feeling } from './gen/dungeon';
 import type { Level } from './generate';
 import { cell, LENGTH, WIDTH } from './geometry';
 import { RoomType } from './room';
@@ -226,7 +225,6 @@ export function buildArenaLevel(seed: number, depth: number): Level & { ring: Ar
     pens.push(pen);
   }
 
-  stitchTerrain(map);
   const centre = { x: ARENA_CENTRE % WIDTH, y: Math.trunc(ARENA_CENTRE / WIDTH) };
   return {
     depth,

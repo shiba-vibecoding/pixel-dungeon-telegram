@@ -1,171 +1,162 @@
-import { createMob, type Hero, type Mob } from './actors';
+import { createMob, type Hero, type Mob, type MobKind } from './actors';
 import { randomRespawnCell } from './ai';
-import { type Ctx, dropItem, enterCell } from './floor';
+import { type Ctx, dropItem, enterCell, heroView } from './floor';
 import { collect } from './inventory';
-import { createItem, type Item, itemDef, ItemGenerator } from './items';
+import { type Enchantment, type Glyph, type Item, randomEnchantment, randomGlyph } from './items';
 import { identify } from './ident';
-import type { Level } from './level/generate';
 import { adjacent } from './level/geometry';
-import type { Rng } from './rng';
-import { scoreGhostDone } from './score';
+import { createItem } from './items';
+import { Dungeon } from './level/gen/dungeon';
+import { Generator } from './level/gen/generator';
+import { Random } from './level/gen/random';
+import { QuestHooks } from './level/gen/quests';
+import type { RegularLevel } from './level/gen/regular-level';
+import { QUEST_SLOT, questScore } from './score';
 import type { World } from './world';
-import { isChallenged, NO_ARMOR, underChallenges } from './challenges';
-
+import { underChallenges } from './challenges';
 
 /*
- * The sad ghost of the sewers (Ghost): once per run a ghost haunts one of
- * depths 2-4 with one of three errands. It may want its dried rose back,
- * which one of that level's monsters carries; or revenge on the fetid rat
- * that took its life, which comes out once the hunting starts; or to be rid
- * of the curse that binds it, which takes shape and fights when the hero
- * agrees to help. Done, it earns the choice of a fine weapon or armour.
+ * The sad ghost of the sewers (Ghost and Ghost.Quest): once a run, on depth 2, 3 or 4 (the deeper,
+ * the likelier), a ghost haunts the room of the way down. Spoken to, it sends the hero after what
+ * killed it — a fetid rat on depth 2, a gnoll trickster on 3, a great crab on 4 — which comes out
+ * somewhere on the level. Slain, the ghost offers a weapon or an armour for its trouble (as good as
+ * each other, and sometimes enchanted or inscribed, which only shows once chosen), and finds peace.
  */
 
-export type GhostErrand = 'rose' | 'rat' | 'curse';
+/** Ghost.Quest.type: 1 the fetid rat, 2 the gnoll trickster, 3 the great crab. */
+export type GhostType = 1 | 2 | 3;
 
 export interface GhostQuest {
   depth: number;
-  /** Absent in saves from before the other errands: the rose. */
-  type?: GhostErrand;
+  type: GhostType;
+  /** The ghost has told its story, and its foe has come out. */
   given: boolean;
-  /** The rose has dropped, or the fetid rat has come out. */
-  dropped: boolean;
-  /** Kills left before the rose is sure to drop. */
-  killsLeft: number;
-  /** The curse has been fought and broken. */
-  freed?: boolean;
+  /** Its foe is slain (Ghost.Quest.processed). */
+  processed: boolean;
+  /** The reward is taken and the ghost is at peace (Ghost.Quest.completed). */
   done: boolean;
   weapon: Item;
   armor: Item;
+  /** The enchantment or glyph the chosen reward gets, kept apart so it is not shown before (Ghost.Quest.enchant, glyph). */
+  enchant?: Enchantment;
+  glyph?: Glyph;
 }
 
-export type GhostLine = 'intro' | 'remind' | 'reward' | 'farewell';
+/** What the ghost says: its story, a reminder, its thanks with the rewards, a farewell; and, when its foe falls, «find me». */
+export type GhostLine = 'intro' | 'remind' | 'reward' | 'farewell' | 'findMe';
 
-const SEWER_MONSTERS = new Set(['rat', 'gnoll', 'crab', 'albino']);
-
-export const errandOf = (quest: GhostQuest): GhostErrand => quest.type ?? 'rose';
-
-/** Ghost.Quest.spawn: the deeper the sewer level, the likelier the ghost, until it has appeared. */
-export function spawnGhost(world: World, level: Level, mobs: Mob[], rng: Rng): void {
-  if (world.quest || level.depth < 2 || level.depth > 4 || rng.int(5 - level.depth) !== 0) return;
-  const pos = randomRespawnCell(rng, world, level, (cell) => !mobs.some((mob) => mob.pos === cell));
-  if (pos === -1) return;
-  mobs.push(createMob(`#${++world.nextId}`, 'ghost', pos, 'passive', 0));
-  const type = (['rose', 'rat', 'curse'] as const)[rng.int(3)]!;
-
-  // The reward: the best of four weapons (no thrown ones) and of four armours.
-  const generator = new ItemGenerator(rng, level.depth);
-  let weapon: Item | null = null;
-  for (let i = 0; i < 4; i++) {
-    let another = generator.of('weapon');
-    while (itemDef(another.kind).category !== 'weapon') another = generator.of('weapon');
-    if (!weapon || another.level > weapon.level) weapon = another;
-  }
-  // Faith is my armor: only worn-out cloth armour (new ClothArmor().degrade()).
-  let armor = isChallenged(world, NO_ARMOR) ? createItem('armor.cloth', 1, -1) : generator.of('armor');
-  for (let i = 0; i < 3 && !isChallenged(world, NO_ARMOR); i++) {
-    const another = generator.of('armor');
-    if (another.level > armor.level) armor = another;
-  }
-  // Ghost.Quest.spawn: both are known through and through.
-  identify(world, weapon!);
-  identify(world, armor);
-  world.quest = { depth: level.depth, type, given: false, dropped: false, killsLeft: 8, done: false, weapon: weapon!, armor };
-}
+/** The ghost's foe on each depth. */
+export const GHOST_FOES: Readonly<Record<GhostType, MobKind>> = { 1: 'fetidRat', 2: 'gnollTrickster', 3: 'greatCrab' };
 
 /**
- * Ghost.Quest.processSewersKill: one of the level's monsters carries the rose;
- * or, at the first kill, the fetid rat comes out.
+ * Ghost.Quest.spawn (from SewerLevel.createMobs): on depth 2, 3 or 4, once a run (1 in 3, 2, 1), the
+ * ghost in the exit room on an open cell, and its rewards rolled: armour and a weapon of the same
+ * tier (50% tier 2, 30% 3, 15% 4, 5% 5) and level (50% +0, 30% +1, 15% +2, 5% +3), and one time in
+ * five an enchantment and a glyph for whichever is chosen.
  */
-export function questKill(ctx: Ctx, mob: Mob): void {
-  const quest = ctx.world.quest;
-  if (!quest || !quest.given || quest.dropped || quest.depth !== ctx.depth || !SEWER_MONSTERS.has(mob.kind)) return;
-  if (errandOf(quest) === 'rat') {
-    const pos = randomRespawnCell(ctx.rng, ctx.world, ctx.level, () => true);
-    if (pos === -1) return;
-    const rat = createMob(`#${++ctx.world.nextId}`, 'fetidRat', pos, 'wandering', ctx.floor.now);
-    ctx.floor.mobs.push(rat);
-    enterCell(ctx.level, pos);
-    quest.dropped = true;
-    return;
+export function spawnGhost(level: RegularLevel): void {
+  const world = Dungeon.world;
+  const depth = Dungeon.depth;
+  if (!world || world.quest || depth <= 1 || Random.Int(5 - depth) !== 0) return;
+  const room = level.roomExit!;
+  const gen = level.level;
+  let pos: number;
+  do {
+    pos = gen.pointToCell(room.random());
+  } while (pos === -1 || gen.solid[pos] || !gen.openSpace[pos] || pos === gen.exit());
+  gen.mobs.push({ kind: 'ghost', pos, state: 'passive' });
+
+  const ARMORS = ['armor.leather', 'armor.mail', 'armor.scale', 'armor.plate'] as const;
+  const armorTier = Random.chances([0, 0, 10, 6, 3, 1]);
+  const armor = createItem(ARMORS[Math.max(2, armorTier) - 2]!);
+  const wepTier = Random.chances([0, 0, 10, 6, 3, 1]);
+  const weapon = Generator.random(`WEP_T${wepTier}` as 'WEP_T2');
+  // The weapon's own starting properties are cleared.
+  weapon.level = 0;
+  delete weapon.enchant;
+  delete weapon.cursed;
+  delete weapon.durability;
+
+  const roll = Random.Float();
+  const itemLevel = roll < 0.5 ? 0 : roll < 0.8 ? 1 : roll < 0.95 ? 2 : 3;
+  weapon.level += itemLevel;
+  armor.level += itemLevel;
+
+  // Rolled first, so the outcome does not change how many draws there are. SEAM(gear): Weapon.Enchantment
+  // and Armor.Glyph random as Pixel Dungeon's lists have them.
+  let enchant: Enchantment | undefined = randomEnchantment(Random.rng);
+  let glyph: Glyph | undefined = randomGlyph(Random.rng);
+  // SEAM(alchemy): ParchmentScrap.enchantChanceMultiplier, 1 without the trinket.
+  if (Random.Float() > Math.fround(0.2)) {
+    enchant = undefined;
+    glyph = undefined;
   }
-  if (errandOf(quest) !== 'rose') return;
-  if (ctx.rng.int(quest.killsLeft) === 0) {
-    dropItem(ctx.floor, mob.pos, createItem('quest.rose'));
-    quest.dropped = true;
-  } else {
-    quest.killsLeft--;
-  }
+  world.quest = {
+    depth, type: (depth - 1) as GhostType, given: false, processed: false, done: false, weapon, armor,
+    ...(enchant ? { enchant } : {}), ...(glyph ? { glyph } : {}),
+  };
 }
 
-/** What the hero brings back: the rose or the fetid rat's skull, as the errand was. */
-const tokenOf = (quest: GhostQuest, hero: Hero): number =>
-  hero.items.findIndex((item) => item.kind === (errandOf(quest) === 'rat' ? 'quest.skull' : 'quest.rose'));
+QuestHooks.ghost = spawnGhost;
 
-const earned = (quest: GhostQuest, hero: Hero): boolean => (errandOf(quest) === 'curse' ? !!quest.freed : tokenOf(quest, hero) >= 0);
-
-/** Talking to the ghost: the errand, a reminder, or the reward on offer. */
+/**
+ * Ghost.interact: the first time, its story, and its foe comes out somewhere out of sight
+ * (Level.randomRespawnCell); then a reminder until the foe is slain, then the rewards.
+ */
 export function talkToGhost(ctx: Ctx, hero: Hero): void {
   const quest = ctx.world.quest;
   if (!quest || quest.done) return;
-  let line: GhostLine;
   if (!quest.given) {
-    // The curse is only taken on once the hero agrees to face it.
-    if (errandOf(quest) !== 'curse') quest.given = true;
-    line = 'intro';
-  } else {
-    line = earned(quest, hero) ? 'reward' : 'remind';
+    const seen = heroView(ctx.world, hero);
+    const pos = randomRespawnCell(ctx.rng, ctx.world, ctx.level, (cell) => !seen[cell]);
+    if (pos === -1) return;
+    const foe = createMob(`#${++ctx.world.nextId}`, GHOST_FOES[quest.type], pos, 'wandering', ctx.floor.now);
+    ctx.floor.mobs.push(foe);
+    enterCell(ctx.level, pos);
+    quest.given = true;
+    ctx.effects.push({ type: 'ghost', hero: hero.id, line: 'intro', questType: quest.type });
+    return;
   }
-  ctx.effects.push({ type: 'ghost', hero: hero.id, line, errand: errandOf(quest) });
+  ctx.effects.push({ type: 'ghost', hero: hero.id, line: quest.processed ? 'reward' : 'remind', questType: quest.type });
 }
 
-export function faceCurseProblem(world: World, hero: Hero): string | null {
-  const quest = world.quest;
-  if (!quest || errandOf(quest) !== 'curse' || quest.given) return 'there is no curse to face';
-  const ghost = world.floors[hero.depth]?.mobs.find((mob) => mob.kind === 'ghost');
-  return ghost && adjacent(ghost.pos, hero.pos) ? null : 'the ghost is not here';
-}
-
-/** Ghost.replace: the curse that binds the ghost takes shape where it was, and turns on the hero. */
-export function faceCurse(ctx: Ctx, hero: Hero): void {
-  const quest = ctx.world.quest!;
-  quest.given = true;
-  const ghost = ctx.floor.mobs.find((mob) => mob.kind === 'ghost')!;
-  ctx.floor.mobs.splice(ctx.floor.mobs.indexOf(ghost), 1);
-  const curse = createMob(ghost.id, 'curse', ghost.pos, 'hunting', ctx.floor.now);
-  curse.level = ctx.depth;
-  curse.ht = curse.hp = 10 + ctx.depth * 3;
-  Object.assign(curse, { enemy: hero.id, target: hero.pos, enemySeen: true });
-  ctx.floor.mobs.push(curse);
-  ctx.effects.push({ type: 'cursed', depth: ctx.depth, mob: curse.id, pos: curse.pos });
-}
-
-/** CursePersonification.die: the curse is broken, and the ghost is itself again. */
-export function curseBroken(ctx: Ctx, curse: Mob): void {
+/** Ghost.Quest.process: the foe slain on the ghost's depth, it calls the hero back («find me»). */
+export function ghostFoeSlain(ctx: Ctx, mob: Mob, by?: string): void {
   const quest = ctx.world.quest;
-  if (quest) quest.freed = true;
-  ctx.floor.mobs.push(createMob(curse.id, 'ghost', curse.pos, 'passive', ctx.floor.now));
-  enterCell(ctx.level, curse.pos);
+  if (!quest || quest.processed || !quest.given || quest.depth !== ctx.depth || mob.kind !== GHOST_FOES[quest.type]) return;
+  quest.processed = true;
+  // Ghost.Quest.process: the errand is done; its foe slain (Statistics.questScores[0] += 1000).
+  questScore(ctx.world, QUEST_SLOT.ghost, 1000);
+  ctx.effects.push({ type: 'ghost', hero: by ?? ctx.world.heroes[0]?.id ?? '', line: 'findMe', questType: quest.type });
 }
 
 export function rewardProblem(world: World, hero: Hero, choice: unknown): string | null {
   const quest = world.quest;
-  if (!quest || quest.done || !quest.given || !earned(quest, hero)) return 'nothing to give';
+  if (!quest || quest.done || !quest.processed) return 'nothing to give';
   if (choice !== 'weapon' && choice !== 'armor') return 'bad choice';
   const ghost = world.floors[hero.depth]?.mobs.find((mob) => mob.kind === 'ghost');
   return ghost && adjacent(ghost.pos, hero.pos) ? null : 'the ghost is not here';
 }
 
-/** The rose or skull for a reward; the ghost finds peace and fades away. */
+/**
+ * WndSadGhost.selectReward: the chosen item gets the enchantment or glyph kept for it and is known
+ * through and through; what will not go in the pack lies by the ghost. The ghost bids farewell and fades.
+ */
 export function rewardFromGhost(ctx: Ctx, hero: Hero, choice: 'weapon' | 'armor'): void {
   const quest = ctx.world.quest!;
-  if (errandOf(quest) !== 'curse') hero.items.splice(tokenOf(quest, hero), 1);
   const item = quest[choice];
-  // WndSadGhost: what will not go into the pack is dropped where the hero stands (Level.drop).
-  if (!collect(hero, item)) dropItem(ctx.floor, hero.pos, underChallenges(ctx.world, item));
-  ctx.effects.push({ type: 'pickedUp', hero: hero.id, item });
+  if (choice === 'weapon' && quest.enchant) item.enchant = quest.enchant;
+  if (choice === 'armor' && quest.glyph) item.glyph = quest.glyph;
+  identify(ctx.world, item);
+  const ghost = ctx.floor.mobs.find((mob) => mob.kind === 'ghost');
+  // What the challenges forbid (armour under faith is my armor) is its worth in gold.
+  const given = underChallenges(ctx.world, item);
+  if (collect(hero, given)) ctx.effects.push({ type: 'pickedUp', hero: hero.id, item: given });
+  else dropItem(ctx.floor, ghost?.pos ?? hero.pos, given);
   quest.done = true;
-  scoreGhostDone(ctx.world);
-  ctx.floor.mobs = ctx.floor.mobs.filter((mob) => mob.kind !== 'ghost');
-  ctx.effects.push({ type: 'ghost', hero: hero.id, line: 'farewell', errand: errandOf(quest) });
+  ctx.effects.push({ type: 'ghost', hero: hero.id, line: 'farewell', questType: quest.type });
+  if (ghost) {
+    ctx.floor.mobs.splice(ctx.floor.mobs.indexOf(ghost), 1);
+    ctx.effects.push({ type: 'died', depth: ctx.depth, who: ghost.id, pos: ghost.pos, kind: 'ghost' });
+  }
 }

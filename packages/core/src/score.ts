@@ -24,6 +24,9 @@ import type { World } from './world';
  * from the world when the score is asked for (floors, gold, the pack).
  */
 
+/** SpecialRoom.CRYSTAL_KEY_SPECIALS (level/gen/rooms/special/special.ts; not imported, to keep this module light). */
+const CRYSTAL_KEY_SPECIALS: readonly string[] = ['PitRoom', 'CrystalVaultRoom', 'CrystalChoiceRoom', 'CrystalPathRoom'];
+
 /** Statistics.bossScores / questScores: five slots each, as in the original. */
 export interface ScoreState {
   bosses: number[];
@@ -108,10 +111,13 @@ export function explorePercent10(world: World, depth: number): number {
   const missed = new Set<number>();
 
   for (const heap of floor.heaps) {
-    if (heap.auto) continue;
+    if (heap.auto || heap.autoExplored) continue;
     if (!explored[heap.pos] || (heap.kind !== 'heap' && heap.kind !== 'forSale' && heap.kind !== 'crystalChest')) missed.add(roomAt(heap.pos));
     else if (heap.items.some((item) => itemDef(item.kind).category === 'key')) missed.add(roomAt(heap.pos));
   }
+  const roomOfKind = (kind: string): number => level.rooms.findIndex((r) => r.kind === kind);
+  // Magical fire still burning (it bars the items), or the sacrificial fire (it holds them).
+  if ((level.eternalFire?.length ?? 0) > 0) missed.add(roomOfKind('MagicalFireRoom'));
   if (floor.altar && floor.altar.volume > 0) missed.add(roomOfType(RoomType.ALTAR));
   for (const mob of floor.mobs) {
     if (mob.ally) continue;
@@ -128,6 +134,12 @@ export function explorePercent10(world: World, depth: number): number {
       if (room >= 0 && (candidate === -2 || !missed.has(candidate))) candidate = room;
     }
     if (candidate !== -2) missed.add(candidate);
+  }
+  // Unused crystal keys for this floor (Notes.KeyRecord): its crystal-key room (SpecialRoom.CRYSTAL_KEY_SPECIALS) is missed.
+  if (world.heroes.some((hero) => heroBelongings(hero).some((item) => item.kind === 'key.crystal' && item.depth === depth))) {
+    level.rooms.forEach((r, i) => {
+      if (r.kind && CRYSTAL_KEY_SPECIALS.includes(r.kind)) missed.add(i);
+    });
   }
   return missed.size === 0 ? 10 : missed.size === 1 ? 5 : missed.size === 2 ? 2 : 0;
 }
@@ -170,8 +182,7 @@ export function scoreBreakdown(world: World, hero: Hero, deepest: number, gold: 
   const state = scoreSoFar(world);
   const quests = [...state.quests];
   // A hero who keeps the corpse dust from the wandmaker's errand past the sewers still gets its due.
-  const wants = world.wandQuest?.wants;
-  if (deepest >= 10 && (wants === undefined || wants === 'dust') && heroBelongings(hero).some((item) => item.kind === 'quest.dust')) {
+  if (deepest >= 10 && heroBelongings(hero).some((item) => item.kind === 'quest.dust')) {
     quests[QUEST_SLOT.wandmaker] = 2000;
   }
 

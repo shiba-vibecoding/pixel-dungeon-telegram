@@ -263,7 +263,7 @@ describe('the dried rose', () => {
     const hero = heroById(world, 'p')!;
     hero.artifact = createItem('artifact.rose');
     expect(act(world, 'p', { type: 'artifact', item: 'artifact', use: 'summon' })).toEqual({ ok: false, reason: 'art:driedrose.desc_no_quest' });
-    world.quest = { depth: 2, type: 'rat', given: true, dropped: true, killsLeft: 0, done: true, weapon: createItem('weapon.mace'), armor: createItem('armor.mail') };
+    world.quest = { depth: 2, type: 1, given: true, processed: true, done: true, weapon: createItem('weapon.mace'), armor: createItem('armor.mail') };
     expect(act(world, 'p', { type: 'artifact', item: 'artifact', use: 'summon' }).ok).toBe(true);
     const ghost = floorAt(world, 1).mobs.find((mob) => mob.kind === 'ghostHero')!;
     expect(ghost).toBeDefined();
@@ -343,7 +343,7 @@ describe('with the wands', () => {
     const hero = heroById(world, 'p')!;
     hero.artifact = createItem('artifact.rose');
     hero.artifact.charge = 100;
-    world.quest = { depth: 2, type: 'rat', given: true, dropped: true, killsLeft: 0, done: true, weapon: createItem('weapon.mace'), armor: createItem('armor.mail') };
+    world.quest = { depth: 2, type: 1, given: true, processed: true, done: true, weapon: createItem('weapon.mace'), armor: createItem('armor.mail') };
     expect(act(world, 'p', { type: 'artifact', item: 'artifact', use: 'summon' }).ok).toBe(true);
     const ghost = floorAt(world, 1).mobs.find((mob) => mob.kind === 'ghostHero')!;
     expect(ghost.ally).toBe(true);

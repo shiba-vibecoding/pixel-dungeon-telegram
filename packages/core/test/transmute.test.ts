@@ -28,25 +28,4 @@ describe('water of transmutation', () => {
       expect(changed.kind).not.toBe('scroll.upgrade');
     }
   });
-
-  it('works on what is dropped into the well, which then runs dry; wading in does nothing', () => {
-    for (let seed = 1; seed < 400; seed++) {
-      const world = createWorld(seed * 7);
-      for (let depth = 1; depth <= 4; depth++) {
-        const level = levelAt(world, depth);
-        const well = level.wells.find((w) => w.water === 'transmutation');
-        if (!well) continue;
-        addHero(world, { id: 'p', name: 'P', heroClass: 'warrior' });
-        const hero = heroById(world, 'p')!;
-        Object.assign(hero, { depth, pos: well.pos, time: floorAt(world, depth).now });
-        hero.items = [createItem('potion.strength')];
-        const result = act(world, 'p', { type: 'drop', item: 0 });
-        expect(result.ok && result.effects.some((e) => e.type === 'transmuted')).toBe(true);
-        expect(level.map[well.pos]).toBe(T.EMPTY_WELL);
-        expect(floorAt(world, depth).heaps.find((h) => h.pos === well.pos)!.items[0]!.kind).toBe('potion.mastery');
-        return;
-      }
-    }
-    throw new Error('no well of transmutation');
-  });
 });

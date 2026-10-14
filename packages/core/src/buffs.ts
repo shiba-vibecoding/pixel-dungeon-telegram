@@ -14,6 +14,7 @@ import { censerTurn } from './trinkets';
 import { chill, corrode, freeze, ignite, ooze, shieldUp } from './status';
 import type { TrapKind } from './traps';
 import { VIAL_OF_BLOOD, trinketLevel } from './trinkets';
+import { frostHurtsElemental } from './wandmaker-mobs';
 
 /*
  * Shattered's buffs that alchemy brings (actors/buffs): what its potions, scrolls, stones, spells, brews and
@@ -187,7 +188,10 @@ export function freezeChar(ctx: Ctx, char: Char, turns: number, add = false): vo
  */
 export function freezeCell(ctx: Ctx, cell: number): void {
   const char = charAt(ctx.world, ctx.depth, cell);
-  if (char && isAlive(char) && !frostImmune(char)) {
+  // Elemental.add: a chill or frost hurts a newborn fire elemental instead.
+  if (char && frostHurtsElemental(ctx, char)) {
+    // (hurt, not chilled)
+  } else if (char && isAlive(char) && !frostImmune(char)) {
     if (has(char.frozen)) {
       freezeChar(ctx, char, 2, true);
     } else {

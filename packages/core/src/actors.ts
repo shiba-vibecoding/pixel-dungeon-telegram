@@ -19,6 +19,8 @@ import type { Rng } from './rng';
 import { adjacent } from './level/geometry';
 import { T } from './level/terrain';
 import type { Action, PlanStep } from './world';
+import type { VaultMob } from './vault-types';
+import type { MineMobState } from './mine-types';
 import type { BossMob } from './bosses/state';
 import type { Awareness, PendingScroll } from './artifacts';
 import type { WealthCounters } from './rings';
@@ -171,6 +173,8 @@ export interface Hero {
   disguise?: { heroClass: HeroClass; turns: number };
   /** TimeStasis: turns left of being frozen in time, untouchable and still (a cursed wand's, or the timekeeper's hourglass's stasis, unseen too). */
   stasis?: number;
+  /** Swiftthistle.TimeBubble: turns of accelerated time left, and the cells pressed meanwhile (timebubble.ts). */
+  timeBubble?: { left: number; presses: number[] };
   /** CursedWand's lingering effects: a supernova building up, gravity gone wild, the ground about to give way. */
   supernova?: { pos: number; turns: number; harmsAllies: boolean };
   gravity?: { turns: number; positiveOnly: boolean; next?: number };
@@ -533,7 +537,7 @@ export function heroSpeed(hero: Hero, footing?: Footing): number {
   if (encumbrance > 0) speed = f32(speed / dpow(1.2, encumbrance));
   const level = gearLevel(hero.armor);
   if (footing && hasGlyph(hero, 'swiftness') && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));
-  if (footing && hasGlyph(hero, 'flow') && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
+  if (footing && hasGlyph(hero, 'flow') && footing.terrain === T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
   if (footing && hasGlyph(hero, 'bulk') && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
   // RingOfHaste.speedMultiplier; stamina, haste (buffs.ts).
   // Nature's Power: twice as fast, and more with Growing Power; momentum (freerunner) quickens the step.
@@ -585,9 +589,22 @@ export type MobKind =
   /* the sad ghost's foes besides the fetid rat (Ghost.Quest). */
   | 'gnollTrickster' | 'greatCrab'
   // Shattered's bosses' own: DM-300's pylons, Yog-Dzewa's other four fists (the King's ghouls are the city's).
-  | 'pylon' | 'soiledFist' | 'rustedFist' | 'brightFist' | 'darkFist';
-/** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
-export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
+  | 'pylon' | 'soiledFist' | 'rustedFist' | 'brightFist' | 'darkFist'
+  // The levels' rooms and quests: SentryRoom's sentry, the wandmaker's, the blacksmith's mine, the imp's vault.
+  | 'sentry'
+  | 'rotHeart' | 'rotLasher' | 'newbornElemental'
+  // The blacksmith's mine (minemobs.ts).
+  | 'crystalWisp' | 'crystalGuardian' | 'crystalSpire' | 'gnollGuard' | 'gnollSapper' | 'gnollGeomancer'
+  | 'fungalSentry' | 'fungalSpinner' | 'fungalCore'
+  // The dwarven vault (vault.ts, vaultmobs.ts, vaultboss.ts).
+  | 'vaultSentry' | 'vaultLaser' | 'vaultMirror' | 'vaultTokenDoor' | 'vaultRat' | 'vaultSkeleton' | 'vaultDM100' | 'vaultDM200'
+  | 'vaultGhoul' | 'vaultGolem' | 'vaultShaman' | 'vaultFireElemental' | 'vaultFrostElemental' | 'vaultShockElemental'
+  | 'vaultBossElemental';
+/**
+ * `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot;
+ * `investigating`: a vault monster that glimpsed someone and goes to look (Mob.INVESTIGATING, vaultmobs.ts).
+ */
+export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive' | 'investigating';
 
 /** Who keeps a shop: the shopkeeper, or the imp of the last one. */
 export const isShopkeeper = (mob: { kind: MobKind }): boolean => mob.kind === 'shopkeeper' || mob.kind === 'impShopkeeper';
@@ -729,6 +746,44 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   bee: { name: 'golden bee', ht: 12, attack: 10, defense: 10, damage: [1, 3], dr: 0, exp: 0, maxLvl: ANY_LVL, speed: 1, flying: true },
   /** Asleep (or so he says) in his hidden treasury beside Goo's lair. */
   ratKing: { name: 'rat king', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 2 },
+  /** SentryRoom.Sentry: an immovable, invulnerable watcher that burns whoever walks its room's floor (see roommobs.ts). */
+  sentry: { name: 'sentry', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  // The old wandmaker's errands (wandmaker-mobs.ts): the rotberry's heart and its lashers, rooted in their garden,
+  // and the newborn fire elemental of the ritual site.
+  rotHeart: { name: 'rot heart', ht: 80, attack: 0, defense: 0, damage: [0, 0], dr: 5, exp: 4, maxLvl: 30, speed: 1 },
+  rotLasher: { name: 'rot lasher', ht: 80, attack: 25, defense: 0, damage: [10, 20], dr: 8, exp: 1, maxLvl: 30, speed: 1 },
+  newbornElemental: { name: 'newborn fire elemental', ht: 60, attack: 15, defense: 12, damage: [10, 12], dr: 5, exp: 10, maxLvl: 20, speed: 1, flying: true },
+  // The blacksmith's mine (minemobs.ts). maxLvl -2: no experience and no loot from the quest's monsters.
+  crystalWisp: { name: 'crystal wisp', ht: 30, attack: 18, defense: 16, damage: [5, 10], dr: 5, exp: 7, maxLvl: -2, speed: 1, flying: true },
+  crystalGuardian: { name: 'crystal guardian', ht: 100, attack: 20, defense: 14, damage: [10, 16], dr: 10, exp: 10, maxLvl: -2, speed: 1 },
+  /** CrystalSpire: immovable, hurt only by the pickaxe; it calls its guardians and sends crystal spikes (minemobs.ts). */
+  crystalSpire: { name: 'crystal spire', ht: 300, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 20, maxLvl: 29, speed: 1 },
+  gnollGuard: { name: 'gnoll guard', ht: 35, attack: 20, defense: 15, damage: [6, 12], dr: 6, exp: 7, maxLvl: -2, speed: 1 },
+  gnollSapper: { name: 'gnoll sapper', ht: 45, attack: 18, defense: 15, damage: [1, 6], dr: 6, exp: 10, maxLvl: -2, speed: 1 },
+  /** GnollGeomancer: immovable but for its dashes; armoured in rock, it throws boulders and brings rocks down (minemobs.ts). */
+  gnollGeomancer: { name: 'gnoll geomancer', ht: 150, attack: 20, defense: 0, damage: [3, 6], dr: 6, exp: 20, maxLvl: 29, speed: 1 },
+  fungalSentry: { name: 'fungal sentry', ht: 200, attack: 50, defense: 12, damage: [5, 10], dr: 0, exp: 10, maxLvl: -2, speed: 1 },
+  fungalSpinner: { name: 'fungal spinner', ht: 40, attack: 22, defense: 16, damage: [10, 20], dr: 6, exp: 7, maxLvl: -2, speed: 1 },
+  fungalCore: { name: 'fungal core', ht: 300, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 20, maxLvl: 29, speed: 1 },
+  // The dwarven vault's hazards and fixtures (VaultSentry, VaultLaser, VaultMirror, VaultTokenDoor): immovable, never hurt.
+  vaultSentry: { name: 'scanning sentry', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  vaultLaser: { name: 'disintegration sentry', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  vaultMirror: { name: 'strange mirror', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  vaultTokenDoor: { name: 'strange door', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  // The vault's guards (actors/mobs/quest/vault): Shattered's monsters, sharper and tougher, worth no experience but a
+  // dwarf token each; the base kind's numbers with the vault's accuracy, evasion and extra armour (vaultmobs.ts).
+  vaultRat: { name: 'marsupial rat', ht: 8, attack: 24, defense: 18, damage: [1, 4], dr: 1, exp: 0, maxLvl: 30, speed: 1 },
+  vaultSkeleton: { name: 'dwarven skeleton', ht: 25, attack: 24, defense: 20, damage: [2, 10], dr: 9, exp: 0, maxLvl: 30, speed: 1 },
+  vaultDM100: { name: 'modified DM-100', ht: 20, attack: 25, defense: 18, damage: [2, 8], dr: 8, exp: 0, maxLvl: 30, speed: 1 },
+  vaultDM200: { name: 'modified DM-200', ht: 80, attack: 28, defense: 15, damage: [10, 25], dr: 8, exp: 0, maxLvl: 30, speed: 1 },
+  vaultGhoul: { name: 'dwarven ghoul', ht: 45, attack: 24, defense: 20, damage: [16, 22], dr: 4, exp: 0, maxLvl: 30, speed: 1 },
+  vaultGolem: { name: 'golem', ht: 120, attack: 28, defense: 15, damage: [25, 30], dr: 12, exp: 0, maxLvl: 30, speed: 1 },
+  vaultShaman: { name: 'captured shaman', ht: 35, attack: 25, defense: 18, damage: [5, 25], dr: 11, exp: 0, maxLvl: 30, speed: 1 },
+  vaultFireElemental: { name: 'fire elemental', ht: 60, attack: 25, defense: 20, damage: [20, 25], dr: 5, exp: 0, maxLvl: 30, speed: 1, flying: true },
+  vaultFrostElemental: { name: 'frost elemental', ht: 60, attack: 25, defense: 20, damage: [20, 25], dr: 5, exp: 0, maxLvl: 30, speed: 1, flying: true },
+  vaultShockElemental: { name: 'shock elemental', ht: 60, attack: 25, defense: 20, damage: [20, 25], dr: 5, exp: 0, maxLvl: 30, speed: 1, flying: true },
+  /** VaultBossElemental: the greater elemental guarding the vault's treasure, its form changing as it is hurt (vaultboss.ts). */
+  vaultBossElemental: { name: 'greater elemental', ht: 600, attack: 28, defense: 20, damage: [20, 25], dr: 10, exp: 30, maxLvl: 29, speed: 1 },
   /** A ward of the wand of warding (NPC: one hit point, until it grows into a sentry); it never misses. */
   ward: { name: 'ward', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** The wand of living earth's guardian, as strong as the wand and the hero (see mobStats). */
@@ -870,6 +925,8 @@ export interface Mob {
   pumped?: boolean;
   /** Turns left of being marked by the sacrificial fire: dying meanwhile, it is an offering. */
   marked?: number;
+  /** SecretHoneypotRoom's bee: the shattered pot it guards (Bee.potPos), no one holding it. */
+  beeHome?: number;
   /** Bitten by a golden bee (Mob.aggro): the bee it has turned on. */
   beeFoe?: string;
   /** The imp who keeps the last shop has greeted the heroes. */
@@ -916,8 +973,20 @@ export interface Mob {
   /** Turns left of moving at half speed (a javelin's wound), and how hard it still bleeds (a tomahawk's). */
   crippled?: number;
   bleeding?: number;
+  /** SentryRoom.Sentry: the room it watches, and its charge (the turns a hero may stand on its floor). */
+  room?: { left: number; top: number; right: number; bottom: number };
+  initialChargeDelay?: number;
+  curChargeDelay?: number;
+  /** CorpseDust.DustWraith: a wraith the corpse dust raised, and how many times it went for the hero (atkCount). */
+  dust?: number;
+  /** NewbornFireElemental.targetingPos (-1: not charging); its cooldown is rangedCooldown below. */
+  targetingPos?: number;
   /** A mirror image: whose twin it is, and the skill and strength it took from them. */
   image?: { owner: string; attack: number; damage: number };
+  /** The dwarven vault's characters: their scans, beams, wandering rounds and spells (vault-types.ts). */
+  vault?: VaultMob;
+  /** The blacksmith's mine's monsters: colours, partners, abilities, rocks on their way (mine-types.ts). */
+  mine?: MineMobState;
   /** A boss's own state (Goo's pumping up, Tengu's abilities, DM-300's charge, the King's phases...): bosses/state.ts. */
   boss?: BossMob;
   /** Property.BOSS_MINION: summoned by a boss (the King's court, Yog's larvae); teaches nothing (maxLvl -2). */
@@ -1075,6 +1144,9 @@ export function beckon(mob: Mob, pos: number): void {
   if (mob.state === 'passive' || mob.kind === 'spawner' || ((mob.kind === 'statue' || mob.kind === 'armoredStatue') && mob.state === 'sleeping')) return;
   // Pylon.beckon and YogDzewa.beckon: they never come.
   if (mob.kind === 'pylon' || mob.kind === 'yog') return;
+  // CrystalGuardian and GnollGeomancer.beckon: not while asleep; CrystalSpire.beckon: never; the fungi are rooted.
+  if ((mob.kind === 'crystalGuardian' || mob.kind === 'gnollGeomancer') && mob.state === 'sleeping') return;
+  if (mob.kind === 'crystalSpire' || mob.kind === 'fungalCore' || mob.kind === 'fungalSentry') return;
   if (mob.kind === 'gnollExile' && !mob.provoked) {
     if ((mob.seenCooldown ?? 0) <= 0) mob.target = pos;
     return;

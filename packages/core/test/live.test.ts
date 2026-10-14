@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, addHero, canEnter, charAt, createMob, createWorld, exploredCells, findPath, floorAt, heroById, inFight, isAlive, levelAt,
-  liveReady, liveTick, liveWaiting, type Mob, NEIGHBOURS8, WIDTH, type World,
+  act, addHero, canEnter, charAt, createMob, createWorld, exploredCells, F, findPath, floorAt, hasFlag, heroById, inFight, isAlive, levelAt,
+  liveReady, liveTick, liveWaiting, type Mob, NEIGHBOURS8, T, WIDTH, type World,
 } from '../src/index';
 import { pacify } from './helpers';
 
@@ -10,6 +10,9 @@ function live(players = 1): World {
   const world = pacify(createWorld(5, 0, 'dungeon', true));
   for (let i = 0; i < players; i++) addHero(world, { id: `p${i}`, name: `P${i}`, heroClass: 'warrior' });
   world.explored[1] = levelAt(world, 1).map.map(() => true);
+  // Everyone in sight of everyone about the entrance: no tall grass in the way.
+  const level = levelAt(world, 1);
+  level.map = level.map.map((t) => (t === T.HIGH_GRASS || t === T.FURROWED_GRASS ? T.GRASS : t));
   return world;
 }
 
@@ -28,7 +31,9 @@ function farCell(world: World, from: number, steps: number): number {
 function ratAfter(world: World, heroId: string, away: number, id = 'r1'): Mob {
   const hero = heroById(world, heroId)!;
   const level = levelAt(world, 1);
-  const n = NEIGHBOURS8.find((d) => [...Array(away).keys()].every((k) => canEnter(level, hero.pos + (k + 1) * d) && !charAt(world, 1, hero.pos + (k + 1) * d)))!;
+  // In plain sight: no tall grass in between.
+  const clear = (c: number): boolean => canEnter(level, c) && !charAt(world, 1, c) && !hasFlag(level.map[c]!, F.LOS_BLOCKING);
+  const n = NEIGHBOURS8.find((d) => [...Array(away).keys()].every((k) => clear(hero.pos + (k + 1) * d)))!;
   const rat = createMob(id, 'rat', hero.pos + away * n, 'hunting', 1);
   rat.enemy = hero.id;
   floorAt(world, 1).mobs.push(rat);

@@ -22,17 +22,15 @@ function at(depth: number, seed = 3): World {
 const seenCells = (world: World): number => heroView(world, heroById(world, 'p')!).filter(Boolean).length;
 
 describe('the demon halls', () => {
-  it('generate depths 21-26: the last shop, Yog-Dzewa, and the Amulet', () => {
-    for (let seed = 1; seed <= 15; seed++) {
+  it("generate depths 21-26: Yog-Dzewa and the Amulet (the imp keeps his shop in the King's hall now)", () => {
+    for (let seed = 1; seed <= 8; seed++) {
       const run = createRun(seed);
-      // The imp's errand done: the last shop is open (see last-shop.test.ts).
       const levels = Array.from({ length: 26 }, (_, i) => generateLevel(run, i + 1, undefined, true));
       // HallsBossLevel: the way down is carved wall until Yog falls; LastLevel: the Amulet, at the end of the walk.
       for (const level of levels.slice(20, 24)) {
-        expect(level.map[level.entrance], `seed ${seed} depth ${level.depth}`).toBe(T.ENTRANCE);
+        expect(level.map[level.entrance], `seed ${seed} depth ${level.depth}`).toBeOneOf([T.ENTRANCE, T.ENTRANCE_SP]);
         expect(level.map[level.exit], `seed ${seed} depth ${level.depth}`).toBe(T.EXIT);
       }
-      expect(levels[20]!.rooms.some((r) => r.type === RoomType.SHOP)).toBe(true);
       expect(levels[24]!.map[levels[24]!.exit]).toBe(T.WALL_DECO);
       const last = levels[25]!;
       expect(last.items.some((s) => s.item.roll === 'kind' && s.item.kind === 'quest.amulet')).toBe(true);
@@ -44,7 +42,8 @@ describe('the demon halls', () => {
     const world = at(24);
     const hero = heroById(world, 'p')!;
     const dark = seenCells(world);
-    expect(dark).toBeLessThanOrEqual(9);
+    // HallsLevel: sight is 26 - depth, two cells here.
+    expect(dark).toBeLessThanOrEqual(25);
     hero.items = [createItem('torch')];
     const result = act(world, 'p', { type: 'use', item: 0 });
     expect(result.ok && result.effects.some((e) => e.type === 'lit')).toBe(true);

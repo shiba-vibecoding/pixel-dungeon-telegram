@@ -76,7 +76,7 @@ describe('harmful potions', () => {
         continue;
       }
       const level = levelAt(world, 1);
-      if (level.map[ratPos] === T.WATER || level.map[ratPos] === T.WATER_TILES) continue;
+      if (level.map[ratPos] === T.WATER) continue;
       hero.items = [createItem('potion.liquidFlame')];
       act(world, 'p', { type: 'throw', item: 0, target: ratPos });
       const rat = floorAt(world, 1).mobs.find((m) => m.id === '#rat');

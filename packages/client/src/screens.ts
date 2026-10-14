@@ -1,5 +1,5 @@
 import {
-  ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
+  escapeScore, keepable, ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
   knownIn, MUST_THROW, TARGETED_SPELLS,
   type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass, HERO_CLASSES,
   type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
@@ -9,6 +9,7 @@ import { artifactActions, artifactCard, type ArtifactHost, chargeStrip, showMisc
 import { artText } from './artifacttext';
 import { abilityName as abilityLabel, AT } from './abilitytext';
 import { type AbilityHost, classArmorCard, showAbilityPick, showTalents, startAbility } from './abilityui';
+import { lt, plain } from './levelnames';
 import { audio } from './audio';
 import { type ChoiceOption, showChoice } from './alchemyui';
 import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse, WEAPON_SLOT } from './quickslot';
@@ -716,6 +717,9 @@ export interface QuestOptions {
   hero: Hero;
   /** Who is speaking: the sad ghost or the old wandmaker. */
   who: MobKind;
+  /** The window's title and icon, when not the speaker's (WndSadGhost: «Defeated fetid rat» and the foe). */
+  title?: string;
+  icon?: MobKind;
   text: string;
   /** Rewards on offer, one of which the hero may take. */
   offers?: readonly Item[];
@@ -757,7 +761,7 @@ export function showQuest(options: QuestOptions): void {
         }, i === 0 ? 'primary' : 'quiet')),
     );
   const box = windowOf(
-    { title: capitalize(t.mobs[options.who]), icon: portrait(options.who), onClose: answers.length > 0 ? undefined : options.onClose },
+    { title: options.title ?? capitalize(t.mobs[options.who]), icon: portrait(options.icon ?? options.who), onClose: answers.length > 0 ? undefined : options.onClose },
     info(options.text, 'pd-speech'),
     offers.length > 0 && el('div', { className: 'pd-rewards' }, ...offers.map(card)),
     answerRow,
@@ -811,68 +815,6 @@ export function showInfo(title: string, lines: readonly string[], onClose: () =>
   );
   if (extras.health) box.querySelector('.pd-titles')!.append(healthBar(extras.health[0], extras.health[1]));
   show(box, onClose);
-}
-
-/* The blacksmith */
-
-export interface ReforgeOptions {
-  world: World;
-  hero: Hero;
-  text: string;
-  onReforge(first: ItemRef, second: ItemRef): void;
-  onClose(): void;
-}
-
-/**
- * WndBlacksmith: two items of one kind become one, a level better. Rather
- * than picking two items one after the other, each possible pair is offered
- * at once: the better item, and what would be melted down with it.
- */
-export function showReforge(options: ReforgeOptions): void {
-  const { world, hero } = options;
-  const owned: Array<{ ref: ItemRef; item: Item }> = [
-    ...(hero.weapon ? [{ ref: 'weapon' as ItemRef, item: hero.weapon }] : []),
-    { ref: 'armor' as ItemRef, item: hero.armor },
-    ...hero.items.map((item, index) => ({ ref: index as ItemRef, item })),
-  ].filter(({ item }) => {
-    const category = itemDef(item.kind).category;
-    // Blacksmith.verify: he works only with what is identified.
-    return (category === 'weapon' || category === 'armor' || category === 'wand' || category === 'ring') &&
-      isIdentified(world, item) && item.level >= 0 && item.kind !== 'weapon.pickaxe';
-  });
-  const pairs: Array<{ first: ItemRef; second: ItemRef; better: Item; worse: Item }> = [];
-  owned.forEach((a, i) => {
-    for (const b of owned.slice(i + 1)) {
-      if (a.item.kind !== b.item.kind) continue;
-      // What is melted down comes from the pack.
-      const [keep, melt] = typeof b.ref !== 'number' || (typeof a.ref === 'number' && a.item.level < b.item.level) ? [b, a] : [a, b];
-      if (typeof melt.ref !== 'number') continue;
-      const better = keep.item.level >= melt.item.level ? keep.item : melt.item;
-      pairs.push({ first: keep.ref, second: melt.ref, better, worse: better === keep.item ? melt.item : keep.item });
-    }
-  });
-  const card = (pair: (typeof pairs)[number]): HTMLElement =>
-    el(
-      'div',
-      { className: 'pd-reward' },
-      el('div', { className: 'pd-reforge' }, slot(world, pair.better, { hero }), el('span', { className: 'pd-reforge-arrow' }), slot(world, pair.worse, { hero })),
-      el('div', { className: 'pd-reward-name', textContent: capitalize(itemName(world, pair.better)) }),
-      el('div', { className: 'pd-reward-desc', textContent: t.reforgePair(itemName(world, pair.better), itemName(world, pair.worse)) }),
-      button(t.reforge, () => {
-        options.onReforge(pair.first, pair.second);
-        options.onClose();
-      }, pairs.length === 1 ? 'primary small' : 'small'),
-    );
-  show(
-    windowOf(
-      { title: capitalize(t.mobs.blacksmith), icon: portrait('blacksmith'), onClose: options.onClose },
-      info(options.text, 'pd-speech'),
-      pairs.length === 0
-        ? info(t.nothingToReforge, 'pd-note')
-        : el('div', { className: 'pd-scroll' }, el('div', { className: 'pd-rewards pd-reforges' }, ...pairs.map(card))),
-    ),
-    options.onClose,
-  );
 }
 
 /* Small windows */
@@ -1136,7 +1078,7 @@ export interface BackpackOptions {
   hero: Hero;
   onAction(action: Action): void;
   /** Throw, zap or shoot the item at a cell the player picks next (or cast it there: a spell, dragon's breath, a siren's song). */
-  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast', choice?: number): void;
+  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key', choice?: number): void;
   /** An action of the classes (a spell, a weapon's ability) aimed at a cell the player picks next. */
   onAimClass?(prompt: string, make: (cell: number) => Action): void;
   /** A Duelist's weapon ability, from the weapon's own window (MeleeWeapon.AC_ABILITY). */
@@ -1376,7 +1318,7 @@ function dragAndDrop(box: HTMLElement, options: BackpackOptions): void {
     if (category === 'scroll' && isKnown(world, item) && (TARGETED_SCROLLS as readonly string[]).includes(item.kind)) {
       for (const ref of scrollTargets(world, hero, item.kind)) drops.set(String(ref), { type: 'use', item: index, on: ref });
     }
-    drops.set('away', { type: 'drop', item: index });
+    if (item.kind !== 'quest.dust') drops.set('away', { type: 'drop', item: index });
     return drops;
   };
   const end = (): void => {
@@ -1599,6 +1541,30 @@ function showItem(options: ItemOptions): void {
  * What can be done with an item, as the design lays out actions: the first red, the rest
  * stone, dropping last. `act` closes the backpack (the dungeon answers); `stay` keeps it open.
  */
+/**
+ * EscapeCrystal.execute: out of the vault, with one of the hero's things kept (worn or in the pack) when
+ * the heist went well enough to keep anything (WndBag of what may come along); otherwise straight out.
+ */
+function escapeVault(options: ItemOptions, act: (action: Action) => void): void {
+  const { world, hero } = options;
+  const score = escapeScore(world, hero);
+  const refs: ItemRef[] = [...hero.items.map((_, i) => i), 'weapon', 'armor', 'artifact', 'misc', 'ring'];
+  const targets = score < 500 ? [] : refs.filter((ref) => { const item = itemAt(hero, ref); return item !== undefined && keepable(item, score); });
+  if (targets.length === 0) {
+    act({ type: 'vault', op: 'escape' });
+    return;
+  }
+  showBackpack({
+    ...options,
+    pick: {
+      title: plain(lt('items.quest.escapecrystal.prompt')),
+      targets,
+      onPick: (keep) => act({ type: 'vault', op: 'escape', keep }),
+      onCancel: () => act({ type: 'vault', op: 'escape' }),
+    },
+  });
+}
+
 function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLElement[]; danger: HTMLElement[] } {
   const { world, hero, item, index } = options;
   const category = itemDef(item.kind).category;
@@ -1613,7 +1579,7 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     options.onAction(action);
     refreshBackpack(options.world, options.hero);
   };
-  const aimWith = (kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast', at: number): void => {
+  const aimWith = (kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key', at: number): void => {
     openBag = null;
     options.onClose();
     options.onAim(at, kind);
@@ -1683,7 +1649,6 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         showSubclassPick({ world, hero, act: (action) => options.onAction(action), onClose: options.onClose }, index, () => showBackpack(options));
       });
     }
-    if (item.kind === 'weapon.pickaxe') use(t.mine, () => act({ type: 'mine' }));
     if (item.kind === 'quest.amulet') {
       use(t.amuletEndGame, () => {
         openBag = null;
@@ -1839,6 +1804,12 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     if (item.kind === 'missile.dart' && tippingSeeds(hero).length > 0) use(actionLabel(t.gear.tip), () => showTip(options, index, act));
     if (isTippedDart(item.kind)) use(actionLabel(t.gear.clean), () => showClean(options, index, act));
     if (category === 'wipeout') use(t.read, () => act({ type: 'use', item: index }));
+    // EscapeCrystal.AC_USE: out of the vault, with one thing kept as the heist allows (its item selector).
+    if (item.kind === 'quest.escapeCrystal') use(lt('items.quest.escapecrystal.ac_use'), () => escapeVault(options, act));
+    // VaultBeacon: back to the vault's entry.
+    if (item.kind === 'quest.vaultBeacon') use(t.beaconReturn, () => act({ type: 'vault', op: 'beacon', item: index }));
+    // SkeletonKey.AC_INSERT: at a door, a chest or a wall cell (SkeletonKey.targeter).
+    if (item.kind === 'artifact.skeletonKey') use(lt('items.artifacts.skeletonkey.ac_insert'), () => aimWith('key', index));
     if (category === 'vial' && item.volume) use(t.drink, () => act({ type: 'use', item: index }));
     // BrokenSeal.AC_AFFIX: onto an armour, worn or in the pack (WndBag's armour selector).
     if (category === 'seal') use(t.hero.affix, () => pickArmorForSeal(options, index, stay));
@@ -1848,7 +1819,8 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
     }
     if (category === 'honeypot') use(t.shatterPot, () => act({ type: 'use', item: index }));
     // Item.AC_THROW: anything in the pack can be thrown where the player taps (a bag would scatter what it holds).
-    if (!['bag', 'missile', 'bomb', 'honeypot', 'potion', 'seed', 'stone', 'brew', 'elixir'].includes(category)) use(t.throwItem, () => aimWith('throw', index));
+    // (CorpseDust has no actions at all: not even throwing or dropping it.)
+    if (!['bag', 'missile', 'bomb', 'honeypot', 'potion', 'seed', 'stone', 'brew', 'elixir'].includes(category) && item.kind !== 'quest.dust') use(t.throwItem, () => aimWith('throw', index));
     // QuickSlot: any item with a use can be kept one tap away: into the first free slot (or one whose item
     // ran out), else the first. Holding a slot on the toolbar chooses for that slot (Toolbar's quickslot_assign).
     if (quickUse(item.kind) && !isQuickslotted(item.kind)) more.push(quickslotButton(world, hero, item));

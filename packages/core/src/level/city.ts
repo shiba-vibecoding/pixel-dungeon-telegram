@@ -1,4 +1,5 @@
-import { Feeling, type LevelBuilder } from './builder';
+import type { LevelBuilder } from './builder';
+import { Feeling } from './gen/dungeon';
 import { LENGTH } from './geometry';
 import type { RegionStyle } from './regular';
 import { T } from './terrain';
@@ -25,7 +26,7 @@ function decorateCity(level: LevelBuilder): void {
   for (let attempt = 0; attempt < 100; attempt++) {
     const pos = roomEntrance.random(rng);
     if (pos !== level.entrance) {
-      map[pos] = T.SIGN;
+      map[pos] = T.EMPTY;
       return;
     }
   }

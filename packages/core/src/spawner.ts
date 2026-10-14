@@ -1,4 +1,5 @@
 import { RAT_SKULL, sundialMultiplier, trinketLevel } from './trinkets';
+import { mineRespawn } from './minemobs';
 import { createMob, type Mob, type MobKind } from './actors';
 import { rollForChampion } from './champions';
 import { castShadow, terrainBlocksSight } from './fov';
@@ -301,6 +302,8 @@ export function respawnCell(ctx: Ctx, mob: Mob, seen: (cell: number) => boolean)
  * sight — then the next in a respawn cooldown, or, failing to place it, a turn later.
  */
 export function respawn(ctx: Ctx, disLimit = 12): void {
+  // The blacksmith's mine keeps its own numbers (MiningLevel: minemobs.ts).
+  if (mineRespawn(ctx)) return;
   const { world, depth, level, floor, rng } = ctx;
   const party = partySize(world);
   if (enemyCount(floor) < mobCount(mobLimit(world, level, rng), party) && !spawnMob(ctx, disLimit)) {

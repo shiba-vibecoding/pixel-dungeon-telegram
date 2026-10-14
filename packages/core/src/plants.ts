@@ -1,11 +1,12 @@
 import { type Hero, isAlive, MOBS } from './actors';
-import { buffsOf, healOverTime, setBarkskin } from './buffs';
+import { buffsOf, cure, healOverTime, setBarkskin } from './buffs';
+import { startBubble } from './timebubble';
 import { isBossDepth } from './level/builder';
 import { levelAt, moveToDepth } from './world';
 import { heroView } from './floor';
 import { onPlantTriggered } from './talents/nature';
 import { tbOf } from './talents/state';
-import { randomRespawnCell } from './ai';
+import { randomDestination, randomRespawnCell } from './ai';
 import { charAt, type Char, type Ctx, dropItem, enterCell, type Floor, heroesOn, isHero, leaveCell } from './floor';
 import { createItem, ItemGenerator, type ItemKind } from './items';
 import { distance, LENGTH } from './level/geometry';
@@ -22,6 +23,8 @@ import { dewcatcher, seedpod } from './regrowth';
 
 export type PlantKind =
   | 'firebloom' | 'icecap' | 'sorrowmoss' | 'dreamweed' | 'sungrass' | 'earthroot' | 'fadeleaf' | 'rotberry'
+  /** Shattered's own plants. */
+  | 'stormvine' | 'swiftthistle' | 'blindweed' | 'mageroyal' | 'starflower'
   /** The wand of regrowth's (WandOfRegrowth.Dewcatcher and Seedpod), which grow from no seed one can carry. */
   | 'dewcatcher' | 'seedpod';
 
@@ -40,9 +43,15 @@ export const SEED_PLANTS: Readonly<Partial<Record<ItemKind, PlantKind>>> = {
   'seed.sungrass': 'sungrass',
   'seed.earthroot': 'earthroot',
   'seed.fadeleaf': 'fadeleaf',
+  'seed.stormvine': 'stormvine',
+  'seed.swiftthistle': 'swiftthistle',
+  'seed.blindweed': 'blindweed',
+  'seed.mageroyal': 'mageroyal',
+  'seed.starflower': 'starflower',
 };
 export const PLANT_KINDS: readonly PlantKind[] = [
   'firebloom', 'icecap', 'sorrowmoss', 'dreamweed', 'sungrass', 'earthroot', 'fadeleaf', 'rotberry', 'dewcatcher', 'seedpod',
+  'stormvine', 'swiftthistle', 'blindweed', 'mageroyal', 'starflower',
 ];
 
 /** The seed each plant grows from. */
@@ -53,6 +62,9 @@ const PLANT_SEEDS: Readonly<Partial<Record<PlantKind, ItemKind>>> = Object.fromE
 /** Frost.DURATION and Vertigo.DURATION. */
 const FROZEN_TURNS = 5;
 const DIZZY_TURNS = 10;
+/** Blindness.DURATION and Cripple.DURATION. */
+const BLIND_TURNS = 10;
+const CRIPPLE_TURNS = 10;
 
 /** Level.plant: a new plant replaces whatever grew there, and bare ground turns to grass. */
 export function plant(ctx: Ctx, pos: number, kind: PlantKind): void {
@@ -157,6 +169,41 @@ export function stepOnPlant(ctx: Ctx, who: Char | null, pos: number, activate = 
       else ctx.effects.push({ type: 'jumped', depth, mob: who.id, from, to });
       break;
     }
+    case 'stormvine':
+      // Stormvine: the warden floats for half levitation's time; anyone else is left dizzy (Vertigo).
+      if (warden) warden.levitating = Math.max(warden.levitating ?? 0, 10);
+      else if (who) who.dizzy = Math.max(who.dizzy ?? 0, DIZZY_TURNS);
+      break;
+    case 'swiftthistle':
+      // Swiftthistle: a bubble of accelerated time (TimeBubble.reset: six turns); the warden is hasted a moment too.
+      if (who && isHero(who)) {
+        startBubble(ctx, who);
+        if (warden) buffsOf(warden).haste = Math.max(buffsOf(warden).haste ?? 0, 1);
+      }
+      break;
+    case 'blindweed':
+      // Blindweed: a flash that blinds and cripples (the warden is shrouded, invisible for half its time); a monster
+      // loses its prey and wanders off.
+      if (warden) warden.invisible = Math.max(warden.invisible, 10);
+      else if (who) {
+        who.blind = Math.max(who.blind ?? 0, BLIND_TURNS);
+        who.crippled = Math.max(who.crippled ?? 0, CRIPPLE_TURNS);
+        if (!isHero(who)) {
+          if (who.state === 'hunting') who.state = 'wandering';
+          who.target = randomDestination(ctx, who);
+        }
+      }
+      break;
+    case 'mageroyal':
+      // Mageroyal: cleansed of what a potion of healing washes away; the warden is shielded from blobs a while.
+      if (who) cure(who);
+      if (warden) warden.gasImmune = Math.max(warden.gasImmune ?? 0, 10);
+      break;
+    case 'starflower':
+      // Starflower: blessed (Bless.DURATION); the warden recharges her wands too (Recharging.DURATION).
+      if (who) who.blessed = Math.max(who.blessed ?? 0, 30);
+      if (warden) warden.recharging = Math.max(warden.recharging ?? 0, 30);
+      break;
     case 'dewcatcher':
       dewcatcher(ctx, pos);
       break;

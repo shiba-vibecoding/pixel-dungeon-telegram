@@ -1,10 +1,12 @@
-import { Feeling, isShopDepth, type LevelBuilder } from './builder';
+import type { LevelBuilder } from './builder';
+import { Feeling } from './gen/dungeon';
+import type { TrapKind } from './trapdefs';
 import { cell, HEIGHT, LENGTH, NEIGHBOURS8, Rect, WIDTH } from './geometry';
 import { PAINTERS } from './painters';
-import { buildDistanceMap, buildPath, Door, DoorType, Room, RoomType } from './room';
+import { Door, DoorType, Room, RoomType } from './room';
 import { T } from './terrain';
 
-/* The classic room-and-corridor level, used by every non-boss depth. */
+/* Pixel Dungeon's room-and-corridor layout, still used by the older boss levels (sewer-boss.ts, prison-boss.ts). */
 
 const f32 = Math.fround;
 
@@ -18,97 +20,6 @@ export interface RegionStyle {
   /** A last say over the room types, once they are assigned. */
   roomTypes?(level: LevelBuilder): void;
   decorate(level: LevelBuilder): void;
-}
-
-export function buildRegularLevel(level: LevelBuilder, style: RegionStyle): boolean {
-  const { rng } = level;
-  if (!initRooms(level, style)) {
-    return false;
-  }
-  const rooms = level.rooms;
-
-  // Entrance and exit: two large-enough rooms far enough apart.
-  const minDistance = Math.trunc(Math.sqrt(rooms.length));
-  const endpointRooms = rooms.filter((room) => room.width() >= 4 && room.height() >= 4);
-  if (endpointRooms.length < 2) {
-    return false;
-  }
-  let retry = 0;
-  let roomEntrance: Room;
-  let roomExit: Room;
-  do {
-    const entranceIndex = rng.int(endpointRooms.length);
-    let exitIndex = rng.int(endpointRooms.length - 1);
-    if (exitIndex >= entranceIndex) {
-      exitIndex++;
-    }
-    roomEntrance = endpointRooms[entranceIndex]!;
-    roomExit = endpointRooms[exitIndex]!;
-    buildDistanceMap(rooms, roomExit);
-    if (retry++ > 10) {
-      return false;
-    }
-  } while (roomEntrance.distance < minDistance);
-
-  roomEntrance.type = RoomType.ENTRANCE;
-  roomExit.type = RoomType.EXIT;
-  level.roomEntrance = roomEntrance;
-  level.roomExit = roomExit;
-
-  // Two (possibly overlapping) shortest routes from entrance to exit; the
-  // second one is pushed away from the first by raising its rooms' price.
-  const connected = new Set<Room>([roomEntrance]);
-  for (let route = 0; route < 2; route++) {
-    buildDistanceMap(rooms, roomExit);
-    const path = buildPath(roomEntrance, roomExit);
-    if (!path) {
-      return false;
-    }
-    let room = roomEntrance;
-    for (const next of path) {
-      room.connect(next);
-      room = next;
-      connected.add(room);
-    }
-    if (route === 0) {
-      for (const node of path) {
-        node.price = roomEntrance.distance;
-      }
-    }
-  }
-
-  // Grow the connected area to 50–70% of all rooms.
-  const nConnected = Math.trunc(f32(rooms.length * rng.floatRange(f32(0.5), f32(0.7))));
-  let attempts = Math.max(16, rooms.length * rooms.length * 4);
-  while (connected.size < nConnected && attempts-- > 0) {
-    const cr = rng.element(connected)!;
-    const or = rng.element(cr.neighbours);
-    if (or && !connected.has(or)) {
-      cr.connect(or);
-      connected.add(or);
-    }
-  }
-  if (connected.size < nConnected) {
-    return false;
-  }
-
-  if (isShopDepth(level.depth) && PAINTERS.has(RoomType.SHOP)) {
-    const shop = [...roomEntrance.connected.keys()].find(
-      (r) => r.connected.size === 1 && r.width() >= 5 && r.height() >= 5,
-    );
-    if (!shop) {
-      return false;
-    }
-    shop.type = RoomType.SHOP;
-  }
-
-  assignRoomTypes(level);
-  style.roomTypes?.(level);
-  paint(level, style);
-  paintWater(level, style);
-  paintGrass(level, style);
-  placeTraps(level, style);
-  return true;
 }
 
 export function initRooms(level: LevelBuilder, style: RegionStyle): boolean {
@@ -160,82 +71,6 @@ export function split(level: LevelBuilder, style: RegionStyle, rect: Rect): void
     const vh = rng.intBetween(rect.top + 3, rect.bottom - 3);
     split(level, style, new Rect(rect.left, rect.top, rect.right, vh));
     split(level, style, new Rect(rect.left, vh, rect.right, rect.bottom));
-  }
-}
-
-function assignRoomTypes(level: LevelBuilder): void {
-  const { rng, specials } = level;
-  let specialRooms = 0;
-
-  for (const r of level.rooms) {
-    if (r.type !== RoomType.NULL || r.connected.size !== 1) {
-      continue;
-    }
-    // Dead ends may become special rooms, rarer with every one placed.
-    if (specials.length > 0 && r.width() > 3 && r.height() > 3 && rng.int(specialRooms * specialRooms + 2) === 0) {
-      if (level.pitRoomNeeded) {
-        r.type = RoomType.PIT;
-        level.pitRoomNeeded = false;
-        for (const excluded of [
-          RoomType.ARMORY, RoomType.CRYPT, RoomType.LABORATORY, RoomType.LIBRARY,
-          RoomType.STATUE, RoomType.TREASURY, RoomType.VAULT, RoomType.WEAK_FLOOR,
-        ]) {
-          remove(specials, excluded);
-        }
-      } else if (level.depth % 5 === 2 && specials.includes(RoomType.LABORATORY)) {
-        r.type = RoomType.LABORATORY;
-      } else {
-        const n = specials.length;
-        const a = rng.int(n);
-        const b = rng.int(n);
-        r.type = specials[Math.min(a, b)]!;
-        if (r.type === RoomType.WEAK_FLOOR) {
-          level.weakFloorCreated = true;
-        }
-      }
-      level.usedSpecials.push(r.type);
-      remove(specials, r.type);
-      specialRooms++;
-    } else if (rng.int(2) === 0) {
-      // Otherwise sometimes open a second exit into an ordinary neighbour.
-      const candidates = r.neighbours.filter(
-        (n) => !r.connected.has(n) && !level.isSpecial(n.type) && n.type !== RoomType.PIT,
-      );
-      if (candidates.length > 1) {
-        r.connect(rng.element(candidates)!);
-      }
-    }
-  }
-
-  let count = 0;
-  for (const r of level.rooms) {
-    if (r.type === RoomType.NULL) {
-      const connections = r.connected.size;
-      if (connections === 0) {
-        continue;
-      }
-      if (rng.int(connections * connections) === 0) {
-        r.type = RoomType.STANDARD;
-        count++;
-      } else {
-        r.type = RoomType.TUNNEL;
-      }
-    }
-  }
-
-  // Every level gets at least four proper rooms.
-  const tunnels = level.rooms.filter((r) => r.type === RoomType.TUNNEL);
-  while (count < 4 && tunnels.length > 0) {
-    const room = tunnels.splice(rng.int(tunnels.length), 1)[0]!;
-    room.type = RoomType.STANDARD;
-    count++;
-  }
-}
-
-function remove<T>(list: T[], value: T): void {
-  const index = list.indexOf(value);
-  if (index >= 0) {
-    list.splice(index, 1);
   }
 }
 
@@ -397,10 +232,8 @@ export function paintGrass(level: LevelBuilder, style: RegionStyle): void {
   }
 }
 
-const SECRET_TRAPS = [
-  T.SECRET_TOXIC_TRAP, T.SECRET_FIRE_TRAP, T.SECRET_PARALYTIC_TRAP, T.SECRET_POISON_TRAP,
-  T.SECRET_ALARM_TRAP, T.SECRET_LIGHTNING_TRAP, T.SECRET_GRIPPING_TRAP, T.SECRET_SUMMONING_TRAP,
-];
+/** Pixel Dungeon's eight traps, as the nearest of Shattered's. */
+const OLD_TRAPS: readonly TrapKind[] = ['toxic', 'burning', 'confusion', 'poisonDart', 'alarm', 'shocking', 'gripping', 'summoning'];
 
 export function placeTraps(level: LevelBuilder, style: RegionStyle): void {
   const { rng, depth } = level;
@@ -409,7 +242,8 @@ export function placeTraps(level: LevelBuilder, style: RegionStyle): void {
     const pos = rng.int(LENGTH);
     if (level.map[pos] === T.EMPTY) {
       const kind = rng.chances(style.trapChances);
-      level.map[pos] = SECRET_TRAPS[kind] ?? level.map[pos]!;
+      const trap = OLD_TRAPS[kind];
+      if (trap) level.setTrap(pos, trap, false);
     }
   }
 }

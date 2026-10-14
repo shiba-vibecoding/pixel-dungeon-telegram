@@ -127,7 +127,7 @@ export function press(ctx: Ctx, char: Char): void {
   }
   const terrain = ctx.level.map[char.pos]!;
   if ((char.levitating ?? 0) > 0) return;
-  if (trapAt(terrain)) triggerTrap(ctx, char, char.pos);
+  if (trapAt(ctx.level, char.pos)) triggerTrap(ctx, char, char.pos);
   stepOnPlant(ctx, char, char.pos);
   observe(ctx.world, char);
 }
@@ -171,7 +171,7 @@ export function teleportChar(ctx: Ctx, char: Char): boolean {
 function setCellToWater(ctx: Ctx, cell: number, traps: boolean): void {
   const terrain = ctx.level.map[cell]!;
   const open = [T.EMPTY, T.GRASS, T.EMBERS, T.EMPTY_SP, T.HIGH_GRASS, T.EMPTY_DECO] as number[];
-  if (open.includes(terrain) || (traps && (trapAt(terrain) || terrain === T.INACTIVE_TRAP))) ctx.level.map[cell] = T.WATER;
+  if (open.includes(terrain) || (traps && (trapAt(ctx.level, cell) || terrain === T.INACTIVE_TRAP))) ctx.level.map[cell] = T.WATER;
 }
 
 /** Fiery creatures (Char.Property.FIERY), whom a geyser hurts as a bomb would. */

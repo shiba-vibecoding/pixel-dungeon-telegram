@@ -3,7 +3,8 @@ import { charAt, type Ctx, heroView } from '../floor';
 import type { Item } from '../items';
 import { stepOnPlant, uproot } from '../plants';
 import { affectHunger } from '../hero';
-import { trapAt, triggerTrap } from '../traps';
+import { disarmBubble } from '../timebubble';
+import { disarmTrap, trapAt, triggerTrap } from '../traps';
 import { T } from '../level/terrain';
 import { chargeCap, visiblyUpgraded } from './artifact';
 import { isWorn, say } from './common';
@@ -90,7 +91,7 @@ export function endFreeze(ctx: Ctx, hero: Hero, item: Item): void {
   for (const cell of presses) {
     const who = charAt(ctx.world, ctx.depth, cell) ?? null;
     stepOnPlant(ctx, who, cell);
-    if (trapAt(ctx.level.map[cell]!)) triggerTrap(ctx, who, cell);
+    if (trapAt(ctx.level, cell)) triggerTrap(ctx, who, cell);
   }
 }
 
@@ -101,13 +102,15 @@ export function delayPress(item: Item, cell: number): void {
 
 /** Level.beforeTransition and timeFreeze.disarmPresses: leaving the level, what was pressed is undone (plants uprooted, traps spent). */
 export function disarmPresses(ctx: Ctx, hero: Hero): void {
+  disarmBubble(ctx, hero);
   const item = frozenBy(hero);
   if (!item?.freeze) return;
   for (const cell of item.freeze.presses) {
     const plant = ctx.world.floors[hero.depth]?.plants?.find((p) => p.pos === cell);
     if (plant && plant.kind !== 'rotberry') uproot(ctx.world.floors[hero.depth]!, cell);
     const level = ctx.world.levels[hero.depth]!;
-    if (trapAt(level.map[cell]!)) level.map[cell] = T.INACTIVE_TRAP;
+    const trap = trapAt(level, cell);
+    if (trap) disarmTrap(level, trap);
   }
   item.freeze.presses = [];
 }

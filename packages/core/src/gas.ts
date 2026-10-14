@@ -5,6 +5,8 @@ import { type Char, charAt, type Ctx, type Floor, heroesOn, isHero, isWater } fr
 import { distance, HEIGHT, LENGTH, NEIGHBOURS4, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import { immuneTo } from './traps';
+import type { Level } from './level/generate';
+import { evolveRoomBlobs, freezeEternalFire, roomBlobsActive } from './roomblobs';
 import { burnHeaps } from './cooking';
 import { addCorrosion, freezeCell, igniteChar, isFiery } from './buffs';
 import { PARALYSIS_TURNS } from './status';
@@ -41,7 +43,8 @@ const CLEANSED: readonly GasKind[] = [...AIRBORNE, 'fire', 'freezing', 'electric
 
 /** How long paralytic gas holds whoever breathes it, after the last breath. */
 
-export const hasGas = (floor: Floor): boolean => GAS_KINDS.some((kind) => (floor.gas?.[kind]?.length ?? 0) > 0);
+export const hasGas = (floor: Floor, level?: Level): boolean =>
+  GAS_KINDS.some((kind) => (floor.gas?.[kind]?.length ?? 0) > 0) || roomBlobsActive(level, floor);
 
 /** The volume of a blob at a cell (Blob.volumeAt). */
 export function gasAt(floor: Floor, kind: GasKind, cell: number): number {
@@ -125,7 +128,7 @@ export function clearGas(ctx: Ctx, pos: number, radius: number): boolean {
     if (left.length !== cloud.length) cleared = true;
     ctx.floor.gas![kind] = left;
   }
-  tidy(ctx.floor);
+  tidy(ctx.floor, ctx.level);
   return cleared;
 }
 
@@ -152,6 +155,8 @@ export function reachable(ctx: Ctx, pos: number, radius: number): Set<number> {
 /** One turn of every cloud on the depth: it spreads and thins (Blob.evolve), then acts on whoever is in it. */
 export function evolveGas(ctx: Ctx): void {
   const { level, floor } = ctx;
+  // The rooms' lasting blobs first: the vents feed the cloud, the eternal fire burns (roomblobs.ts).
+  evolveRoomBlobs(ctx);
   const open = level.map.map((terrain) => !hasFlag(terrain, F.SOLID));
   for (const kind of GAS_KINDS) {
     const cloud = floor.gas?.[kind];
@@ -204,7 +209,7 @@ export function evolveGas(ctx: Ctx): void {
     afterSpreading(ctx, kind, before, cur, next);
     if (kind === 'corrosive' && next.length === 0) delete floor.gasStrength?.corrosive;
   }
-  tidy(floor);
+  tidy(floor, level);
 }
 
 /** What each of Shattered's spreading blobs does to the cells it filled, and to whoever stands in them. */
@@ -238,7 +243,7 @@ function afterSpreading(ctx: Ctx, kind: GasKind, cells: number[], cur: Int32Arra
         const char = charIn(cell);
         if (char && !(!isHero(char) && char.kind === 'fetidRat')) {
           // StenchGas: a hero caught by the fetid rat's cloud, not already stuck, loses quest score.
-          if (isHero(char) && !char.paralysed && ctx.world.quest?.type === 'rat' && ctx.world.quest.dropped) scoreGhostHit(ctx.world, 100);
+          if (isHero(char) && !char.paralysed && ctx.world.quest?.type === 1 && ctx.world.quest.given) scoreGhostHit(ctx.world, 100);
           char.paralysed = Math.max(char.paralysed ?? 0, 2);
         }
       }
@@ -364,6 +369,8 @@ function evolveFreezing(ctx: Ctx, cloud: Array<[number, number]>): void {
     if (volume - 1 > 0) next.push([cell, volume - 1]);
   }
   floor.gas!.freezing = next;
+  // EternalFire: frost on or beside it puts the whole of it out.
+  freezeEternalFire(ctx, cloud.filter(([, volume]) => volume > 0).map(([cell]) => cell));
 }
 
 /**
@@ -469,6 +476,8 @@ function breathe(ctx: Ctx, char: Char, kind: GasKind): void {
     char.paralysed = Math.max(char.paralysed ?? 0, PARALYSIS_TURNS);
     return;
   }
+  // RotHeart, RotLasher: immunities.add(ToxicGas).
+  if ('kind' in char && (char.kind === 'rotHeart' || char.kind === 'rotLasher')) return;
   // ToxicGas.evolve: the deeper, the deadlier.
   const strength = 5 + ctx.depth * 5;
   let damage = Math.trunc((char.ht + strength) / 40);
@@ -479,15 +488,18 @@ function breathe(ctx: Ctx, char: Char, kind: GasKind): void {
 }
 
 /** Drops empty clouds, and the gas clock with the last of them. */
-function tidy(floor: Floor): void {
-  if (!floor.gas) return;
-  for (const kind of GAS_KINDS) {
-    if (floor.gas[kind]?.length === 0) {
-      delete floor.gas[kind];
-      if (floor.gasStrength?.[kind]) delete floor.gasStrength[kind];
+function tidy(floor: Floor, level: Level): void {
+  if (floor.gas) {
+    for (const kind of GAS_KINDS) {
+      if (floor.gas[kind]?.length === 0) {
+        delete floor.gas[kind];
+        if (floor.gasStrength?.[kind]) delete floor.gasStrength[kind];
+      }
     }
+    if (Object.keys(floor.gas).length === 0) delete floor.gas;
   }
-  if (!hasGas(floor)) {
+  // The rooms' lasting blobs keep the depth's blob turns going (roomblobs.ts).
+  if (!hasGas(floor, level)) {
     delete floor.gas;
     delete floor.gasAt;
     delete floor.gasStrength;

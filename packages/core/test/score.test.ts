@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addHero, BOSS_SLOT, bossBeaten, bossScore, challengeMultiplier, createItem, createWorld, DARKNESS, exploredCells, explorePercent10, exploredFloors, floorAt,
   type Hero, heroById, levelAt, NO_HEALING, QUEST_SLOT, runOutcome, scoreBreakdown, scoreGhostDone, scoreGhostHit, scoreImpDone, scoreBlacksmithDone,
-  scoreWandmakerDone, SWARM_INTELLIGENCE, T, type World,
+  scoreWandmakerDone, SWARM_INTELLIGENCE, T, WIDTH, type World,
 } from '../src/index';
 
 /** A lone warrior who has been to depth 4, level 10, with 1200 gold and the starting kit worn, the pack empty. */
@@ -25,6 +25,8 @@ function tidy(world: World, depth: number): void {
   floor.heaps = [];
   floor.mobs = [];
   delete floor.altar;
+  // (A magical-fire room's eternal fire, put out: it keeps its room from counting, as in RegularLevel.levelExplorePercent.)
+  delete level.eternalFire;
   level.map = level.map.map((cell) => (cell === T.SECRET_DOOR || cell === T.LOCKED_DOOR || cell === T.BARRICADE ? T.DOOR : cell));
   exploredCells(world, depth).fill(true);
 }
@@ -71,7 +73,7 @@ describe('Shattered’s score', () => {
     const floor = floorAt(world, 1);
     // A chest where nobody has opened it, in three different rooms in turn.
     const rooms = level.rooms.filter((r) => r.right - r.left > 2 && r.bottom - r.top > 2);
-    const cellIn = (i: number): number => (rooms[i]!.top + 1) * 32 + rooms[i]!.left + 1;
+    const cellIn = (i: number): number => (rooms[i]!.top + 1) * WIDTH + rooms[i]!.left + 1;
     const spots = rooms.map((_, i) => i).filter((i) => level.map[cellIn(i)] !== T.WALL);
     expect(spots.length).toBeGreaterThanOrEqual(3);
     const chest = (i: number): void => {
@@ -91,7 +93,7 @@ describe('Shattered’s score', () => {
     const level = levelAt(world, 1);
     const floor = floorAt(world, 1);
     const room = level.rooms.find((r) => r.right - r.left > 2 && r.bottom - r.top > 2)!;
-    const pos = (room.top + 1) * 32 + room.left + 1;
+    const pos = (room.top + 1) * WIDTH + room.left + 1;
     floor.heaps.push({ pos, kind: 'heap', items: [createItem('gold', 5)], auto: true });
     expect(explorePercent10(world, 1)).toBe(10);
     floor.heaps = [{ pos, kind: 'heap', items: [createItem('key.iron')] }];
@@ -102,6 +104,24 @@ describe('Shattered’s score', () => {
     expect(explorePercent10(world, 1)).toBe(5);
   });
 
+  it("misses the magical-fire room while its fire burns, the crystal-key room while its key is unused, and not a crystal room's show heaps", () => {
+    const { world, hero } = sample();
+    tidy(world, 1);
+    const level = levelAt(world, 1);
+    const room = level.rooms.find((r) => r.right - r.left > 2 && r.bottom - r.top > 2)!;
+    const pos = (room.top + 1) * WIDTH + room.left + 1;
+    room.kind = 'MagicalFireRoom';
+    level.eternalFire = [pos];
+    expect(explorePercent10(world, 1)).toBe(5);
+    delete level.eternalFire;
+    room.kind = 'CrystalVaultRoom';
+    hero.items = [{ ...createItem('key.crystal'), depth: 1 }];
+    expect(explorePercent10(world, 1)).toBe(5);
+    hero.items = [];
+    floorAt(world, 1).heaps = [{ pos, kind: 'chest', items: [createItem('gold', 5)], autoExplored: true }];
+    expect(explorePercent10(world, 1)).toBe(10);
+  });
+
   it('pays each floor 50 x the floors counted, by how much of it was cleared', () => {
     const { world, hero } = sample();
     for (const d of [1, 2, 3, 4]) tidy(world, d);
@@ -109,7 +129,7 @@ describe('Shattered’s score', () => {
     const floor = floorAt(world, 2);
     const level = levelAt(world, 2);
     const room = level.rooms.find((r) => r.right - r.left > 2 && r.bottom - r.top > 2)!;
-    floor.heaps.push({ pos: (room.top + 1) * 32 + room.left + 1, kind: 'chest', items: [createItem('gold', 5)] });
+    floor.heaps.push({ pos: (room.top + 1) * WIDTH + room.left + 1, kind: 'chest', items: [createItem('gold', 5)] });
     // One floor of four is half-cleared: 200 - 100.
     expect(scoreBreakdown(world, hero, 4, 0).explore).toBe(4 * 50 * 3 + 100);
   });

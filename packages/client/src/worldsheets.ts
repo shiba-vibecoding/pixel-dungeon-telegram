@@ -1,4 +1,3 @@
-import { LAST_SHOP_DEPTH } from '@pd/core';
 
 /*
  * The world's sprite sheets (assets/world, Claude Design's «Живой мир»): doors,
@@ -77,7 +76,7 @@ export const regionIndex = (depth: number): 0 | 1 | 2 | 3 | 4 => Math.max(0, Mat
  * (depth 21, LastShopLevel) is laid in the city's tiles and water (TILES_CITY,
  * WATER_CITY) with the city's visuals, though it opens the demon halls.
  */
-export const lookIndex = (depth: number): 0 | 1 | 2 | 3 | 4 => (depth === LAST_SHOP_DEPTH ? 3 : regionIndex(depth));
+export const lookIndex = (depth: number): 0 | 1 | 2 | 3 | 4 => regionIndex(depth);
 
 /** How long an animation lasts once through (a last frame of 0 ms is the end). */
 export function length(frames: readonly Frame[]): number {

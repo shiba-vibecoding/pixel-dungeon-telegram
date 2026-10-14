@@ -113,7 +113,7 @@ export function checkBadges(progress: BadgeProgress, world: World, me: Hero, eff
   // Pixel Dungeon's rare rings are Shattered's master thieves' armband and cape of thorns.
   earn('haggler', belongings.some((item) => item.kind === 'artifact.armband'));
   earn('thorns', belongings.some((item) => item.kind === 'artifact.cape'));
-  earn('bags', ['bag.seeds', 'bag.scrolls', 'bag.wands'].every((kind) => me.items.some((item) => item.kind === kind)));
+  earn('bags', ['bag.seeds', 'bag.scrolls', 'bag.potions', 'bag.wands'].every((kind) => me.items.some((item) => item.kind === kind)));
 
   const known = new Set(world.known);
   // (A category with nothing to label cannot be completed: an empty set is not all of them.)

@@ -2,31 +2,47 @@ import { BACKPACK_SIZE, type Hero } from './actors';
 import { isStackable, type Item, type ItemCategory, itemDef, type ItemKind } from './items';
 
 /*
- * Bags (Bag: SeedPouch, ScrollHolder, WandHolster, Keyring). Whatever a bag
- * holds takes no room in the backpack, up to the bag's size, and is out of
- * reach of fire and thieves. Keys never take room: every hero carries a key
- * ring. A bag itself takes a slot.
+ * Bags (items/bags: VelvetPouch, ScrollHolder, PotionBandolier, MagicalHolster). Whatever a bag can
+ * hold goes into it, up to its capacity (19 each, Bag.capacity), and takes no room in the backpack;
+ * the scroll holder keeps scrolls from fire and the bandolier potions from the cold. Keys never
+ * take room: every hero carries a key ring. A bag itself takes a slot.
  */
 
-export const BAGS: Readonly<Partial<Record<ItemKind, { holds: ItemCategory; size: number }>>> = {
-  'bag.seeds': { holds: 'seed', size: 8 },
-  'bag.scrolls': { holds: 'scroll', size: 12 },
-  'bag.wands': { holds: 'wand', size: 12 },
+export interface BagDef {
+  /** Bag.canHold: what goes in it. */
+  holds: readonly ItemCategory[];
+  /** Bag.capacity. */
+  size: number;
+}
+
+export const BAGS: Readonly<Partial<Record<ItemKind, BagDef>>> = {
+  // VelvetPouch: seeds and runestones (and goo blobs and metal shards).
+  'bag.seeds': { holds: ['seed', 'stone'], size: 19 },
+  // ScrollHolder: scrolls and spells (and arcane resin, styli).
+  'bag.scrolls': { holds: ['scroll', 'spell', 'wipeout'], size: 19 },
+  // PotionBandolier: potions with the brews and elixirs, the waterskin (and liquid metal).
+  'bag.potions': { holds: ['potion', 'brew', 'elixir', 'vial'], size: 19 },
+  // MagicalHolster: wands, thrown weapons and bombs.
+  'bag.wands': { holds: ['wand', 'missile', 'bomb'], size: 19 },
 };
 
-/** How many items of a category the hero's bags can hold. */
-function bagRoom(hero: Hero, category: ItemCategory): number {
-  return hero.items.reduce((room, item) => room + (BAGS[item.kind]?.holds === category ? BAGS[item.kind]!.size : 0), 0);
+/** The bag a category goes into, if the hero has one. */
+function bagFor(hero: Hero, category: ItemCategory): BagDef | undefined {
+  for (const item of hero.items) {
+    const bag = BAGS[item.kind];
+    if (bag?.holds.includes(category)) return bag;
+  }
+  return undefined;
 }
 
 /** Whether an item in the pack lies in a bag (or on the key ring), rather than in the backpack itself. */
 export function inBag(hero: Hero, item: Item): boolean {
   const category = itemDef(item.kind).category;
   if (category === 'key') return true;
-  const room = bagRoom(hero, category);
-  if (room === 0) return false;
-  const same = hero.items.filter((other) => itemDef(other.kind).category === category);
-  return same.indexOf(item) < room;
+  const bag = bagFor(hero, category);
+  if (!bag) return false;
+  const same = hero.items.filter((other) => bag.holds.includes(itemDef(other.kind).category));
+  return same.indexOf(item) < bag.size;
 }
 
 /** Backpack slots taken: everything not in a bag. */
@@ -37,9 +53,15 @@ export function hasRoom(hero: Hero, item: Item): boolean {
   const category = itemDef(item.kind).category;
   if (category === 'gold' || category === 'key') return true;
   if (isStackable(item.kind) && hero.items.some((other) => other.kind === item.kind)) return true;
-  if (hero.items.filter((other) => itemDef(other.kind).category === category).length < bagRoom(hero, category)) return true;
+  const bag = bagFor(hero, category);
+  if (bag && hero.items.filter((other) => bag.holds.includes(itemDef(other.kind).category)).length < bag.size) return true;
   return slotsUsed(hero) < BACKPACK_SIZE;
 }
 
 /** Belongings.randomUnequipped: what fire or a thief can get at, the bags themselves but not what is in them. */
 export const looseItems = (hero: Hero): Item[] => hero.items.filter((item) => !inBag(hero, item));
+
+/** Bag.value: what a bag is worth. */
+export const BAG_VALUES: Readonly<Partial<Record<ItemKind, number>>> = {
+  'bag.seeds': 30, 'bag.scrolls': 40, 'bag.potions': 40, 'bag.wands': 60,
+};

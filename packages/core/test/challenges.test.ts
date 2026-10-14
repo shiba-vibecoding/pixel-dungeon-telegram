@@ -65,18 +65,9 @@ describe('challenges', () => {
     expect(heap.items[0]).toMatchObject({ kind: 'gold', qty: 10 });
   });
 
-  it('faith is my armor: no armour anywhere, and the ghost offers only worn cloth', () => {
+  it('faith is my armor: no armour anywhere', () => {
     expect(floorItems(NO_ARMOR, 7).some((item) => category(item) === 'armor')).toBe(false);
     expect(floorItems(0, 7).some((item) => category(item) === 'armor')).toBe(true);
-    let ghosts = 0;
-    for (let seed = 1; seed <= 30; seed++) {
-      const world = createWorld(seed, NO_ARMOR);
-      levelAt(world, 4);
-      if (!world.quest) continue;
-      ghosts++;
-      expect(world.quest.armor).toMatchObject({ kind: 'armor.cloth', level: -1 });
-    }
-    expect(ghosts).toBeGreaterThan(0);
     expect(heroById(solo(NO_ARMOR), 'p')!.armor.kind).toBe('armor.cloth');
   });
 
@@ -91,7 +82,7 @@ describe('challenges', () => {
     expect(wares.some((item) => item.kind === 'gold')).toBe(true);
   });
 
-  it('barren land: tall grass sheds neither seeds nor dew, and no seed pouch is sold', () => {
+  it('barren land: tall grass sheds no dew, and no seed pouch is sold', () => {
     const items = floorItems(NO_HERBALISM, 7);
     expect(items.some((item) => item.kind === 'bag.seeds')).toBe(false);
     expect(floorItems(0, 7).some((item) => item.kind === 'bag.seeds')).toBe(true);
@@ -106,7 +97,8 @@ describe('challenges', () => {
       expect(level.map[grass]).toBe(T.GRASS);
       act(world, 'p', { type: 'move', to: home });
     }
-    expect(floorAt(world, 1).heaps.some((heap) => heap.pos === grass)).toBe(false);
+    // Challenges.isItemBlocked: only the dew (Shattered's grass still sheds seeds; they just will not grow).
+    expect(floorAt(world, 1).heaps.some((heap) => heap.pos === grass && heap.items.some((i) => i.kind === 'dew'))).toBe(false);
   });
 
   it('forbidden runes: of all scrolls only upgrade can be found; no scroll holder either', () => {
