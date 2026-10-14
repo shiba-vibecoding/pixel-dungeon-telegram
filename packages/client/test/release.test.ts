@@ -4,7 +4,8 @@ import { ACTIONS_KEPT, describeAction, ERRORS_KEPT, noteAction, noteError, recen
 import { compareVersions, newsDue } from '../src/news';
 import { CURRENT, RELEASES } from '../src/releases';
 import { trophyKind } from '../src/trophyicons';
-import { REL_EN, REL_RU } from '../src/i18n-release';
+import { REL_EN } from '../src/i18n-release';
+import { REL_RU } from '../src/i18n-release.ru';
 
 describe('the news data', () => {
   it('has the versions newest first, each once, with both languages for every line', () => {

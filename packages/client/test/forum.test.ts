@@ -4,7 +4,8 @@ import {
 } from '@pd/core';
 import { drinkRisk, enchantLossChance, equipRisk, targetEffect } from '../src/riskyuse';
 import { clearMemo, loadMemo, memoValid, saveMemo } from '../src/windowmemo';
-import { FORUM_EN, FORUM_RU } from '../src/i18n-forum';
+import { FORUM_EN } from '../src/i18n-forum';
+import { FORUM_RU } from '../src/i18n-forum.ru';
 
 type I18n = typeof import('../src/i18n');
 let i18n: I18n;
@@ -164,8 +165,9 @@ describe('the forum stream’s texts', () => {
     for (const part of ['300', '450', '900', '× 65', '50 000', '20 000', '×1,25', '×1,55', '×7,45', '30%']) expect(text, part).toContain(part);
   });
 
-  it('use the verbs of the game: no «Да»/«Нет» left on the confirmations', () => {
-    const { ruStrings, enStrings } = i18n;
+  it('use the verbs of the game: no «Да»/«Нет» left on the confirmations', async () => {
+    const { ru: ruStrings } = await import('../src/i18n-ru');
+    const { en: enStrings } = await import('../src/i18n-en');
     const answers = [
       ruStrings.jumpYes, ruStrings.jumpNo, ruStrings.danger.yes, ruStrings.danger.no, ruStrings.alch.trinketYes, ruStrings.alch.trinketNo,
       ruStrings.staffImbueYes, ruStrings.staffImbueNo, ruStrings.dismissYes, ruStrings.dismissNo, ruStrings.hero.yes, ruStrings.hero.no,

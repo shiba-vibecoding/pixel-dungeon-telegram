@@ -52,7 +52,11 @@ function read(key: string): string | null {
   }
 }
 
+/** Whether the tutorial is done, read once (the game asks every frame): kept up with every write of it here. */
+let doneKnown: boolean | null = null;
+
 function write(key: string, value: string): void {
+  if (key === DONE) doneKnown = value === '1';
   try {
     localStorage.setItem(key, value);
   } catch {
@@ -71,7 +75,7 @@ function marked(text: string): Array<string | HTMLElement> {
 }
 
 /** Seen through or skipped, on this device. */
-export const coachDone = (): boolean => read(DONE) === '1';
+export const coachDone = (): boolean => (doneKnown ??= read(DONE) === '1');
 
 /** A player who has played before the tutorial existed does not need it. */
 export function veteranSkips(): boolean {

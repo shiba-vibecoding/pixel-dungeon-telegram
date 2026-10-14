@@ -889,7 +889,8 @@ export class Hud {
     }
     if (this.changed('depth', String(me.depth))) this.depth.data = String(me.depth);
     // The arena has no depths to speak of: its board says where the party stands.
-    this.depthStat.style.display = state.arena ? 'none' : '';
+    const depthShown = state.arena ? 'none' : '';
+    if (this.depthStat.style.display !== depthShown) this.depthStat.style.display = depthShown;
     this.updateArena(state.arena ?? null, dead);
     if (this.changed('keys', String(state.keys))) this.keys.data = String(state.keys);
     const golden = state.moreKeys?.golden ?? 0;
@@ -992,7 +993,8 @@ export class Hud {
 
     // Toolbar.layout: as many slots as the screen has room for; the toolbar's columns follow.
     this.quicks.forEach((button, slot) => {
-      button.hidden = slot >= state.quick.length;
+      const hide = slot >= state.quick.length;
+      if (button.hidden !== hide) button.hidden = hide;
       this.drawQuick(`quick${slot}`, button, state.quick[slot] ?? null);
     });
     if (this.changed('quickCount', String(state.quick.length))) this.arrangeToolbar(state.quick.length);
@@ -1008,10 +1010,11 @@ export class Hud {
       this.dangerBox.textContent = String(state.danger);
       this.dangerBox.ariaLabel = t.hero.danger(state.danger);
     }
-    this.tools.examine.setAttribute('aria-pressed', String(state.examining));
+    const pressed = String(state.examining);
+    if (this.tools.examine.getAttribute('aria-pressed') !== pressed) this.tools.examine.setAttribute('aria-pressed', pressed);
     this.tools.bag.classList.toggle('alert', state.newLoot);
     this.tools.wait.classList.toggle('resting', resting);
-    for (const button of Object.values(this.tools)) button.disabled = dead;
+    for (const button of Object.values(this.tools)) if (button.disabled !== dead) button.disabled = dead;
   }
 
   /**

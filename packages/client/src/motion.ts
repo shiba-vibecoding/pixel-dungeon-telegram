@@ -3,7 +3,7 @@ import { audio } from './audio';
 import { between, dropSound } from './sfx';
 import { fx } from './fx';
 import { quality } from './quality';
-import { type Assets, levelRegion } from './sprites';
+import { type Assets, levelRegion, oldTiles } from './sprites';
 import type { LevelTiles } from './tiles';
 import { TILE, type View } from './view';
 import { drawFrame, type Frame, frameAt, length, lookIndex, sheet, type SheetName } from './worldsheets';
@@ -484,10 +484,11 @@ export class Motion {
     const region = levelRegion(level);
     const grass = sheet(`grass${region}`);
     const doors = sheet(`doors${region}`);
-    const tiles = this.assets.tiles[levelRegion(level)]!;
-    const columns = tiles.width / TILE;
     const tile = (terrain: number, cell: number): void => {
-      ctx.drawImage(tiles, (terrain % columns) * TILE, Math.trunc(terrain / columns) * TILE, TILE, TILE, 0, 0, TILE, TILE);
+      // (PD 1.9's sheet of this region comes the first time a stand-in is wanted: nothing is drawn until it has.)
+      const tiles = oldTiles(this.assets, region);
+      const columns = tiles.width / TILE;
+      if (columns > 0) ctx.drawImage(tiles, (terrain % columns) * TILE, Math.trunc(terrain / columns) * TILE, TILE, TILE, 0, 0, TILE, TILE);
       void cell;
     };
     const at = (cell: number): { x: number; y: number } => ({ x: (cell % WIDTH) * TILE, y: Math.trunc(cell / WIDTH) * TILE });
@@ -670,6 +671,12 @@ export class Motion {
       ctx.drawImage(this.assets.items, sx, sy, 16, 16, 0, 0, 16, 16);
       ctx.restore();
     }
+  }
+
+  /** Whether a door swings, a chest opens, a heap drops or flies, a ring spreads or a coin falls (pace.ts). */
+  moving(): boolean {
+    return this.tiles.length > 0 || this.ghosts.length > 0 || this.ripples.length > 0 || this.flashes.length > 0 ||
+      this.coins.length > 0 || this.searches.length > 0 || this.launches.length > 0 || this.sway.size > 0 || this.arrivals.size > 0;
   }
 
   /** Over the heaps, under the characters: glints on what lies about, coins in the air. */

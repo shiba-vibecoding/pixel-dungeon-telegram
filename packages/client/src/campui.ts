@@ -3,7 +3,7 @@ import { audio } from './audio';
 import { Camp, type CampScene, campClasses, CAMP_ORDER, seasonOf } from './camp';
 import type { Profile } from './checked';
 import { locale, t } from './i18n';
-import { countChallenges } from './meta';
+import { countChallenges } from './challenge-info';
 import { boardCloses, type CardFallback, countdown, profileCard } from './rankui';
 import { button, el, show } from './screens';
 import { rankIcon, trophyKind } from './trophyicons';

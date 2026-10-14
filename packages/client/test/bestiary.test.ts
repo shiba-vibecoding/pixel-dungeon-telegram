@@ -10,9 +10,9 @@ let ru: Strings;
 beforeAll(async () => {
   // The texts are chosen at load by the page's address; there is none here.
   vi.stubGlobal('location', { search: '' });
-  const i18n = await import('../src/i18n');
-  en = i18n.enStrings as unknown as Strings;
-  ru = i18n.ruStrings as unknown as Strings;
+  // (Each language's texts are a module of their own.)
+  en = (await import('../src/i18n-en')).en as unknown as Strings;
+  ru = (await import('../src/i18n-ru')).ru as unknown as Strings;
   bestiary = await import('../src/bestiary');
 });
 

@@ -1,6 +1,5 @@
 import { isBossDepth, type Level, T, type TrapKind, type World } from '@pd/core';
-import { LEVELS_EN, LEVELS_RU } from './i18n-levels';
-import { lang } from './i18n';
+import { tables } from './i18n';
 
 /*
  * Level.tileName and tileDesc, with each region's own (SewerLevel ... HallsLevel, MiningLevel),
@@ -9,7 +8,7 @@ import { lang } from './i18n';
 
 /** A line of Shattered's texts by its full key, in the player's language ('' if none). */
 export function lt(key: string, ...args: Array<string | number>): string {
-  const text = (lang === 'ru' ? LEVELS_RU : LEVELS_EN)[key] ?? LEVELS_EN[key] ?? '';
+  const text = tables.levels[key] ?? '';
   return args.reduce<string>((s, arg, i) => s.replace(new RegExp(`%${i + 1}\\$[sd]`, 'g'), String(arg)).replace('%s', String(arg)).replace('%d', String(arg)), text);
 }
 

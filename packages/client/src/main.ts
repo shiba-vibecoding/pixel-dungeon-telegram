@@ -17,7 +17,7 @@ import { causeName, causeNote, packLine } from './deathcopy';
 import { clearMemo, loadMemo, type Memo, memoValid, saveMemo } from './windowmemo';
 import { reloadForUpdate } from './update';
 import { preloadMapFx } from './shfx';
-import { preloadMobFx } from './mobfx';
+import { preloadMobFx, resetMobFx } from './mobfx';
 import './game.css';
 import { showChampion, showFallenGhoul, showHiddenMimic } from './mobwin';
 import { burningCells, confirmDanger, firstDanger } from './mistap';
@@ -53,8 +53,8 @@ import {
   aheadOf, DangerMeter, fadeFor, type FightSeen, MUSIC_BOSSES, placeTune, sameTune, TITLE, VICTORY, withDanger,
 } from './soundtrack';
 import { type ArenaHud, type BuffName, CLERIC_BUFFS, COMBO_FRAMES, heroBuffs, Hud, type HudStatus, MOB_BUFFS, type QuickState, TALENT_BUFFS } from './hud';
-import { arenaBest, recordArena, showArenaEnd, showArenaReward } from './arenaui';
-import { ArenaView } from './arenaview';
+import type { ArenaView } from './arenaview';
+import { idle, lazy, load } from './lazy';
 import { levelRegion } from './sprites';
 import { capitalize, fill, lang, t } from './i18n';
 import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
@@ -75,7 +75,8 @@ import { type DailyRulesView, showCamp } from './campui';
 import { showMail, unclaimed } from './mailui';
 import { coachDone, markCoachDone, type Rect, type StepId, Tutorial, veteranSkips } from './coach';
 import { mart } from './mart';
-import { challengeBrief, challengeIcon, eraseDevice, showChallenges, showGuide, showJournal, showSettings } from './meta';
+import { challengeBrief, challengeIcon, eraseDevice } from './challenge-info';
+import type { ChallengesOptions, JournalOptions, SettingsOptions } from './meta';
 import { netlog, sendNetlog } from './netlog';
 import { watchErrors } from './diag';
 import { markSeenHere, newsDue, seenHere } from './news';
@@ -85,6 +86,8 @@ import { CURRENT } from './releases';
 import { type RunFacts, showErrorScreen, showReport } from './reportui';
 import { looksRows, setBadgeImages, showMart, showTreat } from './martui';
 import { quality } from './quality';
+import { Pace } from './pace';
+import { forgetSight, seenCells, seenEnemies } from './sight';
 import { type Launch, Motion } from './motion';
 import { Scenery } from './scenery';
 import { Feedback } from './feedback';
@@ -97,7 +100,7 @@ import { rankings, recordRun } from './rankings';
 import { type CheckOptions, forgetSolo, loadCheck, loadSolo, type Session, soloSession, staleSolo } from './session';
 import { type BoardKind, type Profile, type RunMeta, type RunSlot, runApi, type SyncAnswer } from './checked';
 import { loadAssets } from './sprites';
-import { CoopMarks } from './coop-marks';
+import type { CoopFrame, CoopMarks } from './coop-marks';
 import {
   backButton, guardRun, haptic, initData, initTelegram, inTelegram, launchedForDaily, onLayoutChange, platform,
   shareArena, shareDaily, telegramName, appLink, canShareMessage, canShareStory, shareMessage, shareStory, requestWriteAccess,
@@ -109,7 +112,7 @@ import { ActionIndicator, type ActionKind } from './actionind';
 import { hasFreePoints, refreshHeroWindow, showComboWindow } from './talentui';
 import { tal as talentLine, talentBuffInfo, talentReason } from './talenttext';
 import { STEP_MS, TILE, View } from './view';
-import { bossBar, cellMarks, drawBossGround, drawBossTop } from './bossfx';
+import { bossBar, cellMarks, drawBossGround, drawBossTop, resetBossFx } from './bossfx';
 
 /*
  * Pixel Dungeon client: title screen, then a solo run (kept in local storage),
@@ -247,7 +250,22 @@ const hud = new Hud({
   },
 });
 /** The arena of waves dressed: sand, banners, gates, braziers, the crowd (arenaview.ts). */
-const arenaView = new ArenaView();
+let arenaView: ArenaView | null = null;
+const arenaViewMod = lazy(() => import('./arenaview'));
+const arenaUi = lazy(() => import('./arenaui'));
+/** The settings, challenges, journal and guide windows (meta.ts): a chunk fetched at the first of them, or in the idle time after the first screen. */
+const metaMod = lazy(() => import('./meta'));
+const windowFailed = (): void => toast(t.rel.offline.strip);
+const showSettings = (options: SettingsOptions): void => load(metaMod, (m) => m.showSettings(options), windowFailed);
+const showChallenges = (options: ChallengesOptions): void => load(metaMod, (m) => m.showChallenges(options), windowFailed);
+const showJournal = (options: JournalOptions, tab?: 'notes' | 'catalog' | 'guide', category?: number, entry?: string): void =>
+  load(metaMod, (m) => m.showJournal(options, tab, category, entry), windowFailed);
+const showGuide = (onClose: () => void, entry?: string): void => load(metaMod, (m) => m.showGuide(onClose, entry), windowFailed);
+/** The arena's dressing (a mode that is not shown now: its code is fetched only if a run of it ever draws). */
+function arenaViewNow(): ArenaView | null {
+  if (!arenaView) load(arenaViewMod, (m) => void (arenaView ??= new m.ArenaView()));
+  return arenaView;
+}
 /** The arena's reward window is up (it closes by itself if the wave starts meanwhile). */
 let rewardOpen = false;
 /**
@@ -329,8 +347,10 @@ function coachMove(me: Hero): void {
   }
   const x = (cellX(me.pos) * TILE + TILE / 2 - camera.x) * camera.zoom / (canvas.width / canvas.clientWidth);
   const y = (cellY(me.pos) * TILE - camera.y) * camera.zoom / (canvas.height / canvas.clientHeight);
-  coach.style.left = `${Math.round(x / hud.scale)}px`;
-  coach.style.top = `${Math.round(y / hud.scale)}px`;
+  const left = `${Math.round(x / hud.scale)}px`;
+  const top = `${Math.round(y / hud.scale)}px`;
+  if (coach.style.left !== left) coach.style.left = left;
+  if (coach.style.top !== top) coach.style.top = top;
 }
 
 /**
@@ -338,7 +358,7 @@ function coachMove(me: Hero): void {
  * one, else the nearest asleep (a sneak attack); never a passive one (a shopkeeper, the ghost).
  */
 function attackTarget(world: World, me: Hero): Mob | null {
-  const visible = visibleCells(world, me.depth);
+  const visible = seenCells(world, me.depth);
   const foes = (world.floors[me.depth]?.mobs ?? []).filter((m) => m.state !== 'passive' && !m.ally && visible[m.pos] && m.hp > 0 && !m.image);
   // The enemy picked with the danger indicator comes first (AttackIndicator.target).
   const rank = (m: Mob): number => (m.id === dangerTarget ? -1 : m.enemy === me.id && m.state === 'hunting' ? 0 : m.state === 'sleeping' ? 2 : 1) * 1000 + distance(m.pos, me.pos);
@@ -395,7 +415,7 @@ const tutorialHost = {
       }
       case 'stairs': {
         const exit = levelAt(world, me.depth).exit;
-        return visibleCells(world, me.depth)[exit] ? cellRect(exit, 4) : null;
+        return seenCells(world, me.depth)[exit] ? cellRect(exit, 4) : null;
       }
       case 'backpack':
         return buttonRect('.pd-tool.bag');
@@ -411,7 +431,7 @@ const tutorialHost = {
       case 'enemy':
         return attackTarget(world, me) !== null;
       case 'stairs':
-        return me.depth < 26 && Boolean(visibleCells(world, me.depth)[levelAt(world, me.depth).exit]);
+        return me.depth < 26 && Boolean(seenCells(world, me.depth)[levelAt(world, me.depth).exit]);
       case 'backpack':
         return newLoot || world.turn > 200;
       case 'quick':
@@ -2522,7 +2542,14 @@ canvas.addEventListener('pointerup', lift);
 canvas.addEventListener('pointercancel', lift);
 
 /* Co-op signals (coop-marks.ts): a long press on the map pings that cell for the party. */
-const coop = new CoopMarks(hud.root);
+let coop: CoopMarks | null = null;
+const coopMod = lazy(() => import('./coop-marks'));
+/** Co-op's marks over the map: only an online session has any, so the code is fetched when one first draws. */
+function coopFrame(ctx: CanvasRenderingContext2D, frame: CoopFrame): void {
+  if (frame.session.mode !== 'online') return;
+  if (!coop) load(coopMod, (m) => void (coop ??= new m.CoopMarks(hud.root)));
+  coop?.frame(ctx, frame);
+}
 const LONG_PRESS_MS = 450;
 let pressTimer = 0;
 
@@ -2539,7 +2566,7 @@ function armPing(): void {
     if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) return;
     // The touch is spent: lifting the finger walks nowhere.
     gesture = { kind: 'done' };
-    if (coop.ping(session, view.depth, x + y * WIDTH)) haptic('hit');
+    if (coop?.ping(session, view.depth, x + y * WIDTH)) haptic('hit');
   }, LONG_PRESS_MS);
 }
 
@@ -2943,6 +2970,12 @@ addEventListener('keydown', (event) => {
 
 /* Layout */
 
+/** When the map is drawn: at full pace while something moves, a few times a second while it only breathes (pace.ts). */
+const drawPace = new Pace();
+for (const type of ['pointerdown', 'pointermove', 'pointerup', 'keydown', 'wheel', 'touchstart'] as const) {
+  addEventListener(type, () => drawPace.touch(performance.now()), { passive: true, capture: true });
+}
+
 function resize(): void {
   // Light effects draw a coarser canvas: pixel art stays crisp, there are just fewer pixels to fill.
   const dpr = Math.min(devicePixelRatio || 1, quality.light ? 1.5 : 3);
@@ -2978,6 +3011,7 @@ function resize(): void {
   zoom.max = Math.max(zoom.base + 2, zoom.base * 2);
   zoom.target = clampZoom(zoom.base + zoom.delta);
   camera.zoom = zoom.target;
+  drawPace.force();
 }
 
 /** Toasts appear just under the HUD, however tall it has grown (buffs, companions, a notice). */
@@ -3124,7 +3158,17 @@ function placeVignette(on: boolean, x = 0, y = 0): void {
   vignette.style.setProperty('--outer', `${outer}px`);
 }
 
+/** How often the HUD is brought up to date while the map only breathes (pace.ts), ms. */
+const HUD_CALM_MS = 100;
+let lastHudAt = -Infinity;
+
+/** The backdrop behind the title (and a connecting run) drifts so slowly that 15 frames a second show it all. */
+const BACKDROP_MS = 66;
+let lastBackdrop = -Infinity;
+
 function drawBackdrop(now: number): void {
+  if (now - lastBackdrop >= 0 && now - lastBackdrop < BACKDROP_MS) return;
+  lastBackdrop = now;
   placeVignette(false);
   const { level, all } = backdrop;
   const middle = levelMiddle(level);
@@ -3184,6 +3228,7 @@ function restoreAfterPause(): void {
   lastUnderWindow = 0;
   frames.prev = 0;
   frames.since = 0;
+  drawPace.force();
   bakedKey = '';
   bakedFor = '';
   vignetteState = '';
@@ -3269,6 +3314,7 @@ onWindow((closable) => {
 
 function tick(now: number): void {
   if (!session) {
+    forgetSight();
     // The camp covers a phone's whole screen; behind a wide screen's column the dungeon is still shown.
     if (activeCamp?.canvas.isConnected) activeCamp.frame(now);
     else activeCamp = null;
@@ -3325,6 +3371,8 @@ function tick(now: number): void {
     seenGeneration = session.generation;
     view.reset(me.depth);
     fx.reset();
+    resetMobFx();
+    resetBossFx();
     follow.ready = false;
     pan.x = 0;
     pan.y = 0;
@@ -3400,6 +3448,7 @@ function tick(now: number): void {
     }
     visible = visibleCells(world, me.depth);
     bakedKey = key;
+    drawPace.force();
 
     learnFromSight(world, me, level, visible);
     // Hero.checkVisibleMobs: a newly seen enemy (asleep or not), or one that wakes, stops a walk.
@@ -3420,6 +3469,7 @@ function tick(now: number): void {
 
   const effects = session.drain();
   if (effects.length > 0) {
+    drawPace.effect(now);
     view.apply(effects, world, session.myId, vnow);
     // The backpack, if open, shows the pack as it is now (an item put on, dropped, picked up).
     const mine = session.myId;
@@ -3482,7 +3532,7 @@ function tick(now: number): void {
     dangerOf = { session, generation: session.generation };
     danger.reset();
   }
-  const hunted = isAlive(me) && visibleEnemies(world, me).some((mob) => mob.state === 'hunting');
+  const hunted = isAlive(me) && seenEnemies(world, me).some((mob) => mob.state === 'hunting');
   const wasTense = danger.on;
   const inDanger = danger.update(now, hunted, struckByMonster && isAlive(me));
   struckByMonster = false;
@@ -3570,54 +3620,61 @@ function tick(now: number): void {
     flyToBag(launch);
     return false;
   });
-  const plants = (world.floors[me.depth]?.plants ?? []).map((p) => ({ pos: p.pos, index: PLANT_KINDS.indexOf(p.kind) }));
-  // Clouds of gas: green toxic, yellow paralytic, and Shattered's (their Speck's hardlight colour; the
-  // confusion gas's changes from cell to cell, as its specks do).
-  const clouds = world.floors[me.depth]?.gas ?? {};
-  const gas = Object.entries(GAS_TINTS).flatMap(([kind, tint]) =>
-    (clouds[kind as keyof typeof clouds] ?? []).map(([pos, volume]) => ({
-      pos,
-      // Fire is thick for the few turns it burns.
-      volume: kind === 'fire' ? 30 + volume * 10 : volume,
-      color: Array.isArray(tint) ? tint[pos % tint.length]! : tint as string,
-    })));
-  const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
-  const explored = exploredCells(world, me.depth);
-  const scene = {
-    level, tiles: tiles!, visible, explored, heaps, gas, webs, seeAll: me.mindVision > 0,
-      ...((world.floors[me.depth]?.altar?.volume ?? 0) > 0 ? { altar: world.floors[me.depth]!.altar!.pos } : {}),
-    focus: { x: at.x + TILE / 2, y: at.y + TILE / 2 },
-    lights: world.arena ? [...lightsFor(level, visible, view, vnow), ...arenaView.lights(level, visible, vnow)] : lightsFor(level, visible, view, vnow),
-    heapLook: (pos: number, at: number) => motion.heapLook(pos, at),
-    under: (c: CanvasRenderingContext2D) => {
-      scenery.draw(c, level, visible, explored, vnow);
-      motion.draw(c, level, visible, explored, vnow, tiles!);
-      if (world.arena) arenaView.draw(c, level, explored, vnow, world.arena.phase === 'rest');
-    },
-    over: (c: CanvasRenderingContext2D) => {
-      motion.drawOver(c, vnow);
-      feedback.draw(
-        c, walk.queue, (id) => mobById(world, me.depth, id)?.pos,
-        walk.queue.length === 0 && !walk.chase && !session!.busy, vnow,
-      );
-    },
-    mourning: isAlive(me) ? 0 : Math.min(1, (vnow - (fallenAt ||= vnow)) / 1200),
-    // The boss levels' art, and what their fights leave about (bossfx.ts).
-    ground: (c: CanvasRenderingContext2D) => drawBossGround(c, world, level, assets, explored, visible, vnow),
-    top: (c: CanvasRenderingContext2D) => drawBossTop(c, world, level, assets, explored, visible, vnow),
-    marks: cellMarks(vnow),
-    middle,
-    // The cards sit above the hero, not on them: a third of the way down the free band.
-    cardY: (free.top + (free.bottom - free.top) * 0.3) * (canvas.height / (canvas.clientHeight || 1)),
-  };
-  // The arena's wall and stands stand in the light of the crowd's own torches, whatever the party sees.
-  render(ctx, world.arena ? { ...scene, visible: arenaView.shown(level, visible) } : scene, view, session.myId, assets, camera, vnow);
-  coop.frame(ctx, { session, world, view, camera, free, now: vnow });
-  placeVignette(!quality.light, (scene.focus.x - camera.x) * camera.zoom, (scene.focus.y - camera.y) * camera.zoom);
-  mapControls.update(
-    Math.round(zoom.target) < zoom.max, Math.round(zoom.target) > zoom.min, Math.hypot(pan.x, pan.y) > TILE * 1.5 && !pan.home,
-    document.querySelector<HTMLElement>('#ui .pd-log')?.offsetHeight ?? 120,
-  );
+  // The map is drawn at full pace while something moves, and a few times a second when it only breathes (pace.ts).
+  const settling = Math.abs(targetX - follow.x) * camera.zoom > 0.25 || Math.abs(targetY - follow.y) * camera.zoom > 0.25
+    || camera.zoom !== zoom.target || pan.home || (gesture !== null && gesture.kind !== 'done');
+  const moving = settling || walk.queue.length > 0 || walk.chase !== null || session.busy
+    || view.moving(vnow) || fx.moving(vnow) || motion.moving();
+  if (drawPace.due(now, moving, quality.light)) {
+    const plants = (world.floors[me.depth]?.plants ?? []).map((p) => ({ pos: p.pos, index: PLANT_KINDS.indexOf(p.kind) }));
+    // Clouds of gas: green toxic, yellow paralytic, and Shattered's (their Speck's hardlight colour; the
+    // confusion gas's changes from cell to cell, as its specks do).
+    const clouds = world.floors[me.depth]?.gas ?? {};
+    const gas = Object.entries(GAS_TINTS).flatMap(([kind, tint]) =>
+      (clouds[kind as keyof typeof clouds] ?? []).map(([pos, volume]) => ({
+        pos,
+        // Fire is thick for the few turns it burns.
+        volume: kind === 'fire' ? 30 + volume * 10 : volume,
+        color: Array.isArray(tint) ? tint[pos % tint.length]! : tint as string,
+      })));
+    const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
+    const explored = exploredCells(world, me.depth);
+    const scene = {
+      level, tiles: tiles!, visible, explored, heaps, gas, webs, seeAll: me.mindVision > 0,
+        ...((world.floors[me.depth]?.altar?.volume ?? 0) > 0 ? { altar: world.floors[me.depth]!.altar!.pos } : {}),
+      focus: { x: at.x + TILE / 2, y: at.y + TILE / 2 },
+      lights: world.arena ? [...lightsFor(level, visible, view, vnow), ...(arenaViewNow()?.lights(level, visible, vnow) ?? [])] : lightsFor(level, visible, view, vnow),
+      heapLook: (pos: number, at: number) => motion.heapLook(pos, at),
+      under: (c: CanvasRenderingContext2D) => {
+        scenery.draw(c, level, visible, explored, vnow);
+        motion.draw(c, level, visible, explored, vnow, tiles!);
+        if (world.arena) arenaViewNow()?.draw(c, level, explored, vnow, world.arena.phase === 'rest');
+      },
+      over: (c: CanvasRenderingContext2D) => {
+        motion.drawOver(c, vnow);
+        feedback.draw(
+          c, walk.queue, (id) => mobById(world, me.depth, id)?.pos,
+          walk.queue.length === 0 && !walk.chase && !session!.busy, vnow,
+        );
+      },
+      mourning: isAlive(me) ? 0 : Math.min(1, (vnow - (fallenAt ||= vnow)) / 1200),
+      // The boss levels' art, and what their fights leave about (bossfx.ts).
+      ground: (c: CanvasRenderingContext2D) => drawBossGround(c, world, level, assets, explored, visible, vnow),
+      top: (c: CanvasRenderingContext2D) => drawBossTop(c, world, level, assets, explored, visible, vnow),
+      marks: cellMarks(vnow),
+      middle,
+      // The cards sit above the hero, not on them: a third of the way down the free band.
+      cardY: (free.top + (free.bottom - free.top) * 0.3) * (canvas.height / (canvas.clientHeight || 1)),
+    };
+    // The arena's wall and stands stand in the light of the crowd's own torches, whatever the party sees.
+    render(ctx, world.arena ? { ...scene, visible: arenaViewNow()?.shown(level, visible) ?? visible } : scene, view, session.myId, assets, camera, vnow);
+    coopFrame(ctx, { session, world, view, camera, free, now: vnow });
+    placeVignette(!quality.light, (scene.focus.x - camera.x) * camera.zoom, (scene.focus.y - camera.y) * camera.zoom);
+    mapControls.update(
+      Math.round(zoom.target) < zoom.max, Math.round(zoom.target) > zoom.min, Math.hypot(pan.x, pan.y) > TILE * 1.5 && !pan.home,
+      document.querySelector<HTMLElement>('#ui .pd-log')?.offsetHeight ?? 120,
+    );
+  }
   // The attack indicator and «go on», right there on the map's column.
   if (walk.goal === me.pos) walk.goal = null;
   const foe = isAlive(me) ? attackTarget(world, me) : null;
@@ -3673,78 +3730,85 @@ function tick(now: number): void {
   }
   // QuickSlot: this run's slots (a new run starts with its class's), as many as the screen shows; a slot whose
   // item is used up shows it greyed (a placeholder).
-  syncQuickslots(world, me);
-  const quickState = (slot: number): QuickState | null => {
-    const kind = quickKind(slot);
-    if (!kind) return null;
-    // An artifact may be worn: Shattered's quick slots hold it all the same; the mage's staff is zapped from the hand (quickItem).
-    const item = quickArtifact(me, slot)?.item ?? quickClassArmor(me, slot) ?? quickItem(me, slot);
-    if (!item || isPlaceholder(me, slot)) {
-      return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };
-    }
-    return {
-      sprite: itemSprite(item, world.run.labels),
-      label: isClassArmor(item) ? armorStatus(item) : chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
-      aiming: aim !== null && (aim.kind === 'artifact' ? itemAt(me, aim.action.item) === item : aim.index === quickIndex(me, slot)),
-      charge: itemDef(item.kind).category === 'artifact' ? chargeOf(world, me, item) : isClassArmor(item) ? { share: Math.min(1, (item.charge ?? 0) / 100), full: (item.charge ?? 0) >= 100 } : null,
-      wear: wearOf(world, item),
+  // The HUD (quick slots, notice, bars) is brought up to date on every frame while anything moves, and ten times a second while the
+  // picture only breathes: what it shows changes with a turn, a touch or an effect, none of which waits for a frame in between.
+  if (!drawPace.isCalm(now, moving) || now - lastHudAt >= HUD_CALM_MS || now < lastHudAt) {
+    lastHudAt = now;
+    syncQuickslots(world, me);
+    const quickState = (slot: number): QuickState | null => {
+      const kind = quickKind(slot);
+      if (!kind) return null;
+      // An artifact may be worn: Shattered's quick slots hold it all the same; the mage's staff is zapped from the hand (quickItem).
+      const item = quickArtifact(me, slot)?.item ?? quickClassArmor(me, slot) ?? quickItem(me, slot);
+      if (!item || isPlaceholder(me, slot)) {
+        return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };
+      }
+      return {
+        sprite: itemSprite(item, world.run.labels),
+        label: isClassArmor(item) ? armorStatus(item) : chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
+        aiming: aim !== null && (aim.kind === 'artifact' ? itemAt(me, aim.action.item) === item : aim.index === quickIndex(me, slot)),
+        charge: itemDef(item.kind).category === 'artifact' ? chargeOf(world, me, item) : isClassArmor(item) ? { share: Math.min(1, (item.charge ?? 0) / 100), full: (item.charge ?? 0) >= 100 } : null,
+        wear: wearOf(world, item),
+      };
     };
-  };
-  const quick = Array.from({ length: visibleQuickslots(hud.wide) }, (_, slot) => quickState(slot));
-  const cancelChoice = (): void => {
-    aim = null;
-    examining = false;
-  };
-  // One state at a time, the most pressing: the connection, death, a target to choose, examining, companions.
-  const aimed = aim && aim.kind === 'artifact' ? itemAt(me, aim.action.item)
-    : aim && aim.index >= 0 ? me.items[aim.index] : aim?.index === WEAPON_SLOT ? me.weapon ?? undefined : undefined;
-  const status: HudStatus | null =
-    session.status ? { kind: session.status === t.reconnecting ? 'reconnecting' : 'connecting', text: session.status }
-    : !isAlive(me) && !world.over ? { kind: 'dead', text: `${t.youDied}. ${world.arena ? t.arena.fallenCoop : t.youDiedCoop}` }
-    : aim ? { kind: 'target', text: t.chooseTarget, cancel: { label: t.cancel, onClick: cancelChoice }, ...(aimed ? { item: itemSprite(aimed, world.run.labels) } : {}) }
-    : examining ? { kind: 'examine', text: t.examinePrompt, cancel: { label: t.cancel, onClick: cancelChoice } }
-    : waitingFor.length > 0 ? { kind: 'waiting', text: t.waitingShort, names: waitingFor }
-    : holdingFelt ? { kind: 'waiting', text: t.partyWaitsForYou }
-    : null;
-  actionInd.update(world, me, aim && aim.kind === 'class' ? aim.from : undefined);
-  hud.update(
-    {
-      me,
-      party: session.mode === 'online' ? world.heroes.filter((h) => h.id !== me.id) : [],
-      online: session.online,
-      status,
-      log: view.log,
-      buffs: heroBuffs(me, world),
-      examining,
-      newLoot,
-      looks: session.looks,
-      keys: me.items.filter((i) => (i.kind === 'key.iron' || i.kind === 'key.skeleton') && i.depth === me.depth).length,
-      moreKeys: {
-        golden: me.items.filter((i) => i.kind === 'key.golden' && i.depth === me.depth).length,
-        crystal: me.items.filter((i) => i.kind === 'key.crystal' && i.depth === me.depth).length,
+    const quick = Array.from({ length: visibleQuickslots(hud.wide) }, (_, slot) => quickState(slot));
+    const cancelChoice = (): void => {
+      aim = null;
+      examining = false;
+    };
+    // One state at a time, the most pressing: the connection, death, a target to choose, examining, companions.
+    const aimed = aim && aim.kind === 'artifact' ? itemAt(me, aim.action.item)
+      : aim && aim.index >= 0 ? me.items[aim.index] : aim?.index === WEAPON_SLOT ? me.weapon ?? undefined : undefined;
+    const status: HudStatus | null =
+      session.status ? { kind: session.status === t.reconnecting ? 'reconnecting' : 'connecting', text: session.status }
+      : !isAlive(me) && !world.over ? { kind: 'dead', text: `${t.youDied}. ${world.arena ? t.arena.fallenCoop : t.youDiedCoop}` }
+      : aim ? { kind: 'target', text: t.chooseTarget, cancel: { label: t.cancel, onClick: cancelChoice }, ...(aimed ? { item: itemSprite(aimed, world.run.labels) } : {}) }
+      : examining ? { kind: 'examine', text: t.examinePrompt, cancel: { label: t.cancel, onClick: cancelChoice } }
+      : waitingFor.length > 0 ? { kind: 'waiting', text: t.waitingShort, names: waitingFor }
+      : holdingFelt ? { kind: 'waiting', text: t.partyWaitsForYou }
+      : null;
+    actionInd.update(world, me, aim && aim.kind === 'class' ? aim.from : undefined);
+    hud.update(
+      {
+        me,
+        party: session.mode === 'online' ? world.heroes.filter((h) => h.id !== me.id) : [],
+        online: session.online,
+        status,
+        log: view.log,
+        buffs: heroBuffs(me, world),
+        examining,
+        newLoot,
+        looks: session.looks,
+        keys: me.items.filter((i) => (i.kind === 'key.iron' || i.kind === 'key.skeleton') && i.depth === me.depth).length,
+        moreKeys: {
+          golden: me.items.filter((i) => i.kind === 'key.golden' && i.depth === me.depth).length,
+          crystal: me.items.filter((i) => i.kind === 'key.crystal' && i.depth === me.depth).length,
+        },
+        quick,
+        danger: isAlive(me) ? enemiesInSight.length : 0,
+        waitingFor: session.mode === 'online' ? holders.filter((id) => id !== me.id) : [],
+        arena: arenaHud(world, me, session.mode === 'online'),
+        boss: bossBar(world, me.depth),
       },
-      quick,
-      danger: isAlive(me) ? enemiesInSight.length : 0,
-      waitingFor: session.mode === 'online' ? holders.filter((id) => id !== me.id) : [],
-      arena: arenaHud(world, me, session.mode === 'online'),
-      boss: bossBar(world, me.depth),
-    },
-    walk.resting,
-  );
-  placeToasts();
+      walk.resting,
+    );
+    placeToasts();
+  }
   // The arena's reward: up as soon as nothing else is, gone if the wave began meanwhile (a companion's «To battle!»).
   if (world.arena && !world.over) {
     const offer = world.arena.offers[me.id];
     if (offer && isAlive(me) && !overlayOpen() && world.arena.phase === 'rest') {
       rewardOpen = true;
       walk.reset();
-      showArenaReward({
-        world, hero: me, wave: world.arena.wave, items: offer, coop: session.mode === 'online',
+      const wave = world.arena.wave;
+      const online = session.mode === 'online';
+      load(arenaUi, (ui) => ui.showArenaReward({
+        world, hero: me, wave, items: offer, coop: online,
         onTake: (index) => {
           rewardOpen = false;
           send({ type: 'arenaPick', choice: index }, performance.now());
         },
-      });
+      }));
     } else if (!offer && rewardOpen) {
       rewardOpen = false;
       hideOverlay();
@@ -3758,7 +3822,7 @@ function tick(now: number): void {
   }
   if (world.over && deathShown !== session.generation && world.arena) {
     deathShown = session.generation;
-    showArenaRunEnd(world, me, session.mode === 'solo');
+    void showArenaRunEnd(world, me, session.mode === 'solo');
   }
   if (world.over && deathShown !== session.generation) {
     deathShown = session.generation;
@@ -3878,13 +3942,13 @@ function handleArenaEffects(effects: readonly Effect[], world: World, me: Hero, 
         if (effect.depth === me.depth && effect.cells.length > 0) {
           // The nearest gate is the one heard.
           const near = effect.cells.reduce((best, cell) => (distance(cell, me.pos) < distance(best, me.pos) ? cell : best));
-          arenaView.gatesMoved(effect.open, near);
+          arenaViewNow()?.gatesMoved(effect.open, near);
         }
         break;
       case 'arenaCleared':
         view.say(t.arena.beaten(effect.wave), '#44ff44');
         view.say(t.arena.crowd, '#ffff44');
-        arenaView.cheer(now);
+        arenaViewNow()?.cheer(now);
         haptic('success');
         break;
       case 'arenaSinks': {
@@ -3910,13 +3974,14 @@ function handleArenaEffects(effects: readonly Effect[], world: World, me: Hero, 
 }
 
 /** The end of an arena run: the record, the numbers, everyone's share in co-op; into the rankings. */
-function showArenaRunEnd(world: World, me: Hero, solo: boolean): void {
+async function showArenaRunEnd(world: World, me: Hero, solo: boolean): Promise<void> {
+  const ui = await arenaUi.get();
   const arena = world.arena!;
   const answer = session?.checked ? session.checked.finished() : null;
   const cleared = core.wavesCleared(arena);
   const score = core.arenaScore(world, me.id);
-  const best = arenaBest();
-  const newRecord = recordArena(cleared);
+  const best = ui.arenaBest();
+  const newRecord = ui.recordArena(cleared);
   const name = me.name || playerName || telegramName() || t.heroLabel;
   const cause = me.killedBy && (t.causes[me.killedBy] ?? t.mobs[me.killedBy as MobKind] ?? t.classes[me.killedBy as HeroClass] ?? me.killedBy);
   recordRun({
@@ -3936,7 +4001,7 @@ function showArenaRunEnd(world: World, me: Hero, solo: boolean): void {
   window.setTimeout(() => {
     if (!session?.world?.over) return;
     haptic('error');
-    showArenaEnd({
+    ui.showArenaEnd({
       solo,
       wave: arena.wave,
       cleared,
@@ -4026,6 +4091,8 @@ if (launchedForDaily()) {
 
 
 // Badges and the rankings from the player's other devices: on the title at once, once they come.
+// The windows the title opens are fetched in the spare time after the first screen.
+idle(() => load(metaMod, () => undefined));
 void pullCloud().then(() => {
   reloadBadges();
   if (!session && document.querySelector('.pd-camp')) toTitle(false);
@@ -4049,5 +4116,5 @@ if (import.meta.env.DEV) {
     }
   };
   Object.assign(window, { __release: { news: () => showNews({ release: CURRENT, onClose: () => toTitle(false) }), report: () => api && showReport({ api, run: runFacts, onClose: () => toTitle(false) }), crash: showCrash } });
-  Object.assign(window, { __pd: { get session() { return session; }, openAlchemy, openBackpack, openHero, openJournal, openMenu, badges: () => showBadges(hideOverlay, profile?.honors ?? []), camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
+  Object.assign(window, { __pd: { pace: drawPace, get session() { return session; }, openAlchemy, openBackpack, openHero, openJournal, openMenu, badges: () => showBadges(hideOverlay, profile?.honors ?? []), camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
 }

@@ -440,6 +440,34 @@ export class View {
     this.waveCard = { title, sub, kind, start: Math.max(now, after) };
   }
 
+  /**
+   * Whether anything on the map is moving or about to (pace.ts): a step, a blow, a bolt in flight, a number floating, a card,
+   * a body falling. What only breathes (an idle sprite, a bobbing ward, a pulse) is not counted.
+   */
+  moving(now: number): boolean {
+    if (
+      this.floaters.length > 0 || this.spellSprites.length > 0 || this.flashes.length > 0 || this.beams.length > 0 ||
+      this.projectiles.length > 0 || this.chains.length > 0 || this.stateIcons.length > 0 ||
+      this.bossIntro !== null || this.levelCard !== null || this.depthCard !== null || this.waveCard !== null || this.bannerStart > 0
+    ) return true;
+    for (const p of this.puppets.values()) {
+      if (!p.alive) {
+        if (!p.laid && now < p.removeAt + 100) return true;
+        continue;
+      }
+      if (
+        now - p.moveStart < (p.moveDur ?? this.stepMs) + 40 || p.aim !== undefined || (p.queue !== undefined && p.queue.length > 0) ||
+        p.jump !== undefined || now < p.flashUntil || now < p.alertUntil ||
+        (p.lungeStart !== undefined && now - p.lungeStart < 700) || (p.knockStart !== undefined && now - p.knockStart < 700) ||
+        (p.fallStart !== undefined && now - p.fallStart < FALL_MS + 100) ||
+        (p.appearStart !== undefined && now - p.appearStart < (p.appearMs ?? 400) + 100) ||
+        (p.appearAt !== undefined && now - p.appearAt < 500) || (p.revealAt !== undefined && now - p.revealAt < 700) ||
+        p.anim !== (p.rest ?? 'idle')
+      ) return true;
+    }
+    return false;
+  }
+
   /** A tap skips a region's intro to its fading; true if there was one to skip. */
 
   skipIntro(now: number): boolean {

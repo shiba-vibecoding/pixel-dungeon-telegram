@@ -2,10 +2,7 @@ import {
   artifactKnown, type ArtifactKind, artifactStatus, chargeCap, ghostOf, ghostQuestDone, ghostStrength, type Hero, isWorn, type Item, levelCap,
   SEED_CHARGE, toolkitWarming, type World,
 } from '@pd/core';
-import { ART_EN, ART_RU } from './i18n-artifacts';
-import { CLS_EN, CLS_RU } from './i18n-classes';
-import { ABIL_EN, ABIL_RU } from './i18n-abilities';
-import { lang } from './i18n';
+import { lang, tables } from './i18n';
 
 /*
  * The artifacts' texts, Shattered's own (i18n-artifacts.ts): their names and
@@ -29,7 +26,7 @@ const tomeTexts = (all: Record<string, string>): Record<string, string> => ({
 });
 
 // (The armour abilities' lines are looked up the same way, by their full keys: i18n-abilities.ts.)
-const table: Record<string, string> = lang === 'ru' ? { ...ART_RU, ...ABIL_RU, ...tomeTexts(CLS_RU) } : { ...ART_EN, ...ABIL_EN, ...tomeTexts(CLS_EN) };
+const table: Record<string, string> = { ...tables.art, ...tables.abil, ...tomeTexts(tables.cls) };
 
 /** Messages.format: %d, %s, %1$d, %2$s… filled in order or by number; %% is a percent sign. */
 export function format(text: string, args: ReadonlyArray<string | number> = []): string {

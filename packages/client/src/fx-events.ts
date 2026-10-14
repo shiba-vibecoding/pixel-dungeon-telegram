@@ -1050,14 +1050,23 @@ export function regionFx(level: Level, visible: readonly boolean[], now: number,
   }
 }
 
+/** The torches in sight, found once per sight (a new array each turn) rather than by walking the whole floor every frame. */
+let torches: { level: Level; visible: readonly boolean[]; cells: readonly number[] } | null = null;
+function torchCells(level: Level, visible: readonly boolean[]): readonly number[] {
+  if (torches && torches.level === level && torches.visible === visible) return torches.cells;
+  const cells: number[] = [];
+  for (let cell = 0; cell < level.map.length; cell++) if (level.map[cell] === T.WALL_DECO && visible[cell]) cells.push(cell);
+  torches = { level, visible, cells };
+  return cells;
+}
+
 /** Light this frame: the prison's torches, whatever burns, fire elementals and fists. */
 export function lightsFor(level: Level, visible: readonly boolean[], view: View, now: number): Light[] {
   const lights: Light[] = [];
   const flicker = (seed: number): number => 0.85 + 0.15 * Math.sin(now / 70 + seed) * Math.sin(now / 23 + seed * 3);
   // (The arena's stands hold a crowd, not torches: arenaview.ts lights its braziers.)
   if (levelRegion(level) === 1 && !level.ring) {
-    for (let cell = 0; cell < level.map.length; cell++) {
-      if (level.map[cell] !== T.WALL_DECO || !visible[cell]) continue;
+    for (const cell of torchCells(level, visible)) {
       lights.push({ x: (cell % WIDTH) * TILE + 8, y: Math.trunc(cell / WIDTH) * TILE + 6, radius: 38, color: '255, 150, 60', strength: 0.22 * flicker(cell) });
     }
   }

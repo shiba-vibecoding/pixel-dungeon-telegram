@@ -1,4 +1,4 @@
-import { drawWater, type LevelTiles } from './tiles';
+import { drawWater, type LevelTiles, patternOf } from './tiles';
 import { drawSpell } from './spellfx';
 import { FOG_BLACK, fogHalves } from './fog';
 import { drawAura, drawBeams, drawCharge, drawEbony, drawFallen, drawStateIcons, mobImage } from './mobfx';
@@ -66,6 +66,13 @@ let fogTime = 0;
 const FOG_REVEAL_MS = 70;
 const FOG_FORGET_MS = 260;
 
+/** What the fog textures were last made for: the same level, sight and map mean the same target, so nothing is made again. */
+let fogFor: { level: Level; visible: readonly boolean[]; explored: readonly boolean[] } | null = null;
+/** Every cell has eased all the way to its target: the textures are final until the target changes. */
+let fogSettled = false;
+let fogImage: ImageData | null = null;
+let fogHardImage: ImageData | null = null;
+
 function drawFog(ctx: CanvasRenderingContext2D, level: Level, visible: readonly boolean[], explored: readonly boolean[], now: number): void {
   if (!fogCanvas || !fogHardCanvas) return;
   const fresh = fogLevel !== level || !fogDark;
@@ -75,29 +82,49 @@ function drawFog(ctx: CanvasRenderingContext2D, level: Level, visible: readonly 
     fogDark = new Float32Array(LENGTH * 2).fill(1);
     fogTarget = new Float32Array(LENGTH * 2);
     fogLevel = level;
+    fogFor = null;
+    fogImage = fogCanvas.getContext('2d')!.createImageData(WIDTH * 2, HEIGHT);
+    fogHardImage = fogHardCanvas.getContext('2d')!.createImageData(WIDTH * 2, HEIGHT);
   }
-  const dt = fresh ? 0 : Math.min(100, Math.max(0, now - fogTime));
+  // A step is a frame's worth of easing: after a long wait (frames not drawn while the picture only breathed) it must not be a big jump.
+  const dt = fresh ? 0 : Math.min(50, Math.max(0, now - fogTime));
   fogTime = now;
-  const target = fogHalves(level.map, visible, explored, fogTarget!);
-  const fog = fogCanvas.getContext('2d')!;
-  const hard = fogHardCanvas.getContext('2d')!;
-  const data = fog.createImageData(WIDTH * 2, HEIGHT);
-  const black = hard.createImageData(WIDTH * 2, HEIGHT);
-  const reveal = 1 - Math.exp(-dt / FOG_REVEAL_MS);
-  const forget = 1 - Math.exp(-dt / FOG_FORGET_MS);
-  for (let i = 0; i < LENGTH * 2; i++) {
-    const to = target[i]!;
-    const dark = fogDark![i]!;
-    const eased = fresh ? to : dark + (to - dark) * (to < dark ? reveal : forget);
-    fogDark![i] = eased;
-    // The texel's place in the 2-wide image: cell (i >> 1), half (i & 1).
-    const cell = i >> 1;
-    const at = ((Math.trunc(cell / WIDTH)) * WIDTH * 2 + (cell % WIDTH) * 2 + (i & 1)) * 4 + 3;
-    data.data[at] = Math.round(eased * 255);
-    if (to >= FOG_BLACK) black.data[at] = 255;
+  const same = fogFor !== null && fogFor.level === level && fogFor.visible === visible && fogFor.explored === explored;
+  // The world only changes when an action is done, and then sight is made anew (a new array): until then the target stands, and once
+  // every cell has reached it the fog's two textures are done and are drawn as they are.
+  if (!same) {
+    // (The map's walls and doors only change with an action as well.)
+    fogHalves(level.map, visible, explored, fogTarget!);
+    fogFor = { level, visible, explored };
+    fogSettled = false;
   }
-  fog.putImageData(data, 0, 0);
-  hard.putImageData(black, 0, 0);
+  if (!fogSettled) {
+    const target = fogTarget!;
+    const fog = fogCanvas.getContext('2d')!;
+    const hard = fogHardCanvas.getContext('2d')!;
+    const data = fogImage!;
+    const black = fogHardImage!;
+    const reveal = 1 - Math.exp(-dt / FOG_REVEAL_MS);
+    const forget = 1 - Math.exp(-dt / FOG_FORGET_MS);
+    let moving = false;
+    for (let i = 0; i < LENGTH * 2; i++) {
+      const to = target[i]!;
+      const dark = fogDark![i]!;
+      let eased = fresh ? to : dark + (to - dark) * (to < dark ? reveal : forget);
+      // Close enough that the byte it makes is the target's: done (without this the easing never quite ends).
+      if (Math.abs(to - eased) < 1 / 512) eased = to;
+      else moving = true;
+      fogDark![i] = eased;
+      // The texel's place in the 2-wide image: cell (i >> 1), half (i & 1).
+      const cell = i >> 1;
+      const at = ((Math.trunc(cell / WIDTH)) * WIDTH * 2 + (cell % WIDTH) * 2 + (i & 1)) * 4 + 3;
+      data.data[at] = Math.round(eased * 255);
+      black.data[at] = to >= FOG_BLACK ? 255 : 0;
+    }
+    fog.putImageData(data, 0, 0);
+    hard.putImageData(black, 0, 0);
+    fogSettled = !moving;
+  }
   // Drawn up with smoothing, so the darkness fades from half cell to half cell into what is seen; then what has
   // never been seen is laid over it hard, so the fade never lights a room beyond a wall.
   ctx.save();
@@ -413,6 +440,9 @@ export interface Scene {
   marks?: ReadonlyArray<{ x: number; y: number; text: string; age: number }>;
 }
 
+/** What the camera shows, in world pixels, for drawing only what is on screen. */
+const onScreen = { left: 0, top: 0, right: 0, bottom: 0 };
+
 export function render(
   ctx: CanvasRenderingContext2D,
   scene: Scene,
@@ -439,7 +469,11 @@ export function render(
 
   // What fights left on the floor (blood, chunks, bodies), under what lies there: remembered
   // where the party has been, and dimmed with the rest of it by the fog.
-  fx.drawDecals(ctx, now, (x, y) => explored[Math.trunc(y / TILE) * WIDTH + Math.trunc(x / TILE)] === true);
+  onScreen.left = camera.x;
+  onScreen.top = camera.y;
+  onScreen.right = camera.x + canvas.width / camera.zoom;
+  onScreen.bottom = camera.y + canvas.height / camera.zoom;
+  fx.drawDecals(ctx, now, (x, y) => explored[Math.trunc(y / TILE) * WIDTH + Math.trunc(x / TILE)] === true, onScreen);
   scene.under?.(ctx);
   for (const heap of scene.heaps) {
     if (!explored[heap.pos]) continue;
@@ -573,10 +607,9 @@ export function render(
   // The region's mist, drifting slowly over what can be seen (the dark of the fog covers the rest).
   const mist = sheet(`fog${levelRegion(level)}`);
   if (mist && !quality.light) {
-    const pattern = ctx.createPattern(mist.image, 'repeat');
+    const drift = quality.reducedMotion ? 0 : now / 1000;
+    const pattern = patternOf(ctx, mist.image, drift * 6, drift * 3);
     if (pattern) {
-      const drift = quality.reducedMotion ? 0 : now / 1000;
-      pattern.setTransform(new DOMMatrix().translate(drift * 6, drift * 3));
       ctx.fillStyle = pattern;
       const left = Math.max(0, camera.x);
       const top = Math.max(0, camera.y);

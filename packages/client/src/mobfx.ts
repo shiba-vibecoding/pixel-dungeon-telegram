@@ -127,6 +127,11 @@ export function dressMob(assets: Assets, puppet: Puppet, mob: Mob, now: number):
 /** A golem gathering itself to teleport (GolemSprite.teleParticles). */
 const gathering = new Map<string, boolean>();
 
+/** A new floor or run: no monster of the last is gathering any more (the table would only grow with every monster seen). */
+export function resetMobFx(): void {
+  gathering.clear();
+}
+
 /** What each of Shattered's monster effects looks and sounds like (View.apply). */
 export function mobEffect(view: View, effect: Effect, world: World, myId: string, now: number): void {
   const here = (depth: number): boolean => depth === view.depth;

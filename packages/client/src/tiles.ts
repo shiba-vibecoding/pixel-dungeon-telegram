@@ -47,6 +47,8 @@ export class LevelTiles {
   readonly upper: HTMLCanvasElement;
   /** Cells whose ground tile lets the water below show (water, and the alchemy pot's water). */
   readonly water = new Uint8Array(LENGTH);
+  /** Water cells as runs along a row ([x, y, length] in cells), made when the water changes: one rectangle a run, not a cell. */
+  private runs: Int16Array | null = null;
   private readonly variance = new Uint8Array(LENGTH);
   private map = new Uint8Array(LENGTH);
   private traps: Int16Array = new Int16Array(LENGTH).fill(-1);
@@ -145,7 +147,11 @@ export class LevelTiles {
     };
     const ground = TileVisuals.terrainVisual(ctx, i);
     // The water layer shows through water tiles (and the pot, and decorations standing in water).
-    this.water[i] = (ground >= 32 && ground < 48) || tile === T.ALCHEMY || tile === T.CUSTOM_DECO_WTR ? 1 : 0;
+    const wet = (ground >= 32 && ground < 48) || tile === T.ALCHEMY || tile === T.CUSTOM_DECO_WTR ? 1 : 0;
+    if (this.water[i] !== wet) {
+      this.water[i] = wet;
+      this.runs = null;
+    }
     drawTile(g, this.sheet, ground, x, y);
     drawTile(g, this.sheets.occlusion, TileVisuals.occlusionVisual(ctx, i, open[i] === true, inside(i), tile === T.CHASM), x, y);
     drawTile(g, this.sheets.features, TileVisuals.featuresVisual(ctx, i, this.traps[i]!, this.plants[i]!), x, y);
@@ -175,22 +181,55 @@ export class LevelTiles {
     this.customKey = String(this.level.customTiles?.length ?? 0);
   }
 
+  /** The water as runs of cells along rows: [x, y, length, ...]. */
+  waterRuns(): Int16Array {
+    if (this.runs) return this.runs;
+    const out: number[] = [];
+    for (let y = 0; y < HEIGHT; y++) {
+      for (let x = 0; x < WIDTH; x++) {
+        if (!this.water[y * WIDTH + x]) continue;
+        let end = x + 1;
+        while (end < WIDTH && this.water[y * WIDTH + end]) end++;
+        out.push(x, y, end - x);
+        x = end;
+      }
+    }
+    return (this.runs = Int16Array.from(out));
+  }
+
   /** Whether the custom tilemaps loaded since the bake (a texture arrives later): bake again then. */
   get customStale(): boolean {
     return (this.level.customTiles ?? []).some((c) => c.texture !== undefined && !this.sheets.custom.has(c.texture)) || this.customKey === '';
   }
 }
 
+/** Patterns made once per picture: making one every frame costs a texture set-up each time. */
+const patterns = new WeakMap<CanvasImageSource, CanvasPattern>();
+/** A pattern's shift, reused (setTransform takes a plain matrix). */
+const shift = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+
+/** A repeating pattern of an image, made once, shifted by (dx, dy) world pixels. */
+export function patternOf(ctx: CanvasRenderingContext2D, image: CanvasImageSource, dx: number, dy: number): CanvasPattern | null {
+  let pattern = patterns.get(image);
+  if (!pattern) {
+    pattern = ctx.createPattern(image, 'repeat') ?? undefined;
+    if (!pattern) return null;
+    patterns.set(image, pattern);
+  }
+  shift.e = dx;
+  shift.f = dy;
+  pattern.setTransform(shift);
+  return pattern;
+}
+
 /** The water of a level, scrolling slowly down as Shattered's does (5 pixels a second), under its water tiles. */
 export function drawWater(ctx: CanvasRenderingContext2D, tiles: LevelTiles, water: HTMLImageElement, now: number, still: boolean): void {
-  const pattern = ctx.createPattern(water, 'repeat');
+  const runs = tiles.waterRuns();
+  if (runs.length === 0) return;
+  const pattern = patternOf(ctx, water, 0, still ? 0 : (now / 200) % water.height);
   if (!pattern) return;
-  const ofs = still ? 0 : (now / 200) % water.height;
-  pattern.setTransform(new DOMMatrix().translate(0, ofs));
   ctx.fillStyle = pattern;
-  for (let i = 0; i < LENGTH; i++) {
-    if (tiles.water[i]) ctx.fillRect((i % WIDTH) * TILE, Math.trunc(i / WIDTH) * TILE, TILE, TILE);
-  }
+  for (let i = 0; i < runs.length; i += 3) ctx.fillRect(runs[i]! * TILE, runs[i + 1]! * TILE, runs[i + 2]! * TILE, TILE);
 }
 
 /** A terrain as its picture (DungeonTerrainTilemap.tile, flat), for windows and examine. */

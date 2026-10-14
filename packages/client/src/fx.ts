@@ -97,6 +97,14 @@ interface Corpse {
   pool: { cx: number; cy: number; start: number; radius: number; color: string; edge: string } | null;
 }
 
+/** The part of the world on screen, in world pixels. */
+export interface View {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
 /** A splat, a drop or a chunk left on the floor. */
 export interface Decal {
   x: number;
@@ -369,7 +377,7 @@ class Fx {
   };
 
   /** Pools, stains and bodies, under the characters (world space). */
-  drawDecals(ctx: CanvasRenderingContext2D, now: number, visible: (x: number, y: number) => boolean): void {
+  drawDecals(ctx: CanvasRenderingContext2D, now: number, visible: (x: number, y: number) => boolean, view?: View): void {
     this.expire(now);
     for (const c of this.corpses) {
       if (!c.pool || now < c.pool.start || !visible(c.pool.cx, c.pool.cy)) continue;
@@ -383,20 +391,23 @@ class Fx {
       pixelEllipse(ctx, c.pool.cx, c.pool.cy, r - 1, (r - 1) * 0.45 - 0.5);
     }
     // Flat spatter first, then the bodies over it, then the chunks (which may have landed on a body).
-    this.drawStains(ctx, now, visible, false);
+    this.drawStains(ctx, now, visible, false, view);
     for (const c of this.corpses) {
       if (now < c.at || !visible(c.x + c.image.width / 2, c.y + c.image.height - 2)) continue;
       ctx.globalAlpha = this.corpseFade(c, now);
       ctx.drawImage(c.image, c.x, c.y);
     }
-    this.drawStains(ctx, now, visible, true);
+    this.drawStains(ctx, now, visible, true, view);
     ctx.globalAlpha = 1;
   }
 
-  private drawStains(ctx: CanvasRenderingContext2D, now: number, visible: (x: number, y: number) => boolean, chunks: boolean): void {
+  private drawStains(ctx: CanvasRenderingContext2D, now: number, visible: (x: number, y: number) => boolean, chunks: boolean, view?: View): void {
     let alpha = -1;
     for (const d of this.decals) {
-      if ((d.shade !== null) !== chunks || !visible(d.x, d.y)) continue;
+      if ((d.shade !== null) !== chunks) continue;
+      // Only what is on screen is drawn (a long visit leaves hundreds of stains over the whole floor).
+      if (view && (d.x > view.right || d.y > view.bottom || d.x + d.w < view.left || d.y + d.h < view.top)) continue;
+      if (!visible(d.x, d.y)) continue;
       const age = now - d.born;
       const a = age < REMAINS_MS ? d.alpha : d.alpha * Math.max(0, 1 - (age - REMAINS_MS) / REMAINS_FADE_MS);
       if (a !== alpha) ctx.globalAlpha = alpha = a;
@@ -426,6 +437,11 @@ class Fx {
     let n = 0;
     for (const c of this.corpses) if (now < c.at + c.life) this.corpses[n++] = c;
     this.corpses.length = n;
+  }
+
+  /** Whether the screen is shaking, flashing or slashed at (pace.ts); particles and chunks are covered by the effects that threw them. */
+  moving(now: number): boolean {
+    return now < this.shakeUntil || this.flashes.length > 0 || this.slashes.length > 0;
   }
 
   /** Moves every particle and chunk on to `now`, and lets the spent ones go. */

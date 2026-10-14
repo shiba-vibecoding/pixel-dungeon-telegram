@@ -116,31 +116,128 @@ export interface TextOptions {
   shadow?: number;
   align?: CanvasTextAlign;
   alpha?: number;
+  /** Draw it afresh every time (text that changes every frame, or is drawn once). */
+  cache?: boolean;
+}
+
+/**
+ * Text made once: a number floating up is the same eighteen copies of its letters every frame it stays, so its picture is kept
+ * and drawn as one (a fade then fades the whole picture evenly, rather than the copies' overlaps adding up), only once its font has
+ * loaded (a picture of the fallback font would stay), and at most so many at a time.
+ */
+interface TextPicture {
+  image: HTMLCanvasElement;
+  /** Where the text's own origin (its left end on the baseline) is inside the picture, device pixels. */
+  ox: number;
+  oy: number;
+  width: number;
+}
+const pictures = new Map<string, TextPicture | false>();
+/** A bigger picture than this (a boss's name across the screen) is drawn letter by letter instead: it is up for seconds, once. */
+const MAX_PICTURE_AREA = 40_000;
+const MAX_PICTURES = 120;
+const fontReady = new Map<string, boolean>();
+
+function ready(font: string): boolean {
+  let ok = fontReady.get(font);
+  if (ok === undefined) {
+    ok = typeof document === 'undefined' || !document.fonts || document.fonts.check(font);
+    // A font still loading is asked about again; one found ready stays so.
+    if (ok) fontReady.set(font, true);
+  }
+  return ok;
+}
+
+function picture(
+  text: string, family: string, size: number, s: number, color: string, outline: string, shadow: number,
+): TextPicture | null {
+  const font = `${size}px "${family}"`;
+  const key = `${font}|${s}|${color}|${outline}|${shadow}|${text}`;
+  const kept = pictures.get(key);
+  if (kept !== undefined) return kept || null;
+  if (!ready(font) || typeof document === 'undefined') return null;
+  const probe = document.createElement('canvas').getContext('2d');
+  if (!probe) return null;
+  probe.font = font;
+  const width = probe.measureText(text).width;
+  const pad = Math.ceil(s) + 1;
+  const wide = Math.ceil(width) + pad * 2;
+  const tall = Math.ceil(size * 1.5) + Math.ceil(shadow * s) + pad * 2;
+  if (wide * tall > MAX_PICTURE_AREA) {
+    pictures.set(key, false);
+    return null;
+  }
+  const image = document.createElement('canvas');
+  image.width = wide;
+  image.height = tall;
+  const g = image.getContext('2d')!;
+  g.font = font;
+  g.textAlign = 'left';
+  g.textBaseline = 'alphabetic';
+  const ox = pad;
+  const oy = pad + Math.ceil(size * 1.1);
+  if (shadow) {
+    g.fillStyle = FX_COLORS.shadow;
+    for (const [dx, dy] of AROUND) g.fillText(text, ox + dx * s, oy + dy * s + shadow * s);
+    g.fillText(text, ox, oy + shadow * s);
+  }
+  if (outline !== 'none') {
+    g.fillStyle = outline;
+    for (const [dx, dy] of AROUND) g.fillText(text, ox + dx * s, oy + dy * s);
+  }
+  g.fillStyle = color;
+  g.fillText(text, ox, oy);
+  if (pictures.size >= MAX_PICTURES) {
+    // The oldest half goes (a Map keeps the order things came in).
+    let drop = MAX_PICTURES / 2;
+    for (const old of pictures.keys()) {
+      if (drop-- <= 0) break;
+      pictures.delete(old);
+    }
+  }
+  const made = { image, ox, oy, width };
+  pictures.set(key, made);
+  return made;
 }
 
 /** Text with a pixel outline and a hard shadow; returns its width in device pixels. */
 export function fxText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, px: number, o: TextOptions = {}): number {
   const font = FONTS[o.font ?? 'ui'];
   const s = (o.scale ?? 2) * px;
-  ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalAlpha = o.alpha ?? 1;
-  ctx.font = `${Math.round(font.em * s)}px "${font.family}"`;
-  ctx.textAlign = o.align ?? 'center';
-  ctx.textBaseline = 'alphabetic';
+  const size = Math.round(font.em * s);
+  const align = o.align ?? 'center';
   x = snap(x, s);
   y = snap(y, s);
   const shadow = o.shadow ?? 1;
   const outline = o.outline ?? FX_COLORS.outline;
+  const alpha = o.alpha ?? 1;
+  const color = o.color ?? FX_COLORS.ink;
+  const kept = o.cache !== false ? picture(text, font.family, size, s, color, outline, shadow) : null;
+  if (kept) {
+    const left = align === 'center' ? x - kept.width / 2 : align === 'right' || align === 'end' ? x - kept.width : x;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(kept.image, Math.round(left - kept.ox), Math.round(y - kept.oy));
+    ctx.restore();
+    return kept.width;
+  }
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = alpha;
+  ctx.font = `${size}px "${font.family}"`;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'alphabetic';
   if (shadow) {
     ctx.fillStyle = FX_COLORS.shadow;
-    for (const [dx, dy] of [...AROUND, [0, 0] as const]) ctx.fillText(text, x + dx * s, y + dy * s + shadow * s);
+    for (const [dx, dy] of AROUND) ctx.fillText(text, x + dx * s, y + dy * s + shadow * s);
+    ctx.fillText(text, x, y + shadow * s);
   }
   if (outline !== 'none') {
     ctx.fillStyle = outline;
     for (const [dx, dy] of AROUND) ctx.fillText(text, x + dx * s, y + dy * s);
   }
-  ctx.fillStyle = o.color ?? FX_COLORS.ink;
+  ctx.fillStyle = color;
   ctx.fillText(text, x, y);
   const width = ctx.measureText(text).width;
   ctx.restore();
