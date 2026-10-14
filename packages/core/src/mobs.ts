@@ -7,6 +7,7 @@ import { wealthDropMultiplier } from './rings';
 import { EXOTIC_CRYSTALS, SHARD_OF_OBLIVION, trinketLevel } from './trinkets';
 import { hasProp } from './props';
 import { NEIGHBOURS8, NEIGHBOURS9, LENGTH, WIDTH } from './level/geometry';
+import { ipow } from './fmath';
 import { F, hasFlag } from './level/terrain';
 import type { Level } from './level/generate';
 import type { Rng } from './rng';
@@ -145,7 +146,7 @@ function tierWeapon(ctx: Ctx, tier: number): Item {
 /** Mob.lootChance (and its own override): the chance it leaves something, before the hero's bonuses. */
 export function baseLootChance(ctx: Ctx, mob: Mob): number {
   const world = ctx.world;
-  const third = (drop: LimitedDrop): number => Math.pow(1 / 3, dropsOf(world, drop));
+  const third = (drop: LimitedDrop): number => 1 / ipow(3, dropsOf(world, drop));
   switch (mob.kind) {
     case 'gnoll': case 'brute': return 0.5;
     case 'albino': case 'bandit': case 'shielded': case 'senior': case 'chaosElemental': case 'acidic': case 'eye':

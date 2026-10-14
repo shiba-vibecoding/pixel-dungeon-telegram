@@ -1,7 +1,7 @@
 import {
   type Action, type ArtifactAction, artifactSeams, chargeCap, type ArtifactKind, type ArtifactUse, canFeed, chargesToUse, ghostOf, ghostQuestDone,
   ghostStrength, type Hero, isTargetedScroll, isWorn, type Item, itemDef, type ItemKind, type ItemRef, kindKnown, levelCap, maxPrick, minPrick,
-  type MiscSlot, prickDeathChance, scrollTargets, stealChance, thievery, visiblyUpgraded, type World,
+  isClassArmor, type MiscSlot, prickDeathChance, scrollTargets, stealChance, thievery, visiblyUpgraded, type World,
 } from '@pd/core';
 import { ARTIFACT_CLASS, artifactState, artText, capital, chargeOf, format } from './artifacttext';
 import { t } from './i18n';
@@ -318,6 +318,12 @@ function numberCap(item: Item): number {
 
 /** The small charge strip at the bottom of an artifact's icon (backpack and quick slot). */
 export function chargeStrip(world: World, hero: Hero, item: Item): HTMLElement | null {
+  // The class armour's charge, out of 100 (ClassArmor.status).
+  if (isClassArmor(item) && item.kind === `armor.${hero.heroClass}`) {
+    const strip = el('span', { className: `pd-charge${(item.charge ?? 0) >= 100 ? ' full' : ''}` });
+    strip.style.setProperty('--v', String(Math.min(1, (item.charge ?? 0) / 100)));
+    return strip;
+  }
   if (itemDef(item.kind).category !== 'artifact') return null;
   const charge = chargeOf(world, hero, item);
   if (!charge) return null;

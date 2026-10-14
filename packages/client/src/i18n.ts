@@ -2,6 +2,7 @@ import type { EmoteKind, Enchantment, Glyph, HeroClass, ItemKind, Landmark, MobK
 import type { BuffName } from './hud';
 import { ART_EN, ART_RU } from './i18n-artifacts';
 import { REL_EN, REL_RU } from './i18n-release';
+import { ABIL_EN, ABIL_RU } from './i18n-abilities';
 
 /* Interface text in Russian and English; the language follows Telegram or the browser. */
 
@@ -15,9 +16,9 @@ const RU_GENDERS: Partial<Record<ItemKind, 1 | 2>> = { 'weapon.mace': 1, 'weapon
 
 /** The Russian gender of a wearable's name, plural included: «палочка», «кольцо», «доспехи воина». */
 function brokenGender(kind: ItemKind): 0 | 1 | 2 | 3 {
-  if (kind.startsWith('wand.') || kind === 'armor.mage') return 1;
-  if (kind.startsWith('ring.') || kind === 'armor.rogue') return 2;
-  if (kind === 'armor.warrior') return 3;
+  // (The class armours are «латная броня», «мантия», «одежда» героя, and «плащ».)
+  if (kind.startsWith('wand.') || kind === 'armor.mage' || kind === 'armor.rogue' || kind === 'armor.warrior') return 1;
+  if (kind.startsWith('ring.')) return 2;
   return RU_GENDERS[kind] ?? 0;
 }
 /** String.format for Shattered's texts: %s and %d in turn, or %1$d, %2$s by number. */
@@ -1167,6 +1168,8 @@ const en = {
     rat: 'marsupial rat', gnoll: 'gnoll scout', crab: 'sewer crab', goo: 'Goo', ghost: 'sad ghost', ghostHero: ART_EN['driedrose$ghosthero.name']!, skeleton: 'skeleton',
     thief: 'crazy thief', swarm: 'swarm of flies', shaman: 'gnoll shaman', bat: 'vampire bat', brute: 'gnoll brute',
     tengu: 'Tengu', shopkeeper: 'shopkeeper', wandmaker: 'old wandmaker', spinner: 'cave spinner', dm300: 'DM-300',
+    shadow: ABIL_EN['actors.hero.abilities.rogue.shadowclone$shadowally.name']!, hawk: ABIL_EN['actors.hero.abilities.huntress.spirithawk$hawkally.name']!,
+    ninjaLog: ABIL_EN['actors.hero.abilities.rogue.smokebomb$ninjalog.name']!,
     elemental: 'fire elemental', monk: 'dwarf monk', warlock: 'dwarf warlock', golem: 'golem', king: 'King of Dwarves',
     undead: 'undead dwarf', succubus: 'succubus', eye: 'evil eye', scorpio: 'scorpio', yog: 'Yog-Dzewa',
     rottingFist: 'rotting fist', burningFist: 'burning fist', larva: "god's larva", mimic: 'mimic', statue: 'animated statue',
@@ -1364,11 +1367,11 @@ const en = {
 
   items: {
     gold: 'gold',
-    'armor.warrior': 'warrior suit of armor',
-    'armor.mage': 'mage robe',
-    'armor.rogue': 'rogue garb',
-    'armor.huntress': 'huntress cloak',
-    'kit.armor': 'armor kit',
+    'armor.warrior': ABIL_EN['items.armor.warriorarmor.name']!,
+    'armor.mage': ABIL_EN['items.armor.magearmor.name']!,
+    'armor.rogue': ABIL_EN['items.armor.roguearmor.name']!,
+    'armor.huntress': ABIL_EN['items.armor.huntressarmor.name']!,
+    'crown.king': ABIL_EN['items.kingscrown.name']!,
     'wand.magicMissile': 'Wand of Magic Missile',
     'wand.lightning': 'Wand of Lightning',
     'wand.disintegration': 'Wand of Disintegration',
@@ -1629,7 +1632,7 @@ const en = {
     'missile.holyDart': "holy dart",
   } as Record<ItemKind, string>,
   itemInfo: {
-    'kit.armor': 'With this kit of small tools and materials, the armour you wear becomes the armour of your class: as good as before, and with a special ability.',
+    'crown.king': ABIL_EN['items.kingscrown.desc']!,
     ankh: 'The ancient symbol of immortality. Die while carrying it and you rise again at the stairs, whole, '
       + 'but everything else in your pack is lost, and all your gold.',
     'wand.magicMissile': 'This fairly plain wand launches missiles of pure magical energy. While the wand itself lacks any special effects, it has more available charges and can briefly empower other wands when upgraded.',
@@ -1955,16 +1958,9 @@ const en = {
     busy: 'I\'m busy. Get lost!',
   },
   mine: 'Mine',
-  applyKit: 'Apply it to your armour',
-  classArmorInfo: {
-    warrior: 'A warrior can make a heroic leap in it, stunning everyone around where he lands.',
-    mage: 'A mage can cast molten earth in it: every enemy in sight burns and is held fast.',
-    rogue: 'A rogue can throw a smoke bomb in it: whoever saw him loses him, and he is elsewhere.',
-    huntress: 'A huntress can loose spectral blades in it: one at every enemy in sight.',
-  } as Record<HeroClass, string>,
-  specialCost: 'Each use costs a third of your health.',
-  specials: { warrior: 'Heroic leap', mage: 'Molten earth', rogue: 'Smoke bomb', huntress: 'Spectral blades' } as Record<HeroClass, string>,
-  classArmorMade: (name: string) => `Your armour becomes the ${name}!`,
+  /** KingsCrown: its action, and what the armour says as it changes. */
+  wearCrown: ABIL_EN['items.kingscrown.ac_wear']!,
+  crownUsed: ABIL_EN['items.kingscrown.upgraded']!,
   augment: 'Augment',
   augmented: (name: string) => `Your ${name} is augmented.`,
   corrupted: (mob: string) => `The ${mob} rises again, on your side.`,
@@ -2272,6 +2268,7 @@ const en = {
     // Alchemy's buffs (their Shattered names).
     haste: ALCH_EN.buff_haste, stamina: ALCH_EN.buff_stamina, magicalSight: ALCH_EN.buff_magicalSight, magicImmune: ALCH_EN.buff_magicImmune, foresight: ALCH_EN.buff_foresight, fireImbue: ALCH_EN.buff_fireImbue, frostImbue: ALCH_EN.buff_frostImbue, toxicImbue: ALCH_EN.buff_toxicImbue, featherFall: ALCH_EN.buff_featherFall, cleanse: ALCH_EN.buff_cleanse, drowsy: ALCH_EN.buff_drowsy, magicalSleep: ALCH_EN.buff_magicalSleep, potionHealing: ALCH_EN.buff_healing, arcaneArmor: ALCH_EN.buff_arcaneArmor, aquaHealing: ALCH_EN.buff_aquaHealing, htBoost: ALCH_EN.buff_htBoost, wellFed: ALCH_EN.buff_wellFed, prismaticGuard: ALCH_EN.buff_prismaticGuard, challengeArena: ALCH_EN.buff_challenge,
     stealth: 'Cloaked', timeFreeze: 'Time Freeze', thorns: 'Thorns',
+    endure: ABIL_EN['actors.hero.abilities.warrior.endure$enduretracker.name']!, naturesPower: ABIL_EN['actors.hero.abilities.huntress.naturespower$naturespowertracker.name']!,
     degrade: 'Degraded',
   } as Record<BuffName, string>,
   causes: {
@@ -2944,6 +2941,8 @@ const ru: Strings = {
   // Names as in the Russian localisation of the original.
   mobs: {
     rat: 'сумчатая крыса', gnoll: 'гнолл-разведчик', crab: 'сточный краб', goo: 'Жижа', ghost: 'печальное привидение', ghostHero: 'печальное привидение',
+    shadow: ABIL_RU['actors.hero.abilities.rogue.shadowclone$shadowally.name']!, hawk: ABIL_RU['actors.hero.abilities.huntress.spirithawk$hawkally.name']!,
+    ninjaLog: ABIL_RU['actors.hero.abilities.rogue.smokebomb$ninjalog.name']!,
     skeleton: 'скелет', thief: 'безумный вор', swarm: 'рой мух', shaman: 'гнолл-шаман', bat: 'летучая мышь-вампир',
     brute: 'гнолл-громила', tengu: 'Тенгу', shopkeeper: 'торговец', wandmaker: 'старый мастер палочек',
     spinner: 'пещерный прядильщик', dm300: 'DM-300', elemental: 'огненный элементаль', monk: 'дворф-монах',
@@ -3136,11 +3135,11 @@ const ru: Strings = {
   // Names as in the Russian localisation of the original.
   items: {
     gold: 'золото',
-    'armor.warrior': 'доспехи воина',
-    'armor.mage': 'мантия мага',
-    'armor.rogue': 'одеяние разбойника',
-    'armor.huntress': 'плащ охотницы',
-    'kit.armor': 'набор для брони',
+    'armor.warrior': ABIL_RU['items.armor.warriorarmor.name']!,
+    'armor.mage': ABIL_RU['items.armor.magearmor.name']!,
+    'armor.rogue': ABIL_RU['items.armor.roguearmor.name']!,
+    'armor.huntress': ABIL_RU['items.armor.huntressarmor.name']!,
+    'crown.king': ABIL_RU['items.kingscrown.name']!,
     'wand.magicMissile': 'Палочка Магической стрелы',
     'wand.lightning': 'Палочка Молний',
     'wand.disintegration': 'Палочка Дезинтеграции',
@@ -3401,7 +3400,7 @@ const ru: Strings = {
     'missile.holyDart': "освященный дротик",
   },
   itemInfo: {
-    'kit.armor': 'С этим набором инструментов и материалов надетый доспех становится доспехом вашего класса: не хуже прежнего, да ещё с особым умением.',
+    'crown.king': ABIL_RU['items.kingscrown.desc']!,
     ankh: 'Древний символ бессмертия. Если вы погибнете, имея его при себе, то воскреснете у лестницы целым и '
       + 'невредимым — но всё остальное в рюкзаке пропадёт, как и всё золото.',
     'wand.magicMissile': 'Довольно простая палочка, стреляющая стрелами чистой магической энергии. Хоть палочка и не обладает какими-либо особыми эффектами, она имеет довольно много доступных зарядов и может на некоторое время усилить другие палочки после улучшения.',
@@ -3725,16 +3724,8 @@ const ru: Strings = {
     busy: 'Я занят. Проваливай!',
   },
   mine: 'Добыть руду',
-  applyKit: 'Применить к доспеху',
-  classArmorInfo: {
-    warrior: 'В них воин может совершить героический прыжок, оглушая всех вокруг места приземления.',
-    mage: 'В ней маг может вызвать расплавленную землю: все враги в поле зрения горят и не могут сойти с места.',
-    rogue: 'В нём разбойник может бросить дымовую шашку: видевшие его теряют его из виду, а он уже в другом месте.',
-    huntress: 'В нём охотница может выпустить призрачные клинки — по одному в каждого врага в поле зрения.',
-  },
-  specialCost: 'Каждое применение отнимает треть здоровья.',
-  specials: { warrior: 'Героический прыжок', mage: 'Расплавленная земля', rogue: 'Дымовая шашка', huntress: 'Призрачные клинки' },
-  classArmorMade: (name) => `Ваш доспех становится таким: ${name}!`,
+  wearCrown: ABIL_RU['items.kingscrown.ac_wear']!,
+  crownUsed: ABIL_RU['items.kingscrown.upgraded']!,
   augment: 'Применить',
   augmented: (name) => `${name}: камень Баланса подействовал.`,
   corrupted: (mob) => `${mob} восстаёт снова — на вашей стороне.`,
@@ -4034,6 +4025,7 @@ const ru: Strings = {
     // Alchemy's buffs (their Shattered names).
     haste: ALCH_RU.buff_haste, stamina: ALCH_RU.buff_stamina, magicalSight: ALCH_RU.buff_magicalSight, magicImmune: ALCH_RU.buff_magicImmune, foresight: ALCH_RU.buff_foresight, fireImbue: ALCH_RU.buff_fireImbue, frostImbue: ALCH_RU.buff_frostImbue, toxicImbue: ALCH_RU.buff_toxicImbue, featherFall: ALCH_RU.buff_featherFall, cleanse: ALCH_RU.buff_cleanse, drowsy: ALCH_RU.buff_drowsy, magicalSleep: ALCH_RU.buff_magicalSleep, potionHealing: ALCH_RU.buff_healing, arcaneArmor: ALCH_RU.buff_arcaneArmor, aquaHealing: ALCH_RU.buff_aquaHealing, htBoost: ALCH_RU.buff_htBoost, wellFed: ALCH_RU.buff_wellFed, prismaticGuard: ALCH_RU.buff_prismaticGuard, challengeArena: ALCH_RU.buff_challenge,
     stealth: ART_RU['cloakofshadows$cloakstealth.name']!, timeFreeze: ART_RU['timekeepershourglass$timefreeze.name']!,
+    endure: ABIL_RU['actors.hero.abilities.warrior.endure$enduretracker.name']!, naturesPower: ABIL_RU['actors.hero.abilities.huntress.naturespower$naturespowertracker.name']!,
     thorns: ART_RU['capeofthorns$thorns.name']!,
     degrade: 'Потрёпан',
   },

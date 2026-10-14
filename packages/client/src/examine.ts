@@ -1,5 +1,6 @@
 import { F, hasFlag, type Item, type Mob, type MobKind, type PlantKind, T, trapAt } from '@pd/core';
 import { lang, t } from './i18n';
+import { artText } from './artifacttext';
 
 /*
  * What the examine tool tells about a cell (Toolbar's info button, Mob.description,
@@ -221,7 +222,7 @@ export function mobName(mob: Mob, name: string = t.mobs[mob.kind]): string {
  * Mob.description and Mob.info: what the monster is, what more its kind says (a shaman's mask, a gnoll exile's mood,
  * a statue's arms, a thief's loot, a monk's focus, a brute's rage), and what champion it is.
  */
-export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item) => item.kind): string[] {
+export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item) => item.kind, now = 0): string[] {
   // Shattered's wands' creatures: what they can do, as strong as the wand that made them.
   if (mob.kind === 'ward') {
     const { tier, level } = mob.ward ?? { tier: 1, level: 0 };
@@ -234,6 +235,13 @@ export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item)
   if (mob.kind === 'lotus') {
     const level = mob.lotus?.level ?? 0;
     return [t.lotusInfo(level, Math.round(Math.min(1, 0.4 + 0.04 * level) * 100))];
+  }
+  // The armour abilities' allies, in Shattered's words: the hawk says how long it has left.
+  if (mob.kind === 'shadow') return [artText('actors.hero.abilities.rogue.shadowclone$shadowally.desc')];
+  if (mob.kind === 'ninjaLog') return [artText('actors.hero.abilities.rogue.smokebomb$ninjalog.desc')];
+  if (mob.kind === 'hawk') {
+    const left = Math.max(0, Math.floor(mob.hawk?.remaining ?? 0));
+    return [artText('actors.hero.abilities.huntress.spirithawk$hawkally.desc'), artText('actors.hero.abilities.huntress.spirithawk$hawkally.desc_remaining', [left])];
   }
   const table = lang === 'ru' ? RU_MOBS : EN_MOBS;
   const x = MOB_EXTRAS[lang === 'ru' ? 'ru' : 'en'];
@@ -256,6 +264,8 @@ export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item)
     const [name, desc] = x.champions[mob.champion];
     lines.push(`${capital(name)}: ${desc}`);
   }
+  // Death Mark: the mark and the turns it has left.
+  if (mob.deathMark) lines.push(artText('actors.hero.abilities.rogue.deathmark$deathmarktracker.desc', [Math.max(0, Math.ceil(mob.deathMark.until - now))]));
   return lines;
 }
 
