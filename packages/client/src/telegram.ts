@@ -78,6 +78,10 @@ export function initTelegram(background: string): void {
   // Bot API 8.0: on a phone the game takes the whole screen however it was opened (BotFather's full-screen
   // setting reaches only the profile's «Open» button), unless the player turned that off in the settings.
   if (at('8.0') && /^(ios|android)/.test(webApp.platform) && wantsFullscreen()) webApp.requestFullscreen?.();
+  // On a computer the full-screen mode (BotFather's setting, or a link's mode=fullscreen) is meant for phones: Telegram
+  // Desktop then makes a window larger than what shows, cut off at the screen's edge and with no frame to move it by.
+  // So there the game leaves it at once, for an ordinary window.
+  else if (at('8.0') && !/^(ios|android)/.test(webApp.platform) && webApp.isFullscreen) webApp.exitFullscreen?.();
 }
 
 /*
