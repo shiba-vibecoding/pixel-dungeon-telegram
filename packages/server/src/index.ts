@@ -12,7 +12,7 @@ import { type Delivery, RoomLogic, type RoomState } from './room-logic';
 import {
   ADDRESS_HEADER, addReport, MAX_REPORT_BYTES, parseReport, type Report, REPORT_WINDOW_MS, REPORTS_PER_WINDOW,
 } from './reports';
-import { boardTtl } from './boards';
+import { boardObject, boardTtl } from './boards';
 import { CORS, json, jsonBody } from './http';
 import { boardRoute, mailRoute, meRoute, Player, problemRoute, runRoute } from './player';
 import type { AdminOps } from './admin';
@@ -847,7 +847,7 @@ async function publicEntries(entries: DailyEntry[], env: Env, date: string): Pro
 
 async function daily(request: Request, env: Env, date: string): Promise<Response> {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
-  const board = env.DAILY.get(env.DAILY.idFromName(date));
+  const board = env.DAILY.get(env.DAILY.idFromName(boardObject(date)));
   if (request.method === 'GET') {
     const me = new URL(request.url).searchParams.get('me');
     const response = await board.fetch(`https://board/?date=${date}${me ? `&me=${encodeURIComponent(me)}` : ''}`);

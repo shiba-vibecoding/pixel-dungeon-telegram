@@ -9,7 +9,18 @@ import type { RunSummary } from './runs';
  *   arena:YYYY-Www     the week's best arena run
  *   all, arena-all     the best ever
  * A player's best run stands on each; a finished day or week gives its best trophies.
+ *
+ * Seasons: the Shattered update started the world afresh. Every board lives in a Durable Object named
+ * `s<SEASON>:` + the board's name (boardObject), so the boards of an earlier season are simply never
+ * read again and nothing is deleted by hand. The names above stay as they are everywhere else (a player's
+ * letters, trophies and notes of boards entered): only the address of the object carries the season.
  */
+
+/** The world's season: 1 before the Shattered update, 2 from it. Raised for the next fresh start. */
+export const SEASON = 2;
+
+/** The Durable Object name of a board, in this season. */
+export const boardObject = (name: string, season: number = SEASON): string => `s${season}:${name}`;
 
 export type BoardKind = 'daily' | 'week' | 'arena' | 'all' | 'arenaAll';
 export const BOARD_KINDS: readonly BoardKind[] = ['daily', 'week', 'arena', 'all', 'arenaAll'];

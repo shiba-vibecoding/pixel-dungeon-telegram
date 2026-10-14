@@ -28,6 +28,10 @@ function rulesHash(): string {
 }
 
 describe('rules version', () => {
+  it('is the Shattered update at 18 or later (the pioneer cup keys on rules below 18)', () => {
+    expect(RULES_VERSION).toBeGreaterThanOrEqual(18);
+  });
+
   it('goes up whenever the rules change', () => {
     const now = rulesHash();
     expect(

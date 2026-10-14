@@ -88,6 +88,7 @@ export function showNews(options: NewsOptions): void {
           el('b', { textContent: release.title ? words(release.title) : '' }),
         ),
         release.sub ? el('p', { className: 'pd-news-sub', textContent: words(release.sub) }) : null,
+        release.notice ? el('p', { className: 'pd-news-notice', role: 'note', textContent: words(release.notice) }) : null,
         el(
           'ul',
           { className: 'pd-news-big' },
