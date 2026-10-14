@@ -40,14 +40,16 @@ export const V22_BUFFS_EN = buffNames(CLS_EN, TAL_EN);
 export const V22_BUFFS_RU = buffNames(CLS_RU, TAL_RU);
 
 /** The Warden's plants, by the game's plants: the frame of warden-plants.png and warden-effects.png (WardenPlants). */
-export const WARDEN_PLANTS = { rotberry: 0, firebloom: 1, sungrass: 3, icecap: 4, dreamweed: 5, sorrowmoss: 6, earthroot: 8, fadeleaf: 10 } as const;
+export const WARDEN_PLANTS = {
+  rotberry: 0, firebloom: 1, swiftthistle: 2, sungrass: 3, icecap: 4, stormvine: 5, sorrowmoss: 6, mageroyal: 7, earthroot: 8, starflower: 9, fadeleaf: 10, blindweed: 11,
+} as const;
 
 export const V22_EN = {
   warden: 'Warden', wardenSub: 'Plants give her power, not harm', wardenNote: 'For everyone else, plants work as usual.', wardenLabel: 'Warden:',
   wardenButton: 'Plants of the Warden',
   plants: {
     rotberry: 'A while of extra strength.', firebloom: 'Fire imbue instead of burns.', sungrass: 'Healing goes on even if she steps off.',
-    icecap: 'Frost imbue instead of chill.', dreamweed: 'A few turns of levitation.', sorrowmoss: 'Toxic imbue instead of poison.',
+    icecap: 'Frost imbue instead of chill.', stormvine: 'A few turns of levitation.', swiftthistle: 'Time stands still, then haste.', mageroyal: 'Immune to gases and clouds.', starflower: 'Blessed, and her wands recharge.', blindweed: 'Invisibility instead of blindness.', sorrowmoss: 'Toxic imbue instead of poison.',
     earthroot: 'Bark armor that moves with her.', fadeleaf: 'To the previous depth’s exit.',
   } as Record<string, string>,
   scoreShort: ['Depth and hero level', 'Gold and the value of your pack', 'Floors explored with nothing missed', 'Bosses beaten without needless hits', 'Quests done for the dungeon folk'],
@@ -72,7 +74,7 @@ export const V22_RU: typeof V22_EN = {
   wardenButton: 'Растения Хранительницы',
   plants: {
     rotberry: 'На время прибавляет силы.', firebloom: 'Огненная пропитка вместо ожога.', sungrass: 'Лечение идёт, даже если сойти.',
-    icecap: 'Ледяная пропитка вместо холода.', dreamweed: 'Левитация на несколько ходов.', sorrowmoss: 'Ядовитая пропитка вместо яда.',
+    icecap: 'Ледяная пропитка вместо холода.', stormvine: 'Левитация на несколько ходов.', swiftthistle: 'Время замирает, потом ускорение.', mageroyal: 'Невосприимчивость к газам и облакам.', starflower: 'Благословение и перезарядка палочек.', blindweed: 'Невидимость вместо слепоты.', sorrowmoss: 'Ядовитая пропитка вместо яда.',
     earthroot: 'Броня из коры идёт вместе с ней.', fadeleaf: 'К выходу предыдущей глубины.',
   },
   scoreShort: ['Глубина и уровень героя', 'Золото и цена вещей в рюкзаке', 'Изученные этажи без пропущенного', 'Побеждённые боссы без лишних ударов', 'Выполненные задания жителей'],
