@@ -20,6 +20,7 @@ import { type GasKind, smokeCells } from './gas';
 import { MAGICAL_SIGHT_DISTANCE } from './buffs';
 import { EYE_OF_NEWT, trinketLevel } from './trinkets';
 import type { Level } from './level/generate';
+import type { AbilityKind, Talent } from './talents';
 import { LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import type { Rng, RngState } from './rng';
@@ -27,6 +28,7 @@ import type { World } from './world';
 import type { BossFloor } from './bosses/state';
 import type { BossFx } from './bosses/common';
 import { awareCells } from './artifacts/talisman';
+import { hawkVision } from './abilities/allies';
 
 /*
  * The live part of a depth: its monsters, its clock and its random stream.
@@ -150,9 +152,20 @@ export type Effect =
   /** A scroll of enchantment gave an item its power; a scroll of upgrade drove one out. */
   | { type: 'imbued'; hero: string; item: Item }
   | { type: 'disenchanted'; hero: string; item: Item }
-  /** The armour kit made a hero's armour into class armour; a class armour's special ability was used. */
-  | { type: 'classArmor'; hero: string; item: Item }
-  | { type: 'special'; hero: string; ability: 'leap' | 'moltenEarth' | 'smokeBomb' | 'blades'; from: number; to: number }
+  /** The Dwarf King's crown made a hero's armour into class armour with an ability; the crown's magic moved to another armour. */
+  | { type: 'classArmor'; hero: string; item: Item; ability: AbilityKind }
+  | { type: 'classArmorMoved'; hero: string; item: Item }
+  /**
+   * An armour ability used (abilities/): from where, to where (the target, or the hero's own cell); `cells` what the
+   * animation needs (a cone's tips, the blades' targets, Endure's stored damage), `wand` the staff's wand for the blast.
+   */
+  | { type: 'ability'; depth: number; hero: string; ability: AbilityKind | 'perfectCopy'; from: number; to: number; cells?: number[]; wand?: ItemKind; bolt?: Bolt; mob?: string }
+  /** A point of talent spent. */
+  | { type: 'talentUp'; hero: string; talent: Talent }
+  /** A warp beacon's telefrag at a cell. */
+  | { type: 'telefrag'; depth: number; pos: number }
+  /** Death Mark put on a monster, or ended (`died`: it dies as it ends). */
+  | { type: 'deathMarked'; depth: number; mob: string; on: boolean; died?: boolean }
   /** A dwarf monk knocked the weapon out of a hero's hands; it lies at their feet. */
   | { type: 'disarmed'; depth: number; hero: string; mob: string; item: Item }
   /** A hero jumped into a chasm on `depth` and landed on the depth below. */
@@ -503,6 +516,8 @@ export function heroView(world: World, hero: Hero): boolean[] {
   }
   // Dungeon.observe: what the talisman of foresight shows is seen, and the cells around it.
   awareCells(world, hero, fov);
+  // The spirit hawk shares its whole field of vision with its hunter (Dungeon.observe).
+  hawkVision(world, hero, fov);
   return fov;
 }
 

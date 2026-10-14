@@ -13,6 +13,7 @@ import { scaleMob } from './party';
 import { stepOnPlant } from './plants';
 import { tenguDartTrap } from './bosses/index';
 import { tickMob } from './buffs';
+import { deathMarkTurn } from './abilities';
 import { flies, mobStatusTurn } from './status';
 
 /*
@@ -60,6 +61,8 @@ export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost' | 'toxic'
     if (harm === 'toxic') return (b?.toxicImbue ?? 0) > 0;
     return false;
   }
+  // SpiritHawk.HawkAlly: immune to all area-bound effects (BlobImmunity): gas, fire, frost and the rest of the blobs.
+  if (char.kind === 'hawk') return true;
   // Piranha: the blobs but electricity and freezing, and burning.
   if (char.kind === 'piranha' || char.kind === 'phantomPiranha') return harm !== 'frost' && harm !== 'shock';
   if (harm === 'shock') return false;
@@ -258,6 +261,8 @@ export function mobFall(ctx: Ctx, mob: Mob): void {
 
 /** Hurt a monster's turn by the conditions traps leave behind; true if it loses the turn. */
 export function mobConditions(ctx: Ctx, mob: Mob): boolean {
+  // DeathMarkTracker: the mark runs out, and a monster at no health dies.
+  if (deathMarkTurn(ctx, mob)) return true;
   // What gear left on it: adrenaline, a lucky blow's tracker (throwing.ts).
   if (mobGearTick(ctx, mob)) return true;
   // Shattered's conditions first: corrosion, ooze, corruption, frost and the rest (status.ts); then alchemy's

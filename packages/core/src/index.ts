@@ -27,7 +27,14 @@ export {
   canTarget, isEnchantable, isItemRef, isTargetedScroll, isUnidentified, isUpgradable, itemAt, type ItemRef, scrollTargets, type TargetedScroll,
 } from './scrolls';
 export { type ImpQuest, TOKENS_WANTED } from './imp';
-export { CLASS_ARMOR, CLASS_ARMOR_OF } from './classArmor';
+export {
+  abilitiesOf, CLASS_ARMOR, CLASS_ARMOR_OF, isClassArmor, MAX_CHARGE as CLASS_ARMOR_MAX_CHARGE, START_CHARGE as CLASS_ARMOR_START_CHARGE,
+} from './classArmor';
+// The armour abilities and the tier 4 talents (abilities/, talents.ts).
+export {
+  ABILITIES, abilityAim, copyReach, staffWand as staffWandOf, type Aim, type AbilityInfo, CLASS_ABILITIES, chargeUse as abilityChargeUse, hawkSight, natureActive, wornClassArmor,
+} from './abilities';
+export * from './talents';
 export { BAGS, hasRoom, inBag, slotsUsed } from './bags';
 export * from './world';
 export * from './bones';
@@ -92,7 +99,7 @@ export {
 } from './wands';
 export { chargeLimit } from './regrowth';
 export type { CursedEffect } from './cursed';
-export { friendly } from './allies';
+export { friendly, prismaticMaxHp } from './allies';
 export { mobRotation, RARE_ALTS, rollMob } from './spawner';
 export { CHAMPION_AURA, CHAMPIONS } from './champions';
 export { isEnemy as isHostileMob, isOpenSpace, spawningWeight } from './mobs';

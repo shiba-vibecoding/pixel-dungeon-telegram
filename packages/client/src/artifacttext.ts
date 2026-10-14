@@ -3,6 +3,7 @@ import {
   SEED_CHARGE, toolkitWarming, type World,
 } from '@pd/core';
 import { ART_EN, ART_RU } from './i18n-artifacts';
+import { ABIL_EN, ABIL_RU } from './i18n-abilities';
 import { lang } from './i18n';
 
 /*
@@ -20,7 +21,8 @@ export const ARTIFACT_CLASS: Readonly<Record<ArtifactKind, string>> = {
   'artifact.beacon': 'lloydsbeacon',
 };
 
-const table: Record<string, string> = lang === 'ru' ? ART_RU : ART_EN;
+// (The armour abilities' lines are looked up the same way, by their full keys: i18n-abilities.ts.)
+const table: Record<string, string> = lang === 'ru' ? { ...ART_RU, ...ABIL_RU } : { ...ART_EN, ...ABIL_EN };
 
 /** Messages.format: %d, %s, %1$d, %2$s… filled in order or by number; %% is a percent sign. */
 export function format(text: string, args: ReadonlyArray<string | number> = []): string {

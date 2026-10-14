@@ -1,9 +1,9 @@
-import { type Hero, type Item, type ItemKind, type ItemRef, itemDef, startingKit, type World } from '@pd/core';
+import { CLASS_ARMOR, type Hero, type Item, type ItemKind, type ItemRef, itemDef, startingKit, type World } from '@pd/core';
 
 /*
  * The quick slots as Shattered Pixel Dungeon has them (QuickSlot, Toolbar):
- * six of them, as many shown as the screen has room for (four at least on a
- * phone, all six on a wide screen, keys 1 to 6). Each holds a kind of item
+ * six of them, as many shown as the player chose (2, 4 or 6 on a phone, all six
+ * on a wide screen, keys 1 to 6). Each holds a kind of item
  * from the pack; once the last of it is used up the slot keeps it as a
  * placeholder, greyed, and the next one picked up fills it again
  * (QuickSlot.replacePlaceholder). A new run starts with its class's slots
@@ -80,9 +80,11 @@ export const quickKind = (slot: number): ItemKind | null => state.slots[slot] ??
  * or do what its first action in the backpack does ('item': a potion, a scroll, a runestone, a spell... which may
  * want a target or a choice first).
  */
-export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'shoot' | 'use' | 'item' | 'artifact' | null {
+export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'shoot' | 'use' | 'item' | 'artifact' | 'ability' | null {
   const category = itemDef(kind).category;
   if (category === 'artifact') return 'artifact';
+  // ClassArmor.defaultAction: AC_ABILITY.
+  if (CLASS_ARMOR.includes(kind)) return 'ability';
   if (category === 'wand' || kind === 'weapon.magesStaff') return 'zap';
   // SpiritBow.defaultAction: AC_SHOOT.
   if (category === 'bow') return 'shoot';
@@ -109,18 +111,51 @@ export function quickArtifact(hero: Hero, slot: number): { item: Item; ref: Item
   return index >= 0 ? { item: hero.items[index]!, ref: index } : null;
 }
 
+/** The class armour a quick slot shows: the one worn (Shattered's quick slots hold equipped items too), or one in the pack. */
+export function quickClassArmor(hero: Hero, slot: number): Item | null {
+  const kind = state.slots[slot];
+  if (!kind || !CLASS_ARMOR.includes(kind)) return null;
+  if (hero.armor.kind === kind) return hero.armor;
+  return hero.items.find((item) => item.kind === kind) ?? null;
+}
+
 /** QuickSlot.isPlaceholder: the slot keeps a kind none of which is left in the pack (or in hand, for the staff; nor worn, for an artifact). */
 export const isPlaceholder = (hero: Hero, slot: number): boolean =>
-  state.slots[slot] != null && quickIndex(hero, slot) === -1 && quickArtifact(hero, slot) === null;
+  state.slots[slot] != null && quickIndex(hero, slot) === -1 && quickArtifact(hero, slot) === null && quickClassArmor(hero, slot) === null;
+
+/** How many quick slots the toolbar shows on a phone: 2, 4 or 6 (design v19: ShQuickslots), the player's choice in the settings. */
+export type QuickCount = 2 | 4 | 6;
+
+const COUNT_KEY = 'pd-quick-count';
+
+/** The chosen count, kept on this device; 4 until the player says otherwise. */
+export function quickCount(): QuickCount {
+  try {
+    const value = Number(localStorage.getItem(COUNT_KEY));
+    if (value === 2 || value === 4 || value === 6) return value;
+  } catch {
+    // The default.
+  }
+  return 4;
+}
+
+export function setQuickCount(count: QuickCount): void {
+  try {
+    localStorage.setItem(COUNT_KEY, String(count));
+  } catch {
+    // For this session only.
+  }
+  chosenCount = count;
+}
+
+let chosenCount: QuickCount = quickCount();
 
 /**
- * Toolbar.layout: how many slots the screen shows — four on a narrow phone, five from a wider one,
- * six on a wide screen (QuickSlotButton.lastVisible).
+ * Toolbar.layout: how many slots the screen shows — the player's 2, 4 or 6 on a phone (4 in one row with the other
+ * buttons, 6 in a row of their own above them, ShQuickslots), all six on a wide screen (QuickSlotButton.lastVisible).
  */
-export function visibleQuickslots(wide: boolean, width: number): number {
-  if (wide) return QUICKSLOTS;
-  // Toolbar: 4, one more above 152 points of width, another above 170 (a point is about 2.5 px here).
-  return 4 + (width > 380 ? 1 : 0) + (width > 425 ? 1 : 0);
+export function visibleQuickslots(wide: boolean): number {
+  return wide ? QUICKSLOTS : chosenCount;
 }
 
 /** The item a quick slot shows, if any: in the pack, or the staff in hand. */

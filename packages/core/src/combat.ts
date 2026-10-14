@@ -39,6 +39,9 @@ import type { World } from './world';
 import { challengeFactor, chillChar, igniteChar, isMagicImmune, onHurt } from './buffs';
 import { elementsResist, tenacityMultiplier, wealthBonusDrops } from './rings';
 import { bossSlainBeacon, capeTakes, dispelInvisibility, ghostDied, ghostSeesHero } from './artifacts';
+import {
+  allyArmor, allyOwner, bladeBowProc, cloneGlyph, endDeathMark, endureAdjust, endureStrike, fearTheReaper, hawkDodges, hawkProc, natureArrowProc,
+} from './abilities';
 
 /*
  * Combat as in Char.attack: an accuracy roll against an evasion roll (Char.hit:
@@ -112,6 +115,8 @@ export function drRoll(ctx: Ctx, char: Char): number {
   if (own) return own(ctx, char);
   if (char.kind === 'guardian') return guardianArmor(ctx, char, isChallenged(ctx.world, NO_ARMOR));
   if (char.kind === 'ward') return wardArmor(ctx, char);
+  // The abilities' allies: the shadow clone's share of the hero's armour, the decoy's own.
+  if (char.kind === 'shadow' || char.kind === 'ninjaLog') return allyArmor(ctx, char);
   return mobDrRoll(ctx, char);
 }
 
@@ -133,6 +138,9 @@ export interface AttackOverride {
    * bow for its arrow. Its numbers, its enchantment and its own effect make the shot.
    */
   weapon?: Item;
+  /** Char.attack(enemy, dmgMulti, 0, accMulti): the blow's damage roll and the accuracy roll, so many times as much (spectral blades). */
+  damageMulti?: number;
+  accuracyMulti?: number;
   /** A hidden mimic's bite (Mimic.interact): no blow's procs of its own. */
   ambush?: boolean;
 }
@@ -142,6 +150,8 @@ export interface AttackOverride {
  * defender's; infinite evasion beats anything, infinite accuracy anything else.
  */
 export function hitRoll(ctx: Ctx, attacker: Char, defender: Char, skill: number, accMulti = 1, surprised?: boolean): boolean {
+  // HawkAlly.defenseSkill: a spirit hawk dodges outright the blows Swift Spirit has given it.
+  if (!isHero(defender) && defender.kind === 'hawk' && hawkDodges(ctx.world, defender)) return false;
   const defense = defenseSkill(defender, attacker, surprised);
   if (defense >= INFINITE_EVASION) return false;
   if (skill >= INFINITE_ACCURACY) return true;
@@ -179,7 +189,7 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   // before it has its surprise.
   if (isHero(attacker)) dispelInvisibility(ctx, attacker);
   const skill = sure ? INFINITE_ACCURACY : (override.attack ?? attackSkill(ctx, attacker, defender, strike));
-  const hit = hitRoll(ctx, attacker, defender, skill, 1, surprised);
+  const hit = hitRoll(ctx, attacker, defender, skill, override.accuracyMulti ?? 1, surprised);
   if (!hit) {
     parried(ctx, defender);
     ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0, ...struck });
@@ -194,7 +204,12 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   // ChampionEnemy.meleeDamageFactor; Weakness: two thirds as hard (anyone's).
   damage *= meleeDamageFactor(attacker);
   if ((attacker.weakened ?? 0) > 0) damage *= 0.67;
+  // Char.attack(enemy, dmgMulti, 0, accMulti): the blow's damage roll, so many times as much (spectral blades).
+  if (override.damageMulti !== undefined) damage *= override.damageMulti;
   damage = Math.round(damage);
+  // Endure: the stored damage is added to the endurer's next blows; while enduring, a blow on them is halved (and stored).
+  if (isHero(attacker)) damage = endureStrike(attacker, attacker.time, damage);
+  if (isHero(defender)) damage = Math.round(endureAdjust(defender, ctx.floor.now, damage));
   // Hero.defenseProc: earthen armour takes half the blow, before the armour worn.
   if (isHero(defender)) damage = rockArmorAbsorbs(defender, damage);
   if (!isHero(defender)) {
@@ -230,6 +245,8 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     }
     damage = mobAttackProc(ctx, attacker, defender, damage);
     championAttackProc(ctx, attacker, defender, (char) => igniteChar(ctx, char));
+    // HawkAlly.attackProc: its talons blind and cripple.
+    if (attacker.kind === 'hawk') hawkProc(ctx, allyOwner(ctx.world, attacker), defender);
     // CursePersonification.attackProc: each blow throws its victim back a step, if there is room.
     if (attacker.kind === 'curse') shove(ctx, attacker, defender);
     // Undead.attackProc: now and then a blow stuns.
@@ -245,6 +262,8 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     if (thrown) damage = missileProc(ctx, attacker, defender, damage, override.weapon!);
     // (No enchantment works while magic will not: MagicImmune.)
     if (damage >= 0 && isAlive(defender) && !isMagicImmune(attacker)) damage = weaponProc(ctx, attacker, defender, damage, strike, blow);
+    // Talent.onAttackProc, Spirit Blades: a blade's blow may carry the spirit bow's enchantment too.
+    if (damage >= 0 && isAlive(defender)) damage = bladeBowProc(ctx, attacker, defender, damage, blow);
     // FireImbue.proc and FrostImbue.proc: half the blows set the foe alight; every one chills it.
     if (isAlive(defender) && (attacker.buffs?.fireImbue ?? 0) > 0 && ctx.rng.int(2) === 0) igniteChar(ctx, defender);
     if (isAlive(defender) && (attacker.buffs?.frostImbue ?? 0) > 0) chillChar(defender, 3);
@@ -273,6 +292,10 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   hurt(ctx, defender, damage, attacker);
   staffAfter?.();
   if (isHero(attacker) && !isHero(defender)) afterBlow(ctx, attacker, defender, damage, before, blow);
+  // ShadowAlly.defenseProc: with Cloned Armor, the hero's glyph answers a blow on the clone.
+  if (!isHero(defender) && defender.kind === 'shadow' && !isHero(attacker) && isAlive(attacker)) cloneGlyph(ctx, defender, attacker);
+  // SpiritBow.proc under Nature's Power: Nature's Wrath and Wild Momentum.
+  if (isHero(attacker) && thrown && override.weapon && itemDef(override.weapon.kind).category === 'bow') natureArrowProc(ctx, attacker, defender);
   // Pickaxe.proc: a vampire bat slain with the pickaxe leaves its blood on it, as the blacksmith wants.
   if (isHero(attacker) && attacker.weapon?.kind === 'weapon.pickaxe' && !thrown && !isHero(defender) && defender.kind === 'bat' && !isAlive(defender)) {
     attacker.weapon.bloody = true;
@@ -425,6 +448,8 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
     return;
   }
   const by = typeof source === 'string' ? null : source;
+  // Hero.damage: harm that comes from no one is halved while enduring (what comes from a character was, in Char.attack).
+  if (isHero(victim) && typeof source === 'string') damage = Math.round(endureAdjust(victim, ctx.floor.now, damage));
   // WandOfRegrowth.Lotus.damage: nothing harms it.
   if (!isHero(victim) && victim.kind === 'lotus') return;
   // A boss's own Char.damage: invulnerable, deferring, linked... (bosses/*.ts).
@@ -480,6 +505,11 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   const before = victim.hp;
   onHurt(victim);
   victim.hp -= damage;
+  // Char.damage: a monster marked for death does not die at no health, but waits for the mark to end (abilities/rogue.ts).
+  if (!isHero(victim) && victim.deathMark) {
+    if (victim.hp < 0) victim.hp = 0;
+    if (victim.hp === 0) fearTheReaper(ctx, victim);
+  }
   if (!isHero(victim)) {
     // Goo.damage, Tengu.damage…: phases, brackets, the sealed floor's healing (LockedFloor.addTime).
     if (bossRules(victim)) bossAfterDamage(ctx, victim, before, source);
@@ -510,8 +540,23 @@ export function killMob(ctx: Ctx, mob: Mob, by?: string): void {
   mobDied(ctx, mob, by);
 }
 
+/**
+ * Char.die from outside a blow: a hawk whose time ran out, a decoy replaced, a monster whose death mark has ended at no
+ * health. `by` is the hero credited with the kill.
+ */
+export function finishOff(ctx: Ctx, mob: Mob, by?: string): void {
+  if (!ctx.floor.mobs.includes(mob)) return;
+  if (by) {
+    const hero = ctx.world.heroes.find((h) => h.id === by);
+    if (hero) hero.kills++;
+  }
+  mobDied(ctx, mob, by);
+}
+
 function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   mob.hp = 0;
+  // Char.die: something else forces the death of a monster marked for death; the mark goes (and shields the rogue).
+  if (mob.deathMark) endDeathMark(ctx, mob, true);
   // (Already gone: slain as its blow was being dealt, e.g. the King's court as he takes to his throne.)
   const index = ctx.floor.mobs.indexOf(mob);
   if (index < 0) return;

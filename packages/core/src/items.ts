@@ -395,8 +395,6 @@ export const ITEMS = {
   'tome.mastery': { category: 'tome', sprite: S.MASTERY },
   /** Lit, it lets one see further in the dark halls for a while. */
   torch: { category: 'torch', sprite: S.TORCH },
-  /** The King of Dwarves' legacy: it turns the armour worn into the hero's class armour. */
-  'kit.armor': { category: 'kit', sprite: S.KIT },
   /** Brings its bearer back to life once, at a price: everything else in the pack, and all gold. */
   ankh: { category: 'ankh', sprite: S.ANKH },
   /** The Amulet of Yendor, at the very bottom of the dungeon. */
@@ -714,6 +712,9 @@ function unitValue(kind: ItemKind, known: boolean): number {
 }
 
 /** Item.price; unknown potions and scrolls fetch a plain price. 0 for what cannot be sold. */
+/** The four class armours (classArmor.ts's CLASS_ARMOR), which no shop will buy. */
+const CLASS_ARMOR_KINDS: ReadonlySet<string> = new Set(['armor.warrior', 'armor.mage', 'armor.rogue', 'armor.huntress']);
+
 export function itemPrice(item: Item, known: boolean): number {
   const def = itemDef(item.kind);
   // RatSkull.price: a hunting trophy, of a sort.
@@ -734,8 +735,8 @@ export function itemPrice(item: Item, known: boolean): number {
       if (item.kind === 'weapon.pickaxe' || item.kind === 'weapon.magesStaff') return 0;
       return weaponValue(item);
     case 'armor':
-      // Armor.value: the warrior's sealed armour is not for sale.
-      if (item.seal) return 0;
+      // Armor.value: the warrior's sealed armour is not for sale; nor is class armour (ClassArmor.value: 0).
+      if (item.seal || CLASS_ARMOR_KINDS.has(item.kind)) return 0;
       return armorValue(item);
     case 'potion':
     case 'scroll':

@@ -15,6 +15,7 @@ import { DEPTH_CARD_MS } from './cards';
 import { bossApply } from './bossfx';
 import { dressMob, mobEffect } from './mobfx';
 import { BOLT_MS_PER_CELL, wandFx } from './wandfx';
+import { AT } from './abilitytext';
 
 /*
  * What the player sees, as opposed to what the world is: characters slide
@@ -181,7 +182,21 @@ export interface Puppet {
   dim?: number;
   /** LotusSprite: how far its leaves fall about it (cells). */
   reach?: number;
+  /** HeroicLeap's jump (CharSprite.jump): when it began, how long it takes (ms) and how high it arcs (world pixels). */
+  jump?: { start: number; duration: number; height: number };
+  /** ScrollOfTeleportation.appear: faded in from nothing over 0.4 s from this time. */
+  appearAt?: number;
+  /** DeathMark: marked for death (a pulse of red over it). */
+  marked?: boolean;
+  /** A prismatic image: drawn from prismatic.png, its own glass figure with four colour phases (design v19). */
+  prismatic?: boolean;
+  /** An ally of the heroes: marked with a heart over its head (ally-heart.png, design v19). */
+  ally?: boolean;
 }
+
+/** The ethereal chains fly out in this long (design v19: ShMapFx), then pull in this long. */
+export const CHAIN_MS = 600;
+export const CHAIN_PULL_MS = 250;
 
 /** MobSprite.FALL_TIME: how long a monster takes to drop out of sight into a chasm. */
 export const FALL_MS = 1000;
@@ -332,9 +347,20 @@ export class View {
     trail?: string; wide?: boolean;
     /** A thrown weapon flies as MissileSprite has it (gearfx.ts). */
     flight?: Flight;
+    /** A glow over a missile's own pixels (the spectral blades). */
+    tint?: string;
+    /** Leaves pour off it (the spirit bow's arrows under Nature's Power). */
+    leaves?: boolean;
   }> = [];
   /** Shattered's Chains effects: the ethereal chains thrown out from a cell to a cell (effects/Chains.java). */
   chains: Array<{ from: number; to: number; start: number; duration: number }> = [];
+  /** SpellSprite: an icon over a creature that swells in, stays and fades (effects/SpellSprite.java). */
+  spells: Array<{ id: string; frame: number; start: number; tint?: string }> = [];
+  /** A leap about to be seen (the hero's new cell is not yet drawn), and creatures to fade in once they are drawn. */
+  private readonly jumps = new Map<string, { duration: number; height: number }>();
+  private readonly appearing = new Map<string, number>();
+  /** Where the heroes' warp beacons stand on this depth (WarpBeaconTracker.fx pours ward particles there). */
+  beacons: number[] = [];
   /** TimekeepersHourglass.timeFreeze.fx: while my hero freezes time, everything else is drawn still and grey. */
   timeFrozen = false;
 
@@ -352,6 +378,9 @@ export class View {
     this.projectiles = [];
     this.beams = [];
     this.chains = [];
+    this.spells = [];
+    this.jumps.clear();
+    this.appearing.clear();
   }
 
   /** Coming into a region (or setting out): its card, over the band in the middle. */
@@ -418,11 +447,34 @@ export class View {
           alive: hp > 0, removeAt: Infinity, flashUntil: 0, alertUntil: 0, sleeping, pumped, invisible, row: 0, label: '',
           hp, ht,
         };
+        const appeared = this.appearing.get(id);
+        if (appeared !== undefined) {
+          puppet.appearAt = appeared;
+          this.appearing.delete(id);
+        }
         if (!puppet.alive) {
           puppet.anim = 'die';
           puppet.animStart = -1e9;
         }
         this.puppets.set(id, puppet);
+      } else if (puppet.to !== pos && this.jumps.has(id)) {
+        // HeroicLeap: over everything to the new cell, along an arc.
+        const jump = this.jumps.get(id)!;
+        this.jumps.delete(id);
+        const here = this.position(puppet, now);
+        puppet.from = this.cellOf(puppet, now);
+        puppet.fromX = here.x;
+        puppet.fromY = here.y;
+        puppet.aim = pos;
+        puppet.queue = [];
+        puppet.bend = undefined;
+        puppet.moveStart = now;
+        puppet.moveDur = jump.duration;
+        puppet.jump = { start: now, duration: jump.duration, height: jump.height };
+        if (cellX(pos) !== cellX(puppet.to)) puppet.flip = cellX(pos) < cellX(puppet.to);
+        puppet.to = pos;
+        puppet.anim = 'idle';
+        puppet.animStart = now;
       } else if (puppet.to !== pos) {
         const map = world.levels[this.depth]?.map;
         // Where the walker will stand once what is on screen has played out.
@@ -494,6 +546,7 @@ export class View {
         puppet.label = hero.id === myId ? '' : hero.name;
       }
     }
+    this.beacons = world.heroes.flatMap((hero) => (hero.abil?.beacon?.depth === this.depth ? [hero.abil.beacon.pos] : []));
     for (const mob of world.floors[this.depth]?.mobs ?? []) {
       // A mirror image looks like its hero, only fainter.
       // A prismatic image too, its hero's ally.
@@ -503,6 +556,8 @@ export class View {
         place(mob.id, 'mirror', this.assets.heroes[twin.heroClass], false, mob.pos, mob.hp, mob.ht, false, false, true);
         this.puppets.get(mob.id)!.sprite = heroSprite(this.assets, twin.heroClass, this.looks[twin.id]?.skin);
         this.puppets.get(mob.id)!.row = itemDef(twin.armor.kind).tier ?? 0;
+        this.puppets.get(mob.id)!.prismatic = mob.kind === 'prismatic';
+        this.puppets.get(mob.id)!.ally = mob.kind === 'prismatic';
         continue;
       }
       // DM-300 supercharged and a pylon switched on look otherwise (DM300Sprite, PylonSprite).
@@ -515,7 +570,11 @@ export class View {
       puppet.sprite = sprite;
       // WardSprite.updateTier: a ward drawn as its tier is (one a row of its sheet).
       if (mob.kind === 'ward') puppet.row = (mob.ward?.tier ?? 1) - 1;
-      puppet.levitating = (mob.levitating ?? 0) > 0;
+      // ShadowSprite is drawn with the class armour's row of the hero sheets (6); a spirit hawk flies.
+      if (mob.kind === 'shadow') puppet.row = 6;
+      puppet.marked = mob.deathMark !== undefined;
+      puppet.ally = mob.ally === true && mob.kind !== 'ward' && mob.kind !== 'lotus';
+      puppet.levitating = mob.kind === 'hawk' || (mob.levitating ?? 0) > 0;
       puppet.burning = (mob.burning ?? 0) > 0;
       puppet.poisoned = (mob.poison ?? 0) > 0;
       this.condition(puppet, (mob.frozen ?? 0) > 0, (mob.chill ?? 0) > 0, !!mob.corrupted || !!mob.doomed, (mob.shield ?? 0) > 0 || (mob.invulnerable ?? 0) > 0, now);
@@ -562,7 +621,7 @@ export class View {
   }
 
   shoot(
-    from: number, to: number, sprite: number | null, now: number, color?: string, trail?: string, wide?: boolean, crossbow = false,
+    from: number, to: number, sprite: number | null, now: number, color?: string, trail?: string, wide?: boolean, crossbow = false, tint?: string,
   ): void {
     const cells = Math.max(Math.abs(cellX(to) - cellX(from)), Math.abs(cellY(to) - cellY(from)));
     // MagicMissile flies at its own pace (200 pixels a second); a thrown thing faster, as MissileSprite has it (arrows
@@ -571,7 +630,7 @@ export class View {
     const duration = trail
       ? Math.min(600, Math.max(90, Math.hypot(cellX(to) - cellX(from), cellY(to) - cellY(from)) * BOLT_MS_PER_CELL))
       : Math.max(90, (cells * 45) / (flight?.speed ?? 1));
-    this.projectiles.push({ from, to, start: now, duration, sprite, color, trail, wide, ...(flight ? { flight } : {}) });
+    this.projectiles.push({ from, to, start: now, duration, sprite, color, trail, wide, ...(flight ? { flight } : {}), ...(tint ? { tint } : {}) });
   }
 
   /** CharSprite.add/remove(State): the conditions a creature is shown under, with their comings and goings. */
@@ -627,10 +686,18 @@ export class View {
 
   /** Interpolated position in world pixels. */
   position(puppet: Puppet, now: number): { x: number; y: number } {
-    return segment(
+    const at = segment(
       puppet.fromX ?? cellX(puppet.from) * TILE, puppet.fromY ?? cellY(puppet.from) * TILE, puppet.aim ?? puppet.to,
       puppet.moveStart, puppet.moveDur ?? this.stepMs, puppet.bend, now,
     );
+    // JumpTweener: up and over, higher the farther it goes.
+    const jump = puppet.jump;
+    if (jump) {
+      const k = (now - jump.start) / jump.duration;
+      if (k >= 1) delete puppet.jump;
+      else if (k > 0) at.y -= 4 * jump.height * k * (1 - k);
+    }
+    return at;
   }
 
   private cellOf(puppet: Puppet, now: number): number {
@@ -669,6 +736,108 @@ export class View {
       return mob ? t.mobs[mob.kind] : '';
     }
     return heroById(world, id)?.name ?? '';
+  }
+
+  /** An armour ability used (Shattered's HeroicLeap, Shockwave... each by its own effects). */
+  private ability(effect: Extract<Effect, { type: 'ability' }>, myId: string, now: number): void {
+    if (effect.depth !== this.depth) return;
+    const at = this.placeOf(effect.hero, now);
+    const hero = effect.hero;
+    const trueDistance = Math.hypot(cellX(effect.to) - cellX(effect.from), cellY(effect.to) - cellY(effect.from));
+    switch (effect.ability) {
+      case 'heroicLeap': {
+        // CharSprite.jump: a tenth of a second a cell, an arc two pixels high for each; the ground shakes where it lands.
+        const cells = Math.max(1, trueDistance);
+        const duration = cells * 100;
+        this.jumps.set(hero, { duration, height: cells * 2 });
+        const landing = cellMiddle(effect.to);
+        wandFx.later(duration, now, (landed) => {
+          wandFx.ripple(landing.x, landing.y, 3, landed);
+          audio.play('blast', 1, 0.5, landing);
+        });
+        break;
+      }
+      case 'shockwave': {
+        // MagicMissile.FORCE_CONE out to every outer ray's tip, BLAST at half pitch.
+        this.zapper(effect.from, effect.to, now);
+        for (const cell of effect.cells ?? []) this.shoot(effect.from, cell, null, now, BOLT_COLORS.force, 'force', true);
+        audio.play('blast', 0.5, 1, at);
+        break;
+      }
+      case 'endure': {
+        if (effect.cells) {
+          // EndureTracker.endEnduring: the scream, CHALLENGE, and the berserk icon over the hero.
+          audio.play('challenge', 1, 1, at);
+          this.spells.push({ id: hero, frame: 3, start: now });
+          this.float(hero, String(effect.cells[0]), COLORS.warning, now);
+        } else {
+          this.busy(hero, now);
+        }
+        break;
+      }
+      case 'elementalBlast': {
+        // A missile of the wand's kind out to every tip of the circle; CHARGEUP as the hero gathers.
+        this.busy(hero, now);
+        const bolt = effect.bolt ?? 'magic';
+        const trail = bolt === 'lightning' ? 'spark' : bolt === 'beam' ? 'corruption' : bolt;
+        const tips = effect.cells ?? [];
+        const step = tips.length > 24 ? 2 : 1;
+        for (let i = 0; i < tips.length; i += step) this.shoot(effect.from, tips[i]!, null, now, BOLT_COLORS[bolt], trail, true);
+        audio.play('chargeup', 1, 1, at);
+        break;
+      }
+      case 'wildMagic':
+        // (Each wand's own bolt is shown as it is zapped.)
+        break;
+      case 'warpBeacon':
+        if (effect.from === effect.to || (effect.hero === myId && trueDistance === 0)) {
+          // Placing: the hero operates, TELEPORT.
+          this.busy(hero, now);
+        } else {
+          // ScrollOfTeleportation.appear: there at once, fading in over 0.4 s.
+          this.vanish(hero, now);
+        }
+        audio.play('teleport', 1, 1, cellMiddle(effect.to));
+        break;
+      case 'smokeBomb':
+        // SmokeBomb: a puff of wool where the rogue was, PUFF; the rogue appears afresh (TELEPORT).
+        this.vanish(hero, now);
+        audio.play('puff', 1, 1, cellMiddle(effect.from));
+        audio.play('teleport', 1, 1, cellMiddle(effect.to));
+        break;
+      case 'deathMark':
+        this.zapper(effect.from, effect.to, now);
+        break;
+      case 'shadowClone':
+        // ShadowAlly.appear: PUFF and smoke where the clone comes.
+        audio.play('puff', 1, 1, cellMiddle(effect.to));
+        break;
+      case 'perfectCopy':
+        audio.play('puff', 1, 1, cellMiddle(effect.to));
+        audio.play('puff', 1, 1, cellMiddle(effect.from));
+        break;
+      case 'spectralBlades':
+        // A shuriken at every target, glowing pale; the hero zaps.
+        this.zapper(effect.from, effect.to, now);
+        for (const cell of effect.cells ?? []) this.shoot(effect.from, cell, S.SHURIKEN, now, undefined, undefined, undefined, false, 'rgb(150, 255, 255)');
+        break;
+      case 'naturesPower':
+        // NaturesPower: the hero operates, CHARGEUP, leaves burst round them.
+        this.busy(hero, now);
+        audio.play('chargeup', 1, 1, at);
+        break;
+      case 'spiritHawk':
+        // ScrollOfTeleportation.appear for the hawk: TELEPORT, fading in.
+        if (effect.mob) this.appearing.set(effect.mob, now);
+        audio.play('teleport', 1, 1, cellMiddle(effect.to));
+        break;
+    }
+  }
+
+  /** A character gone from where it was and fading in where it is now (ScrollOfTeleportation.appear). */
+  private vanish(id: string, now: number): void {
+    this.puppets.delete(id);
+    this.appearing.set(id, now);
   }
 
   apply(effects: readonly Effect[], world: World, myId: string, now: number): void {
@@ -1108,16 +1277,45 @@ export class View {
           if (effect.hero === myId) this.say(t.transmuted(itemName(world, effect.from), itemName(world, effect.to)), COLORS.highlight, now);
           break;
         case 'classArmor':
-          audio.play('evoke');
-          if (effect.hero === myId) this.say(t.classArmorMade(itemName(world, effect.item)), COLORS.highlight, now);
+          // KingsCrown.upgradeArmor: a burst of crown specks, the armour changes (MASTERY).
+          audio.play('mastery');
+          this.busy(effect.hero, now);
+          if (effect.hero === myId) this.say(t.crownUsed, COLORS.highlight, now);
           break;
-        case 'special':
-          audio.play(effect.ability === 'smokeBomb' ? 'puff' : effect.ability === 'moltenEarth' ? 'burning' : effect.ability === 'leap' ? 'rocks' : 'miss');
-          if (effect.ability === 'smokeBomb') {
-            this.flashes.push({ cell: effect.from, start: now, color: '200, 200, 200', duration: 600 });
-            this.puppets.delete(effect.hero);
+        case 'classArmorMoved':
+          // ClassArmor.AC_TRANSFER: EVOKE, and the crown's specks.
+          audio.play('evoke');
+          this.busy(effect.hero, now);
+          if (effect.hero === myId) this.say(artText('items.armor.classarmor.transfer_complete'), COLORS.highlight, now);
+          break;
+        case 'ability':
+          this.ability(effect, myId, now);
+          break;
+        case 'telefrag': {
+          // WarpBeacon: HIT_CRUSH and HIT_STRONG where the hero lands on someone.
+          if (effect.depth !== this.depth) break;
+          audio.play('hit_crush', 1, 1, cellMiddle(effect.pos));
+          audio.play('hit_strong', 1, 1, cellMiddle(effect.pos));
+          break;
+        }
+        case 'deathMarked': {
+          if (effect.depth !== this.depth) break;
+          const puppet = this.puppets.get(effect.mob);
+          if (effect.on) {
+            // The mark is announced (Buff.announced): its name over the monster.
+            this.float(effect.mob, capital(AT.markedTitle), COLORS.warning, now, true);
+            audio.play('debuff', 1, 1, this.placeOf(effect.mob, now));
+          } else if (effect.died && puppet) {
+            // DeathMarkTracker.detach: it flashes, bursts into blood, and dies on a stab and a heavy blow.
+            puppet.flashUntil = now + 260;
+            audio.play('hit_stab', 1, 1, this.placeOf(effect.mob, now));
+            audio.play('hit_strong', 1, 1, this.placeOf(effect.mob, now));
           }
-          if (effect.hero === myId) this.say(t.specialUsed[effect.ability]!, COLORS.highlight, now);
+          break;
+        }
+        case 'talentUp':
+          // Talent upgraded: the level-up chime.
+          if (effect.hero === myId) audio.play('levelup');
           break;
         case 'mined':
           // Hero.actMine: a vein of gold struck out (EVOKE).
@@ -1153,6 +1351,10 @@ export class View {
           break;
         case 'missile':
           if (effect.depth === this.depth) this.shoot(effect.from, effect.to, effect.sprite, now);
+          // SpiritBow.emitter under Nature's Power: leaves pour off the arrow in flight.
+          if (effect.depth === this.depth && effect.sprite === S.SPIRIT_ARROW && world.heroes.some((h) => h.depth === this.depth && h.abil?.nature)) {
+            this.projectiles[this.projectiles.length - 1]!.leaves = true;
+          }
           // SpiritArrow.throwSound: the spirit bow's own.
           if (effect.sprite === S.SPIRIT_ARROW) audio.play('atk_spiritbow', 0.87 + Math.random() * 0.28);
           else audio.play('miss', 1.4, 0.6);
@@ -1685,12 +1887,12 @@ export class View {
           this.busy(effect.hero, now);
           break;
         case 'chained':
-          // EtherealChains: Sounds.CHAINS, and the ethereal chain thrown out (Chains: 200 ms, and 50 a cell).
+          // EtherealChains: Sounds.CHAINS, and the ethereal chain thrown out (design v19: links fly out in 600 ms).
           if (effect.depth !== this.depth) break;
           audio.play('chains', 1, 1, cellMiddle(effect.from));
           this.chains.push({
             from: effect.from, to: effect.to, start: now,
-            duration: 200 + (Math.hypot(cellX(effect.to) - cellX(effect.from), cellY(effect.to) - cellY(effect.from)) * TILE * 1000) / 320,
+            duration: CHAIN_MS + CHAIN_PULL_MS,
           });
           break;
         case 'ghostSummoned':

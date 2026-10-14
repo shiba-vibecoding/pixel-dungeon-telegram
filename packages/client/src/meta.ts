@@ -8,6 +8,7 @@ import { fx } from './fx';
 import { capitalize, lang, locale, t } from './i18n';
 import { itemInfo, itemName } from './itemtext';
 import { type FxMode, quality } from './quality';
+import { type QuickCount, quickCount, setQuickCount } from './quickslot';
 import { el, info, portrait, show, sprites, windowOf } from './screens';
 import { mobDescription } from './examine';
 import { canFullscreen, haptics, isFullscreen, openExternal, setFullscreen } from './telegram';
@@ -195,6 +196,12 @@ export function showSettings(options: SettingsOptions): void {
       fxNote,
     ),
     stepsRow(t.meta.shake, () => quality.shake, (v) => quality.setShake(v), () => fx.shake(3, 240, fx.now)),
+    el(
+      'div',
+      { className: 'pd-set-row' },
+      el('span', { className: 'pd-info', textContent: t.meta.quickslots }),
+      segments([['2', '2'], ['4', '4'], ['6', '6']] as const, String(quickCount()) as '2' | '4' | '6', (n) => setQuickCount(Number(n) as QuickCount), true),
+    ),
     canFullscreen() && switchRow(t.fullscreen, null, isFullscreen(), (on) => setFullscreen(on)),
     el(
       'div',
@@ -429,8 +436,33 @@ const LANDMARK_ICONS: Readonly<Record<Landmark, { feature: Feature } | { item: n
   wandmaker: { feature: Feature.Wandmaker }, troll: { feature: Feature.Troll }, imp: { feature: Feature.Imp },
 };
 
-function noteIcon(landmark: Landmark): HTMLElement {
-  const icon = LANDMARK_ICONS[landmark];
+/**
+ * journal2.png (design v19), by a note's key: marks the journal.png lacks. The imp's shop is the shop on the twentieth
+ * depth (Notes.LandmarkRecord.icon). The lost backpack, a distant well, the demon lair and the dark, large, trap and
+ * secret floors have their marks here ahead of the notes that will name them (the levels stream): a note with one of
+ * these keys picks its mark up by itself.
+ */
+const MARK2: Readonly<Record<string, number>> = {
+  shop: 0, impShop: 1, ratKing: 2, demonSpawner: 3, lostPack: 4, beaconLocation: 5, distantWell: 6,
+  chasmFloor: 7, waterFloor: 8, grassFloor: 9, darkFloor: 10, largeFloor: 11, trapsFloor: 12, secretsFloor: 13,
+};
+
+/** Names for notes whose keys the core does not make yet (journal2.json's): a note with one of them reads right at once. */
+const MARK2_NAMES: Readonly<Record<string, { ru: string; en: string }>> = {
+  lostPack: { ru: 'потерянный рюкзак', en: 'lost backpack' }, distantWell: { ru: 'дальний колодец', en: 'distant well' },
+  demonSpawner: { ru: 'логово демонов', en: 'demon spawner' }, darkFloor: { ru: 'этаж: тьма', en: 'floor: dark' },
+  largeFloor: { ru: 'этаж: большой', en: 'floor: large' }, trapsFloor: { ru: 'этаж: ловушки', en: 'floor: traps' },
+  secretsFloor: { ru: 'этаж: тайники', en: 'floor: secrets' },
+};
+
+function noteIcon(landmark: string, depth: number): HTMLElement {
+  const mark = MARK2[landmark === 'shop' && depth === 20 ? 'impShop' : landmark];
+  if (mark !== undefined) {
+    const node = el('i', { className: 'pd-jicon2' });
+    node.dataset.j2 = String(mark);
+    return node;
+  }
+  const icon = LANDMARK_ICONS[landmark as Landmark];
   if (icon && 'item' in icon) {
     const node = el('i', { className: 'pd-item' });
     node.dataset.i = String(icon.item);
@@ -491,8 +523,8 @@ function notesView(world: World, hero: Hero): HTMLElement {
       list.append(el(
         'div',
         { className: `pd-jrow${depth === hero.depth ? ' here' : ''}` },
-        noteIcon(note.landmark),
-        el('span', { className: 'pd-jname', textContent: capitalize(t.hero.landmarks[note.landmark]) }),
+        noteIcon(note.landmark, depth),
+        el('span', { className: 'pd-jname', textContent: capitalize((t.hero.landmarks as Record<string, string>)[note.landmark] ?? MARK2_NAMES[note.landmark]?.[lang] ?? note.landmark) }),
       ));
     }
     for (const key of keys.filter((k) => k.depth === depth)) {

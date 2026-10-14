@@ -5,17 +5,22 @@ import {
   BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   ORE_WANTED, type PlanStep, PLANT_KINDS, type SmithLine, T,
   visibleCells, chargesKnown, staffReach, WIDTH,
-  type World, charAt, swapsWithHero, canReach, heroReach, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
+  type World, charAt, swapsWithHero, canReach, copyReach, heroReach, isClassArmor, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
+import { loop } from './lifecycle';
+import { reloadForUpdate } from './update';
+import { preloadMapFx } from './shfx';
 import './game.css';
 import { bossTile, mobDescription, mobName, plantText, tileText, wellText } from './examine';
 import {
-  chooseQuickslot, isPlaceholder, quickArtifact, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
+  chooseQuickslot, isPlaceholder, quickArtifact, quickClassArmor, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
 } from './quickslot';
 import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookChoice } from './artifactui';
 import { artText, chargeOf } from './artifacttext';
+import { armorStatus } from './abilitytext';
+import { showTalents, startAbility } from './abilityui';
 import { glowOf } from './gearfx';
 import { fx } from './fx';
 import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
@@ -77,7 +82,7 @@ import {
   homeScreenStatus, addToHomeScreen,
 } from './telegram';
 import { startReporting } from './report';
-import { alchemyOpen, refreshAlchemy, showAlchemy } from './alchemyui';
+import { alchemyOpen, noteCrafted, refreshAlchemy, showAlchemy } from './alchemyui';
 import { STEP_MS, TILE, View } from './view';
 import { bossBar, cellMarks, drawBossGround, drawBossTop } from './bossfx';
 
@@ -153,6 +158,8 @@ const assets = await loadAssets(`${import.meta.env.BASE_URL}assets/`, (done) => 
 await Promise.all([document.fonts.load('18px Galmuri11'), document.fonts.load('15px Galmuri9')]).catch(() => undefined);
 loading.remove();
 setAssets(assets);
+// The map's effects of design v19 (bolts, the glass image, hearts, chains): loaded behind the first screen.
+preloadMapFx();
 
 const view = new View(assets);
 /** The world answering touch: doors, grass, water, what falls and what is taken (motion.ts). */
@@ -576,7 +583,7 @@ async function startRun(key: string, mode: 'dungeon' | 'arena', fresh: boolean, 
       ? { run: carried.run, world: carried.world }
       : await api.start(slot, heroClass, chosen);
     if (answer === 'rules') {
-      location.reload();
+      reloadForUpdate();
       return;
     }
     if (typeof answer === 'string') {
@@ -932,6 +939,14 @@ function toggleQuickslot(slot = 0): void {
     if (run) run();
     return;
   }
+  // ClassArmor.defaultAction: the armour's ability (worn; from the pack, it says it is not on).
+  const armor = quickClassArmor(me, slot);
+  if (armor) {
+    walk.reset();
+    if (armor !== me.armor) view.say(artText('items.armor.classarmor.not_equipped'), '#cccccc');
+    else useAbilityNow();
+    return;
+  }
   const index = quickIndex(me, slot);
   const item = quickItem(me, slot);
   if (!item) return;
@@ -946,7 +961,7 @@ function toggleQuickslot(slot = 0): void {
   if (use === 'use') send({ type: 'use', item: index }, performance.now());
   // Shattered's potions, scrolls, stones, spells...: whatever the item's first action is (it may want a target or a choice).
   else if (use === 'item') quickAction(backpackOptions(world!, me), index);
-  else if (use && use !== 'artifact') aim = { index, kind: use };
+  else if (use && use !== 'artifact' && use !== 'ability') aim = { index, kind: use };
 }
 
 /**
@@ -956,7 +971,8 @@ function toggleQuickslot(slot = 0): void {
 function inReach(world: World, me: Hero, pos: number): boolean {
   if (adjacent(me.pos, pos)) return true;
   const there = charAt(world, me.depth, pos);
-  if (there && 'kind' in there && there.ally) return false;
+  // ShadowAlly.canInteract: with Perfect Copy the clone trades places from a few cells away.
+  if (there && 'kind' in there && there.ally) return copyReach(world, me, there);
   return canReach(world, levelAt(world, me.depth), me, pos, Math.max(heroReach(me), staffReach(me)));
 }
 
@@ -984,6 +1000,7 @@ function nextDanger(): void {
   pan.y = (cellY(mob.pos) - cellY(me.pos)) * TILE;
   pan.home = false;
   feedback.aim(mob.pos, true, fx.now, mob.id);
+  feedback.danger(mob.id, mob.pos, fx.now);
 }
 
 /**
@@ -1671,13 +1688,33 @@ function showBuff(name: BuffName, turns?: number): void {
           : name === 'stealth' ? artText('cloakofshadows$cloakstealth.desc', [turns ?? 0])
           : name === 'timeFreeze' ? artText('timekeepershourglass$timefreeze.desc', [turns ?? 0])
           : name === 'thorns' ? artText('capeofthorns$thorns.desc', [turns ?? 0])
-          : name === 'foresight' ? artText('talismanofforesight$foresight.desc') || null : null;
+          : name === 'foresight' ? artText('talismanofforesight$foresight.desc') || null
+          // The armour abilities': Endure's stored blows, Nature's Power.
+          : name === 'endure' && me?.abil?.endure ? artText('actors.hero.abilities.warrior.endure$enduretracker.desc', [me.abil.endure.damageBonus, me.abil.endure.hitsLeft])
+          : name === 'naturesPower' ? artText('actors.hero.abilities.huntress.naturespower$naturespowertracker.desc', [turns ?? 0]) : null;
   if (long) {
     walk.reset();
     showInfo(t.buffs[name], long.split('\n\n'), hideOverlay);
     return;
   }
   toast(turns ? `${t.buffs[name]} (${t.turnsLeft(turns)})` : t.buffs[name]);
+}
+
+/** ClassArmor.execute(AC_ABILITY) from a quick slot: the ability of the armour worn, aimed at a cell where it wants one. */
+function useAbilityNow(): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me || !isAlive(me)) return;
+  walk.reset();
+  startAbility({
+    world, hero: me,
+    send: (action) => send(action, performance.now()),
+    aim: (prompt) => {
+      aim = { index: -1, kind: 'special' };
+      toast(prompt);
+    },
+    back: hideOverlay,
+  });
 }
 
 function openHero(): void {
@@ -1688,6 +1725,15 @@ function openHero(): void {
   aim = null;
   showHero({
     hero: me, buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
+    onTalents: () => showTalents({
+      world, hero: me,
+      act: (action) => {
+        hideOverlay();
+        send(action, performance.now());
+      },
+      stay: (action) => send(action, performance.now()),
+      back: openHero,
+    }),
     looks: looksRows(me.heroClass, (shelf) => showMart({ heroClass: me.heroClass, shelf, onClose: openHero })),
   });
 }
@@ -2103,7 +2149,7 @@ function examineCell(pos: number): void {
   if (char && 'kind' in char) {
     const state = char.state === 'passive' ? '' : t.mobStates[char.state] ?? '';
     const health = char.state === 'passive' ? '' : t.examineHealth(Math.max(0, char.hp), char.ht);
-    showInfo(mobName(char, t.mobs[char.kind]), [...mobDescription(char, (item) => itemName(world, item)), state], hideOverlay, {
+    showInfo(mobName(char, t.mobs[char.kind]), [...mobDescription(char, (item) => itemName(world, item), world.floors[me.depth]?.now ?? 0), state], hideOverlay, {
       icon: portrait(char.kind),
       ...(health ? { health: [Math.max(0, char.hp), char.ht] as const } : {}),
     });
@@ -2468,8 +2514,25 @@ function noteFrame(now: number): void {
   }
 }
 
-function frame(now: number): void {
-  requestAnimationFrame(frame);
+/**
+ * The game came back from being out of sight (a hidden tab, Telegram Desktop's minimised window): clocks measured
+ * between frames start over (the long gap must not look like a struggling phone or a jump in the visual clock),
+ * the canvas is sized afresh (a WebView may have dropped its pixels) and the map is baked and drawn anew.
+ */
+function restoreAfterPause(): void {
+  lastFrame = 0;
+  lastVisual = 0;
+  lastUnderWindow = 0;
+  frames.prev = 0;
+  frames.since = 0;
+  bakedKey = '';
+  bakedFor = '';
+  vignetteState = '';
+  resize();
+}
+
+function frame(now: number, resumed = false): void {
+  if (resumed) restoreAfterPause();
   noteFrame(now);
   if (session && windowOverMap()) {
     if (now - lastUnderWindow < UNDER_WINDOW_MS) return;
@@ -2630,6 +2693,7 @@ function tick(now: number): void {
     if (dangerTarget && !enemiesInSight.includes(dangerTarget)) {
       dangerTarget = null;
       dangerIndex = -1;
+      feedback.clearDanger();
     }
   }
 
@@ -2640,6 +2704,7 @@ function tick(now: number): void {
     const mine = session.myId;
     if (effects.some((e) => ('hero' in e && e.hero === mine) || ('who' in e && e.who === mine))) refreshBackpack(world, me);
     // The pot's window, if open, shows the pack and the energy as they are now.
+    for (const e of effects) if (e.type === 'crafted' && e.hero === mine && alchemyOpen()) noteCrafted(e.item);
     if (alchemyOpen() && effects.some((e) => (e.type === 'crafted' || e.type === 'energized' || e.type === 'catalyst' || e.type === 'interrupted') && e.hero === mine)) refreshAlchemy();
     for (const effect of effects) effectFx(effect, view, world, session.myId, vnow);
     motion.effects(effects, world, me.depth, (e) => itemSprite(e.item, world.run.labels));
@@ -2874,19 +2939,19 @@ function tick(now: number): void {
     const kind = quickKind(slot);
     if (!kind) return null;
     // An artifact may be worn: Shattered's quick slots hold it all the same; the mage's staff is zapped from the hand (quickItem).
-    const item = quickArtifact(me, slot)?.item ?? quickItem(me, slot);
+    const item = quickArtifact(me, slot)?.item ?? quickClassArmor(me, slot) ?? quickItem(me, slot);
     if (!item || isPlaceholder(me, slot)) {
       return { sprite: itemSprite({ kind, qty: 1, level: 0 }, world.run.labels), label: '', aiming: false, placeholder: true };
     }
     return {
       sprite: itemSprite(item, world.run.labels),
-      label: chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
+      label: isClassArmor(item) ? armorStatus(item) : chargesOf(item) ?? (item.qty > 1 ? String(item.qty) : ''),
       aiming: aim !== null && (aim.kind === 'artifact' ? itemAt(me, aim.action.item) === item : aim.index === quickIndex(me, slot)),
-      charge: itemDef(item.kind).category === 'artifact' ? chargeOf(world, me, item) : null,
+      charge: itemDef(item.kind).category === 'artifact' ? chargeOf(world, me, item) : isClassArmor(item) ? { share: Math.min(1, (item.charge ?? 0) / 100), full: (item.charge ?? 0) >= 100 } : null,
       wear: wearOf(world, item),
     };
   };
-  const quick = Array.from({ length: visibleQuickslots(hud.wide, innerWidth) }, (_, slot) => quickState(slot));
+  const quick = Array.from({ length: visibleQuickslots(hud.wide) }, (_, slot) => quickState(slot));
   const cancelChoice = (): void => {
     aim = null;
     examining = false;
@@ -3195,7 +3260,7 @@ function shareChoices(card: () => Promise<ShareCard>, text: string, start: 'dail
   return choices;
 }
 
-requestAnimationFrame(frame);
+loop(frame);
 
 addEventListener('pd-run-restored', () => toast(t.ranked.restored));
 
@@ -3230,5 +3295,5 @@ if (import.meta.env.DEV) {
       await new Promise((resolve) => setTimeout(resolve, 33));
     }
   };
-  Object.assign(window, { __pd: { get session() { return session; }, camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
+  Object.assign(window, { __pd: { get session() { return session; }, openAlchemy, openBackpack, camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
 }

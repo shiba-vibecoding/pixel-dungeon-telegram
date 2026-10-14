@@ -1,7 +1,7 @@
 import { type Hero, isAlive, type Mob, type MobKind } from '../actors';
 import { charAt, type Char, type Ctx, enterCell, type Floor, freeCellNear, heroesOn, isHero, isPassable, leaveCell, observe } from '../floor';
 import { type Ballistica } from '../ballistica';
-import { LENGTH, WIDTH } from '../level/geometry';
+import { LENGTH, trueDistance as cellTrueDistance, WIDTH } from '../level/geometry';
 import { F, hasFlag } from '../level/terrain';
 import type { Rng } from '../rng';
 import type { BossFloor, BossMob, Timed } from './state';
@@ -34,12 +34,8 @@ export function normalFloat(rng: Rng, min: number, max: number): number {
   return f32(min + f32(f32(rng.floatMax(f32(max - min)) + rng.floatMax(f32(max - min))) / 2));
 }
 
-/** Level.trueDistance: the straight-line distance between two cells. */
-export function trueDistance(a: number, b: number): number {
-  const dx = (a % WIDTH) - (b % WIDTH);
-  const dy = Math.trunc(a / WIDTH) - Math.trunc(b / WIDTH);
-  return f32(Math.sqrt(dx * dx + dy * dy));
-}
+/** Level.trueDistance, a float as Shattered's is (geometry.ts: the square root, rounded the same everywhere). */
+export const trueDistance = (a: number, b: number): number => f32(cellTrueDistance(a, b));
 
 /** Level.insideMap. */
 export const insideMap = (cell: number): boolean =>

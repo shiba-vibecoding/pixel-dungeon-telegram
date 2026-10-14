@@ -2,7 +2,8 @@ import { type Hero, isAlive } from '../actors';
 import { type Ctx, exploredCells, heroView } from '../floor';
 import type { Item } from '../items';
 import { discoverable } from '../level/flags';
-import { adjacent, cellX, cellY, HEIGHT, LENGTH, NEIGHBOURS9, WIDTH } from '../level/geometry';
+import { adjacent, cellX, cellY, HEIGHT, LENGTH, NEIGHBOURS9, trueDistance, WIDTH } from '../level/geometry';
+import { dpow } from '../fmath';
 import { discover, F, hasFlag, T } from '../level/terrain';
 import { trapAt } from '../traps';
 import type { World } from '../world';
@@ -13,7 +14,6 @@ import { dispelInvisibility } from './invisibility';
 import { artifactChargeMultiplier, artifactProc, magicImmune, onArtifactUsed, regenOn } from './seams';
 
 /** PathFinder's true distance: straight across, not in steps. */
-const trueDistance = (a: number, b: number): number => Math.hypot(cellX(a) - cellX(b), cellY(a) - cellY(b));
 
 /*
  * TalismanOfForesight: worn, it warns of traps hidden nearby, and charges
@@ -61,7 +61,7 @@ export function scry(ctx: Ctx, hero: Hero, item: Item, cell: number): number {
     dist = trueDistance(hero.pos, target);
   }
   // Two hundred degrees, eight in a hundred less a cell away.
-  const angle = Math.round(200 * 0.92 ** dist);
+  const angle = Math.round(200 * dpow(0.92, dist));
   // ConeAOE(core, degrees): as long as the core ray, its own params.
   const { cells } = cone(ctx, ballistica(ctx, hero.pos, target, STOP_TARGET), Infinity, angle, STOP_TARGET);
   const { world, level, floor } = ctx;

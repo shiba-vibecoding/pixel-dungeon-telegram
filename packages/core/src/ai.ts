@@ -35,6 +35,7 @@ import {
 } from './mobskills';
 import { distanceMap, getStep as pathStep, getStepBack, pathLength, route } from './pathfinder';
 import { createMobs, dealMob, exoticChanceMultiplier, respawn, respawnCell, TIME_TO_RESPAWN } from './spawner';
+import { directableAct } from './abilities';
 
 /*
  * Monster behaviour, ported from Shattered's Mob: sleeping monsters may notice
@@ -212,6 +213,16 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     }
   } else {
     freeActs.set(mob, { at: mob.time, count: 0 });
+  }
+  // The armour abilities' allies (DirectableAlly): the shadow clone and the spirit hawk; the decoy only stands there.
+  if (mob.kind === 'shadow' || mob.kind === 'hawk') {
+    if (!mobConditions(ctx, mob)) directableAct(ctx, mob);
+    else spend(mob, TICK);
+    return;
+  }
+  if (mob.kind === 'ninjaLog') {
+    spend(mob, TICK);
+    return;
   }
   // Alchemy's allies (those that follow a hero: an enthralled monster, a prismatic image, a summoned elemental); the
   // wands' allies go the monsters' way, against the monsters (chooseFoe).

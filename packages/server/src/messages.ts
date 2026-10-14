@@ -1,5 +1,5 @@
 import {
-  type Action, ARTIFACT_USES, type EffectId, MISC_SLOTS, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
+  type Action, ARMOR_TALENTS, ARTIFACT_USES, type EffectId, MISC_SLOTS, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
   type SubClass,
 } from '@pd/core';
 
@@ -30,6 +30,9 @@ const oneOf = <T extends string>(value: unknown, options: readonly T[]): T | nul
   (options as readonly unknown[]).includes(value) ? (value as T) : null;
 /** A backpack slot, the weapon, the armour or a worn ring (the core's ItemRef). */
 const itemRef = (value: unknown): ItemRef | null => (isItemRef(value) && (typeof value !== 'number' || slot(value) !== null) ? value : null);
+
+/** The talents a point can go into (the core checks they are the hero's own). */
+const TALENT_IDS = ARMOR_TALENTS;
 
 const ALL_SUBCLASSES: readonly SubClass[] = Object.values(SUBCLASSES).flat();
 
@@ -199,9 +202,29 @@ export function sanitizeAction(raw: unknown): Action | null {
       return item === null || !subclass ? null : { type: 'master', item, subclass };
     }
     case 'special': {
-      if (a.target === undefined) return { type: 'special' };
-      const target = cell(a.target);
-      return target === null ? null : { type: 'special', target };
+      // The class armour's ability: the cell it is aimed at, and the warp beacon's choice (0 warp, 1 clear).
+      const action: Action = { type: 'special' };
+      if (a.target !== undefined) {
+        const target = cell(a.target);
+        if (target === null) return null;
+        action.target = target;
+      }
+      if (a.choice !== undefined) {
+        if (!isInt(a.choice, 0, 1)) return null;
+        action.choice = a.choice;
+      }
+      return action;
+    }
+    case 'transfer': {
+      // ClassArmor.AC_TRANSFER: the class armour, and the armour whose properties it takes over.
+      const to = sealSource(a.to);
+      const from = sealSource(a.from);
+      return to === null || from === null ? null : { type: 'transfer', to, from };
+    }
+    case 'talent': {
+      // A point in one of the hero's talents.
+      const talent = oneOf(a.talent, TALENT_IDS);
+      return talent ? { type: 'talent', talent } : null;
     }
     case 'augment': {
       // StoneOfAugmentation: the stone, what it is used on, and how.

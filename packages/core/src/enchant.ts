@@ -1,3 +1,4 @@
+import { abilityProcBonus } from './abilities';
 import { rollMob } from './spawner';
 import {
   baseKind, beckon, createMob, enchantLevel, type Hero, heroAttackDelay, heroDefenseSkill, isAlive, isShopkeeper, isStarving, type Mob, type MobKind,
@@ -14,7 +15,7 @@ import { durabilityPerUse, isDart, isMissile } from './missiles';
 import { plant, SEED_PLANTS, stepOnPlant } from './plants';
 import { seedGas } from './gas';
 import { gearLevel } from './weapons';
-import { cellX, cellY, distance, LENGTH, NEIGHBOURS8, NEIGHBOURS9 } from './level/geometry';
+import { cellX, cellY, distance, LENGTH, NEIGHBOURS8, NEIGHBOURS9, squaredDistance } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import { burst, immuneTo } from './traps';
 import { chill } from './status';
@@ -47,7 +48,7 @@ export const ADRENALINE_TURNS = 10;
  * 1 for the rest. Seam: a berserker's rage, the runic blade's slash, smite, the elemental strike, the spirit blades and
  * striking wave talents (classes, talents, abilities) would raise it.
  */
-export const procMultiplier = (char: Char): number => (isHero(char) ? enchantPowerMultiplier(char) : 1);
+export const procMultiplier = (char: Char): number => (isHero(char) ? enchantPowerMultiplier(char) + abilityProcBonus(char) : 1);
 
 /* Who is who (Char.Property; a seam for the mobs stream's own) */
 
@@ -156,11 +157,10 @@ function explosiveCurse(ctx: Ctx, hero: Hero, mob: Char, weapon: Item): void {
   else if (before > 10 && after <= 10) ctx.effects.push({ type: 'explosive', hero: hero.id, item: weapon, state: 'hot' });
   else if (after <= 0) {
     let pos = -1;
-    const trueDistance = (a: number, b: number): number => Math.hypot(cellX(a) - cellX(b), cellY(a) - cellY(b));
     for (const n of NEIGHBOURS8) {
       const cell = mob.pos + n;
       if (hasFlag(ctx.level.map[cell]!, F.SOLID)) continue;
-      if (pos === -1 || trueDistance(hero.pos, cell) < trueDistance(hero.pos, pos)) pos = cell;
+      if (pos === -1 || squaredDistance(hero.pos, cell) < squaredDistance(hero.pos, pos)) pos = cell;
     }
     weapon.explosive = after + 100;
     // The explosion damages thrown weapons (MissileWeapon.damage: they cannot break of it).

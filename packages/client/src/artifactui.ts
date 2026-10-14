@@ -1,7 +1,7 @@
 import {
   type Action, type ArtifactAction, artifactSeams, chargeCap, type ArtifactKind, type ArtifactUse, canFeed, chargesToUse, ghostOf, ghostQuestDone,
   ghostStrength, type Hero, isTargetedScroll, isWorn, type Item, itemDef, type ItemKind, type ItemRef, kindKnown, levelCap, maxPrick, minPrick,
-  type MiscSlot, prickDeathChance, scrollTargets, stealChance, thievery, visiblyUpgraded, type World,
+  isClassArmor, type MiscSlot, prickDeathChance, scrollTargets, stealChance, thievery, visiblyUpgraded, type World,
 } from '@pd/core';
 import { ARTIFACT_CLASS, artifactState, artText, capital, chargeOf, format } from './artifacttext';
 import { t } from './i18n';
@@ -44,14 +44,14 @@ const acLabel = (kind: ItemKind, ac: string): string => {
 const AIMED: ReadonlySet<ArtifactUse> = new Set(['scry', 'cast', 'direct', 'steal', 'root', 'zap']);
 
 /** Artifact.actions: what an artifact offers now, its default action first (Artifact.defaultAction). */
-export function artifactActions(host: ArtifactHost, item: Item, ref: ItemRef): Array<{ label: string; run: () => void }> {
+export function artifactActions(host: ArtifactHost, item: Item, ref: ItemRef): Array<{ label: string; run: () => void; icon?: 'steal' }> {
   const { world, hero } = host;
   const worn = isWorn(hero, item);
   const usable = worn && !item.cursed;
   const charge = item.charge ?? 0;
-  const list: Array<{ label: string; run: () => void }> = [];
-  const add = (ac: string, run: () => void): void => {
-    list.push({ label: acLabel(item.kind, ac), run });
+  const list: Array<{ label: string; run: () => void; icon?: 'steal' }> = [];
+  const add = (ac: string, run: () => void, icon?: 'steal'): void => {
+    list.push({ label: acLabel(item.kind, ac), run, ...(icon ? { icon } : {}) });
   };
   const use = (u: ArtifactUse, extra: Partial<ArtifactAction> = {}): void => {
     const action: ArtifactAction = { type: 'artifact', item: ref, use: u, ...extra };
@@ -106,7 +106,7 @@ export function artifactActions(host: ArtifactHost, item: Item, ref: ItemRef): A
       break;
     }
     case 'artifact.armband':
-      if (usable && charge > 0) add('steal', () => use('steal'));
+      if (usable && charge > 0) add('steal', () => use('steal'), 'steal');
       break;
     case 'artifact.sandals':
       if (usable) {
@@ -318,6 +318,12 @@ function numberCap(item: Item): number {
 
 /** The small charge strip at the bottom of an artifact's icon (backpack and quick slot). */
 export function chargeStrip(world: World, hero: Hero, item: Item): HTMLElement | null {
+  // The class armour's charge, out of 100 (ClassArmor.status).
+  if (isClassArmor(item) && item.kind === `armor.${hero.heroClass}`) {
+    const strip = el('span', { className: `pd-charge${(item.charge ?? 0) >= 100 ? ' full' : ''}` });
+    strip.style.setProperty('--v', String(Math.min(1, (item.charge ?? 0) / 100)));
+    return strip;
+  }
   if (itemDef(item.kind).category !== 'artifact') return null;
   const charge = chargeOf(world, hero, item);
   if (!charge) return null;

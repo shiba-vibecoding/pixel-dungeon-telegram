@@ -1,6 +1,7 @@
 import type { EmoteKind, Enchantment, Glyph, HeroClass, ItemKind, Landmark, MobKind, PlantKind, SubClass, TrapKind } from '@pd/core';
 import type { BuffName } from './hud';
 import { ART_EN, ART_RU } from './i18n-artifacts';
+import { ABIL_EN, ABIL_RU } from './i18n-abilities';
 
 /* Interface text in Russian and English; the language follows Telegram or the browser. */
 
@@ -14,9 +15,9 @@ const RU_GENDERS: Partial<Record<ItemKind, 1 | 2>> = { 'weapon.mace': 1, 'weapon
 
 /** The Russian gender of a wearable's name, plural included: «палочка», «кольцо», «доспехи воина». */
 function brokenGender(kind: ItemKind): 0 | 1 | 2 | 3 {
-  if (kind.startsWith('wand.') || kind === 'armor.mage') return 1;
-  if (kind.startsWith('ring.') || kind === 'armor.rogue') return 2;
-  if (kind === 'armor.warrior') return 3;
+  // (The class armours are «латная броня», «мантия», «одежда» героя, and «плащ».)
+  if (kind.startsWith('wand.') || kind === 'armor.mage' || kind === 'armor.rogue' || kind === 'armor.warrior') return 1;
+  if (kind.startsWith('ring.')) return 2;
   return RU_GENDERS[kind] ?? 0;
 }
 /** String.format for Shattered's texts: %s and %d in turn, or %1$d, %2$s by number. */
@@ -991,6 +992,12 @@ const en = {
   alchUi: {
     brew: 'Brew',
     toEnergy: 'Turn into energy',
+    /** The trinket window after the catalyst (design v19), the recipe book's page not found yet. */
+    takeTrinket: 'Take',
+    decideLater: 'I’ll decide later',
+    randomTrinketNote: 'Which one it is, you will see once you take it.',
+    pageLost: 'This page has not been found yet',
+    pageLostNote: (found: number, total: number) => `The recipe book’s pages lie in the dungeon — on the floor, in chests and with merchants. Found ${found} of ${total}.`,
     recipes: 'Recipes',
     clear: 'Clear',
     add: 'Add',
@@ -1233,6 +1240,8 @@ const en = {
     rat: 'marsupial rat', gnoll: 'gnoll scout', crab: 'sewer crab', goo: 'Goo', ghost: 'sad ghost', ghostHero: ART_EN['driedrose$ghosthero.name']!, skeleton: 'skeleton',
     thief: 'crazy thief', swarm: 'swarm of flies', shaman: 'gnoll shaman', bat: 'vampire bat', brute: 'gnoll brute',
     tengu: 'Tengu', shopkeeper: 'shopkeeper', wandmaker: 'old wandmaker', spinner: 'cave spinner', dm300: 'DM-300',
+    shadow: ABIL_EN['actors.hero.abilities.rogue.shadowclone$shadowally.name']!, hawk: ABIL_EN['actors.hero.abilities.huntress.spirithawk$hawkally.name']!,
+    ninjaLog: ABIL_EN['actors.hero.abilities.rogue.smokebomb$ninjalog.name']!,
     elemental: 'fire elemental', monk: 'dwarf monk', warlock: 'dwarf warlock', golem: 'golem', king: 'King of Dwarves',
     undead: 'undead dwarf', succubus: 'succubus', eye: 'evil eye', scorpio: 'scorpio', yog: 'Yog-Dzewa',
     rottingFist: 'rotting fist', burningFist: 'burning fist', larva: "god's larva", mimic: 'mimic', statue: 'animated statue',
@@ -1303,6 +1312,27 @@ const en = {
   dailyInfo: 'Same dungeon for everyone today',
   coopUnavailable: 'Co-op server is not configured',
   yourName: 'Your name',
+  miscEmpty: 'Misc: empty',
+  /** Windows of the weapons (design v19, ShWeapons): tipping darts, the stone of augmentation. */
+  weaponsUi: {
+    tipSub: 'One seed tips two darts',
+    tipResult: (n: number, dart: string) => `${n} × ${dart}`,
+    speed: 'Speed',
+    damage: 'Damage',
+    evasion: 'Evasion',
+    defense: 'Defense',
+    none: 'No change',
+    now: 'now',
+    apply: 'Change',
+    augSub: 'Changes the item’s balance for good',
+    damageRow: 'Damage',
+    attackRow: 'Attack',
+    armorRow: 'Armor',
+    evasionRow: 'Evasion',
+    turns: (n: number) => (n === 1 ? '1 turn' : `${(Math.round(n * 100) / 100).toLocaleString('en')} turns`),
+    faster: (pct: number) => `${pct}% faster`,
+    slower: (pct: number) => `${pct}% slower`,
+  },
   invite: 'Invite a friend',
   inviteText: 'Join my party in Pixel Dungeon!',
   linkCopied: 'Invite link copied',
@@ -1330,6 +1360,8 @@ const en = {
   replaced: 'The game was opened elsewhere',
   partyFull: 'This party already has four heroes',
   updating: 'The game has been updated: loading the new version…',
+  /** The server answered that the rules are outdated (409): shown before the page reloads (update.ts). */
+  newVersion: 'A new version is out — updating',
   youDied: 'You have fallen',
   youDiedCoop: 'A companion will bring you back by going deeper.',
   partyFell: 'The party has fallen',
@@ -1408,11 +1440,11 @@ const en = {
 
   items: {
     gold: 'gold',
-    'armor.warrior': 'warrior suit of armor',
-    'armor.mage': 'mage robe',
-    'armor.rogue': 'rogue garb',
-    'armor.huntress': 'huntress cloak',
-    'kit.armor': 'armor kit',
+    'armor.warrior': ABIL_EN['items.armor.warriorarmor.name']!,
+    'armor.mage': ABIL_EN['items.armor.magearmor.name']!,
+    'armor.rogue': ABIL_EN['items.armor.roguearmor.name']!,
+    'armor.huntress': ABIL_EN['items.armor.huntressarmor.name']!,
+    'crown.king': ABIL_EN['items.kingscrown.name']!,
     'wand.magicMissile': 'Wand of Magic Missile',
     'wand.lightning': 'Wand of Lightning',
     'wand.disintegration': 'Wand of Disintegration',
@@ -1431,7 +1463,6 @@ const en = {
     'key.golden': 'golden key',
     'key.skeleton': 'worn key',
     'mask.tengu': "Tengu's mask",
-    'crown.king': "Dwarf King's crown",
     ankh: 'Ankh',
     'quest.rose': 'dried rose',
     'quest.skull': 'giant rat skull',
@@ -1675,7 +1706,7 @@ const en = {
     'missile.holyDart': "holy dart",
   } as Record<ItemKind, string>,
   itemInfo: {
-    'kit.armor': 'With this kit of small tools and materials, the armour you wear becomes the armour of your class: as good as before, and with a special ability.',
+    'crown.king': ABIL_EN['items.kingscrown.desc']!,
     ankh: 'The ancient symbol of immortality. Die while carrying it and you rise again at the stairs, whole, '
       + 'but everything else in your pack is lost, and all your gold.',
     'wand.magicMissile': 'This fairly plain wand launches missiles of pure magical energy. While the wand itself lacks any special effects, it has more available charges and can briefly empower other wands when upgraded.',
@@ -1712,7 +1743,6 @@ const en = {
     'ring.tenacity': ART_EN['items.rings.ringoftenacity.desc']!,
     'ring.wealth': ART_EN['items.rings.ringofwealth.desc']!,
     'mask.tengu': "This mask fell off Tengu's face as he died, you can feel great magical power emanating from it. Was the mask Tengu's source of strength?\n\nWhen worn, the tremendous power of the mask will be transferred into you, enabling you to choose a subclass for your hero.\n\nWhich subclass will you choose?",
-    'crown.king': "The crown of the last dwarven king, it glows with tremendous magical energy.\n\nWhen worn, the crown's magic will flow into the armor you're currently wearing, transforming it into a unique epic armor with special abilities. The new armor will keep all the properties of the original armor.",
     'tome.mastery': 'This worn leather book is not that thick, but you feel somehow that you can gather a lot from it. Reading it takes a while: choose one of the two ways of your class.',
     'seed.firebloom': 'Throw it where you want a Firebloom to grow: whoever touches it bursts into flames.',
     'seed.icecap': 'Throw it where you want an Icecap to grow: touched, it freezes everyone around.',
@@ -2003,16 +2033,9 @@ const en = {
     busy: 'I\'m busy. Get lost!',
   },
   mine: 'Mine',
-  applyKit: 'Apply it to your armour',
-  classArmorInfo: {
-    warrior: 'A warrior can make a heroic leap in it, stunning everyone around where he lands.',
-    mage: 'A mage can cast molten earth in it: every enemy in sight burns and is held fast.',
-    rogue: 'A rogue can throw a smoke bomb in it: whoever saw him loses him, and he is elsewhere.',
-    huntress: 'A huntress can loose spectral blades in it: one at every enemy in sight.',
-  } as Record<HeroClass, string>,
-  specialCost: 'Each use costs a third of your health.',
-  specials: { warrior: 'Heroic leap', mage: 'Molten earth', rogue: 'Smoke bomb', huntress: 'Spectral blades' } as Record<HeroClass, string>,
-  classArmorMade: (name: string) => `Your armour becomes the ${name}!`,
+  /** KingsCrown: its action, and what the armour says as it changes. */
+  wearCrown: ABIL_EN['items.kingscrown.ac_wear']!,
+  crownUsed: ABIL_EN['items.kingscrown.upgraded']!,
   augment: 'Augment',
   augmented: (name: string) => `Your ${name} is augmented.`,
   corrupted: (mob: string) => `The ${mob} rises again, on your side.`,
@@ -2320,6 +2343,7 @@ const en = {
     // Alchemy's buffs (their Shattered names).
     haste: ALCH_EN.buff_haste, stamina: ALCH_EN.buff_stamina, magicalSight: ALCH_EN.buff_magicalSight, magicImmune: ALCH_EN.buff_magicImmune, foresight: ALCH_EN.buff_foresight, fireImbue: ALCH_EN.buff_fireImbue, frostImbue: ALCH_EN.buff_frostImbue, toxicImbue: ALCH_EN.buff_toxicImbue, featherFall: ALCH_EN.buff_featherFall, cleanse: ALCH_EN.buff_cleanse, drowsy: ALCH_EN.buff_drowsy, magicalSleep: ALCH_EN.buff_magicalSleep, potionHealing: ALCH_EN.buff_healing, arcaneArmor: ALCH_EN.buff_arcaneArmor, aquaHealing: ALCH_EN.buff_aquaHealing, htBoost: ALCH_EN.buff_htBoost, wellFed: ALCH_EN.buff_wellFed, prismaticGuard: ALCH_EN.buff_prismaticGuard, challengeArena: ALCH_EN.buff_challenge,
     stealth: 'Cloaked', timeFreeze: 'Time Freeze', thorns: 'Thorns',
+    endure: ABIL_EN['actors.hero.abilities.warrior.endure$enduretracker.name']!, naturesPower: ABIL_EN['actors.hero.abilities.huntress.naturespower$naturespowertracker.name']!,
     degrade: 'Degraded',
   } as Record<BuffName, string>,
   causes: {
@@ -2375,6 +2399,7 @@ const en = {
     game: 'Game',
     effects: 'Effects',
     shake: 'Screen shake',
+    quickslots: 'Quick slots',
     learning: 'Learning',
     hints: 'Hints for beginners',
     hintsNote: 'A word about each new thing, once',
@@ -2821,6 +2846,11 @@ const ru: Strings = {
   alchUi: {
     brew: 'Сварить',
     toEnergy: 'Превратить в энергию',
+    takeTrinket: 'Взять',
+    decideLater: 'Решу позже',
+    randomTrinketNote: 'Какая именно — станет ясно, когда возьмёте.',
+    pageLost: 'Страница ещё не найдена',
+    pageLostNote: (found, total) => `Страницы учебника лежат в подземелье — на полу, в сундуках и у торговцев. Найдено ${found} из ${total}.`,
     recipes: 'Рецепты',
     clear: 'Очистить',
     add: 'Добавить',
@@ -3055,6 +3085,8 @@ const ru: Strings = {
   // Names as in the Russian localisation of the original.
   mobs: {
     rat: 'сумчатая крыса', gnoll: 'гнолл-разведчик', crab: 'сточный краб', goo: 'Слизень', ghost: 'печальное привидение', ghostHero: 'печальное привидение',
+    shadow: ABIL_RU['actors.hero.abilities.rogue.shadowclone$shadowally.name']!, hawk: ABIL_RU['actors.hero.abilities.huntress.spirithawk$hawkally.name']!,
+    ninjaLog: ABIL_RU['actors.hero.abilities.rogue.smokebomb$ninjalog.name']!,
     skeleton: 'скелет', thief: 'безумный вор', swarm: 'рой мух', shaman: 'гнолл-шаман', bat: 'летучая мышь-вампир',
     brute: 'гнолл-громила', tengu: 'Тенгу', shopkeeper: 'торговец', wandmaker: 'старый мастер палочек',
     spinner: 'пещерный прядильщик', dm300: 'DM-300', elemental: 'огненный элементаль', monk: 'дворф-монах',
@@ -3128,6 +3160,26 @@ const ru: Strings = {
   dailyInfo: 'Сегодня у всех одно подземелье',
   coopUnavailable: 'Сервер кооператива не настроен',
   yourName: 'Ваше имя',
+  miscEmpty: 'Разное: пусто',
+  weaponsUi: {
+    tipSub: 'Одно семя смазывает два дротика',
+    tipResult: (n, dart) => `${n} × ${dart}`,
+    speed: 'Скорость',
+    damage: 'Урон',
+    evasion: 'Уклонение',
+    defense: 'Защита',
+    none: 'Без изменений',
+    now: 'сейчас',
+    apply: 'Изменить',
+    augSub: 'Меняет баланс вещи навсегда',
+    damageRow: 'Урон',
+    attackRow: 'Удар',
+    armorRow: 'Броня',
+    evasionRow: 'Уклонение',
+    turns: (n) => (n === 1 ? '1 ход' : Number.isInteger(n) && n >= 5 ? `${n} ходов` : `${(Math.round(n * 100) / 100).toLocaleString('ru')} хода`),
+    faster: (pct) => `на ${pct}% быстрее`,
+    slower: (pct) => `на ${pct}% медленнее`,
+  },
   invite: 'Позвать друга',
   inviteText: 'Присоединяйся к моему отряду в Pixel Dungeon!',
   linkCopied: 'Ссылка-приглашение скопирована',
@@ -3155,6 +3207,7 @@ const ru: Strings = {
   replaced: 'Игра открыта в другом окне',
   partyFull: 'В этом отряде уже четыре героя',
   updating: 'Игра обновилась — загружаю новую версию…',
+  newVersion: 'Вышла новая версия — обновляем',
   youDied: 'Вы пали',
   youDiedCoop: 'Товарищ вернёт вас, спустившись глубже.',
   partyFell: 'Отряд пал',
@@ -3227,11 +3280,11 @@ const ru: Strings = {
   // Names as in the Russian localisation of the original.
   items: {
     gold: 'золото',
-    'armor.warrior': 'доспехи воина',
-    'armor.mage': 'мантия мага',
-    'armor.rogue': 'одеяние разбойника',
-    'armor.huntress': 'плащ охотницы',
-    'kit.armor': 'набор для брони',
+    'armor.warrior': ABIL_RU['items.armor.warriorarmor.name']!,
+    'armor.mage': ABIL_RU['items.armor.magearmor.name']!,
+    'armor.rogue': ABIL_RU['items.armor.roguearmor.name']!,
+    'armor.huntress': ABIL_RU['items.armor.huntressarmor.name']!,
+    'crown.king': ABIL_RU['items.kingscrown.name']!,
     'wand.magicMissile': 'Палочка Магической стрелы',
     'wand.lightning': 'Палочка Молний',
     'wand.disintegration': 'Палочка Дезинтеграции',
@@ -3250,7 +3303,6 @@ const ru: Strings = {
     'key.golden': 'золотой ключ',
     'key.skeleton': 'изношенный ключ',
     'mask.tengu': 'маска Тенгу',
-    'crown.king': 'Корона Короля дворфов',
     ankh: 'Анкх',
     'quest.rose': 'сухая роза',
     'quest.skull': 'череп гигантской крысы',
@@ -3494,7 +3546,7 @@ const ru: Strings = {
     'missile.holyDart': "освященный дротик",
   },
   itemInfo: {
-    'kit.armor': 'С этим набором инструментов и материалов надетый доспех становится доспехом вашего класса: не хуже прежнего, да ещё с особым умением.',
+    'crown.king': ABIL_RU['items.kingscrown.desc']!,
     ankh: 'Древний символ бессмертия. Если вы погибнете, имея его при себе, то воскреснете у лестницы целым и '
       + 'невредимым — но всё остальное в рюкзаке пропадёт, как и всё золото.',
     'wand.magicMissile': 'Довольно простая палочка, стреляющая стрелами чистой магической энергии. Хоть палочка и не обладает какими-либо особыми эффектами, она имеет довольно много доступных зарядов и может на некоторое время усилить другие палочки после улучшения.',
@@ -3531,7 +3583,6 @@ const ru: Strings = {
     'ring.tenacity': ART_RU['items.rings.ringoftenacity.desc']!,
     'ring.wealth': ART_RU['items.rings.ringofwealth.desc']!,
     'mask.tengu': 'Эта маска упала с лица Тенгу после его смерти, и вы чувствуете огромную магическую силу, исходящую от неё. Была ли маска источником силы Тенгу?\n\nПри ношении маска передаст вам свою огромную силу, что позволит вам выбрать подкласс своего героя.\n\nКакой подкласс вы выберете?',
-    'crown.king': 'Корона последнего короля дворфов, она светится и излучает магическую силу.\n\nПри ношении корона передаст свою магическую мощь вашей броне, превращая ее в уникальную эпическую броню со специальными способностями. Новая броня сохранит все свойства оригинальной.',
     'tome.mastery': 'Эта потёртая кожаная книга не так уж толста, но вы чувствуете, что можете многое из неё почерпнуть. Чтение займёт время: выберите один из двух путей своего класса.',
     'seed.firebloom': 'Бросьте туда, где должен вырасти огнецвет: тот, кто его коснётся, вспыхнет.',
     'seed.icecap': 'Бросьте туда, где должна вырасти ледянка: от прикосновения она замораживает всех вокруг.',
@@ -3820,16 +3871,8 @@ const ru: Strings = {
     busy: 'Я занят. Проваливай!',
   },
   mine: 'Добыть руду',
-  applyKit: 'Применить к доспеху',
-  classArmorInfo: {
-    warrior: 'В них воин может совершить героический прыжок, оглушая всех вокруг места приземления.',
-    mage: 'В ней маг может вызвать расплавленную землю: все враги в поле зрения горят и не могут сойти с места.',
-    rogue: 'В нём разбойник может бросить дымовую шашку: видевшие его теряют его из виду, а он уже в другом месте.',
-    huntress: 'В нём охотница может выпустить призрачные клинки — по одному в каждого врага в поле зрения.',
-  },
-  specialCost: 'Каждое применение отнимает треть здоровья.',
-  specials: { warrior: 'Героический прыжок', mage: 'Расплавленная земля', rogue: 'Дымовая шашка', huntress: 'Призрачные клинки' },
-  classArmorMade: (name) => `Ваш доспех становится таким: ${name}!`,
+  wearCrown: ABIL_RU['items.kingscrown.ac_wear']!,
+  crownUsed: ABIL_RU['items.kingscrown.upgraded']!,
   augment: 'Применить',
   augmented: (name) => `${name}: камень Баланса подействовал.`,
   corrupted: (mob) => `${mob} восстаёт снова — на вашей стороне.`,
@@ -4129,6 +4172,7 @@ const ru: Strings = {
     // Alchemy's buffs (their Shattered names).
     haste: ALCH_RU.buff_haste, stamina: ALCH_RU.buff_stamina, magicalSight: ALCH_RU.buff_magicalSight, magicImmune: ALCH_RU.buff_magicImmune, foresight: ALCH_RU.buff_foresight, fireImbue: ALCH_RU.buff_fireImbue, frostImbue: ALCH_RU.buff_frostImbue, toxicImbue: ALCH_RU.buff_toxicImbue, featherFall: ALCH_RU.buff_featherFall, cleanse: ALCH_RU.buff_cleanse, drowsy: ALCH_RU.buff_drowsy, magicalSleep: ALCH_RU.buff_magicalSleep, potionHealing: ALCH_RU.buff_healing, arcaneArmor: ALCH_RU.buff_arcaneArmor, aquaHealing: ALCH_RU.buff_aquaHealing, htBoost: ALCH_RU.buff_htBoost, wellFed: ALCH_RU.buff_wellFed, prismaticGuard: ALCH_RU.buff_prismaticGuard, challengeArena: ALCH_RU.buff_challenge,
     stealth: ART_RU['cloakofshadows$cloakstealth.name']!, timeFreeze: ART_RU['timekeepershourglass$timefreeze.name']!,
+    endure: ABIL_RU['actors.hero.abilities.warrior.endure$enduretracker.name']!, naturesPower: ABIL_RU['actors.hero.abilities.huntress.naturespower$naturespowertracker.name']!,
     thorns: ART_RU['capeofthorns$thorns.name']!,
     degrade: 'Потрёпан',
   },
@@ -4180,6 +4224,7 @@ const ru: Strings = {
     game: 'Игра',
     effects: 'Эффекты',
     shake: 'Тряска экрана',
+    quickslots: 'Быстрых слотов',
     learning: 'Обучение',
     hints: 'Подсказки новичку',
     hintsNote: 'Коротко о каждой новой вещи, один раз',

@@ -56,6 +56,8 @@ import {
   type ArtifactAction, artifactProblem, artifactsAct, artifactsTime, carriedOf, chaliceRegenDelay, disarmPresses, freezeTime, frozenBy,
   ghostFollows, ghostSeesBoss, ghostSays, heroPress, naturalism, performArtifact, petalsFor, talismanBlinds, talismanFound,
 } from './artifacts';
+import { type Talent, upgradeTalent, upgradeTalentProblem } from './talents';
+import { abilityProblem, alliesFollow, copyReach, endEnduring, swapWithClone, useAbility } from './abilities';
 
 /*
  * The shared game world. Every change goes through act(), so a server can run
@@ -91,6 +93,13 @@ export type Action =
   | { type: 'faceCurse' }
   /** Ward.interact's «dismiss»: the ward beside the hero is gone. */
   | { type: 'dismiss'; target: string }
+  /**
+   * The armour ability of the class armour worn (ClassArmor.execute, abilities/): `target` the cell it is aimed at where it
+   * asks for one, `choice` the warp beacon's (0 warp to it, 1 clear it).
+   */
+  | { type: 'special'; target?: number; choice?: number }
+  /** A point of talent points spent (Hero.upgradeTalent); it takes no time. */
+  | { type: 'talent'; talent: Talent }
   /** The Amulet of Yendor's «Let's call it a day»: the party wins here. */
   | { type: 'endGame' }
   /** Live turns: what the hero is to do from now on, a turn at a time (an empty plan stops them). */
@@ -450,12 +459,16 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       if (hero.charmed > 0 && hero.charmedBy === mob.id) return 'you are charmed';
       // Hero.canAttack: next to it, or within the weapon's reach (KindOfWeapon.canReach; MagesStaff.reachFactor: a
       // battlemage's staff of disintegration reaches over a cell); a word, or an ally, only face to face.
-      if (adjacent(hero.pos, mob.pos)) return null;
+      if (adjacent(hero.pos, mob.pos) || (mob.ally && copyReach(world, hero, mob))) return null;
       const reach = Math.max(heroReach(hero), staffReach(hero));
       return mob.state !== 'passive' && !mob.ally && canReach(world, level, hero, mob.pos, reach) ? null : 'too far away';
     }
     case 'dismiss':
       return dismissProblem(world, hero, action.target);
+    case 'special':
+      return abilityProblem(world, hero, action);
+    case 'talent':
+      return upgradeTalentProblem(hero, action.talent);
     case 'reward':
       return rewardProblem(world, hero, action.choice);
     case 'wandReward':
@@ -683,6 +696,7 @@ function advanceLive(world: World, depth: number, effects: Effect[], until: numb
     }
     const hero = turn.hero;
     floor.now = Math.max(floor.now, hero.time);
+    endEnduring(ctx, hero);
     if (held(hero)) {
       spend(ctx, hero, TIME_TO_REST);
       overChasm(ctx, hero);
@@ -877,6 +891,8 @@ function advance(world: World, depth: number, effects: Effect[]): void {
 
     const hero = turn.hero;
     floor.now = Math.max(floor.now, hero.time);
+    // Hero.act: an Endure that has run its three turns turns what it took into the blows to come.
+    endEnduring(ctx, hero);
     if (held(hero)) {
       // Paralysed (or frozen, or out of time): the turn passes; whatever the player chose waits.
       spend(ctx, hero, TIME_TO_REST);
@@ -1121,6 +1137,9 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
           ctx.effects.push({ type: 'ward', hero: hero.id, mob: mob.id });
         } else if (mob.kind === 'ghostHero' && ghostIntroduces(ctx, hero, mob)) {
           // DriedRose.GhostHero.interact: its first word, before it ever trades places.
+        } else if (mob.kind === 'shadow' && copyReach(world, hero, mob) && swapWithClone(ctx, hero, mob)) {
+          // ShadowAlly.interact with Perfect Copy: they trade places from a distance.
+          spend(ctx, hero, 1 / heroSpeed(hero));
         } else if (allySwaps(mob) && adjacent(hero.pos, mob.pos)) {
           const from = hero.pos;
           hero.pos = mob.pos;
@@ -1232,6 +1251,16 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
     case 'endGame':
       win(ctx, hero, 'amulet');
       return;
+
+    case 'talent':
+      // Hero.upgradeTalent takes no time.
+      upgradeTalent(hero, action.talent);
+      ctx.effects.push({ type: 'talentUp', hero: hero.id, talent: action.talent });
+      break;
+
+    case 'special':
+      spend(ctx, hero, useAbility(ctx, hero, action, { returnTo: (depth, pos) => beaconReturn(ctx, hero, depth, pos) }));
+      break;
 
     case 'artifact':
       spend(ctx, hero, performArtifact(ctx, hero, action, {
@@ -1404,6 +1433,12 @@ function ghostIntroduces(ctx: Ctx, hero: Hero, ghost: Mob): boolean {
  * InterlevelScene's RETURN: the hero goes straight to another depth (a scroll of passage, a beacon of returning), to
  * a cell there or, without one, its way in; the rose's ghost follows.
  */
+/** Mob.holdAllies and restoreAllies: the rose's ghost, the shadow clone and the spirit hawk come along. */
+function followHero(world: World, hero: Hero, fromDepth: number): void {
+  ghostFollows(world, hero, fromDepth);
+  alliesFollow(world, hero, fromDepth);
+}
+
 export function moveToDepth(world: World, hero: Hero, depth: number, pos?: number): void {
   const fromDepth = hero.depth;
   const fromLevel = levelAt(world, hero.depth);
@@ -1411,7 +1446,7 @@ export function moveToDepth(world: World, hero: Hero, depth: number, pos?: numbe
   const level = levelAt(world, depth);
   hero.depth = depth;
   place(world, hero, level, pos ?? level.entrance);
-  ghostFollows(world, hero, fromDepth);
+  followHero(world, hero, fromDepth);
 }
 
 /** ScrollOfTeleportation.teleportHero: somewhere out of sight on the level, if there is anywhere. */
@@ -1443,7 +1478,7 @@ function beaconReturn(ctx: Ctx, hero: Hero, depth: number, pos: number): void {
   }
   hero.depth = depth;
   place(world, hero, levelAt(world, depth), pos);
-  ghostFollows(world, hero, fromDepth);
+  followHero(world, hero, fromDepth);
   ctx.effects.push({ type: 'teleported', hero: hero.id });
   const there = levelAt(world, depth);
   if (depth === ctx.depth && trapAt(there.map[hero.pos]!) && !(hero.levitating ?? 0)) triggerTrap(ctx, hero, hero.pos);
@@ -1461,7 +1496,7 @@ function changeDepth(ctx: Ctx, hero: Hero, depth: number, arrival: 'entrance' | 
   leaveCell(world, fromLevel, fromDepth, from);
   place(world, hero, level, arrival === 'entrance' ? level.entrance : level.exit);
   // Mob.holdAllies and restoreAllies: the rose's ghost comes along.
-  ghostFollows(world, hero, fromDepth);
+  followHero(world, hero, fromDepth);
 }
 
 /**
@@ -1498,7 +1533,7 @@ function fall(ctx: Ctx, hero: Hero, into: number): void {
   hurt({ world, depth, level: below, floor, rng, effects }, hero, damage, 'fall');
   if (!isAlive(hero)) return;
   observe(world, hero);
-  ghostFollows(world, hero, fromDepth);
+  followHero(world, hero, fromDepth);
   reviveFallen(world, depth, effects);
 }
 
