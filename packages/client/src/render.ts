@@ -443,6 +443,8 @@ export interface Scene {
   ground?: (ctx: CanvasRenderingContext2D) => void;
   /** Over the characters: a boss level's walls and overhangs, lightning, beams (bossfx.ts). */
   top?: (ctx: CanvasRenderingContext2D) => void;
+  /** The whole-level view is showing, 0..1 (camcontrol.ts): the map is read from afar, so the hero and the foes are marked. */
+  overview?: number;
   /** Words over cells at screen scale (a bomb's «3...»): world pixels, the text, its age (ms). */
   marks?: ReadonlyArray<{ x: number; y: number; text: string; age: number }>;
 }
@@ -649,7 +651,8 @@ export function render(
 
   // The region's mist, drifting slowly over what can be seen (the dark of the fog covers the rest).
   const mist = sheet(`fog${levelRegion(level)}`);
-  if (mist && !quality.light) {
+  const afar = (scene.overview ?? 0) > 0.05;
+  if (mist && !quality.light && !afar) {
     const drift = quality.reducedMotion ? 0 : now / 1000;
     const pattern = patternOf(ctx, mist.image, drift * 6, drift * 3);
     if (pattern) {
@@ -665,7 +668,7 @@ export function render(
   ctx.globalCompositeOperation = 'lighter';
   const lightSheet = sheet('light');
   const lightFrame = lightSheet?.anims.light?.[0];
-  for (const light of quality.light ? [] : scene.lights ?? []) {
+  for (const light of quality.light || afar ? [] : scene.lights ?? []) {
     if (lightSheet && lightFrame) {
       ctx.globalAlpha = Math.min(1, light.strength * 2.6);
       ctx.drawImage(
@@ -687,6 +690,46 @@ export function render(
   // edges between are soft. Each cell's darkness eases toward what it should be,
   // so what comes into sight surfaces quickly and what leaves it sinks slowly.
   drawFog(ctx, level, visible, explored, now);
+
+  // From afar the sprites are a few pixels: the hero is a gold mark in a ring, foes red, companions teal, whatever the zoom
+  // (the dot fades out as the zoom brings the sprites up to size; the ring stays).
+  if (afar) {
+    const px = canvas.width / (canvas.clientWidth || canvas.width);
+    const css = px / camera.zoom;
+    const dots = Math.min(1, Math.max(0, 2.4 - camera.zoom));
+    ctx.lineJoin = 'round';
+    for (const { puppet, x, y } of shown) {
+      if (!puppet.alive) continue;
+      const mine = puppet.isHero && puppet.id === myId;
+      const colour = mine ? '#ffd23f' : puppet.ally || puppet.isHero ? '#4fd8c4' : '#ff4a3a';
+      const cx = x + TILE / 2;
+      const cy = y + TILE / 2;
+      const ring = Math.max(TILE * (mine ? 0.95 : 0.75), (mine ? 10 : 8) * css);
+      ctx.globalAlpha = Math.min(1, (scene.overview ?? 0) * 1.5);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 4.5 * css;
+      ctx.beginPath();
+      ctx.arc(cx, cy, ring, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = colour;
+      ctx.lineWidth = 2 * css;
+      ctx.beginPath();
+      ctx.arc(cx, cy, ring, 0, Math.PI * 2);
+      ctx.stroke();
+      if (dots > 0) {
+        ctx.globalAlpha *= dots;
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(cx, cy, (mine ? 5 : 4) * css + 1.5 * css, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = colour;
+        ctx.beginPath();
+        ctx.arc(cx, cy, (mine ? 5 : 4) * css, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
 
   for (const { puppet, x, y } of shown) {
     if (!puppet.alive) continue;

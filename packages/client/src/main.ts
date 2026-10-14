@@ -111,6 +111,7 @@ import { alchemyOpen, noteCrafted, refreshAlchemy, showAlchemy } from './alchemy
 import { ActionIndicator, type ActionKind } from './actionind';
 import { hasFreePoints, refreshHeroWindow, showComboWindow } from './talentui';
 import { tal as talentLine, talentBuffInfo, talentReason } from './talenttext';
+import { boxOf, CamControl } from './camcontrol';
 import { STEP_MS, TILE, View } from './view';
 import { fadingWalls, resetXray } from './xray';
 import { bossBar, cellMarks, drawBossGround, drawBossTop, resetBossFx } from './bossfx';
@@ -297,22 +298,15 @@ function levelMiddle(level: Level): { x: number; y: number; left: number; right:
 
 /** The map's buttons over the log (zoom, the whole level, back to the hero) and the finds' stack (mapui.ts). */
 const mapControlsActions = {
-  zoomIn: () => zoomTo(Math.round(zoom.target) + 1, null),
-  zoomOut: () => zoomTo(Math.round(zoom.target) - 1, null),
+  zoomIn: () => cam.zoomStep(1, null),
+  zoomOut: () => cam.zoomStep(-1, null),
+  // The whole explored level, fit to the screen, until the button is pressed again or the map is tapped (camcontrol.ts).
   whole: () => {
-    // Out as far as it goes, the level's middle in the middle of the view.
     const world = session?.world;
     const me = world && heroById(world, session!.myId);
-    zoomTo(zoom.min, null);
-    if (me) {
-      const middle = levelMiddle(levelAt(world, me.depth));
-      pan.x = middle.x - (cellX(me.pos) * TILE + TILE / 2);
-      pan.y = middle.y - (cellY(me.pos) * TILE + TILE / 2);
-      pan.home = false;
-      pan.loose = true;
-    }
+    cam.toggleOverview(world && me ? boxOf(exploredCells(world, me.depth), WIDTH, TILE) : null);
   },
-  home: () => recentre(160),
+  home: () => cam.recentre(),
   attack: () => {
     const world = session?.world;
     const me = world && heroById(world, session!.myId);
@@ -1213,10 +1207,7 @@ function nextDanger(): void {
   dangerTarget = enemiesInSight[dangerIndex]!;
   const mob = mobById(world, me.depth, dangerTarget);
   if (!mob) return;
-  pan.x = (cellX(mob.pos) - cellX(me.pos)) * TILE;
-  pan.y = (cellY(mob.pos) - cellY(me.pos)) * TILE;
-  pan.home = false;
-  pan.loose = true;
+  cam.lookAt({ x: cellX(mob.pos) * TILE + TILE / 2, y: cellY(mob.pos) * TILE + TILE / 2 });
   feedback.aim(mob.pos, true, fx.now, mob.id);
   feedback.danger(mob.id, mob.pos, fx.now);
 }
@@ -2404,84 +2395,30 @@ function runUnderway(): boolean {
   return !!me && isAlive(me) && !world.over;
 }
 
-/* Zoom and looking around: pinch or wheel to zoom, drag to look about (as GameScene's camera). */
+/* Zoom and looking around: the camera is camcontrol.ts (drag to look about, pinch or wheel to zoom, the whole level, back to the hero). */
 
 /** Zoom levels in device pixels per art pixel: whole numbers keep the art crisp; the view glides between them. */
-const zoom = { base: 2, min: 1, max: 4, target: 2, delta: 0 };
+const zoom = { base: 2, min: 1, max: 4, delta: 0 };
 try {
   // A new key since the zoom's base comes from the screen: a step taken from the old base meant another size.
   zoom.delta = Number(localStorage.getItem('pd-zoom-screen')) || 0;
 } catch {
   // The default zoom, then.
 }
-/** How far the view has been dragged away from the hero, world pixels: it keeps that offset while the hero walks (see tick). */
-const pan = {
-  x: 0,
-  y: 0,
-  /** Easing back to the hero, with this much lag (ms). */
-  home: false,
-  ease: 160,
-  /** The view was sent to look somewhere on purpose (the danger badge): it stays there, not held to the hero's neighbourhood. */
-  loose: false,
-  /** The offset is moving (back to the hero, or off the view's edge): the picture has to be drawn at full pace. */
-  easing: false,
-};
 
-/** Brings the view back to the hero, easing (the centre button, a double tap on the hero, a new enemy in sight). */
-function recentre(lagMs = 160): void {
-  if (pan.x === 0 && pan.y === 0) return;
-  pan.home = true;
-  pan.ease = lagMs;
-  pan.loose = false;
-}
-
-/** The hero keeps at least this far (tiles) from the edges of what the view shows once it has been dragged about. */
-const EDGE_TILES = 2;
-/** How fast the view eases back off an edge (ms). */
-const EDGE_EASE_MS = 140;
-/** A double tap on the hero: within this long (ms) of the first. */
-const DOUBLE_TAP_MS = 350;
-let heroTapAt = 0;
-/** Where a zoom is centred, device pixels: the fingers, the cursor, or the hero. */
-let zoomAnchor: { x: number; y: number } | null = null;
-
-function clampZoom(z: number, give = 0): number {
-  return Math.min(zoom.max + give, Math.max(zoom.min - give, z));
-}
-
-/** Settles on a zoom level (by steps from the wheel and keys) and remembers it. */
-function zoomTo(level: number, anchor: { x: number; y: number } | null): void {
-  const next = clampZoom(Math.round(level));
-  if (next !== Math.round(zoom.target)) audio.play('tick', 1 + (next - zoom.base) * 0.06, 0.35);
-  zoom.target = next;
-  zoomAnchor = anchor;
-  zoom.delta = next - zoom.base;
-  try {
-    localStorage.setItem('pd-zoom-screen', String(zoom.delta));
-  } catch {
-    // Not remembered.
-  }
-}
-
-/** Changes the zoom keeping the world point under `anchor` where it is on screen. */
-function applyZoom(z: number, anchor: { x: number; y: number }): void {
-  const old = camera.zoom;
-  if (!Number.isFinite(z) || z <= 0) return;
-  if (z === old || !follow.ready || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.y)) {
-    camera.zoom = z;
-    return;
-  }
-  const nx = follow.x + anchor.x / old - anchor.x / z;
-  const ny = follow.y + anchor.y / old - anchor.y / z;
-  // Following the hero, the view's target moves with the zoom; the drag offset makes up the difference.
-  const shiftX = (canvas.width / 2) * (1 / z - 1 / old);
-  const shiftY = freeMiddle >= 0 ? freeMiddle * (1 / z - 1 / old) : (canvas.height / 2) * (1 / z - 1 / old);
-  pan.x += nx - follow.x + shiftX;
-  pan.y += ny - follow.y + shiftY;
-  follow.x = nx;
-  follow.y = ny;
-  camera.zoom = z;
-}
+const cam = new CamControl({
+  tile: TILE,
+  reducedMotion: () => quality.reducedMotion,
+  onZoomStep: (level, changed) => {
+    if (changed) audio.play('tick', 1 + (level - zoom.base) * 0.06, 0.35);
+    zoom.delta = level - zoom.base;
+    try {
+      localStorage.setItem('pd-zoom-screen', String(zoom.delta));
+    } catch {
+      // Not remembered.
+    }
+  },
+});
 
 const toDevice = (clientX: number, clientY: number): { x: number; y: number } => {
   const rect = canvas.getBoundingClientRect();
@@ -2491,83 +2428,38 @@ const toDevice = (clientX: number, clientY: number): { x: number; y: number } =>
   return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy };
 };
 
-/** Fingers on the map, in device pixels, and what they are doing. */
-const fingers = new Map<number, { x: number; y: number }>();
-let gesture:
-  | { kind: 'tap' | 'pan'; x: number; y: number; panX: number; panY: number }
-  | { kind: 'pinch'; dist: number; zoom: number; mid: { x: number; y: number } }
-  | { kind: 'done' }
-  | null = null;
-
-const spread = (): { dist: number; mid: { x: number; y: number } } => {
-  const [a, b] = [...fingers.values()];
-  return { dist: Math.hypot(a!.x - b!.x, a!.y - b!.y) || 1, mid: { x: (a!.x + b!.x) / 2, y: (a!.y + b!.y) / 2 } };
-};
-
 canvas.addEventListener('pointerdown', (event) => {
   if (!session?.world || overlayOpen()) return;
+  // The middle button pans; the browser's own use of it (a scrolling cursor) is not wanted.
+  if (event.button === 1) event.preventDefault();
   // The HUD, log and toolbar are HTML over the canvas: what reaches here is a touch on the map.
   try {
     canvas.setPointerCapture(event.pointerId);
   } catch {
     // Not a live pointer (a synthetic event): its moves still reach the canvas.
   }
-  fingers.set(event.pointerId, toDevice(event.clientX, event.clientY));
-  if (fingers.size === 1) {
-    const at = fingers.get(event.pointerId)!;
-    gesture = { kind: 'tap', x: at.x, y: at.y, panX: pan.x, panY: pan.y };
-    armPing();
-  } else if (fingers.size === 2) {
-    const { dist, mid } = spread();
-    gesture = { kind: 'pinch', dist, zoom: camera.zoom, mid };
-  }
+  const at = toDevice(event.clientX, event.clientY);
+  cam.pointerDown(event.pointerId, at.x, at.y, event.timeStamp, event.button);
+  if (event.button === 0) armPing(at);
+});
+canvas.addEventListener('mousedown', (event) => {
+  if (event.button === 1) event.preventDefault();
 });
 
 canvas.addEventListener('pointermove', (event) => {
-  if (!fingers.has(event.pointerId) || !gesture) return;
-  fingers.set(event.pointerId, toDevice(event.clientX, event.clientY));
-  if (gesture.kind === 'tap' || gesture.kind === 'pan') {
-    const at = fingers.get(event.pointerId)!;
-    const dx = at.x - gesture.x;
-    const dy = at.y - gesture.y;
-    // A finger that travels is looking around, not tapping.
-    const slop = 10 * (canvas.width / (canvas.clientWidth || canvas.width));
-    if (gesture.kind === 'tap' && Math.hypot(dx, dy) > slop) gesture = { ...gesture, kind: 'pan' };
-    if (gesture.kind === 'pan') {
-      pan.x = gesture.panX - dx / camera.zoom;
-      pan.y = gesture.panY - dy / camera.zoom;
-      pan.home = false;
-      pan.loose = false;
-    }
-  } else if (gesture.kind === 'pinch' && fingers.size >= 2) {
-    const { dist, mid } = spread();
-    // The zoom follows the fingers, a little past the ends, and the point between them stays put.
-    const z = clampZoom(gesture.zoom * (dist / gesture.dist), 0.6);
-    zoom.target = z;
-    applyZoom(z, mid);
-    pan.x -= (mid.x - gesture.mid.x) / camera.zoom;
-    pan.y -= (mid.y - gesture.mid.y) / camera.zoom;
-    follow.x -= (mid.x - gesture.mid.x) / camera.zoom;
-    follow.y -= (mid.y - gesture.mid.y) / camera.zoom;
-    gesture.mid = mid;
-    pan.home = false;
-  }
+  const at = toDevice(event.clientX, event.clientY);
+  cam.pointerMove(event.pointerId, at.x, at.y, event.timeStamp);
 });
 
 const lift = (event: PointerEvent): void => {
-  if (!fingers.has(event.pointerId)) return;
-  const at = fingers.get(event.pointerId)!;
-  fingers.delete(event.pointerId);
-  if (gesture?.kind === 'pinch') {
-    // Let go: the view settles on the nearest whole zoom, round the point between the fingers.
-    zoomTo(camera.zoom, gesture.mid);
-    gesture = fingers.size > 0 ? { kind: 'done' } : null;
+  const at = toDevice(event.clientX, event.clientY);
+  if (event.type !== 'pointerup') {
+    cam.pointerCancel(event.pointerId);
     return;
   }
-  if (fingers.size > 0) return;
-  const tapped = gesture?.kind === 'tap' && event.type === 'pointerup';
-  gesture = null;
-  if (tapped) tapAt(at.x, at.y);
+  // A drag, a pinch or a fling stopped is not a tap: the camera says what was one.
+  const tap = cam.pointerUp(event.pointerId, at.x, at.y, event.timeStamp);
+  if (tap) tapAt(tap.x, tap.y);
 };
 canvas.addEventListener('pointerup', lift);
 canvas.addEventListener('pointercancel', lift);
@@ -2585,18 +2477,18 @@ const LONG_PRESS_MS = 450;
 let pressTimer = 0;
 
 /** Called as a finger comes down: held still long enough, the touch becomes a ping instead of a tap. */
-function armPing(): void {
+function armPing(at: { x: number; y: number }): void {
   clearTimeout(pressTimer);
-  const started = gesture;
-  if (session?.mode !== 'online' || started?.kind !== 'tap') return;
+  const started = cam.tapping;
+  if (session?.mode !== 'online' || !started) return;
   pressTimer = window.setTimeout(() => {
     // A drag or a pinch, a lifted finger or a new touch each replace the gesture: then it was not a hold.
-    if (gesture !== started || !session?.world || overlayOpen()) return;
-    const x = Math.floor((camera.x + started.x / camera.zoom) / TILE);
-    const y = Math.floor((camera.y + started.y / camera.zoom) / TILE);
+    if (cam.tapping !== started || !session?.world || overlayOpen()) return;
+    const x = Math.floor((camera.x + at.x / camera.zoom) / TILE);
+    const y = Math.floor((camera.y + at.y / camera.zoom) / TILE);
     if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) return;
     // The touch is spent: lifting the finger walks nowhere.
-    gesture = { kind: 'done' };
+    cam.spend();
     if (coop?.ping(session, view.depth, x + y * WIDTH)) haptic('hit');
   }, LONG_PRESS_MS);
 }
@@ -2610,7 +2502,7 @@ canvas.addEventListener('wheel', (event) => {
   // A touchpad's pinch comes as many small steps with ctrl held.
   const notch = event.ctrlKey ? 25 : 60;
   if (Math.abs(wheelSum) < notch) return;
-  zoomTo(Math.round(zoom.target) - Math.sign(wheelSum), toDevice(event.clientX, event.clientY));
+  cam.zoomStep(wheelSum > 0 ? -1 : 1, toDevice(event.clientX, event.clientY));
   wheelSum = 0;
 }, { passive: false });
 
@@ -2781,6 +2673,8 @@ function tapAt(px: number, py: number): void {
   if (view.skipIntro(fx.now)) return;
   const x = Math.floor((camera.x + px / camera.zoom) / TILE);
   const y = Math.floor((camera.y + py / camera.zoom) / TILE);
+  // The whole level is on: a tap on the map walks there (below) and takes the view back to the normal zoom, eased.
+  if (cam.overview) cam.exitOverview(true);
   if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) return;
   if (examining) {
     examining = false;
@@ -2790,14 +2684,8 @@ function tapAt(px: number, py: number): void {
   // A double tap on the hero brings the view back to them (the second tap does nothing else).
   const hero = session.world && heroById(session.world, session.myId);
   if (hero && x + y * WIDTH === hero.pos && !aim) {
-    const nowMs = performance.now();
-    const again = nowMs - heroTapAt < DOUBLE_TAP_MS;
-    heroTapAt = again ? 0 : nowMs;
-    if (again) {
-      recentre(160);
-      return;
-    }
-  } else heroTapAt = 0;
+    if (cam.heroTap(performance.now())) return;
+  } else cam.otherTap();
   tapCell(x + y * WIDTH);
 }
 
@@ -2920,6 +2808,9 @@ addEventListener('blur', () => {
   held.code = '';
 });
 
+/** Shift + these pan the view (camcontrol.ts keyPan). */
+const LOOK_KEYS: Record<string, [number, number]> = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+
 const KEYS: Record<string, [number, number]> = {
   ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
   KeyW: [0, -1], KeyS: [0, 1], KeyA: [-1, 0], KeyD: [1, 0],
@@ -2935,8 +2826,18 @@ addEventListener('keydown', (event) => {
     if (event.code === 'Escape' && session && overlayOpen()) closeOverlay();
     return;
   }
-  const dir = KEYS[event.code];
-  if (dir) {
+  // Shift + an arrow looks about (the arrows alone walk).
+  const look = event.shiftKey ? LOOK_KEYS[event.code] : undefined;
+  if (look) {
+    cam.keyPan(look[0], look[1]);
+    event.preventDefault();
+    return;
+  }
+  // C brings the view back to the hero when it has been looked away; otherwise it is the diagonal step it always was.
+  const dir = event.code === 'KeyC' && cam.away ? undefined : KEYS[event.code];
+  if (event.code === 'KeyC' && cam.away) {
+    cam.recentre();
+  } else if (dir) {
     // Held down, the walking goes on by itself (see step); the keyboard's repeats are not needed.
     if (!event.repeat) {
       held.code = event.code;
@@ -2963,9 +2864,11 @@ addEventListener('keydown', (event) => {
     // Shattered's wait: a press is a turn; Space held down (the keyboard's repeat begins) rests until healed, as
     // holding the hourglass does.
     if (event.code === 'Space' && event.repeat) {
+      // Held: a view looked away comes back to the hero; otherwise the hero rests (once, at the first repeat).
       if (!spaceRests) {
         spaceRests = true;
-        startResting();
+        if (cam.away) cam.recentre();
+        else startResting();
       }
     } else {
       spaceRests = false;
@@ -3001,9 +2904,9 @@ addEventListener('keydown', (event) => {
   } else if (event.code === 'KeyJ') {
     openJournal();
   } else if (event.code === 'Equal' || event.code === 'NumpadAdd') {
-    zoomTo(Math.round(zoom.target) + 1, null);
+    cam.zoomStep(1, null);
   } else if (event.code === 'Minus' || event.code === 'NumpadSubtract') {
-    zoomTo(Math.round(zoom.target) - 1, null);
+    cam.zoomStep(-1, null);
   } else {
     return;
   }
@@ -3051,8 +2954,8 @@ function resize(): void {
   zoom.base = Math.max(1, Math.round((cssScale * dpr) / shrink));
   zoom.min = Math.max(1, Math.min(zoom.base, Math.floor(narrow / (TILE * WIDTH))));
   zoom.max = Math.max(zoom.base + 2, zoom.base * 2);
-  zoom.target = clampZoom(zoom.base + zoom.delta);
-  camera.zoom = zoom.target;
+  cam.configure({ min: zoom.min, max: zoom.max, base: zoom.base, delta: zoom.delta });
+  camera.zoom = cam.zoom;
   drawPace.force();
 }
 
@@ -3159,12 +3062,8 @@ let lastBeat = 0;
 /** What lay around my hero a frame ago: the cell stepped onto as it was before the step (high grass, trampled by it). */
 let around = new Map<number, number>();
 
-/** The soft camera: where it looks, eased after the hero (see tick). */
-const follow = { x: 0, y: 0, depth: 0, ready: false };
-/** How far behind the camera trails: the time it takes to close two thirds of the gap. */
-const CAMERA_LAG_MS = 60;
-/** The same when it has far to go (a teleport, a fall). */
-const CAMERA_CATCH_UP_MS = 45;
+/** My hero was alive at the last frame: the moment they are not, the view comes back to them. */
+let heroWasAlive = true;
 
 /** When the last game frame was drawn, for telling a phone that struggles. */
 let lastFrame = 0;
@@ -3481,12 +3380,7 @@ function tick(now: number): void {
     resetXray();
     resetMobFx();
     resetBossFx();
-    follow.ready = false;
-    pan.x = 0;
-    pan.y = 0;
-    pan.home = false;
-    pan.loose = false;
-    pan.easing = false;
+    heroWasAlive = true;
     walk.reset();
     bakedKey = '';
     threats = new Set();
@@ -3559,8 +3453,6 @@ function tick(now: number): void {
     if (enemies.some((m) => !enemiesInSight.includes(m.id)) || [...awake].some((id) => !threats.has(id))) {
       // Hero.checkVisibleMobs -> interrupt(): a new enemy in view stops walking, resting and a key held down.
       interruptHero();
-      // And the view, if it was dragged off, comes softly back to the hero: the fight is theirs.
-      if (gesture?.kind !== 'pan' && gesture?.kind !== 'pinch' && enemies.some((m) => !enemiesInSight.includes(m.id))) recentre(300);
     }
     threats = awake;
     enemiesInSight = enemies.map((m) => m.id);
@@ -3665,84 +3557,22 @@ function tick(now: number): void {
   freeMiddle = freeMiddle < 0 || view.depth !== freeDepth ? wanted : freeMiddle + (wanted - freeMiddle) * Math.min(1, dt / 140);
   freeDepth = view.depth;
   const middle = freeMiddle;
-  // The view follows the hero softly: it eases after them (a short exponential lag), so a walk
-  // starts and stops with a little weight instead of the map jerking under them. A jump of
-  // more than a few cells (a new depth, a teleport, a fall) is not followed but cut to.
-  // The zoom glides to its level, round its anchor (the fingers, the cursor, or the hero).
-  if (gesture?.kind !== 'pinch' && camera.zoom !== zoom.target) {
-    const z = Math.abs(zoom.target - camera.zoom) < 0.004
-      ? zoom.target
-      : camera.zoom + (zoom.target - camera.zoom) * (1 - Math.exp(-Math.max(0, dt) / 70));
-    applyZoom(z, zoomAnchor ?? { x: canvas.width / 2, y: middle });
-    if (z === zoom.target) zoomAnchor = null;
-  }
-  // A view dragged off keeps its offset from the hero while they walk (looking ahead along the way). It comes back only when
-  // asked to (the centre button, a double tap on the hero, a new enemy in sight), when the hero would be within two tiles of its
-  // edge, and on a new floor: always eased, never at once.
-  const dragging = gesture?.kind === 'pan' || gesture?.kind === 'pinch';
-  const heroX = at.x + TILE / 2;
-  const heroY = at.y + TILE / 2;
-  pan.easing = false;
-  if (pan.home) {
-    const back = Math.exp(-Math.max(0, dt) / pan.ease);
-    pan.x *= back;
-    pan.y *= back;
-    pan.easing = true;
-    if (Math.hypot(pan.x, pan.y) < 0.05) {
-      pan.x = 0;
-      pan.y = 0;
-      pan.home = false;
-      pan.easing = false;
-    }
-  } else if (!dragging && !pan.loose && (pan.x !== 0 || pan.y !== 0)) {
-    // Keeps the hero clear of the edges of the band the HUD leaves free: eased back just far enough.
-    const ratio = canvas.height / (canvas.clientHeight || 1);
-    const z = camera.zoom;
-    const m = EDGE_TILES * TILE;
-    const half = canvas.width / z / 2;
-    const bandTop = (free.top * ratio) / z;
-    const bandBottom = (free.bottom * ratio) / z;
-    const span = (lo: number, hi: number): [number, number] => (lo > hi ? [(lo + hi) / 2, (lo + hi) / 2] : [lo, hi]);
-    const [loX, hiX] = span(-(half - m), half - m);
-    const [loY, hiY] = span(middle / z - (bandBottom - m), middle / z - (bandTop + m));
-    const wantX = Math.max(loX, Math.min(hiX, pan.x));
-    const wantY = Math.max(loY, Math.min(hiY, pan.y));
-    if (wantX !== pan.x || wantY !== pan.y) {
-      const give = 1 - Math.exp(-Math.max(0, dt) / EDGE_EASE_MS);
-      pan.x += (wantX - pan.x) * give;
-      pan.y += (wantY - pan.y) * give;
-      if (Math.abs(wantX - pan.x) < 0.05 && Math.abs(wantY - pan.y) < 0.05) {
-        pan.x = wantX;
-        pan.y = wantY;
-      } else {
-        pan.easing = true;
-      }
-    }
-  }
-  // Not so far that the level leaves the screen: the point looked at stays within where the level lies (a tile's slack).
-  const bounds = levelMiddle(level);
-  pan.x = Math.max(bounds.left - TILE - heroX, Math.min(bounds.right + TILE - heroX, pan.x));
-  pan.y = Math.max(bounds.top - TILE - heroY, Math.min(bounds.bottom + TILE - heroY, pan.y));
-  const targetX = heroX - canvas.width / camera.zoom / 2 + pan.x;
-  const targetY = heroY - middle / camera.zoom + pan.y;
-  // A jump of more than a few cells (a teleport, a fall) is caught up with quicker, still eased; a new floor is cut to.
-  const far = !dragging && Math.hypot(targetX - follow.x, targetY - follow.y) > TILE * 4;
-  if (dragging && follow.ready && follow.depth === me.depth) {
-    // Under the finger the map moves with it, not after it.
-    follow.x = targetX;
-    follow.y = targetY;
-  } else if (!follow.ready || follow.depth !== me.depth) {
-    follow.x = targetX;
-    follow.y = targetY;
-  } else {
-    const ease = 1 - Math.exp(-Math.max(0, dt) / (far ? CAMERA_CATCH_UP_MS : CAMERA_LAG_MS));
-    follow.x += (targetX - follow.x) * ease;
-    follow.y += (targetY - follow.y) * ease;
-  }
-  follow.ready = true;
-  follow.depth = me.depth;
-  camera.x = follow.x + kick.x;
-  camera.y = follow.y + kick.y;
+  // The camera (camcontrol.ts) looks where the hero is plus the offset the player has given it, and keeps that offset while the
+  // hero walks. Only the player, the centre button / double tap / key, a new floor and the hero's death move it back, and
+  // only the hero acting with the view panned off nudges it (just enough). A new enemy moves nothing.
+  if (heroWasAlive && !isAlive(me)) cam.recentre();
+  heroWasAlive = isAlive(me);
+  const ratio = canvas.height / (canvas.clientHeight || 1);
+  const state = cam.frame(dt, {
+    hero: { x: at.x + TILE / 2, y: at.y + TILE / 2 },
+    cell: { x: cellX(me.pos) * TILE + TILE / 2, y: cellY(me.pos) * TILE + TILE / 2 },
+    floor: `${session.generation}:${me.depth}`,
+    bounds: levelMiddle(level),
+    viewport: { width: canvas.width, height: canvas.height, middle, bandTop: free.top * ratio, bandBottom: free.bottom * ratio, px: canvas.width / (canvas.clientWidth || canvas.width) },
+  });
+  camera.zoom = state.zoom;
+  camera.x = state.x + kick.x;
+  camera.y = state.y + kick.y;
   // What lies hidden (the phantom fish) is not drawn until found.
   const heaps = (world.floors[me.depth]?.heaps ?? []).filter((heap) => heap.kind !== 'hidden').map((heap) => ({
     pos: heap.pos,
@@ -3761,9 +3591,7 @@ function tick(now: number): void {
     return false;
   });
   // The map is drawn at full pace while something moves, and a few times a second when it only breathes (pace.ts).
-  const settling = Math.abs(targetX - follow.x) * camera.zoom > 0.25 || Math.abs(targetY - follow.y) * camera.zoom > 0.25
-    || camera.zoom !== zoom.target || pan.home || pan.easing || (gesture !== null && gesture.kind !== 'done');
-  const moving = settling || walk.queue.length > 0 || walk.chase !== null || session.busy
+  const moving = state.moving || walk.queue.length > 0 || walk.chase !== null || session.busy
     || view.moving(vnow) || fx.moving(vnow) || motion.moving() || fadingWalls();
   if (drawPace.due(now, moving, quality.light)) {
     const plants = (world.floors[me.depth]?.plants ?? []).map((p) => ({ pos: p.pos, index: PLANT_KINDS.indexOf(p.kind) }));
@@ -3800,6 +3628,7 @@ function tick(now: number): void {
       ground: (c: CanvasRenderingContext2D) => drawBossGround(c, world, level, assets, explored, visible, vnow),
       top: (c: CanvasRenderingContext2D) => drawBossTop(c, world, level, assets, explored, visible, vnow),
       marks: cellMarks(vnow),
+      overview: cam.overviewShown,
       middle,
       // The cards sit above the hero, not on them: a third of the way down the free band.
       cardY: (free.top + (free.bottom - free.top) * 0.3) * (canvas.height / (canvas.clientHeight || 1)),
@@ -3809,7 +3638,7 @@ function tick(now: number): void {
     coopFrame(ctx, { session, world, view, camera, free, now: vnow });
     placeVignette(!quality.light, (scene.focus.x - camera.x) * camera.zoom, (scene.focus.y - camera.y) * camera.zoom);
     mapControls.update(
-      Math.round(zoom.target) < zoom.max, Math.round(zoom.target) > zoom.min, Math.hypot(pan.x, pan.y) > TILE * 1.5 && !pan.home,
+      cam.canZoomIn, cam.canZoomOut, cam.away, cam.overview,
       document.querySelector<HTMLElement>('#ui .pd-log')?.offsetHeight ?? 120,
     );
   }
@@ -4254,5 +4083,5 @@ if (import.meta.env.DEV) {
     }
   };
   Object.assign(window, { __release: { news: () => showNews({ release: CURRENT, onClose: () => toTitle(false) }), report: () => api && showReport({ api, run: runFacts, onClose: () => toTitle(false) }), crash: showCrash } });
-  Object.assign(window, { __pd: { pace: drawPace, get session() { return session; }, openAlchemy, openBackpack, openHero, openJournal, openMenu, badges: () => showBadges(hideOverlay, profile?.honors ?? []), camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
+  Object.assign(window, { __pd: { cam, pace: drawPace, get session() { return session; }, openAlchemy, openBackpack, openHero, openJournal, openMenu, badges: () => showBadges(hideOverlay, profile?.honors ?? []), camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
 }

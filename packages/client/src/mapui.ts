@@ -26,6 +26,7 @@ export class MapControls {
   private readonly hero: HTMLButtonElement;
   private readonly zoomIn: HTMLButtonElement;
   private readonly zoomOut: HTMLButtonElement;
+  private readonly all: HTMLButtonElement;
   private readonly attackButton: HTMLButtonElement;
   private readonly resumeButton: HTMLButtonElement;
   private attackKey = '';
@@ -51,7 +52,9 @@ export class MapControls {
     this.resumeButton.hidden = true;
     this.box = document.createElement('div');
     this.box.className = 'pd-mapctl';
-    this.box.append(this.attackButton, this.resumeButton, this.hero, this.zoomIn, this.zoomOut, button('all', t.mapAll, actions.whole));
+    this.all = button('all', t.mapAll, actions.whole);
+    this.all.setAttribute('aria-pressed', 'false');
+    this.box.append(this.attackButton, this.resumeButton, this.hero, this.zoomIn, this.zoomOut, this.all);
     root.append(this.box);
   }
 
@@ -68,14 +71,19 @@ export class MapControls {
     if (this.resumeButton.hidden === resume) this.resumeButton.hidden = !resume;
   }
 
-  /** The buttons as things stand: at a limit of the zoom one is spent; «to the hero» only when dragged away. */
-  update(canIn: boolean, canOut: boolean, away: boolean, logHeight: number): void {
-    const state = `${canIn}|${canOut}|${away}|${Math.round(logHeight)}`;
+  /**
+   * The buttons as things stand: at a limit of the zoom one is spent; «to the hero» fades in only when the view is dragged
+   * away; «the whole level» is lit while it is showing.
+   */
+  update(canIn: boolean, canOut: boolean, away: boolean, whole: boolean, logHeight: number): void {
+    const state = `${canIn}|${canOut}|${away}|${whole}|${Math.round(logHeight)}`;
     if (state === this.state) return;
     this.state = state;
     this.zoomIn.disabled = !canIn;
     this.zoomOut.disabled = !canOut;
     this.hero.hidden = !away;
+    this.all.classList.toggle('on', whole);
+    this.all.setAttribute('aria-pressed', String(whole));
     this.box.style.setProperty('--log-h', `${Math.round(logHeight)}px`);
     // The learning card stands above the log, in the same layer.
     this.box.parentElement?.style.setProperty('--log-h', `${Math.round(logHeight)}px`);

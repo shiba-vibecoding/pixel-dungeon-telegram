@@ -105,8 +105,12 @@ canvas#game {
 }
 @media (prefers-reduced-motion: reduce) { .pd-bar-lag { transition: none; } }
 
-/* «Back to the hero» shows only while the view has been dragged away. */
+/* «Back to the hero» shows only while the view has been dragged away, and fades in. «The whole level» is lit while it shows. */
 .pd-mapbtn[hidden] { display: none; }
+#ui .pd-mapctl .pd-mapbtn.hero { animation: pd-cam-fade .24s ease-out both; }
+@keyframes pd-cam-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #ui .pd-mapctl .pd-mapbtn.hero { animation: none; } }
+.pd-mapbtn.all.on { box-shadow: inset 0 0 0 2px var(--gold-deep), inset 0 0 0 4px var(--void); background: var(--stone-800); }
 /* AttackIndicator: the enemy's portrait in a red frame; resume: a gold arrow. */
 .pd-mapbtn.attack { box-shadow: inset 0 0 0 2px #c0392b, inset 0 0 0 4px var(--void); overflow: hidden; padding: 0; }
 .pd-mapbtn.attack::before { display: none; }
