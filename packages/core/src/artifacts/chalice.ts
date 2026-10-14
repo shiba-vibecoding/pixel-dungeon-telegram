@@ -1,3 +1,4 @@
+import { spiritChalice } from '../classes/state';
 import { type Hero, heroArmor, isAlive, isStarving } from '../actors';
 import { hurt } from '../combat';
 import type { Ctx } from '../floor';
@@ -72,7 +73,11 @@ export function chargeChalice(ctx: Ctx, hero: Hero, item: Item, amount: number):
 /** Regeneration.act with the chalice worn: the delay between healed points, cursed half as long again, else shorter. */
 export function chaliceRegenDelay(hero: Hero, delay: number): number {
   const chalice = wornOf(hero, 'artifact.chalice');
-  if (!chalice || magicImmune(hero)) return delay;
+  if (magicImmune(hero)) return delay;
+  // SpiritForm: the chalice's passive regeneration lent for twenty turns (Regeneration.act).
+  const lent = chalice ? undefined : spiritChalice(hero);
+  if (lent) return (delay - (1.33 + lent.level * 0.667)) / artifactChargeMultiplier(hero);
+  if (!chalice) return delay;
   if (chalice.cursed) return delay * 1.5;
   // 15% faster at +0, five times as fast at +10.
   return (delay - (1.33 + chalice.level * 0.667)) / artifactChargeMultiplier(hero);

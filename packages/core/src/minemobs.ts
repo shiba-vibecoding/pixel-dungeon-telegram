@@ -8,7 +8,7 @@ import { createItem } from './items';
 import type { Level } from './level/generate';
 import { distance, LENGTH, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
-import { addQuestScore } from './quest';
+import { questScore } from './score';
 import { mobConditions, mobPress, trapAt, triggerTrap } from './traps';
 import { mobCount, partySize, respawnTime, scaleMob } from './party';
 import type { MineMobState } from './mine-types';
@@ -410,7 +410,7 @@ function invulnerable(ctx: Ctx, mob: Mob, source: Char | string): boolean {
 export function mineBeforeAttack(ctx: Ctx, attacker: Char, defender: Char): boolean {
   if (!isHero(attacker) && attacker.kind === 'crystalGuardian' && isHero(defender)) {
     const spireNear = ctx.floor.mobs.some((m) => m.kind === 'crystalSpire' && m.hp !== m.ht && distance(attacker.pos, m.pos) <= 8);
-    if (!spireNear) addQuestScore(ctx.world, 2, -100);
+    if (!spireNear) questScore(ctx.world, 2, -100);
   }
   if (!isHero(defender) && isMineKind(defender.kind) && invulnerable(ctx, defender, attacker)) {
     ctx.effects.push({ type: 'mineEvent', depth: ctx.depth, what: 'immune', mob: defender.id });
@@ -579,7 +579,7 @@ function spireAct(ctx: Ctx, mob: Mob): void {
         dmg += 12;
         ch.crippled = (ch.crippled ?? 0) + 30;
       } else if (isHero(ch)) {
-        addQuestScore(ctx.world, 2, -100);
+        questScore(ctx.world, 2, -100);
       }
       ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: ch.id, damage: dmg });
       hurt(ctx, ch, dmg, mob);
@@ -776,7 +776,7 @@ function rockThrow(ctx: Ctx, source: Mob, from: number, to: number, knocked: Set
     const dmg = ctx.rng.normalIntRange(6, 12);
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: ch.id, damage: dmg });
     hurt(ctx, ch, dmg, source);
-    if (isHero(ch)) addQuestScore(ctx.world, 2, -100);
+    if (isHero(ch)) questScore(ctx.world, 2, -100);
     if (isAlive(ch)) ch.paralysed = Math.max(ch.paralysed ?? 0, !isHero(ch) && ch.kind === 'gnollGuard' ? 10 : 3);
     if (isAlive(ch) && !knocked.has(ch) && rock.path.length > rock.dist + 1) {
       throwChar(ctx, ch, ballistica(ctx, ch.pos, rock.path[rock.dist + 1]!, MAGIC_BOLT));
@@ -851,7 +851,7 @@ function rockfallsDue(ctx: Ctx, mob: Mob): void {
         const dmg = ctx.rng.normalIntRange(6, 12);
         ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: ch.id, damage: dmg });
         hurt(ctx, ch, dmg, mob);
-        if (isHero(ch)) addQuestScore(ctx.world, 2, -100);
+        if (isHero(ch)) questScore(ctx.world, 2, -100);
         if (isAlive(ch)) ch.paralysed = Math.max(ch.paralysed ?? 0, !isHero(ch) && ch.kind === 'gnollGuard' ? 10 : 3);
       } else if (level.map[cell] !== T.EMPTY_SP && !adjacent(cell, level.entrance) && ctx.rng.int(3) === 0) {
         level.map[cell] = T.MINE_BOULDER;

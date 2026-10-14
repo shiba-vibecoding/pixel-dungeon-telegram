@@ -3,6 +3,7 @@ import type { Ctx } from '../floor';
 import { stepOnPlant } from '../plants';
 import { trapAt, triggerTrap } from '../traps';
 import { delayPress, frozenBy } from './hourglass';
+import { bubblePress } from '../timebubble';
 import { discover, F, hasFlag } from '../level/terrain';
 
 /*
@@ -16,10 +17,11 @@ export function heroPress(ctx: Ctx, hero: Hero): void {
   const frozen = frozenBy(hero);
   const trap = trapAt(ctx.level, cell) !== undefined;
   const plant = ctx.floor.plants?.some((p) => p.pos === cell) ?? false;
-  if (frozen && (trap || plant)) {
+  if ((frozen || hero.timeBubble) && (trap || plant)) {
     // The trap is found, and waits.
     if (trap && hasFlag(ctx.level.map[cell]!, F.SECRET)) ctx.level.map[cell] = discover(ctx.level.map[cell]!);
-    delayPress(frozen, cell);
+    if (frozen) delayPress(frozen, cell);
+    else bubblePress(hero, cell);
     return;
   }
   if (trap) triggerTrap(ctx, hero, cell);

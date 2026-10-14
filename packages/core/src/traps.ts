@@ -1,9 +1,15 @@
-import { isAlive, type Mob, MOBS, mobStats } from './actors';
+import { hasGlyph } from './classes/state';
+import { beckon, createMob, type Hero, heroArmor, isAlive, type Mob, type MobKind, MOBS, mobStats } from './actors';
+import { harvestKill } from './classes/hooks';
+import { mobGearTick } from './throwing';
+import { dealMob } from './spawner';
+import { bleedTick } from './afflict';
+import { hasProp } from './props';
+import { CRIPPLE_TURNS, earnExp, hurt, mobDied } from './combat';
+import { charAt, type Char, type Ctx, enterCell, exploredCells, heroesOn, isHero, isPassable, isWater, leaveCell } from './floor';
+import { distance, NEIGHBOURS8 } from './level/geometry';
 import { burstOnEternalFire } from './roomblobs';
 import { isTallGrass, trample } from './highgrass';
-import { earnExp, hurt, mobDied } from './combat';
-import { type Char, type Ctx, enterCell, exploredCells, heroesOn, isHero, isWater, leaveCell } from './floor';
-import { distance } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import { clearGas, seedGas } from './gas';
 import { burnHeaps, chillPack, freezeHeaps } from './cooking';
@@ -12,9 +18,6 @@ import { activate } from './trap-effects';
 import { frostHurtsElemental } from './wandmaker-mobs';
 import type { Level } from './level/generate';
 import { type TrapInfo, type TrapKind, TRAPS } from './level/trapdefs';
-import { mobGearTick } from './throwing';
-import { bleedTick } from './afflict';
-import { hasProp } from './props';
 import { tenguDartTrap } from './bosses/index';
 import { tickMob } from './buffs';
 import { deathMarkTurn } from './abilities';
@@ -76,7 +79,7 @@ export function immuneTo(char: Char, harm: 'burning' | 'gas' | 'frost' | 'toxic'
     // BlobImmunity (purity), and the imbues: fire (FireImbue), frost and chill (FrostImbue), toxic gas (ToxicImbue);
     // armour of brimstone keeps fire off its wearer (Char.isImmune: Burning).
     if (harm === 'gas') return (char.gasImmune ?? 0) > 0;
-    if (harm === 'burning') return (b?.fireImbue ?? 0) > 0 || char.armor.glyph === 'brimstone';
+    if (harm === 'burning') return (b?.fireImbue ?? 0) > 0 || hasGlyph(char, 'brimstone');
     if (harm === 'frost') return (b?.frostImbue ?? 0) > 0;
     if (harm === 'toxic') return (b?.toxicImbue ?? 0) > 0;
     return false;
@@ -257,7 +260,11 @@ export function mobConditions(ctx: Ctx, mob: Mob): boolean {
     if (damage > 0) {
       ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: mob.id, damage });
       hurt(ctx, mob, damage, 'bleeding');
-      if (!isAlive(mob)) return true;
+      if (!isAlive(mob)) {
+        // Bleeding.act: a sickle's harvest that kills counts as the ability's kill.
+        harvestKill(ctx, mob);
+        return true;
+      }
     }
   }
   if ((mob.poison ?? 0) > 0) {

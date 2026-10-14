@@ -290,11 +290,28 @@ export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item)
 
 const capital = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
+/** A champion's name and what it does, in Shattered's words (ChampionEnemy), for its window; null for anything else. */
+export function championText(mob: Mob): { name: string; desc: string } | null {
+  if (!mob.champion) return null;
+  const x = MOB_EXTRAS[lang === 'ru' ? 'ru' : 'en'];
+  if (mob.champion === 'growing') {
+    const growth = mob.growth ?? 1.19;
+    return { name: capital(x.growing), desc: x.growingDesc(Math.trunc(100 * (growth - 1)), Math.trunc(100 * (1 - 1 / growth))) };
+  }
+  const [name, desc] = x.champions[mob.champion];
+  return { name: capital(name), desc };
+}
+
 const EN_PLANTS: Record<PlantKind, readonly [string, string]> = {
   firebloom: ['Firebloom', 'When something touches a Firebloom, it bursts into flames.'],
   icecap: ['Icecap', 'Touched, an Icecap lets out a pollen that freezes everything around.'],
   sorrowmoss: ['Sorrowmoss', 'A Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.'],
   dreamweed: ['Dreamweed', 'Touched, a Dreamweed lets out a glittering cloud of confusing gas.'],
+  stormvine: ['Stormvine', 'Gravity affects the stormvine plant strangely, allowing its whispy blue tendrils to hang on the air. Anything caught in the vine is affected by this, and becomes disoriented.'],
+  swiftthistle: ['Swiftthistle', 'When trampled, swiftthistle will briefly accelerate the flow of time around it, allowing the trampler to perform several actions instantly.'],
+  blindweed: ['Blindweed', 'Upon being touched a blindweed perishes in a bright flash of light. The flash is strong enough to disorient for several seconds.'],
+  mageroyal: ['Mageroyal', "The mageroyal's prickly flowers contain a chemical which is known for its properties as a strong neutralizing agent. Anything that steps in this plant will be cleansed of many negative effects."],
+  starflower: ['Starflower', 'A rare plant, starflower is said to grant holy power to whomever touches it.'],
   sungrass: ['Sungrass', 'Sungrass is renowned for the healing properties of its sap.'],
   earthroot: ['Earthroot', 'When a creature touches an Earthroot, its roots make a kind of natural armour around it.'],
   fadeleaf: ['Fadeleaf', 'Touching a Fadeleaf will teleport any creature to a random place on the level.'],
@@ -308,6 +325,11 @@ const RU_PLANTS: Record<PlantKind, readonly [string, string]> = {
   icecap: ['Ледянка', 'Если коснуться ледянки, она выпускает пыльцу, которая замораживает всё вокруг.'],
   sorrowmoss: ['Скорбный мох', 'Скорбный мох — это цветок (а не мох) с острыми как бритва лепестками, покрытыми смертельным ядом.'],
   dreamweed: ['Дрём-трава', 'Если коснуться дрём-травы, она выпускает сверкающее облако дурманящего газа.'],
+  stormvine: ['Грозовая лоза', 'Гравитация странно действует на грозовую лозу, позволяя её тонким синим усикам парить в воздухе. Всё, что попадается в эти усики, получает похожий эффект и становится дезориентированным.'],
+  swiftthistle: ['Скорополох', 'Если наступить на скорополох, он ненадолго ускорит поток времени вокруг себя, дав возможность совершить несколько действий за один момент.'],
+  blindweed: ['Слепняк', 'При прикосновении слепняк испускает яркую вспышку света и погибает. Вспышка достаточно сильна, чтобы вывести из строя на несколько секунд.'],
+  mageroyal: ['Магороза', 'Колючие цветки магорозы содержат вещество, известное своими сильными нейтрализующими свойствами. Всё, что попадёт в это растение, будет очищено от множества негативных эффектов.'],
+  starflower: ['Звездоцвет', 'Редкое растение; говорят, звездоцвет дарует святую силу тому, кто к нему прикоснётся.'],
   sungrass: ['Солнечная трава', 'Сок солнечной травы славится своими целебными свойствами.'],
   earthroot: ['Земляной корень', 'Когда существо касается земляного корня, корни образуют вокруг него что-то вроде природной брони.'],
   fadeleaf: ['Блеклист', 'Прикосновение к блеклисту переносит любое существо в случайное место на уровне.'],

@@ -15,6 +15,8 @@ export type { BadgeId } from '@pd/core';
 
 /** Where the arena's badges begin: images from here on are in meta/badges-arena.png, not badges.png. */
 export const ARENA_BADGES = 64;
+/** Badges that can no longer be earned (Shattered knows wands by sight): shown only to those who have them. */
+export const RETIRED: ReadonlySet<BadgeId> = new Set<BadgeId>(['wands']);
 
 /** Each badge's icon in badges.png, and its words. */
 export const BADGES: ReadonlyArray<{ id: BadgeId; image: number; en: string; ru: string }> = [

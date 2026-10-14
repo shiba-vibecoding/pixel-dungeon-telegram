@@ -109,6 +109,10 @@ describe("Goo's lair (SewerBossLevel)", () => {
     expect(blobs).toBeGreaterThanOrEqual(2);
     expect(blobs).toBeLessThanOrEqual(4);
     expect(all.some((e) => e.type === 'bossSlain' && e.kind === 'goo')).toBe(true);
+    // Statistics.bossScores[0]: 1000 for the kill, less 100 for each pumped-up blow that was not dodged (score.ts).
+    const part = world.score!.bosses[0]!;
+    expect(part).toBeLessThanOrEqual(1000);
+    expect((1000 - part) % 100).toBe(0);
   });
 
   it('pumps up for a turn, then strikes from two cells away, three times as hard', () => {

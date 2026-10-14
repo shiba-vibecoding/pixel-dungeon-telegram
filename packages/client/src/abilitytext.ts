@@ -62,6 +62,7 @@ export const ABILITY_GLOW: Readonly<Record<AbilityKind, string>> = {
   elementalBlast: '#ff9a4a', wildMagic: '#c070ff', warpBeacon: '#6ec8ff',
   smokeBomb: '#a8a8bc', deathMark: '#ff5050', shadowClone: '#8c7ad0',
   spectralBlades: '#7fe0e0', naturesPower: '#6fd06f', spiritHawk: '#78b8ff',
+  challenge: '#ffd24a', elementalStrike: '#ff9a4a', feint: '#c8c8e0', ascendedForm: '#fff2a0', trinity: '#ffe9a0', powerOfMany: '#fff7c8',
 };
 
 /** ArmorAbility.desc: what it does and what it costs; the blast adds what the staff's wand makes of it. */

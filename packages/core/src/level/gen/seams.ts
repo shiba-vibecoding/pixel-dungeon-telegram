@@ -31,8 +31,8 @@ export type SeamItem =
   /** SEAM(alchemy): the alchemize spell the shops sell; nothing stands in. */
   | 'alchemize'
   /**
-   * SEAM(alchemy): the other runestones the vault's loot holds, and SEAM(plants) the seeds Pixel Dungeon has
-   * not; the nearest scroll, potion, bomb or seed stands in.
+   * SEAM(alchemy): the other runestones the vault's loot holds, and Shattered's seeds; the stones'
+   * nearest scroll, potion or bomb stands in.
    */
   | 'stoneOfFlock'
   | 'stoneOfShock'
@@ -91,15 +91,17 @@ export function seamItem(name: SeamItem): Item | null {
       return createItem('honeypot.shattered');
     case 'alchemize':
       return createItem('spell.alchemize');
-    // SEAM(plants): seeds Pixel Dungeon has not; the nearest stands in.
+    // Shattered's own seeds.
     case 'mageroyalSeed':
+      return createItem('seed.mageroyal');
     case 'starflowerSeed':
-      return createItem('seed.sungrass');
+      return createItem('seed.starflower');
     case 'stormvineSeed':
+      return createItem('seed.stormvine');
     case 'blindweedSeed':
-      return createItem('seed.dreamweed');
+      return createItem('seed.blindweed');
     case 'swiftthistleSeed':
-      return createItem('seed.fadeleaf');
+      return createItem('seed.swiftthistle');
     // The alchemy guide's pages: their own item (inventory: picked up, the page is found).
     case 'alchemyPage':
       return null;
@@ -107,16 +109,15 @@ export function seamItem(name: SeamItem): Item | null {
 }
 
 /**
- * Plants Shattered grows that Pixel Dungeon has not: SEAM(plants) the starflower, the blandfruit
- * bush, and SEAM(wands) the wand of regrowth's seed pod and dewcatcher. The nearest plant stands in,
- * or none (the cell still turns to grass, as under a plant).
+ * Plants the secret rooms grow: the starflower (now grown here); SEAM(plants) the blandfruit bush and
+ * SEAM(wands) the wand of regrowth's seed pod and dewcatcher have none (the cell still turns to grass, as under a plant).
  */
 export type SeamPlant = 'starflower' | 'blandfruitBush' | 'seedpod' | 'dewcatcher';
 
 export function seamPlant(name: SeamPlant): PlantKind | null {
   switch (name) {
     case 'starflower':
-      return 'sungrass';
+      return 'starflower';
     case 'blandfruitBush':
     case 'seedpod':
     case 'dewcatcher':

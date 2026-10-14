@@ -240,6 +240,14 @@ export function mirrorReward(heroClass: HeroClass): Item {
       case 'huntress':
         reward = { ...createItem('spiritBow'), enchant: randomEnchantment(Random.rng), unique: true };
         break;
+      case 'duelist':
+        // SEAM(gear): Shattered's MirrorSword +3, enchanted; the duelist's rapier stands in.
+        reward = { ...createItem('weapon.rapier', 1, 3), enchant: randomEnchantment(Random.rng) };
+        break;
+      case 'cleric':
+        // The cleric's holy tome +8.
+        reward = { ...createItem('artifact.tome', 1, 8), unique: true };
+        break;
     }
     return reward;
   } finally {

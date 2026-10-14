@@ -27,6 +27,7 @@ import { LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { discover, F, hasFlag, T } from './level/terrain';
 import type { Rng, RngState } from './rng';
 import type { World } from './world';
+import type { ClassFx } from './classes/fx';
 import type { BossFloor } from './bosses/state';
 import type { BossFx } from './bosses/common';
 import { awareCells } from './artifacts/talisman';
@@ -65,6 +66,8 @@ export interface Floor {
   gasStrength?: Partial<Record<GasKind, number>>;
   /** An altar room's sacrificial fire: where it burns, and how much more it hungers for (0 once it has gone out). */
   altar?: { pos: number; volume: number; prize?: Item; bonusSpawns?: number };
+  /** HallowedGround.HallowedTerrain: cells of consecrated ground and the turns they have left. */
+  hallowed?: Record<number, number>;
   /** What this depth gave every hero (strength, upgrades): a hero who joins later gets theirs too (party.ts). */
   perHero?: ItemKind[];
   /** ToxicGasRoom's vents (ToxicGasSeed): [cell, gas let out a turn] (roomblobs.ts). */
@@ -96,7 +99,7 @@ export function landItem(ctx: Ctx, pos: number, item: Item): void {
 export function dropItem(floor: Floor, pos: number, item: Item): void {
   const heap = floor.heaps.find((h) => h.pos === pos);
   if (!heap) {
-    floor.heaps.push({ pos, kind: 'heap', items: [item] });
+    floor.heaps.push({ pos, kind: 'heap', items: [item], auto: true });
   } else if (heap.kind !== 'heap') {
     heap.items.push(item);
   } else {
@@ -454,6 +457,8 @@ export type Effect =
   | { type: 'sinkhole'; depth: number; cells: number[] }
   /** A ward the hero bumped into: dismiss it? (WndOptions) */
   | { type: 'ward'; hero: string; mob: string }
+  /** The Duelist's and the Cleric's doing: an animation, a burst or a sound for the client (classes/fx.ts). */
+  | { type: 'classFx'; depth: number; hero: string; fx: ClassFx }
   /** A queued action that became impossible before the hero's turn came. */
   | { type: 'interrupted'; hero: string; reason: string }
   /*
@@ -612,6 +617,8 @@ export function canEnter(level: Level, pos: number): boolean {
   if (!Number.isInteger(pos) || pos < 0 || pos >= LENGTH) return false;
   const x = pos % WIDTH;
   if (pos < WIDTH || pos >= LENGTH - WIDTH || x === 0 || x === WIDTH - 1) return false;
+  // The Cleric's wall of light is solid for as long as it stands.
+  if (level.lightWall?.[pos]) return false;
   const terrain = level.map[pos]!;
   // MagicalFireRoom.EternalFire: nothing passes through it.
   if (level.eternalFire?.includes(pos)) return false;
@@ -620,7 +627,7 @@ export function canEnter(level: Level, pos: number): boolean {
 
 /** Ground monsters walk on: they step around traps. */
 export function isPassable(level: Level, pos: number): boolean {
-  return pos >= 0 && pos < LENGTH && hasFlag(level.map[pos]!, F.PASSABLE) && !level.eternalFire?.includes(pos);
+  return pos >= 0 && pos < LENGTH && hasFlag(level.map[pos]!, F.PASSABLE) && !level.eternalFire?.includes(pos) && !level.lightWall?.[pos];
 }
 
 /* A door is open while someone stands in it, so it no longer blocks sight. */

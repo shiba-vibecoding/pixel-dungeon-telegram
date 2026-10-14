@@ -5,7 +5,7 @@ import { collect } from './inventory';
 import { createItem, type Item, type ItemKind, randomWand, undoWand, wandFromDeck, wandMaxCharges } from './items';
 import { identify } from './ident';
 import type { Rng } from './rng';
-import { addQuestScore } from './quest';
+import { questScore } from './score';
 import { adjacent, distance, LENGTH, WIDTH } from './level/geometry';
 import { JAVA_N8 } from './wandmaker-mobs';
 import { F, hasFlag, T } from './level/terrain';
@@ -239,7 +239,7 @@ export function wandFromWandmaker(ctx: Ctx, hero: Hero, choice: 1 | 2): void {
   }
   quest.wand1 = null;
   quest.wand2 = null;
-  if (quest.type === 1) addQuestScore(ctx.world, 1, 2000);
+  if (quest.type === 1) questScore(ctx.world, 1, 2000);
 }
 
 /* Corpse dust (items/quest/CorpseDust) */

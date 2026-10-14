@@ -162,3 +162,17 @@ describe('the Rat King', () => {
     expect(kings).toBeGreaterThan(3);
   });
 });
+
+describe("the ghost's quest and the score (Statistics.questScores[0])", () => {
+  it('the great crab blocking the hero it sees costs fifty points a blow; the foe slain earns a thousand', () => {
+    const { world, ghostId } = withGhost(3);
+    const hero = heroById(world, 'p')!;
+    const floor = floorAt(world, world.quest!.depth);
+    talk(world, ghostId);
+    const crab = floor.mobs.find((m) => m.kind === 'greatCrab')!;
+    crab.pos = beside(world, hero.pos);
+    Object.assign(crab, { state: 'hunting', enemy: 'p', enemySeen: true, paralysed: 0 });
+    act(world, 'p', { type: 'attack', target: crab.id });
+    expect(world.score?.quests[0]).toBe(-50);
+  });
+});

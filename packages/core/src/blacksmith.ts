@@ -15,7 +15,7 @@ import type { Room } from './level/gen/room';
 import { BlacksmithRoom } from './level/gen/rooms/quest/blacksmith-room';
 import { T } from './level/terrain';
 import type { BlacksmithQuest, BlacksmithType } from './mine-types';
-import { addQuestScore } from './quest';
+import { questScore } from './score';
 import { isUpgradable, itemAt, type ItemRef } from './scrolls';
 import { mend } from './wear';
 import type { World } from './world';
@@ -305,7 +305,7 @@ export function completeBlacksmith(ctx: Ctx, hero: Hero): void {
     }
   }
   if (q.bossBeaten) q.favor += 1000;
-  addQuestScore(ctx.world, 2, q.favor);
+  questScore(ctx.world, 2, q.favor);
   if (q.favor >= 2500) q.freePickaxe = true;
 }
 

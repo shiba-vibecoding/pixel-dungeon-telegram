@@ -2,7 +2,7 @@ import { type Hero, heroBelongings, type MobKind } from './actors';
 import { heroView } from './floor';
 import { questCompleted, rewardsAvailable } from './blacksmith';
 import { Feeling } from './level/gen/dungeon';
-import { cellX, cellY } from './level/geometry';
+import { cellX, cellY, WIDTH } from './level/geometry';
 import { RoomType } from './level/room';
 import { T } from './level/terrain';
 import type { World } from './world';
@@ -25,7 +25,7 @@ import type { World } from './world';
 export const LANDMARKS = [
   'chasmFloor', 'waterFloor', 'grassFloor', 'darkFloor', 'largeFloor', 'trapsFloor', 'secretsFloor',
   'shop', 'alchemy', 'garden', 'wellOfHealth', 'wellOfAwareness', 'wellOfTransmutation', 'sacrificialFire', 'statue',
-  'beaconLocation', 'demonSpawner',
+  'beaconLocation', 'demonSpawner', 'distantWell',
   'ghost', 'ratKing', 'wandmaker', 'troll', 'imp',
 ] as const;
 export type Landmark = (typeof LANDMARKS)[number];
@@ -81,6 +81,10 @@ export function noteLandmarks(world: World, hero: Hero): void {
     if (landmark && fov[mob.pos] && (mob.kind !== 'ratKing' || depth === 5)) add(world, landmark, depth);
   }
   for (const well of level.wells) if (fov[well.pos]) add(world, WELL_NOTES[well.water], depth);
+  // WeakFloorRoom.WellID: the well glimpsed below the weak floor.
+  for (const tile of level.customTiles ?? []) {
+    if (tile.kind === 'WeakFloorRoom.HiddenWell' && fov[tile.x + tile.y * WIDTH]) add(world, 'distantWell', depth);
+  }
   if (floor.altar && floor.altar.volume > 0 && fov[floor.altar.pos]) add(world, 'sacrificialFire', depth);
   if (level.map.some((terrain, cell) => terrain === T.ALCHEMY && fov[cell])) add(world, 'alchemy', depth);
   // Foliage, the garden's blob: a cell of the garden in sight.
@@ -95,6 +99,11 @@ export function noteLandmarks(world: World, hero: Hero): void {
     for (const item of heroBelongings(other)) if (item.kind === 'artifact.beacon' && item.returnTo) add(world, 'beaconLocation', item.returnTo.depth);
   }
   prune(world);
+}
+
+/** Notes.remove(landmark, depth). */
+export function removeNote(world: World, landmark: Landmark, depth: number): void {
+  if (world.notes) world.notes = world.notes.filter((note) => note.landmark !== landmark || note.depth !== depth);
 }
 
 /** Notes.remove, for whatever is no use any more. */

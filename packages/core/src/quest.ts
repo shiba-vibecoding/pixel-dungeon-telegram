@@ -11,6 +11,7 @@ import { Generator } from './level/gen/generator';
 import { Random } from './level/gen/random';
 import { QuestHooks } from './level/gen/quests';
 import type { RegularLevel } from './level/gen/regular-level';
+import { QUEST_SLOT, questScore } from './score';
 import type { World } from './world';
 import { underChallenges } from './challenges';
 
@@ -124,14 +125,9 @@ export function ghostFoeSlain(ctx: Ctx, mob: Mob, by?: string): void {
   const quest = ctx.world.quest;
   if (!quest || quest.processed || !quest.given || quest.depth !== ctx.depth || mob.kind !== GHOST_FOES[quest.type]) return;
   quest.processed = true;
-  addQuestScore(ctx.world, 0, 1000);
+  // Ghost.Quest.process: the errand is done; its foe slain (Statistics.questScores[0] += 1000).
+  questScore(ctx.world, QUEST_SLOT.ghost, 1000);
   ctx.effects.push({ type: 'ghost', hero: by ?? ctx.world.heroes[0]?.id ?? '', line: 'findMe', questType: quest.type });
-}
-
-/** Statistics.questScores: what each quest adds to the run's score (0 the ghost, 1 the wandmaker, 2 the blacksmith, 3 the imp). */
-export function addQuestScore(world: World, quest: number, points: number): void {
-  const scores = (world.questScores ??= [0, 0, 0, 0, 0]);
-  scores[quest] = (scores[quest] ?? 0) + points;
 }
 
 export function rewardProblem(world: World, hero: Hero, choice: unknown): string | null {

@@ -11,7 +11,7 @@ import { QuestHooks } from './level/gen/quests';
 import { Random } from './level/gen/random';
 import type { Room } from './level/gen/room';
 import { AmbitiousImpRoom } from './level/gen/rooms/quest/ambitious-imp';
-import { addQuestScore } from './quest';
+import { questScore } from './score';
 import type { StoredBelongings } from './vault-types';
 import type { World } from './world';
 
@@ -193,7 +193,7 @@ export function completeImpQuest(world: World, score: number): void {
   const quest = world.impQuest!;
   quest.done = true;
   quest.score = score;
-  addQuestScore(world, 3, score);
+  questScore(world, 3, score);
 }
 
 /** Whether a level is the one with the imp's room (CityLevel with AmbitiousImpRoom). */

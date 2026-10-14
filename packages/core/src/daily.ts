@@ -1,5 +1,6 @@
 import type { Hero } from './actors';
 import { DARKNESS, NO_HEALING, NO_HERBALISM, NO_SCROLLS, SWARM_INTELLIGENCE } from './challenges';
+import { ipow } from './fmath';
 import { collect } from './inventory';
 import { createItem, ITEMS, itemDef, type ItemKind } from './items';
 import type { World } from './world';
@@ -71,9 +72,13 @@ export function applyBoon(world: World, hero: Hero, boon: BoonId): void {
   }
 }
 
-/** How much a run's challenges raise its score: a quarter more for each (the ascension of a hero who has won). */
-export function challengeMultiplier(challenges: number): number {
+/** Statistics.chalMultiplier in twentieths: 1.25 to the power of the challenges on, to the nearest twentieth (20 for none, 25, 31, 39 ...). */
+export function challengeMultiplier20(challenges: number): number {
   let count = 0;
   for (let mask = challenges; mask; mask &= mask - 1) count++;
-  return 1 + count * 0.25;
+  // 1.25^n is exact in binary up to n = 22, so rounding its twentieths is the same on every engine.
+  return Math.round(ipow(1.25, count) * 20);
 }
+
+/** How much a run's challenges raise its score (Rankings.calculateScore): 1.25 to the power of those on, rounded to a twentieth. */
+export const challengeMultiplier = (challenges: number): number => challengeMultiplier20(challenges) / 20;

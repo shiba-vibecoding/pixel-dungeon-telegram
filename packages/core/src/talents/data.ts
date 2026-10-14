@@ -35,6 +35,18 @@ export type TalentId =
   | 'point_blank' | 'seer_shot'
   | 'farsight' | 'shared_enchantment' | 'shared_upgrades'
   | 'durable_tips' | 'barkskin' | 'shielding_dew'
+  // Duelist; Champion; Monk
+  | 'strengthening_meal' | 'adventurers_intuition' | 'patient_strike' | 'aggressive_barrier'
+  | 'focused_meal' | 'liquid_agility' | 'weapon_recharging' | 'lethal_haste' | 'swift_equip'
+  | 'precise_assault' | 'deadly_followup'
+  | 'varied_charge' | 'twin_upgrades' | 'combined_lethality'
+  | 'unencumbered_spirit' | 'monastic_vigor' | 'combined_energy'
+  // Cleric; Priest; Paladin
+  | 'satiated_spells' | 'holy_intuition' | 'searing_light' | 'shield_of_light'
+  | 'enlightening_meal' | 'recall_inscription' | 'sunray' | 'divine_sense' | 'bless'
+  | 'cleanse' | 'light_reading'
+  | 'holy_lance' | 'hallowed_ground' | 'mnemonic_prayer'
+  | 'lay_on_hands' | 'aura_of_protection' | 'wall_of_light'
   | ArmorTalent;
 
 /** The tier 4 talents of the twelve armour abilities (the duelist's, the cleric's and the rat king's are the classes stream's). */
@@ -63,6 +75,14 @@ export const ARMOR_TALENTS = [
   'growingPower', 'naturesWrath', 'wildMomentum',
   // Spirit Hawk
   'eagleEye', 'goForTheEyes', 'swiftSpirit',
+  // Challenge, Elemental Strike, Feint (the classes stream's)
+  'closeTheGap', 'invigoratingVictory', 'eliminationMatch',
+  'elementalReach', 'strikingForce', 'directedPower',
+  'feignedRetreat', 'exposeWeakness', 'counterAbility',
+  // Ascended Form, Trinity, Power of Many
+  'divineIntervention', 'judgement', 'flash',
+  'bodyForm', 'mindForm', 'spiritForm',
+  'beamingRay', 'lifeLink', 'stasis',
   // universal
   'heroicEnergy',
 ] as const;
@@ -77,7 +97,9 @@ export type AbilityKind =
   | 'heroicLeap' | 'shockwave' | 'endure'
   | 'elementalBlast' | 'wildMagic' | 'warpBeacon'
   | 'smokeBomb' | 'deathMark' | 'shadowClone'
-  | 'spectralBlades' | 'naturesPower' | 'spiritHawk';
+  | 'spectralBlades' | 'naturesPower' | 'spiritHawk'
+  /* the Duelist's and the Cleric's (classes/) */
+  | 'challenge' | 'elementalStrike' | 'feint' | 'ascendedForm' | 'trinity' | 'powerOfMany';
 
 export interface TalentDef {
   /** Talent.icon: the frame in talent_icons.png (32 to a row). */
@@ -121,6 +143,18 @@ export const TALENTS: Readonly<Record<TalentId, TalentDef>> = {
   farsight: c3(107), shared_enchantment: c3(108), shared_upgrades: c3(109),
   durable_tips: c3(110), barkskin: c3(111), shielding_dew: c3(112),
 
+  strengthening_meal: t1(128), adventurers_intuition: t1(129), patient_strike: t1(130), aggressive_barrier: t1(131),
+  focused_meal: t2(132), liquid_agility: t2(133), weapon_recharging: t2(134), lethal_haste: t2(135), swift_equip: t2(136),
+  precise_assault: t3(137), deadly_followup: t3(138),
+  varied_charge: c3(139), twin_upgrades: c3(140), combined_lethality: c3(141),
+  unencumbered_spirit: c3(142), monastic_vigor: c3(143), combined_energy: c3(144),
+
+  satiated_spells: t1(160), holy_intuition: t1(161), searing_light: t1(162), shield_of_light: t1(163),
+  enlightening_meal: t2(164), recall_inscription: t2(165), sunray: t2(166), divine_sense: t2(167), bless: t2(168),
+  cleanse: t3(169), light_reading: t3(170),
+  holy_lance: c3(171), hallowed_ground: c3(172), mnemonic_prayer: c3(173),
+  lay_on_hands: c3(174), aura_of_protection: c3(175), wall_of_light: c3(176),
+
   bodySlam: t4(17), impactWave: t4(18), doubleJump: t4(19),
   expandingWave: t4(20), strikingWave: t4(21), shockForce: t4(22),
   sustainedRetribution: t4(23), shrugItOff: t4(24), evenTheOdds: t4(25),
@@ -133,11 +167,17 @@ export const TALENTS: Readonly<Record<TalentId, TalentDef>> = {
   fanOfBlades: t4(113), projectingBlades: t4(114), spiritBlades: t4(115),
   growingPower: t4(116), naturesWrath: t4(117), wildMomentum: t4(118),
   eagleEye: t4(119), goForTheEyes: t4(120), swiftSpirit: t4(121),
+  closeTheGap: t4(145), invigoratingVictory: t4(146), eliminationMatch: t4(147),
+  elementalReach: t4(148), strikingForce: t4(149), directedPower: t4(150),
+  feignedRetreat: t4(151), exposeWeakness: t4(152), counterAbility: t4(153),
+  divineIntervention: t4(177), judgement: t4(178), flash: t4(179),
+  bodyForm: t4(180), mindForm: t4(181), spiritForm: t4(182),
+  beamingRay: t4(183), lifeLink: t4(184), stasis: t4(185),
   heroicEnergy: t4(26),
 };
 
 /** Talent.icon: the heroic energy is drawn by the hero's class (its frame, 26 for the warrior, then 58, 90 and 122). */
-export const HEROIC_ENERGY_ICON: Readonly<Partial<Record<HeroClass, number>>> = { warrior: 26, mage: 58, rogue: 90, huntress: 122 };
+export const HEROIC_ENERGY_ICON: Readonly<Partial<Record<HeroClass, number>>> = { warrior: 26, mage: 58, rogue: 90, huntress: 122, duelist: 154, cleric: 186 };
 export const talentIcon = (talent: TalentId, heroClass: HeroClass): number =>
   talent === 'heroicEnergy' ? HEROIC_ENERGY_ICON[heroClass] ?? 26 : TALENTS[talent].icon;
 
@@ -155,6 +195,12 @@ export const ABILITY_TALENTS: Readonly<Record<AbilityKind, readonly [TalentId, T
   spectralBlades: ['fanOfBlades', 'projectingBlades', 'spiritBlades', 'heroicEnergy'],
   naturesPower: ['growingPower', 'naturesWrath', 'wildMomentum', 'heroicEnergy'],
   spiritHawk: ['eagleEye', 'goForTheEyes', 'swiftSpirit', 'heroicEnergy'],
+  challenge: ['closeTheGap', 'invigoratingVictory', 'eliminationMatch', 'heroicEnergy'],
+  elementalStrike: ['elementalReach', 'strikingForce', 'directedPower', 'heroicEnergy'],
+  feint: ['feignedRetreat', 'exposeWeakness', 'counterAbility', 'heroicEnergy'],
+  ascendedForm: ['divineIntervention', 'judgement', 'flash', 'heroicEnergy'],
+  trinity: ['bodyForm', 'mindForm', 'spiritForm', 'heroicEnergy'],
+  powerOfMany: ['beamingRay', 'lifeLink', 'stasis', 'heroicEnergy'],
 };
 
 export const armorTalents = (ability: AbilityKind): TalentId[] => [...ABILITY_TALENTS[ability]];
@@ -186,6 +232,16 @@ export const CLASS_TALENTS: Readonly<Record<HeroClass, readonly [readonly Talent
     ['invigorating_meal', 'liquid_nature', 'rejuvenating_steps', 'heightened_senses', 'durable_projectiles'],
     ['point_blank', 'seer_shot'],
   ],
+  duelist: [
+    ['strengthening_meal', 'adventurers_intuition', 'patient_strike', 'aggressive_barrier'],
+    ['focused_meal', 'liquid_agility', 'weapon_recharging', 'lethal_haste', 'swift_equip'],
+    ['precise_assault', 'deadly_followup'],
+  ],
+  cleric: [
+    ['satiated_spells', 'holy_intuition', 'searing_light', 'shield_of_light'],
+    ['enlightening_meal', 'recall_inscription', 'sunray', 'divine_sense', 'bless'],
+    ['cleanse', 'light_reading'],
+  ],
 };
 
 /** Talent.initSubclassTalents: a subclass's talents of the third tier. */
@@ -198,6 +254,10 @@ export const SUBCLASS_TALENTS: Readonly<Record<SubClass, readonly TalentId[]>> =
   freerunner: ['evasive_armor', 'projectile_momentum', 'speedy_stealth'],
   sniper: ['farsight', 'shared_enchantment', 'shared_upgrades'],
   warden: ['durable_tips', 'barkskin', 'shielding_dew'],
+  champion: ['varied_charge', 'twin_upgrades', 'combined_lethality'],
+  monk: ['unencumbered_spirit', 'monastic_vigor', 'combined_energy'],
+  priest: ['holy_lance', 'hallowed_ground', 'mnemonic_prayer'],
+  paladin: ['lay_on_hands', 'aura_of_protection', 'wall_of_light'],
 };
 
 /** The class each talent is a class talent of (tier 1 to 3), for metamorphosis's pools. */

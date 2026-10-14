@@ -459,7 +459,7 @@ describe('metamorphosis', () => {
     expect(targets).toHaveLength(11);
     const index = targets.findIndex((t) => t.talent === 'hearty_meal');
     const options = metamorphOptions(world, hero, targets[index]!);
-    expect(options).toHaveLength(3);
+    expect(options).toHaveLength(5);
     const result = act(world, 'p', { type: 'use', item: 0, choice: index * 8 });
     expect(effectsOf(result)).toContainEqual({ type: 'metamorphed', hero: 'p', from: 'hearty_meal', to: options[0] });
     expect(pointsInTalent(hero, options[0]!)).toBe(2);

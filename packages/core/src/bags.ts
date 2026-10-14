@@ -46,7 +46,7 @@ export function inBag(hero: Hero, item: Item): boolean {
 }
 
 /** Backpack slots taken: everything not in a bag. */
-export const slotsUsed = (hero: Hero): number => hero.items.filter((item) => !inBag(hero, item)).length;
+export const slotsUsed = (hero: Hero): number => hero.items.filter((item) => !inBag(hero, item)).length + (hero.secondWep ? 1 : 0);
 
 /** Whether an item would fit: onto a stack, into a bag, or into a free slot. */
 export function hasRoom(hero: Hero, item: Item): boolean {

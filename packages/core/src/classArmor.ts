@@ -17,7 +17,7 @@ import type { AbilityKind } from './talents';
  */
 
 export const CLASS_ARMOR_OF: Readonly<Record<HeroClass, ItemKind>> = {
-  warrior: 'armor.warrior', mage: 'armor.mage', rogue: 'armor.rogue', huntress: 'armor.huntress',
+  warrior: 'armor.warrior', mage: 'armor.mage', rogue: 'armor.rogue', huntress: 'armor.huntress', duelist: 'armor.duelist', cleric: 'armor.cleric',
 };
 export const CLASS_ARMOR: readonly ItemKind[] = Object.values(CLASS_ARMOR_OF);
 

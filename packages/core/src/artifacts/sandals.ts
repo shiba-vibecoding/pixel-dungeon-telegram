@@ -20,8 +20,8 @@ import { artifactChargeMultiplier, artifactProc, magicImmune, onArtifactUsed } f
 /** SandalsOfNature.seedChargeReqs, by the seeds there are (Shattered's stormvine is the dreamweed here). */
 export const SEED_CHARGE: Readonly<Partial<Record<ItemKind, number>>> = {
   'seed.rotberry': 8, 'seed.firebloom': 20, 'seed.sungrass': 80, 'seed.icecap': 20, 'seed.dreamweed': 20, 'seed.sorrowmoss': 20,
-  'seed.earthroot': 40, 'seed.fadeleaf': 12,
-  // Seam (alchemy and levels streams): swiftthistle 20, mageroyal 12, starflower 40, blindweed 12, once those seeds exist.
+  'seed.earthroot': 40, 'seed.fadeleaf': 12, 'seed.stormvine': 20, 'seed.swiftthistle': 20, 'seed.mageroyal': 12, 'seed.starflower': 40,
+  'seed.blindweed': 12,
 };
 
 /** SandalsOfNature.canUseSeed: a seed it has not had towards this level (at its last level, any but the one it grows). */

@@ -12,6 +12,7 @@ import { spendMob } from '../ai';
 import {
   assignBar, barAssigned, bleed, bossMob, fight, lockFloor, N8, say, show, unlockFloor, yell,
 } from './common';
+import { BOSS_SLOT, bossScore } from '../score';
 import type { BossRules } from './rules';
 
 /*
@@ -139,6 +140,8 @@ export const GOO: BossRules = {
     const boss = bossMob(mob);
     if ((boss.pumpedUp ?? 0) > 0) {
       boss.pumpedUp = 0;
+      // The pumped-up blow is an avoidable one (Statistics.bossScores[0] -= 100).
+      bossScore(ctx.world, BOSS_SLOT.goo, -100);
       return ctx.rng.normalIntRange(3, max * 3);
     }
     return ctx.rng.normalIntRange(1, max);

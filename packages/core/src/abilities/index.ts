@@ -8,6 +8,9 @@ import { beaconNeedsTarget, beaconCost, elementalBlast, elementalBlastProblem, w
 import { endure, heroicLeap, leapCharge, leapProblem, shockwave, shockwaveProblem } from './warrior';
 import { deathMark, deathMarkProblem, markCharge, smokeBomb, smokeBombProblem, smokeCharge } from './rogue';
 import { naturesPower, spectralBlades, spectralBladesProblem } from './huntress';
+import {
+  ABILITY_DEFS, type ClassAbilityId, chargeUse as classChargeUse, classAbilityProblem, isClassAbility, performClassAbility,
+} from '../classes/abilities';
 
 /*
  * The armour abilities of the four classes (actors/hero/abilities, ArmorAbility): what each costs, what it asks for,
@@ -41,6 +44,13 @@ export const ABILITIES: Readonly<Record<AbilityKind, AbilityInfo>> = {
   spectralBlades: { kind: 'spectralBlades', heroClass: 'huntress', baseCharge: 25, icon: 25, key: 'huntress.spectralblades' },
   naturesPower: { kind: 'naturesPower', heroClass: 'huntress', baseCharge: 35, icon: 26, key: 'huntress.naturespower' },
   spiritHawk: { kind: 'spiritHawk', heroClass: 'huntress', baseCharge: 35, icon: 27, key: 'huntress.spirithawk' },
+  // The classes stream's: the Duelist's and the Cleric's (classes/abilities.ts has their rules).
+  challenge: { kind: 'challenge', heroClass: 'duelist', baseCharge: 50, icon: 28, key: 'duelist.challenge' },
+  elementalStrike: { kind: 'elementalStrike', heroClass: 'duelist', baseCharge: 25, icon: 29, key: 'duelist.elementalstrike' },
+  feint: { kind: 'feint', heroClass: 'duelist', baseCharge: 35, icon: 30, key: 'duelist.feint' },
+  ascendedForm: { kind: 'ascendedForm', heroClass: 'cleric', baseCharge: 50, icon: 31, key: 'cleric.ascendedform' },
+  trinity: { kind: 'trinity', heroClass: 'cleric', baseCharge: 25, icon: 32, key: 'cleric.trinity' },
+  powerOfMany: { kind: 'powerOfMany', heroClass: 'cleric', baseCharge: 35, icon: 33, key: 'cleric.powerofmany' },
 };
 
 /** HeroClass.armorAbilities: the three each class may choose from. */
@@ -49,10 +59,12 @@ export const CLASS_ABILITIES: Readonly<Record<HeroClass, readonly AbilityKind[]>
   mage: ['elementalBlast', 'wildMagic', 'warpBeacon'],
   rogue: ['smokeBomb', 'deathMark', 'shadowClone'],
   huntress: ['spectralBlades', 'naturesPower', 'spiritHawk'],
+  duelist: ['challenge', 'elementalStrike', 'feint'],
+  cleric: ['ascendedForm', 'trinity', 'powerOfMany'],
 };
 
 /** What the player has to give when using an ability: a cell to aim at, one of the beacon's two choices, or nothing. */
-export type Aim = 'none' | 'cell' | 'beacon';
+export type Aim = 'none' | 'cell' | 'beacon' | 'trinity';
 
 /** The class armour worn (the item), if the hero wears their own. */
 export const wornClassArmor = (hero: Hero) => (hero.armor.kind === `armor.${hero.heroClass}` ? hero.armor : undefined);
@@ -60,6 +72,8 @@ export const wornClassArmor = (hero: Hero) => (hero.armor.kind === `armor.${hero
 /** ArmorAbility.chargeUse: the base cost, less with Heroic Energy (12%, 23%, 32%, 40% off), and each ability's own changes. */
 export function chargeUse(world: World | undefined, hero: Hero, ability: AbilityKind | undefined = hero.ability): number {
   if (!ability) return 0;
+  // The Duelist's and the Cleric's own (classes/abilities.ts; Trinity's depends on the form, see useAbility).
+  if (isClassAbility(ability)) return classChargeUse(hero, classDef(ability), undefined, world);
   let use = ABILITIES[ability].baseCharge;
   switch (pointsInTalent(hero, 'heroicEnergy')) {
     case 1: use *= 0.88; break;
@@ -78,6 +92,8 @@ export function chargeUse(world: World | undefined, hero: Hero, ability: Ability
   }
 }
 
+const classDef = (ability: AbilityKind) => ABILITY_DEFS[ability as ClassAbilityId];
+
 const hasAlly = (world: World | undefined, hero: Hero, kind: 'shadow' | 'hawk'): boolean =>
   (world?.floors[hero.depth]?.mobs ?? []).some((mob) => mob.kind === kind && mob.hp > 0 && mob.directed?.owner === hero.id);
 
@@ -85,6 +101,11 @@ const hasAlly = (world: World | undefined, hero: Hero, kind: 'shadow' | 'hawk'):
 export function abilityAim(world: World, hero: Hero): Aim {
   switch (hero.ability) {
     case 'heroicLeap': case 'shockwave': case 'wildMagic': case 'smokeBomb': case 'deathMark': case 'spectralBlades':
+    case 'challenge': case 'elementalStrike': case 'feint':
+      return 'cell';
+    case 'trinity':
+      return 'trinity';
+    case 'powerOfMany':
       return 'cell';
     case 'warpBeacon':
       return hero.abil?.beacon ? 'beacon' : beaconNeedsTarget(hero) ? 'cell' : 'none';
@@ -116,9 +137,11 @@ export function abilityProblem(world: World, hero: Hero, use: AbilityUse): strin
   const armor = wornClassArmor(hero);
   if (!armor) return 'art:items.armor.classarmor.not_equipped';
   if (!hero.ability) return 'art:items.armor.classarmor.no_ability';
+  const { target, choice } = use;
+  // The Duelist's and the Cleric's check charge themselves (Trinity's cost is by the form, Power of Many's nothing to direct).
+  if (isClassAbility(hero.ability)) return classAbilityProblem(world, hero, target, choice);
   if ((armor.charge ?? 0) < chargeUse(world, hero)) return 'art:items.armor.classarmor.low_charge';
   const ctx = probe(world, hero);
-  const { target, choice } = use;
   switch (hero.ability) {
     case 'heroicLeap': return leapProblem(hero, target);
     case 'shockwave': return shockwaveProblem(hero, target);
@@ -136,6 +159,8 @@ export function abilityProblem(world: World, hero: Hero, use: AbilityUse): strin
     case 'spiritHawk':
       if (hasAlly(world, hero, 'hawk')) return target !== undefined && Number.isInteger(target) ? null : 'art:actors.hero.abilities.armorability.prompt';
       return canSummon(ctx, hero, 'hawk') ? null : 'art:actors.hero.abilities.huntress.spirithawk.no_space';
+    default:
+      return null;
   }
 }
 
@@ -147,8 +172,10 @@ export interface AbilityDeps {
 /** ClassArmor.execute: the ability is used, its charge spent; returns the time it took. */
 export function useAbility(ctx: Ctx, hero: Hero, use: AbilityUse, deps: AbilityDeps): number {
   const armor = wornClassArmor(hero)!;
-  const cost = chargeUse(ctx.world, hero);
   const { target, choice } = use;
+  // The Duelist's and the Cleric's spend their own charge.
+  if (isClassAbility(hero.ability)) return performClassAbility(ctx, hero, target, choice);
+  const cost = chargeUse(ctx.world, hero);
   const spend = (charge = cost): void => {
     armor.charge = Math.max(0, (armor.charge ?? 0) - charge);
   };

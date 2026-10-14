@@ -40,6 +40,7 @@ const RARE_KINDS = ['albino', 'bandit', 'shielded', 'senior', 'acidic'];
 const BOSSES: Readonly<Record<string, BadgeId>> = { goo: 'boss1', tengu: 'boss2', dm300: 'boss3', king: 'boss4' };
 const SUBCLASSES = ['gladiator', 'berserker', 'warlock', 'battlemage', 'freerunner', 'assassin', 'sniper', 'warden'];
 const CLASSES = ['warrior', 'mage', 'rogue', 'huntress'];
+// (The duelist's and the cleric's own badges: SEAM(badges) — Shattered's mastery, unlock and all-classes badges name six.)
 const DEATHS: Readonly<Record<string, BadgeId>> = {
   burning: 'deathFire', poison: 'deathPoison', gas: 'deathGas', hunger: 'deathHunger', fall: 'deathFalling',
   multiplicity: 'deathGlyph', deferred: 'deathGlyph',
@@ -115,12 +116,13 @@ export function checkBadges(progress: BadgeProgress, world: World, me: Hero, eff
   earn('bags', ['bag.seeds', 'bag.scrolls', 'bag.potions', 'bag.wands'].every((kind) => me.items.some((item) => item.kind === kind)));
 
   const known = new Set(world.known);
-  const all = (category: string): boolean => labelled(category).every((kind) => known.has(kind));
+  // (A category with nothing to label cannot be completed: an empty set is not all of them.)
+  const all = (category: string): boolean => labelled(category).length > 0 && labelled(category).every((kind) => known.has(kind));
   earn('potions', all('potion'));
   earn('scrolls', all('scroll'));
   earn('rings', all('ring'));
-  earn('wands', all('wand'));
-  earn('allItems', ['potions', 'scrolls', 'rings', 'wands'].every((id) => progress.earned.includes(id as BadgeId)));
+  // Shattered's wands are known by sight, so there is no wands badge to earn any more (kept for old profiles).
+  earn('allItems', ['potions', 'scrolls', 'rings'].every((id) => progress.earned.includes(id as BadgeId)));
 
   let grimAt = -1;
   for (const effect of effects) {

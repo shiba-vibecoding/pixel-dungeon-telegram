@@ -1,6 +1,6 @@
 import {
   adjacent, cellX, cellY, type Effect, F, terrainFlags, type Enchantment, heroById, isAlive, isTippedDart, itemDef, type ItemKind, itemSprite, LENGTH, type MobKind,
-  type TrapKind, visibleCells, WIDTH, type World,
+  type TrapKind, visibleCells, WIDTH, type World, type HeroClass,
   type Look, S, isInvisible, frozenBy,
 } from '@pd/core';
 import { artText, capital } from './artifacttext';
@@ -184,6 +184,11 @@ export interface Puppet {
   rest?: AnimName;
   aura?: { color: string; rays: number };
   alpha?: number;
+  /** A ghoul lying crumpled (GhoulLifeLink): the ghoul that holds it up, the turns left until it rises and the turns it began with. */
+  downed?: { host: string; turns: number; of: number };
+  /** An ebony mimic still hidden (design v21: ebony-hidden.png), and when it showed itself. */
+  ebonyHidden?: boolean;
+  revealAt?: number;
   /** CharSprite's states (Shattered): FROZEN in a block of ice, CHILLED under falling snow, DARKENED (corruption, doom), SHIELDED in a halo. */
   frozen?: boolean;
   chilled?: boolean;
@@ -359,7 +364,13 @@ export class View {
   /** The arena's wave banner: its words, its kind, and when it shows (after a sinking card, if one is up). */
   waveCard: { title: string; sub: string; kind: '' | 'champions' | 'boss'; start: number } | null = null;
   /** Beams and arcs for a moment (Shattered's Beam and Lightning): from a cell to a cell, in a colour, of a kind. */
-  beams: Array<{ from: number; to: number; start: number; duration: number; color: string; kind: 'beam' | 'lightning' | 'chain' }> = [];
+  beams: Array<{
+    from: number; to: number; start: number; duration: number; color: string; kind: 'beam' | 'lightning' | 'chain' | 'ray';
+    /** A ray (design v21: mob-beams.png): its row of the sheet, and how much farther than `to` it reaches (a fraction of its length). */
+    row?: number; extend?: number;
+  }> = [];
+  /** The curse that has just hit a hero, rising over their head in five steps (design v21: mob-buffs-l.png). */
+  stateIcons: Array<{ hero: string; ix: number; start: number }> = [];
   /** Thrown items and magic bolts in flight; `sprite` null for a bolt. */
   projectiles: Array<{
     from: number; to: number; start: number; duration: number; sprite: number | null; color?: string;
@@ -367,6 +378,8 @@ export class View {
     trail?: string; wide?: boolean;
     /** A thrown weapon flies as MissileSprite has it (gearfx.ts). */
     flight?: Flight;
+    /** A monster's ball (design v21: mob-bolts.png): its row of the sheet and the colour of its four squares of trail. */
+    mobBolt?: { row: number; trail: string };
     /** A glow over a missile's own pixels (the spectral blades). */
     tint?: string;
     /** Leaves pour off it (the spirit bow's arrows under Nature's Power). */
@@ -400,6 +413,7 @@ export class View {
     this.levelCard = null;
     this.projectiles = [];
     this.beams = [];
+    this.stateIcons = [];
     this.chains = [];
     this.spells = [];
     this.spellSprites = [];
@@ -457,7 +471,7 @@ export class View {
     const seen = new Set<string>();
     // TimekeepersHourglass.timeFreeze.fx: everything else stands still while my hero freezes time.
     const me = myId ? heroById(world, myId) : undefined;
-    this.timeFrozen = !!me && frozenBy(me) !== undefined;
+    this.timeFrozen = !!me && (frozenBy(me) !== undefined || me.timeBubble !== undefined);
     const place = (
       id: string, kind: string, sprite: CharSprite, isHero: boolean, pos: number, hp: number, ht: number, sleeping: boolean,
       pumped = false,
@@ -590,7 +604,7 @@ export class View {
     for (const mob of world.floors[this.depth]?.mobs ?? []) {
       // A mirror image looks like its hero, only fainter.
       // A prismatic image too, its hero's ally.
-      const owner = mob.image?.owner ?? (mob.kind === 'prismatic' ? mob.owner : undefined);
+      const owner = mob.image?.owner ?? (mob.kind === 'prismatic' || mob.kind === 'afterImage' ? mob.owner : undefined);
       const twin = owner !== undefined ? world.heroes.find((hero) => hero.id === owner) : undefined;
       if (twin) {
         place(mob.id, 'mirror', this.assets.heroes[twin.heroClass], false, mob.pos, mob.hp, mob.ht, false, false, true);
@@ -598,6 +612,14 @@ export class View {
         this.puppets.get(mob.id)!.row = itemDef(twin.armor.kind).tier ?? 0;
         this.puppets.get(mob.id)!.prismatic = mob.kind === 'prismatic';
         this.puppets.get(mob.id)!.ally = mob.kind === 'prismatic';
+        continue;
+      }
+      if (mob.kind === 'lightAlly') {
+        // A copy of one of the heroes, made of light: the class is drawn by lot when it is made (PowerOfMany.LightAlly).
+        const looks = Object.keys(this.assets.heroes) as HeroClass[];
+        const shape = looks[Number(mob.marks?.cls ?? 0) % looks.length]!;
+        place(mob.id, 'mirror', this.assets.heroes[shape], false, mob.pos, mob.hp, mob.ht, false, false, true);
+        this.puppets.get(mob.id)!.sprite = heroSprite(this.assets, shape);
         continue;
       }
       // DM-300 supercharged and a pylon switched on look otherwise (DM300Sprite, PylonSprite).
@@ -624,6 +646,11 @@ export class View {
         puppet.dim = mob.ward.tier <= 3 ? Math.max(0.2, 1 - mob.ward.zaps / (2 * mob.ward.tier - 1)) : 1;
       }
       if (mob.lotus) puppet.reach = mob.lotus.level;
+      // A ghoul that was lying crumpled stands again (design v21: «The ghoul rises!»).
+      if (puppet.downed) {
+        puppet.downed = undefined;
+        this.say(t.mobLines.ghoulRises, COLORS.warning, now);
+      }
       dressMob(this.assets, puppet, mob, now);
     }
     // Ghouls lying crumpled (GhoulLifeLink), until they rise or die for good.
@@ -636,6 +663,7 @@ export class View {
         puppet.animStart = now;
         puppet.hp = 0;
       }
+      if (puppet) puppet.downed = { host: link.host, turns: link.turns, of: Math.max(1, (link.mob.timesDowned ?? 1) * 5) };
     }
     for (const [id, puppet] of this.puppets) {
       if (!seen.has(id) && (puppet.alive || now >= puppet.removeAt)) this.puppets.delete(id);
@@ -659,6 +687,7 @@ export class View {
     }
     this.floaters = this.floaters.filter((floater) => now - floater.start < 1200);
     this.spellSprites = this.spellSprites.filter((spell) => now - spell.start < SPELL_LIFE);
+    this.stateIcons = this.stateIcons.filter((icon) => now - icon.start < 900);
     this.flashes = this.flashes.filter((flash) => now - flash.start < (flash.duration ?? 600));
     this.projectiles = this.projectiles.filter((p) => now - p.start < p.duration);
     this.beams = this.beams.filter((b) => now - b.start < b.duration);
@@ -2118,6 +2147,18 @@ export class View {
           if (effect.msg === 'chaliceofblood.onprick') audio.play('cursed');
           if (effect.msg.startsWith('timekeepershourglass$sandbag') || effect.msg.startsWith('driedrose$petal')) audio.play('dewdrop');
           if (effect.msg === 'hornofplenty.eat') audio.play('eat');
+          break;
+        }
+        case 'classFx': {
+          // What the Duelist's and the Cleric's doing shows: their sounds, and the numbers floating over whom they touch.
+          if (effect.depth !== this.depth) break;
+          const fx = effect.fx;
+          if (fx.k === 'sound') audio.play(fx.name as Sound, 1, 1, this.placeOf(effect.hero, now));
+          else if (fx.k === 'text') {
+            const who = world.heroes.find((h) => h.depth === this.depth && h.pos === fx.at) ?? world.floors[this.depth]?.mobs.find((m) => m.pos === fx.at);
+            const tone = { p: COLORS.positive, w: COLORS.warning, n: COLORS.negative, i: COLORS.default }[fx.tone];
+            if (who) this.float(who.id, fx.text, fx.icon === 'shield' ? COLORS.shield : tone, now);
+          }
           break;
         }
         case 'stealth':

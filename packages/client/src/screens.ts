@@ -1,9 +1,9 @@
 import {
   escapeScore, keepable, ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
   knownIn, MUST_THROW, TARGETED_SPELLS,
-  type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass,
+  type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass, HERO_CLASSES,
   type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
-  visiblyCursed, type World, CLASS_ARMOR_OF, heroById, isClassArmor, type SealSource, talentPointsAvailable, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
+  type ScoreBreakdown, HIGHLIGHT, visiblyCursed, type World, hasAbility, CLASS_ARMOR_OF, heroById, isClassArmor, type SealSource, talentPointsAvailable, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
 } from '@pd/core';
 import { artifactActions, artifactCard, type ArtifactHost, chargeStrip, showMiscChooser } from './artifactui';
 import { artText } from './artifacttext';
@@ -13,7 +13,7 @@ import { lt, plain } from './levelnames';
 import { audio } from './audio';
 import { type ChoiceOption, showChoice } from './alchemyui';
 import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse, WEAPON_SLOT } from './quickslot';
-import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
+import { ARENA_BADGES, BADGES, RETIRED, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
 import { BUFF_ICONS, type BuffEntry, type BuffName } from './hud';
 import { capitalize, fill, fmt, locale, t } from './i18n';
 import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
@@ -33,7 +33,18 @@ import type { LogLine } from './view';
 
 const root = document.getElementById('overlay')!;
 /** Heroes in avatars.png and in the heroes strip, in this order. */
-export const AVATAR: Readonly<Record<HeroClass, number>> = { warrior: 0, mage: 1, rogue: 2, huntress: 3 };
+export const AVATAR: Readonly<Record<HeroClass, number>> = { warrior: 0, mage: 1, rogue: 2, huntress: 3, duelist: 4, cleric: 5 };
+
+/**
+ * A portrait face: the class's avatar, or the look worn (Pixel-Mart): the Duelist's and the Cleric's looks have their own
+ * avatars (avatars-skins.png, three each: ash, royal, shadow), the older classes' looks are the sheet's alone.
+ */
+export function setAvatar(face: HTMLElement, heroClass: HeroClass, skin?: string): void {
+  const index = skin ? ['ash', 'royal', 'shadow'].indexOf(skin) : -1;
+  const own = index >= 0 && (heroClass === 'duelist' || heroClass === 'cleric');
+  face.classList.toggle('skin', own);
+  face.style.setProperty('--av', String(own ? (heroClass === 'duelist' ? 0 : 3) + index : AVATAR[heroClass]));
+}
 
 let assets: Assets | null = null;
 
@@ -465,7 +476,7 @@ export function showBadges(onClose: () => void, honors: readonly string[] = []):
   };
   const grid = el('div', { className: 'pd-grid c6' });
   // The arena's badges are left out: the arena of waves is no longer offered.
-  for (const badge of BADGES.filter((b) => b.image < ARENA_BADGES)) {
+  for (const badge of BADGES.filter((b) => b.image < ARENA_BADGES && (!RETIRED.has(b.id) || earned.has(b.id)))) {
     const icon = el('i', { className: `pd-badge${earned.has(badge.id) ? '' : ' dim'}` });
     icon.dataset.i = String(badge.image);
     const node = el('button', { className: `pd-slot${fresh.has(badge.id) ? ' new' : ''}`, ariaLabel: badgeText(badge.id) }, icon);
@@ -540,6 +551,45 @@ export function stats(rows: ReadonlyArray<readonly [string, string, string?]>): 
     { className: 'pd-stats' },
     ...rows.map(([label, value, tone]) => el('div', {}, el('dt', { textContent: label }), el('dd', { className: tone ?? '', textContent: value }))),
   );
+}
+
+/**
+ * WndScoreBreakdown: Progression, Treasure, Exploration, Bosses, Quests, then the multipliers (shown when above 1) and the total.
+ * A part at its cap is gold. Under it, a fold with what each part counts, in Shattered's own words.
+ */
+export function scoreTable(b: ScoreBreakdown): HTMLElement {
+  const n = (value: number): string => value.toLocaleString(locale);
+  const x = (value: number): string => `${Number(value.toFixed(2)).toLocaleString(locale)}×`;
+  const s = t.scoring;
+  const rows: Array<{ label: string; value: string; tone?: string; from?: string }> = [
+    { label: s.progress[0], value: n(b.progress), ...(b.progress >= HIGHLIGHT.progress ? { tone: 'gold' } : {}) },
+    {
+      label: s.treasure[0], value: n(b.treasure), from: s.treasureFrom(b.gold, n(b.items)),
+      ...(b.treasure >= HIGHLIGHT.treasure ? { tone: 'gold' } : {}),
+    },
+    {
+      label: s.explore[0], value: n(b.explore), from: b.floors > 0 ? s.exploreFrom(b.clean, b.floors) : '',
+      ...(b.explore >= HIGHLIGHT.explore ? { tone: 'gold' } : {}),
+    },
+    { label: s.bosses[0], value: n(b.bosses), ...(b.bosses >= HIGHLIGHT.bosses ? { tone: 'gold' } : {}) },
+    { label: s.quests[0], value: n(b.quests), ...(b.quests >= HIGHLIGHT.quests ? { tone: 'gold' } : {}) },
+  ];
+  if (b.winMultiplier > 1) rows.push({ label: s.win, value: x(b.winMultiplier) });
+  if (b.chalMultiplier > 1) rows.push({ label: s.challenge, value: x(b.chalMultiplier) });
+  rows.push({ label: s.total, value: n(b.total), tone: 'ally' });
+  const table = el(
+    'dl',
+    { className: 'pd-stats pd-score' },
+    ...rows.map((row) =>
+      el('div', {}, el('dt', {}, row.label, row.from ? el('small', { textContent: row.from }) : null), el('dd', { className: row.tone ?? '', textContent: row.value }))),
+  );
+  const notes = el(
+    'details',
+    { className: 'pd-score-notes' },
+    el('summary', { textContent: s.more }),
+    ...[s.progress, s.treasure, s.explore, s.bosses, s.quests].map(([label, text]) => el('p', {}, el('b', { textContent: `${label}. ` }), text)),
+  );
+  return el('div', { className: 'pd-score-table' }, table, notes);
 }
 
 /** WndHero: the hero's numbers and what currently ails or helps them. */
@@ -780,7 +830,11 @@ export function showSign(text: string, onClose: () => void): void {
 }
 
 /** Chasm.heroJump's WndOptions: a question with a yes and a no; the yes is dangerous here. */
-export function showConfirm(title: string, text: string, yes: string, no: string, onYes: () => void, onClose: () => void): void {
+export function showConfirm(
+  title: string, text: string, yes: string, no: string, onYes: () => void, onClose: () => void,
+  /** A third answer under the others: «don't ask again». */
+  never?: { label: string; onPress: () => void },
+): void {
   show(
     windowOf(
       { narrow: true },
@@ -795,6 +849,11 @@ export function showConfirm(title: string, text: string, yes: string, no: string
           onYes();
         }, 'danger'),
         button(no, onClose, 'quiet'),
+        ...(never ? [button(never.label, () => {
+          onClose();
+          never.onPress();
+          onYes();
+        }, 'quiet')] : []),
       ),
     ),
     onClose,
@@ -890,6 +949,8 @@ export interface EndOptions {
   place?: number | null;
   /** The run's score. */
   score: number;
+  /** Where it comes from (score.ts), shown as the score table instead of the one line. */
+  breakdown?: ScoreBreakdown;
   /** How the server scored it (rankui.ts rankingBlock). */
   ranking?: HTMLElement;
   /** The ways to share the result (shareButton). */
@@ -908,7 +969,7 @@ export function showRunEnd(options: EndOptions): void {
     [t.statLevel, String(hero.lvl)],
     [t.goldLabel, String(hero.gold), 'gold'],
     [t.slain, String(hero.kills)],
-    [t.scoreLabel, options.score.toLocaleString(locale), 'ally'],
+    ...(options.breakdown ? [] : [[t.scoreLabel, options.score.toLocaleString(locale), 'ally'] as const]),
   ];
   show(
     el(
@@ -924,6 +985,7 @@ export function showRunEnd(options: EndOptions): void {
         el('div', { className: 'pd-info', textContent: `${hero.name} · ${t.classes[hero.heroClass]}` }),
       ),
       stats(rows),
+      options.breakdown ? scoreTable(options.breakdown) : null,
       options.ranking,
       actions(
         [button(options.restartLabel, options.onRestart, 'primary')],
@@ -1016,7 +1078,11 @@ export interface BackpackOptions {
   hero: Hero;
   onAction(action: Action): void;
   /** Throw, zap or shoot the item at a cell the player picks next (or cast it there: a spell, dragon's breath, a siren's song). */
-  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key'): void;
+  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key', choice?: number): void;
+  /** An action of the classes (a spell, a weapon's ability) aimed at a cell the player picks next. */
+  onAimClass?(prompt: string, make: (cell: number) => Action): void;
+  /** A Duelist's weapon ability, from the weapon's own window (MeleeWeapon.AC_ABILITY). */
+  onWeaponAbility?(which: 'weapon' | 'second'): void;
   /** An artifact's use aimed at a cell the player picks next (talisman, chains, rose, armband, sandals, beacon). */
   onAimArtifact?(action: ArtifactAction): void;
   onClose(): void;
@@ -1782,6 +1848,14 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         refreshBackpack(world, hero);
       }));
     }
+    // MeleeWeapon.AC_ABILITY: a Duelist's weapon has an ability of its own.
+    if (hero.heroClass === 'duelist' && hasAbility(item)) {
+      use(actionLabel(artText('items.weapon.melee.meleeweapon.ac_ability')), () => {
+        openBag = null;
+        options.onClose();
+        options.onWeaponAbility?.('weapon');
+      });
+    }
     use(t.takeOff, () => stay({ type: 'unequip' }));
   } else if (item === hero.armor && item.kind === CLASS_ARMOR_OF[hero.heroClass]) {
     // ClassArmor.execute(AC_ABILITY): the ability of the armour (it wants a cell to aim at, or none, or the beacon's choice).
@@ -1794,9 +1868,9 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
             options.onAction(action);
             options.onClose();
           },
-          aim: (prompt) => {
+          aim: (prompt, choice) => {
             options.onClose();
-            options.onAim(-1, 'special');
+            options.onAim(-1, 'special', choice);
             toast(prompt);
           },
           back: () => showBackpack(options, { worn: 'armor' }),
@@ -2205,6 +2279,11 @@ function artifactHost(options: ItemOptions, ref: ItemRef): ArtifactHost {
       openBag = null;
       options.onClose();
       options.onAimArtifact?.(action);
+    },
+    aimClass: (prompt, make) => {
+      openBag = null;
+      options.onClose();
+      options.onAimClass?.(prompt, make);
     },
     pick: (title, targets, onPick, onCancel) => showBackpack({ ...options, pick: { title, targets, onPick, onCancel: onCancel ?? back } }),
     back,

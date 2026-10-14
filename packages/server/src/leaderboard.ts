@@ -1,3 +1,5 @@
+import { HERO_CLASSES } from '@pd/core';
+
 /*
  * The daily dungeon's leaderboard: everyone plays the same seed, and each
  * player's best run of the day counts. Pure logic; the Durable Object stores
@@ -31,7 +33,7 @@ export function servedEntry(entry: DailyEntry): DailyEntry {
   return rest;
 }
 
-const HERO_CLASSES = new Set(['warrior', 'mage', 'rogue', 'huntress']);
+const HERO_CLASS_SET: ReadonlySet<string> = new Set(HERO_CLASSES);
 export const BOARD_SIZE = 100;
 
 /** The original's Rankings score: gold plus experience times depth, doubled for a win. */
@@ -52,7 +54,7 @@ export function parseResult(input: unknown): DailyResult | null {
   const level = int(r.level, 1, 30);
   const gold = int(r.gold, 0, 100_000);
   if (depth === null || level === null || gold === null || typeof r.won !== 'boolean') return null;
-  if (typeof r.heroClass !== 'string' || !HERO_CLASSES.has(r.heroClass)) return null;
+  if (typeof r.heroClass !== 'string' || !HERO_CLASS_SET.has(r.heroClass)) return null;
   return { heroClass: r.heroClass, depth, level, gold, won: r.won && depth === LAST_DEPTH };
 }
 

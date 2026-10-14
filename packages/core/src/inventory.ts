@@ -21,7 +21,7 @@ import {
 } from './floor';
 import {
   type Augment, buyPrice, createItem, type Heap, type HeapKind, isCurseEnchant, isCurseGlyph, isStackable, type Item, itemDef, ItemGenerator, type ItemKind,
-  itemPrice, knownIn, stacksWith, wandMaxCharges,
+  isExotic, itemPrice, knownIn, stacksWith, wandMaxCharges,
 } from './items';
 import { isTippedDart, mergeMissiles, TIPPED_DARTS } from './missiles';
 import { outdatedCopy } from './gear';
@@ -63,6 +63,8 @@ import { activateStone, INVENTORY_STONES, stoneProblem, useStone } from './stone
 import { castSpell, spellProblem } from './spells';
 import { explode, lightFuse, snuff } from './bombs';
 import { isChallenged, NO_FOOD } from './challenges';
+import { classPotionUsed, classScrollUsed, classStoneUsed } from './classes/hooks';
+import { swiftEquip } from './classes/duelist';
 
 /*
  * Picking things up, drinking, reading, equipping and dropping. Dropping is
@@ -95,7 +97,7 @@ export type InventoryAction =
    * Put on a weapon, armour, ring or artifact. With the artifact, misc and ring slots taken, a ring or
    * an artifact needs `replace`: which of them to take off for it (KindofMisc's window).
    */
-  | { type: 'equip'; item: number; replace?: MiscSlot }
+  | { type: 'equip'; item: number; replace?: MiscSlot; second?: boolean }
   | { type: 'drop'; item: number }
   /** Throw a dart, the boomerang or a potion at a cell; it flies until it hits someone or something. */
   | { type: 'throw'; item: number; target: number }
@@ -253,6 +255,11 @@ export function inventoryProblem(world: World, hero: Hero, action: InventoryActi
       // A cursed item, once worn, will not come off (EquipableItem.doUnequip).
       // ClassArmor.doEquip: class armour is for its own class only.
       if (CLASS_ARMOR.includes(item.kind) && item.kind !== CLASS_ARMOR_OF[hero.heroClass]) return 'that armour is not made for you';
+      // KindOfWeapon.equipSecondary: the Champion's second weapon.
+      if (action.second) {
+        if (hero.subclass !== 'champion' || category !== 'weapon') return 'no second weapon';
+        return hero.secondWep?.cursed ? CURSED : null;
+      }
       return hero[category]?.cursed ? CURSED : null;
     }
     case 'drop':
@@ -498,15 +505,19 @@ export function performInventory(ctx: Ctx, hero: Hero, action: InventoryAction):
       }
       const slot = itemDef(item.kind).category as 'weapon' | 'armor';
       // Bare-handed, nothing goes back into the pack.
-      const old = hero[slot];
+      const second = action.second === true;
+      const old = second ? hero.secondWep : hero[slot];
       if (old) hero.items[action.item] = old;
       else hero.items.splice(action.item, 1);
-      hero[slot] = item;
+      if (second) hero.secondWep = item;
+      else hero[slot] = item;
       ctx.effects.push({ type: 'equipped', hero: hero.id, item });
       // KindOfWeapon.doEquip and Armor.doEquip: in hand or worn, its curse is known.
       delete item.curseUnknown;
       if (item.cursed) ctx.effects.push({ type: 'cursedEquip', hero: hero.id, item });
       onItemEquipped(ctx, hero, item);
+      // SWIFT_EQUIP: a swap that takes no time, once in twenty turns (twice at +2).
+      if (slot === 'weapon' && swiftEquip(hero)) return 0;
       return TIME_TO_EQUIP;
     }
     case 'drop': {
@@ -841,6 +852,7 @@ function throwStone(ctx: Ctx, hero: Hero, index: number, target: number): void {
   }
   hero.invisible = 0;
   activateStone(ctx, hero, kind, end);
+  classStoneUsed(ctx, hero, kind);
   if (!charAt(ctx.world, ctx.depth, end)) pressUnderItem(ctx, end);
 }
 
@@ -878,6 +890,8 @@ function throwPotion(ctx: Ctx, hero: Hero, index: number, target: number): void 
     const thrownTalent = talentUse(kind);
     if (ctx.rng.float() < thrownTalent.chance) onPotionUsed(ctx, hero, end, thrownTalent.factor);
   }
+  // Potion.shatter: the classes' Talent.onPotionUsed at half the factor.
+  classPotionUsed(ctx, hero, isExotic(kind) ? 1 : 0.5);
   ctx.effects.push({
     type: 'shattered', hero: hero.id, depth: ctx.depth, pos: end, kind, identified: shows && itemDef(kind).category === 'potion' ? learn(ctx.world, kind) : false,
   });
@@ -1195,7 +1209,10 @@ function use(ctx: Ctx, hero: Hero, action: Extract<InventoryAction, { type: 'use
     return TIME_TO_USE;
   }
   if (INVENTORY_STONES.has(kind)) {
-    if (useStone(ctx, hero, kind, on!, action.choice)) takeOne();
+    if (useStone(ctx, hero, kind, on!, action.choice)) {
+      takeOne();
+      classStoneUsed(ctx, hero, kind);
+    }
     hero.invisible = 0;
     return TIME_TO_USE;
   }
@@ -1217,6 +1234,8 @@ function use(ctx: Ctx, hero: Hero, action: Extract<InventoryAction, { type: 'use
     readScroll(ctx, hero, kind, target, { cell: action.cell, choice: action.choice });
     const scrollTalent = talentUse(kind);
     if (isAlive(hero) && ctx.rng.float() < scrollTalent.chance) onScrollUsed(ctx, hero, scrollTalent.factor);
+    // Talent.onScrollUsed, the classes'.
+    classScrollUsed(ctx, hero, kind);
     return TIME_TO_USE;
   }
   // A potion, a brew or an elixir, drunk (Potion.drink).
@@ -1227,6 +1246,8 @@ function use(ctx: Ctx, hero: Hero, action: Extract<InventoryAction, { type: 'use
   // Potion.drink: Talent.onPotionUsed.
   const potionTalent = talentUse(kind);
   if (ctx.rng.float() < potionTalent.chance) onPotionUsed(ctx, hero, hero.pos, potionTalent.factor);
+  // Potion.drink: the classes' Talent.onPotionUsed (an exotic potion counts double).
+  classPotionUsed(ctx, hero, isExotic(kind) ? 2 : 1);
   return TIME_TO_USE;
 }
 

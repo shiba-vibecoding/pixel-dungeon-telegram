@@ -35,7 +35,7 @@ const PING_ARROW_MS = 2000;
 /** Signals that waited longer than this to be shown (a tab in the background) are dropped. */
 const STALE_MS = 1500;
 
-const PORTRAITS: Record<HeroClass, number> = { warrior: 0, mage: 1, rogue: 2, huntress: 3 };
+const PORTRAITS: Record<HeroClass, number> = { warrior: 0, mage: 1, rogue: 2, huntress: 3, duelist: 4, cleric: 5 };
 
 interface Ping {
   from: string;

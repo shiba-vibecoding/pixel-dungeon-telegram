@@ -3,7 +3,7 @@ import { ballistica } from './ai';
 import { attack, hurt, mobDied } from './combat';
 import { type Char, type Ctx, heroesOn, isHero, landItem, leaveCell } from './floor';
 import { createItem } from './items';
-import { addQuestScore } from './quest';
+import { questScore } from './score';
 import { seedGas } from './gas';
 import { seedFire } from './trap-effects';
 import { adjacent, distance, LENGTH, WIDTH } from './level/geometry';
@@ -121,10 +121,10 @@ function notice(ctx: Ctx, mob: Mob, enemy: Hero): void {
  */
 export function wandmakerAttack(ctx: Ctx, attacker: Mob, defender: Char): void {
   if (!isHero(defender)) return;
-  if (attacker.kind === 'rotLasher') addQuestScore(ctx.world, 1, -100);
+  if (attacker.kind === 'rotLasher') questScore(ctx.world, 1, -100);
   if (attacker.dust !== undefined) {
     attacker.dust++;
-    if (attacker.dust === 2 || attacker.dust === 3) addQuestScore(ctx.world, 1, -100);
+    if (attacker.dust === 2 || attacker.dust === 3) questScore(ctx.world, 1, -100);
   }
 }
 
@@ -171,11 +171,11 @@ export function wandmakerMobDied(ctx: Ctx, mob: Mob): void {
   if (mob.kind === 'rotHeart') {
     lashersDie(ctx);
     landItem(ctx, mob.pos, createItem('seed.rotberry'));
-    addQuestScore(ctx.world, 1, 2000);
+    questScore(ctx.world, 1, 2000);
   }
   if (mob.kind === 'newbornElemental') {
     landItem(ctx, mob.pos, createItem('quest.embers'));
-    addQuestScore(ctx.world, 1, 2000);
+    questScore(ctx.world, 1, 2000);
   }
 }
 
@@ -255,7 +255,7 @@ function zap(ctx: Ctx, mob: Mob): void {
     spend(mob, 1);
     const cells = JAVA_N9.map((n) => targeting + n).filter((cell) => cell >= 0 && cell < LENGTH && !hasFlag(ctx.level.map[cell]!, F.SOLID));
     ctx.effects.push({ type: 'elementalBlast', depth: ctx.depth, mob: mob.id, from: mob.pos, to: targeting, cells });
-    for (const hero of heroesOn(ctx.world, ctx.depth)) if (cells.includes(hero.pos)) addQuestScore(ctx.world, 1, -200);
+    for (const hero of heroesOn(ctx.world, ctx.depth)) if (cells.includes(hero.pos)) questScore(ctx.world, 1, -200);
     // Blob.seed(cell, 8 or, in water, 2, Fire), and Burning.reignite for whoever is there.
     seedFire(ctx, cells);
   }

@@ -6,13 +6,14 @@ import type { ItemSpec } from '../level/builder';
 import type { Level } from '../level/generate';
 import { WIDTH } from '../level/geometry';
 import type { Rng } from '../rng';
+import { bossBeaten } from '../score';
 import type { World } from '../world';
 import { BOSS_KINDS, bossFloor, isFist, nextTimed, removeTimed, schedule } from './common';
 import { GOO } from './goo';
 import { bombTurn, fireTurn, prisonOccupy, shockerTurn, TENGU, tenguBlobsTurn, tenguDartTrap, tenguTimed } from './tengu';
 import { cavesOccupy, cavesPylons, DM300, energyTurn, PYLON, rocksTurn, rollPylonArcs, ventTurn } from './dm300';
 import { cityOccupy, KING, linking, shareLinkedDamage, subjectDied, summoningTurn } from './king';
-import { FISTS, hallsOccupy, LARVA, YOG } from './yog';
+import { FISTS, hallsOccupy, LARVA, spawnersAlive, YOG } from './yog';
 import type { BossRules } from './rules';
 import type { Timed } from './state';
 
@@ -86,6 +87,8 @@ export function bossDied(ctx: Ctx, mob: Mob, by?: string): void {
   // Its buffs and their effects go with it (Char.destroy), the lingering ones of a fight aside.
   const boss = ctx.floor.boss;
   if (boss) boss.timed = boss.timed.filter((t) => !('mob' in t && t.mob === mob.id) && !(t.kind === 'lifeLink' && (t.a === mob.id || t.b === mob.id)));
+  // Statistics.bossScores: Yog-Dzewa's is counted before its minions go, with the spawners left alive.
+  if (BOSS_KINDS.has(mob.kind)) bossBeaten(ctx.world, mob.kind, mob.kind === 'yog' ? spawnersAlive(ctx) : 0);
   RULES[mob.kind]?.die?.(ctx, mob, by);
   if (BOSS_KINDS.has(mob.kind)) ctx.effects.push({ type: 'bossSlain', depth: ctx.depth, kind: mob.kind });
 }

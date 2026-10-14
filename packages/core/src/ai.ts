@@ -2,6 +2,8 @@ import { pointsInTalent } from './talents/data';
 import {
   baseKind, beckon, createMob, type Hero, heroStealth, isAlive, isShopkeeper, type Mob, type MobState, MOBS, mobSpeed, mobStats,
 } from './actors';
+import { lightAllyAct } from './classes/cleric-allies';
+import { afterImageAct } from './classes/duelist-armor';
 import { bossRules, populateBoss } from './bosses/index';
 import { attack, defenseOf, hurt } from './combat';
 import { dissolveGuardian, lotusAct, wardCanAttack, wardZap } from './allies';
@@ -165,6 +167,8 @@ export function chooseEnemy(ctx: Ctx, mob: Mob, fov: boolean[]): Char | undefine
       }
     }
   }
+  // Mob.chooseEnemy: going for the hero while a Feint's afterimage stands in sight, it goes for the afterimage instead.
+  if (chosen && isHero(chosen)) chosen = allies.find((ally) => ally.kind === 'afterImage' && fov[ally.pos]) ?? chosen;
   chosen ??= current && isHero(current) ? current : undefined;
   if (!chosen) {
     for (const hero of heroes) {
@@ -220,6 +224,16 @@ export function mobAct(ctx: Ctx, mob: Mob): void {
     }
   } else {
     freeActs.set(mob, { at: mob.time, count: 0 });
+  }
+  // Feint.AfterImage.act: it fades.
+  if (mob.kind === 'afterImage') {
+    afterImageAct(ctx, mob);
+    return;
+  }
+  // PowerOfMany.LightAlly.
+  if (mob.kind === 'lightAlly') {
+    lightAllyAct(ctx, mob);
+    return;
   }
   // The armour abilities' allies (DirectableAlly): the shadow clone and the spirit hawk; the decoy only stands there.
   if (mob.kind === 'shadow' || mob.kind === 'hawk') {

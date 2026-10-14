@@ -129,7 +129,7 @@ describe('talking to him, and his reward (WndWandmaker)', () => {
       expect(floor.mobs.some((m) => m.kind === 'wandmaker')).toBe(false);
       expect(quest.wand1).toBeNull();
       // Quest.complete scores the dust's errand; the others score as their foe falls.
-      expect(world.questScores?.[1] ?? 0).toBe(type === 1 ? 2000 : 0);
+      expect(world.score?.quests[1] ?? 0).toBe(type === 1 ? 2000 : 0);
       expect(act(world, 'p', { type: 'wandReward', choice: 1 })).toEqual({ ok: false, reason: 'nothing to give' });
     });
   }
@@ -266,7 +266,7 @@ describe('the embers (RitualSiteRoom, CeremonialCandle, Elemental.NewbornFireEle
     expect(elemental!.paralysed ?? 0).toBe(0);
 
     // Slain, it leaves its embers (and 2000 points to the quest).
-    const before = world.questScores?.[1] ?? 0;
+    const before = world.score?.quests[1] ?? 0;
     Object.assign(hero, { attackSkill: 1000 });
     elemental!.hp = 1;
     for (let i = 0; i < 20 && floor.mobs.includes(elemental!); i++) {
@@ -275,7 +275,7 @@ describe('the embers (RitualSiteRoom, CeremonialCandle, Elemental.NewbornFireEle
     }
     expect(floor.mobs.includes(elemental!)).toBe(false);
     expect(floor.heaps.some((h) => h.pos === elemental!.pos && h.items.some((i) => i.kind === 'quest.embers'))).toBe(true);
-    expect((world.questScores?.[1] ?? 0) - before).toBe(2000);
+    expect((world.score?.quests[1] ?? 0) - before).toBe(2000);
   });
 });
 
@@ -350,12 +350,12 @@ describe('the rotberry seed (RotGardenRoom, RotHeart, RotLasher)', () => {
     floor.mobs.push(...lashers);
     heart.hp = 1;
     hero.pos = beside(world, depth, heart.pos);
-    const before = world.questScores?.[1] ?? 0;
+    const before = world.score?.quests[1] ?? 0;
     // (Its bark may take a blow: strike until it falls.)
     for (let i = 0; i < 20 && floor.mobs.includes(heart); i++) act(world, 'p', { type: 'attack', target: heart.id });
     expect(floor.mobs.some((m) => m.kind === 'rotHeart' || m.kind === 'rotLasher')).toBe(false);
     expect(floor.heaps.some((h) => h.pos === heart.pos && h.items.some((i) => i.kind === 'seed.rotberry'))).toBe(true);
-    expect((world.questScores?.[1] ?? 0) - before).toBe(2000);
+    expect((world.score?.quests[1] ?? 0) - before).toBe(2000);
   });
 
   it('a lasher lashes out at whoever is beside it (crippling, and costing the quest), and mends with nobody near', () => {
@@ -379,7 +379,7 @@ describe('the rotberry seed (RotGardenRoom, RotHeart, RotLasher)', () => {
     expect(lashed).toBeGreaterThan(0);
     expect(crippled).toBe(true);
     expect(lasher.pos).toBe(pos);
-    expect(world.questScores?.[1]).toBe(-100 * lashed);
+    expect(world.score?.quests[1]).toBe(-100 * lashed);
     // Away from it, it waits again, and mends.
     hero.pos = beside(world, depth, wandmaker.pos);
     lasher.hp = 50;

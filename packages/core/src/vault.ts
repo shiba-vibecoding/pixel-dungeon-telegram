@@ -14,7 +14,7 @@ import { discoverable } from './level/flags';
 import type { Level } from './level/generate';
 import { adjacent, cellX, cellY, LENGTH, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
-import { addQuestScore } from './quest';
+import { questScore } from './score';
 import { itemAt, type ItemRef } from './scrolls';
 import type { VaultFlameSpawn, VaultFloor } from './vault-types';
 import { bossSpellsTurn, summonBoss } from './vaultboss';
@@ -57,11 +57,11 @@ function heroFov(ctx: Ctx): boolean[] {
 export function hazardHit(world: World): void {
   const quest = world.impQuest;
   if (quest && quest.hazardFreebies > 0) quest.hazardFreebies--;
-  else addQuestScore(world, 3, -100);
+  else questScore(world, 3, -100);
 }
 
 /** The greater elemental's spells and blows cost the quest a hundred points each (Statistics.questScores[3]). */
-export const bossPenalty = (world: World): void => addQuestScore(world, 3, -100);
+export const bossPenalty = (world: World): void => questScore(world, 3, -100);
 
 /* The level's turn */
 

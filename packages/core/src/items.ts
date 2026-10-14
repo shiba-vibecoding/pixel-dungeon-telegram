@@ -228,6 +228,8 @@ export const ITEMS = {
   'armor.mage': armor(6, S.ARMOR_MAGE),
   'armor.rogue': armor(6, S.ARMOR_ROGUE),
   'armor.huntress': armor(6, S.ARMOR_HUNTRESS),
+  'armor.duelist': armor(6, S.ARMOR_DUELIST),
+  'armor.cleric': armor(6, S.ARMOR_CLERIC),
 
   // Thrown weapons (MissileWeapon), by tier; their numbers are in missiles.ts.
   'missile.throwingStone': missile(1, S.THROWING_STONE),
@@ -296,6 +298,12 @@ export const ITEMS = {
   'seed.sungrass': { category: 'seed', sprite: S.SEED_SUNGRASS },
   'seed.earthroot': { category: 'seed', sprite: S.SEED_EARTHROOT },
   'seed.fadeleaf': { category: 'seed', sprite: S.SEED_FADELEAF },
+  // Shattered's own: stormvine, swiftthistle, blindweed, mageroyal and the rare starflower.
+  'seed.stormvine': { category: 'seed', sprite: S.SEED_STORMVINE },
+  'seed.swiftthistle': { category: 'seed', sprite: S.SEED_SWIFTTHISTLE },
+  'seed.blindweed': { category: 'seed', sprite: S.SEED_BLINDWEED },
+  'seed.mageroyal': { category: 'seed', sprite: S.SEED_MAGEROYAL },
+  'seed.starflower': { category: 'seed', sprite: S.SEED_STARFLOWER },
   /** Only from the shrub the old wandmaker is after; it brews strength. */
   'seed.rotberry': { category: 'seed', sprite: S.SEED_ROTBERRY },
   // Food (Food, Pasty, MysteryMeat), as filling as Shattered makes it (Hunger.HUNGRY is 300): a ration
@@ -352,6 +360,8 @@ export const ITEMS = {
   'artifact.sandals': { category: 'artifact', sprite: S.ARTIFACT_SANDALS },
   'artifact.cape': { category: 'artifact', sprite: S.ARTIFACT_CAPE },
   'artifact.toolkit': { category: 'artifact', sprite: S.ARTIFACT_TOOLKIT },
+  /** The cleric's own (HolyTome): never dealt, it casts the cleric's spells and grows with the charges they spend. */
+  'artifact.tome': { category: 'artifact', sprite: S.ARTIFACT_TOME },
   /** Goo's legacy now and then: takes its bearer back to a place set beforehand (LloydsBeacon, an artifact in Shattered). */
   'artifact.beacon': { category: 'artifact', sprite: S.ARTIFACT_BEACON },
   /** TimekeepersHourglass.sandBag: sold in the shops to whoever has the hourglass, it makes it stronger. */
@@ -977,9 +987,12 @@ const KIND_CHANCES: Readonly<Record<
   Exclude<GeneratedCategory, 'gold' | 'food' | 'misc' | 'weapon' | 'armor' | 'missile' | 'wand' | 'artifact' | 'potion' | 'scroll' | 'stone'>,
   ReadonlyArray<readonly [ItemKind, number]>
 >> = {
+  // Generator.Category.SEED: Shattered's eleven (the rotberry only from its shrub), the starflower half as often.
+  // (Pixel Dungeon's dreamweed is no longer found; Shattered has none.)
   seed: [
-    ['seed.firebloom', 1], ['seed.icecap', 1], ['seed.sorrowmoss', 1], ['seed.dreamweed', 1], ['seed.sungrass', 1],
-    ['seed.earthroot', 1], ['seed.fadeleaf', 1],
+    ['seed.sungrass', 2], ['seed.fadeleaf', 2], ['seed.icecap', 2], ['seed.firebloom', 2], ['seed.sorrowmoss', 2],
+    ['seed.swiftthistle', 2], ['seed.blindweed', 2], ['seed.stormvine', 2], ['seed.earthroot', 2], ['seed.mageroyal', 2],
+    ['seed.starflower', 1],
   ],
   // Thorns and haggler are only dropped by DM-300 and thieves.
   // Generator.Category.RING: the twelve alike.
@@ -1198,6 +1211,8 @@ export interface Heap {
   haunted?: boolean;
   /** Heap.autoExplored: made by the level for show, not counted as something missed. */
   autoExplored?: boolean;
+  /** Made during play, not by the level's builder: it does not count for the floor's exploration score (Heap.autoExplored; score.ts). */
+  auto?: true;
 }
 
 /** Sprites of closed containers in items.png. */

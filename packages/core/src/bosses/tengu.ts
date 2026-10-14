@@ -20,6 +20,7 @@ import {
   assignBar, bleed, bossFloor, bossMob, CIRCLE8, distanceMap, fight, gatherParty, lockFloor, N8, patchGenerate, removeTimed,
   schedule, show, timedOf, trueDistance, unlockFloor, yell,
 } from './common';
+import { BOSS_SLOT, bossScore } from '../score';
 import type { BossRules } from './rules';
 import type { Timed } from './state';
 
@@ -284,6 +285,7 @@ export function tenguDartTrap(ctx: Ctx, victim: Char | null, pos: number): boole
     if (closest > range) target = undefined;
   }
   if (!target) return true;
+  if (isHero(target)) bossScore(ctx.world, BOSS_SLOT.tengu, -100);
   ctx.effects.push({ type: 'missile', depth: ctx.depth, from: pos, to: target.pos, sprite: S.DART });
   const dr = drRollOf(ctx, target);
   const damage = ctx.rng.normalIntRange(4, 8) - dr;
@@ -577,6 +579,7 @@ export function bombTurn(ctx: Ctx, bomb: Extract<Timed, { kind: 'bomb' }>): void
   for (const c of cells) {
     const ch = charAt(ctx.world, ctx.depth, c);
     if (!ch || (!isHero(ch) && ch.kind === 'tengu') || !isAlive(ch)) continue;
+    if (isHero(ch)) bossScore(ctx.world, BOSS_SLOT.tengu, -100);
     const damage = ctx.rng.normalIntRange(5 + depth, 10 + depth * 2) - drRollOf(ctx, ch);
     if (damage > 0) {
       ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: ch.id, damage });
@@ -664,6 +667,7 @@ export function tenguBlobsTurn(ctx: Ctx): void {
   for (const cell of burnt) {
     const ch = charAt(ctx.world, ctx.depth, cell);
     if (ch && !(!isHero(ch) && ch.kind === 'tengu')) ch.burning = Math.max(ch.burning ?? 0, 8);
+    if (ch && isHero(ch)) bossScore(ctx.world, BOSS_SLOT.tengu, -100);
     burnCell(ctx, cell);
   }
   const shock = boss.shock ?? [];
@@ -679,6 +683,7 @@ export function tenguBlobsTurn(ctx: Ctx): void {
     const ch = charAt(ctx.world, ctx.depth, cell);
     if (!ch || (!isHero(ch) && ch.kind === 'tengu') || !isAlive(ch)) continue;
     const damage = 2 + 10;
+    if (isHero(ch)) bossScore(ctx.world, BOSS_SLOT.tengu, -100);
     ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: ch.id, damage });
     hurt(ctx, ch, damage, 'lightning');
   }

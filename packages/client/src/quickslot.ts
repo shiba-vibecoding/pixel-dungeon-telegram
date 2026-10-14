@@ -1,4 +1,4 @@
-import { CLASS_ARMOR, type Hero, type Item, type ItemKind, type ItemRef, itemDef, startingKit, type World } from '@pd/core';
+import { CLASS_ARMOR, hasAbility, type Hero, type Item, type ItemKind, type ItemRef, itemDef, startingKit, type World } from '@pd/core';
 
 /*
  * The quick slots as Shattered Pixel Dungeon has them (QuickSlot, Toolbar):
@@ -98,6 +98,8 @@ export function quickUse(kind: ItemKind): 'throw' | 'zap' | 'shoot' | 'use' | 'i
 export function quickIndex(hero: Hero, slot = 0): number {
   const kind = state.slots[slot];
   if (kind === 'weapon.magesStaff' && hero.weapon?.kind === kind && hero.weapon.wand !== undefined) return WEAPON_SLOT;
+  // The Duelist's weapon in hand, whose ability the slot uses (MeleeWeapon.defaultAction).
+  if (kind && hero.heroClass === 'duelist' && hero.weapon?.kind === kind && hasAbility(hero.weapon)) return WEAPON_SLOT;
   return kind ? hero.items.findIndex((item) => item.kind === kind) : -1;
 }
 

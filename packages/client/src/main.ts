@@ -2,7 +2,7 @@ import {
   type Action, adjacent, blockers, liveBlockers, distance, type Mob, trapAt, buyPrice, cellX, cellY, createHero, createWorld, type Effect, exploredCells, F, findPath, hasFlag,
   HEAP_SPRITES,
   type Hero, type Item, type Level,
-  BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
+  BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, HERO_CLASSES, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   type PlanStep, PLANT_KINDS, T,
   visibleCells, chargesKnown, staffReach, WIDTH,
   type World, charAt, swapsWithHero, canReach, copyReach, heroReach, isClassArmor, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
@@ -12,7 +12,10 @@ import './ui.css';
 import { loop } from './lifecycle';
 import { reloadForUpdate } from './update';
 import { preloadMapFx } from './shfx';
+import { preloadMobFx } from './mobfx';
 import './game.css';
+import { showChampion, showFallenGhoul, showHiddenMimic } from './mobwin';
+import { burningCells, confirmDanger, firstDanger } from './mistap';
 import { blobTexts, bossTile, mobDescription, mobName, plantText, tileText, wellText } from './examine';
 import {
   chooseQuickslot, isPlaceholder, quickArtifact, quickClassArmor, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
@@ -21,6 +24,7 @@ import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookC
 import { artText, chargeOf } from './artifacttext';
 import { armorStatus } from './abilitytext';
 import { showTalents, startAbility } from './abilityui';
+import { showMonk, weaponPrompt } from './classui';
 import { glowOf } from './gearfx';
 import { fx } from './fx';
 import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
@@ -43,11 +47,11 @@ import { stepSound } from './sfx';
 import {
   aheadOf, DangerMeter, fadeFor, type FightSeen, MUSIC_BOSSES, placeTune, sameTune, TITLE, VICTORY, withDanger,
 } from './soundtrack';
-import { type ArenaHud, type BuffName, heroBuffs, Hud, type HudStatus, type QuickState } from './hud';
+import { type ArenaHud, type BuffName, heroBuffs, Hud, type HudStatus, MOB_BUFFS, type QuickState } from './hud';
 import { arenaBest, recordArena, showArenaEnd, showArenaReward } from './arenaui';
 import { ArenaView } from './arenaview';
 import { levelRegion } from './sprites';
-import { capitalize, t } from './i18n';
+import { capitalize, fill, t } from './i18n';
 import { chargesOf, itemInfo, itemName, wearOf } from './itemtext';
 import { type Camera, render } from './render';
 import type { GhostLine, ImpLine } from '@pd/core';
@@ -56,8 +60,8 @@ import { feelingLine, lt, plain, spawnerWarning } from './levelnames';
 import { levelFx } from './levelfx';
 import { mineTarget, setSmithToast, type SmithEnv, smithBranch, talkWithBlacksmith } from './blacksmith-ui';
 import {
-  armorTier, closeOverlay, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showHelp, showHero,
-  refreshBackpack, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice,
+  armorTier, closeOverlay, el, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showHelp, showHero,
+  refreshBackpack, quickAction, showHistory, showMenu, showRankings, showAmulet, showQuest, showRunEnd, showBadges, info, show, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice, windowOf,
 } from './screens';
 import { rankingBlock, showBoards } from './rankui';
 import { type Camp, campClasses } from './camp';
@@ -82,7 +86,7 @@ import { Finds, MapControls } from './mapui';
 import { type HintId, hints } from './hints';
 import { lookIndex, preloadSheets, regionIndex } from './worldsheets';
 import { type ShareCard, shareCard, sharePicture, storyCard } from './share';
-import { rankings, recordRun, runScore } from './rankings';
+import { rankings, recordRun } from './rankings';
 import { type CheckOptions, forgetSolo, loadCheck, loadSolo, type Session, soloSession, staleSolo } from './session';
 import { type BoardKind, type Profile, type RunMeta, type RunSlot, runApi, type SyncAnswer } from './checked';
 import { loadAssets } from './sprites';
@@ -175,6 +179,7 @@ loading.remove();
 setAssets(assets);
 // The map's effects of design v19 (bolts, the glass image, hearts, chains): loaded behind the first screen.
 preloadMapFx();
+preloadMobFx();
 
 const view = new View(assets);
 /** The world answering touch: doors, grass, water, what falls and what is taken (motion.ts). */
@@ -843,7 +848,7 @@ function dailyRulesView(): DailyRulesView {
   const [boon, info] = t.ranked.boons[rules.boon] ?? [rules.boon, ''];
   const item = BOON_ITEMS[rules.boon] ?? 'gold';
   return {
-    hardship: { index: Math.max(0, index), name: t.meta.challengeList[index]?.[0] ?? '' },
+    hardship: { index: Math.max(0, index), name: t.meta.challengeList[index]?.[0] ?? '', info: t.meta.challengeList[index]?.[1] ?? '' },
     boon: { sprite: itemSprite(core.createItem(item), {}), name: t.camp.boons[rules.boon] ?? boon, info },
   };
 }
@@ -897,6 +902,7 @@ function toTitle(ask = true): void {
     onDailyBoard: api ? () => openBoards('daily') : undefined,
     dailyState: dailyState(),
     rules: dailyRulesView(),
+    onNewDay: () => toTitle(false),
     onPractice: () => startSolo('daily'),
     onRankings: () => openBoards(),
     onMart: () => showMart({ heroClass, onClose: toTitle, onTry: startTry }),
@@ -982,7 +988,9 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
 let aim:
-  | { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key' }
+  | { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key'; choice?: number }
+  /** An action of the classes that wants a target: a spell cast at a cell, a weapon's ability. */
+  | { index: -1; kind: 'class'; make: (cell: number) => Action }
   | { index: -1; kind: 'artifact'; action: ArtifactAction }
   /** A subclass's action that wants a target: a combo move, the assassin's prepared strike. */
   | { index: -1; kind: 'ability'; ability: 'combo'; move: core.ComboMove }
@@ -1003,6 +1011,11 @@ function artifactHost(world: World, me: Hero): ArtifactHost {
     aim: (action) => {
       hideOverlay();
       aim = { index: -1, kind: 'artifact', action };
+    },
+    aimClass: (prompt, make) => {
+      hideOverlay();
+      aim = { index: -1, kind: 'class', make };
+      toast(prompt);
     },
     pick: (title, targets, onPick, onCancel) => showBackpack({
       world, hero: me, onAction: (action) => send(action, performance.now()), onAim: () => undefined, onClose: hideOverlay,
@@ -1048,6 +1061,12 @@ function toggleQuickslot(slot = 0): void {
   const index = quickIndex(me, slot);
   const item = quickItem(me, slot);
   if (!item) return;
+  // MeleeWeapon.defaultAction for a Duelist: the weapon's ability.
+  if (me.heroClass === 'duelist' && (item === me.weapon || item === me.secondWep) && core.hasAbility(item)) {
+    walk.reset();
+    weaponAbilityNow(me, item === me.secondWep ? 'second' : 'weapon');
+    return;
+  }
   // Wand.actions: no zapping a wand known to be empty (one of unknown charges may be tried, and fizzle); the staff's, not at all.
   const wand = item.kind === 'weapon.magesStaff' ? item.wand : item;
   if (wand?.charges === 0 && (chargesKnown(wand) || wand !== item)) {
@@ -1765,7 +1784,13 @@ function tapCell(cell: number, quiet = false): void {
       if (problem) toast(talentReason(problem) || t.reasons[problem] || problem);
       else send(action, performance.now());
     }
-    else if (shot.kind === 'special') send({ type: 'special', target: cell }, performance.now());
+    else if (shot.kind === 'class') {
+      const action = shot.make(cell);
+      const problem = core.actionProblem(world, me, action);
+      if (problem) toast(talentReason(problem) || t.reasons[problem] || problem);
+      else send(action, performance.now());
+    }
+    else if (shot.kind === 'special') send({ type: 'special', target: cell, ...(shot.choice !== undefined ? { choice: shot.choice } : {}) }, performance.now());
     else if (shot.kind === 'key') send({ type: 'skeletonKey', item: shot.index, target: cell }, performance.now());
     // A spell cast, dragon's breath breathed, a siren's song sung at the cell.
     else if (shot.kind === 'cast') {
@@ -1870,7 +1895,10 @@ function tapCell(cell: number, quiet = false): void {
   }
   // The alchemy pot: what it is for, then walk up to it as usual.
   if (level.map[cell] === T.ALCHEMY) view.say(t.alchemyPot, '#ffff44');
-  walk.queue = findPath(level, me.pos, cell, occupiedCells(world, me.depth), explored, floating) ?? [];
+  // The way goes round monsters in sight, known traps (findPath) and flames in sight, where another way exists.
+  const occupied = occupiedCells(world, me.depth);
+  const flames = floating ? occupied : new Set([...occupied, ...burningCells(world, me.depth)]);
+  walk.queue = findPath(level, me.pos, cell, flames, explored, floating) ?? findPath(level, me.pos, cell, occupied, explored, floating) ?? [];
   if (walk.queue.length === 0) {
     // No way around a known trap: walk up to it and say so; a tap on the trap itself steps onto it.
     const risky = findPath(level, me.pos, cell, occupiedCells(world, me.depth), explored, floating, true);
@@ -1883,6 +1911,31 @@ function tapCell(cell: number, quiet = false): void {
       // No way there: say so where the finger was.
       feedback.refuse(cell, vnow);
     }
+    return;
+  }
+  // Mis-tap protection (mistap.ts): a step onto a trap or into flames in sight is asked about first; with a walk
+  // ahead of it, the hero stops short and the next tap on the spot asks.
+  const peril = confirmDanger.on ? firstDanger(world, me, level, walk.queue) : null;
+  if (peril) {
+    const way = walk.queue;
+    if (peril.index > 0) {
+      walk.queue = way.slice(0, peril.index);
+      view.say(peril.danger === 'trap' ? t.trapInTheWay : t.danger.fireAhead, '#ff8800');
+      if (!quiet) feedback.aim(walk.queue[walk.queue.length - 1]!, false, vnow);
+      return;
+    }
+    walk.queue = [];
+    held.code = '';
+    const trap = peril.danger === 'trap';
+    showConfirm(
+      trap ? t.danger.trap : t.danger.fire, trap ? t.danger.trapQuestion : t.danger.fireQuestion, t.danger.yes, t.danger.no,
+      () => {
+        const now = session?.world && heroById(session.world, session.myId);
+        if (now && isAlive(now) && now.pos === me.pos) walk.queue = way;
+      },
+      hideOverlay,
+      { label: t.danger.never, onPress: () => confirmDanger.set(false) },
+    );
     return;
   }
   if (!quiet && walk.queue.length > 1) feedback.aim(cell, false, vnow);
@@ -1937,6 +1990,22 @@ function showBuff(name: BuffName, turns?: number): void {
           : name === 'naturesPower' ? artText('actors.hero.abilities.huntress.naturespower$naturespowertracker.desc', [turns ?? 0])
           // The talents' and subclasses': Shattered's descriptions.
           : (me && talentBuffInfo(me, name, turns)) || null;
+  // The monsters' curses (design v21, .pd-buff-window): their icon, Shattered's words and the turns left.
+  const mobIx = MOB_BUFFS[name];
+  if (mobIx !== undefined) {
+    walk.reset();
+    const icon = el('i', { className: 'pd-mbuff large' });
+    icon.style.setProperty('--ix', String(mobIx));
+    const key = name as 'vulnerable' | 'hexed' | 'degrade';
+    show(
+      windowOf(
+        { title: capitalize(t.buffs[name]), icon, onClose: hideOverlay, narrow: true, className: 'pd-buff-window' },
+        ...t.mobBuffDesc[key].split('\n\n').map((line) => info(fill(line, turns ?? 0))),
+      ),
+      hideOverlay,
+    );
+    return;
+  }
   if (long) {
     walk.reset();
     showInfo(t.buffs[name], long.split('\n\n'), hideOverlay);
@@ -1962,12 +2031,22 @@ function useAbilityNow(): void {
   startAbility({
     world, hero: me,
     send: (action) => send(action, performance.now()),
-    aim: (prompt) => {
-      aim = { index: -1, kind: 'special' };
+    aim: (prompt, choice) => {
+      aim = { index: -1, kind: 'special', ...(choice !== undefined ? { choice } : {}) };
       toast(prompt);
     },
     back: hideOverlay,
   });
+}
+
+/** MeleeWeapon.execute(AC_ABILITY): the weapon's ability, aimed at a cell where it asks for one. */
+function weaponAbilityNow(me: Hero, which: 'weapon' | 'second'): void {
+  const weapon = which === 'second' ? me.secondWep : me.weapon;
+  if (!weapon) return;
+  if (core.abilityAims(weapon)) {
+    aim = { index: -1, kind: 'class', make: (cell) => ({ type: 'weaponAbility', which, cell }) };
+    toast(weaponPrompt(weapon.kind));
+  } else send({ type: 'weaponAbility', which }, performance.now());
 }
 
 /** An action of the talents' and subclasses' indicator (berserk, freerun, snipe, a combo move, ambush). */
@@ -1989,6 +2068,23 @@ function useAction(kind: ActionKind): void {
       });
       break;
     case 'ambush': aim = { index: -1, kind: 'ability', ability: 'ambush' }; break;
+    // The Duelist's subclasses: the Monk's abilities, the Champion's swap of weapons, the brawler's stance.
+    case 'monk':
+      showMonk({
+        world, hero: me, back: hideOverlay,
+        act: (action) => {
+          hideOverlay();
+          send(action, performance.now());
+        },
+        aim: (prompt, make) => {
+          hideOverlay();
+          aim = { index: -1, kind: 'class', make };
+          toast(prompt);
+        },
+      });
+      break;
+    case 'swap': send({ type: 'swap' }, performance.now()); break;
+    case 'stance': send({ type: 'stance' }, performance.now()); break;
   }
 }
 
@@ -2012,9 +2108,14 @@ function backpackOptions(world: World, me: Hero): Parameters<typeof showBackpack
     world,
     hero: me,
     onAction: (action) => send(action, performance.now()),
-    onAim: (index, kind) => {
-      aim = { index, kind };
+    onAim: (index, kind, choice) => {
+      aim = { index, kind, ...(choice !== undefined ? { choice } : {}) };
     },
+    onAimClass: (prompt, make) => {
+      aim = { index: -1, kind: 'class', make };
+      toast(prompt);
+    },
+    onWeaponAbility: (which) => weaponAbilityNow(me, which),
     onClose: hideOverlay,
   };
 }
@@ -2047,9 +2148,14 @@ function openBackpack(): void {
     world,
     hero: me,
     onAction: (action) => send(action, performance.now()),
-    onAim: (index, kind) => {
-      aim = { index, kind };
+    onAim: (index, kind, choice) => {
+      aim = { index, kind, ...(choice !== undefined ? { choice } : {}) };
     },
+    onAimClass: (prompt, make) => {
+      aim = { index: -1, kind: 'class', make };
+      toast(prompt);
+    },
+    onWeaponAbility: (which) => weaponAbilityNow(me, which),
     onAimArtifact: (action) => {
       aim = { index: -1, kind: 'artifact', action };
     },
@@ -2414,6 +2520,23 @@ function examineCell(pos: number): void {
   }
   const seen = visibleCells(world, me.depth)[pos];
   const char = seen ? charAt(world, me.depth, pos) : undefined;
+  // A ghoul lying crumpled is in no list of monsters (GhoulLifeLink): a tap on it tells it is playing dead.
+  const fallen = seen ? world.floors[me.depth]?.downed?.find((link) => link.mob.pos === pos) : undefined;
+  if (!char && fallen) {
+    showFallenGhoul(fallen.mob, fallen.turns, Math.max(1, (fallen.mob.timesDowned ?? 1) * 5));
+    return;
+  }
+  if (char && 'kind' in char && char.kind === 'ebonyMimic' && char.hidden) {
+    showHiddenMimic(char);
+    return;
+  }
+  if (char && 'kind' in char && char.champion) {
+    showChampion(char, [
+      ...mobDescription({ ...char, champion: undefined }, (item) => itemName(world, item), world.floors[me.depth]?.now ?? 0),
+      char.state === 'passive' ? '' : t.mobStates[char.state] ?? '',
+    ]);
+    return;
+  }
   if (char && 'kind' in char) {
     const state = char.state === 'passive' ? '' : t.mobStates[char.state] ?? '';
     const health = char.state === 'passive' ? '' : t.examineHealth(Math.max(0, char.hp), char.ht);
@@ -3353,8 +3476,9 @@ function tick(now: number): void {
     const answer = session.checked ? session.checked.finished() : null;
     if (answer) void answer.then((reply) => reply?.badges && announceBadges(reply.badges.filter((id) => !earnedBadges().has(id))));
     const deepestNow = Object.keys(world.levels).length;
-    // Scored as the server scores it (core verify.ts runOutcome: challenges raise it).
-    const scoreNow = core.runOutcome(world, me).score;
+    // Scored as the server scores it (core verify.ts runOutcome: Shattered's score, the parts in `breakdown`).
+    const outcomeNow = core.runOutcome(world, me);
+    const scoreNow = outcomeNow.score;
     const killer = me.killedBy && (t.causes[me.killedBy] ?? t.mobs[me.killedBy as MobKind] ?? t.classes[me.killedBy as HeroClass] ?? me.killedBy);
     const shareText = dailyRun ? t.shareText(scoreNow, deepestNow) : t.shareTextRun(scoreNow, deepestNow);
     const share = shareChoices(async () => {
@@ -3375,6 +3499,7 @@ function tick(now: number): void {
       const place = recordRun({
         key: `${world.run.seed}:${me.id}:${world.turn}`,
         score: scoreNow,
+        ...(outcomeNow.breakdown ? { breakdown: outcomeNow.breakdown } : {}),
         name: me.name || playerName || telegramName() || t.heroLabel,
         heroClass: me.heroClass,
         lvl: me.lvl,
@@ -3400,6 +3525,7 @@ function tick(now: number): void {
         },
         onExit: () => toTitle(),
         score: scoreNow,
+        ...(outcomeNow.breakdown ? { breakdown: outcomeNow.breakdown } : {}),
         ranking: rankingBlock(answer),
         onBoards: api ? () => openBoards(dailyRun ? 'daily' : 'week') : undefined,
         share,

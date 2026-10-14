@@ -1,3 +1,4 @@
+import { hasGlyph } from './classes/state';
 import { wear } from './wear';
 import { talentTime, beforeHeroAct, consumeLethalMomentum } from './talents/turns';
 import { hasTalent, pointsInTalent, type TalentId, upgradeProblem } from './talents/data';
@@ -20,7 +21,7 @@ import { camouflage, isEnemy } from './enchant';
 import { canReach, gearTick } from './throwing';
 import { heroTurns, search, TIME_TO_SEARCH } from './hero';
 import { startingKit } from './heroclass';
-import { type Note, noteLandmarks } from './journal';
+import { type Note, noteLandmarks, removeNote } from './journal';
 import type { LimitedDrop } from './mobs';
 import { bleedTick } from './afflict';
 import { ambush } from './mobskills';
@@ -54,8 +55,11 @@ import { type SkeletonKeyAction, skeletonKeyProblem, useSkeletonKey } from './sk
 import { type BlacksmithAction, blacksmithProblem, type BlacksmithQuest, blacksmithService, talkToBlacksmith } from './blacksmith';
 import { mineInteract } from './minemobs';
 import { talkToWandmaker, type WandQuest, wandFromWandmaker, wandRewardProblem } from './wandmaker';
-import { isBossDepth } from './level/builder';
+import { isBossDepth, LAST_SHOP_DEPTH } from './level/builder';
 import { skeletonKeyLocks } from './skeletonkey';
+import { type ClassAction, classProblem, isClassAction, performClass } from './classes/actions';
+import { settleTimers } from './classes/state';
+import { greaterHasteMove, onRest } from './classes/duelist-talents';
 import { generateLevel, type Level } from './level/generate';
 import { adjacent, cellX, cellY, distance, HEIGHT, LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { RoomType } from './level/room';
@@ -78,6 +82,8 @@ import {
   type ArtifactAction, artifactProblem, artifactsAct, artifactsTime, carriedOf, chaliceRegenDelay, disarmPresses, freezeTime, frozenBy,
   ghostFollows, ghostSeesBoss, ghostSays, heroPress, naturalism, performArtifact, petalsFor, talismanBlinds, talismanFound,
 } from './artifacts';
+import { bubbleTime } from './timebubble';
+import type { ScoreState } from './score';
 import { abilityProblem, alliesFollow, copyReach, endEnduring, swapWithClone, useAbility } from './abilities';
 
 /*
@@ -143,7 +149,9 @@ export type Action =
    */
   | { type: 'arenaReady'; cancel?: boolean }
   | { type: 'arenaPick'; choice: number }
-  | InventoryAction;
+  | InventoryAction
+  /** The Duelist's and the Cleric's own: talents, weapon abilities, spells (classes/actions.ts). */
+  | ClassAction;
 
 export type ActionResult = { ok: true; effects: Effect[] } | { ok: false; reason: string };
 
@@ -182,6 +190,8 @@ export interface World {
   night?: boolean;
   /** The daily dungeon's boon the hero set out with (daily.ts), for the screens. */
   boon?: string;
+  /** Statistics.bossScores and questScores (score.ts): what the bosses beaten and the errands done have earned, less avoidable hits; absent until the first. */
+  score?: ScoreState;
   /** The Amulet of Yendor has been taken up (Statistics.amuletObtained): its question is asked once. */
   amuletTaken?: boolean;
   /** A fallen hero's bones from an earlier run on this device, for their depth to hold (bones.ts; solo only). */
@@ -209,8 +219,6 @@ export interface World {
    * the depth, the depth while the hero is down its side level), with its floor and what was seen of it.
    */
   parked?: Record<number, { level: Level; floor: Floor; explored: boolean[] }>;
-  /** Statistics.questScores: what each quest added to the score (the ghost, the wandmaker, the blacksmith, the imp). */
-  questScores?: number[];
   /** Dungeon.droppedItems: what fell into a chasm as a depth was made, waiting for the depth below to be made. */
   chasmItems?: Record<number, Item[]>;
   /** Dungeon.LimitedDrops kept by the monsters (mobs.ts): how many of each drop have come so far. */
@@ -526,6 +534,7 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
   // The unstable spellbook's scroll waits to be settled first.
   if (hero.pendingScroll && action.type !== 'artifact') return 'art:unstablespellbook.prompt';
   if (isInventoryAction(action)) return inventoryProblem(world, hero, action);
+  if (isClassAction(action)) return classProblem(world, hero, action);
   const inArena = arenaProblem(world, hero, action);
   if (inArena !== undefined) return inArena;
   const level = levelAt(world, hero.depth);
@@ -1106,6 +1115,11 @@ function playTurn(ctx: Ctx, turn: Exclude<Turn, { kind: 'hero' }>): void {
  */
 function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   // Char.spendConstant: while the hourglass freezes time, the hero's acts only use up its charge.
+  // Swiftthistle.TimeBubble: the hero's acts only use up the bubble.
+  if (hero.timeBubble && hero.depth === ctx.depth) {
+    bubbleTime(ctx, hero, time);
+    return;
+  }
   const frozen = frozenBy(hero);
   if (frozen && hero.depth === ctx.depth) {
     freezeTime(ctx, hero, frozen, time);
@@ -1117,6 +1131,8 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   }
   const from = hero.time;
   hero.time += time;
+  // What the classes' abilities set to last until the hero's next turn now has its end.
+  settleTimers(hero);
   if (hero.depth === ctx.depth) altarMarksHero(ctx, hero, time);
   // The hero's buffs, the artifacts' among them, once a turn; a cursed hourglass may steal a turn.
   const lost = heroTurns(ctx, hero, from, hero.time);
@@ -1188,7 +1204,7 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
   if (hero.gasImmune) hero.gasImmune = Math.max(0, hero.gasImmune - time);
   if (hero.burning > 0) {
     // Armour of brimstone: fire does not take (Char.isImmune: Burning).
-    if (isWater(ctx.level.map[hero.pos]!) || hero.armor.glyph === 'brimstone') {
+    if (isWater(ctx.level.map[hero.pos]!) || hasGlyph(hero, 'brimstone')) {
       hero.burning = 0;
     } else {
       for (let i = ticks(hero.burning); i > 0 && isAlive(hero); i--) {
@@ -1208,6 +1224,14 @@ function spend(ctx: Ctx, hero: Hero, time: number, constant = false): void {
 function perform(ctx: Ctx, hero: Hero, action: Action): void {
   const { world, level } = ctx;
   beforeHeroAct(ctx, hero);
+  if (isClassAction(action)) {
+    spend(ctx, hero, performClass(ctx, hero, action));
+    if (isAlive(hero)) {
+      observe(world, hero);
+      noteLandmarks(world, hero);
+    }
+    return;
+  }
   if (isInventoryAction(action)) {
     spend(ctx, hero, performInventory(ctx, hero, action));
     if (isAlive(hero)) {
@@ -1220,6 +1244,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
     case 'wait':
       // Hero.rest: resting takes a turn, whatever slows or hastens the hero (spendConstant); and digs in (hold fast).
       spend(ctx, hero, TIME_TO_REST, true);
+      onRest(hero);
       holdFastRest(hero, hero.sealShield !== undefined);
       break;
 
@@ -1306,7 +1331,8 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
       }
       // Hero.actMove: a freerunner builds momentum with each step.
       if (hero.pos !== from) gainMomentum(hero);
-      spend(ctx, hero, 1 / heroSpeed(hero, footing(ctx, hero)));
+      // GreaterHaste: a move costs no time, and uses one of its moves up.
+      spend(ctx, hero, greaterHasteMove(hero) ? 0 : 1 / heroSpeed(hero, footing(ctx, hero)));
       if (hero.pos === from) break;
       // The step is done, then the trap goes off; floating, the hero touches nothing (Char.move). While the
       // hourglass freezes time, traps and plants wait for it to start again (heroPress).
@@ -1488,7 +1514,7 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
 function footing(ctx: Ctx, hero: Hero): Footing {
   const { level } = ctx;
   let enemyNear = false;
-  if (hero.armor.glyph === 'swiftness') {
+  if (hasGlyph(hero, 'swiftness')) {
     const reach = new Map<number, number>([[hero.pos, 0]]);
     const queue = [hero.pos];
     for (let head = 0; head < queue.length && !enemyNear; head++) {
@@ -1676,6 +1702,8 @@ function changeDepth(ctx: Ctx, hero: Hero, depth: number, arrival: 'entrance' | 
 function fall(ctx: Ctx, hero: Hero, into: number): void {
   const { world, level, effects } = ctx;
   const weakFloor = level.rooms.some((room) => room.type === RoomType.WEAK_FLOOR && within(room, into));
+  // Chasm.heroFall: down the weak floor, the distant well is reached (Notes.remove(DISTANT_WELL)).
+  if (weakFloor) removeNote(world, 'distantWell', hero.depth);
   effects.push({ type: 'fell', hero: hero.id, depth: hero.depth, pos: into });
   disarmPresses(ctx, hero);
   const fromDepth = hero.depth;

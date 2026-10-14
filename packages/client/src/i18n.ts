@@ -1,6 +1,7 @@
 import type { EmoteKind, Enchantment, Glyph, HeroClass, ItemKind, Landmark, MobKind, PlantKind, SubClass, TrapKind } from '@pd/core';
 import type { BuffName } from './hud';
 import { ART_EN, ART_RU } from './i18n-artifacts';
+import { CLS_EN, CLS_RU } from './i18n-classes';
 import { TAL_EN, TAL_RU } from './i18n-talents';
 import { REL_EN, REL_RU } from './i18n-release';
 import { ABIL_EN, ABIL_RU } from './i18n-abilities';
@@ -1114,7 +1115,10 @@ const en = {
   thanksBought: 'Thank you! It is yours.',
   buyFailed: 'The purchase did not go through.',
   buyExpired: 'The game has been open for too long: close it and open it again to buy.',
-  lookOf: { warrior: "The warrior's look", mage: "The mage's look", rogue: "The rogue's look", huntress: "The huntress's look" },
+  lookOf: {
+    warrior: "The warrior's look", mage: "The mage's look", rogue: "The rogue's look", huntress: "The huntress's look",
+    duelist: "The duelist's look", cleric: "The cleric's look",
+  },
   skinNames: { ash: 'Ashen', royal: 'Royal', shadow: 'Shadow' },
   skinInfo: { ash: 'Armour gone grey with ash, the hair too.', royal: 'Gold for metal and light cloth, purple for the rest.', shadow: 'Dark violet, hair near black.' },
   effectNames: { sparks: 'Sparks', fireflies: 'Fireflies', snow: 'Snowfall' },
@@ -1168,13 +1172,17 @@ const en = {
   newRecord: 'New record!',
   rankPlace: (n: number) => `Place ${n} among your runs`,
   won: 'Won',
-  classes: { warrior: 'Warrior', mage: 'Mage', rogue: 'Rogue', huntress: 'Huntress' } as Record<HeroClass, string>,
+  classes: { warrior: 'Warrior', mage: 'Mage', rogue: 'Rogue', huntress: 'Huntress', duelist: 'Duelist', cleric: 'Cleric' } as Record<HeroClass, string>,
+  /** The chip by a class the game has just got (the title's «new»). */
+  newClass: 'new',
   // HeroClass.*_desc_short.
   classInfo: {
     warrior: 'The Warrior endures extra damage with shielding granted by his broken seal. The seal can be moved between armors and transfers a single upgrade.',
     mage: "The Mage is an arcane expert and carries a magical staff that's stronger than a wand. The staff can be imbued with any wand the Mage finds.",
     rogue: 'The Rogue can evade enemies and strike from invisibility using his cloak of shadows. He also detects secrets and traps from a greater distance.',
     huntress: 'The Huntress is a master of thrown weapons and has a magical bow with infinite arrows. She also travels through tall grass without trampling it.',
+    duelist: CLS_EN['actors.hero.heroclass.duelist_desc_short']!,
+    cleric: CLS_EN['actors.hero.heroclass.cleric_desc_short']!,
   } as Record<HeroClass, string>,
   /**
    * Shattered's five boss fights (bosses/*.ts in the core): each boss's lines by the key the core sends ('notice',
@@ -1260,7 +1268,7 @@ const en = {
     elemental: 'fire elemental', monk: 'dwarf monk', warlock: 'dwarf warlock', golem: 'golem', king: 'King of Dwarves',
     undead: 'undead dwarf', succubus: 'succubus', eye: 'evil eye', scorpio: 'scorpio', yog: 'Yog-Dzewa',
     rottingFist: 'rotting fist', burningFist: 'burning fist', larva: "god's larva", mimic: 'mimic', statue: 'animated statue',
-    piranha: 'giant piranha', imp: 'ambitious imp', sheep: 'sheep', blacksmith: 'troll blacksmith', mirror: 'mirror image', prismatic: 'prismatic image',
+    piranha: 'giant piranha', imp: 'ambitious imp', sheep: 'sheep', blacksmith: 'troll blacksmith', mirror: 'mirror image', prismatic: 'prismatic image', afterImage: 'afterimage', lightAlly: 'light ally',
     albino: 'albino rat', bandit: 'crazy bandit', shielded: 'armored brute', senior: 'senior monk', acidic: 'acidic scorpio',
     fetidRat: 'fetid rat', curse: 'curse personification', ratKing: 'rat king', wraith: 'wraith', bee: 'golden bee',
     impShopkeeper: 'ambitious imp', snake: 'sewer snake', gnollExile: 'gnoll exile', gnollTrickster: 'gnoll trickster',
@@ -1301,6 +1309,9 @@ const en = {
     ate: (item: string) => `The mimic ate your ${item}!`,
     mimicReveal: 'That chest is a mimic!',
     ebonyReveal: 'There was a mimic there!',
+    ghoulRises: 'The ghoul rises!',
+    ghoulTag: 'playing dead',
+    ghoulRiseIn: (turns: number) => `It will rise in ${turns} ${turns === 1 ? 'turn' : 'turns'} if the other ghoul is still alive.`,
     debuffs: { weakness: 'You feel weakened!', vulnerable: 'You feel fragile!', hex: 'You have been hexed!', degrade: 'Your equipment feels weaker!', blindness: 'You are blinded!' },
   },
   isMimic: 'This is a mimic!',
@@ -1451,6 +1462,14 @@ const en = {
   jumpQuestion: 'Do you really want to jump into the chasm? You can probably die.',
   jumpYes: "Yes, I know what I'm doing",
   jumpNo: 'No, I changed my mind',
+  /** Mis-tap protection (mistap.ts): the question before a step onto a trap in sight or into flames in sight. */
+  danger: {
+    trap: 'Trap', fire: 'Fire',
+    trapQuestion: 'There is a trap on that cell. Do you really want to step onto it?',
+    fireQuestion: 'That cell is on fire. Do you really want to step into the flames?',
+    yes: 'Step there anyway', no: 'No, stay put', never: "Yes, and don't ask again",
+    fireAhead: 'Flames bar the way. Tap the spot again to step in.',
+  },
   enterPrison: 'The sewers give way to an old prison. Its inmates have long since gone mad.',
   depthTitle: (depth: number) => `Depth ${depth}`,
   regionNames: ['Sewers', 'Prison', 'Caves', 'Dwarven City', 'Demon Halls'] as readonly string[],
@@ -1467,6 +1486,9 @@ const en = {
     'armor.mage': ABIL_EN['items.armor.magearmor.name']!,
     'armor.rogue': ABIL_EN['items.armor.roguearmor.name']!,
     'armor.huntress': ABIL_EN['items.armor.huntressarmor.name']!,
+    'armor.duelist': CLS_EN['items.armor.duelistarmor.name']!,
+    'armor.cleric': CLS_EN['items.armor.clericarmor.name']!,
+    'artifact.tome': CLS_EN['items.artifacts.holytome.name']!,
     'crown.king': ABIL_EN['items.kingscrown.name']!,
     'wand.magicMissile': 'Wand of Magic Missile',
     'wand.lightning': 'Wand of Lightning',
@@ -1518,6 +1540,8 @@ const en = {
     'seed.icecap': 'seed of Icecap',
     'seed.sorrowmoss': 'seed of Sorrowmoss',
     'seed.dreamweed': 'seed of Dreamweed',
+    'seed.stormvine': 'seed of stormvine', 'seed.swiftthistle': 'seed of swiftthistle', 'seed.blindweed': 'seed of blindweed',
+    'seed.mageroyal': 'seed of mageroyal', 'seed.starflower': 'seed of starflower',
     'seed.sungrass': 'seed of Sungrass',
     'seed.earthroot': 'seed of Earthroot',
     'seed.fadeleaf': 'seed of Fadeleaf',
@@ -1781,6 +1805,11 @@ const en = {
     'seed.icecap': 'Throw it where you want an Icecap to grow: touched, it freezes everyone around.',
     'seed.sorrowmoss': 'Throw it where you want a Sorrowmoss to grow: whoever touches it is poisoned.',
     'seed.dreamweed': 'Throw it where you want a Dreamweed to grow: touched, it releases a cloud of confusion.',
+    'seed.stormvine': 'Throw it where you want a stormvine to grow: whatever is caught in it becomes disoriented.',
+    'seed.swiftthistle': 'Throw it where you want a swiftthistle to grow: trampled, it lets you perform several actions instantly.',
+    'seed.blindweed': 'Throw it where you want a blindweed to grow: touched, it perishes in a flash that blinds and disorients.',
+    'seed.mageroyal': 'Throw it where you want a mageroyal to grow: whatever steps in it is cleansed of many negative effects.',
+    'seed.starflower': 'Throw it where you want a starflower to grow: a rare plant said to grant holy power to whomever touches it.',
     'seed.sungrass': 'Throw it where you want a Sungrass to grow: whoever touches it heals while standing still.',
     'seed.earthroot': 'Throw it where you want an Earthroot to grow: whoever touches it is armoured while standing still.',
     'seed.fadeleaf': 'Throw it where you want a Fadeleaf to grow: whoever touches it is carried elsewhere on the level.',
@@ -2214,7 +2243,8 @@ const en = {
   combo: (count: number) => `${count} hit combo!`,
   subclasses: {
     gladiator: 'gladiator', berserker: 'berserker', battlemage: 'battlemage', warlock: 'warlock',
-    freerunner: 'freerunner', assassin: 'assassin', sniper: 'sniper', warden: 'warden',
+    freerunner: 'freerunner', assassin: 'assassin', sniper: 'sniper', warden: 'warden', champion: 'champion', monk: 'monk', priest: 'priest',
+    paladin: 'paladin',
   } as Record<SubClass, string>,
   subclassInfo: {
     gladiator: 'Gladiator: a successful melee hit starts a combo, in which every next hit inflicts more damage.',
@@ -2225,12 +2255,18 @@ const en = {
     assassin: 'Assassin: a surprise attack inflicts additional damage.',
     sniper: 'Sniper: her missiles find the weak points in an enemy\'s armour and ignore it.',
     warden: 'Warden: trampling tall grass and touching plants gives her a bark armour, and plants yield her seeds and dewdrops.',
+    champion: CLS_EN['actors.hero.herosubclass.champion_short_desc']!,
+    monk: CLS_EN['actors.hero.herosubclass.monk_short_desc']!,
+    priest: CLS_EN['actors.hero.herosubclass.priest_short_desc']!,
+    paladin: CLS_EN['actors.hero.herosubclass.paladin_short_desc']!,
   } as Record<SubClass, string>,
   alchemyPot: 'An alchemy pot: stand by it and tap it to brew.',
   brewed: 'The seeds in the pot brew into a potion!',
   plants: {
     firebloom: 'The Firebloom bursts into flames!', icecap: 'The Icecap freezes everything around!',
     sorrowmoss: 'The Sorrowmoss poisons you!', dreamweed: 'The Dreamweed releases a cloud of confusion!',
+    stormvine: 'The stormvine leaves you disoriented!', swiftthistle: 'Time speeds up around you!', blindweed: 'The blindweed blinds you with a flash!',
+    mageroyal: 'You feel refreshed.', starflower: 'The starflower blesses you!',
     sungrass: 'The Sungrass soothes your wounds while you stand still.', earthroot: 'The Earthroot armours you while you stand still.',
     fadeleaf: 'The Fadeleaf whisks you away!', rotberry: 'The Rotberry bursts into a cloud of toxic gas, and its roots hold you fast!',
     dewcatcher: '', seedpod: '',
@@ -2338,9 +2374,32 @@ const en = {
   goldLabel: 'Gold',
   slain: 'Foes slain',
   scoreLabel: 'Score',
+  /* The score table (WndScoreBreakdown): Shattered's own words. */
+  scoring: {
+    title: 'Score Breakdown',
+    progress: ['Progression', 'Based on maximum depth and hero level.'],
+    treasure: ['Treasure', 'Based on gold collected and held item value.'],
+    explore: ['Exploration', 'Based on floors explored. Reduced by missing items or hidden doors, or unsolved puzzles.'],
+    bosses: ['Bosses', 'Based on bosses defeated. Reduced by standing in avoidable attacks during boss fights.'],
+    quests: ['Quests', 'Based on quests completed. Reduced by taking avoidable attacks or missing quest score.'],
+    win: 'Win Multiplier',
+    challenge: 'Challenge Multiplier',
+    total: 'Total Score',
+    /** The small print under a part: where it came from. */
+    treasureFrom: (gold: number, items: string) => `gold ${gold.toLocaleString('en-US')} + items ${items}`,
+    exploreFrom: (clean: number, floors: number) => `${clean} of ${floors} floors cleared`,
+    more: 'What each part counts',
+    open: 'Score breakdown',
+  },
   conditions: 'Conditions',
   noConditions: 'Nothing out of the ordinary.',
   turnsLeft: (n: number) => `${n} turns`,
+  /** Shattered's own texts of the monsters' curses (actors.buffs.*.desc): %s is the turns left. */
+  mobBuffDesc: {
+    vulnerable: "Vulnerability magic increases all physical damage that a character takes by 33%%, after that damage has been reduced by armor.\n\nTurns of vulnerable remaining: %s.",
+    hexed: "Dark magic which saps focus, making the target slightly disoriented.\n\nHexing reduces accuracy and evasion by 20%%, making the target less effective in combat.\n\nTurns of hex remaining: %s.",
+    degrade: "Powerful dark magic is sapping the strength that scrolls of upgrade have applied to your equipment!\n\nWhile degraded, upgraded gear will be treated as if it is a lower level than it actually is. Every upgrade after +3 becomes exponentially weaker than the last one. The descriptions of your items will change to reflect their reduced power level.\n\nDegradation does not affect strength requirements, wand charges, durability of thrown weapons, or artifacts.\n\nTurns of degradation remaining: %s. Using a scroll of upgrade or remove curse will end degradation immediately.",
+  },
   buffs: {
     mindVision: 'Mind vision', invisible: 'Invisible', ooze: 'Caustic ooze', poison: 'Poisoned', fire: 'Burning',
     paralysis: 'Paralysed', roots: 'Rooted', slow: 'Slowed', hunger: 'Hungry', starvation: 'Starving', weakness: 'Weakened',
@@ -2409,6 +2468,8 @@ const en = {
     sound: 'Sound',
     vibration: 'Vibration',
     vibrationNote: 'On hits and finds',
+    confirmDanger: 'Ask before a trap or fire',
+    confirmDangerNote: 'A tap that would step onto a trap or into flames in sight asks first',
     game: 'Game',
     effects: 'Effects',
     shake: 'Screen shake',
@@ -2459,7 +2520,7 @@ const en = {
     challenges: 'Challenges',
     challengesOn: (n: number) => `${n} of 7 on`,
     challengesLocked: 'They open after your first victory, once you take the Amulet of Yendor.',
-    challengesFoot: 'Chosen before a new game; they last the whole run. Each one adds a quarter to the score.',
+    challengesFoot: 'Chosen before a new game; they last the whole run. Each one multiplies the score by 1.25.',
     challengeList: [
       ['On diet', 'No food turns up; gold lies in its place.'],
       ['Faith is my armor', 'No armor turns up; gold lies in its place.'],
@@ -2484,6 +2545,14 @@ const en = {
     notSeenEnemy: "You haven't come across this enemy in this run yet.",
     enemyCount: (n: number) => `You have defeated this enemy ${n} ${n === 1 ? 'time' : 'times'} in this run.`,
     seenCount: (a: number, b: number) => `${a} of ${b} seen`,
+    /** The bestiary of design v21: counts, group captions and the detail line. */
+    best: {
+      count: (seen: number, all: number, slain: number) => `Seen ${seen} of ${all} · slain ${slain}`,
+      depths: (a: number, b: number) => `depths ${a}–${b}`,
+      groups: { boss: 'Bosses', any: 'Everywhere', rare: 'Rare', quest: 'Quest' },
+      slain: (n: number) => `Slain: ${n}`,
+      unseen: 'Not met yet',
+    },
     identified: 'Identified · tap to read',
     notIdentified: 'Not identified yet',
     known: (a: number, b: number) => `${a} of ${b} known`,
@@ -2576,6 +2645,12 @@ const en = {
     ofTotal: (n: number) => `of ${n}`,
     practice2: 'Practice',
     dailyOpenNote: 'The same dungeon for everyone; one attempt goes to the board.',
+    /** The day's rules, each in a line: «Hardship — name: what it does», «Boon — name: what it gives». */
+    dailyHardship: (name: string, info: string) => `Hardship · ${name}: ${info}`,
+    dailyBoon: (name: string, info: string) => `Boon · ${name}: ${info}`,
+    /** The countdown to the next daily dungeon (the day is UTC) and when that is for this player. */
+    dailyNext: (left: string) => `Next daily dungeon in ${left}`,
+    dailyResets: (time: string) => `New rules at ${time} your time`,
   },
   /* The camp (the home screen), its mail, the step tutorial, and what the boards give. */
   camp: {
@@ -2840,7 +2915,7 @@ const en = {
     notesDesc: 'As you journey through the dungeon, you will automatically record noteworthy things here.',
     floorHeader: (n: number) => `Floor ${n}`,
     landmarks: {
-      chasmFloor: 'chasm floor', waterFloor: 'water floor', grassFloor: 'grass floor', darkFloor: 'dark floor', largeFloor: 'large floor', trapsFloor: 'trapped floor', secretsFloor: 'secretive floor', demonSpawner: 'demon spawner',
+      chasmFloor: 'chasm floor', waterFloor: 'water floor', grassFloor: 'grass floor', distantWell: 'distant well', darkFloor: 'dark floor', largeFloor: 'large floor', trapsFloor: 'trapped floor', secretsFloor: 'secretive floor', demonSpawner: 'demon spawner',
       shop: 'shop', alchemy: 'alchemy pot', garden: 'garden', wellOfHealth: 'well of health', wellOfAwareness: 'well of awareness',
       wellOfTransmutation: 'well of transmutation', sacrificialFire: 'sacrificial fire', statue: 'animated statue',
       beaconLocation: "lloyd's beacon", ghost: 'sad ghost', ratKing: 'rat king', wandmaker: 'old wandmaker', troll: 'troll blacksmith',
@@ -2965,7 +3040,7 @@ const ru: Strings = {
   thanksBought: 'Спасибо! Покупка ваша.',
   buyFailed: 'Покупка не прошла.',
   buyExpired: 'Игра открыта слишком долго: закройте и откройте её снова, чтобы купить.',
-  lookOf: { warrior: 'Облик воина', mage: 'Облик мага', rogue: 'Облик разбойника', huntress: 'Облик охотницы' },
+  lookOf: { warrior: 'Облик воина', mage: 'Облик мага', rogue: 'Облик разбойника', huntress: 'Облик охотницы', duelist: 'Облик дуэлянтки', cleric: 'Облик клирика' },
   skinNames: { ash: 'Пепельный', royal: 'Королевский', shadow: 'Теневой' },
   skinInfo: { ash: 'Броня, посеревшая от пепла, и пепельные волосы.', royal: 'Металл и светлая ткань в золото, цветное в пурпур.', shadow: 'Тёмный фиолетовый, волосы почти чёрные.' },
   effectNames: { sparks: 'Искры', fireflies: 'Светлячки', snow: 'Снегопад' },
@@ -3019,12 +3094,15 @@ const ru: Strings = {
   newRecord: 'Новый рекорд!',
   rankPlace: (n) => `${n}-е место среди ваших забегов`,
   won: 'Победа',
-  classes: { warrior: 'Воин', mage: 'Маг', rogue: 'Разбойник', huntress: 'Охотница' },
+  classes: { warrior: 'Воин', mage: 'Маг', rogue: 'Разбойник', huntress: 'Охотница', duelist: 'Дуэлянтка', cleric: 'Клирик' },
+  newClass: 'новый',
   classInfo: {
     warrior: 'Воин - стойкий боец с сильной выдержкой в бою, благодаря щиту, дарованному сломанной печатью. Печать можно перемещать с одной брони на другую и она может переносить одно улучшение на ней.',
     mage: 'Маг - специалист по волшебным делам и носит с собой уникальный магический посох, который сильнее палочек. Посох может быть наделен силой любой палочки, которую можно найти в подземелье.',
     rogue: 'Разбойник - мастер скрытого боя, способен уклоняться от атак врагов и бить исподтишка, используя свой уникальный Плащ Теней. Он также замечает секреты и ловушки на большем расстоянии.',
     huntress: 'Охотница - эксперт дальнего боя, а также владеет своим уникальным магическим луком с бесконечными стрелами. Она также может ходить в высокой траве, не вытаптывая её.',
+    duelist: CLS_RU['actors.hero.heroclass.duelist_desc_short']!,
+    cleric: CLS_RU['actors.hero.heroclass.cleric_desc_short']!,
   },
   bosses: {
     lines: {
@@ -3107,7 +3185,7 @@ const ru: Strings = {
     warlock: 'дворф-чернокнижник', golem: 'голем', king: 'Король Дворфов', undead: 'мёртвый гном', succubus: 'суккуб',
     eye: 'злобоглаз', scorpio: 'скорпид', yog: 'Йог-Джева', rottingFist: 'гнилостная длань', burningFist: 'пылающая длань',
     larva: 'личинка бога', mimic: 'мимик', statue: 'живая статуя', piranha: 'гигантская пиранья', imp: 'амбициозный бес',
-    sheep: 'овца', blacksmith: 'тролль-кузнец', mirror: 'зеркальный образ', prismatic: 'радужная копия', albino: 'крыса-альбинос', bandit: 'безумный бандит',
+    sheep: 'овца', blacksmith: 'тролль-кузнец', mirror: 'зеркальный образ', prismatic: 'радужная копия', afterImage: 'послеобраз', lightAlly: 'светлый союзник', albino: 'крыса-альбинос', bandit: 'безумный бандит',
     shielded: 'бронированный громила', senior: 'монах-наставник', acidic: 'кислотный скорпид', fetidRat: 'вонючая крыса',
     curse: 'олицетворение проклятия', ratKing: 'крысиный король', wraith: 'призрак', bee: 'золотая пчела',
     impShopkeeper: 'амбициозный бес', snake: 'сточная змея', gnollExile: 'гнолл-изгой', gnollTrickster: 'гнолл-трикстер',
@@ -3148,6 +3226,9 @@ const ru: Strings = {
     ate: (item: string) => `Мимик съел ваш ${item}!`,
     mimicReveal: 'Этот сундук оказался мимиком!',
     ebonyReveal: 'Здесь прятался мимик!',
+    ghoulRises: 'Гуль поднимается!',
+    ghoulTag: 'притворяется мёртвым',
+    ghoulRiseIn: (turns) => `Поднимется через ходов: ${turns}, если второй гуль жив.`,
     debuffs: { weakness: 'Вы чувствуете слабость!', vulnerable: 'Вы чувствуете себя хрупким!', hex: 'Вас сглазили!', degrade: 'Ваша экипировка выглядит дряхлой!', blindness: 'Вас ослепили!' },
   },
   isMimic: 'Это мимик!',
@@ -3293,6 +3374,13 @@ const ru: Strings = {
   jumpQuestion: 'Вы действительно хотите прыгнуть в пропасть? Можно и разбиться насмерть.',
   jumpYes: 'Да, я знаю, что делаю',
   jumpNo: 'Нет, я передумал',
+  danger: {
+    trap: 'Ловушка', fire: 'Огонь',
+    trapQuestion: 'На этой клетке ловушка. Вы действительно хотите на неё наступить?',
+    fireQuestion: 'Эта клетка горит. Вы действительно хотите шагнуть в огонь?',
+    yes: 'Всё равно шагнуть', no: 'Нет, остаться', never: 'Да, больше не спрашивать',
+    fireAhead: 'Путь преграждает огонь. Коснитесь места ещё раз, чтобы шагнуть в него.',
+  },
   enterPrison: 'Канализация сменяется старой тюрьмой. Её узники давно обезумели.',
   depthTitle: (depth) => `Глубина ${depth}`,
   regionNames: ['Канализация', 'Тюрьма', 'Пещеры', 'Город гномов', 'Демонические залы'],
@@ -3306,6 +3394,9 @@ const ru: Strings = {
     'armor.mage': ABIL_RU['items.armor.magearmor.name']!,
     'armor.rogue': ABIL_RU['items.armor.roguearmor.name']!,
     'armor.huntress': ABIL_RU['items.armor.huntressarmor.name']!,
+    'armor.duelist': CLS_RU['items.armor.duelistarmor.name']!,
+    'armor.cleric': CLS_RU['items.armor.clericarmor.name']!,
+    'artifact.tome': CLS_RU['items.artifacts.holytome.name']!,
     'crown.king': ABIL_RU['items.kingscrown.name']!,
     'wand.magicMissile': 'Палочка Магической стрелы',
     'wand.lightning': 'Палочка Молний',
@@ -3357,6 +3448,8 @@ const ru: Strings = {
     'seed.icecap': 'семя ледянки',
     'seed.sorrowmoss': 'семя скорбного мха',
     'seed.dreamweed': 'семя дрём-травы',
+    'seed.stormvine': 'семя грозовой лозы', 'seed.swiftthistle': 'семя скорополоха', 'seed.blindweed': 'семя слепняка',
+    'seed.mageroyal': 'семя магорозы', 'seed.starflower': 'семя звездоцвета',
     'seed.sungrass': 'семя солнечной травы',
     'seed.earthroot': 'семя земляного корня',
     'seed.fadeleaf': 'семя блеклиста',
@@ -3620,6 +3713,11 @@ const ru: Strings = {
     'seed.icecap': 'Бросьте туда, где должна вырасти ледянка: от прикосновения она замораживает всех вокруг.',
     'seed.sorrowmoss': 'Бросьте туда, где должен вырасти скорбный мох: тот, кто его коснётся, отравится.',
     'seed.dreamweed': 'Бросьте туда, где должна вырасти дрём-трава: от прикосновения она выпускает облако дурмана.',
+    'seed.stormvine': 'Бросьте туда, где должна вырасти грозовая лоза: всё, что в неё попадёт, будет дезориентировано.',
+    'seed.swiftthistle': 'Бросьте туда, где должен вырасти скорополох: если наступить на него, можно совершить несколько действий за один момент.',
+    'seed.blindweed': 'Бросьте туда, где должен вырасти слепняк: от прикосновения он гибнет во вспышке, ослепляющей и сбивающей с толку.',
+    'seed.mageroyal': 'Бросьте туда, где должна вырасти магороза: всё, что в неё попадёт, очистится от множества негативных эффектов.',
+    'seed.starflower': 'Бросьте туда, где должен вырасти звездоцвет: редкое растение, что, говорят, дарует святую силу коснувшемуся.',
     'seed.sungrass': 'Бросьте туда, где должна вырасти солнечная трава: коснувшийся её исцеляется, пока стоит на месте.',
     'seed.earthroot': 'Бросьте туда, где должен вырасти земляной корень: коснувшийся его защищён, пока стоит на месте.',
     'seed.fadeleaf': 'Бросьте туда, где должен вырасти блеклист: коснувшегося его уносит в другое место уровня.',
@@ -4047,7 +4145,8 @@ const ru: Strings = {
   combo: (count) => `Комбо: ${count}!`,
   subclasses: {
     gladiator: 'гладиатор', berserker: 'берсерк', battlemage: 'боевой маг', warlock: 'чернокнижник',
-    freerunner: 'бегунья', assassin: 'убийца', sniper: 'снайпер', warden: 'хранительница',
+    freerunner: 'бегунья', assassin: 'убийца', sniper: 'снайпер', warden: 'хранительница', champion: 'чемпион', monk: 'монах', priest: 'жрец',
+    paladin: 'паладин',
   },
   subclassInfo: {
     gladiator: 'Гладиатор: удачный удар в ближнем бою начинает комбо, и каждый следующий удар в нём сильнее.',
@@ -4058,12 +4157,18 @@ const ru: Strings = {
     assassin: 'Убийца: внезапная атака наносит дополнительный урон.',
     sniper: 'Снайпер: её метательное оружие находит слабые места в броне врага и не замечает её.',
     warden: 'Хранительница: вытаптывая высокую траву и касаясь растений, обретает защиту коры, а растения дарят ей семена и росу.',
+    champion: CLS_RU['actors.hero.herosubclass.champion_short_desc']!,
+    monk: CLS_RU['actors.hero.herosubclass.monk_short_desc']!,
+    priest: CLS_RU['actors.hero.herosubclass.priest_short_desc']!,
+    paladin: CLS_RU['actors.hero.herosubclass.paladin_short_desc']!,
   },
   alchemyPot: 'Алхимический котёл: встаньте рядом и коснитесь его, чтобы варить.',
   brewed: 'Семена в котле превращаются в зелье!',
   plants: {
     firebloom: 'Огнецвет вспыхивает пламенем!', icecap: 'Ледянка замораживает всё вокруг!',
     sorrowmoss: 'Скорбный мох отравляет вас!', dreamweed: 'Дрём-трава выпускает облако дурмана!',
+    stormvine: 'Грозовая лоза сбивает вас с толку!', swiftthistle: 'Время вокруг вас ускоряется!', blindweed: 'Слепняк ослепляет вас вспышкой!',
+    mageroyal: 'Вы чувствуете себя взбодрённым.', starflower: 'Звездоцвет благословляет вас!',
     sungrass: 'Солнечная трава лечит ваши раны, пока вы стоите на месте.', earthroot: 'Земляной корень защищает вас, пока вы стоите на месте.',
     fadeleaf: 'Блеклист уносит вас прочь!', rotberry: 'Гнилоягодник лопается облаком ядовитого газа, а его корни держат вас на месте!',
     dewcatcher: '', seedpod: '',
@@ -4167,9 +4272,31 @@ const ru: Strings = {
   goldLabel: 'Золото',
   slain: 'Побеждено врагов',
   scoreLabel: 'Очки',
+  /* The score table (WndScoreBreakdown): Shattered's own words. */
+  scoring: {
+    title: 'Распределение очков',
+    progress: ['Прогресс', 'Даются за максимальную глубину и уровень героя.'],
+    treasure: ['Сокровища', 'Даются за собранное золото и общую цену предметов в инвентаре.'],
+    explore: ['Исследование', 'Даются за исследованные этажи. Уменьшаются за пропущенные предметы, скрытые двери или неразгаданные загадки.'],
+    bosses: ['Боссы', 'Даются за побежденных боссов. Уменьшаются за то, что вы стоите в атаках, которых можно избежать во время боев с боссами.'],
+    quests: ['Задания', 'Даются за выполненные задания у NPC. Уменьшаются за то, что вы стоите в атаках, которые можно избежать, или за недостающие очки задания.'],
+    win: 'Множитель победы',
+    challenge: 'Множитель испытаний',
+    total: 'Всего очков',
+    treasureFrom: (gold, items) => `золото ${gold.toLocaleString('ru-RU')} + предметы ${items}`,
+    exploreFrom: (clean, floors) => `этажей без упущенного: ${clean} из ${floors}`,
+    more: 'За что даются очки',
+    open: 'Распределение очков',
+  },
   conditions: 'Состояние',
   noConditions: 'Ничего необычного.',
   turnsLeft: (n) => `ходов: ${n}`,
+  /** Shattered's own texts of the monsters' curses (actors.buffs.*.desc): %s is the turns left. */
+  mobBuffDesc: {
+    vulnerable: "Магия уязвимости повышает физический урон, причиняемый персонажу. Весь входящий физический урон, оставшийся после блокирования броней, увеличен на 33%%.\n\nОсталось ходов с уязвимостью: %s.",
+    hexed: "От темной дезориентирующей магии сложнее сосредоточиться на цели и уклоняться.\n\nСглаз снижает меткость и уклонение на 20%%, и, таким образом, снижает эффективность цели в бою.\n\nОсталось ходов со сглазом: %s.",
+    degrade: "Мощная, темная магия высасывает силу, которой Свитки улучшения наделили вашу экипировку!\n\nВо время, пока ваша экипировка деградирована, ее фактический уровень ниже действительного. Любое улучшение после +3 становится порядком слабее предыдущего. Описание ваших предметов будет изменяться с учетом его сниженного уровня силы.\n\nДеградация не влияет на требования силы, заряды палочек, прочность метательного оружия или на артефакты.\n\nОсталось ходов с деградацией: %s. Использование Свитка улучшения или рассеяния немедленно снимет эффект деградации.",
+  },
   buffs: {
     mindVision: 'Ясновидение', invisible: 'Невидимость', ooze: 'Едкая слизь', poison: 'Отравление', fire: 'Горение',
     paralysis: 'Паралич', roots: 'Опутан корнями', slow: 'Замедление', hunger: 'Голод', starvation: 'Истощение', weakness: 'Слабость',
@@ -4234,6 +4361,8 @@ const ru: Strings = {
     sound: 'Звук',
     vibration: 'Вибрация',
     vibrationNote: 'При ударах и находках',
+    confirmDanger: 'Спрашивать перед ловушкой и огнём',
+    confirmDangerNote: 'Шаг на видимую ловушку или в видимый огонь сначала переспросит',
     game: 'Игра',
     effects: 'Эффекты',
     shake: 'Тряска экрана',
@@ -4283,7 +4412,7 @@ const ru: Strings = {
     challenges: 'Испытания',
     challengesOn: (n: number) => `Включено: ${n} из 7`,
     challengesLocked: 'Откроются после первой победы, когда вы добудете Амулет Йендора.',
-    challengesFoot: 'Выбираются перед новой игрой и действуют весь забег. Каждое добавляет к очкам четверть.',
+    challengesFoot: 'Выбираются перед новой игрой и действуют весь забег. Каждое умножает очки на 1,25.',
     challengeList: [
       ['На диете', 'Еда не встречается — на её месте золото.'],
       ['Вера — мой доспех', 'Броня не встречается — на её месте золото.'],
@@ -4307,6 +4436,13 @@ const ru: Strings = {
     notSeenEnemy: 'Вы ещё не встречали этого врага в этом забеге.',
     enemyCount: (n) => `Вы победили этого врага ${n} раз в этом забеге.`,
     seenCount: (a, b) => `Встречено: ${a} из ${b}`,
+    best: {
+      count: (seen, all, slain) => `Встречено ${seen} из ${all} · убито ${slain}`,
+      depths: (a, b) => `глубины ${a}–${b}`,
+      groups: { boss: 'Боссы', any: 'Всюду', rare: 'Редкие', quest: 'Задания' },
+      slain: (n) => `Убито: ${n}`,
+      unseen: 'Ещё не встречен',
+    },
     identified: 'Опознано · коснитесь, чтобы прочитать',
     notIdentified: 'Ещё не опознано',
     known: (a: number, b: number) => `Известно ${a} из ${b}`,
@@ -4397,6 +4533,10 @@ const ru: Strings = {
     ofTotal: (n) => `из ${n}`,
     practice2: 'Тренировка',
     dailyOpenNote: 'У всех одно подземелье; в таблицу идёт одна попытка.',
+    dailyHardship: (name, info) => `Помеха · ${name}: ${info}`,
+    dailyBoon: (name, info) => `Дар · ${name}: ${info}`,
+    dailyNext: (left) => `До следующего подземелья дня: ${left}`,
+    dailyResets: (time) => `Новые правила в ${time} по вашему времени`,
   },
   camp: {
     cls: ['Воин', 'Маг', 'Разбойник', 'Охотница', 'Дуэлянтка', 'Клирик'],
@@ -4652,7 +4792,7 @@ const ru: Strings = {
     notesDesc: 'Путешествуя по подземелью, вы будете автоматически записывать сюда примечательные вещи.',
     floorHeader: (n) => `Этаж ${n}`,
     landmarks: {
-      chasmFloor: 'этаж над пропастью', waterFloor: 'затопленный этаж', grassFloor: 'заросший этаж', darkFloor: 'тёмный этаж', largeFloor: 'большой этаж',
+      chasmFloor: 'этаж над пропастью', waterFloor: 'затопленный этаж', grassFloor: 'заросший этаж', distantWell: 'отдалённый колодец', darkFloor: 'тёмный этаж', largeFloor: 'большой этаж',
       trapsFloor: 'этаж с ловушками', secretsFloor: 'этаж с тайниками', demonSpawner: 'рассадник демонов',
       shop: 'магазин', alchemy: 'алхимический котел', garden: 'тайный сад', wellOfHealth: 'источник жизни', wellOfAwareness: 'источник мудрости',
       wellOfTransmutation: 'источник превращений', sacrificialFire: 'жертвенный огонь', statue: 'живая статуя',
@@ -4697,6 +4837,8 @@ export const t: Strings = lang === 'ru' ? ru : en;
 export const locale = lang === 'ru' ? 'ru-RU' : 'en-US';
 if (typeof document !== 'undefined') document.documentElement.lang = lang;
 export { capitalize };
+/** Both languages' texts, for the tests that check one against the other. */
+export { en as enStrings, ru as ruStrings };
 
 /** Messages.format: a Shattered template's %s, %d, %.1f and %1$d filled in order (or by number), %% a percent sign. */
 export function fill(template: string, ...args: Array<string | number>): string {

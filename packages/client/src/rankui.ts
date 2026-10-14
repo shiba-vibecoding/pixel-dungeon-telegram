@@ -3,7 +3,7 @@ import { audio } from './audio';
 import type { BoardEntry, BoardKind, BoardView, Profile, RunApi, SyncAnswer } from './checked';
 import { locale, t } from './i18n';
 import type { RunRecord } from './rankings';
-import { AVATAR, button, el, info, show, sprites, windowOf } from './screens';
+import { AVATAR, button, el, info, scoreTable, show, sprites, windowOf } from './screens';
 import { type RankIcon, rankIcon, trophyKind } from './trophyicons';
 
 /*
@@ -156,7 +156,31 @@ function mineRows(records: readonly RunRecord[], trophies: Profile['trophies']):
   for (const record of records) {
     const arena = record.mode === 'arena';
     const what = record.won ? '' : record.cause ? ` · ${record.cause}` : '';
-    list.append(row(null, record, [`${shortDate(record.date)} · `, ...detail(record.heroClass, record.lvl, record.depth, arena, record.won), what], false));
+    const line = row(null, record, [`${shortDate(record.date)} · `, ...detail(record.heroClass, record.lvl, record.depth, arena, record.won), what], false);
+    list.append(line);
+    // A run with its score table opens into it: what the points are made of (design-system rows, the table is the end screen's).
+    if (record.breakdown) {
+      const more = el('div', { className: 'pd-rank-more' }, scoreTable(record.breakdown));
+      more.hidden = true;
+      line.classList.add('more');
+      line.tabIndex = 0;
+      line.setAttribute('role', 'button');
+      line.setAttribute('aria-expanded', 'false');
+      line.setAttribute('aria-label', `${number(record.score)}. ${t.scoring.open}`);
+      const toggle = (): void => {
+        audio.play('click');
+        more.hidden = !more.hidden;
+        line.setAttribute('aria-expanded', String(!more.hidden));
+      };
+      line.onclick = toggle;
+      line.onkeydown = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          toggle();
+        }
+      };
+      list.append(more);
+    }
   }
   nodes.push(list);
   return nodes;
