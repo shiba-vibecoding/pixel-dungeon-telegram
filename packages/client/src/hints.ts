@@ -16,7 +16,9 @@ export type HintId =
   | 'potion' | 'scroll' | 'weapon' | 'armor' | 'ring' | 'wand' | 'food' | 'seed' | 'missile' | 'bomb' | 'key' | 'gold'
   | 'dew' | 'vial' | 'bag' | 'ankh' | 'honeypot' | 'torch' | 'tome' | 'kit' | 'beacon' | 'arena' | 'live'
   /* The forum study's newcomer hints (CATALOGUE §1): curses, mimics, wealth, cleansing, the score. */
-  | 'curse' | 'mimic' | 'wealth' | 'cleanse' | 'score';
+  | 'curse' | 'mimic' | 'wealth' | 'cleanse' | 'score'
+  /* WeakFloorRoom: the well glimpsed in the depths below the weak floor. */
+  | 'distantWell';
 
 type Text = readonly [title: string, text: string];
 
@@ -32,6 +34,7 @@ const RU: Record<HintId, Text> = {
   secret: ['Тайники', 'Если уровень кажется тупиком, ищите у стен: подземелье прячет двери и ловушки.'],
   hungry: ['Голод', 'Оранжевая полоса — сытость. Через 300 ходов после сытости вы «голодны» — пора искать еду; через 450 — «истощены»: здоровье убывает и не восстанавливается. Голод утоляют еда, Колодец исцеления и Зелье Избавления.'],
   levelUp: ['Новый уровень', 'Герой стал сильнее: больше здоровья, точнее удары. Опыт — жёлтая полоса под здоровьем.'],
+  distantWell: ['Отдалённый колодец', 'Вы еле-еле можете разглядеть внизу колодец. Может быть, там что-то есть? Прыжок в пропасть приведёт на этаж ниже (падение немного ранит), где, возможно, найдётся что-то стоящее. Это не провал в уровне, а особая комната.'],
   well: ['Колодец', 'Колодец исцеления — один глоток: полное здоровье, дурные эффекты, голод и проклятие со всего надетого долой. Потом он пересыхает, так что сперва наденьте сомнительные вещи. Есть и колодцы знания и превращений: в них бросают предмет.'],
   altar: ['Алтарь', 'Жертвенный огонь притягивает монстров. Убитые на нём засчитываются как жертва, и алтарь наградит вас.'],
   alchemy: ['Алхимический котёл', 'Встаньте рядом и коснитесь котла: до трёх ингредиентов дают зелья, камни, заклинания, бомбы и аксессуары, часто за алхимическую энергию. Три одинаковых семени варят своё зелье, сразу опознанное.'],
@@ -83,6 +86,7 @@ const EN: Record<HintId, Text> = {
   secret: ['Hidden things', 'If a level seems a dead end, search by the walls: the dungeon hides doors and traps.'],
   hungry: ['Hunger', 'The orange bar is how fed you are. 300 turns after being fed you are “hungry”: time to find food; at 450 you are “starving”: health drains and does not come back. Food, the Well of Health and a Potion of Cleansing end hunger.'],
   levelUp: ['Level up', 'The hero grew stronger: more health, surer blows. Experience is the yellow bar under health.'],
+  distantWell: ['Distant well', 'You can just make out a well in the depths below, perhaps there is something down there? Jumping into the chasm drops you to the floor below (the fall hurts a little), where there may be something worth finding. The chasm is no mistake: it is a special room.'],
   well: ['A well', 'The Well of Health is one draught: full health, bad effects, hunger and the curse on everything worn, all gone. Then it runs dry, so put on any doubtful items first. There are wells of awareness and transmutation too: throw an item into them.'],
   altar: ['An altar', 'The sacrificial fire draws monsters in. Those slain in it count as offerings, and the altar rewards you.'],
   alchemy: ['An alchemy pot', 'Stand by the pot and tap it: up to three ingredients make potions, stones, spells, bombs and trinkets, often for alchemical energy. Three identical seeds brew their potion, already known.'],

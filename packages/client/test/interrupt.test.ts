@@ -49,9 +49,9 @@ describe('Hero.interrupt: what stops the hero\'s plan', () => {
 });
 
 describe('the backpack on a wide screen', () => {
-  it("lays the item's window beside the pack from 900 px, in #overlay (the container query of .pd-overlay never matched in the game)", () => {
+  it("lays the item's window beside the pack from 760 px, in #overlay (the container query of .pd-overlay never matched in the game)", () => {
     const css = readFileSync(new URL('../src/ui.css', import.meta.url), 'utf8');
-    const block = /@media \(min-width: 900px\) \{([^@]*?)\n\}/.exec(css)?.[1] ?? '';
+    const block = /@media \(min-width: 760px\) \{([^@]*?)\n\}/.exec(css)?.[1] ?? '';
     expect(block).toContain('#overlay .pd-bag-body { flex-direction: row;');
     expect(block).toContain('#overlay .pd-pick { flex: 1 1 0;');
   });

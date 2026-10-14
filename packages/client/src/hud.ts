@@ -538,6 +538,7 @@ export class Hud {
     const menu = el('button', 'pd-menu');
     menu.ariaLabel = t.menu;
     menu.setAttribute('aria-keyshortcuts', 'Escape');
+    menu.title = `${t.menu} (Esc)`;
     menu.onclick = tap(() => handlers.menu());
     this.menu = menu;
     this.buffBox = el('div', 'pd-buffs');
@@ -622,6 +623,8 @@ export class Hud {
       const node = el('button', `pd-mapbtn ${kind}`);
       node.ariaLabel = label;
       if (key) node.setAttribute('aria-keyshortcuts', key);
+      // A tooltip on a computer: what the button is, and its key.
+      node.title = key ? `${label} (${key})` : label;
       node.onclick = tap(act);
       return node;
     };

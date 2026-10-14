@@ -2609,6 +2609,8 @@ function learnFromSight(world: World, me: Hero, level: Level, visible: readonly 
     if (terrain === T.WELL) hints.first('well');
     if (terrain === T.ALCHEMY) hints.first('alchemy');
   }
+  // WeakFloorRoom.HiddenWell: the well glimpsed in the chasm below the weak floor.
+  if (level.customTiles?.some((c) => c.kind === 'WeakFloorRoom.HiddenWell' && visible[c.x + c.y * WIDTH])) hints.first('distantWell');
   if (visible[level.exit] && me.depth < 26) hints.first('stairs');
   if (level.altar && visible[level.altar.pos]) hints.first('altar');
   // The arena: a word about the waves; it has no secrets, stairs or bosses' lairs to explain.
