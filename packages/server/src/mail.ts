@@ -16,6 +16,10 @@ import { finishedBoards, trophyPlaces } from './boards';
  * frost) are added here and in the client's mail window, and old letters stay as they are.
  * Nothing here gives Stars.
  *
+ * One letter is not a board's: «Первопроходец» (pioneer.ts), the commemorative cup for everyone who played
+ * before the Shattered update. It is kept until claimed, however long they are away, and its cup goes first
+ * on the shelf.
+ *
  * Pure logic over the profile; the board lookups are passed in (player.ts asks the board objects).
  */
 
@@ -26,7 +30,10 @@ const DAY_MS = 86_400_000;
 const MAIL_MAX = 60;
 const BOOKS_MAX = 200;
 
-export type LetterKind = 'cup' | 'medal';
+export type LetterKind = 'cup' | 'medal' | 'pioneer';
+
+/** The pioneer letter's id, and the board name its cup carries on the shelf. */
+export const PIONEER_ID = 'pioneer';
 
 /** What a letter gives. */
 export type Gift = { type: 'trophy'; board: string; place: number };
@@ -52,6 +59,14 @@ export interface Trophy {
   board: string;
   place: number;
   at: number;
+}
+
+/** The most trophies the shelf keeps (the pioneer cup is never among those dropped). */
+const SHELF_MAX = 50;
+
+/** The pioneer letter: the cup is its one gift, and it has no place on any board. */
+export function pioneerLetter(now: number): Letter {
+  return { id: PIONEER_ID, kind: 'pioneer', board: PIONEER_ID, place: 0, at: now, gifts: [{ type: 'trophy', board: PIONEER_ID, place: 0 }] };
 }
 
 /** The parts of a profile the mail touches. */
@@ -110,7 +125,8 @@ export function boardsToCheck(profile: MailProfile, now: number): string[] {
 
 /** Letters past their keeping go; so do notes of boards no letter could come from any more. */
 export function pruneMail(profile: MailProfile, now: number): boolean {
-  const mail = profile.mail.filter((letter) => letter.at + MAIL_KEPT_MS > now);
+  // The pioneer letter waits as long as it takes; the boards' letters are kept 30 days from the close.
+  const mail = profile.mail.filter((letter) => letter.kind === 'pioneer' || letter.at + MAIL_KEPT_MS > now);
   const entered = profile.entered.filter((board) => {
     const end = boardEnd(board);
     return end === null || end + MAIL_KEPT_MS > now;
@@ -167,7 +183,10 @@ export function claimLetter(profile: MailProfile, id: string, now: number): Clai
   if (letter.claimed !== undefined) return 'already';
   for (const gift of letter.gifts) {
     if (gift.type === 'trophy' && !profile.trophies.some((trophy) => trophy.board === gift.board)) {
-      profile.trophies = [{ board: gift.board, place: gift.place, at: now }, ...profile.trophies].slice(0, 50);
+      // The newest first, but the pioneer cup stands first for good and is never what the shelf's limit drops.
+      const shelf = [{ board: gift.board, place: gift.place, at: now }, ...profile.trophies];
+      const pioneer = shelf.filter((trophy) => trophy.board === PIONEER_ID);
+      profile.trophies = [...pioneer, ...shelf.filter((trophy) => trophy.board !== PIONEER_ID).slice(0, SHELF_MAX - pioneer.length)];
     }
   }
   letter.claimed = now;

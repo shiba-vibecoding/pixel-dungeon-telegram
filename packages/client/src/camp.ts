@@ -170,6 +170,14 @@ export interface CampOptions {
   effect?: EffectId | null;
   /** Only this part of the scene, in background pixels, shown at `scale` (the Mart's preview). */
   crop?: readonly [x: number, y: number, w: number, h: number];
+  /**
+   * The scene runs on to the edges of its element (design v20, CampWide and CampTall): the sides go on as a reflection of
+   * the scene's edges and darken, dithered, into the void; the top is the sky's darkest colour, the bottom the ground reflected.
+   * Call `resize()` once it is on the page and whenever its size changes.
+   */
+  fill?: boolean;
+  /** No class name with arrows under the hero (the Mart's window). */
+  label?: boolean;
   scale?: number;
   /** Name and arrows, and a tappable hero; off for a preview. */
   interactive?: boolean;
@@ -185,7 +193,10 @@ export class Camp {
   readonly layer = document.createElement('div');
   readonly classes = campClasses();
   private readonly ctx: CanvasRenderingContext2D;
-  private readonly crop: readonly [number, number, number, number];
+  private crop: readonly [number, number, number, number];
+  /** The extended backgrounds (fill), by scene and season, made once for the size they were made at. */
+  private readonly extCache = new Map<string, HTMLCanvasElement>();
+  private lastShift = 0;
   private readonly scale: number;
   private scene: CampScene;
   private season: Season;
@@ -223,20 +234,14 @@ export class Camp {
     this.season = options.season;
     this.hero = Math.max(0, Math.min(this.classes.length - 1, options.hero));
     this.place = PLACES[this.scene];
-    const [, , cw, ch] = this.crop;
-    this.canvas.width = cw;
-    this.canvas.height = ch;
     this.canvas.className = 'pd-camp-canvas';
-    this.canvas.style.width = `${cw * this.scale}px`;
-    this.canvas.style.height = `${ch * this.scale}px`;
     this.canvas.setAttribute('aria-hidden', 'true');
     this.ctx = this.canvas.getContext('2d')!;
     this.ctx.imageSmoothingEnabled = false;
     this.silhouette.width = 12;
     this.silhouette.height = 15;
     this.layer.className = 'pd-camp-layer';
-    this.layer.style.width = this.canvas.style.width;
-    this.layer.style.height = this.canvas.style.height;
+    this.size();
     host.classList.add('pd-camp');
     host.prepend(this.canvas, this.layer);
 
@@ -253,6 +258,139 @@ export class Camp {
     }
   }
 
+  /** The canvas and its layer at the crop's size. */
+  private size(): void {
+    const [, , cw, ch] = this.crop;
+    this.canvas.width = cw;
+    this.canvas.height = ch;
+    this.canvas.style.width = `${cw * this.scale}px`;
+    this.canvas.style.height = `${ch * this.scale}px`;
+    this.layer.style.width = this.canvas.style.width;
+    this.layer.style.height = this.canvas.style.height;
+    this.ctx.imageSmoothingEnabled = false;
+  }
+
+  /**
+   * How far the scene may be lowered (px): what a filled scene has above its first row. A tall phone lowers it so the
+   * hero's feet stand 16 px above the sheet (campui.ts), and the extended sky shows above.
+   */
+  get ext(): number {
+    return this.options.fill ? -this.crop[1] * this.scale : 0;
+  }
+
+  /** A filled scene to the size its element has now (a turn of the phone, the keyboard, a window resized). */
+  resize(): void {
+    if (!this.options.fill) return;
+    const { scale } = this;
+    const ex = Math.max(0, Math.ceil(((this.host.clientWidth || W * scale) / scale - W) / 2));
+    const et = Math.ceil((this.host.clientHeight || H * scale) / scale / 2);
+    const next: [number, number, number, number] = [-ex, -et, W + 2 * ex, H + et + 24];
+    if (next.every((value, i) => value === this.crop[i])) return;
+    this.crop = next;
+    this.extCache.clear();
+    this.size();
+    this.layout();
+    this.shift(this.lastShift);
+  }
+
+  /** The hero's button, his bubble and the class name, where the crop puts them. */
+  private layout(): void {
+    const { scale } = this;
+    const [hx, hy] = this.px(HERO[0] - 6, HERO[1] - 15);
+    Object.assign(this.heroButton.style, { left: `${hx - 8}px`, top: `${hy - 8}px`, width: `${12 * scale + 16}px`, height: `${15 * scale + 12}px` });
+    const [lx, ly] = this.px(HERO[0], HERO[1] + 2);
+    Object.assign(this.label.style, { left: `${lx}px`, top: `${ly}px` });
+    const [bx, by] = this.px(HERO[0], HERO[1] - 17);
+    Object.assign(this.bubble.style, { left: `${bx}px`, top: `${by}px` });
+  }
+
+  /**
+   * The background carried to the crop's edges: the sides reflect the scene's edges and, from 4 pixels out, darken over 26
+   * into the void by an ordered 4×4 dither; the top is the darkest colour of the first row (sky, vault) with a few stars where
+   * there is sky; the bottom reflects the ground.
+   */
+  private extBg(bg: HTMLImageElement): HTMLCanvasElement | null {
+    if (!ready(bg)) return null;
+    const key = `${this.scene}-${this.season}`;
+    const cached = this.extCache.get(key);
+    if (cached) return cached;
+    const [cx, cy, cw, ch] = this.crop;
+    const ox = -cx;
+    const oy = -cy;
+    const canvas = document.createElement('canvas');
+    canvas.width = cw;
+    canvas.height = ch;
+    const g = canvas.getContext('2d', { willReadFrequently: true })!;
+    g.drawImage(bg, ox, oy);
+    const data = g.getImageData(0, 0, cw, ch);
+    const a = data.data;
+    const P = 2 * W;
+    const rr = rng(11);
+    let best = 0;
+    let top: [number, number, number] = [11, 11, 9];
+    for (let x = 0; x < W; x++) {
+      const i = (oy * cw + ox + x) * 4;
+      const lum = a[i]! + a[i + 1]! + a[i + 2]!;
+      if (!x || lum < best) {
+        best = lum;
+        top = [a[i]!, a[i + 1]!, a[i + 2]!];
+      }
+    }
+    for (let y = oy; y < oy + H; y++) {
+      for (let x = 0; x < cw; x++) {
+        const sx = x - ox;
+        if (sx >= 0 && sx < W) continue;
+        let m = ((sx % P) + P) % P;
+        m = m < W ? m : P - 1 - m;
+        const i = (y * cw + x) * 4;
+        const j = (y * cw + ox + m) * 4;
+        a[i] = a[j]!;
+        a[i + 1] = a[j + 1]!;
+        a[i + 2] = a[j + 2]!;
+        a[i + 3] = 255;
+      }
+    }
+    for (let y = 0; y < ch; y++) {
+      if (y >= oy && y < oy + H) continue;
+      for (let x = 0; x < cw; x++) {
+        const i = (y * cw + x) * 4;
+        if (y < oy) {
+          const star = this.place.sky !== undefined && rr() < 0.012;
+          a[i] = star ? 232 : top[0];
+          a[i + 1] = star ? 226 : top[1];
+          a[i + 2] = star ? 200 : top[2];
+        } else {
+          const j = ((2 * (oy + H) - 1 - y) * cw + x) * 4;
+          a[i] = a[j]!;
+          a[i + 1] = a[j + 1]!;
+          a[i + 2] = a[j + 2]!;
+        }
+        a[i + 3] = 255;
+      }
+    }
+    for (let y = 0; y < ch; y++) {
+      for (let x = 0; x < cw; x++) {
+        const dd = x < ox ? ox - x : x >= ox + W ? x - ox - W + 1 : 0;
+        if (dd <= 4) continue;
+        const k = Math.min(1, (dd - 4) / 26);
+        const th = (BAYER[(y % 4) * 4 + (x % 4)]! + 0.5) / 16;
+        const i = (y * cw + x) * 4;
+        if (th < k) {
+          a[i] = 11;
+          a[i + 1] = 11;
+          a[i + 2] = 9;
+        } else {
+          a[i] = Math.round(a[i]! * (1 - 0.4 * k));
+          a[i + 1] = Math.round(a[i + 1]! * (1 - 0.4 * k));
+          a[i + 2] = Math.round(a[i + 2]! * (1 - 0.35 * k));
+        }
+      }
+    }
+    g.putImageData(data, 0, 0);
+    this.extCache.set(key, canvas);
+    return canvas;
+  }
+
   /** The class on the scene now. */
   get heroClass(): string {
     return this.classes[this.hero] ?? 'warrior';
@@ -263,12 +401,9 @@ export class Camp {
   }
 
   private buildHero(): void {
-    const { scale } = this;
     const button = this.heroButton;
     button.className = 'pd-camp-hero';
     button.type = 'button';
-    const [hx, hy] = this.px(HERO[0] - 6, HERO[1] - 15);
-    Object.assign(button.style, { left: `${hx - 8}px`, top: `${hy - 8}px`, width: `${12 * scale + 16}px`, height: `${15 * scale + 12}px` });
     this.label.className = 'pd-camp-name';
     const prev = document.createElement('button');
     prev.className = 'pd-camp-arrow prev';
@@ -279,14 +414,12 @@ export class Camp {
     next.type = 'button';
     next.ariaLabel = this.text.next;
     this.label.append(prev, this.name, next);
-    const [lx, ly] = this.px(HERO[0], HERO[1] + 2);
-    Object.assign(this.label.style, { left: `${lx}px`, top: `${ly}px` });
     this.bubble.className = 'pd-camp-bubble';
     this.bubble.hidden = true;
     this.bubble.setAttribute('role', 'status');
-    const [bx, by] = this.px(HERO[0], HERO[1] - 17);
-    Object.assign(this.bubble.style, { left: `${bx}px`, top: `${by}px` });
-    this.layer.append(button, this.bubble, this.label);
+    this.layer.append(button, this.bubble);
+    if (this.options.label !== false) this.layer.append(this.label);
+    this.layout();
     this.refreshName();
     button.addEventListener('click', () => {
       if (this.now - this.lastSwipe > 320) this.tap();
@@ -576,7 +709,12 @@ export class Camp {
     this.spawn(dt);
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     const bg = image(background(this.scene, this.season));
-    if (ready(bg)) ctx.drawImage(bg, -crop[0], -crop[1]);
+    if (this.options.fill) {
+      const extended = this.extBg(bg);
+      if (extended) ctx.drawImage(extended, 0, 0);
+    } else if (ready(bg)) {
+      ctx.drawImage(bg, -crop[0], -crop[1]);
+    }
     if (!this.reduced) {
       for (const s of this.stars) {
         const ph = (t / 1000 + s[2]) % 9;
@@ -661,10 +799,22 @@ export class Camp {
     audio.play('step', 0.9, 0.5);
   }
 
-  /** Moves the scene up (never down), so that a low screen still shows the hero above the sheet. */
+  /**
+   * Moves the scene: up on a low screen, so that the hero's feet still stand above the sheet; down (to `ext`) on a tall one, where a
+   * filled scene's extended sky shows above. 0 puts the scene's own first row at the top of its element.
+   */
   shift(y: number): void {
-    this.canvas.style.top = `${y}px`;
-    this.layer.style.top = `${y}px`;
+    this.lastShift = y;
+    const top = y + (this.options.fill ? this.crop[1] * this.scale : 0);
+    this.canvas.style.top = `${top}px`;
+    this.layer.style.top = `${top}px`;
+  }
+
+  /** The scene changed to another camp (a try-on and its end); the stars are looked for again. */
+  setCamp(scene: CampScene): void {
+    if (scene === this.scene) return;
+    this.scene = scene;
+    this.setScene();
   }
 
   /** Puts the hero on the scene by his class, without the walk. */

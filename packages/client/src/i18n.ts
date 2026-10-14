@@ -2,6 +2,7 @@ import type { EmoteKind, Enchantment, Glyph, HeroClass, ItemKind, Landmark, MobK
 import type { BuffName } from './hud';
 import { ART_EN, ART_RU } from './i18n-artifacts';
 import { TAL_EN, TAL_RU } from './i18n-talents';
+import { REL_EN, REL_RU } from './i18n-release';
 import { ABIL_EN, ABIL_RU } from './i18n-abilities';
 
 /* Interface text in Russian and English; the language follows Telegram or the browser. */
@@ -998,6 +999,8 @@ const ART_NAMES_EN = artNames(ART_EN);
 const ART_NAMES_RU = artNames(ART_RU);
 
 const en = {
+  /** The release screens: what's new, the pioneer, the problem report, offline, the board's rules, the camps in the Mart (i18n-release.ts). */
+  rel: REL_EN,
   /** Shattered's alchemy: the pot, its items' messages, buffs and the alchemy guide (ALCH_EN). */
   alch: ALCH_EN,
   /** The alchemy pot's window and the choices alchemy's items ask for (ShAlchemy in the design system). */
@@ -1067,7 +1070,7 @@ const en = {
   musicVolume: 'Music',
   soundVolume: 'Sounds',
   heroName: "Hero's name",
-  continueMeta: (heroClass: string, lvl: number, depth: number) => `${heroClass}, level ${lvl} · depth ${depth}`,
+  continueMeta: (heroClass: string, lvl: number, depth: number) => `${heroClass} · lv ${lvl} · depth ${depth}`,
   take: 'Take',
   choose: 'Choose',
   reforge: 'Reforge',
@@ -2860,6 +2863,7 @@ const en = {
 type Strings = typeof en;
 
 const ru: Strings = {
+  rel: REL_RU,
   alch: ALCH_RU,
   alchUi: {
     brew: 'Сварить',
@@ -2925,7 +2929,7 @@ const ru: Strings = {
   musicVolume: 'Музыка',
   soundVolume: 'Звуки',
   heroName: 'Имя героя',
-  continueMeta: (heroClass, lvl, depth) => `${heroClass}, уровень ${lvl} · глубина ${depth}`,
+  continueMeta: (heroClass, lvl, depth) => `${heroClass} · ур. ${lvl} · глубина ${depth}`,
   take: 'Взять',
   choose: 'Выбрать',
   reforge: 'Перековать',
