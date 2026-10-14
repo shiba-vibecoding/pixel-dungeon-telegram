@@ -116,7 +116,8 @@ export function checkBadges(progress: BadgeProgress, world: World, me: Hero, eff
   earn('bags', ['bag.seeds', 'bag.scrolls', 'bag.wands'].every((kind) => me.items.some((item) => item.kind === kind)));
 
   const known = new Set(world.known);
-  const all = (category: string): boolean => labelled(category).every((kind) => known.has(kind));
+  // (A category with nothing to label, wands here, cannot be completed: an empty set is not all of them.)
+  const all = (category: string): boolean => labelled(category).length > 0 && labelled(category).every((kind) => known.has(kind));
   earn('potions', all('potion'));
   earn('scrolls', all('scroll'));
   earn('rings', all('ring'));

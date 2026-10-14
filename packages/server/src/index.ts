@@ -14,7 +14,10 @@ import {
 } from './reports';
 import { boardTtl } from './boards';
 import { CORS, json, jsonBody } from './http';
-import { boardRoute, mailRoute, meRoute, Player, runRoute } from './player';
+import { boardRoute, mailRoute, meRoute, Player, problemRoute, runRoute } from './player';
+import type { AdminOps } from './admin';
+import { changeOutages, normalizeDays } from './outages';
+import { adminNotice, KEEP_PROBLEMS, newId, type Problem, type StoredProblem } from './problem';
 import { Card, cardRoute, challengeRoute } from './sharing';
 import { Notifier, notifierStub, notifyRoute } from './notifier';
 import { readBody, sameSecret } from './secret';
@@ -64,6 +67,10 @@ export interface Env {
   REPORTS: DurableObjectNamespace<ReportStore>;
   /** Secret that reads the reports back: GET /reports with Authorization: Bearer <REPORT_KEY>. */
   REPORT_KEY?: string;
+  /** Days the server was down (YYYY-MM-DD, separated by commas): streaks take them as played (outages.ts). */
+  OUTAGE_DAYS?: string;
+  /** The moment of the Shattered release (ISO): profiles made before it are pioneers (pioneer.ts). */
+  RELEASE_AT?: string;
 }
 
 /** A room left without players this long is deleted, dungeon and all. */
@@ -126,6 +133,38 @@ async function reports(request: Request, env: Env): Promise<Response> {
   return store.fetch('https://reports/');
 }
 
+/** What the admin's commands do (admin.ts AdminOps): the reports' object knows who sent a problem, and the outage days. */
+function adminOps(env: Env): AdminOps {
+  const store = env.REPORTS.get(env.REPORTS.idFromName('all'));
+  return {
+    async bugHunter(id) {
+      const found = await store.fetch('https://reports/resolve', { method: 'POST', body: JSON.stringify({ id }) });
+      if (!found.ok) return 'unknown';
+      const { by } = (await found.json()) as { by: string };
+      const gave = await env.PLAYER.get(env.PLAYER.idFromName(by)).fetch('https://player/honor', { method: 'POST', body: JSON.stringify({ honor: 'bughunter' }) });
+      const { granted } = (await gave.json()) as { granted: boolean };
+      await store.fetch('https://reports/hunter', { method: 'POST', body: JSON.stringify({ id }) });
+      const chat = /^tg(\d+)$/.exec(by)?.[1];
+      if (granted && chat && env.BOT_TOKEN) {
+        try {
+          await botApi(env.BOT_TOKEN)('sendMessage', {
+            chat_id: Number(chat),
+            text: 'Спасибо! Ваш отчёт подтверждён: значок «Охотник за багами» теперь в вашем профиле.\nThank you! Your report was confirmed: the «Bug hunter» badge is in your profile now.',
+          });
+        } catch {
+          // The badge is given all the same.
+        }
+      }
+      return granted ? 'granted' : 'already';
+    },
+    async outages(change) {
+      const response = await store.fetch('https://reports/outages', { method: 'POST', body: JSON.stringify(change ?? {}) });
+      return (await response.json()) as string[];
+    },
+  };
+}
+
+
 /** Reports worth a message to the admin chat at once: errors, desyncs, the server's own failures, a player's «report a problem». */
 const ALERT_KINDS: ReadonlySet<string> = new Set(['server', 'error', 'rejection', 'desync']);
 /** The admin chat hears of at most this many new problems an hour; the rest wait in the reports. */
@@ -152,7 +191,54 @@ export class ReportStore extends DurableObject<Env> {
     }
   }
 
+  private readonly problemAlerts = new WindowLimiter(30, 3600_000);
+
+  /** A player's problem report: kept with its reporter apart, the admin told. */
+  private async keepProblem(request: Request): Promise<Response> {
+    const { problem, by } = (await request.json()) as { problem: Omit<Problem, 'id'>; by: string };
+    const kept = (await this.ctx.storage.get<StoredProblem[]>('problems')) ?? [];
+    let id = newId();
+    while (kept.some((p) => p.id === id)) id = newId();
+    const stored: StoredProblem = { ...problem, id, by };
+    let all = [...kept, stored].slice(-KEEP_PROBLEMS);
+    // Within a stored value's limit, the oldest going first.
+    while (all.length > 1 && JSON.stringify(all).length > 1_000_000) all = all.slice(1);
+    await this.ctx.storage.put('problems', all);
+    if (this.env.BOT_TOKEN && this.env.ADMIN_CHAT_ID && this.problemAlerts.allow('admin', Date.now())) {
+      try {
+        await botApi(this.env.BOT_TOKEN)('sendMessage', { chat_id: this.env.ADMIN_CHAT_ID, text: adminNotice(stored), parse_mode: 'HTML' });
+      } catch {
+        // Kept all the same: the admin reads it with the reports.
+      }
+    }
+    return json({ id });
+  }
+
   override async fetch(request: Request): Promise<Response> {
+    const path = new URL(request.url).pathname;
+    if (request.method === 'POST' && path === '/problem') return this.keepProblem(request);
+    if (request.method === 'POST' && (path === '/resolve' || path === '/hunter')) {
+      const { id } = (await request.json()) as { id: string };
+      const kept = (await this.ctx.storage.get<StoredProblem[]>('problems')) ?? [];
+      const found = kept.find((p) => p.id === id);
+      if (!found) return json({ error: 'unknown' }, 404);
+      if (path === '/hunter') {
+        found.hunter = true;
+        await this.ctx.storage.put('problems', kept);
+      }
+      return json({ by: found.by, hunter: found.hunter === true });
+    }
+    if (path === '/outages') {
+      let days = normalizeDays((await this.ctx.storage.get<string[]>('outages')) ?? []);
+      if (request.method === 'POST') {
+        const change = (await request.json()) as { op?: 'add' | 'remove'; day?: string };
+        if ((change.op === 'add' || change.op === 'remove') && typeof change.day === 'string') {
+          days = changeOutages(days, change.op, change.day);
+          await this.ctx.storage.put('outages', days);
+        }
+      }
+      return json(days);
+    }
     if (request.method === 'POST') {
       const address = request.headers.get(ADDRESS_HEADER);
       if (address && !this.limiter.allow(address, Date.now())) return new Response(null, { status: 429 });
@@ -168,7 +254,17 @@ export class ReportStore extends DurableObject<Env> {
       return new Response(null, { status: 204 });
     }
     const reports = (await this.ctx.storage.get<Report[]>('reports')) ?? [];
-    return new Response(JSON.stringify(reports), { headers: { 'Content-Type': 'application/json' } });
+    // The players' problem reports read like the rest, with their id; who sent them is never served.
+    const problems = ((await this.ctx.storage.get<StoredProblem[]>('problems')) ?? []).map(({ by: _by, ...p }): Report => ({
+      at: p.at, kind: 'problem', message: `#${p.id} ${p.text || '(no text)'}`.slice(0, 500),
+      context: {
+        version: p.facts.version, rules: p.facts.rules, build: p.facts.build, platform: p.facts.platform, lang: p.facts.lang, device: p.facts.device,
+        ...(p.facts.run ? { run: p.facts.run.id, seed: p.facts.run.seed, depth: p.facts.run.depth, slot: p.facts.run.slot, seq: p.facts.run.seq } : {}),
+        ...(p.hunter ? { hunter: true } : {}),
+      },
+      ...(p.actions || p.errors ? { log: [...(p.errors ?? []).map((e) => `ERR ${e}`), ...(p.actions ?? [])].join('\n') } : {}),
+    }));
+    return new Response(JSON.stringify([...reports, ...problems]), { headers: { 'Content-Type': 'application/json' } });
   }
 }
 
@@ -668,7 +764,7 @@ async function webhook(request: Request, env: Env): Promise<Response> {
       throw new Error('update is not JSON');
     }
     await handleUpdate(update, botApi(env.BOT_TOKEN), wallets(env), {
-      appLink: env.APP_LINK ?? '', adminChatId: env.ADMIN_CHAT_ID, termsUrl: env.TERMS_URL, supportLimiter,
+      appLink: env.APP_LINK ?? '', adminChatId: env.ADMIN_CHAT_ID, termsUrl: env.TERMS_URL, supportLimiter, ops: adminOps(env),
     });
   } catch (error) {
     await keepReport(env, serverReport(error, 'webhook'));
@@ -763,6 +859,7 @@ export default {
     if (url.pathname === '/shop/me' || url.pathname === '/shop/invoice') return shop(request, env, url.pathname === '/shop/me' ? 'me' : 'invoice');
     if (url.pathname === '/telegram/webhook' && request.method === 'POST') return webhook(request, env);
     if (url.pathname === '/report' || url.pathname === '/reports') return reports(request, env);
+    if (url.pathname === '/problem') return problemRoute(request, env);
     if (url.pathname === '/run') return runRoute(request, env);
     if (url.pathname === '/me') return meRoute(request, env);
     if (url.pathname === '/mail') return mailRoute(request, env);

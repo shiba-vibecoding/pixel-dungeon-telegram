@@ -3,7 +3,7 @@ import {
   knownIn, MUST_THROW, TARGETED_SPELLS,
   type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass, HERO_CLASSES,
   type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
-  visiblyCursed, type World, hasAbility, CLASS_ARMOR_OF, heroById, isClassArmor, type SealSource, talentPointsAvailable, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
+  type ScoreBreakdown, HIGHLIGHT, visiblyCursed, type World, hasAbility, CLASS_ARMOR_OF, heroById, isClassArmor, type SealSource, talentPointsAvailable, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
 } from '@pd/core';
 import { artifactActions, artifactCard, type ArtifactHost, chargeStrip, showMiscChooser } from './artifactui';
 import { artText } from './artifacttext';
@@ -456,7 +456,7 @@ export function showMenu(options: MenuOptions): void {
 /* Badges */
 
 /** WndBadges: every badge, the ones earned bright, new ones with a golden dot; a tap tells what each is for. */
-export function showBadges(onClose: () => void): void {
+export function showBadges(onClose: () => void, honors: readonly string[] = []): void {
   const earned = earnedBadges();
   const fresh = unseenBadges();
   markBadgesSeen();
@@ -498,6 +498,21 @@ export function showBadges(onClose: () => void): void {
     };
     grid.append(node);
   }
+  // Honours the admin gave (server-side, not the run's badges in core): «Bug hunter» for a confirmed problem report.
+  for (const honor of honors) {
+    const words = t.rel.honors[honor];
+    if (!words) continue;
+    const node = el('button', { className: 'pd-slot', ariaLabel: words[0] }, el('i', { className: 'pd-offer-badge bughunter' }));
+    node.onclick = () => {
+      audio.play('click');
+      grid.querySelectorAll('.selected').forEach((n) => n.classList.remove('selected'));
+      node.classList.add('selected');
+      big.className = 'pd-offer-badge bughunter';
+      name.textContent = `${words[0]} · ${words[1]}`;
+      detail.classList.remove('locked');
+    };
+    grid.append(node);
+  }
   const first = BADGES.find((b) => fresh.has(b.id)) ?? BADGES.find((b) => earned.has(b.id)) ?? BADGES[0]!;
   show(
     windowOf(
@@ -535,6 +550,45 @@ export function stats(rows: ReadonlyArray<readonly [string, string, string?]>): 
     { className: 'pd-stats' },
     ...rows.map(([label, value, tone]) => el('div', {}, el('dt', { textContent: label }), el('dd', { className: tone ?? '', textContent: value }))),
   );
+}
+
+/**
+ * WndScoreBreakdown: Progression, Treasure, Exploration, Bosses, Quests, then the multipliers (shown when above 1) and the total.
+ * A part at its cap is gold. Under it, a fold with what each part counts, in Shattered's own words.
+ */
+export function scoreTable(b: ScoreBreakdown): HTMLElement {
+  const n = (value: number): string => value.toLocaleString(locale);
+  const x = (value: number): string => `${Number(value.toFixed(2)).toLocaleString(locale)}×`;
+  const s = t.scoring;
+  const rows: Array<{ label: string; value: string; tone?: string; from?: string }> = [
+    { label: s.progress[0], value: n(b.progress), ...(b.progress >= HIGHLIGHT.progress ? { tone: 'gold' } : {}) },
+    {
+      label: s.treasure[0], value: n(b.treasure), from: s.treasureFrom(b.gold, n(b.items)),
+      ...(b.treasure >= HIGHLIGHT.treasure ? { tone: 'gold' } : {}),
+    },
+    {
+      label: s.explore[0], value: n(b.explore), from: b.floors > 0 ? s.exploreFrom(b.clean, b.floors) : '',
+      ...(b.explore >= HIGHLIGHT.explore ? { tone: 'gold' } : {}),
+    },
+    { label: s.bosses[0], value: n(b.bosses), ...(b.bosses >= HIGHLIGHT.bosses ? { tone: 'gold' } : {}) },
+    { label: s.quests[0], value: n(b.quests), ...(b.quests >= HIGHLIGHT.quests ? { tone: 'gold' } : {}) },
+  ];
+  if (b.winMultiplier > 1) rows.push({ label: s.win, value: x(b.winMultiplier) });
+  if (b.chalMultiplier > 1) rows.push({ label: s.challenge, value: x(b.chalMultiplier) });
+  rows.push({ label: s.total, value: n(b.total), tone: 'ally' });
+  const table = el(
+    'dl',
+    { className: 'pd-stats pd-score' },
+    ...rows.map((row) =>
+      el('div', {}, el('dt', {}, row.label, row.from ? el('small', { textContent: row.from }) : null), el('dd', { className: row.tone ?? '', textContent: row.value }))),
+  );
+  const notes = el(
+    'details',
+    { className: 'pd-score-notes' },
+    el('summary', { textContent: s.more }),
+    ...[s.progress, s.treasure, s.explore, s.bosses, s.quests].map(([label, text]) => el('p', {}, el('b', { textContent: `${label}. ` }), text)),
+  );
+  return el('div', { className: 'pd-score-table' }, table, notes);
 }
 
 /** WndHero: the hero's numbers and what currently ails or helps them. */
@@ -944,6 +998,8 @@ export interface EndOptions {
   place?: number | null;
   /** The run's score. */
   score: number;
+  /** Where it comes from (score.ts), shown as the score table instead of the one line. */
+  breakdown?: ScoreBreakdown;
   /** How the server scored it (rankui.ts rankingBlock). */
   ranking?: HTMLElement;
   /** The ways to share the result (shareButton). */
@@ -962,7 +1018,7 @@ export function showRunEnd(options: EndOptions): void {
     [t.statLevel, String(hero.lvl)],
     [t.goldLabel, String(hero.gold), 'gold'],
     [t.slain, String(hero.kills)],
-    [t.scoreLabel, options.score.toLocaleString(locale), 'ally'],
+    ...(options.breakdown ? [] : [[t.scoreLabel, options.score.toLocaleString(locale), 'ally'] as const]),
   ];
   show(
     el(
@@ -978,6 +1034,7 @@ export function showRunEnd(options: EndOptions): void {
         el('div', { className: 'pd-info', textContent: `${hero.name} · ${t.classes[hero.heroClass]}` }),
       ),
       stats(rows),
+      options.breakdown ? scoreTable(options.breakdown) : null,
       options.ranking,
       actions(
         [button(options.restartLabel, options.onRestart, 'primary')],
@@ -2257,7 +2314,8 @@ function artifactHost(options: ItemOptions, ref: ItemRef): ArtifactHost {
 let toastTimer = 0;
 
 export interface ToastOptions {
-  tone?: 'good' | 'warn' | 'ally' | 'badge';
+  /** `update`: the new-version notice of design v20 (a turning icon, update.ts). */
+  tone?: 'good' | 'warn' | 'ally' | 'badge' | 'update';
   /** An item sprite or a badge image beside the text. */
   item?: number;
   badge?: number;

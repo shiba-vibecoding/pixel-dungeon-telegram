@@ -8,6 +8,7 @@ import type { Level } from './level/generate';
 import { adjacent, NEIGHBOURS8 } from './level/geometry';
 import { T } from './level/terrain';
 import type { Rng } from './rng';
+import { scoreBlacksmithDone } from './score';
 import type { World } from './world';
 import { isUpgradable, itemAt, type ItemRef } from './scrolls';
 import { updateWand } from './staff';
@@ -77,6 +78,8 @@ export function talkToSmith(ctx: Ctx, hero: Hero): void {
     else if (quest.wants === 'blood' && !pickaxe.bloody) line = 'noBlood';
     else if (quest.wants === 'gold' && oreOf(hero) < ORE_WANTED) line = 'noGold';
     else {
+      // Blacksmith.Quest.start's favor: 50 for each piece of dark gold (2000 at most), 1000 for the bat's blood.
+      scoreBlacksmithDone(ctx.world, quest.wants === 'gold' ? Math.min(2000, oreOf(hero) * 50) : 1000);
       returnPickaxe(hero);
       hero.items = hero.items.filter((item) => item.kind !== 'quest.ore');
       quest.done = true;

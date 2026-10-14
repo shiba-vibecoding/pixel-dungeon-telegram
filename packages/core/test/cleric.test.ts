@@ -282,3 +282,19 @@ describe("the Cleric's tier-three spells", () => {
     expect(Object.keys(level.lightWall ?? {}).length).toBe(0);
   });
 });
+
+describe('the numbers in the descriptions (ClericSpell.desc, MonkAbility.desc)', () => {
+  it('are the hero\'s own: a talent point, the level, the strength', async () => {
+    const { spellDescArgs, monkDescArgs } = await import('../src/index');
+    const world = cleric();
+    const hero = heroById(world, 'p')!;
+    grant(hero, 'bless', 2);
+    expect(spellDescArgs(hero, 'bless')).toEqual([10, 15, 15, 15]);
+    expect(spellDescArgs(hero, 'sunray')).toEqual([4, 8, 4]);
+    hero.lvl = 10;
+    expect(spellDescArgs(hero, 'smite')).toEqual([10, 20]);
+    hero.str = 12;
+    expect(monkDescArgs(hero, 'flurry')).toEqual([2, 6]);
+    expect(monkDescArgs(hero, 'kick')).toEqual([6, 24]);
+  });
+});

@@ -97,6 +97,12 @@ describe('checked runs', () => {
     const { finish } = waitToDeath(logic, 'dungeon', 'r1', device);
     expect(finish!.summary.mode).toBe('dungeon');
     expect(finish!.summary.ranked).toBe(true);
+    // The score is Shattered's, and the table it is made of travels with the summary into the history.
+    const { breakdown } = finish!.summary;
+    expect(breakdown).toBeDefined();
+    expect(finish!.summary.score).toBe(breakdown!.total);
+    expect(breakdown!.progress + breakdown!.treasure + breakdown!.explore + breakdown!.bosses + breakdown!.quests).toBeGreaterThanOrEqual(breakdown!.total);
+    expect(logic.profile.history[0]?.breakdown).toEqual(breakdown);
     expect(logic.profile.best).toBe(finish!.summary.score);
     expect(logic.profile.history).toHaveLength(1);
     expect(logic.profile.bones).not.toBeNull();

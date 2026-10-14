@@ -1,6 +1,6 @@
 import type { Hero } from './actors';
 import { arenaScore, wavesCleared } from './arena';
-import { challengeMultiplier } from './daily';
+import { type ScoreBreakdown, scoreBreakdown } from './score';
 import type { World } from './world';
 
 /*
@@ -81,9 +81,6 @@ export function fingerprint(world: World): string {
 /** The deepest depth a run has reached (levels are made as they are first entered). */
 export const deepestDepth = (world: World): number => Math.max(1, ...Object.keys(world.levels).map(Number));
 
-/** Rankings.score: gold collected plus level times the deepest depth times a hundred, twice that for a win. */
-export const dungeonScore = (gold: number, lvl: number, depth: number, won: boolean): number => (gold + lvl * depth * 100) * (won ? 2 : 1);
-
 /** How a finished run (or one under way) stands: what the boards and the end screen show. */
 export interface RunOutcome {
   mode: 'dungeon' | 'arena';
@@ -99,6 +96,8 @@ export interface RunOutcome {
   killedBy: string | null;
   turns: number;
   challenges: number;
+  /** Shattered's score table (score.ts), in a dungeon run: the parts of `score`, which is its total. */
+  breakdown?: ScoreBreakdown;
 }
 
 export function runOutcome(world: World, hero: Hero): RunOutcome {
@@ -110,9 +109,9 @@ export function runOutcome(world: World, hero: Hero): RunOutcome {
     return { ...base, mode: 'arena', score: arenaScore(world, hero.id), depth: wavesCleared(world.arena), won: false };
   }
   const depth = deepestDepth(world);
-  // Challenges raise the score (daily.ts challengeMultiplier): the way up for a hero who has won.
-  const score = Math.round(dungeonScore(gold, hero.lvl, depth, world.victory) * challengeMultiplier(world.challenges ?? 0));
-  return { ...base, mode: 'dungeon', score, depth, won: world.victory };
+  // Rankings.calculateScore: progress, treasure, exploration, bosses and quests, times the win and challenge multipliers.
+  const breakdown = scoreBreakdown(world, hero, depth, gold);
+  return { ...base, mode: 'dungeon', score: breakdown.total, depth, won: world.victory, breakdown };
 }
 
 /** The daily dungeon's seed: the same for everyone on the same (UTC) day, `date` as YYYY-MM-DD. */

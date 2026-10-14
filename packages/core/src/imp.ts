@@ -7,6 +7,7 @@ import { identify } from './ident';
 import type { Level } from './level/generate';
 import { adjacent } from './level/geometry';
 import type { Rng } from './rng';
+import { scoreImpDone } from './score';
 import type { World } from './world';
 
 /*
@@ -81,6 +82,7 @@ export function ringFromImp(ctx: Ctx, hero: Hero): void {
   if (!collect(hero, ring)) dropItem(ctx.floor, hero.pos, ring);
   ctx.effects.push({ type: 'pickedUp', hero: hero.id, item: ring });
   quest.done = true;
+  scoreImpDone(ctx.world);
   ctx.floor.mobs = ctx.floor.mobs.filter((mob) => mob.kind !== 'imp');
   ctx.effects.push({ type: 'imp', hero: hero.id, line: 'farewell' });
 }

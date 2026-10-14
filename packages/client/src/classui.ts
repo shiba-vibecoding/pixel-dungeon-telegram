@@ -1,5 +1,5 @@
 import {
-  allSpells, type Action, type Enchantment, type Glyph, type Hero, hasAbility, abilityAims, classState, type ItemKind, itemDef, type SpellDef, tomeOf,
+  allSpells, type Action, MONK_ABILITIES, MONK_AIMS, MONK_COST, monkDescArgs, monkEmpowered, monkEnergy, monkEnergyCap, spellDescArgs, spellDescExtra, type Enchantment, type Glyph, type Hero, hasAbility, abilityAims, classState, type ItemKind, itemDef, type SpellDef, tomeOf,
   trinityOptions, type World,
 } from '@pd/core';
 import { artText, capital } from './artifacttext';
@@ -31,9 +31,19 @@ export interface ClassHost {
 }
 
 /** actors.hero.spells.<name>: the class's message key of a spell. */
-const keyOf = (spell: SpellDef): string => `actors.hero.spells.${spell.id.toLowerCase()}`;
-/** The numbers in a spell's description are the rules' own; where the window does not compute them, a dash stands. */
-const textOf = (key: string): string => artText(key).replace(/%(\d\$)?[ds]/g, '…');
+const keyOf = (spell: SpellDef): string =>
+  `actors.hero.spells.${spell.id === 'bless' ? 'blessspell' : spell.id === 'lifeLink' ? 'lifelinkspell' : spell.id.toLowerCase()}`;
+const textOf = (key: string, args?: Array<string | number>): string => artText(key, args);
+
+/** ClericSpell.desc: the description with its numbers as the hero has them, what the subclass adds, and the charge cost. */
+function spellDesc(hero: Hero, world: World, spell: SpellDef): string {
+  const extra = spellDescExtra(hero, spell.id);
+  return [
+    textOf(`${keyOf(spell)}.desc`, spellDescArgs(hero, spell.id)),
+    ...(extra ? [textOf(`${keyOf(spell)}.${extra}`)] : []),
+    artText('actors.hero.spells.clericspell.charge_cost', [Math.trunc(spell.cost(hero, world))]),
+  ].join('\n\n');
+}
 
 export const spellName = (spell: SpellDef): string => capital(textOf(`${keyOf(spell)}.name`));
 
@@ -66,13 +76,12 @@ export function showTome(host: ClassHost): void {
 /** One spell: what it does, what it costs, and the buttons to cast it or to make it the quick spell. */
 function showSpell(host: ClassHost, spell: SpellDef): void {
   const { world, hero } = host;
-  const cost = spell.cost(hero, world);
   const quick = classState(hero).quick === spell.id;
   const back = (): void => showTome(host);
   show(
     windowOf(
       { title: spellName(spell), sub: S.charges(Math.floor(tomeOf(hero)?.charge ?? 0)), onClose: back, narrow: true },
-      info(`${textOf(`${keyOf(spell)}.desc`)}\n\n${artText('actors.hero.spells.clericspell.charge_cost', [cost])}`),
+      info(spellDesc(hero, world, spell)),
       el(
         'div',
         { className: 'pd-confirm-actions' },
@@ -140,3 +149,48 @@ export function weaponPrompt(kind: ItemKind): string {
 }
 
 export { abilityAims, hasAbility };
+
+/* The Monk's abilities (WndMonkAbilities) */
+
+const MONK_KEY: Readonly<Record<string, string>> = { flurry: 'flurry', focus: 'focus', dash: 'dash', kick: 'dragonkick', meditate: 'meditate' };
+const monkKey = (ability: string): string => `actors.buffs.monkenergy$monkability$${MONK_KEY[ability]}`;
+
+/** WndMonkAbilities: the five abilities with their cost in energy, the ones the Monk can pay for lit; a tap uses one (aimed ones ask for a cell). */
+export function showMonk(host: ClassHost): void {
+  const { hero } = host;
+  const energy = Math.floor(monkEnergy(hero));
+  const power = monkEmpowered(hero);
+  const rows = MONK_ABILITIES.map((ability) => {
+    const name = capital(artText(`${monkKey(ability)}.name`));
+    const node = button(`${name} · ${MONK_COST[ability]}`, () => showMonkAbility(host, ability), energy >= MONK_COST[ability] ? '' : 'quiet');
+    return node;
+  });
+  show(
+    windowOf(
+      { title: capital(artText('actors.buffs.monkenergy.name')), sub: `${energy} / ${monkEnergyCap(hero)}${power ? ' ★' : ''}`, onClose: host.back, narrow: true },
+      info(artText('actors.buffs.monkenergy.desc', [energy, monkEnergyCap(hero)])),
+      el('div', { className: 'pd-scroll' }, ...rows),
+    ),
+    host.back,
+  );
+}
+
+function showMonkAbility(host: ClassHost, ability: (typeof MONK_ABILITIES)[number]): void {
+  const { hero } = host;
+  const power = monkEmpowered(hero);
+  const key = monkKey(ability);
+  const desc = artText(power ? `${key}.empower_desc` : `${key}.desc`, monkDescArgs(hero, ability));
+  const back = (): void => showMonk(host);
+  const use = (): void => {
+    if (!MONK_AIMS[ability]) host.act({ type: 'monk', ability });
+    else host.aim(artText(`${key}.prompt`) || artText('items.weapon.melee.meleeweapon.prompt') || artText('actors.hero.abilities.armorability.prompt'), (cell) => ({ type: 'monk', ability, cell }));
+  };
+  show(
+    windowOf(
+      { title: capital(artText(`${key}.name`)), sub: `${MONK_COST[ability]}`, onClose: back, narrow: true },
+      info(desc),
+      el('div', { className: 'pd-confirm-actions' }, button(S.cast, use, 'primary'), button(t.back ?? 'Back', back, 'quiet')),
+    ),
+    back,
+  );
+}

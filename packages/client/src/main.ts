@@ -21,7 +21,7 @@ import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookC
 import { artText, chargeOf } from './artifacttext';
 import { armorStatus } from './abilitytext';
 import { showTalents, startAbility } from './abilityui';
-import { weaponPrompt } from './classui';
+import { showMonk, weaponPrompt } from './classui';
 import { glowOf } from './gearfx';
 import { fx } from './fx';
 import { ambientFx, blobFx, effectFx, lightsFor, regionFx, stepFx } from './fx-events';
@@ -63,6 +63,12 @@ import { coachDone, markCoachDone, type Rect, type StepId, Tutorial, veteranSkip
 import { mart } from './mart';
 import { eraseDevice, showChallenges, showJournal, showSettings } from './meta';
 import { netlog, sendNetlog } from './netlog';
+import { watchErrors } from './diag';
+import { markSeenHere, newsDue, seenHere } from './news';
+import { showNews } from './newsui';
+import { closeOffline, showOffline } from './offlineui';
+import { CURRENT } from './releases';
+import { type RunFacts, showErrorScreen, showReport } from './reportui';
 import { looksRows, setBadgeImages, showMart, showTreat } from './martui';
 import { quality } from './quality';
 import { type Launch, Motion } from './motion';
@@ -72,7 +78,7 @@ import { Finds, MapControls } from './mapui';
 import { type HintId, hints } from './hints';
 import { lookIndex, preloadSheets, regionIndex } from './worldsheets';
 import { type ShareCard, shareCard, sharePicture, storyCard } from './share';
-import { rankings, recordRun, runScore } from './rankings';
+import { rankings, recordRun } from './rankings';
 import { type CheckOptions, forgetSolo, loadCheck, loadSolo, type Session, soloSession, staleSolo } from './session';
 import { type BoardKind, type Profile, type RunMeta, type RunSlot, runApi, type SyncAnswer } from './checked';
 import { loadAssets } from './sprites';
@@ -82,7 +88,7 @@ import {
   shareArena, shareDaily, telegramName, appLink, canShareMessage, canShareStory, shareMessage, shareStory, requestWriteAccess,
   homeScreenStatus, addToHomeScreen,
 } from './telegram';
-import { startReporting } from './report';
+import { report, startReporting } from './report';
 import { alchemyOpen, noteCrafted, refreshAlchemy, showAlchemy } from './alchemyui';
 import { ActionIndicator, type ActionKind } from './actionind';
 import { hasFreePoints, refreshHeroWindow, showComboWindow } from './talentui';
@@ -102,6 +108,7 @@ const SERVER: string = import.meta.env.VITE_SERVER_URL ?? (import.meta.env.DEV ?
 
 initTelegram('#1f1d1d');
 // What goes wrong reaches whoever looks after the game (report.ts): never who, only where.
+watchErrors();
 startReporting(import.meta.env.DEV ? '' : SERVER, () => {
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
@@ -590,6 +597,22 @@ async function startRun(key: string, mode: 'dungeon' | 'arena', fresh: boolean, 
       reloadForUpdate();
       return;
     }
+    if (answer === 'offline') {
+      // The server hands out every run that counts: with none to be had, the player may wait for it or play without ranking.
+      hideOverlay();
+      showOffline({
+        kind: 'start',
+        ping: async () => (await api.me()) !== null,
+        onBack: () => void startRun(key, mode, fresh, welcome),
+        onPlay: () => {
+          hideOverlay();
+          forgetSolo(key);
+          enterGame(local(), null, welcome);
+          dailyRun = slot === 'daily';
+        },
+      });
+      return;
+    }
     if (typeof answer === 'string') {
       toast(t.ranked.offlineStart);
       forgetSolo(key);
@@ -640,6 +663,8 @@ function settings(onClose: () => void): void {
   showSettings({
     onClose, onEffects: () => resize(), onReset: resetDevice,
     ...(api && inTelegram ? { reminders: { on: stored('pd-notify') === 'on', set: (on: boolean) => void setReminders(on) } } : {}),
+    onNews: () => showNews({ release: CURRENT, onClose: () => settings(onClose) }),
+    ...(api ? { onReport: () => showReport({ api, run: runFacts, onClose: () => settings(onClose) }) } : {}),
     // Outside Telegram the name is not known, and the camp has no field for it.
     ...(!inTelegram ? { name: { value: playerName, set: (value: string) => { playerName = value; store('pd-name', value); } } } : {}),
   });
@@ -722,7 +747,10 @@ let lettersCounted = -1;
 /** Asks the server who the player is; the camp shows their card, mail and tutorial once it answers. */
 function refreshProfile(): void {
   void api?.me().then((answer) => {
-    if (!answer) return;
+    if (!answer) {
+      maybeNews(null);
+      return;
+    }
     profile = answer;
     adoptBadges(answer.badges);
     // The tutorial's end is kept with the profile, for every device (and told to it from here, if only this device knew).
@@ -731,11 +759,61 @@ function refreshProfile(): void {
     const waiting = unclaimed(answer.mail);
     if (lettersCounted >= 0 && waiting > lettersCounted) audio.play('item', 1.1, 0.5);
     lettersCounted = waiting;
+    if (maybeNews(answer)) return;
     if (!session && document.querySelector('.pd-camp')) {
       toTitle(false);
       askOnTitle();
     }
   });
+}
+
+/** «Try it at the camp»: the camp of the Mart is on the home screen for ten seconds, then the player's own is back. */
+let tryTimer = 0;
+function startTry(camp: core.CampId): void {
+  mart.tryCamp(camp);
+  toTitle(false);
+  toast(t.rel.mart.trying(t.rel.mart.camps[camp]?.[3] ?? camp, 10), { tone: 'good' });
+  clearTimeout(tryTimer);
+  tryTimer = window.setTimeout(() => {
+    if (!session && activeCamp?.canvas.isConnected) {
+      activeCamp.setCamp(mart.campWorn() ?? 'outdoor');
+      toast(t.rel.mart.tryOver);
+    }
+  }, 10_000);
+}
+
+/** The run on now, as far as a problem report may say (reportui.ts). */
+function runFacts(): RunFacts | null {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me) return null;
+  return { id: session!.checked?.meta.id ?? '', seed: world.run.seed, depth: me.depth, slot: dailyRun ? 'daily' : 'dungeon', seq: session!.checked?.meta.seq ?? 0 };
+}
+
+/** «Что нового» is looked at once a launch: shown to a player who has played before the update, once per version (news.ts). */
+let newsChecked = false;
+function maybeNews(answer: Profile | null): boolean {
+  if (newsChecked || session || !document.querySelector('.pd-camp')) return false;
+  newsChecked = true;
+  const veteran = openings > 1 || stored('pd-moved') === '1' || coachDone() || loadSolo(SOLO_SLOT) !== null || Boolean(answer && (answer.games > 0 || answer.history.length > 0));
+  const due = newsDue({ local: seenHere(), ...(answer ? { server: answer.newsSeen ?? null } : {}), veteran, current: CURRENT.version });
+  if (due === 'none') return false;
+  if (due === 'mark') {
+    markSeenHere();
+    void api?.news(CURRENT.version);
+    return false;
+  }
+  showNews({
+    release: CURRENT,
+    onClose: () => {
+      // «Play» and the cross both record the version, here and with the profile.
+      markSeenHere();
+      void api?.news(CURRENT.version);
+      toTitle(false);
+      askOnTitle();
+    },
+  });
+  return true;
 }
 
 /** The mail window; back to the camp when closed. */
@@ -761,7 +839,7 @@ function dailyRulesView(): DailyRulesView {
   const [boon, info] = t.ranked.boons[rules.boon] ?? [rules.boon, ''];
   const item = BOON_ITEMS[rules.boon] ?? 'gold';
   return {
-    hardship: { index: Math.max(0, index), name: t.meta.challengeList[index]?.[0] ?? '' },
+    hardship: { index: Math.max(0, index), name: t.meta.challengeList[index]?.[0] ?? '', info: t.meta.challengeList[index]?.[1] ?? '' },
     boon: { sprite: itemSprite(core.createItem(item), {}), name: t.camp.boons[rules.boon] ?? boon, info },
   };
 }
@@ -797,7 +875,7 @@ function toTitle(ask = true): void {
     name: profile?.name || (inTelegram ? telegramName() : playerName.trim()) || t.heroDefault,
     profile,
     fallback: { best: records.reduce((best, record) => Math.max(best, record.score), 0), games: records.length },
-    scene: mart.campWorn() ?? 'outdoor',
+    scene: mart.campShown() ?? 'outdoor',
     skinOf: (name) => mart.skinOf(name),
     effect: mart.effectWorn(),
     frame: mart.frameWorn(),
@@ -815,9 +893,10 @@ function toTitle(ask = true): void {
     onDailyBoard: api ? () => openBoards('daily') : undefined,
     dailyState: dailyState(),
     rules: dailyRulesView(),
+    onNewDay: () => toTitle(false),
     onPractice: () => startSolo('daily'),
     onRankings: () => openBoards(),
-    onMart: () => showMart({ heroClass, onClose: toTitle }),
+    onMart: () => showMart({ heroClass, onClose: toTitle, onTry: startTry }),
     onSettings: () => settings(toTitle),
     mail: api ? { count: unclaimed(profile?.mail ?? []), onOpen: openMail } : undefined,
     challenges: challengesOpen() ? challenges : 0,
@@ -846,7 +925,7 @@ function openMenu(): void {
   showMenu({
     onResume: hideOverlay,
     onHelp: () => showHelp(hideOverlay),
-    onBadges: () => showBadges(hideOverlay),
+    onBadges: () => showBadges(hideOverlay, profile?.honors ?? []),
     onJournal: () => openJournal(openMenu),
     onSettings: () => settings(openMenu),
     onReport: session?.mode === 'online'
@@ -1801,6 +1880,23 @@ function useAction(kind: ActionKind): void {
       });
       break;
     case 'ambush': aim = { index: -1, kind: 'ability', ability: 'ambush' }; break;
+    // The Duelist's subclasses: the Monk's abilities, the Champion's swap of weapons, the brawler's stance.
+    case 'monk':
+      showMonk({
+        world, hero: me, back: hideOverlay,
+        act: (action) => {
+          hideOverlay();
+          send(action, performance.now());
+        },
+        aim: (prompt, make) => {
+          hideOverlay();
+          aim = { index: -1, kind: 'class', make };
+          toast(prompt);
+        },
+      });
+      break;
+    case 'swap': send({ type: 'swap' }, performance.now()); break;
+    case 'stance': send({ type: 'stance' }, performance.now()); break;
   }
 }
 
@@ -2630,8 +2726,65 @@ function frame(now: number, resumed = false): void {
     // These slow frames are on purpose: «auto» effects must not take them for a struggling phone.
     lastFrame = now;
   }
-  tick(now);
+  if (crashed) return;
+  try {
+    tick(now);
+    loopFailures = 0;
+  } catch (error) {
+    // A frame that fails now and then is only reported; one that fails again and again leaves the game stuck: the error screen.
+    report('error', `frame: ${(error as Error).message}`, (error as Error).stack);
+    if (++loopFailures >= 5) showCrash();
+  }
+  netStrip();
 }
+
+let loopFailures = 0;
+let crashed = false;
+
+/** «Something went wrong»: «Restart» loads the page again (the run is kept), «Report a problem» where the server can take one. */
+function showCrash(): void {
+  if (crashed) return;
+  crashed = true;
+  session?.close();
+  showErrorScreen({ api, run: runFacts, restart: () => location.reload() });
+}
+
+/*
+ * The strip under the HUD while the connection is down (design v20, .pd-net-badge): a run the server handed out says it
+ * will count later; a run played on the device alone (begun offline or past a refusal) says it is not ranked.
+ */
+const netBadge = Object.assign(document.createElement('span'), { className: 'pd-net-badge', hidden: true });
+netBadge.setAttribute('role', 'status');
+document.getElementById('ui')!.append(netBadge);
+function netStrip(): void {
+  const checked = session?.checked;
+  const text = !session || session.mode !== 'solo' || !api ? '' : checked ? (checked.offline ? t.rel.offline.strip : '') : t.rel.offline.stripLocal;
+  if (netBadge.textContent !== text) netBadge.textContent = text;
+  netBadge.hidden = text === '' || overlayOpen();
+}
+
+/** The connection went or came back (session.ts): once a run, the window says so; the strip stays while it lasts. */
+let offlineShownFor = '';
+addEventListener('pd-net', (event) => {
+  const state = (event as CustomEvent<string>).detail;
+  const checked = session?.checked;
+  if (state === 'online') {
+    if (closeOffline()) hideOverlay();
+    toast(t.rel.offline.back, { tone: 'good' });
+    return;
+  }
+  if (!checked || overlayOpen() || offlineShownFor === checked.meta.id) return;
+  offlineShownFor = checked.meta.id;
+  showOffline({
+    kind: 'live',
+    ping: async () => (await api?.me()) !== null,
+    onBack: () => {
+      hideOverlay();
+      session?.checked?.retry();
+    },
+    onPlay: hideOverlay,
+  });
+});
 
 function tick(now: number): void {
   if (!session) {
@@ -3123,8 +3276,9 @@ function tick(now: number): void {
     const answer = session.checked ? session.checked.finished() : null;
     if (answer) void answer.then((reply) => reply?.badges && announceBadges(reply.badges.filter((id) => !earnedBadges().has(id))));
     const deepestNow = Object.keys(world.levels).length;
-    // Scored as the server scores it (core verify.ts runOutcome: challenges raise it).
-    const scoreNow = core.runOutcome(world, me).score;
+    // Scored as the server scores it (core verify.ts runOutcome: Shattered's score, the parts in `breakdown`).
+    const outcomeNow = core.runOutcome(world, me);
+    const scoreNow = outcomeNow.score;
     const killer = me.killedBy && (t.causes[me.killedBy] ?? t.mobs[me.killedBy as MobKind] ?? t.classes[me.killedBy as HeroClass] ?? me.killedBy);
     const shareText = dailyRun ? t.shareText(scoreNow, deepestNow) : t.shareTextRun(scoreNow, deepestNow);
     const share = shareChoices(async () => {
@@ -3145,6 +3299,7 @@ function tick(now: number): void {
       const place = recordRun({
         key: `${world.run.seed}:${me.id}:${world.turn}`,
         score: scoreNow,
+        ...(outcomeNow.breakdown ? { breakdown: outcomeNow.breakdown } : {}),
         name: me.name || playerName || telegramName() || t.heroLabel,
         heroClass: me.heroClass,
         lvl: me.lvl,
@@ -3170,6 +3325,7 @@ function tick(now: number): void {
         },
         onExit: () => toTitle(),
         score: scoreNow,
+        ...(outcomeNow.breakdown ? { breakdown: outcomeNow.breakdown } : {}),
         ranking: rankingBlock(answer),
         onBoards: api ? () => openBoards(dailyRun ? 'daily' : 'week') : undefined,
         share,
@@ -3362,6 +3518,8 @@ if (launchedForDaily()) {
   startSolo('daily');
 } else {
   toTitle();
+  // Without the server there is no profile to ask: the news are judged by this device alone.
+  if (!api) maybeNews(null);
 }
 
 
@@ -3388,5 +3546,6 @@ if (import.meta.env.DEV) {
       await new Promise((resolve) => setTimeout(resolve, 33));
     }
   };
+  Object.assign(window, { __release: { news: () => showNews({ release: CURRENT, onClose: () => toTitle(false) }), report: () => api && showReport({ api, run: runFacts, onClose: () => toTitle(false) }), crash: showCrash } });
   Object.assign(window, { __pd: { get session() { return session; }, openAlchemy, openBackpack, camera, view, motion, walk, advance, play, resize, core, fx, startSolo, audio, tick, held, tapCell } });
 }

@@ -1179,6 +1179,8 @@ export interface Heap {
   pos: number;
   kind: HeapKind;
   items: Item[];
+  /** Made during play, not by the level's builder: it does not count for the floor's exploration score (Heap.autoExplored; score.ts). */
+  auto?: true;
 }
 
 /** Sprites of closed containers in items.png. */

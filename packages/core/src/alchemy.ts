@@ -489,7 +489,7 @@ function give(ctx: Ctx, hero: Hero, item: Item): void {
   const stack = isStackable(item.kind) ? hero.items.find((other) => stacksWith(other, item)) : undefined;
   if (stack) stack.qty += item.qty;
   else if (hasRoom(hero, item)) hero.items.push(item);
-  else ctx.floor.heaps.push({ pos: hero.pos, kind: 'heap', items: [underChallenges(ctx.world, item)] });
+  else ctx.floor.heaps.push({ pos: hero.pos, kind: 'heap', items: [underChallenges(ctx.world, item)], auto: true });
 }
 
 /* Energy */

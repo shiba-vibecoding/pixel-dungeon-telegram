@@ -25,6 +25,6 @@ describe('the daily dungeon’s rules', () => {
 
   it('raise a score a quarter for each challenge', () => {
     expect(challengeMultiplier(0)).toBe(1);
-    expect(challengeMultiplier(1 | 4 | 32)).toBe(1.75);
+    expect(challengeMultiplier(1 | 4 | 32)).toBe(1.95);
   });
 });

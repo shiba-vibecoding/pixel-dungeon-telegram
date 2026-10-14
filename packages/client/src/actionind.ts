@@ -1,4 +1,5 @@
 import {
+  duelistCharges, monkEnergy, wearsForce, classState,
   ambushRange, berserkOf, bowOf, canBerserk, comboOf, type Hero, highestMove, isAlive, isInvisible, momentumOf, prepTurns, type World,
 } from '@pd/core';
 import { audio } from './audio';
@@ -12,14 +13,14 @@ import { tal } from './talenttext';
  * strike while unseen, the sniper's mark with the bow. Each button wears the action's icon (hero_icons.png) and a number.
  */
 
-export type ActionKind = 'berserk' | 'combo' | 'freerun' | 'ambush' | 'snipe';
+export type ActionKind = 'berserk' | 'combo' | 'freerun' | 'ambush' | 'snipe' | 'monk' | 'swap' | 'stance';
 
 export interface ActionIndicatorHandlers {
   use(kind: ActionKind): void;
 }
 
 /** HeroIcon.BERSERK, COMBO, PREPARATION, MOMENTUM, SNIPERS_MARK. */
-const ICONS: Readonly<Record<ActionKind, number>> = { berserk: 104, combo: 105, ambush: 106, freerun: 107, snipe: 108 };
+const ICONS: Readonly<Record<ActionKind, number>> = { berserk: 104, combo: 105, ambush: 106, freerun: 107, snipe: 108, swap: 109, monk: 110, stance: 105 };
 
 interface Offer {
   kind: ActionKind;
@@ -46,6 +47,12 @@ export function actionsOf(world: World, hero: Hero): Offer[] {
     const augment = bowOf(hero)!.augment;
     const name = augment === 'speed' ? 'volley' : augment === 'damage' ? 'sniper' : 'snapshot';
     offers.push({ kind: 'snipe', number: Math.ceil(mark.left), label: tal(`actors.buffs.snipersmark.action_name_${name}`) });
+  }
+  // MonkEnergy: abilities while there is energy; the Champion's swap of weapons; the Duelist's brawler's stance with a ring of force.
+  if (hero.subclass === 'monk' && monkEnergy(hero) >= 1) offers.push({ kind: 'monk', number: Math.floor(monkEnergy(hero)), label: tal('actors.buffs.monkenergy.action') });
+  if (hero.subclass === 'champion') offers.push({ kind: 'swap', number: Math.floor(duelistCharges(hero)), label: tal('items.weapon.melee.meleeweapon.swap') });
+  if (hero.heroClass === 'duelist' && wearsForce(hero)) {
+    offers.push({ kind: 'stance', number: classState(hero).brawl?.active ? 1 : 0, label: tal('items.rings.ringofforce.ability_name') });
   }
   void world;
   return offers;

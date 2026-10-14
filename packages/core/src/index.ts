@@ -55,6 +55,7 @@ export {
 } from './ident';
 export * from './shop';
 export * from './verify';
+export * from './score';
 export * from './badges';
 export * from './daily';
 export * from './spd-sprites';
@@ -130,5 +131,7 @@ export { chargeCap as duelistChargeCap, charges as duelistCharges } from './clas
 export { allSpells, type CastAction, type SpellDef, type SpellId, spellDef, spellsOf, tomeOf } from './classes/cleric';
 export { cs as classState, hasTimer, timerLeft, markTurns } from './classes/state';
 export { discoveredOf, trinityOptions } from './classes/trinity';
+export { monkDescArgs, spellDescArgs, spellDescExtra } from './classes/texts';
 export type { ClassFx } from './classes/fx';
 export { HERO_CLASSES as CLASSES } from './heroclass';
+export { wearsForce } from './rings';

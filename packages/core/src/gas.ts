@@ -8,6 +8,7 @@ import { immuneTo } from './traps';
 import { burnHeaps } from './cooking';
 import { addCorrosion, freezeCell, igniteChar, isFiery } from './buffs';
 import { PARALYSIS_TURNS } from './status';
+import { scoreGhostHit } from './score';
 
 /*
  * Clouds of gas and other blobs (Blob and its kinds). A cloud is so much gas per cell; every turn it spreads
@@ -235,7 +236,11 @@ function afterSpreading(ctx: Ctx, kind: GasKind, cells: number[], cur: Int32Arra
       // StenchGas: Paralysis.DURATION / 5 (a fetid rat breathes its own unharmed: FetidRat immunities).
       for (const cell of cells) {
         const char = charIn(cell);
-        if (char && !(!isHero(char) && char.kind === 'fetidRat')) char.paralysed = Math.max(char.paralysed ?? 0, 2);
+        if (char && !(!isHero(char) && char.kind === 'fetidRat')) {
+          // StenchGas: a hero caught by the fetid rat's cloud, not already stuck, loses quest score.
+          if (isHero(char) && !char.paralysed && ctx.world.quest?.type === 'rat' && ctx.world.quest.dropped) scoreGhostHit(ctx.world, 100);
+          char.paralysed = Math.max(char.paralysed ?? 0, 2);
+        }
       }
       return;
     case 'storm':
