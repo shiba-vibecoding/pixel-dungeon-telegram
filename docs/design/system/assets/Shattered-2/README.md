@@ -21,3 +21,6 @@
 | `icon-hourglass.png` | 7×9 | таймер доски рекордов |
 
 Облики Дуэлянтки и Клирика лежат в группе `Skins` (`duelist-*.png`, `cleric-*.png`, `avatars-skins.png`), ряды привала — в `Camp/camp-heroes.png` (ряды 10–15).
+
+
+**v24:** `journal2.png` — торговец, бес и Крысиный король с листов Shattered.

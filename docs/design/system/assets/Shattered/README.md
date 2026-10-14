@@ -13,3 +13,6 @@
 | `icon-talent.png` | 13×13 | звезда таланта | `--spr-talent` |
 | `talent-plus.png` | 10×10 | золотой «+»: свободные очки талантов на кнопке героя и вкладке | `--spr-talent-plus` |
 | `mask-enchant.png`, `mask-glyph.png` | 7×8 | маски значка зачарования (искра) и глифа (щит-руна); красятся в `--ench` | `--spr-mask-enchant`, `--spr-mask-glyph` |
+
+
+**v24:** `avatars.png` — все 6 портретов Shattered (первые 144 px его `avatars.png`); `heroes6.png` — кадр 0 ряда 1 шести листов Shattered; `items-shpd.png` — + клетка 135, зеркальный меч (стекло на клинке двуручника), по желанию.

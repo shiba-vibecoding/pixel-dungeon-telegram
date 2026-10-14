@@ -1993,3 +1993,120 @@ const camp = PD.camp(root, { scene: worn.camp ?? 'outdoor', season: seasonOf(new
 | `.pd-guide-window`, `.pd-guide-list`, `.pd-guide-row(.read)`, `.pd-guide-ico(.big)`, `.pd-guide-img`, `.pd-chev`, `.pd-back`, `.pd-guide-title`, `.pd-guide-page`, `.pd-guide-points`, `.pd-trap-legend`, `.pd-trapc`, `.pd-compare` | «Памятка» |
 | `.pd-runtag(.ranked/.replay/.seed/.unranked)`, `.pd-runtag-line`, `.pd-menu-sub` | метка забега |
 | `.pd-ch9(.big)`, `.pd-challenge9(.info)`, `.pd-ch-info`, `.pd-new-tag`, `.pd-boss-list` | испытания |
+
+
+## Арт v24 · один Pixel Dungeon
+
+Полный проход по арту по пакету аудита. Правила — карточка «Арт-дирекция», список несовпадений — «Аудит арта», было/стало — «Персонажи v24», «Мир v24», «Бафы и значки v24», снимки игры — «Было и стало · регионы/экраны» (полный набор в `docs/design/previews/v24/`).
+
+**Коду ничего менять не нужно:** все листы лежат по прежним путям, того же размера и раскладки, номера кадров те же. Достаточно заменить файлы и пересобрать `ui.css`. Ниже — необязательные правки, которые убирают последние швы.
+
+### 1. Заменить файлы
+
+Скопируйте `packages/client/public/assets/` из архива поверх своей папки (64 файла, новых нет):
+
+| Файл (`packages/client/public/assets/`) | Размер | Что теперь |
+| --- | --- | --- |
+| `avatars.png` | 144×32 | первые 144 px `avatars.png` Shattered (6 портретов 24×32) |
+| `badges.png` | 128×128 | значки Shattered в рамках уровней на местах PD; 6 исчезнувших в Shattered — картинка PD в рамке |
+| `blacksmith.png` | 64×16 | = `spd/blacksmith.png` (грузится, не рисуется) |
+| `buffs.png` | 128×16 | иконки Shattered на местах PD (29 → 33, 30 → 38, 31 → 39) |
+| `camp/camp-heroes.png` | 252×240 | ряды 0–5 = ряд 1 листов, 6–15 = ряд 1 образов |
+| `ghost.png` | 32×16 | кадры 0–1 Shattered `ghost.png` (запасная фигура) |
+| `heroes6.png` | 72×15 | кадр 0 ряда 1 шести листов |
+| `icons.png` | 128×64 | метки Shattered: череп, занят, сон, тревога, глубина; значки классов — вещи классов |
+| `imp.png` | 64×16 | Shattered `imp.png` |
+| `items.png` | 256×512 | + клетка 135: зеркальный меч (по желанию) |
+| `mage.png` | 256×128 | лист Shattered `mage.png` |
+| `meta/banner-whatsnew.png` | 104×56 | тот же костёр, герои с новых листов |
+| `meta/journal-alchemy.png` | 16×16 | исходник клетки journal.png (не грузится; можно удалить) |
+| `meta/journal-garden.png` | 16×16 | исходник клетки journal.png (не грузится; можно удалить) |
+| `meta/journal-statue.png` | 16×16 | исходник клетки journal.png (не грузится; можно удалить) |
+| `meta/journal-well-awareness.png` | 16×16 | исходник клетки journal.png (не грузится; можно удалить) |
+| `meta/journal-well-health.png` | 16×16 | исходник клетки journal.png (не грузится; можно удалить) |
+| `meta/journal-well-transmutation.png` | 16×16 | исходник клетки journal.png (не грузится; можно удалить) |
+| `meta/icon-update.png` | 16×16 | значок CHANGES Shattered (CSS берёт свою копию `--spr-update`) |
+| `meta/journal.png` | 176×16 | колодцы, котёл, сад, статуя — тайлы Shattered |
+| `ranger.png` | 256×128 | лист Shattered `huntress.png` |
+| `ratKing.png` | 128×16 | ряд 0 Shattered `ratking.png` (16×16, 8 кадров) |
+| `rogue.png` | 256×128 | лист Shattered `rogue.png` |
+| `shattered/journal2.png` | 224×16 | торговец, бес, Крысиный король — Shattered |
+| `sheep.png` | 128×16 | Shattered `sheep.png` (кадры 0–3), кадр 4 пуст, как был |
+| `shopkeeper.png` | 32×16 | Shattered `shopkeeper.png` |
+| `skins/mage-ash.png` | 256×128 | перекраска нового листа тем же правилом |
+| `skins/mage-royal.png` | 256×128 | перекраска нового листа тем же правилом |
+| `skins/mage-shadow.png` | 256×128 | перекраска нового листа тем же правилом |
+| `skins/ranger-ash.png` | 256×128 | перекраска нового листа тем же правилом |
+| `skins/ranger-royal.png` | 256×128 | перекраска нового листа тем же правилом |
+| `skins/ranger-shadow.png` | 256×128 | перекраска нового листа тем же правилом |
+| `skins/rogue-ash.png` | 256×128 | перекраска нового листа тем же правилом |
+| `skins/rogue-royal.png` | 256×128 | перекраска нового листа тем же правилом |
+| `skins/rogue-shadow.png` | 256×128 | перекраска нового листа тем же правилом |
+| `skins/warrior-ash.png` | 256×128 | перекраска нового листа тем же правилом |
+| `skins/warrior-royal.png` | 256×128 | перекраска нового листа тем же правилом |
+| `skins/warrior-shadow.png` | 256×128 | перекраска нового листа тем же правилом |
+| `spd/custom_tiles/prison_exit.png` | 256×512 | те же цвета пола |
+| `spd/custom_tiles/prison_quest.png` | 256×256 | те же цвета пола |
+| `spd/custom_tiles/rat_king_room.png` | 128×16 | те же цвета пола |
+| `spd/prison_exit.png` | 256×512 | те же цвета пола |
+| `spd/tiles_prison.png` | 256×256 | цвета пола → L 60, разброс 10 |
+| `spd/tiles_sewers.png` | 256×256 | цвета пола → L 60, разброс 10 (стены, индексы, альфа те же) |
+| `tiles0.png` | 256×128 | клетки PD = тайлы Shattered нового листа региона |
+| `tiles1.png` | 256×128 | клетки PD = тайлы Shattered нового листа региона |
+| `tiles2.png` | 256×128 | клетки PD = тайлы Shattered нового листа региона |
+| `tiles3.png` | 256×128 | клетки PD = тайлы Shattered нового листа региона |
+| `tiles4.png` | 256×128 | клетки PD = тайлы Shattered нового листа региона |
+| `undead.png` | 256×16 | Shattered `undead.png` |
+| `wandmaker.png` | 64×16 | = `spd/wandmaker.png` (грузится, не рисуется) |
+| `warrior.png` | 256×128 | лист Shattered `warrior.png` |
+| `world/chests.png` | 64×96 | кадр 0 = клетка items.png, дальше щель света, крышка, пусто |
+| `world/doors0.png` | 64×48 | из RAISED_DOOR 112/113, LOCKED 114, BARRICADE 121 → EMBERS 3 |
+| `world/doors1.png` | 64×48 | из RAISED_DOOR 112/113, LOCKED 114, BARRICADE 121 → EMBERS 3 |
+| `world/doors2.png` | 64×48 | из RAISED_DOOR 112/113, LOCKED 114, BARRICADE 121 → EMBERS 3 |
+| `world/doors3.png` | 64×48 | из RAISED_DOOR 112/113, LOCKED 114, BARRICADE 121 → EMBERS 3 |
+| `world/doors4.png` | 64×48 | из RAISED_DOOR 112/113, LOCKED 114, BARRICADE 121 → EMBERS 3 |
+| `world/grass0.png` | 80×40 | качание из RAISED_HIGH_GRASS (122), примятая до GRASS (2) |
+| `world/grass1.png` | 80×40 | качание из RAISED_HIGH_GRASS (122), примятая до GRASS (2) |
+| `world/grass2.png` | 80×40 | качание из RAISED_HIGH_GRASS (122), примятая до GRASS (2) |
+| `world/grass3.png` | 80×40 | качание из RAISED_HIGH_GRASS (122), примятая до GRASS (2) |
+| `world/grass4.png` | 80×40 | качание из RAISED_HIGH_GRASS (122), примятая до GRASS (2) |
+| `wraith.png` | 128×16 | ряд 0 Shattered `wraith.png` (проклятие) |
+
+### 2. Пересобрать `ui.css`
+
+`node packages/client/scripts/build-ui-css.mjs` с новым `docs/design/system/components/bundle.css`. В нём заменены встроенные спрайты: `--atlas-avatars`, `--atlas-heroes`, `--atlas-warrior`, `--atlas-buffs`, `--atlas-badges`, `--atlas-sitems`, `--atlas-journal`, `--atlas-journal2`, `--spr-badge-locked`, `--spr-npc-blacksmith`, `--spr-skull`, `--spr-busy`, `--spr-depth`, `--spr-warn`, `--spr-update`, `--spr-banner-release`. Два правила, дописанных в `ui.css` руками (`.pd-runend > .pd-scroll`, `.pd-news-notice`), теперь лежат в `bundle.css` — собранный файл совпадает с нынешним во всём, кроме спрайтов. Классы и токены не менялись.
+
+`docs/design/bot-cover-640x360.png` — пересобрана `packages/client/scripts/bot-cover.py` с новыми `tiles0.png` и `avatars.png` (в архиве). Подпись «Кооперативный рогалик» осталась от кооператива — поправьте в скрипте, если режим не вернётся.
+
+### 3. Необязательно: правки кода
+
+| Где | Что | Зачем |
+| --- | --- | --- |
+| `motion.ts:68` `CHEST_ANIMS` | Ключевать анимацию по виду кучи (`chest`, `mimic`, …), а не по спрайту | У мимика и сундука один спрайт `S.CHEST`, карта оставляет `mimic` — сейчас каждый сундук открывается пастью |
+| `motion.ts:476` | Под качающейся и примятой травой рисовать визуал своей клетки (`FLOOR`/`FLOOR_ALT_*` по `variance`), а не `tiles[r]` `T.EMPTY` | На клетках с другим вариантом пола под травой видно пятно |
+| `motion.ts` (двери) | Не играть кадры `doors*` у `DOOR_SIDEWAYS` | Кадры нарисованы фронтально; у боковой двери они не к месту |
+| `motion.ts` (трава) | Брать кадры качания и для `RAISED_HIGH_GRASS_ALT` (125) с его рисунком | Сейчас альтернативная трава качается рисунком 122 |
+| `sprites.ts` `loadAssets` | Убрать `water0–4` (корневые), `blacksmith`, `wandmaker`, `plants` из `names` | Грузятся и не рисуются |
+| `spd-sprites.ts` / `vault-rooms.ts` | `MIRROR_SWORD = 135` для награды зеркала дуэлянтке | Своя картинка «зеркального меча» (в Shattered это двуручник; по желанию) |
+| `build-ui-css.mjs` | Третья гарнитура для заголовков (`--font-title`, шрифт PD из `pixel_font.ttf` Shattered, 20.48 px) | Предложение на v25, в v24 не включено |
+
+### 4. Можно удалить
+
+Не грузятся (или грузятся и не рисуются), по `manifest.md` аудита:
+
+- 30 листов PD 1.9 в корне: `bat, bee, brute, burningFist, crab, dm300, elemental, eye, gnoll, golem, goo, king, larva, mimic, monk, piranha, rat, rottingFist, scorpio, shaman, skeleton, spinner, statue, succubus, swarm, tengu, thief, warlock, yog .png`; `items-pd.png`, `item_icons.png`.
+- Грузятся, не рисуются: корневые `water0–4.png` (рисуются `spd/water*`), `plants.png`, `blacksmith.png`, `wandmaker.png` (перекрыты `spd/`) — вместе со строками загрузки.
+- Дубли: `spd/effects.png` (= `spd/effects/effects.png`), `spd/ghoul.png`, `spd/spawner.png` (= `spd/mobs/`).
+- Исходники собранных атласов в `meta/`: `challenge-*.png`, `journal-*.png`, `trophy-*`, `medal-week*`, `streak-*`, `cursor.png`, `frost.png`, `*.json`; в `mart/` — `icon-*.svg` (CSS держит свои копии).
+- Спящее (арена, кооператив) — оставить до решения о режимах.
+
+### 5. Что проверено и не менялось
+
+Все 31 лист монстров и 5 боссов — Shattered; цвета ловушек — 9 семейств `terrain_features.png`, легенда «Памятки» совпадает; туман `fog0–4` — в оттенках регионов; рамка окна — `chrome.png` Shattered (±3 RGB); у всех 293 видов предметов есть иконка в `items.png`; шрифт Galmuri.
+
+### 6. Остальное в архиве
+
+- `docs/design/system/`: `README.md` (раздел «Арт-дирекция (v24)»), этот `migration.md`, `components/bundle.css` и `bundle.js` (новые встроенные спрайты; классы прежние), 7 новых карточек `components/Art*/` (арт-дирекция, аудит, персонажи, мир, бафы и значки, было/стало по регионам и экранам), превью, где сменились ссылки на листы (`ArenaAtlas`, `ArenaBanners`, `ArenaDesk`, `ArenaEntry`, `ArenaHud`, `ArenaReward`, `MartShelves`, `WorldSprites`), `assets/*/README.md` групп, чьи листы обновлены, и новая `assets/Art-v24/README.md`.
+- `docs/design/previews/v24/`: снимки игры до и после (14 сцен × RU/EN × 375×812 и 1280×800), карточки на RU и EN, `README.md` — как снято; `docs/design/previews/v24-overview.png`.
+- `docs/design/bot-cover-640x360.png` — пересобрана.
+- `tools/art/`: `p24_all.sh` (порядок: персонажи → тайлы → UI → сундуки → баннер → картинки системы), `p24_chars.py`, `p24_tiles.py`, `p24_ui.py`, `p24_fx.py`, `p24_dsimg.py`, `p24_cards.py`, `p24_dsjson.py`, `v24-shots.js` + `v24-shots.sh` (снимки до/после). Пути в скриптах — рабочие пути дизайнера; источники — `assets/` до v24 и листы Shattered PD 4.0.2 (`core/src/main/assets`).

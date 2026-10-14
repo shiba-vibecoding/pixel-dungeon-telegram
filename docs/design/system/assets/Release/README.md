@@ -11,3 +11,6 @@
 | `social-preview-ru.png`, `header-ru.png`, `screens-ru.png`, `badge-*-ru.png` | готовые | оформление GitHub; английские — в `docs/github/` архива |
 
 Сцена собирается скриптом `tools/art/banner.py` из тех же частей, что Привал: `scene(w, h, cxf=…)` — ширина, высота, где стоит костёр.
+
+
+**v24:** `icon-update.png` — значок CHANGES из `icons.png` Shattered (зелёная и красная стрелки); `banner-whatsnew.png` — тот же костёр, герои с листов Shattered.
