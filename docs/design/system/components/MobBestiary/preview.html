@@ -1,4 +1,4 @@
-<!-- @dsCard group="Монстры Shattered" height=852 width=1173 page subtitle="Журнал → Каталог → «Бестиарий»: портреты по регионам, затем боссы, «Встречаются всюду» и редкие; не встреченные — силуэтом своего спрайта; в углу клетки — сколько убито; снизу — выбранный: портрет ×3, где живёт, описание" -->
+<!-- @dsCard group="Монстры Shattered" height=852 width=1173 page subtitle="Журнал → Каталог → «Бестиарий»: портреты по регионам, затем боссы, задания (зловонная крыса, гнолл-трюкач, огромный краб), «Всюду» и редкие; не встреченные — силуэтом своего спрайта; в углу клетки — сколько убито; снизу — выбранный: портрет ×3, где живёт, описание" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>Бестиарий</title>
@@ -19,7 +19,7 @@
   function gm(p, o) { o = o || {}; o.mates = false; o.noMobs = true; o.depth = o.depth || 12; PD.demo.game(p, o); return p; }
   var a = gm(phone(375, 812, en ? '<b>Regions</b> · DM-100 selected' : '<b>Регионы</b> · выбран DM-100')); PD.demo.overlay(a, PD.demo.win.bestiary(L, { sel: 'dm100' }));
   var b = gm(phone(375, 812, en ? '<b>Not met yet</b> · a silhouette' : '<b>Не встречен</b> · силуэт')); PD.demo.overlay(b, PD.demo.win.bestiary(L, { sel: 'ripper', only: [4, 'boss'] }));
-  var c = gm(phone(360, 812, '<b>360 px</b> · ' + (en ? 'anywhere and rare' : 'всюду и редкие'))); PD.demo.overlay(c, PD.demo.win.bestiary(L, { sel: 'mimic', only: ['any', 'rare'] }));
+  var c = gm(phone(360, 812, '<b>360 px</b> · ' + (en ? 'quests, anywhere, rare' : 'задания, всюду, редкие'))); PD.demo.overlay(c, PD.demo.win.bestiary(L, { sel: 'fetid', only: ['quest', 'any', 'rare'] }));
   PD.sprite(document.body);
 </script>
 </body>

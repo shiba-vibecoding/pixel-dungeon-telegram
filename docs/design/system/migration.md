@@ -1872,3 +1872,78 @@ const camp = PD.camp(root, { scene: worn.camp ?? 'outdoor', season: seasonOf(new
 | `.pd-mob-window`, `.pd-mob-face(.champ)`, `.pd-champ-tag`, `.pd-mob-hp`, `.pd-mob-buffs` | окно существа |
 | `.pd-ghoul-fallen`, `.pd-bar.fallen`, `.pd-rise-pips`, `.pd-ebony-hidden` | гуль и мимик |
 | `.pd-buff i.mob`, `.pd-mbuff(.large)`, `.pd-buff-window` | состояния |
+
+
+## Последний пакет перед Shattered (v22)
+
+### Священный том и Троица
+
+```html
+<section class="pd-window pd-hero-window pd-tome" role="dialog">
+  <header class="pd-window-head"><div class="pd-slot"><i class="pd-sitem" style="--u:2px;--ix:7;--iy:16"></i></div><div class="pd-titles"><h2 class="pd-heading">Священный том</h2><span class="pd-sub">Жрец · уровень 14</span></div><button class="pd-close"></button></header>
+  <div class="pd-tome-charge"><span>Заряд <b>6</b> из 10</span><span class="pd-charge-pips"><i class="on"></i>…<i></i></span></div>
+  <div class="pd-scroll"><div class="pd-talents">
+    <section class="pd-tier pd-spell-tier"><header class="pd-tier-head"><h3>Ярус 2</h3><span class="pd-tier-sub">таланты 2-го яруса</span></header>
+      <div class="pd-spell">
+        <button class="pd-spell-main"><span class="pd-spell-ico"><i class="pd-hicon" style="--u:2px;--ix:6;--iy:5"></i></span><span class="pd-spell-text"><span class="pd-spell-line"><b>Солнечный луч</b><span class="pd-cost"><i class="pd-cost-ico"></i>1</span></span><small>Урон издалека и слепота.</small></span></button>
+        <button class="pd-quick" role="radio" aria-checked="true" aria-label="Быстрое заклинание"></button>
+      </div>
+    </section>
+  </div></div>
+</section>
+```
+
+Номер значка: `--ix = n % 8`, `--iy = ⌊n / 8⌋` в `hero_icons.png`. Бесплатно — `.pd-cost.free` с «0». Не хватает заряда — `.pd-spell.low` и `aria-disabled` на кнопке. Троица: `.pd-trinity` → `.pd-forms` → `.pd-form.body|.mind|.spirit(.selected)` с `.pd-form-head` и `.pd-form-pick`.
+
+### Кнопка действия
+
+```html
+<div class="pd-actind-wrap"><button class="pd-actind" style="--ind:#5500bb" aria-label="Способность оружия: 2"><i class="pd-sitem" style="--u:2px;--ix:3;--iy:6"></i><span class="pd-actind-n">2</span></button></div>
+<div class="pd-actind-wrap r2"><button class="pd-actind swap" style="--ind:#5500bb"><span class="pd-wslot">…</span><i class="pd-swap-ico"></i><span class="pd-wslot spare">…</span></button></div>
+```
+
+Состояния: `.charging` + `<span class="pd-actind-fill">` и `--v`; `.aiming` + `aria-pressed="true"` + `<i class="pd-actind-aim">`; `.stance(.on)`. Цвета — README `ActionStates`. Приёмы Монаха — `.pd-monk-window` → `.pd-monk-ab(.low)` с `.pd-monk-ico` и `.pd-energy-pips`.
+
+### Состояния и листы
+
+- HUD: `<i class="cleric" style="--ix:N">` внутри `.pd-buff` (Клирик). Окно и списки: `.pd-cbuff(.large)`, `.pd-tlbuff(.large)` (таланты), `.pd-cmbuff(.large)` (комбо), `.pd-tbuff2.large` с `--ix/--iy` (любой значок `large_buffs.png` Shattered, 16 в ряд).
+- Заклинания над героем — `spell-sprites.png`, кадр N = `SpellSprite` N; 8 — «мастерство» из PD 1.9.
+
+### Союзник света и остаточный образ
+
+Рецепты тинта — README `ClericLooks`: союзник — плоский силуэт (255, 250, 200) × 0,85 + ореол; усиленный — `tint(1.33, 1.33, 0.83, 0.4…0.6)`; образ — прозрачность 0,6 и 5 ступеней до 0 за 3 с.
+
+### Хранительница
+
+`.pd-warden-window` → `.pd-warden-list` → `li` с `.pd-wplant`, `.pd-spell-text`, `.pd-weffect` (`--ix` 0–11 в порядке README `WardenPlants`). В окне растения — `<p class="pd-warden-note"><i class="pd-weffect" style="--ix:3"></i><span><b>Хранительница:</b> …</span></p>`.
+
+### Счёт
+
+`.pd-score` → `.pd-score-row(.max)` (`.pd-spart`, `.pd-score-name`, `.pd-score-val` с `.pd-max`), `.pd-score-mul`, `.pd-score-total`. Карточка «Мои» — `.pd-score-card` с `.pd-score-mini`. Готовая разметка — `PD.demo.scoreTable(lang, { vals, win, chal, compact })`.
+
+### Защита от промаха
+
+```html
+<section class="pd-window narrow pd-confirm" role="alertdialog">
+  <div class="pd-confirm-art"><i class="pd-confirm-ico trap"></i></div>
+  <h2 class="pd-heading center">Наступить на ловушку?</h2>
+  <p class="pd-info center"><b>Огненная ловушка.</b> Подожжёт вас и всё вокруг.</p>
+  <button class="pd-check small" role="checkbox" aria-checked="false"><i></i><span><b>Больше не спрашивать</b></span></button>
+  <div class="pd-row"><button class="pd-button quiet">Нет</button><button class="pd-button primary">Шагнуть</button></div>
+</section>
+```
+
+### Бестиарий
+
+`bestiary.png` теперь 264×168 (7 рядов): ячейки 66–68 — зловонная крыса, гнолл-трюкач, огромный краб, группа «Задания» между боссами и «Всюду». Размеры фона в `.pd-mob` — 528×336 (×3 — 792×504).
+
+| Класс | Что это |
+| --- | --- |
+| `.pd-tome`, `.pd-tome-charge`, `.pd-charge-pips`, `.pd-spell-tier`, `.pd-spell(.low)`, `.pd-spell-main`, `.pd-spell-ico`, `.pd-spell-text`, `.pd-spell-line`, `.pd-cost(.free)`, `.pd-quick` | священный том |
+| `.pd-trinity`, `.pd-forms`, `.pd-form`, `.pd-form-head`, `.pd-form-pick` | Троица |
+| `.pd-actind(.charging/.aiming/.swap/.stance)`, `.pd-actind-wrap(.r2)`, `.pd-actind-n`, `.pd-actind-fill`, `.pd-actind-aim`, `.pd-wslot`, `.pd-swap-ico`, `.pd-aim-toast` | кнопка действия |
+| `.pd-monk-window`, `.pd-monk-ab`, `.pd-monk-ico`, `.pd-energy-pips` | приёмы Монаха |
+| `.pd-cbuff`, `.pd-tlbuff`, `.pd-cmbuff`, `.pd-tbuff2`, `.pd-spellspr` | значки состояний и заклинаний |
+| `.pd-warden-window`, `.pd-warden-list`, `.pd-wplant`, `.pd-weffect`, `.pd-warden-note` | Хранительница |
+| `.pd-score`, `.pd-score-row`, `.pd-spart`, `.pd-max`, `.pd-score-total`, `.pd-score-card`, `.pd-score-mini` | счёт |
+| `.pd-confirm`, `.pd-confirm-art`, `.pd-confirm-ico`, `.pd-check.small` | защита от промаха |

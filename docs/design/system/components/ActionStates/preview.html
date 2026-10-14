@@ -1,0 +1,28 @@
+<!-- @dsCard group="Клирик и Дуэлянтка" height=400 width=1100 subtitle="Все кнопки действия: плитка цвета indicatorColor из Shattered, значок ×2, число справа внизу зелёным (#00ff00). Способность оружия — готова, копит, прицел; смена оружия Чемпиона; боевая стойка — выкл и вкл; Монах — обычно и усилен; комбо — цвет лучшего доступного приёма ×0,875; быстрое заклинание тома; берсерк, подготовка, импульс, метка снайпера" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Кнопки действия</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 8px; flex: none; }
+  .cap { margin: 0; height: 20px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .cap b { color: var(--gold); font-weight: 400; }
+  .phone { position: relative; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get('lang') || 'ru', en = L === 'en';
+  function phone(w, h, cap) { var c = document.createElement('div'); c.className = 'col'; c.innerHTML = '<p class="cap">' + (cap || '') + '</p>'; var p = document.createElement('div'); p.className = 'phone pd-phone'; p.style.width = w + 'px'; p.style.height = h + 'px'; c.appendChild(p); document.getElementById('row').appendChild(c); return p; }
+  function game(p) { var g = document.createElement('div'); g.style.cssText = 'position:absolute;inset:0'; p.appendChild(g); PD.demo.game(g); return g; }
+  function gm(p, o) { o = o || {}; o.mates = false; o.noMobs = true; o.depth = o.depth || 12; PD.demo.game(p, o); return p; }
+  var row = document.getElementById('row'); row.style.cssText = 'display:block;padding:16px;width:1068px'; var A = PD.demo.actind, V = PD.demo.v22[L];
+  var items = [['weapon', {}, V.ab.ready, '#5500bb'], ['charging', {}, V.ab.charging, '#444444 · 40%'], ['aiming', {}, V.ab.aiming, en ? 'gold frame blinks 0.4 s' : 'рамка мигает 0,4 с'], ['swap', {}, V.ab.swap, en ? 'in hand · spare' : 'в руке · запасное'], ['stance', {}, V.ab.stance + ' · ' + V.ab.off, '#5500bb'], ['stance', { on: true }, V.ab.stance + ' · ' + V.ab.on, en ? 'green frame' : 'зелёная рамка'], ['monk', { n: 3 }, V.ab.monk, '#a08840'], ['monk', { n: 7, empowered: true }, V.ab.monk + ' · ' + V.empowered, '#aaee22'],
+    ['quick', {}, V.ab.quickSpell, '#002157'], ['quick', { free: true, spell: 'guiding' }, V.ab.quickSpell + ' · ' + V.free, '#0063ff'], ['berserk', {}, en ? 'Berserk' : 'Берсерк', '#660000'], ['prep', {}, en ? 'Preparation' : 'Подготовка', '#444444'], ['momentum', {}, en ? 'Momentum' : 'Импульс', '#444444'], ['mark', {}, en ? 'Sniper’s mark' : 'Метка снайпера', '#444444']];
+  V.combo.forEach(function (c, i) { items.push(['combo', { move: c[0], n: [1, 2, 4, 6, 8, 10][i] }, V.ab.combo + ' · ' + c[1], ['#dfdfdf', '#00df00', '#b2df00', '#dfdf00', '#dfb200', '#df0000'][i]]); });
+  var h = '<div class="pd-legend">' + items.map(function (it) { return '<div>' + A(L, it[0], it[1]) + '<span></span><span>' + it[2] + '<small>' + it[3] + '</small></span></div>'; }).join('') + '</div>';
+  row.innerHTML = h; PD.sprite(row);
+</script>
+</body>
+</html>

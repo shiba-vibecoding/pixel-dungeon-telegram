@@ -1,0 +1,27 @@
+<!-- @dsCard group="Перед релизом" height=852 width=1158 page subtitle="Счёт забега по частям, как в Shattered: прогресс (до 50 000), сокровища (20 000), исследование (20 000), боссы (15 000), задания (10 000) — у каждой значок; часть на пределе — золотая рамка и плашка «максимум»; затем множители победы и испытаний, итог золотом. В «Мои» — маленькая карточка: пять значков с тысячами, множители, итог" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Счёт забега</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 8px; flex: none; }
+  .cap { margin: 0; height: 20px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .cap b { color: var(--gold); font-weight: 400; }
+  .phone { position: relative; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get('lang') || 'ru', en = L === 'en';
+  function phone(w, h, cap) { var c = document.createElement('div'); c.className = 'col'; c.innerHTML = '<p class="cap">' + (cap || '') + '</p>'; var p = document.createElement('div'); p.className = 'phone pd-phone'; p.style.width = w + 'px'; p.style.height = h + 'px'; c.appendChild(p); document.getElementById('row').appendChild(c); return p; }
+  function game(p) { var g = document.createElement('div'); g.style.cssText = 'position:absolute;inset:0'; p.appendChild(g); PD.demo.game(g); return g; }
+  function gm(p, o) { o = o || {}; o.mates = false; o.noMobs = true; o.depth = o.depth || 12; PD.demo.game(p, o); return p; }
+  var a = gm(phone(375, 812, en ? '<b>Run end</b> · score' : '<b>Конец забега</b> · счёт')); PD.demo.overlay(a, PD.demo.win.score(L));
+  var b = gm(phone(360, 812, '<b>360 px</b> · ' + (en ? 'a death, no maxes' : 'смерть, без максимумов'))); PD.demo.overlay(b, PD.demo.win.score(L, { vals: [21400, 3120, 8800, 3000, 2000], win: 1, chal: 1, sub: en ? 'Died · Duelist · depth 9' : 'Погибла · Дуэлянтка · гл. 9' }));
+  var c = gm(phone(375, 812, en ? '<b>«Mine»</b> · cards' : '<b>«Мои»</b> · карточки')); var V = PD.demo.v22[L];
+  PD.demo.overlay(c, '<section class="pd-window" role="dialog"><header class="pd-window-head"><div class="pd-titles"><h2 class="pd-heading">' + V.mine + '</h2></div><button class="pd-close" aria-label="×"></button></header><div class="pd-scroll" style="display:flex;flex-direction:column;gap:6px">' + PD.demo.scoreTable(L, { compact: true }) + PD.demo.scoreTable(L, { compact: true, vals: [21400, 3120, 8800, 3000, 2000], win: 1, chal: 1 }).replace(V.mineT, en ? 'Died · Duelist · depth 9' : 'Погибла · Дуэлянтка · гл. 9').replace(V.mineDate, en ? 'Oct 10' : '10 окт') + '</div></section>');
+  PD.sprite(document.body);
+</script>
+</body>
+</html>
