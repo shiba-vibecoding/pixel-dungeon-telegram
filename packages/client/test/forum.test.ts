@@ -13,8 +13,8 @@ let death: typeof import('../src/deathcopy');
 let labels: typeof import('../src/labels');
 
 beforeAll(async () => {
-  // The texts are chosen at load by the page's address; there is none here.
-  vi.stubGlobal('location', { search: '' });
+  // The texts are chosen at load by the page's address: Russian here, whatever the machine's language (CI runs in English).
+  vi.stubGlobal('location', { search: '?lang=ru' });
   i18n = await import('../src/i18n');
   names = await import('../src/levelnames');
   death = await import('../src/deathcopy');
