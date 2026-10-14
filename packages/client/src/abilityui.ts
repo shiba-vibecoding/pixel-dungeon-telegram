@@ -6,6 +6,7 @@ import { artText } from './artifacttext';
 import { ABILITY_GLOW, abilityDesc, abilityName, abilityShort, AT, capital, chargeText, talentLevels, talentTitle } from './abilitytext';
 import { itemName } from './itemtext';
 import { button, el, info, itemIcon, show, windowOf } from './screens';
+import { optionName } from './classui';
 
 /*
  * The windows of the armour abilities, after the design system's ShPicks and ShTalents: the crown's pick of an ability (three cards
@@ -201,8 +202,8 @@ export interface AbilityUse {
   hero: Hero;
   /** Does the ability (with its target or choice). */
   send(action: Action): void;
-  /** Asks for a cell on the map; the next tap sends the ability at it. */
-  aim(prompt: string): void;
+  /** Asks for a cell on the map; the next tap sends the ability at it (with Trinity's form as the choice). */
+  aim(prompt: string, choice?: number): void;
   /** Back to what was open before the beacon's window. */
   back(): void;
 }
@@ -224,7 +225,43 @@ export function startAbility(use: AbilityUse): void {
       return;
     case 'beacon':
       showBeacon(use);
+      return;
+    case 'trinity':
+      showTrinity(use);
   }
+}
+
+/** The effects of Trinity that are aimed at a cell (a spirit form's chains, armband, sandals and talisman). */
+const AIMED_SPIRIT: ReadonlySet<string> = new Set(['artifact.chains', 'artifact.armband', 'artifact.sandals', 'artifact.talisman']);
+
+/** Trinity's WndUseTrinity: which of its three forms to use (the effects of different forms can be active at once). */
+function showTrinity(use: AbilityUse): void {
+  const { world, hero } = use;
+  const set = hero.cls?.trinity ?? {};
+  const forms = ['body', 'mind', 'spirit'] as const;
+  const rows = forms.flatMap((form, choice) => {
+    const option = set[form];
+    if (!option) return [];
+    const label = capital(artText(`actors.hero.abilities.cleric.trinity$wndusetrinity.${form}`, [capital(optionName(world, option))]));
+    const run = (): void => {
+      if (form === 'mind' || (form === 'spirit' && AIMED_SPIRIT.has(option))) {
+        use.back();
+        use.aim(artText('actors.hero.abilities.armorability.prompt'), choice);
+      } else {
+        use.back();
+        use.send({ type: 'special', choice });
+      }
+    };
+    return [button(label, run)];
+  });
+  show(
+    windowOf(
+      { title: capital(abilityName('trinity')), icon: el('div', { className: 'pd-slot' }, abilityIcon('trinity', 3)), narrow: true },
+      info(artText('actors.hero.abilities.cleric.trinity$wndusetrinity.text')),
+      rows.length ? el('div', { className: 'pd-confirm-actions' }, ...rows) : info(artText('actors.hero.abilities.cleric.trinity.no_imbue')),
+    ),
+    use.back,
+  );
 }
 
 /** WarpBeacon's WndOptions: teleport to the beacon, clear it, or cancel. */

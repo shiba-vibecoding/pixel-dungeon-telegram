@@ -10,6 +10,9 @@ import {
   hasTalent, pointsInTalent, talentBook, type TalentId, tierOfTalent, upgradeProblem,
 } from './data';
 import { tbOf } from './state';
+import { classFoodEaten, classStoneUsed } from '../classes/hooks';
+import { identifiesOnEquip, intuitionSpeed } from '../classes/duelist-talents';
+import { classTalentUpgraded } from '../classes/talent-effects';
 
 /*
  * Talent.java's static hooks: what the talents do as food is eaten, potions drunk, scrolls read, items put on or
@@ -36,6 +39,8 @@ export function idSpeedFactor(hero: Hero, item: Item): number {
   if (category === 'wand') factor = f32(factor * f32(1 + f32(2 * pointsInTalent(hero, 'scholars_intuition'))));
   if (category === 'missile') factor = f32(factor * f32(1 + f32(2 * pointsInTalent(hero, 'survivalists_intuition'))));
   if (category === 'ring') factor = f32(factor * (1 + pointsInTalent(hero, 'thiefs_intuition')));
+  // The Duelist's adventurer's intuition (melee weapons 2.5x, armour 1.75x at +1; instant and 2.5x at +2).
+  if (category === 'weapon' || category === 'armor') factor = f32(factor * intuitionSpeed(hero, category));
   return factor;
 }
 
@@ -49,6 +54,7 @@ export function upgradeTalent(ctx: Ctx, hero: Hero, id: TalentId): void {
   }
   ctx.effects.push({ type: 'talent', hero: hero.id, talent: id, points: pointsInTalent(hero, id) });
   onTalentUpgraded(ctx, hero, id);
+  classTalentUpgraded(ctx, hero, id);
 }
 
 /** Why a talent point cannot be spent on that talent (see data.ts upgradeProblem). */
@@ -72,7 +78,7 @@ export function onTalentUpgraded(ctx: Ctx, hero: Hero, id: TalentId): void {
 /* Food (Talent.onFoodEaten, Food.eatingTime) */
 
 /** The meal talents: eating takes two turns less. */
-const MEAL_TALENTS: readonly TalentId[] = ['iron_stomach', 'energizing_meal', 'mystical_meal', 'invigorating_meal'];
+const MEAL_TALENTS: readonly TalentId[] = ['iron_stomach', 'energizing_meal', 'mystical_meal', 'invigorating_meal', 'focused_meal', 'enlightening_meal'];
 
 /** Food.TIME_TO_EAT. */
 export const TIME_TO_EAT = 3;
@@ -122,6 +128,8 @@ export function onFoodEaten(ctx: Ctx, hero: Hero, _energy: number, source: Item 
     const buffs = buffsOf(hero);
     buffs.haste = Math.max(buffs.haste ?? 0, 0.67 + pointsInTalent(hero, 'invigorating_meal'));
   }
+  // The Duelist's and the Cleric's meals (strengthening, focused, satiated spells, enlightening).
+  classFoodEaten(ctx, hero);
   // We process these at the end as they can stack together from some talents.
   if (wandChargeTurns > 0) {
     hero.recharging = Math.max(hero.recharging ?? 0, wandChargeTurns);
@@ -223,8 +231,9 @@ export function onScrollUsed(ctx: Ctx, hero: Hero, factor: number): void {
 }
 
 /** Talent.onRunestoneUsed: nothing for the four classes (the cleric's recall inscription lives with the classes stream). */
-export function onRunestoneUsed(_ctx: Ctx, _hero: Hero, _kind: ItemKind): void {
-  // SEAM(classes): RECALL_INSCRIPTION (the cleric's).
+export function onRunestoneUsed(ctx: Ctx, hero: Hero, kind: ItemKind): void {
+  // The cleric's recall inscription.
+  classStoneUsed(ctx, hero, kind);
 }
 
 /** Talent.onArtifactUsed: enhanced rings, a level more on every ring for a while. */
@@ -242,6 +251,8 @@ export function onItemEquipped(ctx: Ctx, hero: Hero, item: Item): void {
   const category = itemDef(item.kind).category;
   let known = false;
   if (pointsInTalent(hero, 'veterans_intuition') === 2 && category === 'armor') known = true;
+  // Adventurer's intuition at +2: a weapon is known on sight.
+  if (category === 'weapon' && identifiesOnEquip(hero)) known = true;
   if (hasTalent(hero, 'thiefs_intuition') && category === 'ring') {
     if (pointsInTalent(hero, 'thiefs_intuition') === 2) known = true;
     learn(ctx.world, item.kind);

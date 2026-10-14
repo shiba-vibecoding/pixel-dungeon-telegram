@@ -7,7 +7,7 @@ export { Feeling, HeapType, type ItemSpawn, type ItemSpec, isBossDepth, LAST_SHO
 export { type BossArt, type BossLevelInfo, generateLevel, type Level, type RoomInfo } from './level/generate';
 export { discoverable, passable } from './level/flags';
 export * from './actors';
-export { KIT_SEAMS, startingKit, type StartingKit } from './heroclass';
+export { HERO_CLASSES, KIT_SEAMS, startingKit, type StartingKit } from './heroclass';
 export {
   affectHunger, earnExp, floorLocked, growHT, heroHT, isEnemy, MAX_LEVEL, maxExpFor, REGENERATION_DELAY, regenOn, TIME_TO_SEARCH, visibleEnemies,
 } from './hero';
@@ -122,3 +122,16 @@ export { bowOf, markedMob, MARK_TURNS } from './talents/huntress';
 export { holdFastDecay } from './talents/hold-fast';
 export { METAMORPH_OPTIONS, type MetamorphTarget, metamorphOptions, metamorphTargets } from './talents/metamorph';
 export { eatingTime, idSpeedFactor, talentUse } from './talents';
+
+// The classes stream: the Duelist and the Cleric (weapon abilities, the Monk, the holy tome and its spells; their talents are in talents/).
+export { type ClassAction, classProblem, isClassAction } from './classes/actions';
+export { MONK_ABILITIES, MONK_AIMS, MONK_COST, type MonkAbility, energyCap as monkEnergyCap, energyOf as monkEnergy, empowered as monkEmpowered } from './classes/monk';
+export { abilityAims, abilityBoost, abilityInfoArgs, abilityKind, hasAbility, weaponOf } from './classes/duelist';
+export { chargeCap as duelistChargeCap, charges as duelistCharges } from './classes/charger';
+export { allSpells, type CastAction, type SpellDef, type SpellId, spellDef, spellsOf, tomeOf } from './classes/cleric';
+export { cs as classState, hasTimer, timerLeft, markTurns } from './classes/state';
+export { discoveredOf, trinityOptions } from './classes/trinity';
+export { monkDescArgs, spellDescArgs, spellDescExtra } from './classes/texts';
+export type { ClassFx } from './classes/fx';
+export { HERO_CLASSES as CLASSES } from './heroclass';
+export { wearsForce } from './rings';

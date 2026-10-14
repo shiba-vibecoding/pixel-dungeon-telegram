@@ -1,5 +1,5 @@
 import {
-  type Action, ARTIFACT_USES, type EffectId, MISC_SLOTS, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
+  type Action, ARTIFACT_USES, MONK_ABILITIES, type EffectId, MISC_SLOTS, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
   type SubClass, COMBO_MOVES, TALENTS, type TalentId,
 } from '@pd/core';
 
@@ -16,6 +16,8 @@ import {
 const MAX_SLOT = 255;
 /** An item's choice (an enchantment, a guess, a recipe...): small and whole. */
 const MAX_CHOICE = 63;
+/** Trinity's lists of what the party has seen can be long. */
+const MAX_CLASS_CHOICE = 255;
 /** A used item's choice: a scroll of metamorphosis names a talent and one of its options (target * 8 + option). */
 const MAX_USE_CHOICE = 255;
 /** The largest choice an artifact's window offers (the toolkit's levels at most). */
@@ -159,7 +161,7 @@ export function sanitizeAction(raw: unknown): Action | null {
       const item = slot(a.item);
       if (item === null) return null;
       // KindofMisc's window: which of the artifact, misc and ring slots to free for it.
-      if (a.replace === undefined) return { type: 'equip', item };
+      if (a.replace === undefined) return a.second === true ? { type: 'equip', item, second: true } : { type: 'equip', item };
       const replace = oneOf(a.replace, MISC_SLOTS);
       return replace ? { type: 'equip', item, replace } : null;
     }
@@ -225,7 +227,7 @@ export function sanitizeAction(raw: unknown): Action | null {
       return item === null || !subclass ? null : { type: 'master', item, subclass };
     }
     case 'special': {
-      // The class armour's ability: the cell it is aimed at, and the warp beacon's choice (0 warp, 1 clear).
+      // The class armour's ability: the cell it is aimed at, the warp beacon's choice (0 warp, 1 clear) or Trinity's form (0 to 2).
       const action: Action = { type: 'special' };
       if (a.target !== undefined) {
         const target = cell(a.target);
@@ -233,7 +235,7 @@ export function sanitizeAction(raw: unknown): Action | null {
         action.target = target;
       }
       if (a.choice !== undefined) {
-        if (!isInt(a.choice, 0, 1)) return null;
+        if (!isInt(a.choice, 0, 2)) return null;
         action.choice = a.choice;
       }
       return action;
@@ -244,6 +246,53 @@ export function sanitizeAction(raw: unknown): Action | null {
       const from = sealSource(a.from);
       return to === null || from === null ? null : { type: 'transfer', to, from };
     }
+    case 'weaponAbility': {
+      // The Duelist's weapon ability: the weapon in hand or the second one, and the cell it asks for.
+      const which = a.which === undefined ? undefined : oneOf(a.which, ['weapon', 'second'] as const);
+      if (which === null) return null;
+      const out: Extract<Action, { type: 'weaponAbility' }> = { type: 'weaponAbility' };
+      if (which) out.which = which;
+      if (a.cell !== undefined) {
+        const at = cell(a.cell);
+        if (at === null) return null;
+        out.cell = at;
+      }
+      return out;
+    }
+    case 'monk': {
+      const ability = oneOf(a.ability, MONK_ABILITIES);
+      if (!ability) return null;
+      if (a.cell === undefined) return { type: 'monk', ability };
+      const at = cell(a.cell);
+      return at === null ? null : { type: 'monk', ability, cell: at };
+    }
+    case 'swap':
+    case 'stance':
+      return { type: a.type };
+    case 'cast': {
+      // A spell of the holy tome: its name, the cell it is aimed at, the pack slot or the choice it takes.
+      if (typeof a.spell !== 'string' || !/^[A-Za-z]{3,30}$/.test(a.spell)) return null;
+      const out: Extract<Action, { type: 'cast' }> = { type: 'cast', spell: a.spell };
+      if (a.cell !== undefined) {
+        const at = cell(a.cell);
+        if (at === null) return null;
+        out.cell = at;
+      }
+      if (a.item !== undefined) {
+        const item = slot(a.item);
+        if (item === null) return null;
+        out.item = item;
+      }
+      if (a.choice !== undefined) {
+        if (!isInt(a.choice, 0, MAX_CLASS_CHOICE)) return null;
+        out.choice = a.choice;
+      }
+      return out;
+    }
+    case 'quick':
+      // HolyTome.setQuickSpell: a spell's name, or none.
+      if (a.spell === null) return { type: 'quick', spell: null };
+      return typeof a.spell === 'string' && /^[A-Za-z]{3,30}$/.test(a.spell) ? { type: 'quick', spell: a.spell } : null;
     case 'augment': {
       // StoneOfAugmentation: the stone, what it is used on, and how.
       const item = slot(a.item);

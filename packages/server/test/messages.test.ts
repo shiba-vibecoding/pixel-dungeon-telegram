@@ -43,11 +43,24 @@ describe('client messages', () => {
     expect(sanitizeAction({ type: 'special', target: 7 })).toEqual({ type: 'special', target: 7 });
     // The armour ability's warp beacon choice, the class armour's transfer, a point of talent.
     expect(sanitizeAction({ type: 'special', choice: 1, x: 2 })).toEqual({ type: 'special', choice: 1 });
-    expect(sanitizeAction({ type: 'special', choice: 2 })).toBeNull();
+    expect(sanitizeAction({ type: 'special', choice: 3 })).toBeNull();
     expect(sanitizeAction({ type: 'transfer', to: 'armor', from: 4, junk: 1 })).toEqual({ type: 'transfer', to: 'armor', from: 4 });
     expect(sanitizeAction({ type: 'transfer', to: 'weapon', from: 4 })).toBeNull();
     expect(sanitizeAction({ type: 'talent', talent: 'bodySlam' })).toEqual({ type: 'talent', talent: 'bodySlam' });
     expect(sanitizeAction({ type: 'talent', talent: 'nonsense' })).toBeNull();
+    // The classes' actions: a Duelist's weapon ability, a Monk's, a Cleric's spells, Trinity's form.
+    expect(sanitizeAction({ type: 'weaponAbility', which: 'second', cell: 5, junk: 1 })).toEqual({ type: 'weaponAbility', which: 'second', cell: 5 });
+    expect(sanitizeAction({ type: 'weaponAbility', which: 'third' })).toBeNull();
+    expect(sanitizeAction({ type: 'weaponAbility' })).toEqual({ type: 'weaponAbility' });
+    expect(sanitizeAction({ type: 'monk', ability: 'flurry', cell: 9 })).toEqual({ type: 'monk', ability: 'flurry', cell: 9 });
+    expect(sanitizeAction({ type: 'monk', ability: 'nonsense' })).toBeNull();
+    expect(sanitizeAction({ type: 'swap' })).toEqual({ type: 'swap' });
+    expect(sanitizeAction({ type: 'cast', spell: 'guidingLight', cell: 12, junk: 1 })).toEqual({ type: 'cast', spell: 'guidingLight', cell: 12 });
+    expect(sanitizeAction({ type: 'cast', spell: 'bodyForm', choice: 3 })).toEqual({ type: 'cast', spell: 'bodyForm', choice: 3 });
+    expect(sanitizeAction({ type: 'cast', spell: 'x' })).toBeNull();
+    expect(sanitizeAction({ type: 'quick', spell: null })).toEqual({ type: 'quick', spell: null });
+    expect(sanitizeAction({ type: 'quick', spell: 'bless' })).toEqual({ type: 'quick', spell: 'bless' });
+    expect(sanitizeAction({ type: 'special', choice: 2, target: 4 })).toEqual({ type: 'special', choice: 2, target: 4 });
     // The talents of every tier, and nothing off the table (a prototype's names too).
     expect(sanitizeAction({ type: 'talent', talent: 'hearty_meal', x: 1 })).toEqual({ type: 'talent', talent: 'hearty_meal' });
     expect(sanitizeAction({ type: 'talent', talent: 'toString' })).toBeNull();

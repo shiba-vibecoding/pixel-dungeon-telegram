@@ -66,11 +66,11 @@ export const sitem = (n: number): HTMLElement => frame(el('i', { className: 'pd-
 
 /** HeroIcon.* of each subclass. */
 export const SUBCLASS_ICON: Readonly<Record<SubClass, number>> = {
-  berserker: 0, gladiator: 1, battlemage: 2, warlock: 3, assassin: 4, freerunner: 5, sniper: 6, warden: 7,
+  berserker: 0, gladiator: 1, battlemage: 2, warlock: 3, assassin: 4, freerunner: 5, sniper: 6, warden: 7, champion: 8, monk: 9, priest: 10, paladin: 11,
 };
 const GLOW: Readonly<Record<SubClass, string>> = {
   berserker: '#ff6644', gladiator: '#ffcc66', battlemage: '#66aaff', warlock: '#b070ff', assassin: '#9a9a9a', freerunner: '#66ddaa',
-  sniper: '#ffaa44', warden: '#77cc55',
+  sniper: '#ffaa44', warden: '#77cc55', champion: '#ffb04a', monk: '#e8d070', priest: '#fff2a0', paladin: '#ffe070',
 };
 
 const pips = (points: number, max: number): HTMLElement =>

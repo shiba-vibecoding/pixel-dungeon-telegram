@@ -4,7 +4,7 @@ import {
 } from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
-import { AVATAR, durabilityBar, markWear, sprites } from './screens';
+import { AVATAR, durabilityBar, markWear, setAvatar, sprites } from './screens';
 import { QUICKSLOTS } from './quickslot';
 import { hasFreePoints } from './talentui';
 import { BUFF_TINTS } from './shfx';
@@ -752,7 +752,7 @@ export class Hud {
   update(state: HudState, resting: boolean): void {
     const { me } = state;
     const dead = !isAlive(me);
-    if (this.changed('av', `${me.heroClass}`)) this.avatar.style.setProperty('--av', String(AVATAR[me.heroClass]));
+    if (this.changed('av', `${me.heroClass}:${state.looks[me.id]?.skin ?? ''}`)) setAvatar(this.avatar, me.heroClass, state.looks[me.id]?.skin);
     // Pixel-Mart: the portrait's frame.
     const frame = state.looks[me.id]?.frame ?? '';
     if (this.changed('frame', frame)) {

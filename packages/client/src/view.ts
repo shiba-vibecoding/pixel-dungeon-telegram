@@ -1,6 +1,6 @@
 import {
   adjacent, cellX, cellY, type Effect, F, terrainFlags, type Enchantment, heroById, isAlive, isTippedDart, itemDef, type ItemKind, itemSprite, LENGTH, type MobKind,
-  visibleCells, WIDTH, type World,
+  visibleCells, WIDTH, type World, type HeroClass,
   type Look, S, isInvisible, frozenBy,
 } from '@pd/core';
 import { artText, capital } from './artifacttext';
@@ -569,7 +569,7 @@ export class View {
     for (const mob of world.floors[this.depth]?.mobs ?? []) {
       // A mirror image looks like its hero, only fainter.
       // A prismatic image too, its hero's ally.
-      const owner = mob.image?.owner ?? (mob.kind === 'prismatic' ? mob.owner : undefined);
+      const owner = mob.image?.owner ?? (mob.kind === 'prismatic' || mob.kind === 'afterImage' ? mob.owner : undefined);
       const twin = owner !== undefined ? world.heroes.find((hero) => hero.id === owner) : undefined;
       if (twin) {
         place(mob.id, 'mirror', this.assets.heroes[twin.heroClass], false, mob.pos, mob.hp, mob.ht, false, false, true);
@@ -577,6 +577,14 @@ export class View {
         this.puppets.get(mob.id)!.row = itemDef(twin.armor.kind).tier ?? 0;
         this.puppets.get(mob.id)!.prismatic = mob.kind === 'prismatic';
         this.puppets.get(mob.id)!.ally = mob.kind === 'prismatic';
+        continue;
+      }
+      if (mob.kind === 'lightAlly') {
+        // A copy of one of the heroes, made of light: the class is drawn by lot when it is made (PowerOfMany.LightAlly).
+        const looks = Object.keys(this.assets.heroes) as HeroClass[];
+        const shape = looks[Number(mob.marks?.cls ?? 0) % looks.length]!;
+        place(mob.id, 'mirror', this.assets.heroes[shape], false, mob.pos, mob.hp, mob.ht, false, false, true);
+        this.puppets.get(mob.id)!.sprite = heroSprite(this.assets, shape);
         continue;
       }
       // DM-300 supercharged and a pylon switched on look otherwise (DM300Sprite, PylonSprite).
@@ -1951,6 +1959,18 @@ export class View {
           if (effect.msg === 'chaliceofblood.onprick') audio.play('cursed');
           if (effect.msg.startsWith('timekeepershourglass$sandbag') || effect.msg.startsWith('driedrose$petal')) audio.play('dewdrop');
           if (effect.msg === 'hornofplenty.eat') audio.play('eat');
+          break;
+        }
+        case 'classFx': {
+          // What the Duelist's and the Cleric's doing shows: their sounds, and the numbers floating over whom they touch.
+          if (effect.depth !== this.depth) break;
+          const fx = effect.fx;
+          if (fx.k === 'sound') audio.play(fx.name as Sound, 1, 1, this.placeOf(effect.hero, now));
+          else if (fx.k === 'text') {
+            const who = world.heroes.find((h) => h.depth === this.depth && h.pos === fx.at) ?? world.floors[this.depth]?.mobs.find((m) => m.pos === fx.at);
+            const tone = { p: COLORS.positive, w: COLORS.warning, n: COLORS.negative, i: COLORS.default }[fx.tone];
+            if (who) this.float(who.id, fx.text, fx.icon === 'shield' ? COLORS.shield : tone, now);
+          }
           break;
         }
         case 'stealth':

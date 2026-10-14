@@ -4,7 +4,7 @@ import { Camp, type CampScene, campClasses, seasonOf } from './camp';
 import { badgeText } from './badges';
 import { t } from './i18n';
 import { mart, shelf } from './mart';
-import { AVATAR, button, el, info, show, sprites, toast, windowOf } from './screens';
+import { AVATAR, setAvatar, button, el, info, show, sprites, toast, windowOf } from './screens';
 
 /*
  * Pixel-Mart's windows, in the design system's markup (docs/design/system,
@@ -103,9 +103,9 @@ function effectCanvas(effect: EffectId, heroClass: HeroClass, scale: number): HT
 }
 
 /** A portrait in a frame. */
-function framedPortrait(frame: string, heroClass: HeroClass): HTMLElement {
+function framedPortrait(frame: string, heroClass: HeroClass, skin?: string): HTMLElement {
   const face = el('i');
-  face.style.setProperty('--av', String(AVATAR[heroClass]));
+  setAvatar(face, heroClass, skin);
   return el('div', { className: `pd-avatar framed frame-${frame}` }, face);
 }
 

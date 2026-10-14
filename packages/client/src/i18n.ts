@@ -1,6 +1,7 @@
 import type { EmoteKind, Enchantment, Glyph, HeroClass, ItemKind, Landmark, MobKind, PlantKind, SubClass, TrapKind } from '@pd/core';
 import type { BuffName } from './hud';
 import { ART_EN, ART_RU } from './i18n-artifacts';
+import { CLS_EN, CLS_RU } from './i18n-classes';
 import { TAL_EN, TAL_RU } from './i18n-talents';
 import { REL_EN, REL_RU } from './i18n-release';
 import { ABIL_EN, ABIL_RU } from './i18n-abilities';
@@ -1114,7 +1115,10 @@ const en = {
   thanksBought: 'Thank you! It is yours.',
   buyFailed: 'The purchase did not go through.',
   buyExpired: 'The game has been open for too long: close it and open it again to buy.',
-  lookOf: { warrior: "The warrior's look", mage: "The mage's look", rogue: "The rogue's look", huntress: "The huntress's look" },
+  lookOf: {
+    warrior: "The warrior's look", mage: "The mage's look", rogue: "The rogue's look", huntress: "The huntress's look",
+    duelist: "The duelist's look", cleric: "The cleric's look",
+  },
   skinNames: { ash: 'Ashen', royal: 'Royal', shadow: 'Shadow' },
   skinInfo: { ash: 'Armour gone grey with ash, the hair too.', royal: 'Gold for metal and light cloth, purple for the rest.', shadow: 'Dark violet, hair near black.' },
   effectNames: { sparks: 'Sparks', fireflies: 'Fireflies', snow: 'Snowfall' },
@@ -1168,13 +1172,17 @@ const en = {
   newRecord: 'New record!',
   rankPlace: (n: number) => `Place ${n} among your runs`,
   won: 'Won',
-  classes: { warrior: 'Warrior', mage: 'Mage', rogue: 'Rogue', huntress: 'Huntress' } as Record<HeroClass, string>,
+  classes: { warrior: 'Warrior', mage: 'Mage', rogue: 'Rogue', huntress: 'Huntress', duelist: 'Duelist', cleric: 'Cleric' } as Record<HeroClass, string>,
+  /** The chip by a class the game has just got (the title's «new»). */
+  newClass: 'new',
   // HeroClass.*_desc_short.
   classInfo: {
     warrior: 'The Warrior endures extra damage with shielding granted by his broken seal. The seal can be moved between armors and transfers a single upgrade.',
     mage: "The Mage is an arcane expert and carries a magical staff that's stronger than a wand. The staff can be imbued with any wand the Mage finds.",
     rogue: 'The Rogue can evade enemies and strike from invisibility using his cloak of shadows. He also detects secrets and traps from a greater distance.',
     huntress: 'The Huntress is a master of thrown weapons and has a magical bow with infinite arrows. She also travels through tall grass without trampling it.',
+    duelist: CLS_EN['actors.hero.heroclass.duelist_desc_short']!,
+    cleric: CLS_EN['actors.hero.heroclass.cleric_desc_short']!,
   } as Record<HeroClass, string>,
   /**
    * Shattered's five boss fights (bosses/*.ts in the core): each boss's lines by the key the core sends ('notice',
@@ -1260,7 +1268,7 @@ const en = {
     elemental: 'fire elemental', monk: 'dwarf monk', warlock: 'dwarf warlock', golem: 'golem', king: 'King of Dwarves',
     undead: 'undead dwarf', succubus: 'succubus', eye: 'evil eye', scorpio: 'scorpio', yog: 'Yog-Dzewa',
     rottingFist: 'rotting fist', burningFist: 'burning fist', larva: "god's larva", mimic: 'mimic', statue: 'animated statue',
-    piranha: 'giant piranha', imp: 'ambitious imp', sheep: 'sheep', blacksmith: 'troll blacksmith', mirror: 'mirror image', prismatic: 'prismatic image',
+    piranha: 'giant piranha', imp: 'ambitious imp', sheep: 'sheep', blacksmith: 'troll blacksmith', mirror: 'mirror image', prismatic: 'prismatic image', afterImage: 'afterimage', lightAlly: 'light ally',
     albino: 'albino rat', bandit: 'crazy bandit', shielded: 'armored brute', senior: 'senior monk', acidic: 'acidic scorpio',
     fetidRat: 'fetid rat', curse: 'curse personification', ratKing: 'rat king', wraith: 'wraith', bee: 'golden bee',
     impShopkeeper: 'ambitious imp', snake: 'sewer snake', gnollExile: 'gnoll exile', gnollTrickster: 'gnoll trickster',
@@ -1470,6 +1478,9 @@ const en = {
     'armor.mage': ABIL_EN['items.armor.magearmor.name']!,
     'armor.rogue': ABIL_EN['items.armor.roguearmor.name']!,
     'armor.huntress': ABIL_EN['items.armor.huntressarmor.name']!,
+    'armor.duelist': CLS_EN['items.armor.duelistarmor.name']!,
+    'armor.cleric': CLS_EN['items.armor.clericarmor.name']!,
+    'artifact.tome': CLS_EN['items.artifacts.holytome.name']!,
     'crown.king': ABIL_EN['items.kingscrown.name']!,
     'wand.magicMissile': 'Wand of Magic Missile',
     'wand.lightning': 'Wand of Lightning',
@@ -2223,7 +2234,8 @@ const en = {
   combo: (count: number) => `${count} hit combo!`,
   subclasses: {
     gladiator: 'gladiator', berserker: 'berserker', battlemage: 'battlemage', warlock: 'warlock',
-    freerunner: 'freerunner', assassin: 'assassin', sniper: 'sniper', warden: 'warden',
+    freerunner: 'freerunner', assassin: 'assassin', sniper: 'sniper', warden: 'warden', champion: 'champion', monk: 'monk', priest: 'priest',
+    paladin: 'paladin',
   } as Record<SubClass, string>,
   subclassInfo: {
     gladiator: 'Gladiator: a successful melee hit starts a combo, in which every next hit inflicts more damage.',
@@ -2234,6 +2246,10 @@ const en = {
     assassin: 'Assassin: a surprise attack inflicts additional damage.',
     sniper: 'Sniper: her missiles find the weak points in an enemy\'s armour and ignore it.',
     warden: 'Warden: trampling tall grass and touching plants gives her a bark armour, and plants yield her seeds and dewdrops.',
+    champion: CLS_EN['actors.hero.herosubclass.champion_short_desc']!,
+    monk: CLS_EN['actors.hero.herosubclass.monk_short_desc']!,
+    priest: CLS_EN['actors.hero.herosubclass.priest_short_desc']!,
+    paladin: CLS_EN['actors.hero.herosubclass.paladin_short_desc']!,
   } as Record<SubClass, string>,
   alchemyPot: 'An alchemy pot: stand by it and tap it to brew.',
   brewed: 'The seeds in the pot brew into a potion!',
@@ -3023,7 +3039,7 @@ const ru: Strings = {
   thanksBought: 'Спасибо! Покупка ваша.',
   buyFailed: 'Покупка не прошла.',
   buyExpired: 'Игра открыта слишком долго: закройте и откройте её снова, чтобы купить.',
-  lookOf: { warrior: 'Облик воина', mage: 'Облик мага', rogue: 'Облик разбойника', huntress: 'Облик охотницы' },
+  lookOf: { warrior: 'Облик воина', mage: 'Облик мага', rogue: 'Облик разбойника', huntress: 'Облик охотницы', duelist: 'Облик дуэлянтки', cleric: 'Облик клирика' },
   skinNames: { ash: 'Пепельный', royal: 'Королевский', shadow: 'Теневой' },
   skinInfo: { ash: 'Броня, посеревшая от пепла, и пепельные волосы.', royal: 'Металл и светлая ткань в золото, цветное в пурпур.', shadow: 'Тёмный фиолетовый, волосы почти чёрные.' },
   effectNames: { sparks: 'Искры', fireflies: 'Светлячки', snow: 'Снегопад' },
@@ -3077,12 +3093,15 @@ const ru: Strings = {
   newRecord: 'Новый рекорд!',
   rankPlace: (n) => `${n}-е место среди ваших забегов`,
   won: 'Победа',
-  classes: { warrior: 'Воин', mage: 'Маг', rogue: 'Разбойник', huntress: 'Охотница' },
+  classes: { warrior: 'Воин', mage: 'Маг', rogue: 'Разбойник', huntress: 'Охотница', duelist: 'Дуэлянтка', cleric: 'Клирик' },
+  newClass: 'новый',
   classInfo: {
     warrior: 'Воин - стойкий боец с сильной выдержкой в бою, благодаря щиту, дарованному сломанной печатью. Печать можно перемещать с одной брони на другую и она может переносить одно улучшение на ней.',
     mage: 'Маг - специалист по волшебным делам и носит с собой уникальный магический посох, который сильнее палочек. Посох может быть наделен силой любой палочки, которую можно найти в подземелье.',
     rogue: 'Разбойник - мастер скрытого боя, способен уклоняться от атак врагов и бить исподтишка, используя свой уникальный Плащ Теней. Он также замечает секреты и ловушки на большем расстоянии.',
     huntress: 'Охотница - эксперт дальнего боя, а также владеет своим уникальным магическим луком с бесконечными стрелами. Она также может ходить в высокой траве, не вытаптывая её.',
+    duelist: CLS_RU['actors.hero.heroclass.duelist_desc_short']!,
+    cleric: CLS_RU['actors.hero.heroclass.cleric_desc_short']!,
   },
   bosses: {
     lines: {
@@ -3165,7 +3184,7 @@ const ru: Strings = {
     warlock: 'дворф-чернокнижник', golem: 'голем', king: 'Король Дворфов', undead: 'мёртвый гном', succubus: 'суккуб',
     eye: 'злобоглаз', scorpio: 'скорпид', yog: 'Йог-Джева', rottingFist: 'гнилостная длань', burningFist: 'пылающая длань',
     larva: 'личинка бога', mimic: 'мимик', statue: 'живая статуя', piranha: 'гигантская пиранья', imp: 'амбициозный бес',
-    sheep: 'овца', blacksmith: 'тролль-кузнец', mirror: 'зеркальный образ', prismatic: 'радужная копия', albino: 'крыса-альбинос', bandit: 'безумный бандит',
+    sheep: 'овца', blacksmith: 'тролль-кузнец', mirror: 'зеркальный образ', prismatic: 'радужная копия', afterImage: 'послеобраз', lightAlly: 'светлый союзник', albino: 'крыса-альбинос', bandit: 'безумный бандит',
     shielded: 'бронированный громила', senior: 'монах-наставник', acidic: 'кислотный скорпид', fetidRat: 'вонючая крыса',
     curse: 'олицетворение проклятия', ratKing: 'крысиный король', wraith: 'призрак', bee: 'золотая пчела',
     impShopkeeper: 'амбициозный бес', snake: 'сточная змея', gnollExile: 'гнолл-изгой', gnollTrickster: 'гнолл-трикстер',
@@ -3366,6 +3385,9 @@ const ru: Strings = {
     'armor.mage': ABIL_RU['items.armor.magearmor.name']!,
     'armor.rogue': ABIL_RU['items.armor.roguearmor.name']!,
     'armor.huntress': ABIL_RU['items.armor.huntressarmor.name']!,
+    'armor.duelist': CLS_RU['items.armor.duelistarmor.name']!,
+    'armor.cleric': CLS_RU['items.armor.clericarmor.name']!,
+    'artifact.tome': CLS_RU['items.artifacts.holytome.name']!,
     'crown.king': ABIL_RU['items.kingscrown.name']!,
     'wand.magicMissile': 'Палочка Магической стрелы',
     'wand.lightning': 'Палочка Молний',
@@ -4112,7 +4134,8 @@ const ru: Strings = {
   combo: (count) => `Комбо: ${count}!`,
   subclasses: {
     gladiator: 'гладиатор', berserker: 'берсерк', battlemage: 'боевой маг', warlock: 'чернокнижник',
-    freerunner: 'бегунья', assassin: 'убийца', sniper: 'снайпер', warden: 'хранительница',
+    freerunner: 'бегунья', assassin: 'убийца', sniper: 'снайпер', warden: 'хранительница', champion: 'чемпион', monk: 'монах', priest: 'жрец',
+    paladin: 'паладин',
   },
   subclassInfo: {
     gladiator: 'Гладиатор: удачный удар в ближнем бою начинает комбо, и каждый следующий удар в нём сильнее.',
@@ -4123,6 +4146,10 @@ const ru: Strings = {
     assassin: 'Убийца: внезапная атака наносит дополнительный урон.',
     sniper: 'Снайпер: её метательное оружие находит слабые места в броне врага и не замечает её.',
     warden: 'Хранительница: вытаптывая высокую траву и касаясь растений, обретает защиту коры, а растения дарят ей семена и росу.',
+    champion: CLS_RU['actors.hero.herosubclass.champion_short_desc']!,
+    monk: CLS_RU['actors.hero.herosubclass.monk_short_desc']!,
+    priest: CLS_RU['actors.hero.herosubclass.priest_short_desc']!,
+    paladin: CLS_RU['actors.hero.herosubclass.paladin_short_desc']!,
   },
   alchemyPot: 'Алхимический котёл: встаньте рядом и коснитесь его, чтобы варить.',
   brewed: 'Семена в котле превращаются в зелье!',

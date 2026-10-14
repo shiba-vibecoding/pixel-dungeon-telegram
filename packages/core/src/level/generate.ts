@@ -41,6 +41,8 @@ export interface Level {
   items: ItemSpawn[];
   /** Items to drop anywhere on the level, such as the key to a locked room. */
   toSpawn: ItemSpec[];
+  /** WallOfLight.LightWall: cells of solid light and the turns they have left (the Cleric's; nothing walks through them). */
+  lightWall?: Record<number, number>;
   /** Magic wells that still hold water. */
   wells: Array<{ pos: number; water: WellWater }>;
   secretDoors: number;

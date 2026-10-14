@@ -1,4 +1,5 @@
 import { type Hero, heroBelongings, heroEquipped, heroRings } from './actors';
+import { intuitionSpeed } from './classes/duelist-talents';
 import type { Ctx } from './floor';
 import { itemDef, type Item, type ItemKind, knownIn, labelKind } from './items';
 import type { World } from './world';

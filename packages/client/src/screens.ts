@@ -1,9 +1,9 @@
 import {
   ALCHEMIZE_CHOICES, armorEvasionBonus, armorStats, augmentsFor, weaponStats, heroEquipped, CAN_THROW, energyValue, enchantOptions, INVENTORY_STONES, intuitionChoices, isTargetedScroll,
   knownIn, MUST_THROW, TARGETED_SPELLS,
-  type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass,
+  type Action, type Augment, BACKPACK_SIZE, scrollTargets, isBroken, isEnchantable, isIdentified, isTippedDart, type Hero, inBag, type HeroClass, HERO_CLASSES,
   type Item, itemAt, itemDef, itemPrice, type ItemKind, type ItemRef, itemSprite, levelKnown, maxExp, type MobKind, S, SUBCLASSES, TIPPED_DARTS,
-  type ScoreBreakdown, HIGHLIGHT, visiblyCursed, type World, CLASS_ARMOR_OF, heroById, isClassArmor, type SealSource, talentPointsAvailable, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
+  type ScoreBreakdown, HIGHLIGHT, visiblyCursed, type World, hasAbility, CLASS_ARMOR_OF, heroById, isClassArmor, type SealSource, talentPointsAvailable, offersSealTransfer, shielding, type ArtifactAction, miscChoices, type MiscSlot, visiblyUpgraded,
 } from '@pd/core';
 import { artifactActions, artifactCard, type ArtifactHost, chargeStrip, showMiscChooser } from './artifactui';
 import { artText } from './artifacttext';
@@ -12,7 +12,7 @@ import { type AbilityHost, classArmorCard, showAbilityPick, showTalents, startAb
 import { audio } from './audio';
 import { type ChoiceOption, showChoice } from './alchemyui';
 import { chooseQuickslot, isPlaceholder, isQuickslotted, QUICKSLOTS, quickKind, quickUse, WEAPON_SLOT } from './quickslot';
-import { ARENA_BADGES, BADGES, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
+import { ARENA_BADGES, BADGES, RETIRED, type BadgeId, badgeText, earnedBadges, markBadgesSeen, unseenBadges } from './badges';
 import { BUFF_ICONS, type BuffEntry, type BuffName } from './hud';
 import { capitalize, fill, fmt, locale, t } from './i18n';
 import { chargesOf, isKnown, itemInfo, itemName, magicOf, markSeen, plainName, strengthOf, wearOf } from './itemtext';
@@ -32,7 +32,18 @@ import type { LogLine } from './view';
 
 const root = document.getElementById('overlay')!;
 /** Heroes in avatars.png and in the heroes strip, in this order. */
-export const AVATAR: Readonly<Record<HeroClass, number>> = { warrior: 0, mage: 1, rogue: 2, huntress: 3 };
+export const AVATAR: Readonly<Record<HeroClass, number>> = { warrior: 0, mage: 1, rogue: 2, huntress: 3, duelist: 4, cleric: 5 };
+
+/**
+ * A portrait face: the class's avatar, or the look worn (Pixel-Mart): the Duelist's and the Cleric's looks have their own
+ * avatars (avatars-skins.png, three each: ash, royal, shadow), the older classes' looks are the sheet's alone.
+ */
+export function setAvatar(face: HTMLElement, heroClass: HeroClass, skin?: string): void {
+  const index = skin ? ['ash', 'royal', 'shadow'].indexOf(skin) : -1;
+  const own = index >= 0 && (heroClass === 'duelist' || heroClass === 'cleric');
+  face.classList.toggle('skin', own);
+  face.style.setProperty('--av', String(own ? (heroClass === 'duelist' ? 0 : 3) + index : AVATAR[heroClass]));
+}
 
 let assets: Assets | null = null;
 
@@ -464,7 +475,7 @@ export function showBadges(onClose: () => void, honors: readonly string[] = []):
   };
   const grid = el('div', { className: 'pd-grid c6' });
   // The arena's badges are left out: the arena of waves is no longer offered.
-  for (const badge of BADGES.filter((b) => b.image < ARENA_BADGES)) {
+  for (const badge of BADGES.filter((b) => b.image < ARENA_BADGES && (!RETIRED.has(b.id) || earned.has(b.id)))) {
     const icon = el('i', { className: `pd-badge${earned.has(badge.id) ? '' : ' dim'}` });
     icon.dataset.i = String(badge.image);
     const node = el('button', { className: `pd-slot${fresh.has(badge.id) ? ' new' : ''}`, ariaLabel: badgeText(badge.id) }, icon);
@@ -1125,7 +1136,11 @@ export interface BackpackOptions {
   hero: Hero;
   onAction(action: Action): void;
   /** Throw, zap or shoot the item at a cell the player picks next (or cast it there: a spell, dragon's breath, a siren's song). */
-  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast'): void;
+  onAim(index: number, kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast', choice?: number): void;
+  /** An action of the classes (a spell, a weapon's ability) aimed at a cell the player picks next. */
+  onAimClass?(prompt: string, make: (cell: number) => Action): void;
+  /** A Duelist's weapon ability, from the weapon's own window (MeleeWeapon.AC_ABILITY). */
+  onWeaponAbility?(which: 'weapon' | 'second'): void;
   /** An artifact's use aimed at a cell the player picks next (talisman, chains, rose, armband, sandals, beacon). */
   onAimArtifact?(action: ArtifactAction): void;
   onClose(): void;
@@ -1861,6 +1876,14 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
         refreshBackpack(world, hero);
       }));
     }
+    // MeleeWeapon.AC_ABILITY: a Duelist's weapon has an ability of its own.
+    if (hero.heroClass === 'duelist' && hasAbility(item)) {
+      use(actionLabel(artText('items.weapon.melee.meleeweapon.ac_ability')), () => {
+        openBag = null;
+        options.onClose();
+        options.onWeaponAbility?.('weapon');
+      });
+    }
     use(t.takeOff, () => stay({ type: 'unequip' }));
   } else if (item === hero.armor && item.kind === CLASS_ARMOR_OF[hero.heroClass]) {
     // ClassArmor.execute(AC_ABILITY): the ability of the armour (it wants a cell to aim at, or none, or the beacon's choice).
@@ -1873,9 +1896,9 @@ function itemActions(options: ItemOptions): { main: HTMLElement[]; more: HTMLEle
             options.onAction(action);
             options.onClose();
           },
-          aim: (prompt) => {
+          aim: (prompt, choice) => {
             options.onClose();
-            options.onAim(-1, 'special');
+            options.onAim(-1, 'special', choice);
             toast(prompt);
           },
           back: () => showBackpack(options, { worn: 'armor' }),
@@ -2284,6 +2307,11 @@ function artifactHost(options: ItemOptions, ref: ItemRef): ArtifactHost {
       openBag = null;
       options.onClose();
       options.onAimArtifact?.(action);
+    },
+    aimClass: (prompt, make) => {
+      openBag = null;
+      options.onClose();
+      options.onAimClass?.(prompt, make);
     },
     pick: (title, targets, onPick, onCancel) => showBackpack({ ...options, pick: { title, targets, onPick, onCancel: onCancel ?? back } }),
     back,

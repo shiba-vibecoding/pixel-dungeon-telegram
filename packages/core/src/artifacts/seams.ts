@@ -4,6 +4,7 @@ import { EXOTIC_OF, type Item, itemDef, type ItemKind } from '../items';
 import { isMagicImmune } from '../buffs';
 import { readScroll } from '../reading';
 import type { World } from '../world';
+import { classEatingTime, classFoodEaten } from '../classes/hooks';
 import { regenOn as heroRegenOn } from '../hero';
 import { energyArtifactMultiplier } from '../rings';
 import { pointsInTalent } from '../talents/data';

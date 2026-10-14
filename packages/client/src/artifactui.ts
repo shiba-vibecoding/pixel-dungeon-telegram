@@ -7,6 +7,7 @@ import { ARTIFACT_CLASS, artifactState, artText, capital, chargeOf, format } fro
 import { t } from './i18n';
 import { itemName } from './itemtext';
 import { button, el, info, show, windowOf } from './screens';
+import { cast, quickSpellOf, showTome, spellName } from './classui';
 
 /*
  * The artifacts in the backpack (Artifact.actions and execute, their windows):
@@ -27,6 +28,8 @@ export interface ArtifactHost {
   stay(action: Action): void;
   /** The next tap on the map picks the cell. */
   aim(action: ArtifactAction): void;
+  /** The next tap on the map picks the cell for an action of the classes (a spell, a weapon's ability). */
+  aimClass(prompt: string, make: (cell: number) => Action): void;
   /** The backpack opened on what can be chosen, the chosen one handed back (WndBag.ItemSelector). */
   /** The backpack as a selector; cancelled, `onCancel` (else back to where it was). */
   pick(title: string, targets: readonly ItemRef[], onPick: (ref: ItemRef) => void, onCancel?: () => void): void;
@@ -127,6 +130,15 @@ export function artifactActions(host: ArtifactHost, item: Item, ref: ItemRef): A
       break;
     case 'artifact.cape':
       break;
+    case 'artifact.tome': {
+      // HolyTome.defaultAction: the quick spell, if there is one; else the spells.
+      if (item.cursed) break;
+      const classHost = { world, hero, act: host.act, aim: host.aimClass, back: host.back };
+      const quick = quickSpellOf(world, hero);
+      if (quick) list.push({ label: spellName(quick), run: () => cast(classHost, quick) });
+      add('cast', () => showTome(classHost));
+      break;
+    }
   }
   return list;
 }

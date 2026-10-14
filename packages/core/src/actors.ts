@@ -1,3 +1,4 @@
+import { hasGlyph } from './classes/state';
 import { effectiveLevel } from './wear';
 import { dpow } from './fmath';
 import { createItem, type Item, itemDef, type ItemKind } from './items';
@@ -21,6 +22,7 @@ import type { Action, PlanStep } from './world';
 import type { BossMob } from './bosses/state';
 import type { Awareness, PendingScroll } from './artifacts';
 import type { WealthCounters } from './rings';
+import { type ClassState, hasTimer, type MobMarks } from './classes/state';
 import { type AbilityKind, pointsInTalent, type TalentBook } from './talents/data';
 import { holdFastArmor } from './talents/hold-fast';
 import { freerunning, momentumEvasion, momentumSpeed } from './talents/rogue';
@@ -41,13 +43,16 @@ const f32 = Math.fround;
 export type { HeroClass } from './heroclass';
 export { HUNGRY, isHungry, isStarving, STARVING } from './hero';
 
-/** HeroSubClass: the two ways each class can master with Tengu's mask (HeroClass's subclasses, in its order). */
-export type SubClass = 'gladiator' | 'berserker' | 'battlemage' | 'warlock' | 'freerunner' | 'assassin' | 'sniper' | 'warden';
+/** HeroSubClass: the two ways each class can master with the Tome of Mastery. */
+export type SubClass =
+  | 'gladiator' | 'berserker' | 'battlemage' | 'warlock' | 'freerunner' | 'assassin' | 'sniper' | 'warden' | 'champion' | 'monk' | 'priest' | 'paladin';
 export const SUBCLASSES: Readonly<Record<HeroClass, readonly [SubClass, SubClass]>> = {
   warrior: ['berserker', 'gladiator'],
   mage: ['battlemage', 'warlock'],
   rogue: ['assassin', 'freerunner'],
   huntress: ['sniper', 'warden'],
+  duelist: ['champion', 'monk'],
+  cleric: ['priest', 'paladin'],
 };
 
 /** Backpack slots, equipment aside. */
@@ -215,6 +220,10 @@ export interface Hero {
   ability?: AbilityKind;
   /** The ability's trackers: Endure, the leap's double jump, Nature's Power, the warp beacon... (abilities/state.ts). */
   abil?: AbilityState;
+  /** Belongings.secondWep: the Champion's second weapon. */
+  secondWep?: Item | null;
+  /** What the Duelist and the Cleric keep (classes/state.ts). */
+  cls?: ClassState;
 }
 
 /** HeavyBoomerang.CircleBack: a boomerang flying back to where it was thrown from, in `left` turns. */
@@ -387,7 +396,7 @@ export function heroDefenseSkill(hero: Hero): number {
   // RingOfEvasion.evasionMultiplier.
   let evasion = f32(f32(hero.defenseSkill * evasionMultiplier(hero)) * blessing(hero));
   if (hero.paralysed > 0) evasion = f32(evasion / 2);
-  if (hero.armor.glyph === 'stone') return 0;
+  if (hasGlyph(hero, 'stone')) return 0;
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
   if (encumbrance > 0) evasion = f32(evasion / dpow(1.5, encumbrance));
   // Momentum.evasionBonus: freerunning, half the hero's level more, and evasive armor's share of strength to spare.
@@ -430,9 +439,12 @@ export function heroDrRoll(hero: Hero, rng: Rng): number {
  * most on a surprise attack. Bare-handed: 1 to STR-8. Darts thrown with a crossbow in hand take its numbers; a spirit
  * arrow the bow's. Seam: the thirteen-leaf clover (a trinket) would alter the hero's rolls.
  */
-export function heroDamageRoll(hero: Hero, rng: Rng, surprised = false, weapon: Strike = hero.weapon): number {
+export function heroDamageRoll(hero: Hero, rng: Rng, surprised = false, weapon: Strike = hero.weapon, fists = false): number {
   let damage: number;
-  if (!weapon) {
+  if (fists) {
+    // A Monk's ability: plain fists, whatever ring is worn (RingOfForce.damageRoll with the UnarmedAbilityTracker).
+    damage = rng.normalIntRange(1, Math.max(heroStr(hero) - 8, 1));
+  } else if (!weapon) {
     // RingOfForce.damageRoll: bare-handed, as a weapon of the strength's tier with a ring of force; else 1 to STR-8.
     const force = forceRange(hero, heroStr(hero));
     damage = force ? rng.normalIntRange(force[0], force[1]) : rng.normalIntRange(1, Math.max(heroStr(hero) - 8, 1));
@@ -487,13 +499,16 @@ export function heroAttackDelay(hero: Hero, weapon: Strike = hero.weapon): numbe
   // Hero.attackDelay: a lethal momentum makes the blow cost nothing (consumed by the caller, once it knows it struck).
   // SpiritBow.speedMultiplier under Nature's Power: a third to a half more.
   if (category === 'bow') return f32(delay / (attackSpeedMultiplier(hero) + natureBowSpeed(hero)));
-  return f32(delay / attackSpeedMultiplier(hero));
+  // Scimitar.SwordDance: 0.6 faster (Weapon.speedMultiplier adds it to the furor ring's).
+  return f32(delay / (attackSpeedMultiplier(hero) + (hero.cls && hasTimer(hero, 'dance') ? 0.6 : 0)));
 }
 
 /** Weapon.reachFactor: how far the weapon in hand strikes (a projecting one a cell further). */
 export function heroReach(hero: Hero): number {
-  if (!hero.weapon || itemDef(hero.weapon.kind).category !== 'weapon') return 1;
-  const reach = weaponRch(hero.weapon.kind);
+  // AscendedForm: the weapon reaches two cells further, and bare hands three (Hero.canAttack, Weapon.reachFactor).
+  const ascended = hero.cls?.ascend !== undefined;
+  if (!hero.weapon || itemDef(hero.weapon.kind).category !== 'weapon') return ascended ? 3 : 1;
+  const reach = weaponRch(hero.weapon.kind) + (ascended ? 2 : 0);
   return hero.weapon.enchant === 'projecting' ? reach + 1 : reach;
 }
 
@@ -516,11 +531,10 @@ export function heroSpeed(hero: Hero, footing?: Footing): number {
   const encumbrance = armorStr(hero.armor) - heroStr(hero);
   let speed = hero.crippled > 0 ? 0.5 : 1;
   if (encumbrance > 0) speed = f32(speed / dpow(1.2, encumbrance));
-  const glyph = hero.armor.glyph;
   const level = gearLevel(hero.armor);
-  if (footing && glyph === 'swiftness' && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));
-  if (footing && glyph === 'flow' && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
-  if (footing && glyph === 'bulk' && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
+  if (footing && hasGlyph(hero, 'swiftness') && !footing.enemyNear) speed = f32(speed * f32(1.2 + 0.04 * level));
+  if (footing && hasGlyph(hero, 'flow') && footing.terrain >= T.WATER_TILES && footing.terrain <= T.WATER) speed = f32(speed * f32(2 + 0.5 * level));
+  if (footing && hasGlyph(hero, 'bulk') && (footing.terrain === T.DOOR || footing.terrain === T.OPEN_DOOR)) speed = f32(speed / 3);
   // RingOfHaste.speedMultiplier; stamina, haste (buffs.ts).
   // Nature's Power: twice as fast, and more with Growing Power; momentum (freerunner) quickens the step.
   return f32(speed * speedMultiplier(hero) * buffSpeed(hero) * natureSpeed(hero) * momentumSpeed(hero));
@@ -531,7 +545,7 @@ export const heroArmor = (hero: Hero): number =>
   armorDrMax(hero.armor) + (hero.weapon && itemDef(hero.weapon.kind).category === 'weapon' ? weaponDefense(hero.weapon) : 0) +
   Math.max(0, Math.ceil(hero.barkskin ?? 0)) + (hero.buffs?.barkskin?.level ?? 0);
 /** Hero.stealth: armour of obfuscation adds 1 and a third a level (Obfuscation.stealthBoost); talents add to it in their stream. */
-export const heroStealth = (hero: Hero): number => (hero.armor.glyph === 'obfuscation' ? Math.fround(1 + gearLevel(hero.armor) / 3) : 0);
+export const heroStealth = (hero: Hero): number => (hasGlyph(hero, 'obfuscation') ? Math.fround(1 + gearLevel(hero.armor) / 3) : 0);
 /** Hero.maxExp: what the next level costs. */
 export const maxExp = (hero: Hero): number => 5 + hero.lvl * 5;
 
@@ -550,6 +564,10 @@ export type MobKind =
   | 'prismatic'
   /** WandOfWarding.Ward, WandOfLivingEarth.EarthGuardian, WandOfRegrowth.Lotus. */
   | 'ward' | 'guardian' | 'lotus'
+  /** Feint.AfterImage: the Duelist's decoy, which enemies strike at and lose track of the hero. */
+  | 'afterImage'
+  /** PowerOfMany.LightAlly: the Cleric's ally of solid light, a copy of one of the heroes (it takes after its hero's level). */
+  | 'lightAlly'
   /** The armour abilities' allies: ShadowClone.ShadowAlly, SpiritHawk.HawkAlly, SmokeBomb.NinjaLog. */
   | 'shadow' | 'hawk' | 'ninjaLog'
   /* Shattered's roster (MobSpawner): the sewers' snakes and slimes, */
@@ -715,6 +733,10 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   ward: { name: 'ward', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** The wand of living earth's guardian, as strong as the wand and the hero (see mobStats). */
   guardian: { name: 'earthen guardian', ht: 1, attack: 0, defense: 0, damage: [2, 4], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
+  /** The Cleric's light ally: 80 health; its accuracy, evasion and strength grow with the hero's level (see mobStats). */
+  lightAlly: { name: 'light ally', ht: 80, attack: 10, defense: 5, damage: [5, 30], dr: 5, exp: 0, maxLvl: 0, speed: 1 },
+  /** Feint's afterimage: the hero's shadow, struck at in vain (it fades before the hero's next turn). */
+  afterImage: { name: 'afterimage', ht: 1, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** The wand of regrowth's lotus, which withers a little every turn. */
   lotus: { name: 'golden lotus', ht: 25, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** DriedRose.GhostHero: the sad ghost come back as a companion (its numbers come from its rose and its hero, see mobStats). */
@@ -771,6 +793,8 @@ function ownStats(mob: Mob): MobStats {
     // PrismaticImage: the hero's accuracy and evasion (9 + lvl, 4 + lvl) and its own damage, by the hero's level.
     return { ...MOBS.prismatic, ht: mob.ht, attack: 9 + depth, defense: 4 + depth, damage: [2 + Math.trunc(depth / 4), 4 + Math.trunc(depth / 2)] };
   }
+  // LightAlly: equal to the hero's own accuracy and evasion at its level.
+  if (mob.kind === 'lightAlly') return { ...MOBS.lightAlly, attack: depth + 9, defense: depth + 4 };
   if (mob.kind === 'shadow') {
     // ShadowAlly: the hero's own accuracy and evasion at its level (set when it was made).
     const defense = mob.shadow?.defense ?? 5;
@@ -958,6 +982,8 @@ export interface Mob {
   ghostGear?: { lvl: number; str: number; weapon?: Item; armor?: Item };
   /** MasterThievesArmband.StolenTracker: robbed by the armband (nothing more to drop), or tried. */
   robbed?: 'stolen' | 'tried';
+  /** What the Duelist's and the Cleric's abilities and spells have left on it (classes/state.ts). */
+  marks?: MobMarks;
   /**
    * DeathMark.DeathMarkTracker (abilities/rogue.ts): the time the mark ends, and the health it had when marked.
    * Marked, it takes a quarter more harm and is not dead at no health (Char.isAlive: deathMarked) until the mark ends.

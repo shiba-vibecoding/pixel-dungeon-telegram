@@ -1,3 +1,4 @@
+import { spiritRing } from './classes/state';
 import { isEnemy } from './mobs';
 import { type Hero, heroRings, isAlive, type Mob, type MobKind } from './actors';
 import { mightHTMultiplier } from './rings';
@@ -15,6 +16,7 @@ import { cellX, cellY, HEIGHT, WIDTH } from './level/geometry';
 import { circleCells } from './fov';
 import { discover, F, hasFlag, T } from './level/terrain';
 import { sealShieldTick } from './seal';
+import { classTurn } from './classes/turn';
 import { chargeClassArmor } from './classArmor';
 import type { World } from './world';
 import { artifactsAct, artifactsGainExp, chaliceRegenDelay, talismanBlinds, talismanFound } from './artifacts';
@@ -44,7 +46,7 @@ export const heroHT = (hero: Hero): number => 20 + 5 * (hero.lvl - 1) + (hero.ht
  */
 export function growHT(hero: Hero, amount: number, boostHP: boolean): void {
   // With rings of might worn, Hero.updateHT itself: the base health times their multiplier.
-  if (heroRings(hero).some((ring) => ring.kind === 'ring.might')) {
+  if (heroRings(hero).some((ring) => ring.kind === 'ring.might') || spiritRing(hero)?.kind === 'ring.might') {
     refreshMightHT(hero, boostHP);
     return;
   }
@@ -269,6 +271,8 @@ export function heroTurns(ctx: Ctx, hero: Hero, from: number, to: number): numbe
     lockedFloorTurn(ctx, hero);
     hungerTurn(ctx, hero);
     sealShieldTick(ctx, hero);
+    // The classes stream: the Duelist's Charger and trackers, the Cleric's tome.
+    classTurn(ctx, hero);
     // ClassArmor.Charger: worn class armour gathers charge.
     chargeClassArmor(ctx, hero);
     // The talents' and subclasses' buffs (Berserk, Combo, Momentum, Preparation, protective shadows).

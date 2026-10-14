@@ -226,6 +226,9 @@ const MOB_SPRITES: Partial<Record<MobKind, { w: number; h: number; file?: string
   mirror: { w: 12, h: 15, anims: HERO_ANIMS },
   // A prismatic image (PrismaticImage) is drawn with its hero's sheet too, until it has a sprite of its own.
   prismatic: { w: 12, h: 15, anims: HERO_ANIMS },
+  // Feint's afterimage and Power of Many's light ally: a hero's sheet too (View.sync), faint.
+  afterImage: { w: 12, h: 15, anims: HERO_ANIMS },
+  lightAlly: { w: 12, h: 15, anims: HERO_ANIMS },
   blacksmith: {
     w: 13,
     h: 16,
@@ -330,7 +333,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
   const names = [
     'tiles0', 'water0', 'tiles1', 'water1', 'tiles2', 'water2', 'tiles3', 'water3',
     'undead', 'tiles4', 'water4',
-    'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'warrior', 'mage', 'rogue', 'ranger', 'ghost',
+    'imp', 'sheep', 'blacksmith', 'wraith', 'ratKing', 'warrior', 'mage', 'rogue', 'ranger', 'duelist', 'cleric', 'ghost',
     'shopkeeper', 'wandmaker', 'spd/ghost', 'spd/effects',
     'icons', 'items', 'plants', 'spd/wards', 'spd/guardian', 'spd/lotus', 'spd/spirit_hawk', 'spd/ninja_log', 'spd/spell_icons',
     // Shattered's bosses and their levels' custom tiles.
@@ -365,7 +368,7 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
     if (shattered) return spdSprite(spd[shattered.sheet], shattered);
     const spec = MOB_SPRITES[kind] ?? MOB_SPRITES.ghost!;
     // A mirror image is drawn with its hero's own sheet (see View.sync); the warrior's stands in here.
-    const image = spec.file ?? (kind === 'mirror' || kind === 'prismatic' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp'
+    const image = spec.file ?? (kind === 'mirror' || kind === 'prismatic' || kind === 'afterImage' || kind === 'lightAlly' ? 'warrior' : kind === 'fetidRat' ? 'rat' : kind === 'curse' ? 'wraith' : kind === 'impShopkeeper' ? 'imp'
       : kind === 'ward' ? 'spd/wards' : kind === 'guardian' ? 'spd/guardian' : kind === 'lotus' ? 'spd/lotus' : kind === 'ghostHero' ? 'spd/ghost'
       : kind === 'shadow' ? 'rogue' : kind === 'hawk' ? 'spd/spirit_hawk' : kind === 'ninjaLog' ? 'spd/ninja_log'
       : baseKind(kind));
@@ -384,6 +387,8 @@ export async function loadAssets(base: string, onProgress?: (done: number) => vo
       mage: hero(images.mage),
       rogue: hero(images.rogue),
       huntress: hero(images.ranger),
+      duelist: hero(images.duelist),
+      cleric: hero(images.cleric),
     },
     mobs: Object.fromEntries([...kinds].map((kind) => [kind, mob(kind)])) as Record<MobKind, CharSprite>,
     variants: { 'dm300.charged': variant('dm300.charged'), 'pylon.active': variant('pylon.active') },
