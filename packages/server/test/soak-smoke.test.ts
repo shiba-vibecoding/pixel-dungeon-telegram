@@ -12,7 +12,8 @@ describe('the soak engine', () => {
       expect(failures.map((f) => `#${f.spec} ${f.kind}: ${f.message}`), `spec ${id}`).toEqual([]);
       expect(stats.actions).toBeGreaterThan(0);
     }
-  });
+    // Eighteen short runs: under a full parallel suite this outran the 5 s default once.
+  }, 60_000);
 
   // Spec 227's first moves were refused, and a refusal made the hero's empty buffs (never sent to the server): found by the soak.
   it('finds a refused action that does not leave the world as it was only if the fingerprint sees the difference', () => {
