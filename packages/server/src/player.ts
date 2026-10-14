@@ -3,8 +3,13 @@ import { type Action, dayOf, type HeroClass, isPatron, RULES_VERSION, type Walle
 import { BOARD_KINDS, type BoardKind, boardName, boardOfRun, boardsFor } from './boards';
 import { CORS, json, jsonBody } from './http';
 import type { Env } from './index';
+import { outageDays } from './outages';
 import { type DailyEntry, publicId } from './leaderboard';
 import { claimAll, claimLetter, collectMail, type Lookup, noteEntered, readAll } from './mail';
+import { newsSeenAfter, parseVersion } from './news';
+import { grantPioneer } from './pioneer';
+import { giveHonor, MAX_PROBLEM_BYTES, parseProblem, takeProblemSlot } from './problem';
+import { readBody } from './secret';
 import { sanitizeAction } from './messages';
 import { EntryWriter, fromEntries, toEntries } from './run-store';
 import { describe, ended, MAX_SYNC_ACTIONS, parseSlot, PlayerLogic, type RunSlot, type RunSummary, streakNow } from './runs';
@@ -19,8 +24,10 @@ import { verifyInitData, WEEK_SECONDS } from './telegram-auth';
  *               { initData, rules, op: 'get', slot }                         the run as the server has it
  *   POST /me    { initData }                     the profile: records, streak, trophies, mail, places now
  *               { initData, coachDone: true }    the step tutorial is done (kept with the profile, for every device)
+ *               { initData, news: '2.4' }        the news of that version have been seen (kept the same way)
  *   POST /mail  { initData, op: 'readAll' | 'claim' | 'claimAll', letter }   the mailbox (mail.ts): its letters and trophies after
  *   POST /board { initData?, kind }              a board's best, and my place on it
+ *   POST /problem { initData, text?, attach, info, actions?, errors? }   «Сообщить о проблеме» (problem.ts): at most five a day
  *
  * Each player's runs and profile live in their own Durable Object (Player), so a player's
  * requests are taken one at a time. Only Telegram players have checked runs: elsewhere the
@@ -78,7 +85,10 @@ export async function meRoute(request: Request, env: Env): Promise<Response> {
   if (!body) return json({ error: 'bad json' }, 400);
   const player = await who(body, env);
   if (!player) return json({ error: 'unauthorized' }, 401);
-  const response = await playerStub(env, player.key).fetch('https://player/me', { method: 'POST', body: JSON.stringify({ player, coachDone: body.coachDone === true }) });
+  const news = parseVersion(body.news);
+  const response = await playerStub(env, player.key).fetch('https://player/me', {
+    method: 'POST', body: JSON.stringify({ player, coachDone: body.coachDone === true, ...(news ? { news } : {}) }),
+  });
   return new Response(response.body, { status: response.status, headers: { 'Content-Type': 'application/json', ...CORS } });
 }
 
@@ -93,6 +103,31 @@ export async function mailRoute(request: Request, env: Env): Promise<Response> {
   if (!op) return json({ error: 'bad op' }, 400);
   const id = typeof body.letter === 'string' ? body.letter.slice(0, 64) : '';
   const response = await playerStub(env, player.key).fetch('https://player/mail', { method: 'POST', body: JSON.stringify({ player, op, id }) });
+  return new Response(response.body, { status: response.status, headers: { 'Content-Type': 'application/json', ...CORS } });
+}
+
+/**
+ * POST /problem: a player's report of what went wrong. Anyone who sent the rules of an older build may send one
+ * (they are the ones likeliest to need to), so the rules are not checked; the body is capped, the player known by
+ * their init data, and their own object counts their reports of the day (problem.ts) before the store keeps this.
+ */
+export async function problemRoute(request: Request, env: Env): Promise<Response> {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+  const text = await readBody(request, MAX_PROBLEM_BYTES);
+  if (text === null) return json({ error: 'too big' }, 413);
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return json({ error: 'bad json' }, 400);
+  }
+  if (typeof body !== 'object' || body === null) return json({ error: 'bad json' }, 400);
+  const player = await who(body as Record<string, unknown>, env);
+  if (!player) return json({ error: 'unauthorized' }, 401);
+  const problem = parseProblem(body, Date.now());
+  if (!problem) return json({ error: 'bad report' }, 400);
+  const response = await playerStub(env, player.key).fetch('https://player/problem', { method: 'POST', body: JSON.stringify({ player, problem }) });
   return new Response(response.body, { status: response.status, headers: { 'Content-Type': 'application/json', ...CORS } });
 }
 
@@ -115,12 +150,19 @@ export async function boardRoute(request: Request, env: Env): Promise<Response> 
 export class Player extends DurableObject<Env> {
   private logic: PlayerLogic | null = null;
   private readonly writer = new EntryWriter();
+  /** A profile made just now: written with the first thing that is. */
+  private fresh = false;
 
   private async load(): Promise<PlayerLogic> {
     if (!this.logic) {
       const entries = await this.ctx.storage.list<string>();
       this.writer.loaded(entries);
       const { profile, runs } = fromEntries(entries);
+      // A player the server has never kept: the moment they came is noted (pioneer.ts). Those kept before have none.
+      if (!entries.has('profile')) {
+        profile.born = Date.now();
+        this.fresh = true;
+      }
       this.logic = new PlayerLogic(profile, runs);
     }
     return this.logic;
@@ -149,6 +191,32 @@ export class Player extends DurableObject<Env> {
     const logic = await this.load();
     const now = Date.now();
     if (url.pathname === '/mail') return json(await this.mail(logic, body, now));
+    if (url.pathname === '/honor') {
+      // The admin confirmed a problem report (index.ts adminOps): the badge goes to the profile, once.
+      const granted = giveHonor(logic.profile, String(body.honor ?? ''));
+      if (granted) await this.persist(new Set(), new Map());
+      return json({ granted });
+    }
+    if (url.pathname === '/problem') {
+      const today = dayOf(now);
+      const taken = takeProblemSlot(logic.profile.problems, today);
+      if (!taken.ok) return json({ error: 'limit' }, 429);
+      const before = logic.profile.problems;
+      logic.profile.problems = taken.state;
+      let id: string | null = null;
+      try {
+        const stored = await this.env.REPORTS.get(this.env.REPORTS.idFromName('all')).fetch('https://reports/problem', {
+          method: 'POST', body: JSON.stringify({ problem: body.problem, by: body.player.key }),
+        });
+        if (stored.ok) id = ((await stored.json()) as { id: string }).id;
+      } catch {
+        // Told below.
+      }
+      // A report that could not be kept does not count against the day.
+      if (id === null) logic.profile.problems = before;
+      await this.persist(new Set(), new Map());
+      return id === null ? json({ error: 'not kept' }, 502) : json({ id, left: Math.max(0, 5 - taken.state.count) });
+    }
     if (url.pathname === '/me') {
       // The tutorial's end is kept once and for good; a light answer, the profile comes with the next ask.
       if (body.coachDone === true) {
@@ -157,6 +225,14 @@ export class Player extends DurableObject<Env> {
           await this.persist(new Set(), new Map());
         }
         return json({ coachDone: true });
+      }
+      if (typeof body.news === 'string') {
+        const seen = newsSeenAfter(logic.profile.newsSeen, body.news);
+        if (seen !== logic.profile.newsSeen) {
+          logic.profile.newsSeen = seen;
+          await this.persist(new Set(), new Map());
+        }
+        return json({ news: seen });
       }
       return json(await this.me(logic, body.player, now));
     }
@@ -168,7 +244,7 @@ export class Player extends DurableObject<Env> {
         const challenges = Number.isInteger(body.challenges) ? (body.challenges as number) & 0xff : 0;
         const run = logic.start({
           slot, heroClass, challenges, name: body.player.name, seed: crypto.getRandomValues(new Uint32Array(1))[0]! >>> 1,
-          id: crypto.randomUUID(), now, today: dayOf(now),
+          id: crypto.randomUUID(), now, today: dayOf(now), outages: slot === 'daily' ? await outageDays(this.env) : [],
         });
         await this.persist(new Set([slot]), new Map());
         // The reminders hear that the streak was kept today (they keep nothing for those who did not ask).
@@ -275,7 +351,15 @@ export class Player extends DurableObject<Env> {
   private async me(logic: PlayerLogic, player: Who, now: number): Promise<Record<string, unknown>> {
     const p = logic.profile;
     // Boards finished since last asked become letters (mail.ts); the trophies are claimed from them.
-    if (await collectMail(p, now, this.standing(player.key))) await this.persist(new Set(), new Map());
+    let changed = await collectMail(p, now, this.standing(player.key));
+    // «Первопроходец»: one letter for whoever played before the update (pioneer.ts).
+    const releaseAt = Date.parse(this.env.RELEASE_AT ?? '');
+    if (grantPioneer(p, Object.values(logic.runs), now, Number.isFinite(releaseAt) ? releaseAt : null)) changed = true;
+    if (this.fresh) {
+      this.fresh = false;
+      changed = true;
+    }
+    if (changed) await this.persist(new Set(), new Map());
     const places: Partial<Record<BoardKind, number | null>> = {};
     const totals: Partial<Record<BoardKind, number>> = {};
     for (const kind of BOARD_KINDS) {
@@ -298,8 +382,8 @@ export class Player extends DurableObject<Env> {
     );
     return {
       name: p.name, games: p.games, wins: p.wins, deepest: p.deepest, best: p.best, bestByClass: p.bestByClass,
-      arenaWaves: p.arenaWaves, arenaBest: p.arenaBest, streak: streakNow(p.streak, today), dailyDone: p.dailyDate === today,
-      badges: p.badges, history: p.history, trophies: p.trophies, mail: p.mail, coachDone: p.coachDone, places, totals, runs, today,
+      arenaWaves: p.arenaWaves, arenaBest: p.arenaBest, streak: streakNow(p.streak, today, await outageDays(this.env)), dailyDone: p.dailyDate === today,
+      badges: p.badges, history: p.history, trophies: p.trophies, mail: p.mail, coachDone: p.coachDone, newsSeen: p.newsSeen ?? null, honors: p.honors ?? [], places, totals, runs, today,
     };
   }
 }

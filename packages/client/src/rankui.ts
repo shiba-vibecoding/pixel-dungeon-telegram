@@ -139,8 +139,10 @@ function mineRows(records: readonly RunRecord[], trophies: Profile['trophies']):
       el(
         'div',
         { className: 'pd-trophy-shelf' },
-        ...trophies.slice(0, 12).map((trophy) => {
+        // The pioneer cup stands first, whatever came later.
+        ...[...trophies].sort((a, b) => Number(b.board === 'pioneer') - Number(a.board === 'pioneer')).slice(0, 12).map((trophy) => {
           const kind = trophy.board.split(':')[0] ?? '';
+          if (kind === 'pioneer') return el('span', { title: t.rel.pioneer.gift }, rankIcon('pioneer', { big: true }), el('b', { textContent: t.rel.pioneer.shelf }));
           return el('span', { title: trophyText(trophy) }, rankIcon(trophyKind(trophy.board, trophy.place), { big: true }), el('b', { textContent: `#${trophy.place}` }), t.ranked.trophyBoard[kind] ?? kind);
         }),
       ),
@@ -182,6 +184,30 @@ function mineRows(records: readonly RunRecord[], trophies: Profile['trophies']):
   }
   nodes.push(list);
   return nodes;
+}
+
+/** The icon of each rule in «Board rules». */
+function ruleIcon(kind: string): HTMLElement {
+  if (kind === 'score') return rankIcon('gold', { x1: true });
+  if (kind === 'places') return rankIcon('week', { x1: true });
+  if (kind === 'tie') return el('b', { className: 'pd-rules-eq', textContent: '=' });
+  const icon = el('i', { className: 'pd-icon' });
+  icon.style.cssText = kind === 'close' ? 'width:14px;height:18px;background-image:var(--spr-hourglass)' : 'width:18px;height:16px;background-image:var(--spr-check)';
+  return icon;
+}
+
+/**
+ * «Board rules» (design v20, ReleaseRules), opened by the «?» of the rankings: what scores (core verify.ts
+ * dungeonScore, runOutcome, challengeMultiplier), what each place wins, when a board closes (boards.ts, mail.ts boardEnd),
+ * who is higher on equal scores (the board's order, leaderboard.ts: the run that reached the server first) and what counts.
+ */
+export function showRules(onClose: () => void): void {
+  const list = el(
+    'dl',
+    { className: 'pd-rules' },
+    ...t.rel.rules.items.map(([kind, title, text]) => el('div', {}, el('dt', {}, el('span', { className: 'pd-rules-ico' }, ruleIcon(kind)), title), el('dd', { textContent: text }))),
+  );
+  show(windowOf({ title: t.rel.rules.title, onClose }, el('div', { className: 'pd-scroll' }, list)), onClose);
 }
 
 export interface BoardsOptions {
@@ -235,7 +261,17 @@ export function showBoards(options: BoardsOptions): void {
     node.setAttribute('role', 'tab');
     tabs.append(node);
   }
-  show(windowOf({ title: t.ranked.title, onClose: options.onClose, className: 'pd-boards-window' }, tabs, note, prizes, body), options.onClose);
+  const box = windowOf({ title: t.ranked.title, onClose: options.onClose, className: 'pd-boards-window' }, tabs, note, prizes, body);
+  // The «?» sits in the head, before the cross; the rules open over the board and come back to it.
+  if (options.api) {
+    const help = el('button', { className: 'pd-help', type: 'button', textContent: '?', ariaLabel: t.rel.rules.help, title: t.rel.rules.help });
+    help.onclick = () => {
+      audio.play('click');
+      showRules(() => showBoards({ ...options, tab: current }));
+    };
+    box.querySelector('.pd-window-head')?.append(help);
+  }
+  show(box, options.onClose);
   select(current);
 }
 
@@ -309,6 +345,7 @@ export function profileCard(options: CardOptions): HTMLElement {
 /** A trophy's words: which board, which place, and when. */
 export function trophyText(trophy: { board: string; place: number }): string {
   const [kind = '', when = ''] = trophy.board.split(':');
+  if (kind === 'pioneer') return t.rel.pioneer.gift;
   return `${t.ranked.trophy(t.ranked.trophyBoard[kind] ?? kind, trophy.place)} (${when})`;
 }
 

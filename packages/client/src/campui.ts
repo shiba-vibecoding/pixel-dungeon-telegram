@@ -121,21 +121,28 @@ function dailyInfo(options: CampScreenOptions): HTMLElement {
   return node;
 }
 
+/** The time to the day's close, short: «5 ч» (the last hour: minutes). */
+function left(): string {
+  const ms = Math.floor(Date.now() / 86_400_000 + 1) * 86_400_000 - Date.now();
+  const hours = Math.floor(ms / 3_600_000);
+  return hours >= 1 ? t.rel.camp.left(hours, true) : t.rel.camp.left(Math.max(1, Math.ceil(ms / 60_000)), false);
+}
+
 /** The compact block of the day's dungeon: its rules (hardship red, boon green, the attempts) and the way down. */
 function dailyBlock(options: CampScreenOptions): HTMLElement {
   const day = options.dailyState;
   const done = day?.state === 'done';
-  const chipText = done ? t.ranked.dailyChipDone : day?.state === 'going' ? t.ranked.dailyChipGoing : t.ranked.dailyChipOpen;
-  const chip = el('span', { className: `pd-chip${done ? ' done' : ''}` });
-  if (done && day.place !== null) {
-    if (day.place <= 3) chip.append(rankIcon(trophyKind('daily', day.place), { x1: true }));
-    chip.append(`${chipText} · #${day.place} ${t.ranked.ofTotal(Math.max(day.total, day.place))}`);
-  } else {
-    chip.append(chipText);
-  }
+  // Under the title (design v20, CampRules): the attempt and the time to the day's close (00:00 UTC), or, once played, the place.
+  const chipText = done
+    ? day.place !== null ? t.rel.camp.placeOf(day.place) : t.rel.camp.played
+    : `${day?.state === 'going' ? t.ranked.dailyChipGoing : t.rel.camp.attempt} · ${left()}`;
+  const chip = el('small', { className: 'pd-daily-left' });
+  if (done && day.place !== null && day.place <= 3) chip.append(rankIcon(trophyKind('daily', day.place), { x1: true }));
+  chip.append(chipText);
   if (options.onDailyBoard) {
     chip.setAttribute('role', 'button');
     chip.tabIndex = 0;
+    chip.style.cursor = 'pointer';
     chip.title = t.camp.board;
     chip.setAttribute('aria-label', `${chipText}. ${t.camp.board}`);
     const open = (): void => {
@@ -160,11 +167,10 @@ function dailyBlock(options: CampScreenOptions): HTMLElement {
       el('span', { className: 'boon', title: rules.boon.info }, boon, rules.boon.name),
     );
   }
-  rulesNode.append(chip);
   return el(
     'div',
     { className: `pd-daily compact${done ? ' done' : ''}` },
-    el('div', { className: 'pd-daily-title' }, el('h3', { textContent: t.daily })),
+    el('div', { className: 'pd-daily-title' }, el('h3', { textContent: t.daily }), chip),
     rulesNode,
     dailyInfo(options),
     done && options.onPractice ? button(t.ranked.practice2, options.onPractice) : button(t.descendDaily, options.onDaily),
@@ -226,11 +232,19 @@ export function showCamp(options: CampScreenOptions): CampScreen {
   if (on) challenges.append(el('b', { className: 'pd-ch-n', textContent: String(on) }));
   const actions = el('div', { className: 'pd-actions' });
   if (save) {
-    const resume = button(t.continueRun, options.onContinue, 'primary big stacked');
-    const face = el('i', { className: 'pd-camp-face' });
-    face.style.setProperty('--av', String(avatar(save.heroClass)));
-    resume.prepend(face);
-    resume.append(el('span', { className: 'pd-btn-sub', textContent: t.continueMeta(t.camp.cls[avatar(save.heroClass)] ?? t.classes[save.heroClass], save.lvl, save.depth) }));
+    // The saved run's hero on the button (design v20, CampFace): a 44 px portrait, «Warrior · lv 7 · depth 9» left-aligned.
+    // It is the run's hero (and look), whatever class the scene shows for a new game.
+    const resume = button('', options.onContinue, 'primary big stacked with-face');
+    const heroFace = portrait(save.heroClass);
+    const faceHead = el('i', { className: heroFace.skinAvatar ? 'skin' : '' });
+    faceHead.style.setProperty('--av', String(heroFace.avatar));
+    const face = el('span', { className: 'pd-camp-face' }, faceHead);
+    face.setAttribute('aria-hidden', 'true');
+    resume.append(
+      face,
+      el('span', { className: 'pd-btn-label', textContent: t.continueRun }),
+      el('span', { className: 'pd-btn-sub', textContent: t.continueMeta(t.camp.cls[avatar(save.heroClass)] ?? t.classes[save.heroClass], save.lvl, save.depth) }),
+    );
     actions.append(resume, el('div', { className: 'pd-row' }, button(t.newRun, options.onSolo), challenges));
   } else {
     const fresh = button(t.solo, options.onSolo, 'primary big stacked');
@@ -246,7 +260,7 @@ export function showCamp(options: CampScreenOptions): CampScreen {
   const ui = el('div', { className: 'pd-camp-ui' }, top, edges, sheet);
 
   const camp = new Camp(root, {
-    scene: options.scene, season: seasonOf(new Date()), hero: first, skinOf: options.skinOf, effect: options.effect ?? null,
+    scene: options.scene, season: seasonOf(new Date()), hero: first, skinOf: options.skinOf, effect: options.effect ?? null, fill: true,
     onHero: (name) => {
       options.onClass(name);
       top.replaceChildren(card());
@@ -258,12 +272,16 @@ export function showCamp(options: CampScreenOptions): CampScreen {
   show(root, null, true);
   audio.ambience('camp');
 
-  // A low screen lifts the scene so that the hero's feet stand 16 px above the sheet.
+  // The hero's feet stand 16 px above the sheet: a low screen lifts the scene, a tall one lowers it (its extended sky fills the top).
   const fit = (): void => {
     const lift = sheet.getBoundingClientRect().top - root.getBoundingClientRect().top;
-    camp.shift(Math.min(0, Math.round(lift - 16 - 129 * 4)));
+    camp.shift(Math.min(camp.ext, Math.round(lift - 16 - 129 * 4)));
   };
-  fit();
-  if (typeof ResizeObserver === 'function') new ResizeObserver(fit).observe(root);
+  const refit = (): void => {
+    camp.resize();
+    fit();
+  };
+  refit();
+  if (typeof ResizeObserver === 'function') new ResizeObserver(refit).observe(root);
   return { camp };
 }

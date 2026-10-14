@@ -33,6 +33,7 @@ function dayOf(board: string): string {
 
 /** The letter's words, with its place picked out. */
 function words(letter: Letter): HTMLElement {
+  if (letter.kind === 'pioneer') return el('p', { className: 'pd-letter-text', textContent: `${t.rel.pioneer.kind} · ${t.rel.pioneer.letter}` });
   const [, when = ''] = letter.board.split(':');
   const text = letter.kind === 'cup'
     ? t.mail.cupText(dayOf(letter.board), letter.place, letter.total)
@@ -44,7 +45,7 @@ function words(letter: Letter): HTMLElement {
 function gift(item: Gift): HTMLElement | null {
   if (item.type !== 'trophy') return null;
   const kind = trophyKind(item.board, item.place);
-  return el('span', { className: 'pd-gift' }, rankIcon(kind, { x1: true }), t.mail.gifts[kind] ?? '');
+  return el('span', { className: 'pd-gift' }, rankIcon(kind, { x1: true }), kind === 'pioneer' ? t.rel.pioneer.gift : t.mail.gifts[kind] ?? '');
 }
 
 export interface MailOptions {
@@ -53,6 +54,13 @@ export interface MailOptions {
   /** The mailbox changed (a claim): the letters and the trophies as the server has them. */
   onChange(letters: Letter[], trophies: Profile['trophies']): void;
   onClose(): void;
+}
+
+/** The mail's own icon, for the head of its windows. */
+function mailIcon(): HTMLElement {
+  const icon = el('i', { className: 'pd-icon' });
+  icon.style.cssText = 'width:32px;height:32px;background-image:var(--spr-mail)';
+  return icon;
 }
 
 export function showMail(options: MailOptions): void {
@@ -90,6 +98,40 @@ export function showMail(options: MailOptions): void {
     void options.api.mail('claimAll').then((answer) => apply(answer, t.mail.claimedToast));
   };
 
+  /** The pioneer letter opened (design v20: the emblem in its wreath, the words, the cup, «Claim»). */
+  const openPioneer = (letter: Letter): void => {
+    const emblem = el('i', { className: 'pd-pioneer' });
+    emblem.setAttribute('aria-hidden', 'true');
+    const done = letter.claimed !== undefined;
+    const take = button(done ? t.mail.got : t.mail.claim, () => {
+      if (busy || done) return;
+      busy = true;
+      void options.api.mail('claim', letter.id).then((answer) => {
+        apply(answer, t.mail.claimedToast);
+        back();
+      });
+    }, done ? 'quiet' : 'primary');
+    take.disabled = done;
+    const icon = el('i', { className: 'pd-icon' });
+    icon.style.cssText = 'width:32px;height:32px;background-image:var(--spr-mail)';
+    const letterBox = el(
+      'article',
+      { className: 'pd-letter-open' },
+      emblem,
+      el('span', { className: 'pd-letter-kind', textContent: t.rel.pioneer.kind }),
+      el('h3', { textContent: t.rel.pioneer.title }),
+      el('p', { textContent: t.rel.pioneer.text }),
+      el('span', { className: 'pd-gift' }, rankIcon('pioneer', { x1: true }), t.rel.pioneer.gift),
+      take,
+      el('time', { textContent: when(letter.at, Date.now()) }),
+    );
+    show(windowOf({ title: t.mail.title, icon, onClose: back, className: 'pd-mail-window' }, letterBox), back);
+  };
+  const back = (): void => {
+    show(windowOf({ title: t.mail.title, icon: mailIcon(), onClose: options.onClose, className: 'pd-mail-window' }, scroll, foot), options.onClose);
+    render();
+  };
+
   const render = (): void => {
     const first = letters.find((letter) => letter.claimed === undefined);
     const now = Date.now();
@@ -113,15 +155,27 @@ export function showMail(options: MailOptions): void {
                   return node;
                 })(),
           );
-          const kind = letter.kind === 'cup' ? trophyKind(letter.board, letter.place) : 'week';
-          return el(
+          const kind = letter.kind === 'pioneer' ? 'pioneer' : letter.kind === 'cup' ? trophyKind(letter.board, letter.place) : 'week';
+          const title = letter.kind === 'pioneer' ? t.rel.pioneer.title : letter.kind === 'cup' ? t.mail.cup : t.mail.medal;
+          const node = el(
             'article',
-            { className: `pd-letter${done ? ' claimed' : unread.has(letter.id) ? ' unread' : ''}` },
+            { className: `pd-letter${letter.kind === 'pioneer' ? ' special' : ''}${done ? ' claimed' : unread.has(letter.id) ? ' unread' : ''}` },
             el('span', { className: 'pd-letter-ico' }, rankIcon(kind, { big: true })),
-            el('header', { className: 'pd-letter-head' }, el('b', { textContent: letter.kind === 'cup' ? t.mail.cup : t.mail.medal }), el('time', { textContent: when(letter.at, now) })),
+            el('header', { className: 'pd-letter-head' }, el('b', { textContent: title }), el('time', { textContent: when(letter.at, now) })),
             words(letter),
             act,
           );
+          // The pioneer letter opens: its emblem and its words are a page of their own.
+          if (letter.kind === 'pioneer') {
+            const read = (event: Event): void => {
+              if ((event.target as HTMLElement).closest('button')) return;
+              audio.play('click');
+              openPioneer(letter);
+            };
+            node.onclick = read;
+            node.style.cursor = 'pointer';
+          }
+          return node;
         }),
       );
       foot.hidden = false;
@@ -132,9 +186,6 @@ export function showMail(options: MailOptions): void {
     sprites(list);
   };
 
-  const icon = el('i', { className: 'pd-icon' });
-  icon.style.cssText = 'width:32px;height:32px;background-image:var(--spr-mail)';
-  show(windowOf({ title: t.mail.title, icon, onClose: options.onClose, className: 'pd-mail-window' }, scroll, foot), options.onClose);
-  render();
+  back();
   if (unread.size > 0) void options.api.mail('readAll').then((answer) => answer && options.onChange(answer.mail, answer.trophies));
 }
