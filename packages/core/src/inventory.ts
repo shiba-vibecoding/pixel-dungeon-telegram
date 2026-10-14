@@ -38,7 +38,7 @@ import { transmute } from './transmute';
 import { drinkFromWaterskin, pickUpDew, TIME_TO_DRINK, WATERSKIN_VOLUME } from './waterskin';
 import { hasRoom } from './bags';
 import { wipeOut } from './altar';
-import { applyArmorKit, CLASS_ARMOR, CLASS_ARMOR_OF, classSpecial, crownProblem, specialProblem, TIME_TO_APPLY_KIT, TIME_TO_CROWN, TIME_TO_TRANSFER, transferArmor, transferProblem, useCrown } from './classArmor';
+import { CLASS_ARMOR, CLASS_ARMOR_OF, crownProblem, TIME_TO_CROWN, TIME_TO_TRANSFER, transferArmor, transferProblem, useCrown } from './classArmor';
 import { furrowGrass, type World } from './world';
 import { scaleMob } from './party';
 import { ambush, cleanseSpirit, potDropped, potPickedUp, spawnBee, spawnWraith as spawnShatteredWraith } from './mobskills';

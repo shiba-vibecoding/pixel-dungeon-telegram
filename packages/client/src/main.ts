@@ -1709,14 +1709,11 @@ function showBuff(name: BuffName, turns?: number): void {
           : name === 'timeFreeze' ? artText('timekeepershourglass$timefreeze.desc', [turns ?? 0])
           : name === 'thorns' ? artText('capeofthorns$thorns.desc', [turns ?? 0])
           : name === 'foresight' ? artText('talismanofforesight$foresight.desc') || null
-<<<<<<< HEAD
-          // The talents' and subclasses': Shattered's descriptions.
-          : (me && talentBuffInfo(me, name, turns)) || null;
-=======
           // The armour abilities': Endure's stored blows, Nature's Power.
           : name === 'endure' && me?.abil?.endure ? artText('actors.hero.abilities.warrior.endure$enduretracker.desc', [me.abil.endure.damageBonus, me.abil.endure.hitsLeft])
-          : name === 'naturesPower' ? artText('actors.hero.abilities.huntress.naturespower$naturespowertracker.desc', [turns ?? 0]) : null;
->>>>>>> shattered
+          : name === 'naturesPower' ? artText('actors.hero.abilities.huntress.naturespower$naturespowertracker.desc', [turns ?? 0])
+          // The talents' and subclasses': Shattered's descriptions.
+          : (me && talentBuffInfo(me, name, turns)) || null;
   if (long) {
     walk.reset();
     showInfo(t.buffs[name], long.split('\n\n'), hideOverlay);
@@ -1725,7 +1722,6 @@ function showBuff(name: BuffName, turns?: number): void {
   toast(turns ? `${t.buffs[name]} (${t.turnsLeft(turns)})` : t.buffs[name]);
 }
 
-<<<<<<< HEAD
 /** A level gained with a point to spend: the hero window opens on the talents (WndHero.lastIdx). */
 let newTalents = false;
 
@@ -1734,16 +1730,29 @@ const actionInd = new ActionIndicator({
   use: (kind) => useAction(kind),
 });
 
-function useAction(kind: ActionKind): void {
-=======
 /** ClassArmor.execute(AC_ABILITY) from a quick slot: the ability of the armour worn, aimed at a cell where it wants one. */
 function useAbilityNow(): void {
->>>>>>> shattered
   const world = session?.world;
   const me = world && heroById(world, session!.myId);
   if (!world || !me || !isAlive(me)) return;
   walk.reset();
-<<<<<<< HEAD
+  startAbility({
+    world, hero: me,
+    send: (action) => send(action, performance.now()),
+    aim: (prompt) => {
+      aim = { index: -1, kind: 'special' };
+      toast(prompt);
+    },
+    back: hideOverlay,
+  });
+}
+
+/** An action of the talents' and subclasses' indicator (berserk, freerun, snipe, a combo move, ambush). */
+function useAction(kind: ActionKind): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me || !isAlive(me)) return;
+  walk.reset();
   const host = { world, hero: me, act: (action: Action) => send(action, performance.now()), onClose: hideOverlay };
   switch (kind) {
     case 'berserk': send({ type: 'ability', ability: 'berserk' }, performance.now()); break;
@@ -1758,17 +1767,6 @@ function useAbilityNow(): void {
       break;
     case 'ambush': aim = { index: -1, kind: 'ability', ability: 'ambush' }; break;
   }
-=======
-  startAbility({
-    world, hero: me,
-    send: (action) => send(action, performance.now()),
-    aim: (prompt) => {
-      aim = { index: -1, kind: 'special' };
-      toast(prompt);
-    },
-    back: hideOverlay,
-  });
->>>>>>> shattered
 }
 
 function openHero(): void {
@@ -1778,21 +1776,8 @@ function openHero(): void {
   walk.reset();
   aim = null;
   showHero({
-<<<<<<< HEAD
     hero: me, world, act: (action) => send(action, performance.now()), tab: newTalents ? 'talents' : 'stats',
     buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
-=======
-    hero: me, buffs: heroBuffs(me), onClose: hideOverlay, skin: session?.looks[me.id]?.skin,
-    onTalents: () => showTalents({
-      world, hero: me,
-      act: (action) => {
-        hideOverlay();
-        send(action, performance.now());
-      },
-      stay: (action) => send(action, performance.now()),
-      back: openHero,
-    }),
->>>>>>> shattered
     looks: looksRows(me.heroClass, (shelf) => showMart({ heroClass: me.heroClass, shelf, onClose: openHero })),
   });
   newTalents = false;

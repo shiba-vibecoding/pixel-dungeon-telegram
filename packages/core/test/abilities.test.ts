@@ -5,7 +5,7 @@ import {
 } from '../src/index';
 import { endEnduring, endureAdjust } from '../src/abilities';
 import { pacify } from './helpers';
-import { CENTRE, foeAt, ready, special, wait } from './abilities-helpers';
+import { CENTRE, foeAt, ready, setTalents, special, wait } from './abilities-helpers';
 
 describe("the Dwarf King's crown and class armour", () => {
   it('turns the armour worn into the hero\'s class armour with the chosen ability, keeping its level and glyph', () => {
@@ -78,7 +78,7 @@ describe("the Dwarf King's crown and class armour", () => {
     expect(talentPointsAvailable(hero, 4)).toBe(2);
     expect(act(world, 'p', { type: 'talent', talent: 'sustainedRetribution' }).ok).toBe(true);
     expect(talentPointsAvailable(hero, 4)).toBe(1);
-    expect(act(world, 'p', { type: 'talent', talent: 'bodySlam' })).toEqual({ ok: false, reason: 'that is not one of your talents' });
+    expect(act(world, 'p', { type: 'talent', talent: 'bodySlam' })).toEqual({ ok: false, reason: 'you have no such talent' });
   });
 });
 
@@ -184,7 +184,7 @@ describe("the warrior's abilities", () => {
     hero.abil = { endure: { until: 12, enduring: true, damageBonus: 0, hitsLeft: 0 } };
     expect(endureAdjust(hero, 1, 20)).toBe(10);
     expect(hero.abil.endure!.damageBonus).toBe(10);
-    heroById(world, 'p')!.talents = { shrugItOff: 4 };
+    setTalents(heroById(world, 'p')!, { shrugItOff: 4 });
     expect(endureAdjust(hero, 1, 20)).toBeCloseTo(20 * 0.5 * 0.8 ** 4, 5);
     endEnduring({ world, depth: 1, level: levelAt(world, 1), floor: floorAt(world, 1), rng: new Rng(floorAt(world, 1).rng), effects: [] }, { ...hero, time: 3 });
   });

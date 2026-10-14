@@ -158,7 +158,6 @@ export type Effect =
    */
   | { type: 'ability'; depth: number; hero: string; ability: AbilityKind | 'perfectCopy'; from: number; to: number; cells?: number[]; wand?: ItemKind; bolt?: Bolt; mob?: string }
   /** A point of talent spent. */
-  | { type: 'talentUp'; hero: string; talent: Talent }
   /** A warp beacon's telefrag at a cell. */
   | { type: 'telefrag'; depth: number; pos: number }
   /** Death Mark put on a monster, or ended (`died`: it dies as it ends). */

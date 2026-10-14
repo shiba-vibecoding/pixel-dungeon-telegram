@@ -14,12 +14,9 @@ import { haptic } from './telegram';
 import { DEPTH_CARD_MS } from './cards';
 import { dressMob, mobEffect } from './mobfx';
 import { BOLT_MS_PER_CELL, wandFx } from './wandfx';
-<<<<<<< HEAD
 import { SPELL_FRAMES, SPELL_LIFE, type Spell } from './spellfx';
 import { subclassName, tal, talentMessage, talentTitle } from './talenttext';
-=======
 import { AT } from './abilitytext';
->>>>>>> shattered
 
 /*
  * What the player sees, as opposed to what the world is: characters slide
@@ -325,8 +322,8 @@ export class View {
   /** How long a step takes on screen (ms): STEP_MS, or under live turns the room's beat, so walks never pause. */
   stepMs = STEP_MS;
   floaters: Floater[] = [];
-  /** SpellSprites over characters (spellfx.ts). */
-  spells: Spell[] = [];
+  /** The talents' SpellSprites over characters (spellfx.ts). */
+  spellSprites: Spell[] = [];
   /** Cells lit up for a moment: discoveries and traps, or tinted clouds of gas and flame. */
   flashes: Array<{ cell: number; start: number; color?: string; duration?: number }> = [];
   log: LogLine[] = [];
@@ -385,6 +382,7 @@ export class View {
     this.beams = [];
     this.chains = [];
     this.spells = [];
+    this.spellSprites = [];
     this.jumps.clear();
     this.appearing.clear();
   }
@@ -617,7 +615,7 @@ export class View {
       }
     }
     this.floaters = this.floaters.filter((floater) => now - floater.start < 1200);
-    this.spells = this.spells.filter((spell) => now - spell.start < SPELL_LIFE);
+    this.spellSprites = this.spellSprites.filter((spell) => now - spell.start < SPELL_LIFE);
     this.flashes = this.flashes.filter((flash) => now - flash.start < (flash.duration ?? 600));
     this.projectiles = this.projectiles.filter((p) => now - p.start < p.duration);
     this.beams = this.beams.filter((b) => now - b.start < b.duration);
@@ -1328,10 +1326,6 @@ export class View {
           }
           break;
         }
-        case 'talentUp':
-          // Talent upgraded: the level-up chime.
-          if (effect.hero === myId) audio.play('levelup');
-          break;
         case 'mined':
           // Hero.actMine: a vein of gold struck out (EVOKE).
           if (effect.depth !== this.depth) break;
@@ -1543,7 +1537,7 @@ export class View {
           break;
         case 'spell':
           // SpellSprite.show.
-          if (this.puppets.has(effect.hero)) this.spells.push({ hero: effect.hero, frame: SPELL_FRAMES[effect.sprite], ...(effect.tint ? { tint: effect.tint } : {}), start: now });
+          if (this.puppets.has(effect.hero)) this.spellSprites.push({ hero: effect.hero, frame: SPELL_FRAMES[effect.sprite], ...(effect.tint ? { tint: effect.tint } : {}), start: now });
           break;
         case 'charged':
           // ScrollOfRecharging.charge: energy sparks around the hero.
@@ -1551,7 +1545,7 @@ export class View {
           break;
         case 'berserk':
           // Berserk.startBerserking: SpellSprite.BERSERK, CHALLENGE, the screen flashing red, the shield's worth floating.
-          if (this.puppets.has(effect.hero)) this.spells.push({ hero: effect.hero, frame: SPELL_FRAMES.berserk, start: now });
+          if (this.puppets.has(effect.hero)) this.spellSprites.push({ hero: effect.hero, frame: SPELL_FRAMES.berserk, start: now });
           this.float(effect.hero, `+${effect.amount}`, COLORS.shield, now);
           if (effect.hero === myId) audio.play('challenge');
           break;
@@ -1569,7 +1563,7 @@ export class View {
         case 'freerun':
           // Momentum.doAction: MISS at a lower pitch, a jet of speed, SpellSprite.HASTE in yellow.
           audio.play('miss', 1, 0.8);
-          if (this.puppets.has(effect.hero)) this.spells.push({ hero: effect.hero, frame: SPELL_FRAMES.haste, tint: [1, 1, 0], start: now });
+          if (this.puppets.has(effect.hero)) this.spellSprites.push({ hero: effect.hero, frame: SPELL_FRAMES.haste, tint: [1, 1, 0], start: now });
           break;
         case 'snipe':
           // SpiritBow.sniperSpecial: the special shot's name over the hero.

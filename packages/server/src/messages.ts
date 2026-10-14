@@ -1,11 +1,6 @@
 import {
-<<<<<<< HEAD
   type Action, ARTIFACT_USES, type EffectId, MISC_SLOTS, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
   type SubClass, COMBO_MOVES, TALENTS, type TalentId,
-=======
-  type Action, ARMOR_TALENTS, ARTIFACT_USES, type EffectId, MISC_SLOTS, type PlanStep, type FrameId, isItemRef, type ItemRef, LENGTH, type Look, OFFERS, type SkinVariant, SUBCLASSES,
-  type SubClass,
->>>>>>> shattered
 } from '@pd/core';
 
 /*
@@ -38,8 +33,6 @@ const oneOf = <T extends string>(value: unknown, options: readonly T[]): T | nul
 /** A backpack slot, the weapon, the armour or a worn ring (the core's ItemRef). */
 const itemRef = (value: unknown): ItemRef | null => (isItemRef(value) && (typeof value !== 'number' || slot(value) !== null) ? value : null);
 
-/** The talents a point can go into (the core checks they are the hero's own). */
-const TALENT_IDS = ARMOR_TALENTS;
 
 const ALL_SUBCLASSES: readonly SubClass[] = Object.values(SUBCLASSES).flat();
 
@@ -198,7 +191,7 @@ export function sanitizeAction(raw: unknown): Action | null {
       return typeof a.target === 'string' && a.target.length > 0 && a.target.length <= MAX_ID ? { type: 'dismiss', target: a.target } : null;
     case 'talent': {
       // Hero.upgradeTalent: a point in one of the talents (the rules say whether the hero has it and a point to spend).
-      const talent = typeof a.talent === 'string' && a.talent in TALENTS ? (a.talent as TalentId) : null;
+      const talent = typeof a.talent === 'string' && Object.hasOwn(TALENTS, a.talent) ? (a.talent as TalentId) : null;
       return talent ? { type: 'talent', talent } : null;
     }
     case 'ability': {
@@ -250,11 +243,6 @@ export function sanitizeAction(raw: unknown): Action | null {
       const to = sealSource(a.to);
       const from = sealSource(a.from);
       return to === null || from === null ? null : { type: 'transfer', to, from };
-    }
-    case 'talent': {
-      // A point in one of the hero's talents.
-      const talent = oneOf(a.talent, TALENT_IDS);
-      return talent ? { type: 'talent', talent } : null;
     }
     case 'augment': {
       // StoneOfAugmentation: the stone, what it is used on, and how.

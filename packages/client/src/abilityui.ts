@@ -99,7 +99,7 @@ export function showAbilityInfo(host: AbilityHost, kind: AbilityKind, back: () =
   const row = el('div', { className: 'pd-talent-row' });
   for (const talent of ABILITY_TALENTS[kind]) {
     const node = el('button', { className: 'pd-talent zero', ariaLabel: talentTitle(talent), onclick: () => showTalentCard(host, talent, () => showAbilityInfo(host, kind, back), true) },
-      talentIconNode(talent, hero), pips(0, TALENTS[talent].maxPoints));
+      talentIconNode(talent, hero), pips(0, TALENTS[talent].max));
     row.append(node);
   }
   show(
@@ -127,7 +127,7 @@ export function showTalents(host: AbilityHost): void {
   const row = el('div', { className: 'pd-talent-row' });
   for (const talent of talentsOf(hero)) {
     const points = pointsInTalent(hero, talent);
-    const max = TALENTS[talent].maxPoints;
+    const max = TALENTS[talent].max;
     const node = el('button', {
       className: `pd-talent${points === 0 ? ' zero' : ''}${points === max ? ' max' : ''}${free > 0 && points < max ? ' can' : ''}`,
       ariaLabel: `${talentTitle(talent)}, ${points}/${max}`,
@@ -162,7 +162,7 @@ function chargeBar(armor: Item): HTMLElement {
 export function showTalentCard(host: AbilityHost, talent: Talent, back: () => void, readOnly: boolean): void {
   const { hero } = host;
   const points = readOnly ? 0 : pointsInTalent(hero, talent);
-  const max = TALENTS[talent].maxPoints;
+  const max = TALENTS[talent].max;
   const { intro, levels } = talentLevels(talent);
   const free = readOnly ? 0 : talentPointsAvailable(hero, 4);
   const list = el('ol', { className: 'pd-talent-levels' }, ...levels.map((text, i) =>

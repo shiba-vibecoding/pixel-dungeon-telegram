@@ -1,11 +1,8 @@
 import type { EmoteKind, Enchantment, Glyph, HeroClass, ItemKind, Landmark, MobKind, PlantKind, SubClass, TrapKind } from '@pd/core';
 import type { BuffName } from './hud';
 import { ART_EN, ART_RU } from './i18n-artifacts';
-<<<<<<< HEAD
 import { TAL_EN, TAL_RU } from './i18n-talents';
-=======
 import { ABIL_EN, ABIL_RU } from './i18n-abilities';
->>>>>>> shattered
 
 /* Interface text in Russian and English; the language follows Telegram or the browser. */
 
@@ -2286,12 +2283,9 @@ const en = {
     // Alchemy's buffs (their Shattered names).
     haste: ALCH_EN.buff_haste, stamina: ALCH_EN.buff_stamina, magicalSight: ALCH_EN.buff_magicalSight, magicImmune: ALCH_EN.buff_magicImmune, foresight: ALCH_EN.buff_foresight, fireImbue: ALCH_EN.buff_fireImbue, frostImbue: ALCH_EN.buff_frostImbue, toxicImbue: ALCH_EN.buff_toxicImbue, featherFall: ALCH_EN.buff_featherFall, cleanse: ALCH_EN.buff_cleanse, drowsy: ALCH_EN.buff_drowsy, magicalSleep: ALCH_EN.buff_magicalSleep, potionHealing: ALCH_EN.buff_healing, arcaneArmor: ALCH_EN.buff_arcaneArmor, aquaHealing: ALCH_EN.buff_aquaHealing, htBoost: ALCH_EN.buff_htBoost, wellFed: ALCH_EN.buff_wellFed, prismaticGuard: ALCH_EN.buff_prismaticGuard, challengeArena: ALCH_EN.buff_challenge,
     stealth: 'Cloaked', timeFreeze: 'Time Freeze', thorns: 'Thorns',
-<<<<<<< HEAD
     // The talents' and subclasses' buffs (their Shattered names, talenttext.ts).
     ...talentBuffNames(TAL_EN),
-=======
     endure: ABIL_EN['actors.hero.abilities.warrior.endure$enduretracker.name']!, naturesPower: ABIL_EN['actors.hero.abilities.huntress.naturespower$naturespowertracker.name']!,
->>>>>>> shattered
     degrade: 'Degraded',
   } as Record<BuffName, string>,
   causes: {

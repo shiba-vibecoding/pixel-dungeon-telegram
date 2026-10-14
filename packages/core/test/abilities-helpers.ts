@@ -1,11 +1,17 @@
 import {
   act, addHero, canEnter, charAt, createItem, createMob, createWorld, floorAt, heroById, type HeroClass, levelAt, type Mob, type MobKind,
-  NEIGHBOURS8, T, WIDTH, type World, type AbilityKind, type Talent,
+  NEIGHBOURS8, T, talentBook, TALENTS, WIDTH, type World, type AbilityKind, type Talent, type Hero,
 } from '../src/index';
 import { observe } from '../src/floor';
 import { pacify } from './helpers';
 
 export const CENTRE = 20 + 20 * WIDTH;
+
+/** Puts points in a hero's talents (each in the tier it belongs to). */
+export function setTalents(hero: Hero, talents: Partial<Record<Talent, number>>): void {
+  const book = talentBook(hero);
+  for (const [id, points] of Object.entries(talents) as Array<[Talent, number]>) book.tiers[TALENTS[id].tier - 1]![id] = points;
+}
 
 /**
  * A hero in class armour with an ability, a full charge and a sturdy body, on a walled room of bare floor (13 by 9 cells)
@@ -24,7 +30,7 @@ export function ready(heroClass: HeroClass, ability: AbilityKind, talents: Parti
   hero.pos = CENTRE - 4;
   hero.armor = { ...createItem(`armor.${heroClass}`), base: 'armor.mail', level: 2, charge: 100 };
   hero.ability = ability;
-  hero.talents = talents;
+  setTalents(hero, talents);
   Object.assign(hero, { hp: 300, ht: 300, lvl: 25, attackSkill: 100000 });
   observe(world, hero);
   return world;

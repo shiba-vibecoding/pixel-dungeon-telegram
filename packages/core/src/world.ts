@@ -66,7 +66,6 @@ import {
   type ArtifactAction, artifactProblem, artifactsAct, artifactsTime, carriedOf, chaliceRegenDelay, disarmPresses, freezeTime, frozenBy,
   ghostFollows, ghostSeesBoss, ghostSays, heroPress, naturalism, performArtifact, petalsFor, talismanBlinds, talismanFound,
 } from './artifacts';
-import { type Talent, upgradeTalent, upgradeTalentProblem } from './talents';
 import { abilityProblem, alliesFollow, copyReach, endEnduring, swapWithClone, useAbility } from './abilities';
 
 /*
@@ -108,8 +107,6 @@ export type Action =
    * asks for one, `choice` the warp beacon's (0 warp to it, 1 clear it).
    */
   | { type: 'special'; target?: number; choice?: number }
-  /** A point of talent points spent (Hero.upgradeTalent); it takes no time. */
-  | { type: 'talent'; talent: Talent }
   /** The Amulet of Yendor's «Let's call it a day»: the party wins here. */
   | { type: 'endGame' }
   /** Live turns: what the hero is to do from now on, a turn at a time (an empty plan stops them). */
@@ -503,8 +500,6 @@ function problemWith(world: World, hero: Hero, action: Action): string | null {
       return dismissProblem(world, hero, action.target);
     case 'special':
       return abilityProblem(world, hero, action);
-    case 'talent':
-      return upgradeTalentProblem(hero, action.talent);
     case 'reward':
       return rewardProblem(world, hero, action.choice);
     case 'wandReward':
@@ -1323,12 +1318,6 @@ function perform(ctx: Ctx, hero: Hero, action: Action): void {
     case 'endGame':
       win(ctx, hero, 'amulet');
       return;
-
-    case 'talent':
-      // Hero.upgradeTalent takes no time.
-      upgradeTalent(hero, action.talent);
-      ctx.effects.push({ type: 'talentUp', hero: hero.id, talent: action.talent });
-      break;
 
     case 'special':
       spend(ctx, hero, useAbility(ctx, hero, action, { returnTo: (depth, pos) => beaconReturn(ctx, hero, depth, pos) }));

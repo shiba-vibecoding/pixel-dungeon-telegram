@@ -20,7 +20,7 @@ import { T } from './level/terrain';
 import type { Action, PlanStep } from './world';
 import type { Awareness, PendingScroll } from './artifacts';
 import type { WealthCounters } from './rings';
-import { pointsInTalent, type TalentBook } from './talents/data';
+import { type AbilityKind, pointsInTalent, type TalentBook } from './talents/data';
 import { holdFastArmor } from './talents/hold-fast';
 import { freerunning, momentumEvasion, momentumSpeed } from './talents/rogue';
 import { consumeLethalMomentum } from './talents/turns';
@@ -207,8 +207,6 @@ export interface Hero {
   kinetic?: number;
   /** Turns left of a wayward weapon's poor aim (Wayward.WaywardBuff). */
   wayward?: number;
-  /** Talents: points by talent (talents.ts; absent: none). */
-  talents?: Partial<Record<Talent, number>>;
   /** Hero.armorAbility: the ability the Dwarf King's crown gave the class armour (abilities/). */
   ability?: AbilityKind;
   /** The ability's trackers: Endure, the leap's double jump, Nature's Power, the warp beacon... (abilities/state.ts). */

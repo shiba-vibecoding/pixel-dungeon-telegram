@@ -742,7 +742,7 @@ export function render(
   ctx.globalAlpha = 1;
 
   // SpellSprites over characters (spellfx.ts): food, charge, rage, haste.
-  for (const spell of view.spells) {
+  for (const spell of view.spellSprites) {
     const puppet = view.puppets.get(spell.hero);
     if (!puppet) continue;
     const at = view.position(puppet, now);

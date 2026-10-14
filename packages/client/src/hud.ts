@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { berserkOf, comboOf, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, prismaticMaxHp, shielding, STARVING, stealthCloak, momentumOf, prepTurns } from '@pd/core';
-=======
-import { FURY_LEVEL, prismaticMaxHp, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, shielding, STARVING, stealthCloak, talentPointsAvailable } from '@pd/core';
->>>>>>> shattered
+import { berserkOf, comboOf, frozenBy, type Hero, heroArtifacts, isAlive, isHungry, isStarving, type Look, maxExp, prismaticMaxHp, shielding, STARVING, stealthCloak, momentumOf, prepTurns, talentPointsAvailable } from '@pd/core';
 import { audio } from './audio';
 import { t } from './i18n';
 import { AVATAR, durabilityBar, markWear, sprites } from './screens';
@@ -42,16 +38,13 @@ export const BUFF_ICONS = {
   prismaticGuard: 1020, challengeArena: 1054,
   // The artifacts': the cloak's stealth (INVISIBLE, dimmed), the hourglass's time freeze and stasis (TIME), the cape's THORNS, the talisman's FORESIGHT.
   stealth: 1012, timeFreeze: 1007, thorns: 1031,
-<<<<<<< HEAD
   // The talents' and subclasses' (their BuffIndicator icons): rage, the combo, momentum, preparation, the sniper's mark, hold fast,
   // trackers that add to the next blow (WEAPON), cooldowns (TIME), empowered wands (WAND), enhanced rings and a surge (UPGRADE).
   berserk: 1040, berserking: 1040, exhausted: 1040, comboChain: 1017, momentum: 1051, freerunning: 1051, preparation: 1042, sniperMark: 1027,
   holdFast: 1020, trackerBlow: 1045, cooldown: 1007, wandEmpower: 1072, enhancedRings: 1050, surge: 1050, revealedArea: 1000,
   parry: 1061, followup: 1057,
-=======
   // The armour abilities': Endure's stored blows (BuffIndicator.ARMOR) and Nature's Power (NATURE_POWER).
   endure: 1020, naturesPower: 1058,
->>>>>>> shattered
   // The monsters' curses (mobs stream): BuffIndicator.VULNERABLE, HEX, DEGRADE.
   degrade: 1048,
 } as const;
@@ -390,7 +383,6 @@ export class Hud {
   /** ShTalents' gold plus on the hero button while there are talent points to spend. */
   private readonly talentBadge: HTMLElement;
   private readonly level: HTMLElement;
-  private readonly talentBadge: HTMLElement;
   private readonly hp: HTMLElement;
   private readonly hpText: HTMLElement;
   private readonly hpLag: HTMLElement;
@@ -454,9 +446,6 @@ export class Hud {
     avatarButton.append(this.avatar);
     avatarButton.onclick = tap(() => handlers.hero());
     this.level = el('span', 'pd-hero-lvl');
-    // The golden «+» while talent points are free (TalentsPane / StatusPane.talentBlink).
-    this.talentBadge = el('i', 'pd-talent-badge');
-    this.talentBadge.hidden = true;
     this.hpText = el('span', 'pd-bar-text');
     // The wound's trace: a pale stretch where health was, melting away a moment after a blow.
     this.hpLag = el('span', 'pd-bar-lag');
@@ -785,10 +774,6 @@ export class Hud {
     this.updateArena(state.arena ?? null, dead);
     if (this.changed('keys', String(state.keys))) this.keys.data = String(state.keys);
     this.avatar.parentElement!.classList.toggle('dead', dead);
-    // The armour ability's tier 4 points (the talents stream's tiers 1 to 3 add to it): a blinking plus on the hero.
-    const points = isAlive(me) && talentPointsAvailable(me, 4) > 0;
-    this.talentBadge.hidden = !points;
-    this.avatar.parentElement!.classList.toggle('talent', points);
 
     const buffKey = state.buffs.map((b) => `${b.name}${b.tint ?? ''}:${b.turns !== undefined && b.turns <= 3 ? 'f' : ''}`).join(',');
     if (this.changed('buffs', buffKey)) {

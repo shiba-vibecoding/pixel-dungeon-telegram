@@ -37,7 +37,6 @@ import {
 import type { World } from './world';
 import { challengeFactor, chillChar, igniteChar, isMagicImmune, onHurt } from './buffs';
 import { elementsResist, tenacityMultiplier, wealthBonusDrops } from './rings';
-<<<<<<< HEAD
 import { bossSlainBeacon, capeTakes, chargeArtifacts, dispelInvisibility, ghostDied, ghostSeesHero } from './artifacts';
 import { onAttackProc, onDefenseProc, ironStomachFactor, onMobKilled, bountyBonus } from './talents/combat';
 import { berserkAbsorbs, berserkDamageFactor, deathlessEnded, deathlessFury } from './talents/berserk';
@@ -48,12 +47,9 @@ import { onSoulMarkedDied, soulMarkRestoration } from './talents/warlock';
 import { pointsInTalent } from './talents/data';
 import { staffProc, staffProcDone } from './talents/magic';
 import { tbOf } from './talents/state';
-=======
-import { bossSlainBeacon, capeTakes, dispelInvisibility, ghostDied, ghostSeesHero } from './artifacts';
 import {
   allyArmor, allyOwner, bladeBowProc, cloneGlyph, endDeathMark, endureAdjust, endureStrike, fearTheReaper, hawkDodges, hawkProc, natureArrowProc,
 } from './abilities';
->>>>>>> shattered
 
 /*
  * Combat as in Char.attack: an accuracy roll against an evasion roll (Char.hit:
@@ -135,7 +131,6 @@ export interface AttackOverride {
    * bow for its arrow. Its numbers, its enchantment and its own effect make the shot.
    */
   weapon?: Item;
-<<<<<<< HEAD
   /** Char.attack's accuracy of INFINITE_ACCURACY (a combo move, a sniper shot): the blow cannot miss (but may be dodged for sure). */
   sure?: boolean;
   /** Char.attack's dmgMulti and dmgBonus (a combo move's). */
@@ -143,11 +138,9 @@ export interface AttackOverride {
   damageBonus?: number;
   /** A combo move's own blow: it does not build the combo (Combo.doAttack calls Char.attack, not Hero.onAttackComplete). */
   move?: boolean;
-=======
   /** Char.attack(enemy, dmgMulti, 0, accMulti): the blow's damage roll and the accuracy roll, so many times as much (spectral blades). */
   damageMulti?: number;
   accuracyMulti?: number;
->>>>>>> shattered
   /** A hidden mimic's bite (Mimic.interact): no blow's procs of its own. */
   ambush?: boolean;
 }
@@ -198,15 +191,10 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   // Striking gives an invisible hero away (Invisibility.dispel: the cloak's stealth and a time freeze too), but not
   // before it has its surprise.
   if (isHero(attacker)) dispelInvisibility(ctx, attacker);
-<<<<<<< HEAD
   const skill = sure || override.sure ? INFINITE_ACCURACY : (override.attack ?? attackSkill(attacker, defender, strike));
   // Hero.defenseSkill with a parry: infinite evasion, and the blow is answered.
   const parry = isHero(defender) && !isHero(attacker) && parries(ctx, defender);
-  const hit = !parry && hitRoll(ctx, attacker, defender, skill, 1, surprised);
-=======
-  const skill = sure ? INFINITE_ACCURACY : (override.attack ?? attackSkill(attacker, defender, strike));
-  const hit = hitRoll(ctx, attacker, defender, skill, override.accuracyMulti ?? 1, surprised);
->>>>>>> shattered
+  const hit = !parry && hitRoll(ctx, attacker, defender, skill, override.accuracyMulti ?? 1, surprised);
   if (!hit) {
     parried(ctx, defender);
     ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage: 0, ...struck });
@@ -336,18 +324,14 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   ctx.effects.push({ type: 'attack', depth: ctx.depth, attacker: attacker.id, target: defender.id, hit, damage, ...struck });
   hurt(ctx, defender, damage, attacker);
   staffAfter?.();
-<<<<<<< HEAD
   if (isHero(attacker) && !isHero(defender)) {
     afterBlow(ctx, attacker, defender, damage, before, blow);
     afterHeroBlow(ctx, attacker, defender, wasEnemy, thrown, strike, prep, override.move === true);
   }
-=======
-  if (isHero(attacker) && !isHero(defender)) afterBlow(ctx, attacker, defender, damage, before, blow);
   // ShadowAlly.defenseProc: with Cloned Armor, the hero's glyph answers a blow on the clone.
   if (!isHero(defender) && defender.kind === 'shadow' && !isHero(attacker) && isAlive(attacker)) cloneGlyph(ctx, defender, attacker);
   // SpiritBow.proc under Nature's Power: Nature's Wrath and Wild Momentum.
   if (isHero(attacker) && thrown && override.weapon && itemDef(override.weapon.kind).category === 'bow') natureArrowProc(ctx, attacker, defender);
->>>>>>> shattered
   // Pickaxe.proc: a vampire bat slain with the pickaxe leaves its blood on it, as the blacksmith wants.
   if (isHero(attacker) && attacker.weapon?.kind === 'weapon.pickaxe' && !thrown && !isHero(defender) && defender.kind === 'bat' && !isAlive(defender)) {
     attacker.weapon.bloody = true;
@@ -563,17 +547,15 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
     }
   }
   victim.hp -= damage;
-<<<<<<< HEAD
-  if (isHero(victim)) {
-    // Berserk.berserking at zero health: deathless fury keeps the hero up on a single point; the shield spent, they fall.
-    if (victim.hp <= 0 && deathlessFury(ctx, victim)) victim.hp = 1;
-    else if (isAlive(victim) && deathlessEnded(victim)) victim.hp = 0;
-=======
   // Char.damage: a monster marked for death does not die at no health, but waits for the mark to end (abilities/rogue.ts).
   if (!isHero(victim) && victim.deathMark) {
     if (victim.hp < 0) victim.hp = 0;
     if (victim.hp === 0) fearTheReaper(ctx, victim);
->>>>>>> shattered
+  }
+  if (isHero(victim)) {
+    // Berserk.berserking at zero health: deathless fury keeps the hero up on a single point; the shield spent, they fall.
+    if (victim.hp <= 0 && deathlessFury(ctx, victim)) victim.hp = 1;
+    else if (isAlive(victim) && deathlessEnded(victim)) victim.hp = 0;
   }
   // Goo.damage, Tengu.damage…: hurting a boss keeps a sealed floor's healing going (LockedFloor.addTime).
   if (!isHero(victim)) {
