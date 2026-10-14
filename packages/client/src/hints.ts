@@ -293,6 +293,8 @@ class Hints {
   suppress: (id: HintId) => boolean = () => false;
   /** A card waits while this holds (the tutorial's bubble is up). */
   hold: () => boolean = () => false;
+  /** The card on screen is set aside while the tutorial shows a step. */
+  private aside = false;
 
   /** Where the cards appear (the interface layer). */
   attach(root: HTMLElement): void {
@@ -320,6 +322,21 @@ class Hints {
 
   /** Called every frame: keeps the arrow by its button, and shows the next hint once the last has gone and a moment has passed. */
   pump(): void {
+    // A card already up when the tutorial's step comes along steps aside (the step's bubble would cover its buttons), its time
+    // stopped, and comes back when the step is done.
+    if (this.card) {
+      const held = this.hold();
+      if (held && !this.aside) {
+        this.aside = true;
+        window.clearTimeout(this.timer);
+        this.left -= performance.now() - this.since;
+        this.card.style.display = 'none';
+      } else if (!held && this.aside) {
+        this.aside = false;
+        this.card.style.display = '';
+        this.countDown();
+      }
+    }
     this.placeArrow();
     if (!this.root || this.card || this.queue.length === 0 || this.hold()) return;
     if (performance.now() - this.lastShown < GAP_MS) return;
@@ -483,6 +500,7 @@ class Hints {
     this.dropArrow();
     this.card?.remove();
     this.card = null;
+    this.aside = false;
     this.lastShown = performance.now();
     if (all) this.queue = [];
   }

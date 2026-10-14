@@ -233,7 +233,9 @@ export class Tutorial {
     const below = rect.y + rect.h / 2 < height / 2;
     bubble.className = `pd-coach-bubble ${below ? 'below' : 'above'}`;
     if (below) {
-      bubble.style.top = `${Math.round(rect.y + rect.h + 18)}px`;
+      // Never under Telegram's own buttons at the top of a full screen (--safe-t, game.css).
+      const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pd-tg-top')) || 0;
+      bubble.style.top = `${Math.round(Math.max(rect.y + rect.h + 18, safeTop + 8))}px`;
       bubble.style.bottom = '';
     } else {
       bubble.style.bottom = `${Math.round(height - rect.y + 18)}px`;
