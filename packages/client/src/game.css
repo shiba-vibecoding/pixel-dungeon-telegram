@@ -408,3 +408,6 @@ body:not(:has(#ui.pd-wide)) .pd-fight { bottom: calc(var(--bar-h, calc(var(--saf
 }
 @keyframes pd-talent-pulse { from { transform: scale(1); } to { transform: scale(1.18); } }
 @media (prefers-reduced-motion: reduce) { .pd-talent-badge { animation: none; } }
+
+/* The offline strip is shown only while it has something to say (main.ts netStrip): its display:inline-flex beat [hidden]. */
+.pd-net-badge[hidden] { display: none !important; }
