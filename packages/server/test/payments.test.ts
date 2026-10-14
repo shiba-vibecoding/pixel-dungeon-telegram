@@ -160,7 +160,7 @@ describe('Pixel-Mart payments', () => {
     expect(String(calls[1]!.params.text)).toMatch(/подписка/);
     expect(String(calls[1]!.params.text)).toMatch(/https:\/\/example\.org\/terms\.html$/);
     expect(String(calls[2]!.params.text)).toMatch(/Ann/);
-    expect(calls[2]!.params.reply_markup).toEqual({ inline_keyboard: [[{ text: 'Играть в Pixel Dungeon', url: 'https://t.me/bot/app?mode=fullscreen' }]] });
+    expect(calls[2]!.params.reply_markup).toEqual({ inline_keyboard: [[{ text: 'Играть в Pixel Dungeon', url: 'https://t.me/bot/app' }]] });
   });
 
   it('passes what a player writes on to the admin, with who they are and what they paid', async () => {

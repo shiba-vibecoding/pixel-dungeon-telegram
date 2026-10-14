@@ -95,7 +95,7 @@ export async function challengeRoute(request: Request, env: Env): Promise<Respon
   const mode = body.mode === 'arena' ? 'arena' : 'daily';
   const ru = speaksRussian(user.language_code);
   // Opened over the whole screen (Bot API 8.0 direct links' mode).
-  const link = `${env.APP_LINK ?? 'https://t.me/pixel_dungeon_gamebot/pixel_dungeon'}?startapp=${mode}&mode=fullscreen`;
+  const link = `${env.APP_LINK ?? 'https://t.me/pixel_dungeon_gamebot/pixel_dungeon'}?startapp=${mode}`;
   const button = { text: mode === 'arena' ? (ru ? '⚔ На арену' : '⚔ To the arena') : (ru ? '⚔ Принять вызов' : '⚔ Take the challenge'), url: link };
   const result = card
     ? { type: 'photo', id: crypto.randomUUID().slice(0, 32), photo_url: card, thumbnail_url: card, caption: text, reply_markup: { inline_keyboard: [[button]] } }

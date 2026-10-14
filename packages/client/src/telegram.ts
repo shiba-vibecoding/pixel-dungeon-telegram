@@ -105,12 +105,12 @@ export function guardRun(on: boolean): void {
   }
 }
 
-/** The player's choice about the whole screen, kept on this device: on unless turned off. */
+/** The player's choice about the whole screen, kept on this device: off unless the player turns it on (Telegram's full screen covers the game's top with its own buttons). */
 function wantsFullscreen(): boolean {
   try {
-    return localStorage.getItem('pd-fullscreen') !== 'off';
+    return localStorage.getItem('pd-fullscreen') === 'on';
   } catch {
-    return true;
+    return false;
   }
 }
 
@@ -233,7 +233,7 @@ async function share(
   startParam: string, query: Record<string, string>, text: string,
 ): Promise<'shared' | 'copied' | 'failed'> {
   if (inTelegram && webApp!.openTelegramLink) {
-    const link = `${APP_LINK}?startapp=${encodeURIComponent(startParam)}&mode=fullscreen`;
+    const link = `${APP_LINK}?startapp=${encodeURIComponent(startParam)}`;
     webApp!.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`);
     return 'shared';
   }
@@ -324,7 +324,7 @@ export function openLink(url: string): void {
 const at = (version: string): boolean => inTelegram && (webApp?.isVersionAtLeast?.(version) ?? false);
 
 /** The game's t.me link, opening at `start` (daily, arena) or at the title. */
-export const appLink = (start?: string): string => `${APP_LINK}?${start ? `startapp=${encodeURIComponent(start)}&` : ''}mode=fullscreen`;
+export const appLink = (start?: string): string => (start ? `${APP_LINK}?startapp=${encodeURIComponent(start)}` : APP_LINK);
 
 /** Whether this Telegram can post a story from the game. */
 export const canShareStory = (): boolean => at('7.8') && typeof webApp?.shareToStory === 'function';

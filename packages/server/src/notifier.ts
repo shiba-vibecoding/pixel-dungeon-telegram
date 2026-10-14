@@ -90,7 +90,7 @@ export class Notifier extends DurableObject<Env> {
         try {
           await bot('sendMessage', {
             chat_id: job.chat, text: job.text,
-            reply_markup: { inline_keyboard: [[{ text: job.button, url: job.start === 'play' ? `${app}?mode=fullscreen` : `${app}?startapp=${job.start}&mode=fullscreen` }]] },
+            reply_markup: { inline_keyboard: [[{ text: job.button, url: job.start === 'play' ? app : `${app}?startapp=${job.start}` }]] },
           });
         } catch (error) {
           // Blocked, or the chat is gone: no more reminders there.
