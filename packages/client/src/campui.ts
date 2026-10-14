@@ -169,12 +169,35 @@ function dailyBlock(options: CampScreenOptions): HTMLElement {
       el('span', { className: 'boon', title: rules.boon.info }, boon, rules.boon.name),
     );
   }
+  // The words (what the hardship does, what the boon gives, the countdown, the attempt) stay folded: the camp is the hero's scene,
+  // not a page of text. A tap on the rules opens them, another folds them away.
+  const info = dailyInfo(options);
+  info.hidden = true;
+  if (rules) {
+    rulesNode.append(el('span', { className: 'more', textContent: '?' }));
+    rulesNode.setAttribute('role', 'button');
+    rulesNode.tabIndex = 0;
+    rulesNode.style.cursor = 'pointer';
+    rulesNode.setAttribute('aria-expanded', 'false');
+    const toggle = (): void => {
+      audio.play('click');
+      info.hidden = !info.hidden;
+      rulesNode.setAttribute('aria-expanded', String(!info.hidden));
+    };
+    rulesNode.onclick = toggle;
+    rulesNode.onkeydown = (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggle();
+      }
+    };
+  }
   return el(
     'div',
     { className: `pd-daily compact${done ? ' done' : ''}` },
     el('div', { className: 'pd-daily-title' }, el('h3', { textContent: t.daily }), chip),
     rulesNode,
-    dailyInfo(options),
+    info,
     done && options.onPractice ? button(t.ranked.practice2, options.onPractice) : button(t.descendDaily, options.onDaily),
   );
 }

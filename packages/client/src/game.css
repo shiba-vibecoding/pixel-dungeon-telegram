@@ -328,6 +328,9 @@ html.pd-paused *, html.pd-paused *::before, html.pd-paused *::after { animation-
 .pd-toolbar.tb2.q6 .pd-quickbar { gap: 6px; }
 /* The camp's daily-rules chip uses the nine-icon sheet too (hostile champions and badder bosses can be the day's hardship). */
 .pd-daily-rules .pd-ch9 { --u: 1px; }
+.pd-daily-rules .more { margin-left: auto; min-width: 20px; padding: 0 6px; text-align: center; background: var(--stone-700); color: var(--ink); }
+.pd-daily-rules[aria-expanded="true"] .more { background: var(--gold); color: var(--stone-900, #1a1612); }
+.pd-daily-info[hidden] { display: none !important; }
 .pd-rules { white-space: pre-line; }
 /* «Памятка»: a row's line is one line; the entry's page scrolls under its title. */
 .pd-guide-row .pd-spell-text small { -webkit-line-clamp: 1; }
