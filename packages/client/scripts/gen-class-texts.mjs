@@ -90,6 +90,8 @@ writeFileSync(out, `${header}export const CLS_EN: Record<string, string> = {
 ${body(en)}
 };
 `);
+// Shattered's Russian file has a typo here; the game says it right.
+for (const key of Object.keys(ru)) ru[key] = ru[key].replace('Усиляющий', 'Усиливающий');
 writeFileSync(out.replace(/\.ts$/, '.ru.ts'), `${header}export const CLS_RU: Record<string, string> = {
 ${body(ru)}
 };
