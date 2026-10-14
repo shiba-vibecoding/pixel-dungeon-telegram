@@ -1,105 +1,79 @@
+<p align="right"><b>English</b> · <a href="README.ru.md">Русский</a></p>
+
 <p align="center">
-  <img src="docs/github/header-ru.png" alt="Pixel Dungeon в Telegram: шесть героев у костра у входа в подземелье" width="100%">
+  <img src="docs/github/header-en.png" alt="Pixel Dungeon in Telegram: six heroes by the fire at the dungeon’s door" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://t.me/pixel_dungeon_gamebot/pixel_dungeon"><img src="docs/github/badge-play-ru.png" alt="Играть в Telegram" height="44"></a>
-  <img src="docs/github/badge-daily-ru.png" alt="Подземелье дня" height="44">
-  <img src="docs/github/badge-ver-ru.png" alt="Shattered v4" height="44">
-  <a href="LICENSE"><img src="docs/github/badge-gpl-ru.png" alt="GPL-3.0" height="44"></a>
+  <a href="https://t.me/pixel_dungeon_gamebot/pixel_dungeon"><img src="docs/github/badge-play-en.png" alt="Play in Telegram" height="44"></a>
+  <img src="docs/github/badge-daily-en.png" alt="Daily dungeon" height="44">
+  <img src="docs/github/badge-ver-en.png" alt="Shattered v4" height="44">
+  <a href="LICENSE"><img src="docs/github/badge-gpl-en.png" alt="GPL-3.0" height="44"></a>
 </p>
 
-**Pixel Dungeon для Telegram** — классический пошаговый рогалик Watabou, доросший до контента
-**Shattered Pixel Dungeon 4.0.2**. Открывается прямо в Telegram, ставить ничего не нужно: забег хранится
-на сервере и продолжается с телефона или компьютера.
+**Pixel Dungeon for Telegram** is Watabou’s classic turn-based roguelike grown into the content of
+**Shattered Pixel Dungeon 4.0.2**. It opens right inside Telegram with nothing to install. Your run is kept on the
+server and goes on from your phone or your computer.
 
 <p align="center">
-  <img src="docs/github/screens-ru.png" alt="Привал, подземелье, таланты, алхимия" width="100%">
+  <img src="docs/github/screens-en.png" alt="The camp, the dungeon, talents, alchemy" width="100%">
 </p>
 
-## Что внутри
+## What’s inside
 
-- **Шесть классов.** Воин, Маг, Разбойник, Охотница, Дуэлянтка и Клирик. У каждого свои подклассы и таланты
-  на четырёх ярусах, а ещё способности брони.
-- **Всё подземелье Shattered.** 26 глубин в пяти областях: монстры и их чемпионы, пять боссов с их настоящими
-  тактиками, квесты Призрака, Мастера палочек, Кузнеца с его шахтами и Беса с хранилищем.
-- **Алхимия.** Котёл, энергия, экзотические зелья и свитки, руны, заклинания, эликсиры и безделушки.
-- **Подземелье дня.** Одно на всех и одна попытка. Каждый день новое испытание и новый дар. Есть доски дня,
-  недели и за всё время, кубки за первые места и серия дней с заморозками.
-- **Честный рейтинг.** Сервер переигрывает каждый забег по ходам игрока, а сид дня секретный, поэтому пройти его
-  заранее нельзя.
-- **9 испытаний Shattered**, включая «Злых боссов». Счёт показывает, из чего он сложился: прогресс,
-  сокровища, исследование, боссы и задания.
-- **Привал.** Это живой главный экран: ваш герой сидит у костра, его можно потрогать, а облик и эффекты можно
-  выбрать в Пиксель-Марте. Во всём Пиксель-Марте продаются только украшения, преимуществ за деньги нет.
-- **Для новичков.** Есть пошаговое обучение и «Памятка» в журнале: голод, проклятия, мимики, анх и другие
-  неочевидные правила. Игра переспрашивает, прежде чем вы шагнёте на ловушку, в огонь или выпьете неизвестное
-  зелье рядом с врагом.
+- **Six classes:** Warrior, Mage, Rogue, Huntress, Duelist and Cleric, each with subclasses, talents on four tiers
+  and armour abilities.
+- **All of Shattered’s dungeon:** 26 depths in five regions, monsters and their champions, the five bosses with
+  their real tactics, and the quests of the Ghost, the Wandmaker, the Blacksmith (with his mines) and the Imp
+  (with his vault).
+- **Alchemy:** the alchemy pot, energy, exotic potions and scrolls, runestones, spells, elixirs and trinkets.
+- **The daily dungeon:** the same for everyone, one attempt, a new challenge and boon every day. There are daily,
+  weekly and all-time boards, trophies for the top places, and a streak with freezes.
+- **Fair rankings:** the server replays every run from the player’s moves, and the daily seed is a server secret,
+  so nobody can scout it in advance.
+- **Shattered’s nine challenges**, Badder Bosses included. The score shows what it is made of: progress,
+  treasure, exploration, bosses and quests.
+- **The camp:** a living home screen with your hero by the fire, who reacts when you touch them. Pixel-Mart sells
+  looks and effects only, never an advantage.
+- **Made for newcomers:** a step-by-step tutorial and a guide in the journal covering hunger, curses, mimics, the
+  ankh and the other unobvious rules. The game asks before you step on a known trap or into fire, or drink an
+  unknown potion with an enemy in view.
 
-## Как играть
+## How to play
 
-Откройте бота [@pixel_dungeon_gamebot](https://t.me/pixel_dungeon_gamebot) и нажмите «Играть». Прямо в браузере
-игра тоже открывается — [shiba-vibecoding.github.io/pixel-dungeon-telegram](https://shiba-vibecoding.github.io/pixel-dungeon-telegram/), —
-но забеги вне Telegram в рейтинг не идут.
+Open [@pixel_dungeon_gamebot](https://t.me/pixel_dungeon_gamebot) and press «Play». The game also opens in a plain
+browser at [shiba-vibecoding.github.io/pixel-dungeon-telegram](https://shiba-vibecoding.github.io/pixel-dungeon-telegram/),
+but runs outside Telegram are not ranked.
 
-## Как проверяются забеги
+## How runs are checked
 
-Ядро игры детерминировано, поэтому забег полностью задаётся сидом и действиями игрока. Сервер выдаёт забег,
-устройство играет сразу, без ожидания сети, и отправляет ходы пачками вместе с отпечатком своего мира. Сервер
-повторяет те же ходы на своей копии. Если ход не проходит или отпечатки расходятся, устройство получает копию
-сервера. Смерть нельзя отменить перезагрузкой, а правки на устройстве просто откатываются. В конце забега
-сервер считает очки, выдаёт значки и ставит забег на доски.
+The core is deterministic, so a run is just its seed plus the player’s actions. The server hands out the run. The
+device plays at once, with no wait for the network, and sends its actions in batches with a fingerprint of its
+world. The player’s Durable Object replays the same actions on its own copy. If an action is refused or the
+fingerprints differ, it sends its copy back, so a death cannot be undone by reloading and edits on the device are
+simply reverted. When the run ends the server scores it, awards the badges and puts it on the boards.
 
-## Устройство
+## Layout
 
-- `packages/core` — вся игра на чистом детерминированном TypeScript, без глобальных переменных, отрисовки и
-  API платформы. Мир хранится как обычный JSON, поэтому один и тот же код работает и в браузере, и на сервере.
-- `packages/client` — Mini App: карта на canvas, а окна, интерфейс, журнал и панель — на HTML по
-  дизайн-системе «Pixel Dungeon UI» (`docs/design/system`).
-- `packages/server` — Cloudflare Worker: по Durable Object на игрока и на каждую доску, вход через Telegram,
-  письма и напоминания бота, Пиксель-Март.
+- `packages/core`: the whole game as pure, deterministic TypeScript, with no globals, no rendering and no platform
+  APIs. The world is plain JSON, so the same code runs in the browser and on the server.
+- `packages/client`: the Mini App. The map is drawn on a canvas; windows, HUD, log and toolbar are HTML after the
+  «Pixel Dungeon UI» design system (`docs/design/system`).
+- `packages/server`: a Cloudflare Worker with one Durable Object per player and one per board, Telegram login,
+  the bot’s letters and reminders, and Pixel-Mart.
 
 ```bash
 npm install
 npm test            # vitest
 npm run typecheck
-npm run server      # сервер на http://127.0.0.1:8787
-npm run dev         # клиент на http://127.0.0.1:5173
+npm run server      # the server on http://127.0.0.1:8787
+npm run dev         # the client on http://127.0.0.1:5173
 ```
 
-Выкладка (GitHub Pages, Cloudflare, Telegram) описана в [DEPLOY.md](DEPLOY.md). Как переносился Shattered —
-в [docs/SHATTERED.md](docs/SHATTERED.md).
+Deployment (GitHub Pages, Cloudflare, Telegram) is in [DEPLOY.md](DEPLOY.md), and the story of the Shattered port is
+in [docs/SHATTERED.md](docs/SHATTERED.md).
 
-<details><summary><b>English</b></summary>
-
-<p align="center"><img src="docs/github/header-en.png" alt="Pixel Dungeon in Telegram: six heroes by the fire at the dungeon’s door" width="100%"></p>
-<p align="center"><a href="https://t.me/pixel_dungeon_gamebot/pixel_dungeon"><img src="docs/github/badge-play-en.png" alt="Play in Telegram" height="44"></a></p>
-
-**Pixel Dungeon for Telegram** is Watabou’s classic turn-based roguelike grown into the content of
-**Shattered Pixel Dungeon 4.0.2**. It opens right inside Telegram with nothing to install. Your run is kept on the
-server and continues on your phone or computer.
-
-<p align="center"><img src="docs/github/screens-en.png" alt="The camp, the dungeon, talents, alchemy" width="100%"></p>
-
-- **Six classes:** Warrior, Mage, Rogue, Huntress, Duelist and Cleric. Each has subclasses, talents on four tiers
-  and armour abilities.
-- **All of Shattered’s dungeon:** 26 depths in five regions, champion monsters, the five bosses and every quest.
-- **Alchemy:** exotic potions and scrolls, runestones, spells, elixirs and trinkets.
-- **The daily dungeon:** one for everyone, one attempt, a new challenge and boon every day. There are daily,
-  weekly and all-time boards with trophies, and a streak with freezes.
-- **Fair rankings:** the server replays every run from the player’s moves, and the daily seed is a server secret.
-- **The camp:** a living home screen with your hero by the fire. Pixel-Mart sells looks only, never power.
-
-Play: open [@pixel_dungeon_gamebot](https://t.me/pixel_dungeon_gamebot) and press «Play».
-
-The core is deterministic, so a run is its seed plus the player’s actions. The device plays at once and sends
-its actions in batches with a fingerprint of its world. The player’s Durable Object replays them on its own copy
-and sends that copy back if they differ, so a death cannot be undone by reloading. Development commands and the
-package layout are above, and deployment is in [DEPLOY.md](DEPLOY.md).
-
-</details>
-
-## Авторы и лицензия · Credits and license
+## Credits and license
 
 Pixel Dungeon by Watabou (Oleg Dolya), GPL-3.0. This rewrite follows the original's rules and is distributed
 under GPL-3.0-or-later (see LICENSE).
