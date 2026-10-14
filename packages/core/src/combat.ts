@@ -1,5 +1,6 @@
 import { familiarise, identifyBelongings } from './ident';
-import { bossHurt, earnExp } from './hero';
+import { earnExp } from './hero';
+import { bossAfterDamage, bossBeforeDamage, bossDied, bossHoldsOn, bossRules } from './bosses/index';
 import { shieldDamage } from './seal';
 import {
   baseKind, BRUTE_ENRAGED_DAMAGE, isShopkeeper, statsOf, createMob, type Hero, heroArmor, heroAttackSkill, heroDamageRoll, heroDefenseSkill,
@@ -59,8 +60,9 @@ import {
  * then the attacker's attackProc, and the harm.
  */
 
-function attackSkill(char: Char, target: Char, weapon?: Item | null): number {
-  return isHero(char) ? heroAttackSkill(char, target.pos, weapon === undefined ? char.weapon : weapon) : mobStats(char).attack;
+function attackSkill(ctx: Ctx, char: Char, target: Char, weapon?: Item | null): number {
+  if (isHero(char)) return heroAttackSkill(char, target.pos, weapon === undefined ? char.weapon : weapon);
+  return bossRules(char)?.attackSkill?.(ctx, char, target) ?? mobStats(char).attack;
 }
 
 /**
@@ -73,9 +75,18 @@ function defenseSkill(char: Char, attacker?: Char, surprised?: boolean): number 
   // Mob.surprisedBy: the hero, unseen by it or invisible, with a weapon that can surprise (Hero.canSurpriseAttack).
   const caught = surprised ?? (attacker !== undefined && isHero(attacker) && surprises(attacker, char, attacker.weapon));
   // Mob.defenseSkill: none caught off guard, paralysed, or an ally struck by its hero.
-  const base = caught || (char.paralysed ?? 0) > 0 || (char.ally && attacker !== undefined && isHero(attacker)) ? 0 : mobStats(char).defense;
+  const base = caught || (char.paralysed ?? 0) > 0 || (char.ally && attacker !== undefined && isHero(attacker)) ? 0
+    : bossRules(char)?.defenseSkill?.(char) ?? mobStats(char).defense;
   return mobDefenseSkill(char, attacker, base);
 }
+
+/** Char.hit for a magic attack (a bolt, a beam): its accuracy counts double (a boss's own accuracy). */
+export function magicHit(ctx: Ctx, attacker: Char, defender: Char): boolean {
+  return hitRoll(ctx, attacker, defender, attackSkill(ctx, attacker, defender), 2);
+}
+
+/** Char.drRoll, for the bosses' own rolls of what armour takes (drRoll). */
+export const drRollOf = (ctx: Ctx, char: Char): number => drRoll(ctx, char);
 
 /** Char.defenseSkill, as a monster's ranged attack (or anyone's) is weighed against it. */
 export function defenseOf(char: Char, attacker?: Char): number {
@@ -108,6 +119,9 @@ function mobDrRoll(ctx: Ctx, mob: Mob): number {
  */
 export function drRoll(ctx: Ctx, char: Char): number {
   if (isHero(char)) return heroDrRoll(char, ctx.rng);
+  // A boss's own (Goo's, Tengu's, DM-300's, the King's, Yog's fists...).
+  const own = bossRules(char)?.drRoll;
+  if (own) return own(ctx, char);
   if (char.kind === 'guardian') return guardianArmor(ctx, char, isChallenged(ctx.world, NO_ARMOR));
   if (char.kind === 'ward') return wardArmor(ctx, char);
   // The abilities' allies: the shadow clone's share of the hero's armour, the decoy's own.
@@ -118,6 +132,8 @@ export function drRoll(ctx: Ctx, char: Char): number {
 function damageRoll(ctx: Ctx, char: Char, range?: readonly [number, number]): number {
   if (range) return ctx.rng.normalIntRange(range[0], range[1]);
   if (isHero(char)) return heroDamageRoll(char, ctx.rng);
+  const own = bossRules(char)?.damageRoll;
+  if (own) return own(ctx, char);
   const [min, max] = mobDamageRange(char);
   return ctx.rng.normalIntRange(min, max);
 }
@@ -191,7 +207,7 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   // Striking gives an invisible hero away (Invisibility.dispel: the cloak's stealth and a time freeze too), but not
   // before it has its surprise.
   if (isHero(attacker)) dispelInvisibility(ctx, attacker);
-  const skill = sure || override.sure ? INFINITE_ACCURACY : (override.attack ?? attackSkill(attacker, defender, strike));
+  const skill = sure || override.sure ? INFINITE_ACCURACY : (override.attack ?? attackSkill(ctx, attacker, defender, strike));
   // Hero.defenseSkill with a parry: infinite evasion, and the blow is answered.
   const parry = isHero(defender) && !isHero(attacker) && parries(ctx, defender);
   const hit = !parry && hitRoll(ctx, attacker, defender, skill, override.accuracyMulti ?? 1, surprised);
@@ -249,10 +265,10 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
   if ((defender.vulnerable ?? 0) > 0) damage = Math.trunc(damage * 1.33);
   // Viscosity: some of what gets past the armour is put off.
   if (isHero(defender) && blow.viscosity !== undefined) damage = deferDamage(ctx, defender, damage, blow.viscosity);
-  // Goo's touch may leave caustic ooze that burns until washed off in water.
-  if (!isHero(attacker) && attacker.kind === 'goo' && ctx.rng.int(3) === 0 && isHero(defender)) {
-    if (defender.ooze < 0) ctx.effects.push({ type: 'oozed', hero: defender.id });
-    defender.ooze = 0;
+  // A boss's own attackProc (Goo's and the rotting fist's ooze...).
+  if (!isHero(attacker) && !override.ambush) {
+    const proc = bossRules(attacker)?.attackProc;
+    if (proc) damage = proc(ctx, attacker, defender, damage);
   }
   // Char.attackProc: what a monster's blow does besides the damage (mobskills.ts), a champion's too.
   if (!isHero(attacker) && !override.ambush) {
@@ -261,13 +277,6 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     }
     damage = mobAttackProc(ctx, attacker, defender, damage);
     championAttackProc(ctx, attacker, defender, (char) => igniteChar(ctx, char));
-    if (isHero(defender)) {
-      // RottingFist.attackProc: one blow in three leaves caustic ooze.
-      if (attacker.kind === 'rottingFist' && ctx.rng.int(3) === 0) {
-        if (defender.ooze < 0) ctx.effects.push({ type: 'oozed', hero: defender.id });
-        defender.ooze = 0;
-      }
-    }
     // HawkAlly.attackProc: its talons blind and cripple.
     if (attacker.kind === 'hawk') hawkProc(ctx, allyOwner(ctx.world, attacker), defender);
     // CursePersonification.attackProc: each blow throws its victim back a step, if there is room.
@@ -309,8 +318,6 @@ export function attack(ctx: Ctx, attacker: Char, defender: Char, override: Attac
     defender.enemy = attacker.id;
     if (defender.state !== 'passive') defender.state = 'hunting';
   }
-  // Yog.defenseProc: struck, Yog-Dzewa spawns a larva next to it.
-  if (!isHero(defender) && defender.kind === 'yog') spawnLarva(ctx, defender);
   // Char.damage, as a vorpal blow has it: unless it kills, it is dealt as bleeding instead.
   if (blow.vorpal !== undefined && !isHero(defender) && damage <= defender.hp) {
     const bleed = Math.round(blow.vorpal * (2 + damage / 2));
@@ -422,18 +429,6 @@ function shove(ctx: Ctx, curse: Mob, victim: Char): void {
 /** Cripple.DURATION. */
 export const CRIPPLE_TURNS = 10;
 
-function spawnLarva(ctx: Ctx, yog: Mob): void {
-  const { world, depth, level, rng, floor } = ctx;
-  const cells = NEIGHBOURS8.map((n) => yog.pos + n).filter((c) => isPassable(level, c) && !charAt(world, depth, c));
-  if (cells.length === 0) return;
-  const larva = createMob(`#${++world.nextId}`, 'larva', rng.element(cells)!, 'hunting', floor.now + 1);
-  Object.assign(larva, { enemy: yog.enemy, target: yog.target });
-  floor.mobs.push(larva);
-  enterCell(level, larva.pos);
-}
-
-const isFist = (mob: Mob): boolean => mob.kind === 'rottingFist' || mob.kind === 'burningFist';
-
 /**
  * Swarm.defenseProc: struck for less than it has left, the swarm splits — a clone with half of what will be left
  * flies off beside it (not into walls; into traps and chasms all the same), burning or poisoned as it is, the same
@@ -471,13 +466,16 @@ export type Hazard =
   /** Alchemy's: electricity, an aqua brew's geyser, the psionic blast, the special bombs. */
   | 'electricity' | 'geyser' | 'psionic' | 'arcaneBomb' | 'flashbang' | 'holy' | 'shrapnel'
   /** Shattered's monsters: a brute's rage spent, a ghoul's host gone, a minion's master slain. */
-  | 'rage' | 'lifelink' | 'master';
+  | 'rage' | 'lifelink' | 'master'
+  /** The bosses' own: DM-300's falling rocks, the King's summoning and his KingDamager, a life link. */
+  | 'rocks' | 'king' | 'link';
 
 /** Who cannot be harmed: the folk (the sad ghost, the quest givers, the sheep), the heroes' passive allies; a shopkeeper will not stay to be. */
 const untouchable = (mob: Mob): boolean => mob.state === 'passive' && !isEnemy(mob) && !mob.corrupted;
 
 export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Hazard): void {
-  if (!isAlive(victim)) return;
+  // Char.damage: nothing for the dead, nor for negative damage.
+  if (!isAlive(victim) || damage < 0) return;
   // Hero.damage: in the hourglass's stasis nothing can touch the hero.
   if (isHero(victim) && (victim.stasis ?? 0) > 0) return;
   // The folk cannot be harmed (the sad ghost, the quest givers, the sheep); the shopkeeper will not stay to be.
@@ -490,6 +488,13 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   if (isHero(victim) && typeof source === 'string') damage = Math.round(endureAdjust(victim, ctx.floor.now, damage));
   // WandOfRegrowth.Lotus.damage: nothing harms it.
   if (!isHero(victim) && victim.kind === 'lotus') return;
+  // A boss's own Char.damage: invulnerable, deferring, linked... (bosses/*.ts).
+  if (!isHero(victim) && bossRules(victim)) {
+    const through = bossBeforeDamage(ctx, victim, damage, source);
+    // (A negative blow does nothing: the soiled fist deep in grass.)
+    if (through === null || through < 0) return;
+    damage = through;
+  }
   if (!isHero(victim)) {
     // Mob.damage: it wakes, and unless it hunts already (or flees), it is alerted to who struck it.
     if (victim.state === 'sleeping') victim.state = 'wandering';
@@ -536,16 +541,8 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
   if (isHero(victim)) damage = shieldDamage(ctx, victim, damage, source === 'hunger');
   // Berserk's shield is the last to give way (shieldUsePriority -1).
   if (isHero(victim)) damage = berserkAbsorbs(victim, damage);
+  const before = victim.hp;
   onHurt(victim);
-  if (!isHero(victim) && victim.kind === 'yog') {
-    // Yog.damage: each living fist halves the harm, and they all come to defend it.
-    const fists = ctx.floor.mobs.filter(isFist);
-    damage >>= fists.length;
-    for (const fist of fists) {
-      if (fist.state !== 'hunting') fist.state = 'wandering';
-      fist.target = victim.pos;
-    }
-  }
   victim.hp -= damage;
   // Char.damage: a monster marked for death does not die at no health, but waits for the mark to end (abilities/rogue.ts).
   if (!isHero(victim) && victim.deathMark) {
@@ -557,12 +554,13 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
     if (victim.hp <= 0 && deathlessFury(ctx, victim)) victim.hp = 1;
     else if (isAlive(victim) && deathlessEnded(victim)) victim.hp = 0;
   }
-  // Goo.damage, Tengu.damage…: hurting a boss keeps a sealed floor's healing going (LockedFloor.addTime).
   if (!isHero(victim)) {
-    bossHurt(ctx, victim, damage);
+    // Goo.damage, Tengu.damage…: phases, brackets, the sealed floor's healing (LockedFloor.addTime).
+    if (bossRules(victim)) bossAfterDamage(ctx, victim, before, source);
     afterDamage(ctx, victim, source);
   }
-  if (!isAlive(victim)) {
+  // (Tengu holds on at no health in his arena until its fight is over: Tengu.isAlive.)
+  if (!isAlive(victim) && !(!isHero(victim) && bossHoldsOn(ctx, victim))) {
     if (isHero(victim)) {
       victim.killedBy = typeof source === 'string' ? source : isHero(source) ? source.heroClass : source.kind;
       heroDied(ctx, victim);
@@ -577,6 +575,13 @@ export function hurt(ctx: Ctx, victim: Char, damage: number, source: Char | Haza
       mobDied(ctx, victim, by && isHero(by) ? by.id : undefined);
     }
   }
+}
+
+/** Mob.die, for whatever kills a monster outright (a boss's fight ending, its subjects dying with it). */
+export function killMob(ctx: Ctx, mob: Mob, by?: string): void {
+  if (!ctx.floor.mobs.includes(mob)) return;
+  mob.hp = 0;
+  mobDied(ctx, mob, by);
 }
 
 /**
@@ -599,8 +604,10 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   mob.hp = 0;
   // Char.die: something else forces the death of a monster marked for death; the mark goes (and shields the rogue).
   if (mob.deathMark) endDeathMark(ctx, mob, true);
+  // (Already gone: slain as its blow was being dealt, e.g. the King's court as he takes to his throne.)
   const index = ctx.floor.mobs.indexOf(mob);
-  if (index >= 0) ctx.floor.mobs.splice(index, 1);
+  if (index < 0) return;
+  ctx.floor.mobs.splice(index, 1);
   leaveCell(ctx.world, ctx.level, ctx.depth, mob.pos);
   ctx.effects.push({ type: 'died', depth: ctx.depth, who: mob.id, pos: mob.pos, kind: mob.kind, ...(by ? { by } : {}) });
   // The curse, broken, is the ghost again: nothing to learn from it, nothing left behind.
@@ -664,41 +671,9 @@ function mobDied(ctx: Ctx, mob: Mob, by?: string): void {
   // DemonSpawner.die: the demonic energy here lessens.
   if (mob.kind === 'spawner') ctx.effects.push({ type: 'mobSays', depth: ctx.depth, mob: mob.id, line: 'spawnerDied' });
 
-  if (mob.kind === 'yog') {
-    // Its fists die with it.
-    for (const fist of ctx.floor.mobs.filter(isFist)) {
-      ctx.effects.push({ type: 'hurt', depth: ctx.depth, who: fist.id, damage: fist.hp });
-      fist.hp = 0;
-      mobDied(ctx, fist);
-    }
-  }
-  if (mob.kind === 'goo' || mob.kind === 'tengu' || mob.kind === 'dm300' || mob.kind === 'king' || mob.kind === 'yog') {
-    const { level } = ctx;
-    // Goo's lair dries out behind the heroes; Tengu's arena opens; the rock
-    // in DM-300's way back crumbles.
-    if (level.map[level.entrance] === T.WATER_TILES) level.map[level.entrance] = T.ENTRANCE;
-    if (level.arenaDoor !== undefined && (level.map[level.arenaDoor] === T.LOCKED_DOOR || level.map[level.arenaDoor] === T.WALL)) {
-      level.map[level.arenaDoor] = level.map[level.arenaDoor] === T.WALL ? T.EMPTY_DECO : T.DOOR;
-      ctx.effects.push({ type: 'arena', depth: ctx.depth, sealed: false });
-    }
-    // Goo, Tengu, DM-300 and the King drop a skeleton key for the locked way down; Yog's fall opens it.
-    if (mob.kind === 'yog') {
-      if (level.map[level.exit] === T.LOCKED_EXIT) level.map[level.exit] = T.UNLOCKED_EXIT;
-    } else if (!ctx.world.arena) {
-      // (The arena has no locked way down for it to open.)
-      dropItem(ctx.floor, mob.pos, { ...createItem('key.skeleton'), depth: ctx.depth });
-    }
-    ctx.effects.push({ type: 'yell', depth: ctx.depth, mob: mob.id, kind: mob.kind, line: 'death' });
-    ctx.effects.push({ type: 'bossSlain', depth: ctx.depth, kind: mob.kind });
-    // King.die: the crown.
-    if (mob.kind === 'king') dropItem(ctx.floor, mob.pos, createItem('crown.king'));
-    // Tengu, DM-300 and the King: a beacon carried grows stronger.
-    if (mob.kind === 'tengu' || mob.kind === 'dm300' || mob.kind === 'king') bossSlainBeacon(ctx);
-    // Tengu.die: a Tome of Mastery, here one for every hero who has not mastered yet.
-    if (mob.kind === 'tengu') {
-      for (const hero of ctx.world.heroes) if (!hero.subclass) dropItem(ctx.floor, mob.pos, createItem('mask.tengu'));
-    }
-  }
+  // A boss's death (Goo.die, Tengu.die...): its level unseals, its drops, its last words; a beacon carried grows stronger.
+  bossDied(ctx, mob, by);
+  if (mob.kind === 'tengu' || mob.kind === 'dm300' || mob.kind === 'king') bossSlainBeacon(ctx);
 }
 
 /** Bestiary.countEncounter: one more of a kind slain (and so seen). */

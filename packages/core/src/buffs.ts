@@ -134,7 +134,7 @@ export const isFiery = (char: Char): boolean => !isHero(char) && (char.kind === 
 export function isUnholy(char: Char): boolean {
   if (isHero(char)) return false;
   const kind = baseKind(char.kind);
-  return ['skeleton', 'undead', 'wraith', 'king', 'succubus', 'eye', 'scorpio', 'yog', 'rottingFist', 'burningFist', 'larva'].includes(kind);
+  return ['skeleton', 'undead', 'wraith', 'king', 'succubus', 'eye', 'scorpio', 'yog', 'rottingFist', 'burningFist', 'larva', 'ghoul', 'soiledFist', 'rustedFist', 'brightFist', 'darkFist'].includes(kind);
 }
 
 /** Whether something harmful would be shaken off at once: a potion of cleansing's Cleanse. */

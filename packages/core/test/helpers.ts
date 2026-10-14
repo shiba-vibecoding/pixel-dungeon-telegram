@@ -49,7 +49,8 @@ export function botAction(world: World, id: string, deepest = 4): Action {
     if (!path || path.length === 0) return { type: 'wait' };
     const inTheWay = floor.mobs.find((mob) => mob.pos === path[0]);
     if (swapsWithHero(inTheWay)) return { type: 'move', to: path[0]! };
-    if (inTheWay?.state === 'passive') return { type: 'wait' };
+    // (A demon spawner never moves, nor fights: it is struck down.)
+    if (inTheWay?.state === 'passive' && inTheWay.kind !== 'spawner') return { type: 'wait' };
     return inTheWay ? { type: 'attack', target: inTheWay.id } : { type: 'move', to: path[0]! };
   };
 
@@ -90,7 +91,9 @@ export function checkInvariants(world: World): void {
       if (!isAlive(mob) || mob.hp > mob.ht) throw new Error(`${mob.id} has ${mob.hp}/${mob.ht} HP`);
       // A trap may be found under a monster standing on it; a flier may hover over a chasm.
       const flier = MOBS[mob.kind].flying === true;
-      if (!canEnter(level, mob.pos) && !(flier && hasFlag(level.map[mob.pos]!, F.PIT))) throw new Error(`${mob.id} (${mob.kind}) stands in a wall at ${mob.pos} on depth ${depth} (terrain ${level.map[mob.pos]})`);
+      // The Dwarf King sits on his throne (DwarfKing, CityBossLevel.throne).
+      const throned = mob.kind === 'king' && level.boss?.throne === mob.pos;
+      if (!canEnter(level, mob.pos) && !throned && !(flier && hasFlag(level.map[mob.pos]!, F.PIT))) throw new Error(`${mob.id} (${mob.kind}) stands in a wall at ${mob.pos} on depth ${depth} (terrain ${level.map[mob.pos]})`);
       occupy(mob.pos, mob.id);
     }
     for (const hero of world.heroes.filter((h) => h.depth === depth && isAlive(h))) {

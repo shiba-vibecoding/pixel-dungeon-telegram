@@ -83,7 +83,7 @@ export function beyond(ctx: Ctx, from: number, through: number): Trajectory {
 /** Bosses (Char.Property.BOSS): they are knocked back only half as far. */
 const BOSSES: ReadonlySet<string> = new Set(['goo', 'tengu', 'dm300', 'king', 'yog']);
 /** Char.Property.IMMOVABLE: Yog-Dzewa and those who keep a shop or a quest never budge. */
-const IMMOVABLE: ReadonlySet<string> = new Set(['yog', 'shopkeeper', 'impShopkeeper', 'wandmaker', 'blacksmith', 'imp', 'ghost', 'ratKing']);
+const IMMOVABLE: ReadonlySet<string> = new Set(['yog', 'shopkeeper', 'impShopkeeper', 'wandmaker', 'blacksmith', 'imp', 'ghost', 'ratKing', 'pylon']);
 
 export const isImmovable = (char: Char): boolean => !isHero(char) && IMMOVABLE.has(char.kind);
 

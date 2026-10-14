@@ -208,16 +208,13 @@ function regenerationTurn(ctx: Ctx, hero: Hero): void {
 
 /* A boss's sealed floor (LockedFloor) */
 
-/** The bosses whose fight seals their floor. */
-const BOSSES: ReadonlySet<MobKind> = new Set(['goo', 'tengu', 'dm300', 'king', 'yog']);
-
 /**
- * Level.locked: a boss's floor is sealed while its fight is on. Seam for the bosses stream, which
- * seals and unseals the floors as each boss does; here, while a boss is up and hunting.
+ * Level.locked: a boss's floor is sealed while its fight is on (the bosses' levels seal and unseal it:
+ * bosses/*.ts).
  */
 export function floorLocked(world: World, depth: number): boolean {
   if (!isBossDepth(depth) || world.arena) return false;
-  return (world.floors[depth]?.mobs ?? []).some((mob) => BOSSES.has(mob.kind) && mob.state === 'hunting');
+  return world.floors[depth]?.boss?.locked === true;
 }
 
 /** LockedFloor.left: passive healing goes on for this many turns of a boss fight, more as the boss is hurt. */
@@ -237,18 +234,23 @@ function lockedFloorTurn(ctx: Ctx, hero: Hero): void {
 export const regenOn = (world: World, hero: Hero): boolean => (hero.lockedFloor ?? LOCKED_TURNS) >= 1 || !floorLocked(world, hero.depth);
 
 /**
- * LockedFloor.addTime, from Goo.damage, Tengu.damage, DM300.damage, DwarfKing.damage, YogDzewa.damage and
- * YogFist.damage: hurting the boss keeps passive healing going (50 turns at most). Seam for the bosses
- * stream; these are Shattered's factors without the stronger bosses' challenge.
+ * LockedFloor.addTime, from Goo.damage, Tengu.damage, DM300.damage, Pylon.damage, DwarfKing.damage,
+ * YogDzewa.damage and YogFist.damage: hurting the boss keeps passive healing going (50 turns at most),
+ * by `factor` turns for every point of health it lost (each boss's own, without the stronger bosses'
+ * challenge).
  */
-export function bossHurt(ctx: Ctx, boss: Mob, damage: number): void {
-  const factor: Partial<Record<MobKind, number>> = {
-    goo: 1.5, tengu: 1, dm300: 1, king: 1 / 3, yog: 1 / 2, rottingFist: 1 / 2, burningFist: 1 / 2,
-  };
-  const f = factor[boss.kind];
-  if (f === undefined || damage <= 0) return;
+export function bossHurt(ctx: Ctx, boss: Mob, damage: number, factor: number): void {
+  if (damage <= 0) return;
   for (const hero of ctx.world.heroes) {
-    if (hero.depth === ctx.depth && hero.lockedFloor !== undefined) hero.lockedFloor = Math.min(hero.lockedFloor + damage * f, LOCKED_TURNS);
+    if (hero.depth === ctx.depth && hero.lockedFloor !== undefined) hero.lockedFloor = Math.min(hero.lockedFloor + damage * factor, LOCKED_TURNS);
+  }
+  void boss;
+}
+
+/** LockedFloor.removeTime, from Goo.act: Goo healing in its water takes passive healing's time away. */
+export function bossHealed(ctx: Ctx, time: number): void {
+  for (const hero of ctx.world.heroes) {
+    if (hero.depth === ctx.depth && hero.lockedFloor !== undefined) hero.lockedFloor = Math.max(0, hero.lockedFloor - time);
   }
 }
 

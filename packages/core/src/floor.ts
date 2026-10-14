@@ -25,6 +25,8 @@ import { LENGTH, NEIGHBOURS8, WIDTH } from './level/geometry';
 import { F, hasFlag, T } from './level/terrain';
 import type { Rng, RngState } from './rng';
 import type { World } from './world';
+import type { BossFloor } from './bosses/state';
+import type { BossFx } from './bosses/common';
 import { awareCells } from './artifacts/talisman';
 import { pointsInTalent } from './talents/data';
 import { hawkVision } from './abilities/allies';
@@ -63,6 +65,8 @@ export interface Floor {
   altar?: { pos: number; volume: number };
   /** What this depth gave every hero (strength, upgrades): a hero who joins later gets theirs too (party.ts). */
   perHero?: ItemKind[];
+  /** A boss's level: the fight's state (sealed, the health bar, its phases, buffs and blobs): bosses/state.ts. */
+  boss?: BossFloor;
   /** Ghouls lying crumpled, held up by another (GhoulLifeLink, mobskills.ts): they rise again in time. */
   downed?: DownedGhoul[];
 }
@@ -172,8 +176,20 @@ export type Effect =
   | { type: 'hurt'; depth: number; who: string; damage: number }
   | { type: 'oozed'; hero: string }
   | { type: 'pumped'; depth: number; mob: string }
-  /** A boss speaks up; `hero` is whom it noticed. */
-  | { type: 'yell'; depth: number; mob: string; kind: MobKind; line: 'notice' | 'death' | 'summon'; hero?: string }
+  /**
+   * A boss speaks up (Mob.yell): `line` is the key of its line in Shattered's texts for its kind ('notice',
+   * 'defeated', 'gluuurp', 'interesting', 'charging', 'wave_1'...); `hero` is whom it noticed.
+   */
+  | { type: 'yell'; depth: number; mob: string; kind: MobKind; line: string; hero?: string }
+  /** A boss's status over its head ('!!!', 'invulnerable', 'enraged') or a line in the log ('pumpup', 'shield'...). */
+  | { type: 'bossLine'; depth: number; mob: string; kind: MobKind; line: string; as: 'status' | 'log' | 'warn' | 'negative' }
+  /** A boss fight's visual and sound (bosses/common.ts BossFx). */
+  | { type: 'bossFx'; depth: number; fx: BossFx; mob?: string; pos?: number; to?: number; cells?: number[]; value?: number }
+  /**
+   * A boss fight's course, for the music and the screens: it starts (the boss noticed the hero, the floor sealed),
+   * changes phase, reaches its finale (BossHealthBar.bleed) and ends (the boss slain, or the floor unsealed).
+   */
+  | { type: 'bossFight'; depth: number; mob: string; kind: MobKind; state: 'start' | 'phase' | 'finale' | 'end'; phase?: number }
   /** A warlock's shadow bolt left the hero weakened. */
   | { type: 'weakened'; hero: string }
   /** A seed took root; a plant was set off by someone stepping on it. */
@@ -216,6 +232,8 @@ export type Effect =
   /** A wand of unknown charges zapped with none left (Wand.zapper): it fizzles, and its level is known. */
   | { type: 'fizzled'; hero: string; item: Item }
   | { type: 'healed'; hero: string; amount: number }
+  /** A monster healed (showStatusWithIcon HEALING): Goo in its water, the rotting fist, a boss's minion. */
+  | { type: 'healedMob'; depth: number; mob: string; amount: number }
   | { type: 'strength'; hero: string }
   | { type: 'upgraded'; hero: string; item: Item }
   | { type: 'teleported'; hero: string }
@@ -487,7 +505,12 @@ export function swapsWithHero(char: Char | undefined): boolean {
 }
 
 /** Level.viewDistance for heroes on a depth: shorter under the DARKNESS challenge. */
-export const heroSight = (world: World, depth: number): number => viewDistance(depth, isChallenged(world, DARKNESS));
+export const heroSight = (world: World, depth: number): number => {
+  // HallsBossLevel: Yog-Dzewa darkens its hall (YogDzewa.updateVisibility).
+  const own = world.floors[depth]?.boss?.viewDistance;
+  if (own !== undefined) return isChallenged(world, DARKNESS) ? Math.min(own, 2) : own;
+  return viewDistance(depth, isChallenged(world, DARKNESS));
+};
 
 /** Field of view of one hero (Dungeon.switchLevel and Light: a torch lights up to Light.DISTANCE). */
 export function heroView(world: World, hero: Hero): boolean[] {

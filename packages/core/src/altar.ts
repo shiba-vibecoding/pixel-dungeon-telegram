@@ -64,7 +64,7 @@ export function sacrifice(ctx: Ctx, char: Char): void {
 }
 
 /** Bestiary.isBoss: whom the scroll of wipe out spares. */
-const BOSSES = new Set(['goo', 'tengu', 'dm300', 'king', 'yog', 'burningFist', 'rottingFist']);
+const BOSSES = new Set(['goo', 'tengu', 'dm300', 'king', 'yog', 'burningFist', 'rottingFist', 'soiledFist', 'rustedFist', 'brightFist', 'darkFist', 'pylon']);
 
 /**
  * ScrollOfWipeOut: the wrath of the dungeon's spirits kills every monster on

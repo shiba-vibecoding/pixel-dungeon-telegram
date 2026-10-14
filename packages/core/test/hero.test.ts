@@ -175,6 +175,8 @@ describe("a boss's sealed floor (LockedFloor)", () => {
     const goo = createMob('#goo', 'goo', freeBeside(world, freeBeside(world, level.entrance)), 'hunting', floor.now);
     Object.assign(goo, { paralysed: 1e9, enemy: 'p' });
     floor.mobs.push(goo);
+    // Goo awake: its level is sealed (SewerBossLevel.seal).
+    floor.boss = { timed: [], locked: true };
     return world;
   }
 

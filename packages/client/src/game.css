@@ -212,6 +212,18 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 /* The journal's notes (the hero stream): a landmark journal.png has no icon for takes an item's picture; a floor's feeling, none. */
 .pd-jicon.item { background: none; display: grid; place-items: center; }
 .pd-jicon.blank { background: none; }
+
+/* BossHealthBar: the boss's name and health under the HUD's band, a blood-red bar that drips at the boss's last stand. */
+.pd-bossbar { display: flex; align-items: center; gap: 6px; margin: 4px 8px 0; }
+.pd-bossbar[hidden] { display: none; }
+.pd-bossbar .pd-icon { width: 16px; height: 16px; flex: none; }
+.pd-bossbar .pd-boss-name { font: var(--text-hud, 400 20px/20px var(--font-small)); color: #ff6a4a; text-shadow: var(--text-outline); white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.pd-bossbar .pd-bar.boss { flex: 1; height: 16px; }
+.pd-bossbar .pd-bar.boss::before { background: linear-gradient(to bottom, #ff6a5a 0 25%, #c81e1e 25% 70%, #7a0e0e 70% 100%); }
+.pd-bossbar .pd-bar.boss.shield::after { background: rgba(140, 200, 255, 0.45); }
+.pd-bossbar.bleeding .pd-bar.boss::before { animation: pd-boss-bleed 0.8s steps(2) infinite; }
+.pd-bossbar .pd-bar.boss .pd-bar-text { font-size: 16px; line-height: 16px; }
+@keyframes pd-boss-bleed { 50% { filter: brightness(1.35); } }
 /* The bestiary (mobs stream): a monster not seen yet is its dark shape. */
 .pd-portrait.silhouette canvas { filter: brightness(0) opacity(0.45); }
 .pd-catalog .pd-portrait canvas { max-width: 32px; max-height: 32px; image-rendering: pixelated; }

@@ -4,6 +4,7 @@ import { type Puppet, STEP_MS, TILE, type View } from './view';
 import { audio } from './audio';
 import { wandFx } from './wandfx';
 import { duration, levelRegion } from './sprites';
+import { bossParticles } from './bossfx';
 import { magicColor } from './itemtext';
 
 /*
@@ -29,11 +30,14 @@ const DUST = ['#b8ad8f', '#8f866c', '#d6ccae'];
 /** What spills from a creature struck or slain, and whether it glows. */
 function material(kind: string): { colors: readonly string[]; glow: boolean } {
   switch (kind as MobKind) {
-    case 'goo': case 'acidic': case 'spinner': case 'rottingFist': case 'larva': case 'swarm':
+    case 'goo':
+      // GooSprite.blood: black.
+      return { colors: ['#000000', '#1a1a1a', '#2a0a2a'], glow: false };
+    case 'acidic': case 'spinner': case 'rottingFist': case 'larva': case 'swarm':
       return { colors: ICHOR, glow: false };
     case 'skeleton': case 'undead':
       return { colors: BONE, glow: false };
-    case 'golem': case 'dm300': case 'statue':
+    case 'golem': case 'dm300': case 'statue': case 'pylon': case 'rustedFist':
       return { colors: SPARK, glow: true };
     case 'wraith': case 'curse': case 'ghost': case 'mirror': case 'hawk':
       return { colors: ECTO, glow: true };
@@ -43,8 +47,12 @@ function material(kind: string): { colors: readonly string[]; glow: boolean } {
       return { colors: ['#966400', '#c89040', '#5a3c00'], glow: false };
     case 'elemental': case 'burningFist':
       return { colors: FIRE, glow: true };
-    case 'eye': case 'yog':
+    case 'eye': case 'yog': case 'darkFist':
       return { colors: VOID, glow: true };
+    case 'brightFist':
+      return { colors: ['#ffffff', '#fffcc0', '#ffe9a0'], glow: true };
+    case 'soiledFist':
+      return { colors: ['#7f5424', '#5fcf2f', '#4a3a18'], glow: false };
     case 'bee':
       return { colors: GOLD, glow: true };
     default:
@@ -122,6 +130,8 @@ function goreOf(kind: string): Gore {
 }
 
 const BOSSES = new Set(['goo', 'tengu', 'dm300', 'king', 'yog']);
+/** The bosses' first lines that open their fights (not every yell: Tengu says another at his arena). */
+const OPENING: ReadonlySet<string> = new Set(['notice', 'notice_gotcha']);
 
 /** The way the last blow on each creature went, so its death can throw it apart that way. */
 const blows = new Map<string, { angle: number; at: number }>();
@@ -318,6 +328,9 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
     case 'bossSlain':
       fx.shake(6, 1200, now);
       return;
+    case 'bossFx':
+      bossParticles(effect, view, now);
+      return;
     case 'amulet':
     case 'victory': {
       // The Amulet of Yendor taken, and the run won: a shower of gold over everything in sight.
@@ -332,7 +345,7 @@ export function effectFx(effect: Effect, view: View, world: World, myId: string,
     }
     case 'yell':
       // A boss that notices the heroes: the ground trembles.
-      if (here(effect.depth) && effect.line === 'notice' && BOSSES.has(effect.kind)) {
+      if (here(effect.depth) && OPENING.has(effect.line) && BOSSES.has(effect.kind)) {
         view.bossIntro = { kind: effect.kind, start: now };
         audio.duck(0.3, 2600);
         fx.shake(4, 700, now);

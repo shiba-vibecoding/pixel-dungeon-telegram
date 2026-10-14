@@ -1,0 +1,27 @@
+<!-- @dsCard group="Монстры Shattered" height=852 width=1572 page subtitle="Упавший гуль: лежит последним кадром «падения», без полоски здоровья; от него к живому напарнику — пунктир, пульсирует; над ним три точки — ходы до подъёма. Эбеновый мимик: почти прозрачный сундук с контуром, раз в 2,4 с контур вспыхивает на кадр; раскрылся — белые искры, «Здесь прятался мимик!»" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Гуль и эбеновый мимик</title>
+<style>
+  html, body { margin: 0; background: var(--void); }
+  .row { display: flex; gap: 24px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 8px; flex: none; }
+  .cap { margin: 0; height: 20px; font: var(--text-caption, 400 15px/20px var(--font-small)); color: var(--ink-muted); }
+  .cap b { color: var(--gold); font-weight: 400; }
+  .phone { position: relative; overflow: hidden; --safe-t: 0px; --safe-b: 34px; flex: none; }
+</style></head>
+<body>
+<div class="pd-root row" id="row"></div>
+<script>
+  var q = new URLSearchParams(location.search), L = q.get('lang') || 'ru', en = L === 'en';
+  function phone(w, h, cap) { var c = document.createElement('div'); c.className = 'col'; c.innerHTML = '<p class="cap">' + (cap || '') + '</p>'; var p = document.createElement('div'); p.className = 'phone pd-phone'; p.style.width = w + 'px'; p.style.height = h + 'px'; c.appendChild(p); document.getElementById('row').appendChild(c); return p; }
+  function game(p) { var g = document.createElement('div'); g.style.cssText = 'position:absolute;inset:0'; p.appendChild(g); PD.demo.game(g); return g; }
+  function gm(p, o) { o = o || {}; o.mates = false; o.noMobs = true; o.depth = o.depth || 12; PD.demo.game(p, o); return p; }
+  var a = gm(phone(375, 812, en ? '<b>Fallen ghoul</b> · rises in 3 turns' : '<b>Упавший гуль</b> · встанет через 3 хода')); PD.demo.mobFx(a, { scene: 'ghoul', lang: L });
+  var b = gm(phone(375, 812, en ? '<b>Examined</b>' : '<b>Осмотрели</b>')); PD.demo.mobFx(b, { scene: 'ghoul', lang: L }); PD.demo.overlay(b, PD.demo.win.mobInfo(L, { kind: 'ghoul' }));
+  var c = gm(phone(375, 812, en ? '<b>Ebony mimic</b> · hidden, then revealed' : '<b>Эбеновый мимик</b> · спрятан, потом раскрыт')); PD.demo.mobFx(c, { scene: 'ebony', lang: L });
+  var d = gm(phone(375, 812, en ? '<b>Examined</b> · suspicious outline' : '<b>Осмотрели</b> · подозрительное очертание')); PD.demo.overlay(d, PD.demo.win.mobInfo(L, { kind: 'ebony' }));
+  PD.sprite(document.body);
+</script>
+</body>
+</html>

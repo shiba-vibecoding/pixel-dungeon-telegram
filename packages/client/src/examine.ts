@@ -1,4 +1,6 @@
-import { F, hasFlag, type Item, type Mob, type MobKind, type PlantKind, T, trapAt } from '@pd/core';
+import {
+  F, GATE_CELLS, hasFlag, isFist, type Item, type Level, type Mob, type MobKind, PEDESTALS, type PlantKind, T, THRONE, trapAt, type World,
+} from '@pd/core';
 import { lang, t } from './i18n';
 import { artText } from './artifacttext';
 
@@ -223,6 +225,12 @@ export function mobName(mob: Mob, name: string = t.mobs[mob.kind]): string {
  * a statue's arms, a thief's loot, a monk's focus, a brute's rage), and what champion it is.
  */
 export function mobDescription(mob: Mob, nameOf: (item: Item) => string = (item) => item.kind, now = 0): string[] {
+  // Shattered's bosses, their fists, pylons and minions (DM300.description, Pylon.description, YogFist.description).
+  const boss = t.bosses.descs;
+  if (mob.kind === 'pylon') return [mob.boss?.active ? boss.pylonActive! : boss.pylon!];
+  if (mob.kind === 'dm300') return mob.boss?.supercharged ? [boss.dm300!, boss.dm300Supercharged!] : [boss.dm300!];
+  if (isFist(mob)) return [boss.fist!, boss[mob.kind] ?? ''];
+  if (boss[mob.kind]) return [boss[mob.kind]!];
   // Shattered's wands' creatures: what they can do, as strong as the wand that made them.
   if (mob.kind === 'ward') {
     const { tier, level } = mob.ward ?? { tier: 1, level: 0 };
@@ -411,4 +419,34 @@ function tileOf(terrain: number): Tile {
 export function tileText(terrain: number): { name: string; desc: string } {
   const [name, desc] = (lang === 'ru' ? RU_TILES : EN_TILES)[tileOf(terrain)];
   return { name, desc };
+}
+
+/**
+ * The boss levels' own tiles (CavesBossLevel and CityBossLevel's tileName and tileDesc, the custom tiles'
+ * name and desc) and what a fight leaves on a cell (Tengu's blobs, bombs and shockers, the pylons' energy).
+ */
+export function bossTile(world: World, level: Level, pos: number): { name: string; desc: string; extra: string[] } | null {
+  const tiles = t.bosses.tiles;
+  const floor = world.floors[level.depth];
+  const extra: string[] = [];
+  const boss = floor?.boss;
+  if (boss?.fire?.some(([c]) => c === pos)) extra.push(tiles.fireBlob);
+  if (boss?.shock?.some(([c]) => c === pos)) extra.push(tiles.shockBlob);
+  if (boss?.energy?.includes(pos)) extra.push(tiles.energyDesc);
+  for (const entry of boss?.timed ?? []) {
+    if (entry.kind === 'bomb' && entry.pos === pos) return { name: tiles.bombName, desc: tiles.bombDesc, extra: [tiles.bombBlob, ...extra] };
+    if (entry.kind === 'shocker' && entry.pos === pos) return { name: tiles.shockerName, desc: tiles.shockerDesc, extra };
+  }
+  const terrain = level.map[pos]!;
+  if (level.depth === 15 && !world.arena) {
+    if (GATE_CELLS.includes(pos)) return { name: tiles.gateName, desc: hasFlag(terrain, F.SOLID) ? tiles.gateDesc : tiles.gateBroken, extra };
+    if (terrain === T.INACTIVE_TRAP) return { name: tiles.wiresName, desc: tiles.wiresDesc, extra };
+    if (terrain >= T.WATER_TILES && terrain <= T.WATER) return { ...tileText(terrain), extra: [tiles.waterDesc, ...extra] };
+  }
+  if (level.depth === 20 && !world.arena) {
+    if (pos === THRONE) return { name: tiles.throneName, desc: tiles.throneDesc, extra };
+    if (PEDESTALS.includes(pos)) return { name: tiles.summoningName, desc: tiles.summoningDesc, extra };
+  }
+  if (extra.length > 0) return { ...tileText(terrain), extra };
+  return null;
 }

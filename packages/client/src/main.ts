@@ -13,7 +13,7 @@ import { loop } from './lifecycle';
 import { reloadForUpdate } from './update';
 import { preloadMapFx } from './shfx';
 import './game.css';
-import { mobDescription, mobName, plantText, tileText, wellText } from './examine';
+import { bossTile, mobDescription, mobName, plantText, tileText, wellText } from './examine';
 import {
   chooseQuickslot, isPlaceholder, quickArtifact, quickClassArmor, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
 } from './quickslot';
@@ -87,6 +87,7 @@ import { ActionIndicator, type ActionKind } from './actionind';
 import { hasFreePoints, refreshHeroWindow, showComboWindow } from './talentui';
 import { tal as talentLine, talentBuffInfo, talentReason } from './talenttext';
 import { STEP_MS, TILE, View } from './view';
+import { bossBar, cellMarks, drawBossGround, drawBossTop } from './bossfx';
 
 /*
  * Pixel Dungeon client: title screen, then a solo run (kept in local storage),
@@ -1296,12 +1297,16 @@ function openShop(): void {
   });
 }
 
+/** The way down: the stairs, or any cell of a boss level's way out once it is open (LevelTransition's area). */
+const isExitCell = (level: Level, cell: number): boolean =>
+  cell === level.exit || (level.exits?.includes(cell) === true && level.map[cell] === T.EXIT);
+
 function useStairs(world: World, stairs: 'descend' | 'ascend', now: number): void {
   // The arena has no stairs: its dais is no way up.
   if (world.arena) return;
   const me = heroById(world, session!.myId)!;
   const level = levelAt(world, me.depth);
-  if (stairs === 'descend' && me.pos === level.exit) {
+  if (stairs === 'descend' && isExitCell(level, me.pos)) {
     send({ type: 'descend' }, now);
   } else if (stairs === 'ascend' && me.pos === level.entrance && (me.depth > 1 || hasAmulet(me))) {
     send({ type: 'ascend' }, now);
@@ -1430,7 +1435,7 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
     if (effect.type === 'sold' && effect.hero === myId && selling && overlayOpen()) openShop();
     if (world && me) learnFromEffect(world, me, effect);
     // Goo winding up: a warning nobody can miss, while there is still time to step back.
-    if (effect.type === 'pumped' && me && effect.depth === me.depth) toast(t.gooPumpsTip, { tone: 'warn' });
+    if (effect.type === 'bossFx' && effect.fx === 'pumpUp' && effect.value === 1 && me && effect.depth === me.depth) toast(t.gooPumpsTip, { tone: 'warn' });
     // Hunger kills quietly in the original's log: here it says what to do, and with what.
     if (effect.type === 'hunger' && effect.hero === myId && world && me) {
       const food = me.items.find((item) => itemDef(item.kind).category === 'food');
@@ -1606,7 +1611,7 @@ function tapCell(cell: number, quiet = false): void {
     if (heapAt(world, me.depth, me.pos)) takeHere(world, me, performance.now());
     // Hero.handle on the hero's own cell: standing in tall grass or on a plant, it is trampled where the hero stands.
     else if (core.canSelfTrample(world, me)) send({ type: 'move', to: me.pos }, performance.now());
-    else if (!world.arena && me.pos === level.exit) useStairs(world, 'descend', performance.now());
+    else if (!world.arena && isExitCell(level, me.pos)) useStairs(world, 'descend', performance.now());
     else if (!world.arena && me.pos === level.entrance && (me.depth > 1 || hasAmulet(me))) useStairs(world, 'ascend', performance.now());
     else if (me.pos === level.entrance && heapAt(world, me.depth, me.pos) === undefined && me.depth === 1 && level.map[me.pos] === T.ENTRANCE) {
       // Hero.actAscend without the Amulet: the way out stays shut.
@@ -1691,7 +1696,7 @@ function tapCell(cell: number, quiet = false): void {
   walk.pickup = heapAt(world, me.depth, cell) && enemiesInSight.length === 0;
   // Hero.handle: walking to the stairs doesn't take them while enemies are in sight (a tap on them, standing there, does).
   if (world.arena || enemiesInSight.length > 0) return;
-  if (cell === level.exit) walk.stairs = 'descend';
+  if (isExitCell(level, cell)) walk.stairs = 'descend';
   else if (cell === level.entrance && (me.depth > 1 || hasAmulet(me))) walk.stairs = 'ascend';
 }
 
@@ -2219,6 +2224,12 @@ function examineCell(pos: number): void {
   }
   const plant = world.floors[me.depth]?.plants?.find((p) => p.pos === pos);
   const level = levelAt(world, me.depth);
+  // A boss level's own fixtures and what its fight leaves about (bossTile, examine.ts).
+  const own = bossTile(world, level, pos);
+  if (own && !plant) {
+    showInfo(own.name, [own.desc, ...own.extra], hideOverlay);
+    return;
+  }
   const { name, desc } = plant ? plantText(plant.kind) : tileText(level.map[pos]!);
   const well = level.map[pos] === T.WELL ? level.wells.find((w) => w.pos === pos) : undefined;
   // Level.tileDesc: and what covers it (Web.tileDesc).
@@ -2904,6 +2915,10 @@ function tick(now: number): void {
       );
     },
     mourning: isAlive(me) ? 0 : Math.min(1, (vnow - (fallenAt ||= vnow)) / 1200),
+    // The boss levels' art, and what their fights leave about (bossfx.ts).
+    ground: (c: CanvasRenderingContext2D) => drawBossGround(c, world, level, assets, explored, visible, vnow),
+    top: (c: CanvasRenderingContext2D) => drawBossTop(c, world, level, assets, explored, visible, vnow),
+    marks: cellMarks(vnow),
     middle,
     // The cards sit above the hero, not on them: a third of the way down the free band.
     cardY: (free.top + (free.bottom - free.top) * 0.3) * (canvas.height / (canvas.clientHeight || 1)),
@@ -3021,6 +3036,7 @@ function tick(now: number): void {
       danger: isAlive(me) ? enemiesInSight.length : 0,
       waitingFor: session.mode === 'online' ? holders.filter((id) => id !== me.id) : [],
       arena: arenaHud(world, me, session.mode === 'online'),
+      boss: bossBar(world, me.depth),
     },
     walk.resting,
   );

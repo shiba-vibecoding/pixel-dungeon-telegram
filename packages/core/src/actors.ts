@@ -18,6 +18,7 @@ import type { Rng } from './rng';
 import { adjacent } from './level/geometry';
 import { T } from './level/terrain';
 import type { Action, PlanStep } from './world';
+import type { BossMob } from './bosses/state';
 import type { Awareness, PendingScroll } from './artifacts';
 import type { WealthCounters } from './rings';
 import { type AbilityKind, pointsInTalent, type TalentBook } from './talents/data';
@@ -76,8 +77,11 @@ export interface Hero {
   plan?: PlanStep[];
   /** Regeneration.partialRegen: health regained towards the next point. */
   regen: number;
-  /** Caustic ooze from Goo: time since it last burned, or -1 when clean. Water washes it off. */
+  /** Caustic ooze from Goo: 0 while it eats at the hero, -1 when clean. Water washes it off. */
   ooze: number;
+  /** Ooze.left and Ooze.acted: turns before it wears off, and whether it has hurt yet (bosses/goo.ts). */
+  oozeLeft?: number;
+  oozeActed?: boolean;
   /** The weapon in hand; none after a monk's disarming blow, until the hero takes one up again. */
   weapon: Item | null;
   armor: Item;
@@ -561,7 +565,9 @@ export type MobKind =
   /* and anywhere: tormented spirits, mimics of three more kinds, armoured statues, phantom piranhas; */
   | 'tormentedSpirit' | 'goldenMimic' | 'crystalMimic' | 'ebonyMimic' | 'armoredStatue' | 'phantomPiranha'
   /* the sad ghost's foes besides the fetid rat (Ghost.Quest). */
-  | 'gnollTrickster' | 'greatCrab';
+  | 'gnollTrickster' | 'greatCrab'
+  // Shattered's bosses' own: DM-300's pylons, Yog-Dzewa's other four fists (the King's ghouls are the city's).
+  | 'pylon' | 'soiledFist' | 'rustedFist' | 'brightFist' | 'darkFist';
 /** `passive`: the sad ghost and the shopkeeper, who neither fight nor can be hurt; `fleeing`: a thief making off with its loot. */
 export type MobState = 'sleeping' | 'wandering' | 'hunting' | 'fleeing' | 'passive';
 
@@ -616,7 +622,8 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   fetidRat: { name: 'fetid rat', ht: 20, attack: 12, defense: 5, damage: [1, 4], dr: 1, dr2: 2, exp: 4, maxLvl: 5, speed: 1 },
   gnollTrickster: { name: 'gnoll trickster', ht: 20, attack: 16, defense: 5, damage: [1, 6], dr: 2, exp: 5, maxLvl: 8, speed: 1 },
   greatCrab: { name: 'great crab', ht: 25, attack: 12, defense: 0, damage: [1, 7], dr: 4, exp: 6, maxLvl: 9, speed: 1 },
-  goo: { name: 'Goo', ht: 80, attack: 15, defense: 12, damage: [2, 12], dr: 2, exp: 10, maxLvl: 30, speed: 1 },
+  // Goo (Shattered): its accuracy, damage and evasion change as it is hurt and pumps up (bosses/goo.ts).
+  goo: { name: 'Goo', ht: 100, attack: 10, defense: 8, damage: [1, 8], dr: 2, exp: 10, maxLvl: 29, speed: 1 },
   ghost: { name: 'sad ghost', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 0.5, flying: true },
   shopkeeper: { name: 'shopkeeper', ht: 1, attack: 0, defense: 1000, damage: [0, 0], dr: 0, exp: 0, maxLvl: 0, speed: 1 },
   /** ImpShopkeeper: an imp keeps the last shop, in the demon halls. */
@@ -633,7 +640,7 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   /** Necromancer: no blow of its own (Char.damageRoll, attackSkill), its skeleton fights for it. */
   necromancer: { name: 'necromancer', ht: 40, attack: 0, defense: 14, damage: [1, 1], dr: 5, exp: 7, maxLvl: 14, speed: 1 },
   spectralNecromancer: { name: 'spectral necromancer', ht: 40, attack: 0, defense: 14, damage: [1, 1], dr: 5, exp: 7, maxLvl: 14, speed: 1 },
-  tengu: { name: 'Tengu', ht: 120, attack: 20, defense: 20, damage: [8, 15], dr: 5, exp: 20, maxLvl: 30, speed: 1 },
+  tengu: { name: 'Tengu', ht: 200, attack: 20, defense: 15, damage: [6, 12], dr: 5, exp: 20, maxLvl: 29, speed: 1 },
   // The caves (depths 11-14).
   bat: { name: 'vampire bat', ht: 30, attack: 16, defense: 15, damage: [5, 18], dr: 4, exp: 7, maxLvl: 15, speed: 2, flying: true },
   brute: { name: 'gnoll brute', ht: 40, attack: 20, defense: 15, damage: [5, 25], dr: 8, exp: 8, maxLvl: 16, speed: 1 },
@@ -646,7 +653,9 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   spinner: { name: 'cave spinner', ht: 50, attack: 22, defense: 17, damage: [10, 20], dr: 6, exp: 9, maxLvl: 17, speed: 1 },
   dm200: { name: 'DM-200', ht: 80, attack: 20, defense: 12, damage: [10, 25], dr: 8, exp: 9, maxLvl: 17, speed: 1 },
   dm201: { name: 'DM-201', ht: 120, attack: 20, defense: 12, damage: [15, 25], dr: 8, exp: 9, maxLvl: 17, speed: 1 },
-  dm300: { name: 'DM-300', ht: 200, attack: 28, defense: 18, damage: [18, 24], dr: 10, exp: 30, maxLvl: 30, speed: 1 },
+  dm300: { name: 'DM-300', ht: 300, attack: 20, defense: 15, damage: [15, 25], dr: 10, exp: 30, maxLvl: 29, speed: 1 },
+  /** Pylon: DM-300's power source in a corner of its arena, harmless until switched on. */
+  pylon: { name: 'power pylon', ht: 50, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 1, maxLvl: -2, speed: 1 },
   // The dwarven city (depths 16-19).
   ghoul: { name: 'dwarven ghoul', ht: 45, attack: 24, defense: 20, damage: [16, 22], dr: 4, exp: 5, maxLvl: 20, speed: 1 },
   /** Elemental.FireElemental, and its frost, shock and chaos kin. */
@@ -658,7 +667,7 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   senior: { name: 'senior monk', ht: 70, attack: 30, defense: 30, damage: [16, 25], dr: 2, exp: 11, maxLvl: 21, speed: 1, attackDelay: 0.5 },
   warlock: { name: 'dwarf warlock', ht: 70, attack: 25, defense: 18, damage: [12, 18], dr: 8, exp: 11, maxLvl: 21, speed: 1 },
   golem: { name: 'golem', ht: 120, attack: 28, defense: 15, damage: [25, 30], dr: 12, exp: 12, maxLvl: 22, speed: 1 },
-  king: { name: 'King of Dwarves', ht: 300, attack: 32, defense: 25, damage: [20, 38], dr: 14, exp: 40, maxLvl: 30, speed: 1 },
+  king: { name: 'King of Dwarves', ht: 300, attack: 26, defense: 22, damage: [15, 25], dr: 10, exp: 40, maxLvl: 29, speed: 1 },
   undead: { name: 'undead dwarf', ht: 28, attack: 16, defense: 15, damage: [12, 16], dr: 5, exp: 0, maxLvl: 30, speed: 1 },
   // The demon halls (depths 21-24).
   succubus: { name: 'succubus', ht: 80, attack: 40, defense: 25, damage: [25, 30], dr: 10, exp: 12, maxLvl: 25, speed: 1 },
@@ -669,10 +678,16 @@ export const MOBS: Readonly<Record<MobKind, MobStats>> = {
   ripper: { name: 'ripper demon', ht: 60, attack: 30, defense: 22, damage: [15, 25], dr: 4, exp: 9, maxLvl: -2, speed: 1, attackDelay: 0.5 },
   /** DemonSpawner: never strikes nor moves, and dodges nothing. */
   spawner: { name: 'demon spawner', ht: 120, attack: 0, defense: 0, damage: [1, 1], dr: 12, exp: 15, maxLvl: 29, speed: 1 },
-  yog: { name: 'Yog-Dzewa', ht: 300, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 50, maxLvl: 30, speed: 1 },
-  rottingFist: { name: 'rotting fist', ht: 300, attack: 36, defense: 25, damage: [24, 36], dr: 15, exp: 0, maxLvl: 30, speed: 1 },
-  burningFist: { name: 'burning fist', ht: 200, attack: 36, defense: 25, damage: [20, 32], dr: 15, exp: 0, maxLvl: 30, speed: 1 },
-  larva: { name: "god's larva", ht: 25, attack: 30, defense: 20, damage: [15, 20], dr: 8, exp: 0, maxLvl: 30, speed: 1 },
+  yog: { name: 'Yog-Dzewa', ht: 1000, attack: 0, defense: 0, damage: [0, 0], dr: 0, exp: 50, maxLvl: 29, speed: 1 },
+  // YogFist: six kinds, two of a pair never together (bosses/yog.ts); no experience (maxLvl -2).
+  rottingFist: { name: 'rotting fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  burningFist: { name: 'burning fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  soiledFist: { name: 'soiled fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  rustedFist: { name: 'rusted fist', ht: 300, attack: 36, defense: 20, damage: [22, 44], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  brightFist: { name: 'bright fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  darkFist: { name: 'dark fist', ht: 300, attack: 36, defense: 20, damage: [18, 36], dr: 15, exp: 25, maxLvl: -2, speed: 1 },
+  /** YogDzewa.Larva. */
+  larva: { name: "god's larva", ht: 20, attack: 30, defense: 12, damage: [15, 25], dr: 4, exp: 5, maxLvl: -2, speed: 1 },
   // Anywhere: as strong as the depth they are on (see mobStats).
   mimic: { name: 'mimic', ht: 6, attack: 6, defense: 2, damage: [1, 2], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 1 },
   goldenMimic: { name: 'golden mimic', ht: 6, attack: 6, defense: 2, damage: [1, 2], dr: 1, exp: 0, maxLvl: ANY_LVL, speed: 1 },
@@ -719,9 +734,15 @@ export const weaponDefenseFactor = (weapon: Item): number => weaponDefense(weapo
  * A monster's numbers: the table's, or as strong as the depth it is on — an animated statue with its
  * weapon (Statue), an armoured one twice as sturdy (ArmoredStatue), a mimic as its level (Mimic.adjustStats,
  * a golden one a third stronger), a piranha (Piranha), a wraith (Wraith.adjustStats, a tormented spirit's
- * half as good again).
+ * half as good again); a boss's summoned minion teaches
+ * nothing and leaves nothing (maxLvl -2).
  */
 export function mobStats(mob: Mob): MobStats {
+  const stats = ownStats(mob);
+  return mob.bossMinion ? { ...stats, maxLvl: -2 } : stats;
+}
+
+function ownStats(mob: Mob): MobStats {
   const depth = mob.level ?? 1;
   if (mob.kind === 'ghostHero' && mob.ghostGear) {
     // GhostHero: as accurate as the hero (lvl + 9) and as nimble (lvl + 4), striking with its weapon or bare-handed.
@@ -793,7 +814,9 @@ export const isMimic = (kind: MobKind): boolean => kind === 'mimic' || kind === 
  */
 export function mobSpeed(mob: Mob): number {
   // Char.speed: Haste three times as fast (a crystal mimic on the run), Adrenaline twice, and alchemy's buffs (dread, stamina).
-  const speed = MOBS[mob.kind].speed * ((mob.haste ?? 0) > 0 ? 3 : 1) * ((mob.adrenaline ?? 0) > 0 ? 2 : 1) * buffSpeed(mob);
+  const speed = MOBS[mob.kind].speed * ((mob.haste ?? 0) > 0 ? 3 : 1) * ((mob.adrenaline ?? 0) > 0 ? 2 : 1) * buffSpeed(mob)
+    // DM300.speed: supercharged, twice as fast (bosses/dm300.ts).
+    * (mob.kind === 'dm300' && mob.boss?.supercharged ? 2 : 1);
   return (mob.kind === 'thief' || mob.kind === 'bandit') && mob.item ? (5 * speed) / 6 : speed;
 }
 
@@ -871,6 +894,10 @@ export interface Mob {
   bleeding?: number;
   /** A mirror image: whose twin it is, and the skill and strength it took from them. */
   image?: { owner: string; attack: number; damage: number };
+  /** A boss's own state (Goo's pumping up, Tengu's abilities, DM-300's charge, the King's phases...): bosses/state.ts. */
+  boss?: BossMob;
+  /** Property.BOSS_MINION: summoned by a boss (the King's court, Yog's larvae); teaches nothing (maxLvl -2). */
+  bossMinion?: boolean;
   /** Shattered's buffs from alchemy (buffs.ts): dread, aggression, a magical sleep and the like. */
   buffs?: Buffs;
   /** The hero an ally from alchemy follows (a prismatic image, an enthralled monster, a summoned elemental). */
@@ -1020,6 +1047,8 @@ export type ChampionKind = 'blazing' | 'projecting' | 'antiMagic' | 'giant' | 'b
  */
 export function beckon(mob: Mob, pos: number): void {
   if (mob.state === 'passive' || mob.kind === 'spawner' || ((mob.kind === 'statue' || mob.kind === 'armoredStatue') && mob.state === 'sleeping')) return;
+  // Pylon.beckon and YogDzewa.beckon: they never come.
+  if (mob.kind === 'pylon' || mob.kind === 'yog') return;
   if (mob.kind === 'gnollExile' && !mob.provoked) {
     if ((mob.seenCooldown ?? 0) <= 0) mob.target = pos;
     return;

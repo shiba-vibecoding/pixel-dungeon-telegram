@@ -56,9 +56,9 @@ export const procMultiplier = (char: Char): number => (isHero(char) ? berserkEnc
 
 const BOSSES: ReadonlySet<MobKind> = new Set(['goo', 'tengu', 'dm300', 'king', 'yog']);
 const MINIBOSSES: ReadonlySet<MobKind> = new Set(['fetidRat', 'curse']);
-const INORGANIC: ReadonlySet<MobKind> = new Set(['dm300', 'golem', 'statue', 'wraith', 'curse']);
-const UNDEAD: ReadonlySet<MobKind> = new Set(['skeleton', 'wraith', 'undead', 'king']);
-const DEMONIC: ReadonlySet<MobKind> = new Set(['succubus', 'eye', 'scorpio', 'yog', 'larva', 'rottingFist', 'burningFist']);
+const INORGANIC: ReadonlySet<MobKind> = new Set(['dm300', 'golem', 'statue', 'wraith', 'curse', 'rustedFist', 'pylon']);
+const UNDEAD: ReadonlySet<MobKind> = new Set(['skeleton', 'wraith', 'undead', 'king', 'ghoul']);
+const DEMONIC: ReadonlySet<MobKind> = new Set(['succubus', 'eye', 'scorpio', 'yog', 'larva', 'rottingFist', 'burningFist', 'soiledFist', 'rustedFist', 'brightFist', 'darkFist']);
 /** Those who know no fear (Terror among their immunities), and those no magic drives amok. */
 const FEARLESS: ReadonlySet<MobKind> = new Set(['yog', 'rottingFist', 'burningFist', 'golem', 'monk', 'brute', 'eye', 'curse', 'wraith']);
 const UNSHAKEABLE: ReadonlySet<MobKind> = new Set(['yog', 'golem', 'monk']);

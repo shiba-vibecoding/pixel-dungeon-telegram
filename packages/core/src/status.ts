@@ -124,6 +124,8 @@ export function damageTaken(ctx: Ctx, victim: Char, damage: number, by: Char | n
 /** Barrier.act: a shield fades by a point once enough of a turn's share (a twentieth of it, a point at most) has gathered. */
 function fadeShield(char: Char): void {
   if (!char.shield) return;
+  // A boss's barrier fades on the floor's clock, or holds (bosses/index.ts: DM-300's charge, the King's DKBarrior).
+  if (!isHero(char) && char.boss !== undefined) return;
   char.shieldDecay = (char.shieldDecay ?? 0) + Math.min(1, char.shield / 20);
   if (char.shieldDecay >= 1) {
     char.shield--;

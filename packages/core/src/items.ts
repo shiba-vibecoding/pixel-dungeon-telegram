@@ -372,8 +372,18 @@ export const ITEMS = {
   'key.iron': { category: 'key', sprite: S.IRON_KEY },
   /** Opens a locked or crystal chest of the level it was found on. */
   'key.golden': { category: 'key', sprite: S.GOLDEN_KEY },
-  /** SkeletonKey: dropped by a boss, it opens the locked way down from its level. */
+  /** WornKey: Goo's, it opens the locked way down from the sewers' boss level. */
   'key.skeleton': { category: 'key', sprite: S.WORN_KEY },
+  /**
+   * TengusMask: Tengu's, worn to choose a way to master (as the Tome of Mastery here). SEAM(talents): the
+   * talents stream gives it its subclass choice.
+   */
+  'mask.tengu': { category: 'tome', sprite: S.MASK },
+  /**
+   * KingsCrown: the Dwarf King's, it turns the armour worn into class armour (as the armour kit here).
+   * SEAM(abilities): the abilities stream gives it the choice of an armour ability.
+   */
+  'crown.king': { category: 'kit', sprite: S.CROWN },
   /** The sad ghost's dried rose. */
   'quest.rose': { category: 'quest', sprite: S.ARTIFACT_ROSE1 },
   /** The fetid rat's, for the sad ghost. */
@@ -387,15 +397,8 @@ export const ITEMS = {
   'quest.fish': { category: 'quest', sprite: S.PHANTOM_MEAT },
   /** Tengu's legacy: reading it, a hero masters one of two ways. */
   'tome.mastery': { category: 'tome', sprite: S.MASTERY },
-  /** TengusMask: Tengu's, worn to choose a way to master (the Tome of Mastery of Pixel Dungeon, kept for older saves). */
-  'mask.tengu': { category: 'tome', sprite: S.MASK },
   /** Lit, it lets one see further in the dark halls for a while. */
   torch: { category: 'torch', sprite: S.TORCH },
-  /**
-   * KingsCrown: the Dwarf King's, it turns the armour worn into class armour (as the armour kit here).
-   * SEAM(abilities): the abilities stream gives it the choice of an armour ability.
-   */
-  'crown.king': { category: 'kit', sprite: S.CROWN },
   /** Brings its bearer back to life once, at a price: everything else in the pack, and all gold. */
   ankh: { category: 'ankh', sprite: S.ANKH },
   /** The Amulet of Yendor, at the very bottom of the dungeon. */
@@ -1268,7 +1271,7 @@ function shopRare(generator: ItemGenerator, rng: Rng): Item | null {
 }
 
 /** Rolls what a painter asked for. */
-function rollSpec(spec: ItemSpec, generator: ItemGenerator, rng: Rng, depth: number): Item | null {
+export function rollSpec(spec: ItemSpec, generator: ItemGenerator, rng: Rng, depth: number): Item | null {
   switch (spec.roll) {
     case 'random':
       return generator.random();
