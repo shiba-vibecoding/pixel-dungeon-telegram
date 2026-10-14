@@ -442,7 +442,7 @@ export function showMenu(options: MenuOptions): void {
 /* Badges */
 
 /** WndBadges: every badge, the ones earned bright, new ones with a golden dot; a tap tells what each is for. */
-export function showBadges(onClose: () => void): void {
+export function showBadges(onClose: () => void, honors: readonly string[] = []): void {
   const earned = earnedBadges();
   const fresh = unseenBadges();
   markBadgesSeen();
@@ -480,6 +480,21 @@ export function showBadges(onClose: () => void): void {
       node.classList.add('selected');
       big.className = 'pd-offer-badge patron';
       name.textContent = t.maecenas;
+      detail.classList.remove('locked');
+    };
+    grid.append(node);
+  }
+  // Honours the admin gave (server-side, not the run's badges in core): «Bug hunter» for a confirmed problem report.
+  for (const honor of honors) {
+    const words = t.rel.honors[honor];
+    if (!words) continue;
+    const node = el('button', { className: 'pd-slot', ariaLabel: words[0] }, el('i', { className: 'pd-offer-badge bughunter' }));
+    node.onclick = () => {
+      audio.play('click');
+      grid.querySelectorAll('.selected').forEach((n) => n.classList.remove('selected'));
+      node.classList.add('selected');
+      big.className = 'pd-offer-badge bughunter';
+      name.textContent = `${words[0]} · ${words[1]}`;
       detail.classList.remove('locked');
     };
     grid.append(node);

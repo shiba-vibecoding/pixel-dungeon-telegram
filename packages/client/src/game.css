@@ -230,12 +230,8 @@ body:has(#overlay.open) .pd-mapctl { visibility: hidden; }
 html.pd-paused *, html.pd-paused *::before, html.pd-paused *::after { animation-play-state: paused !important; }
 /* The journal's new marks (journal2.png): as wide as the others in the row. */
 .pd-jrow .pd-jicon2 { flex: none; }
-/* «Привал»: the home screen is one column as tall as the screen; on a monitor it stays a phone-wide column in the middle (the scene is 376 px wide). */
-#overlay.bare > .pd-camp { flex: 1 1 auto; align-self: stretch; width: 100%; max-width: 440px; min-width: 0; }
-@media (min-width: 441px) { #overlay.bare > .pd-camp { box-shadow: 0 0 0 1px var(--stone-700), 0 0 40px rgba(0, 0, 0, .6); } }
-/* The hero of the saved run, on the «Continue» button. */
-.pd-camp-sheet .pd-button.stacked { position: relative; }
-.pd-camp-face { position: absolute; left: 12px; top: 50%; width: 30px; height: 40px; margin-top: -20px; background: var(--atlas-avatars) no-repeat; background-size: 180px 40px; background-position: calc(var(--av, 0) * -30px) 0; image-rendering: pixelated; }
+/* «Привал»: the home screen is as tall and as wide as the screen. The scene runs to the edges (camp.ts fill: reflected, darkening sides); the interface is a 440 px column in the middle (ui.css .pd-camp-ui, design v20 CampWide). */
+#overlay.bare > .pd-camp { flex: 1 1 auto; align-self: stretch; width: 100%; min-width: 0; }
 .pd-daily-rules .pd-chip[role="button"] { cursor: pointer; }
 .pd-daily-rules .pd-chip .pd-tro { --u: 1px; margin: -2px 2px 0 -2px; }
 /* A camp's picture in the Pixel-Mart: the scene cropped to the fire and the hero. */
@@ -249,11 +245,8 @@ html.pd-paused *, html.pd-paused *::before, html.pd-paused *::after { animation-
 .pd-camp-ui > .pd-camp-edges { pointer-events: none; }
 .pd-camp-edges > .pd-camp-edge { pointer-events: none; }
 .pd-camp-edge > .pd-camp-icon { pointer-events: auto; }
-/* A letter's gift that does not fit beside «Claim» in a narrow window sends the button to its own row (v18's layout), rather than under it. */
-.pd-letter-act { flex-wrap: wrap; }
-.pd-letter-gifts { flex: 1 1 auto; min-width: min-content; }
-/* Five shelves in the Pixel-Mart: on a narrow screen the patron's tab keeps its star and gives up its word (it stays in its label). */
-@media (max-width: 420px) { .pd-tab.patron .pd-tab-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } }
+/* The «Bug hunter» honour (server-side) beside the run badges; the sprite is 16 px, like the patron's. */
+.pd-offer-badge.bughunter { background: var(--spr-badge-bughunter) center / contain no-repeat; image-rendering: pixelated; }
 /* A camp's name may take two lines: they are long. */
 .pd-offer.camp .pd-offer-name { white-space: normal; line-height: 18px; min-height: 36px; }
 /* With no streak, the card's line is a sentence: it may take two lines. */

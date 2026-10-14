@@ -53,6 +53,8 @@ class Mart {
   private worn: Worn = load<Worn>(LOOK_KEY, { skins: {} });
   private listeners: Listener[] = [];
   private server = '';
+  /** A camp tried on for a few seconds (the Mart's «Try it at the camp»): shown on the home screen until `until`, then the own camp is back. */
+  private trying: { camp: CampId; until: number } | null = null;
 
   /** Payments go through the co-op server; without one (or outside Telegram) the shop only shows. */
   get open(): boolean {
@@ -124,6 +126,18 @@ class Mart {
   campWorn(): CampId | undefined {
     const camp = this.worn.camp;
     return camp && this.owns(offerBySku(`camp.${camp}`)!) ? camp : undefined;
+  }
+
+  /** Tries a camp on the home screen for `ms` (10 s by default); it is shown by campShown() until then. */
+  tryCamp(camp: CampId, ms = 10_000): void {
+    this.trying = { camp, until: Date.now() + ms };
+  }
+
+  /** The camp the home screen shows now: the one being tried on, else the one worn. */
+  campShown(): CampId | undefined {
+    if (this.trying && this.trying.until > Date.now()) return this.trying.camp;
+    this.trying = null;
+    return this.campWorn();
   }
 
   /** The look a class wears on the home screen: its skin, if it is this player's. */

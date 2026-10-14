@@ -37,6 +37,7 @@
     // Days the server was down (YYYY-MM-DD, separated by commas): the daily streak takes them as played, breaking
     // nothing and spending no freeze. The admin's bot command /outage <day> adds more without a deploy (outages.ts).
     "OUTAGE_DAYS": "",
+    // PLACEHOLDER (empty): set to the real release moment before the deploy, e.g. "2026-10-27T09:00:00Z".
     // The moment of the Shattered release (ISO, UTC): every profile made before it is sent the «Первопроходец»
     // letter, as is every profile kept before profiles noted their birth (pioneer.ts). Set it before the deploy.
     "RELEASE_AT": ""
