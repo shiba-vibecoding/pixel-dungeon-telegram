@@ -126,6 +126,27 @@ export function backButton(handler: (() => void) | null): void {
   else button.hide();
 }
 
+/**
+ * The room Telegram's own controls take at the top (`--pd-tg-top`, joined into `--safe-t` in game.css). In full screen on a
+ * phone Telegram lays «Закрыть» and «⋮» over the page; its CSS variables for that may be missing or late, and then a window's
+ * cross sat under those buttons. So the inset is worked out here from the Web App's numbers, with 56 px kept for the buttons
+ * when Telegram gives none.
+ */
+function applySafeTop(): void {
+  if (!webApp || !inTelegram) return;
+  const app = webApp as unknown as { safeAreaInset?: { top?: number }; contentSafeAreaInset?: { top?: number } };
+  const safe = app.safeAreaInset?.top ?? 0;
+  const content = app.contentSafeAreaInset?.top ?? 0;
+  let top = safe + content;
+  if (webApp.isFullscreen && /^(ios|android)/.test(webApp.platform) && content === 0) top = Math.max(top, safe + 56);
+  document.documentElement.style.setProperty('--pd-tg-top', `${top}px`);
+}
+
+if (webApp && inTelegram) {
+  applySafeTop();
+  for (const event of ['safeAreaChanged', 'contentSafeAreaChanged', 'fullscreenChanged', 'viewportChanged']) webApp.onEvent?.(event, applySafeTop);
+}
+
 /** Calls back when Telegram changes the safe areas or the viewport. */
 export function onLayoutChange(callback: () => void): void {
   if (!webApp?.onEvent || !inTelegram) return;

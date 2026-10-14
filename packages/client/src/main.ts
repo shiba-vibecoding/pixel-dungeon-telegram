@@ -65,7 +65,7 @@ import { feelingLine, lt, plain, spawnerWarning, trapText, trapWarning } from '.
 import { levelFx } from './levelfx';
 import { mineTarget, setSmithToast, type SmithEnv, smithBranch, talkWithBlacksmith } from './blacksmith-ui';
 import {
-  armorTier, closeOverlay, el, hideOverlay, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showDangerConfirm, showHelp, showHero,
+  armorTier, closeOverlay, el, hideOverlay, onWindow, overlayOpen, windowOverMap, portrait, setAssets, showBackpack, showConfirm, showDangerConfirm, showHelp, showHero,
   refreshBackpack, reopenWindow, windowState, type WindowState, quickAction, showHistory, showMenu, showRankings, showResurrect, showAmulet, showQuest, showRunEnd, showBadges, info, show, showInfo, showSell, showSign, showTrade, showWaiting, slot, toast, type ShareChoice, windowOf,
 } from './screens';
 import { rankingBlock, showBoards } from './rankui';
@@ -3244,6 +3244,12 @@ addEventListener('pd-net', (event) => {
     },
     onPlay: hideOverlay,
   });
+});
+
+// On the title screen (no run) Telegram's back button closes a window that can be closed (settings, boards, mail…): on a phone
+// in full screen Telegram's own «Закрыть» sits where a window's cross is. With nothing to close it goes, and «Закрыть» is back.
+onWindow((closable) => {
+  if (!session) backButton(closable ? () => void closeOverlay() : null);
 });
 
 function tick(now: number): void {

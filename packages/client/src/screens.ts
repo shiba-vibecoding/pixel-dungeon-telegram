@@ -115,6 +115,14 @@ export function show(content: HTMLElement, onClose: (() => void) | null, bare = 
   root.classList.add('open');
   root.classList.toggle('bare', bare);
   sprites(content);
+  windowListener?.(onClose !== null);
+}
+
+let windowListener: ((closable: boolean) => void) | null = null;
+
+/** Told whenever a window is put up: whether it can be closed (Telegram's back button closes it on the title screen). */
+export function onWindow(listener: (closable: boolean) => void): void {
+  windowListener = listener;
 }
 
 /**
@@ -160,6 +168,7 @@ export function hideOverlay(): void {
   closer = null;
   root.classList.remove('open', 'bare');
   root.replaceChildren();
+  windowListener?.(false);
 }
 
 export function overlayOpen(): boolean {
