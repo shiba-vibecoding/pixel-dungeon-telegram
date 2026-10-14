@@ -153,7 +153,7 @@ const REST: How = {
   gesture: 'hold',
   ru: '<b>Удерживайте</b> часы, чтобы отдохнуть до полного',
   en: '<b>Hold</b> the hourglass to rest until healed',
-  wide: { gesture: 'click', ru: 'Отдохнуть до полного:', en: 'Rest until healed:' },
+  wide: { gesture: 'click', ru: 'Отдохнуть до полного (или удерживайте пробел):', en: 'Rest until healed (or hold Space):' },
   key: 'R',
   target: 'wait',
 };

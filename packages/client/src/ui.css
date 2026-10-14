@@ -602,6 +602,9 @@ button.pd-slot:active, .pd-slot.pressed { background: var(--stone-900); }
 .pd-toast .pd-icon, .pd-toast .pd-item { flex: none; }
 .pd-toast.good { color: var(--good); }
 .pd-toast.warn { color: var(--warn); }
+/* hunger's banner: bigger, red, and it stays long enough to read */
+.pd-toast.alarm { color: var(--danger); font: var(--text-title, 400 24px/28px var(--font-ui)); max-width: min(calc(100% - 2 * var(--space-4)), 560px); white-space: normal; }
+.pd-toast.alarm .pd-item { --u: 3px; }
 .pd-toast.ally { color: var(--ink); }
 .pd-toast.ally b { color: var(--ally); font-weight: 400; }
 @keyframes pd-toast-in { from { opacity: 0; translate: 0 -8px; } }
@@ -1295,6 +1298,20 @@ button.pd-slot:active, .pd-slot.pressed { background: var(--stone-900); }
   .pd-pick { flex: 1 1 0; padding: 0 0 0 var(--space-4); border-left: var(--u) solid var(--stone-500); }
   .pd-pick-head .pd-heading { font: var(--text-title, 400 24px/28px var(--font-ui)); }
   .pd-pick-actions > .primary .pd-btn-sub { display: block; }
+}
+/* В игре окна лежат в #overlay, а он не контейнер (контейнер — только .pd-overlay карточек), поэтому запрос выше там не срабатывал:
+   на мониторе описание предмета сидело в узкой прокручиваемой коробке под сеткой. От 900 px (тот же порог, что у .pd-wide) панель справа. */
+@media (min-width: 900px) {
+  #overlay .pd-window.bag { --window-max: 860px; height: auto; }
+  #overlay .pd-bag-body { flex-direction: row; align-items: stretch; gap: var(--space-4); }
+  #overlay .pd-pick { flex: 1 1 0; padding: 0 0 0 var(--space-4); border-left: var(--u) solid var(--stone-500); }
+  #overlay .pd-pick-head .pd-heading { font: var(--text-title, 400 24px/28px var(--font-ui)); }
+  #overlay .pd-pick-actions > .primary .pd-btn-sub { display: block; }
+}
+/* ячейки крупнее, пока хватает высоты (ниже 700 px — компактные, как выше) */
+@media (min-width: 900px) and (min-height: 701px) {
+  #overlay .pd-window.bag { --cell: 72px; }
+  #overlay :is(.pd-bag-equip, .pd-bag-grid) .pd-slot .pd-item { --u: 4px; }
 }
 /* узкие и низкие экраны: ячейки сжимаются по ширине (до 56 px на 360), на высоте ниже 700 — 48 px и предмет ×2 */
 .pd-bag-equip, .pd-bag-grid { grid-template-columns: repeat(5, minmax(0, var(--cell))); }

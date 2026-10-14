@@ -308,6 +308,8 @@ export interface HudHandlers {
   history(): void;
   /** A tap on a buff icon: what it is. */
   buff(name: BuffName, turns?: number): void;
+  /** A tap on the health bar: what the numbers, the red pulse and the regeneration mean right now. */
+  vitals(): void;
   /** A tap on a companion. */
   mate(id: string): void;
   /** The arena's «To battle!» (pressed again: not ready after all). */
@@ -528,6 +530,7 @@ export class Hud {
     // The wound's trace: a pale stretch where health was, melting away a moment after a blow.
     this.hpLag = el('span', 'pd-bar-lag');
     this.hp = el('div', 'pd-bar', this.hpLag, this.hpText);
+    this.hp.onclick = tap(() => handlers.vitals());
     this.xp = el('div', 'pd-bar thin xp');
     this.food = el('div', 'pd-bar thin food');
     this.depth = document.createTextNode('');

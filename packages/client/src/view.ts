@@ -1859,6 +1859,8 @@ export class View {
         case 'hunger':
           if (effect.hero === myId) {
             this.say(effect.state === 'hungry' ? t.hungry : t.starving, effect.state === 'hungry' ? COLORS.warning : COLORS.negative, now);
+            // A sound of its own for each: Shattered's alert for hungry, its critical-health alarm for starving.
+            audio.play(effect.state === 'hungry' ? 'alert' : 'health_critical');
             if (effect.state === 'starving') haptic('error');
           }
           break;
@@ -1881,7 +1883,12 @@ export class View {
           break;
         case 'dewCollected':
           audio.play('dewdrop');
-          if (effect.hero === myId) this.say(effect.full ? t.vialFull : t.dewCollected, effect.full ? COLORS.positive : COLORS.default, now);
+          if (effect.hero === myId) {
+            this.say(effect.full ? t.vialFull : t.dewCollected, effect.full ? COLORS.positive : COLORS.default, now);
+            // Dewdrop.doPickUp: the skin takes the drop while it has room, so a hurt hero is not healed; say what to do.
+            const self = world.heroes.find((h) => h.id === myId);
+            if (self && self.hp < self.ht) this.say(t.dewToSkin, COLORS.warning, now);
+          }
           break;
         case 'vial':
           audio.play('drink');

@@ -90,6 +90,7 @@ import { Scenery } from './scenery';
 import { Feedback } from './feedback';
 import { Finds, MapControls } from './mapui';
 import { type HintId, hints } from './hints';
+import { interruptWalk, tookDamage, type Vitals, vitalsOf } from './interrupt';
 import { lookIndex, preloadSheets, regionIndex } from './worldsheets';
 import { type ShareCard, shareCard, sharePicture, storyCard } from './share';
 import { rankings, recordRun } from './rankings';
@@ -223,6 +224,7 @@ const hud = new Hud({
     assignQuickslot(slot);
   },
   danger: () => nextDanger(),
+  vitals: () => explainVitals(),
   journal: () => openJournal(),
   settings: () => settings(hideOverlay),
   backpack: () => {
@@ -1118,6 +1120,63 @@ function inReach(world: World, me: Hero, pos: number): boolean {
 let threats = new Set<string>();
 /** Hero.visibleEnemies: the enemies in my hero's sight, in the level's order (the danger indicator's list); a new one interrupts walking. */
 let enemiesInSight: string[] = [];
+/**
+ * Hero.interrupt: damage from any source, or a new enemy in view, drops the hero's plan: the walk, the way to
+ * the stairs, a rest, a key held down (and under live turns the room's standing order). The chase of `except`
+ * (the monster that struck) goes on. «Go on» (walk.goal) is kept to resume the walk.
+ */
+function interruptHero(except: string | null = null): void {
+  const live = held.striding && session?.beatMs != null;
+  interruptWalk(walk, held, except);
+  if (live) {
+    held.striding = false;
+    send({ type: 'plan', steps: [] }, performance.now());
+  }
+}
+
+/**
+ * A tap on the health bar: the numbers, what the red pulsing at the edges of the screen is (low health), whether
+ * health comes back (not while starving) and what heals at once (the waterskin).
+ */
+function explainVitals(): void {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me || !isAlive(me)) return;
+  const low = me.hp <= me.ht / 4;
+  const parts = [t.vitals(me.hp, me.ht)];
+  if (isStarving(me)) parts.push(t.starvingRemind);
+  else {
+    if (low) parts.push(t.lowHealthEdge);
+    if (me.hp < me.ht) parts.push(t.vitalsRegen);
+  }
+  const skin = me.items.find((item) => item.kind === 'waterskin');
+  if (me.hp < me.ht && (skin?.volume ?? 0) > 0) parts.push(t.vitalsSkin);
+  toast(parts.join(' '), { ...(low || isStarving(me) ? { tone: 'warn' as const } : {}), ms: 7000 });
+}
+
+/** Whether the red pulse at low health has been explained in the log for this spell of low health. */
+let lowHealthTold = false;
+
+/** The world turn of the last hunger banner or reminder (starving, the hero is told again every STARVE_REMIND_TURNS). */
+let lastStarveRemind = -Infinity;
+const STARVE_REMIND_TURNS = 40;
+
+/**
+ * Hungry, and again starving: a banner that stays, in red, with the food to eat if there is any. (The sound is the view's:
+ * Shattered's alert for hungry, its critical-health alarm for starving.) Starving says that health no longer regenerates
+ * and what to do: eat, or a well of health, or a potion of cleansing.
+ */
+function hungerBanner(world: World, me: Hero, starving: boolean): void {
+  const food = me.items.find((item) => itemDef(item.kind).category === 'food');
+  const text = starving ? t.starvingRemind : t.hungryBanner;
+  toast(food ? `${text} ${t.eatThis(itemName(world, food))}` : text, {
+    tone: 'alarm', ms: starving ? 9000 : 6000, ...(food ? { item: itemSprite(food, world.run.labels) } : {}),
+  });
+}
+
+/** My hero's health and shield at the last frame (a drop in them is damage taken: Hero.damage). */
+let lastVitals: Vitals | null = null;
+
 /** DangerIndicator: the enemy last stepped to, and where in the list. */
 let dangerTarget: string | null = null;
 let dangerIndex = -1;
@@ -1614,20 +1673,18 @@ function handleMyEffects(effects: readonly Effect[], myId: string): void {
     if (world && me) learnFromEffect(world, me, effect);
     // Goo winding up: a warning nobody can miss, while there is still time to step back.
     if (effect.type === 'bossFx' && effect.fx === 'pumpUp' && effect.value === 1 && me && effect.depth === me.depth) toast(t.gooPumpsTip, { tone: 'warn' });
-    // Hunger kills quietly in the original's log: here it says what to do, and with what.
+    // Hunger kills quietly in the original's log: here a banner says it, with a sound, and what to do and with what.
     if (effect.type === 'hunger' && effect.hero === myId && world && me) {
-      const food = me.items.find((item) => itemDef(item.kind).category === 'food');
-      const tip = effect.state === 'starving' ? t.starvingTip : t.hungryTip;
-      toast(food ? `${tip} ${t.eatThis(itemName(world, food))}` : tip, { tone: 'warn', ...(food ? { item: itemSprite(food, world.run.labels) } : {}) });
+      lastStarveRemind = world.turn;
+      hungerBanner(world, me, effect.state === 'starving');
     }
     const hurt =
       (effect.type === 'attack' && effect.target === myId) ||
       (effect.type === 'hurt' && effect.who === myId) ||
       (effect.type === 'hunger' && effect.hero === myId && effect.state === 'starving');
     if ((effect.type === 'interrupted' && effect.hero === myId) || hurt) {
-      walk.queue = [];
-      walk.stairs = null;
-      walk.resting = false;
+      // Hero.interrupt: damage stops a walk, a rest and a key held down (a chase of the one that struck goes on).
+      interruptHero(effect.type === 'attack' ? effect.attacker : null);
     }
   }
 }
@@ -1800,6 +1857,9 @@ function act(type: 'wait' | 'search'): void {
   const world = session?.world;
   if (!world || session!.busy) return;
   walk.reset();
+  // Waiting or searching while starving does not heal: say so (Hunger: health drains instead of regenerating).
+  const me = heroById(world, session!.myId);
+  if (me && isStarving(me) && me.hp < me.ht) view.say(t.tooHungryToRest, '#ff4444');
   send({ type }, performance.now());
 }
 
@@ -2767,6 +2827,9 @@ function startResting(): void {
   view.say(t.resting, '#cccccc');
 }
 
+/** Space has been held long enough to rest (see the key handler). */
+let spaceRests = false;
+
 /** The direction key held down, if any: the hero walks on while it is. */
 const held = { code: '', dx: 0, dy: 0, striding: false };
 addEventListener('keyup', (event) => {
@@ -2820,7 +2883,17 @@ addEventListener('keydown', (event) => {
       }
     }
   } else if (event.code === 'Space' || event.code === 'Numpad5' || event.code === 'Period') {
-    act('wait');
+    // Shattered's wait: a press is a turn; Space held down (the keyboard's repeat begins) rests until healed, as
+    // holding the hourglass does.
+    if (event.code === 'Space' && event.repeat) {
+      if (!spaceRests) {
+        spaceRests = true;
+        startResting();
+      }
+    } else {
+      spaceRests = false;
+      act('wait');
+    }
   } else if (event.code === 'KeyR') {
     startResting();
   } else if (event.code === 'KeyF') {
@@ -3199,13 +3272,18 @@ function tick(now: number): void {
   if (session.world) {
     const self = heroById(session.world, session.myId);
     if (self && isAlive(self) && self.hp <= self.ht / 4) {
+      // Once per spell of low health, the log says what the red pulsing at the edges is.
+      if (!lowHealthTold) {
+        lowHealthTold = true;
+        view.say(t.lowHealthEdge, '#ff4444');
+      }
       const danger = 1 - self.hp / (self.ht / 4);
       const vnowBeat = fx.time(now);
       if (vnowBeat - lastBeat > 1150 - danger * 450) {
         lastBeat = vnowBeat;
         fx.flash('170, 0, 0', 0.16 + danger * 0.22, 520, vnowBeat, true);
       }
-    }
+    } else if (self && self.hp > self.ht / 2) lowHealthTold = false;
   }
   // A phone that cannot keep up gets light effects («auto» in quality.ts).
   if (quality.frame(now - lastFrame)) {
@@ -3305,9 +3383,8 @@ function tick(now: number): void {
     const enemies = isAlive(me) ? visibleEnemies(world, me) : [];
     const awake = new Set(enemies.filter((m) => m.state !== 'sleeping').map((m) => m.id));
     if (enemies.some((m) => !enemiesInSight.includes(m.id)) || [...awake].some((id) => !threats.has(id))) {
-      walk.queue = [];
-      walk.stairs = null;
-      walk.pickup = false;
+      // Hero.checkVisibleMobs -> interrupt(): a new enemy in view stops walking, resting and a key held down.
+      interruptHero();
     }
     threats = awake;
     enemiesInSight = enemies.map((m) => m.id);
@@ -3343,6 +3420,19 @@ function tick(now: number): void {
   // Live turns: a step on screen lasts the room's beat, so walks run on without a pause.
   view.stepMs = session.beatMs ?? STEP_MS;
   view.sync(world, vnow, session.myId);
+  // Hero.damage -> interrupt(): whatever hurt the hero (a blow, a bolt, gas, fire, a trap), the walk stops.
+  const vitals = vitalsOf(me, `${session.generation}:${me.depth}`);
+  if (isAlive(me) && tookDamage(lastVitals, vitals)) interruptHero();
+  lastVitals = vitals;
+  // Starving: now and then the game says again that health no longer comes back, and what to do about it.
+  if (isAlive(me) && isStarving(me) && !world.over) {
+    if (world.turn - lastStarveRemind >= STARVE_REMIND_TURNS || world.turn < lastStarveRemind) {
+      lastStarveRemind = world.turn;
+      view.say(t.starvingRemind, '#ff4444');
+      hungerBanner(world, me, true);
+      audio.play('health_warn');
+    }
+  } else lastStarveRemind = -Infinity;
   step(world, now, visible);
   fx.update(vnow, dt);
   ambientFx(view, vnow, dt);

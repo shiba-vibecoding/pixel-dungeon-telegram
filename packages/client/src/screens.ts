@@ -2661,7 +2661,9 @@ let toastTimer = 0;
 
 export interface ToastOptions {
   /** `update`: the new-version notice of design v20 (a turning icon, update.ts). */
-  tone?: 'good' | 'warn' | 'ally' | 'badge' | 'update';
+  tone?: 'good' | 'warn' | 'ally' | 'badge' | 'update' | 'alarm';
+  /** How long it stays, in ms (2400 by default); hunger's banner stays longer. */
+  ms?: number;
   /** An item sprite or a badge image beside the text. */
   item?: number;
   badge?: number;
@@ -2682,5 +2684,5 @@ export function toast(text: string, options: ToastOptions = {}): void {
     toastTimer = window.setTimeout(() => {
       node.hidden = true;
     }, 260);
-  }, 2400);
+  }, options.ms ?? 2400);
 }
