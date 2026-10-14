@@ -4,6 +4,7 @@ import { ART_EN, ART_RU } from './i18n-artifacts';
 import { CLS_EN, CLS_RU } from './i18n-classes';
 import { TAL_EN, TAL_RU } from './i18n-talents';
 import { REL_EN, REL_RU } from './i18n-release';
+import { V22_BUFFS_EN, V22_BUFFS_RU, V22_EN, V22_RU } from './i18n-v22';
 import { ABIL_EN, ABIL_RU } from './i18n-abilities';
 
 /* Interface text in Russian and English; the language follows Telegram or the browser. */
@@ -982,10 +983,10 @@ const talentBuffNames = (table: Record<string, string>) => ({
   berserk: table['actors.buffs.berserk.angered']!, berserking: table['actors.buffs.berserk.berserk']!, exhausted: table['actors.buffs.berserk.recovering']!,
   comboChain: table['actors.buffs.combo.name']!, momentum: table['actors.buffs.momentum.momentum']!, freerunning: table['actors.buffs.momentum.running']!,
   preparation: table['actors.buffs.preparation.name']!, sniperMark: table['actors.buffs.snipersmark.name']!, holdFast: table['actors.buffs.holdfast.name']!,
-  trackerBlow: table['actors.hero.talent$provokedangertracker.name']!, cooldown: table['actors.hero.talent$improvisedprojectilecooldown.name']!,
+  trackerBlow: table['actors.hero.talent$provokedangertracker.name']!,
   wandEmpower: table['actors.buffs.wandempower.name']!, enhancedRings: table['actors.hero.talent.enhanced_rings.title']!,
   surge: table['actors.hero.talent.strongman.title']!, revealedArea: table['actors.hero.talent.seer_shot.title']!,
-  parry: table['actors.buffs.combo$combomove.parry.name']!, followup: table['actors.hero.talent$followupstriketracker.name']!,
+  parry: table['actors.buffs.combo$combomove.parry.name']!,
 });
 
 /** The artifacts' names, from Shattered's own texts (i18n-artifacts.ts). */
@@ -2373,6 +2374,8 @@ const en = {
   goldLabel: 'Gold',
   slain: 'Foes slain',
   scoreLabel: 'Score',
+  /** Design v22 (i18n-v22.ts): the tome, the action buttons, the Warden's plants, the score table's short lines, the mis-tap question. */
+  v22: V22_EN,
   /* The score table (WndScoreBreakdown): Shattered's own words. */
   scoring: {
     title: 'Score Breakdown',
@@ -2414,6 +2417,7 @@ const en = {
     stealth: 'Cloaked', timeFreeze: 'Time Freeze', thorns: 'Thorns',
     // The talents' and subclasses' buffs (their Shattered names, talenttext.ts).
     ...talentBuffNames(TAL_EN),
+    ...V22_BUFFS_EN,
     endure: ABIL_EN['actors.hero.abilities.warrior.endure$enduretracker.name']!, naturesPower: ABIL_EN['actors.hero.abilities.huntress.naturespower$naturespowertracker.name']!,
     degrade: 'Degraded',
   } as Record<BuffName, string>,
@@ -4269,6 +4273,7 @@ const ru: Strings = {
   goldLabel: 'Золото',
   slain: 'Побеждено врагов',
   scoreLabel: 'Очки',
+  v22: V22_RU,
   /* The score table (WndScoreBreakdown): Shattered's own words. */
   scoring: {
     title: 'Распределение очков',
@@ -4311,6 +4316,7 @@ const ru: Strings = {
     thorns: ART_RU['capeofthorns$thorns.name']!,
     // The talents' and subclasses' buffs (their Shattered names, talenttext.ts).
     ...talentBuffNames(TAL_RU),
+    ...V22_BUFFS_RU,
     degrade: 'Потрёпан',
   },
   causes: {

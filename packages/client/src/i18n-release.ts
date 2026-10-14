@@ -72,7 +72,7 @@ export const REL_EN = {
     title: 'Board rules',
     help: 'Board rules',
     items: [
-      ['score', 'Score', 'As in the original: gold collected + level × deepest depth × 100. A win with the Amulet doubles it. Each challenge adds a quarter.'],
+      ['score', 'Score', 'Five parts, as in Shattered: progress (level × deepest depth × 65, up to 50,000), treasure (gold and the value of the pack, up to 20,000), exploration (floors explored with nothing missed, up to 20,000), bosses (up to 15,000) and quests (up to 10,000). Their sum is multiplied: ×2 for a win, ×2.5 for a win that comes back to the surface, and more with every challenge. A part at its cap is marked «max» in the score table.'],
       ['places', 'Places', 'Day: the top three win a cup. Week: the top ten win a medal. Prizes arrive by mail when the board closes.'],
       ['close', 'When it closes', 'Day — at midnight UTC. Week — on the night to Monday, also at 00:00 UTC. The timer is under the board’s note.'],
       ['tie', 'Equal scores', 'Whoever’s run ended earlier is higher (by the server’s clock).'],
@@ -180,7 +180,7 @@ export const REL_RU: Strings = {
     title: 'Правила доски',
     help: 'Правила доски',
     items: [
-      ['score', 'Очки', 'Как в оригинале: собранное золото + уровень × наибольшая глубина × 100. Победа с амулетом удваивает очки. Каждое испытание добавляет четверть.'],
+      ['score', 'Очки', 'Пять частей, как в Shattered: прогресс (уровень × наибольшая глубина × 65, до 50 000), сокровища (золото и цена вещей в рюкзаке, до 20 000), исследование (этажи без пропущенного, до 20 000), боссы (до 15 000) и задания (до 10 000). Сумма умножается: ×2 за победу, ×2,5 за победу с возвращением на поверхность и ещё сильнее с каждым испытанием. Часть, дошедшая до предела, помечена в таблице очков «максимум».'],
       ['places', 'Места', 'День: тройка лучших получает кубок. Неделя: десятка лучших — медаль. Награды приходят в почту, когда доска закрывается.'],
       ['close', 'Когда закрывается', 'День — в полночь по UTC (03:00 по Москве). Неделя — в ночь на понедельник, тоже в 00:00 UTC. Таймер — под пояснением доски.'],
       ['tie', 'Равные очки', 'Выше тот, чей забег закончился раньше (по часам сервера).'],

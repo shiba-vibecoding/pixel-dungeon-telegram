@@ -195,6 +195,36 @@ function drawGhostLight(ctx: CanvasRenderingContext2D, x: number, y: number, now
   ctx.restore();
 }
 
+/** The afterimage fades a step every 0.6 s (design v22). */
+const AFTER_STEP_MS = 600;
+/** A glowing ally's tint share, a quarter of a second each. */
+const GLOW_STEPS = [0.5, 0.6, 0.5, 0.4] as const;
+
+/**
+ * The light about a light ally (design v22, ClericLooks): a warm halo of radius 13 in three flat steps, and three sparks that rise every 1.6 s.
+ * Drawn in the puppet's own coordinates (the sprite's top left is 0, 0).
+ */
+function drawLightHalo(ctx: CanvasRenderingContext2D, w: number, h: number, now: number, strength: number): void {
+  const cx = w / 2;
+  const cy = h / 2;
+  ctx.save();
+  ctx.fillStyle = '#fff0aa';
+  for (const [r, a] of [[13, 0.1], [10, 0.12], [7, 0.14]] as const) {
+    ctx.globalAlpha = a * strength;
+    ctx.beginPath();
+    ctx.arc(Math.round(cx), Math.round(cy), r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (strength >= 1) {
+    for (let i = 0; i < 3; i++) {
+      const phase = (now / 1600 + i / 3) % 1;
+      ctx.globalAlpha = 1 - phase;
+      ctx.fillRect(Math.round(cx + (i - 1) * 4), Math.round(h - phase * h), 1, 1);
+    }
+  }
+  ctx.restore();
+}
+
 function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y: number, now: number, frozen = false): void {
   const { sheet, anims } = puppet.sprite;
   const anim = puppet.anim === 'idle' && puppet.pumped ? 'pump' : puppet.anim;
@@ -227,6 +257,8 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   ctx.save();
   if (puppet.invisible) ctx.globalAlpha = 0.4;
   if (puppet.alpha !== undefined) ctx.globalAlpha = puppet.alpha;
+  // The Duelist's afterimage (AfterImageSprite, design v22 ClericLooks): 0.6 at first, then 0.48, 0.36, 0.24, 0.12, gone, a step every 0.6 s: 3 s in all.
+  if (puppet.afterAt !== undefined) ctx.globalAlpha = Math.max(0, 0.6 - 0.12 * Math.floor((now - puppet.afterAt) / AFTER_STEP_MS));
   // ScrollOfTeleportation.appear: faded in from nothing over 0.4 s; ShadowSprite.resetColor: a shade at 0.8.
   if (puppet.appearAt !== undefined) ctx.globalAlpha *= Math.min(1, Math.max(0, (now - puppet.appearAt) / 400));
   if (puppet.kind === 'shadow') ctx.globalAlpha *= 0.8;
@@ -260,7 +292,19 @@ function drawPuppet(ctx: CanvasRenderingContext2D, puppet: Puppet, x: number, y:
   } else {
     ctx.translate(dx, dy);
   }
-  ctx.drawImage(image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+  if (puppet.light) {
+    // LightAllySprite (design v22): a flat warm silhouette, a stepped halo about it and three sparks rising.
+    drawLightHalo(ctx, sheet.w, sheet.h, now, 1);
+    ctx.globalAlpha *= 0.85;
+    tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, 'rgb(255, 250, 200)', 1);
+  } else {
+    ctx.drawImage(image, sx, sy, sheet.w, sheet.h, 0, 0, sheet.w, sheet.h);
+    // An ally empowered by Power of Many glows (CharSprite.State.GLOWING): tint(1.33, 1.33, 0.83, s) with s at 0.5, 0.6, 0.5, 0.4 by 250 ms, and a weak halo.
+    if (puppet.glow && puppet.alive) {
+      drawLightHalo(ctx, sheet.w, sheet.h, now, 0.5);
+      tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, 'rgb(255, 255, 212)', GLOW_STEPS[Math.floor(now / 250) % 4]!);
+    }
+  }
   // ShadowSprite.resetColor: brightness 0, the clone is a silhouette of darkness.
   if (puppet.kind === 'shadow') tintSprite(ctx, image, sx, sy, sheet.w, sheet.h, '#000000', 1);
   if (puppet.sprite.brightness !== undefined) {
@@ -676,23 +720,6 @@ export function render(
       }
       ctx.restore();
     }
-  }
-
-  // SpellSprite: an icon that swells in over a creature's head, stays, and fades.
-  view.spells = view.spells.filter((spell) => now - spell.start < 1400);
-  for (const spell of view.spells) {
-    const puppet = view.puppets.get(spell.id);
-    if (!puppet) continue;
-    const { x, y } = view.position(puppet, now);
-    const age = (now - spell.start) / 1000;
-    const alpha = age < 0.2 ? age / 0.2 : age < 1 ? 1 : Math.max(0, 1 - (age - 1) / 0.4);
-    const scale = age < 0.2 ? age / 0.2 : 1;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.translate(snap(x + TILE / 2), snap(y + TILE - puppet.sprite.sheet.h - 8));
-    ctx.scale(scale, scale);
-    ctx.drawImage(assets.spells, spell.frame * 16, 0, 16, 16, -8, -8, 16, 16);
-    ctx.restore();
   }
 
   drawBeams(ctx, view, now);

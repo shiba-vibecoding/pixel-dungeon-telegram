@@ -6,7 +6,11 @@ import { artText, capital } from './artifacttext';
 import { audio } from './audio';
 import { lang, t } from './i18n';
 import { itemName } from './itemtext';
-import { button, el, info, show, windowOf } from './screens';
+import { button, el, info, show, slot, windowOf } from './screens';
+import { plantText } from './examine';
+import { WARDEN_PLANTS } from './i18n-v22';
+import { hicon } from './talentui';
+import { subclassName } from './talenttext';
 
 /*
  * The Duelist's weapon ability and the Cleric's holy tome in the windows: the spells by tier with their cost and what they ask
@@ -47,27 +51,88 @@ function spellDesc(hero: Hero, world: World, spell: SpellDef): string {
 
 export const spellName = (spell: SpellDef): string => capital(textOf(`${keyOf(spell)}.name`));
 
-/** HolyTome.execute: the spells the Cleric has, by tier, as rows (a tap opens one). */
+/** HeroIcon of each spell (hero_icons.png, design v22: the holy tome's icons are 40-66; on the action button the same + 32). */
+export const SPELL_ICON: Readonly<Record<string, number>> = {
+  guidingLight: 40, holyWeapon: 41, holyWard: 42, holyIntuition: 43, shieldOfLight: 44, recallInscription: 45, sunray: 46, divineSense: 47, bless: 48,
+  cleanse: 49, radiance: 50, holyLance: 51, hallowedGround: 52, mnemonicPrayer: 53, smite: 54, layOnHands: 55, auraOfProtection: 56, wallOfLight: 57,
+  divineIntervention: 58, judgement: 59, flash: 60, bodyForm: 61, mindForm: 62, spiritForm: 63, beamingRay: 64, lifeLink: 65, stasis: 66,
+};
+
+/** The cost of a spell as the design draws it: a blue crystal and the number (a free one in gold). */
+export function costTag(cost: number): HTMLElement {
+  const n = Math.trunc(cost);
+  const node = el('span', { className: `pd-cost${n === 0 ? ' free' : ''}` }, el('i', { className: 'pd-cost-ico' }), String(n));
+  node.title = n === 0 ? t.v22.free : `${t.v22.charge} ${n}`;
+  return node;
+}
+
+/**
+ * HolyTome.execute (design v22, ClericTome): the spells the Cleric has in tiers, a row each with its icon, name, cost in charge and a line
+ * of what it does (a tap opens the spell), and a star for the one quick spell.
+ */
 export function showTome(host: ClassHost): void {
   const { world, hero } = host;
+  const V = t.v22;
   const tome = tomeOf(hero);
   const charges = Math.floor(tome?.charge ?? 0);
-  const rows: HTMLElement[] = [];
+  // HolyTome: Math.min(level + 3, 10) charges.
+  const cap = tome ? Math.min(tome.level + 3, 10) : charges;
   const quick = classState(hero).quick;
+  const tiers: HTMLElement[] = [];
   for (const tier of [1, 2, 3, 4] as const) {
     const spells = allSpells(hero, world).filter((spell) => spell.tier === tier);
     if (spells.length === 0) continue;
-    rows.push(el('h3', { className: 'pd-tier-head', textContent: S.tier(tier) }));
-    for (const spell of spells) {
+    const name = tier === 3 && hero.subclass ? capital(subclassName(hero.subclass)) : V.tierSub[tier - 1]!;
+    const rows = spells.map((spell) => {
       const cost = spell.cost(hero, world);
-      const node = button(`${spellName(spell)}${quick === spell.id ? ' ★' : ''} · ${cost}`, () => showSpell(host, spell), charges >= cost ? '' : 'quiet');
-      rows.push(node);
-    }
+      const low = charges < cost;
+      const main = el(
+        'button',
+        { className: 'pd-spell-main', type: 'button' },
+        el('span', { className: 'pd-spell-ico' }, hicon(SPELL_ICON[spell.id] ?? 40)),
+        el(
+          'span',
+          { className: 'pd-spell-text' },
+          el('span', { className: 'pd-spell-line' }, el('b', { textContent: spellName(spell) }), costTag(cost)),
+          el('small', { textContent: textOf(`${keyOf(spell)}.short_desc`) }),
+        ),
+      );
+      main.ariaLabel = `${spellName(spell)}, ${V.charge} ${Math.trunc(cost)}`;
+      if (low) main.setAttribute('aria-disabled', 'true');
+      main.onclick = () => {
+        audio.play('click');
+        showSpell(host, spell);
+      };
+      const star = el('button', { className: 'pd-quick', type: 'button', ariaLabel: V.quick, title: V.quick });
+      star.setAttribute('role', 'radio');
+      star.setAttribute('aria-checked', String(quick === spell.id));
+      star.onclick = () => {
+        audio.play('click');
+        host.act({ type: 'quick', spell: spell.id });
+      };
+      return el('div', { className: `pd-spell${low ? ' low' : ''}` }, main, star);
+    });
+    tiers.push(
+      el(
+        'section',
+        { className: 'pd-tier pd-spell-tier' },
+        el('header', { className: 'pd-tier-head' }, el('h3', { textContent: S.tier(tier) }), el('span', { className: 'pd-tier-sub', textContent: name })),
+        ...rows,
+      ),
+    );
   }
+  const pips = el('span', { className: 'pd-charge-pips' }, ...Array.from({ length: cap }, (_, i) => el('i', { className: i < charges ? 'on' : '' })));
+  const head = el('div', { className: 'pd-tome-charge' }, el('span', {}, `${V.charge} `, el('b', { textContent: String(charges) }), ` ${V.of} ${cap}`), pips);
+  const who = hero.subclass ? capital(subclassName(hero.subclass)) : capital(t.classes[hero.heroClass]);
   show(
     windowOf(
-      { title: capital(tome ? itemName(world, tome) : S.spells), sub: S.charges(charges), onClose: host.back },
-      rows.length ? el('div', { className: 'pd-scroll' }, ...rows) : info(S.none),
+      {
+        title: capital(tome ? itemName(world, tome) : S.spells), sub: `${who} · ${t.levelShort} ${hero.lvl}`, icon: tome ? slot(world, tome) : null,
+        onClose: host.back, className: 'pd-hero-window pd-tome',
+      },
+      tiers.length ? head : null,
+      tiers.length ? el('div', { className: 'pd-scroll' }, el('div', { className: 'pd-talents' }, ...tiers)) : info(S.none),
+      tiers.length ? info(V.quickNote, 'pd-note') : null,
     ),
     host.back,
   );
@@ -160,16 +225,40 @@ export function showMonk(host: ClassHost): void {
   const { hero } = host;
   const energy = Math.floor(monkEnergy(hero));
   const power = monkEmpowered(hero);
-  const rows = MONK_ABILITIES.map((ability) => {
+  // Design v22 (DuelistActions): a row each with its icon, what it does and its cost in energy as pips; the ones the Monk cannot pay for are dim.
+  const rows = MONK_ABILITIES.map((ability, i) => {
     const name = capital(artText(`${monkKey(ability)}.name`));
-    const node = button(`${name} · ${MONK_COST[ability]}`, () => showMonkAbility(host, ability), energy >= MONK_COST[ability] ? '' : 'quiet');
+    const low = energy < MONK_COST[ability];
+    const icon = el('i', { className: 'pd-monk-ico' });
+    icon.style.setProperty('--ix', String(i));
+    const node = el(
+      'button',
+      { className: `pd-monk-ab${low ? ' low' : ''}`, type: 'button' },
+      icon,
+      el(
+        'span',
+        { className: 'pd-spell-text' },
+        el('b', { textContent: name }),
+        el('small', { textContent: artText(power ? `${monkKey(ability)}.empower_desc` : `${monkKey(ability)}.desc`, monkDescArgs(hero, ability)) }),
+      ),
+      el('span', { className: 'pd-energy-pips' }, ...Array.from({ length: 5 }, (_, n) => el('i', { className: n < MONK_COST[ability] ? 'on' : '' }))),
+    );
+    node.ariaLabel = `${name}, ${MONK_COST[ability]}`;
+    if (low) node.setAttribute('aria-disabled', 'true');
+    node.onclick = () => {
+      audio.play('click');
+      showMonkAbility(host, ability);
+    };
     return node;
   });
   show(
     windowOf(
-      { title: capital(artText('actors.buffs.monkenergy.name')), sub: `${energy} / ${monkEnergyCap(hero)}${power ? ' ★' : ''}`, onClose: host.back, narrow: true },
-      info(artText('actors.buffs.monkenergy.desc', [energy, monkEnergyCap(hero)])),
-      el('div', { className: 'pd-scroll' }, ...rows),
+      {
+        title: capital(artText('actors.buffs.monkenergy.name')), sub: `${energy} / ${monkEnergyCap(hero)}${power ? ` · ${t.v22.empowered}` : ''}`,
+        icon: el('div', { className: `pd-slot pd-monk-slot${power ? ' emp' : ''}` }, hicon(110)), onClose: host.back, className: 'pd-monk-window',
+      },
+      el('div', { className: 'pd-scroll' }, el('div', { className: 'pd-monk-list' }, ...rows)),
+      info(t.v22.monkNote, 'pd-note'),
     ),
     host.back,
   );
@@ -193,4 +282,42 @@ function showMonkAbility(host: ClassHost, ability: (typeof MONK_ABILITIES)[numbe
     ),
     back,
   );
+}
+
+/* The Warden's plants (design v22, WardenPlants) */
+
+/**
+ * HeroSubClass.WARDEN: a plant gives her its own effect in place of its harm. A row each for the plants of this game, with the plant, what it
+ * gives her in a line and the picture of that effect.
+ */
+export function showWarden(onClose: () => void): void {
+  const V = t.v22;
+  const rows = (Object.keys(WARDEN_PLANTS) as Array<keyof typeof WARDEN_PLANTS>).map((kind) => {
+    const plant = el('i', { className: 'pd-wplant' });
+    plant.style.setProperty('--ix', String(WARDEN_PLANTS[kind]));
+    const effect = el('i', { className: 'pd-weffect' });
+    effect.style.setProperty('--ix', String(WARDEN_PLANTS[kind]));
+    return el(
+      'li',
+      {},
+      plant,
+      el('span', { className: 'pd-spell-text' }, el('b', { textContent: capital(plantText(kind).name) }), el('small', { textContent: V.plants[kind] })),
+      effect,
+    );
+  });
+  show(
+    windowOf(
+      { title: V.warden, sub: V.wardenSub, icon: el('div', { className: 'pd-slot' }, hicon(7)), onClose, className: 'pd-warden-window' },
+      el('div', { className: 'pd-scroll' }, el('ul', { className: 'pd-warden-list' }, ...rows)),
+      info(V.wardenNote, 'pd-note'),
+    ),
+    onClose,
+  );
+}
+
+/** The line under a plant's description for a Warden: what stepping on it gives her. */
+export function wardenNote(kind: keyof typeof WARDEN_PLANTS): HTMLElement {
+  const icon = el('i', { className: 'pd-weffect' });
+  icon.style.setProperty('--ix', String(WARDEN_PLANTS[kind]));
+  return el('p', { className: 'pd-warden-note' }, icon, el('span', {}, el('b', { textContent: t.v22.wardenLabel }), ` ${t.v22.plants[kind]}`));
 }

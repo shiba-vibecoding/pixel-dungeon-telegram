@@ -1,8 +1,9 @@
 import type { MobKind } from '@pd/core';
 
 /*
- * The bestiary's roster in the order of the design's portrait sheet (design v21: assets/mobs/bestiary.png and
- * bestiary.json, 24×24 cells, 11 to a row): thirty by region, the bosses, those found everywhere, the rare ones.
+ * The bestiary's roster in the order of the design's portrait sheet (design v22: assets/mobs/bestiary.png and
+ * bestiary.json, 24×24 cells, 11 to a row, 7 rows, 69 cells): thirty by region, the bosses, those found everywhere, the rare ones,
+ * and the quest's three (the fetid rat, the gnoll trickster, the great crab).
  * `kind` is the core's monster; the design draws two that the core does not have (the trap guardian and the
  * sentry), which stay out of the list but keep their places on the sheet.
  */
@@ -12,7 +13,7 @@ export type BestGroup = 'region0' | 'region1' | 'region2' | 'region3' | 'region4
 export interface BestEntry {
   /** The design's key (bestiary.json). */
   key: string;
-  /** Its cell on the sheet, counting along the rows; none for the quest's, which are drawn from their own sprites. */
+  /** Its cell on the sheet, counting along the rows (the quest's too since design v22; null would be drawn from the monster's own sprite). */
   n: number | null;
   kind: MobKind | null;
   group: BestGroup;
@@ -38,16 +39,12 @@ const SHEET: ReadonlyArray<readonly [string, MobKind | null, BestGroup]> = [
   ['bandit', 'bandit', 'rare'], ['spectral', 'spectralNecromancer', 'rare'], ['armBrute', 'shielded', 'rare'], ['dm201', 'dm201', 'rare'],
   ['elemChaos', 'chaosElemental', 'rare'], ['senior', 'senior', 'rare'], ['acidic', 'acidic', 'rare'], ['tormented', 'tormentedSpirit', 'rare'],
   ['phantom', 'phantomPiranha', 'rare'], ['mimicCrystal', 'crystalMimic', 'rare'], ['armStatue', 'armoredStatue', 'rare'],
+  // Bestiary.QUEST: the sad ghost's foes, drawn on the sheet since design v22.
+  ['fetid', 'fetidRat', 'quest'], ['trickster', 'gnollTrickster', 'quest'], ['greatcrab', 'greatCrab', 'quest'],
 ];
-
-/** Bestiary.QUEST: the sad ghost's foes, which the design has no portraits for yet (drawn from their sprites). */
-const QUEST: ReadonlyArray<readonly [string, MobKind]> = [['fetidRat', 'fetidRat'], ['gnollTrickster', 'gnollTrickster'], ['greatCrab', 'greatCrab']];
 
 /** Every monster of the list, in groups' order. */
-export const BESTIARY_ENTRIES: readonly BestEntry[] = [
-  ...SHEET.map(([key, kind, group], n): BestEntry => ({ key, n, kind, group })).filter((entry) => entry.kind !== null),
-  ...QUEST.map(([key, kind]): BestEntry => ({ key, n: null, kind, group: 'quest' })),
-];
+export const BESTIARY_ENTRIES: readonly BestEntry[] = SHEET.map(([key, kind, group], n): BestEntry => ({ key, n, kind, group })).filter((entry) => entry.kind !== null);
 
 export const BEST_GROUPS: readonly BestGroup[] = ['region0', 'region1', 'region2', 'region3', 'region4', 'boss', 'any', 'rare', 'quest'];
 
