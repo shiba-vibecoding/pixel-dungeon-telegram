@@ -67,6 +67,10 @@ canvas#game {
 
 /* Windows that may grow long scroll inside, keeping the frame and the cross in place: as tall as the screen allows. */
 .pd-window > .pd-scroll { min-height: 0; flex: 0 1 auto; }
+/* A scroll area whose parts keep the window's own gaps (a quest giver's words and rewards, a long description). */
+.pd-window > .pd-scroll.pd-stack { display: flex; flex-direction: column; gap: var(--space-3); }
+/* The safety net: a window whose content still outgrows the screen scrolls as a whole instead of spilling off it (windows with a scroll area of their own never reach it). */
+.pd-window { overflow-y: auto; overscroll-behavior: contain; }
 
 
 /* Reward cards without an item slot: a pair to reforge. */

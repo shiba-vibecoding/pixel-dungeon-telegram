@@ -6,7 +6,7 @@ import {
   BONES_ROLLS, type Bones, haggles, hasAmulet, heroById, type HeroClass, HERO_CLASSES, leaveBones, HEIGHT, isAlive, isHungry, isStarving, itemDef, itemSprite, levelAt, mobById, type MobKind,
   type PlanStep, PLANT_KINDS, T,
   visibleCells, chargesKnown, staffReach, WIDTH,
-  type World, charAt, swapsWithHero, canReach, copyReach, heroReach, isClassArmor, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
+  type World, charAt, swapsWithHero, canReach, copyReach, heroReach, isClassArmor, isEnemy, visibleEnemies, type ArtifactAction, itemAt, thievery, NEIGHBOURS8, atPot,
 } from '@pd/core';
 import * as core from '@pd/core';
 import './ui.css';
@@ -25,6 +25,7 @@ import { blobTexts, bossTile, mobDescription, mobName, plantText, tileText, well
 import {
   chooseQuickslot, isPlaceholder, quickArtifact, quickClassArmor, quickIndex, quickItem, quickKind, quickUse, syncQuickslots, visibleQuickslots, WEAPON_SLOT,
 } from './quickslot';
+import { fireAtTarget, lastTargetIn, refreshTarget, rememberTarget, resetTargeting, shotPath, startTargeting, usesTargeting } from './targeting';
 import { type ArtifactHost, defaultArtifactAction, shopliftOffer, showSpellbookChoice } from './artifactui';
 import { artText, chargeOf } from './artifacttext';
 import { armorStatus } from './abilitytext';
@@ -313,6 +314,7 @@ const mapControlsActions = {
     const target = world && me ? attackTarget(world, me) : null;
     if (!world || !me || !target || session!.busy) return;
     walk.reset();
+    rememberTarget(target);
     if (inReach(world, me, target.pos)) send({ type: 'attack', target: target.id }, performance.now());
     else walk.chase = target.id;
   },
@@ -1025,7 +1027,11 @@ const heapAt = (world: World, depth: number, pos: number): boolean =>
 
 /** Aiming a thrown weapon or a wand: the next tap on the map picks the target. */
 let aim:
-  | { index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key'; choice?: number }
+  | {
+    index: number; kind: 'throw' | 'zap' | 'shoot' | 'special' | 'cast' | 'key'; choice?: number;
+    /** Aiming from this quick slot (QuickSlotButton.targetingSlot), the last target marked: the slot tapped again fires at it. */
+    slot?: number; marked?: boolean;
+  }
   /** An action of the classes that wants a target: a spell cast at a cell, a weapon's ability. */
   | { index: -1; kind: 'class'; make: (cell: number) => Action; /** The action indicator's button that asked (its frame blinks while aiming). */ from?: 'weapon' }
   | { index: -1; kind: 'artifact'; action: ArtifactAction }
@@ -1067,8 +1073,24 @@ function quickTap(slot: number): void {
   const me = session?.world && heroById(session.world, session.myId);
   if (!me) return;
   tutorial.did('quick');
+  // QuickSlotButton.onClick: the slot that is aiming at a marked target, tapped again, fires at it.
+  if (aim && 'marked' in aim && aim.marked && aim.slot === slot && fireMarked()) return;
   if (!aim && (quickKind(slot) === null || isPlaceholder(me, slot))) assignQuickslot(slot);
   else toggleQuickslot(slot);
+}
+
+/** The aim from a quick slot is on a marked target: fire at it (autoAim: angled round what is in the way, if need be). False: it is gone. */
+function fireMarked(): boolean {
+  const world = session?.world;
+  const me = world && heroById(world, session!.myId);
+  if (!world || !me || !aim || !('marked' in aim) || !isAlive(me)) return false;
+  const shot = fireAtTarget(world, levelAt(world, me.depth), me);
+  if (!shot) {
+    aim.marked = false;
+    return false;
+  }
+  tapCell(shot.cell);
+  return true;
 }
 
 function toggleQuickslot(slot = 0): void {
@@ -1115,7 +1137,10 @@ function toggleQuickslot(slot = 0): void {
   if (use === 'use') send({ type: 'use', item: index }, performance.now());
   // Shattered's potions, scrolls, stones, spells...: whatever the item's first action is (it may want a target or a choice).
   else if (use === 'item') quickAction(backpackOptions(world!, me), index);
-  else if (use && use !== 'artifact' && use !== 'ability') aim = { index, kind: use };
+  else if (use && use !== 'artifact' && use !== 'ability') {
+    // QuickSlotButton.useTargeting: a throw, a wand, a bow offers the last target, marked, for the slot to be tapped again.
+    aim = usesTargeting(item.kind) ? { index, kind: use, slot, marked: startTargeting(world!, me) } : { index, kind: use };
+  }
 }
 
 /**
@@ -1207,6 +1232,7 @@ function nextDanger(): void {
   dangerTarget = enemiesInSight[dangerIndex]!;
   const mob = mobById(world, me.depth, dangerTarget);
   if (!mob) return;
+  rememberTarget(mob);
   cam.lookAt({ x: cellX(mob.pos) * TILE + TILE / 2, y: cellY(mob.pos) * TILE + TILE / 2 });
   feedback.aim(mob.pos, true, fx.now, mob.id);
   feedback.danger(mob.id, mob.pos, fx.now);
@@ -1900,6 +1926,11 @@ function tapCell(cell: number, quiet = false): void {
   if (aim) {
     const shot = aim;
     aim = null;
+    // Item.cast and its kin: whoever the shot is aimed at is the last target (QuickSlotButton.target).
+    if (shot.kind === 'throw' || shot.kind === 'zap' || shot.kind === 'shoot') {
+      const end = shotPath(world, level, me.depth, me.pos, cell).at(-1);
+      rememberTarget(visibleEnemies(world, me).find((m) => m.pos === end));
+    }
     if (shot.kind === 'artifact') send({ ...shot.action, cell }, performance.now());
     else if (shot.kind === 'ability') {
       // The subclasses' actions on a target: the monster on the cell.
@@ -1951,6 +1982,7 @@ function tapCell(cell: number, quiet = false): void {
   const mob = world.floors[me.depth]?.mobs.find((m) => m.pos === cell);
   if (mob && visible[cell]) {
     walk.chase = mob.id;
+    if (isEnemy(mob)) rememberTarget(mob);
     if (!quiet) feedback.aim(cell, true, vnow, mob.id);
     return;
   }
@@ -3373,7 +3405,10 @@ function tick(now: number): void {
   lastVisual = vnow;
 
   if (session.generation !== seenGeneration || me.depth !== view.depth) {
-    if (session.generation !== seenGeneration) deathShown = -1;
+    if (session.generation !== seenGeneration) {
+      deathShown = -1;
+      resetTargeting();
+    }
     seenGeneration = session.generation;
     view.reset(me.depth);
     fx.reset();
@@ -3456,6 +3491,8 @@ function tick(now: number): void {
     }
     threats = awake;
     enemiesInSight = enemies.map((m) => m.id);
+    // Hero.checkVisibleMobs: with no fair last target, the nearest enemy a shot can reach becomes it.
+    if (isAlive(me)) refreshTarget(world, level, me);
     if (dangerTarget && !enemiesInSight.includes(dangerTarget)) {
       dangerTarget = null;
       dangerIndex = -1;
@@ -3607,6 +3644,8 @@ function tick(now: number): void {
       })));
     const webs = (clouds.web ?? []).map(([pos, volume]) => ({ pos, volume }));
     const explored = exploredCells(world, me.depth);
+    // QuickSlotButton.crossM: aiming from a slot, the target the slot tapped again fires at is marked on the map.
+    feedback.mark(aim && 'marked' in aim && aim.marked ? lastTargetIn(enemiesInSight.flatMap((id) => mobById(world, me.depth, id) ?? []))?.id ?? null : null);
     const scene = {
       level, tiles: tiles!, visible, explored, heaps, gas, webs, seeAll: me.mindVision > 0,
         ...((world.floors[me.depth]?.altar?.volume ?? 0) > 0 ? { altar: world.floors[me.depth]!.altar!.pos } : {}),
@@ -3729,7 +3768,7 @@ function tick(now: number): void {
     const status: HudStatus | null =
       session.status ? { kind: session.status === t.reconnecting ? 'reconnecting' : 'connecting', text: session.status }
       : !isAlive(me) && !world.over ? { kind: 'dead', text: `${t.youDied}. ${world.arena ? t.arena.fallenCoop : t.youDiedCoop}` }
-      : aim ? { kind: 'target', text: t.chooseTarget, cancel: { label: t.cancel, onClick: cancelChoice }, ...(aimed ? { item: itemSprite(aimed, world.run.labels) } : {}) }
+      : aim ? { kind: 'target', text: 'marked' in aim && aim.marked ? t.chooseTargetAgain : t.chooseTarget, cancel: { label: t.cancel, onClick: cancelChoice }, ...(aimed ? { item: itemSprite(aimed, world.run.labels) } : {}) }
       : examining ? { kind: 'examine', text: t.examinePrompt, cancel: { label: t.cancel, onClick: cancelChoice } }
       : waitingFor.length > 0 ? { kind: 'waiting', text: t.waitingShort, names: waitingFor }
       : holdingFelt ? { kind: 'waiting', text: t.partyWaitsForYou }

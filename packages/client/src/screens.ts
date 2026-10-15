@@ -154,8 +154,8 @@ export function showResurrect(world: World, hero: Hero, onKeep: (keep: number[])
   };
   const open = (): void => show(windowOf(
     { title: t.ankh.title, icon: slot(world, { kind: 'ankh', qty: 1, level: 0 } as Item) },
-    info(t.ankh.message),
-    grid,
+    // The pack may be long: the message and the grid scroll, «Confirm» stays in reach.
+    el('div', { className: 'pd-scroll pd-stack' }, info(t.ankh.message), grid),
     button(t.ankh.confirm, () => {
       if (picked.length >= 2) done();
       else showConfirm(t.ankh.warnTitle, t.ankh.warnBody, t.ankh.warnYes, t.ankh.warnNo, done, open);
@@ -778,7 +778,8 @@ export function showTrade(options: TradeOptions): void {
   stealButton?.prepend(el('i', { className: 'pd-steal' }));
   const head = windowOf(
     { title: capitalize(itemName(world, item)), icon: slot(world, item, { hero }), onClose: options.onClose },
-    ...describedItem(world, hero, item),
+    // The description scrolls on a short screen; «Buy» and the gold stay in reach.
+    el('div', { className: 'pd-scroll pd-stack' }, ...describedItem(world, hero, item)),
     actions(stealButton ? [buy, stealButton] : [buy], []),
     info(t.yourGold(hero.gold), 'pd-note center'),
   );
@@ -874,8 +875,8 @@ export function showQuest(options: QuestOptions): void {
     );
   const box = windowOf(
     { title: options.title ?? capitalize(t.mobs[options.who]), icon: portrait(options.icon ?? options.who), onClose: answers.length > 0 ? undefined : options.onClose },
-    info(options.text, 'pd-speech'),
-    offers.length > 0 && el('div', { className: 'pd-rewards' }, ...offers.map(card)),
+    // The words and the rewards scroll on a short screen; the title and the answers stay in reach.
+    el('div', { className: 'pd-scroll pd-stack' }, info(options.text, 'pd-speech'), offers.length > 0 && el('div', { className: 'pd-rewards' }, ...offers.map(card))),
     answerRow,
   );
   show(box, answers.length > 0 ? null : options.onClose);

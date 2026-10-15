@@ -30,6 +30,8 @@ export class Feedback {
   private nope: { cell: number; start: number } | null = null;
   /** The danger badge's pick (design v19, .pd-danger-ring): the enemy last stepped to is ringed in red, followed as it moves. */
   private ring: { mob: string; cell: number; start: number } | null = null;
+  /** The target an aim from a quick slot has marked (QuickSlotButton.crossM): the slot tapped again fires at it. */
+  private marked: string | null = null;
   private passed: Passed[] = [];
   /** The dots last drawn: only a dot of the way goes out when stepped on. */
   private dotted = new Set<number>();
@@ -51,6 +53,11 @@ export class Feedback {
 
   clear(): void {
     this.target = null;
+  }
+
+  /** The monster the aim is marked on (or none), set on every frame. */
+  mark(mob: string | null): void {
+    this.marked = mob;
   }
 
   /** The ring goes (the enemy is out of sight). */
@@ -105,6 +112,17 @@ export class Feedback {
           const [x, y] = xy(cell);
           drawFrame(ctx, s, frame, x, y);
         }
+      }
+    }
+
+    // The marked target: the attack frame, pulsing as long as the aim lasts.
+    const markedAt = this.marked ? mobAt(this.marked) : undefined;
+    if (markedAt !== undefined) {
+      const frames = s.anims['target-attack'];
+      if (frames) {
+        const frame = quality.reducedMotion ? frames[2]! : frameAt(frames, now, true, PULSE);
+        const [x, y] = xy(markedAt);
+        drawFrame(ctx, s, frame, x, y);
       }
     }
 

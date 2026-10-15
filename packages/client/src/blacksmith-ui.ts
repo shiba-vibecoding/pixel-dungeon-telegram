@@ -99,8 +99,8 @@ export function showBlacksmith(env: SmithEnv): void {
   show(
     windowOf(
       { title: capitalize(t.mobs.blacksmith), icon: portrait('blacksmith'), onClose: env.close },
-      info(say(`${WND}.prompt`, q.favor), 'pd-speech'),
-      el('div', { className: 'pd-confirm-actions' }, ...buttons),
+      // Six long buttons: on a short screen they scroll under his words, the cross stays in reach.
+      el('div', { className: 'pd-scroll pd-stack' }, info(say(`${WND}.prompt`, q.favor), 'pd-speech'), el('div', { className: 'pd-confirm-actions' }, ...buttons)),
     ),
     env.close,
   );

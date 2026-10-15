@@ -49,6 +49,15 @@ export function recent(): { actions: string[]; errors: string[] } {
   return { actions: [...actions], errors: [...errors] };
 }
 
+/**
+ * A script from another origin (Telegram's SDK, the webview's own injections) that threw: the browser hides what and
+ * where, saying only «Script error.», which is nothing to act on. Our own scripts are same-origin (Vite marks the built
+ * ones crossorigin) and always say. Neither reported (report.ts) nor kept for a report.
+ */
+export function opaqueError(event: Pick<ErrorEvent, 'message' | 'filename' | 'lineno' | 'error'>): boolean {
+  return /^script error\.?$/i.test(event.message.trim()) && !event.filename && !event.lineno && !event.error;
+}
+
 let listening = false;
 
 /** Starts listening for the console's errors (once). */
@@ -56,7 +65,7 @@ export function watchErrors(): void {
   if (listening || typeof window === 'undefined') return;
   listening = true;
   addEventListener('error', (event) => {
-    if (event.message) noteError(`${event.message}${event.filename ? ` @ ${event.filename.replace(/^.*\//, '')}:${event.lineno}` : ''}`);
+    if (event.message && !opaqueError(event)) noteError(`${event.message}${event.filename ? ` @ ${event.filename.replace(/^.*\//, '')}:${event.lineno}` : ''}`);
   });
   addEventListener('unhandledrejection', (event) => {
     const reason = event.reason as unknown;

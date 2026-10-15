@@ -238,10 +238,15 @@ export function showCard(host: TalentHost, id: TalentId, back: () => void, pick?
         className: 'pd-talent-card',
         onClose: close,
       },
-      el('div', { className: 'pd-talent-progress' }, pips(have, def.max), el('span', { textContent: UI.of(have, def.max) })),
-      leadNode,
-      list,
-      meta ? el('p', { className: 'pd-note' }, ...emphasized(meta)) : null,
+      // What each point gives scrolls on a short screen; the upgrade stays in reach.
+      el(
+        'div',
+        { className: 'pd-scroll pd-stack' },
+        el('div', { className: 'pd-talent-progress' }, pips(have, def.max), el('span', { textContent: UI.of(have, def.max) })),
+        leadNode,
+        list,
+        meta ? el('p', { className: 'pd-note' }, ...emphasized(meta)) : null,
+      ),
       actions,
     ),
     close,
@@ -295,8 +300,8 @@ export function showSubclassPick(host: TalentHost, maskIndex: number, back: () =
   show(
     windowOf(
       { title: UI.wayTitle, icon: el('div', { className: 'pd-slot' }, sitem(itemDef(mask.kind).sprite ?? 59)), onClose: back },
-      el('p', { className: 'pd-tpick-intro' }, tal('windows.wndchoosesubclass.message')),
-      el('div', { className: 'pd-tpicks two' }, ...cards),
+      // The two ways scroll on a short screen; «Later» stays in reach.
+      el('div', { className: 'pd-scroll pd-stack' }, el('p', { className: 'pd-tpick-intro' }, tal('windows.wndchoosesubclass.message')), el('div', { className: 'pd-tpicks two' }, ...cards)),
       button(tal('windows.wndchoosesubclass.cancel') || t.later, back, 'quiet'),
     ),
     back,

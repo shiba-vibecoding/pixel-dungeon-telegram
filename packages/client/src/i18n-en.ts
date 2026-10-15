@@ -1873,6 +1873,7 @@ export const en = {
   throwItem: 'Throw',
   zap: 'Zap',
   chooseTarget: 'Choose a target',
+  chooseTargetAgain: 'Tap the slot again to fire',
   readOn: 'Read on…',
   /** WndBag's selector titles: what the scroll is to be read on. */
   pickTitle: {

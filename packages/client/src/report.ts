@@ -5,6 +5,8 @@
  * build, Telegram's platform — never who; a few per session at most.
  */
 
+import { opaqueError } from './diag';
+
 type Context = Record<string, string | number | boolean>;
 
 let endpoint = '';
@@ -68,7 +70,7 @@ export function startReporting(server: string, context: () => Context): void {
   about = context;
   addEventListener('error', (event) => {
     // A resource that failed to load has no message; scripts' errors do.
-    if (!event.message) return;
+    if (!event.message || opaqueError(event)) return;
     const where = event.filename ? ` @ ${event.filename.replace(/^.*\//, '')}:${event.lineno}:${event.colno}` : '';
     report('error', `${event.message}${where}`, (event.error as Error | undefined)?.stack);
   });

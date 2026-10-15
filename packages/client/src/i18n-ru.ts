@@ -1838,6 +1838,7 @@ export const ru: Strings = {
   throwItem: 'Метнуть',
   zap: 'Взмахнуть',
   chooseTarget: 'Выберите цель',
+  chooseTargetAgain: 'Ещё раз слот — выстрел в цель',
   readOn: 'Прочитать на…',
   pickTitle: { 'scroll.upgrade': 'Улучшить предмет', 'scroll.enchantment': 'Зачаровать предмет', 'scroll.identify': 'Опознать предмет' },
   pickTarget: 'Коснитесь предмета, на котором прочитать свиток.',
