@@ -37,7 +37,11 @@
   S.kind = kind;
   var isWallCh = function (c) { return c === '#' || c === 'P' || c === 'T'; };
   S.isWall = function (x, y) { return isWallCh(kind(x, y)); };
-  S.walkable = function (x, y) { var c = kind(x, y); return c === '.' || c === '~' || c === 'D'; };
+  S.walkable = function (x, y) {
+    if (S.chest && x === S.chest.x && y === S.chest.y) return false;
+    var c = kind(x, y);
+    return c === '.' || c === '~' || c === 'D';
+  };
   S.isWater = function (x, y) { return kind(x, y) === '~'; };
   S.doorCell = { x: 5, y: 0 };
   S.doorOpen = false;
@@ -89,8 +93,8 @@
   // Frame sizes and animations as the game plays them (mobsprites.ts RAT / GNOLL, sprites.ts HERO_ANIMS).
   S.SHEETS = {
     hero: { img: 'warrior', w: 12, h: 15, row: 2, anims: { idle: anim(1, [0, 0, 0, 1, 0, 0, 1, 1], true), run: anim(20, [2, 3, 4, 5, 6, 7], true), attack: anim(15, [13, 14, 15, 0]) } },
-    rat: { img: 'rat', w: 16, h: 15, row: 0, anims: { idle: anim(2, [0, 0, 0, 1], true), run: anim(10, [6, 7, 8, 9, 10], true), attack: anim(15, [2, 3, 4, 5, 0]) } },
-    gnoll: { img: 'gnoll', w: 12, h: 15, row: 0, anims: { idle: anim(2, [0, 0, 0, 1, 0, 0, 1, 1], true), run: anim(12, [4, 5, 6, 7], true), attack: anim(12, [2, 3, 0]) } },
+    rat: { img: 'rat', w: 16, h: 15, row: 0, anims: { idle: anim(2, [0, 0, 0, 1], true), run: anim(10, [6, 7, 8, 9, 10], true), attack: anim(15, [2, 3, 4, 5, 0]), die: anim(10, [11, 12, 13, 14]) } },
+    gnoll: { img: 'gnoll', w: 12, h: 15, row: 0, anims: { idle: anim(2, [0, 0, 0, 1, 0, 0, 1, 1], true), run: anim(12, [4, 5, 6, 7], true), attack: anim(12, [2, 3, 0]), die: anim(12, [8, 9, 10]) } },
   };
   // The prison torch (world/ambient1.json "torch"): six 16x16 frames in the sheet's first row.
   S.TORCH_FRAMES = 6;
@@ -160,6 +164,11 @@
     return c;
   };
 
+  /** Pictures only the HD-2D demo needs: the chest and the item sheet. */
+  S.loadExtras = function () {
+    return Promise.all([loadImg(ASSETS + 'world/chests.png'), loadImg(ASSETS + 'items.png')]).then(function (r) { S.img.chests = r[0]; S.img.items = r[1]; });
+  };
+
   S.load = function () {
     var keys = Object.keys(FILES);
     return Promise.all(keys.map(function (k) { return loadImg(ASSETS + FILES[k]); })).then(function (imgs) {
@@ -218,7 +227,7 @@
     return {
       name: name, sheet: sheet, def: S.SHEETS[sheet], x: cx + 0.5, y: cy + 0.5, cx: cx, cy: cy, next: null, path: [], speed: speed,
       anim: 'idle', t: Math.random() * 800, frame: 0, flip: false, flash: 0, moving: false, attacking: false, hitDone: true, hitAt: 0, target: null,
-      blocked: 0, ai: { state: 'wander', wait: rand(600, 1800), cooldown: 3500, hits: 0, atkCd: 0, repath: 0 },
+      hp: 2, dead: false, respawnIn: 0, castTarget: null, openChest: false, blocked: 0, ai: { state: 'wander', wait: rand(600, 1800), cooldown: 3500, hits: 0, atkCd: 0, repath: 0 },
     };
   }
 
@@ -235,6 +244,9 @@
     S.mist = [];
     for (var i = 0; i < 14; i++) S.mist.push({ x: rand(0, W), y: rand(0.6, H - 1), r: rand(1.1, 2.2), vx: rand(-0.12, 0.12), vy: rand(-0.05, 0.05), ph: rand(0, 6.28), a: rand(0.6, 1) });
     S.torch = { x: 8.5, y: 0.78, lx: 8.5, ly: 1.25, flicker: 1, frame: 0, nextFrame: 0, noise: 1 };
+    S.events = [];
+    S.item = null; S.fire = null; S.fireCd = 0; S.slowLeft = 0; S.timeScale = 1;
+    S.chest = S.extras ? { x: 9, y: 7, open: false, t: 0, resetIn: 0 } : null;
     S.dripIn = 600;
     S.sparkIn = 100;
     S.time = 0;
@@ -243,7 +255,7 @@
   function occupied(x, y, except) {
     for (var i = 0; i < S.actors.length; i++) {
       var a = S.actors[i];
-      if (a === except) continue;
+      if (a === except || a.dead) continue;
       if ((a.cx === x && a.cy === y) || (a.next && a.next.x === x && a.next.y === y)) return true;
     }
     return false;
@@ -262,6 +274,7 @@
     if (Math.abs(dx) > 0.02) e.flip = dx < 0;
     if (d <= mv) {
       e.x = tx; e.y = ty; e.cx = n.x; e.cy = n.y;
+      waterRipple(e);
       e.path.shift();
       e.next = e.path.length ? e.path[0] : null;
     } else {
@@ -269,6 +282,20 @@
       e.y += (dy / d) * mv;
     }
     return true;
+  }
+
+  /** Stepping into water, or onto a cell beside it, sends rings across the puddle. */
+  function waterRipple(e) {
+    if (S.ripples.length > 11) return;
+    if (S.isWater(e.cx, e.cy)) {
+      S.ripples.push({ x: e.cx + 0.5, y: e.cy + 0.5, age: 0, life: 1200, tap: false, big: true });
+      S.ripples.push({ x: e.cx + 0.5, y: e.cy + 0.5, age: -180, life: 1200, tap: false, big: true });
+      return;
+    }
+    for (var d = 0; d < 8; d++) {
+      var nx = e.cx + DIRS[d][0], ny = e.cy + DIRS[d][1];
+      if (S.isWater(nx, ny)) { S.ripples.push({ x: nx + 0.5, y: ny + 0.5, age: 0, life: 900, tap: false }); return; }
+    }
   }
 
   var adjacent = function (a, b) { return Math.max(Math.abs(a.cx - b.cx), Math.abs(a.cy - b.cy)) <= 1; };
@@ -283,10 +310,13 @@
     if (Math.abs(target.x - e.x) > 0.1) e.flip = target.x < e.x;
   }
 
-  function floater(x, y, text, color) { S.floaters.push({ x: x, y: y, text: text, color: color, age: 0, life: 1000 }); }
+  function floater(x, y, text, color, big) { S.floaters.push({ x: x, y: y, text: text, color: color, age: 0, life: big ? 1300 : 1000, big: !!big }); }
+  function ev(o) { if (S.extras) S.events.push(o); }
 
   function onHit(e) {
+    if (e.castTarget) { launchFire(e, e.castTarget); e.castTarget = null; return; }
     var tg = e.target;
+    if (!tg || tg.dead) return;
     var dmg = e === S.hero ? 2 + ((Math.random() * 5) | 0) : 1 + ((Math.random() * 3) | 0);
     tg.flash = 1;
     floater(tg.x + rand(-0.15, 0.15), tg.y - 0.6, '-' + dmg, tg === S.hero ? '#ff5a4a' : '#ffd24a');
@@ -296,7 +326,7 @@
   function mobAI(m, dt) {
     var ai = m.ai, h = S.hero;
     ai.cooldown -= dt; ai.atkCd -= dt; ai.repath -= dt;
-    if (m.attacking) return;
+    if (m.dead || m.attacking) return;
     if (ai.state === 'wander') {
       if (!m.path.length) {
         ai.wait -= dt;
@@ -332,6 +362,15 @@
   }
 
   function updateActor(e, dt) {
+    if (e.dead) {
+      e.t += dt;
+      e.anim = 'die';
+      e.frame = frameOf(e.def.anims.die, e.t);
+      if (e.flash > 0) e.flash = Math.max(0, e.flash - dt / 220);
+      e.respawnIn -= dt;
+      if (e.respawnIn <= 0) respawn(e);
+      return;
+    }
     var moving = false;
     if (!e.attacking && e.path.length) moving = stepMove(e, dt);
     e.moving = moving;
@@ -356,9 +395,151 @@
     if (!p) return false;
     h.path = (h.next ? [h.next] : []).concat(p);
     h.counterIn = -1;
+    h.openChest = false;
     S.ripples.push({ x: cx + 0.5, y: cy + 0.5, age: 0, life: 520, tap: true });
     return true;
   };
+
+  /* ------------------------------------------------ extras (the HD-2D demo): chest, loot, fireball, kills */
+
+  /** Turns on the chest, the fireball and mobs that can die; the Pixi demo leaves them off. */
+  S.extras = false;
+  S.enableExtras = function () { S.extras = true; S.chest = { x: 9, y: 7, open: false, t: 0, resetIn: 0 }; };
+
+  var nearCell = function (a, c) { return Math.max(Math.abs(a.cx - c.x), Math.abs(a.cy - c.y)) <= 1; };
+
+  /** A tap on the chest: opens it if the hero stands beside it, else walks there first. */
+  S.tapChest = function () {
+    var c = S.chest, h = S.hero;
+    if (!c || c.open || h.attacking) return false;
+    if (nearCell(h, c) && !h.moving) { openChest(); return true; }
+    var best = null;
+    for (var d = 0; d < 8; d++) {
+      var nx = c.x + DIRS[d][0], ny = c.y + DIRS[d][1];
+      if (!S.walkable(nx, ny)) continue;
+      var p = S.path(h.next ? h.next.x : h.cx, h.next ? h.next.y : h.cy, nx, ny);
+      if (p && (!best || p.length < best.length)) best = p;
+    }
+    if (!best) return false;
+    h.path = (h.next ? [h.next] : []).concat(best);
+    h.openChest = true;
+    return true;
+  };
+
+  function openChest() {
+    var c = S.chest, h = S.hero;
+    c.open = true; c.t = 0;
+    var spots = [];
+    for (var d = 0; d < 8; d++) {
+      var nx = c.x + DIRS[d][0], ny = c.y + DIRS[d][1];
+      if (S.walkable(nx, ny) && !S.isWater(nx, ny) && !(nx === h.cx && ny === h.cy)) spots.push([nx, ny]);
+    }
+    // Prefer the cells in front of the chest (south, towards the camera).
+    spots.sort(function (a, b) { return b[1] - a[1] + (Math.random() - 0.5); });
+    var to = spots[0] || [c.x, c.y + 1];
+    S.item = { state: 'arc', t: 0, fx: c.x + 0.5, fy: c.y + 0.5, tx: to[0] + 0.5, ty: to[1] + 0.5, cx: to[0], cy: to[1], x: c.x + 0.5, y: c.y + 0.5, h: 0.5, rare: true, takenT: 0 };
+    ev({ type: 'chestOpen', x: c.x + 0.5, y: c.y + 0.5 });
+  }
+
+  /** The hero casts a fireball at the nearest mob it can see. 1: cast, 0: busy, -1: no target. */
+  S.castFireball = function () {
+    var h = S.hero;
+    if (h.attacking || S.fire || S.fireCd > 0) return 0;
+    var best = null, bd = 99;
+    S.mobs.forEach(function (m) {
+      if (m.dead) return;
+      var d = dist(h, m);
+      if (d < bd && sees(h, m)) { bd = d; best = m; }
+    });
+    if (!best) { floater(h.x, h.y - 0.7, 'нет целей', '#9fd0ff'); return -1; }
+    h.path = []; h.next = null; h.openChest = false;
+    startAttack(h, best);
+    h.castTarget = best;
+    S.fireCd = 900;
+    ev({ type: 'cast', x: h.x, y: h.y });
+    return 1;
+  };
+
+  /** A straight look from a to b: no wall in the way. */
+  function sees(a, b) {
+    var n = Math.ceil(dist(a, b) / 0.25);
+    for (var i = 1; i < n; i++) {
+      var t = i / n;
+      if (S.isWall(Math.floor(a.x + (b.x - a.x) * t), Math.floor(a.y + (b.y - a.y) * t))) return false;
+    }
+    return true;
+  }
+
+  function launchFire(h, target) {
+    S.fire = { x: h.x + (h.flip ? -0.3 : 0.3), y: h.y - 0.1, target: target, age: 0, dx: h.flip ? -1 : 1, dy: 0 };
+    ev({ type: 'fireLaunch', x: S.fire.x, y: S.fire.y });
+  }
+
+  function impact(f) {
+    var t = f.target, dmg = 4 + ((Math.random() * 4) | 0);
+    S.fire = null;
+    t.flash = 1;
+    t.hp -= 1;
+    floater(t.x + rand(-0.1, 0.1), t.y - 0.7, '-' + dmg, '#ff8a3a', true);
+    S.slowLeft = 150;
+    ev({ type: 'impact', x: t.x, y: t.y, target: t, killed: t.hp <= 0 });
+    if (t.hp <= 0) {
+      t.dead = true; t.path = []; t.next = null; t.attacking = false; t.respawnIn = 7500; t.t = 0; t.anim = 'die';
+      ev({ type: 'mobDie', x: t.x, y: t.y });
+    }
+  }
+
+  function respawn(m) {
+    var f = flood(S.hero.cx, S.hero.cy, 99), picks = [];
+    for (var i = 0; i < f.dist.length; i++) {
+      var x = i % W, y = (i / W) | 0;
+      if (f.dist[i] >= 5 && S.walkable(x, y) && !S.isWater(x, y) && !occupied(x, y, m)) picks.push(i);
+    }
+    var pi = picks.length ? picks[(Math.random() * picks.length) | 0] : 1 + W;
+    m.cx = pi % W; m.cy = (pi / W) | 0; m.x = m.cx + 0.5; m.y = m.cy + 0.5;
+    m.dead = false; m.hp = 2; m.anim = 'idle'; m.t = 0; m.path = []; m.next = null;
+    m.ai.state = 'wander'; m.ai.cooldown = 3500; m.ai.hits = 0;
+    ev({ type: 'respawn', x: m.x, y: m.y });
+  }
+
+  function updateExtras(dt) {
+    var h = S.hero, c = S.chest, it = S.item, f = S.fire;
+    if (S.fireCd > 0) S.fireCd -= dt;
+    if (h.openChest && !h.moving && !h.path.length && !h.attacking) {
+      h.openChest = false;
+      if (c && !c.open && nearCell(h, c)) openChest();
+    }
+    if (c && c.open) c.t += dt;
+    if (f) {
+      f.age += dt;
+      var t = f.target, dx = t.x - f.x, dy = t.y - f.y, d = Math.sqrt(dx * dx + dy * dy), mv = 13 * dt / 1000;
+      if (d <= mv + 0.3 || f.age > 3000) impact(f);
+      else { f.x += dx / d * mv; f.y += dy / d * mv; f.dx = dx / d; f.dy = dy / d; }
+    }
+    if (it) {
+      it.t += dt;
+      if (it.state === 'arc') {
+        var s = Math.min(1, it.t / 800);
+        it.x = it.fx + (it.tx - it.fx) * s; it.y = it.fy + (it.ty - it.fy) * s;
+        it.h = 0.5 + 1.7 * 4 * s * (1 - s);
+        if (s >= 1) { it.state = 'ground'; it.t = 0; ev({ type: 'itemLand', x: it.tx, y: it.ty }); }
+      } else if (it.state === 'ground') {
+        it.x = it.tx; it.y = it.ty; it.h = 0.42;
+        if (h.cx === it.cx && h.cy === it.cy) {
+          it.state = 'taken'; it.takenT = 0;
+          floater(h.x, h.y - 0.8, 'Редкий предмет!', '#d49bff', true);
+          ev({ type: 'pickup', x: it.tx, y: it.ty });
+          c.resetIn = 6500;
+        }
+      } else if (it.state === 'taken') {
+        it.takenT += dt;
+      }
+    }
+    if (c && c.open && it && it.state === 'taken' && c.resetIn > 0) {
+      c.resetIn -= dt;
+      if (c.resetIn <= 0) { c.open = false; c.t = 0; S.item = null; ev({ type: 'chestClose', x: c.x + 0.5, y: c.y + 0.5 }); }
+    }
+  }
 
   /* -------------------------------------------------------------- the update */
 
@@ -370,7 +551,7 @@
     if (h.counterIn > 0) {
       h.counterIn -= dt;
       if (h.counterIn <= 0 && !h.attacking && !h.moving) {
-        for (i = 0; i < S.mobs.length; i++) if (adjacent(h, S.mobs[i])) { startAttack(h, S.mobs[i]); break; }
+        for (i = 0; i < S.mobs.length; i++) if (!S.mobs[i].dead && adjacent(h, S.mobs[i])) { startAttack(h, S.mobs[i]); break; }
       }
     }
     for (i = 0; i < S.mobs.length; i++) mobAI(S.mobs[i], dt);
@@ -379,6 +560,7 @@
     var open = false;
     for (i = 0; i < S.actors.length; i++) if (Math.hypot(S.actors[i].x - 5.5, S.actors[i].y - 0.5) < 1.6) open = true;
     S.doorOpen = open;
+    if (S.extras) updateExtras(dt);
 
     // The torch: a flame never twice the same.
     var t = S.torch;
@@ -454,8 +636,12 @@
     'a.pd-pill:active{background:rgba(40,60,100,.8)}',
     '.pd-hint{position:fixed;left:0;right:0;top:calc(max(8px,env(safe-area-inset-top)) + 40px);text-align:center;font-size:11px;color:rgba(223,230,255,.62);pointer-events:none;z-index:4;text-shadow:0 1px 2px #000}',
     '.pd-fps{position:fixed;left:max(10px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));font:11px/1.4 ui-monospace,Menlo,Consolas,monospace;background:rgba(9,11,19,.74);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:5px 8px;white-space:pre;pointer-events:none;z-index:5;min-width:92px}',
-    '.pd-bar{position:fixed;right:max(10px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:8px;z-index:5}',
-    'button.pd-btn{font:600 13px system-ui,sans-serif;min-height:44px;min-width:84px;padding:0 12px;color:#dfe6ff;background:rgba(9,11,19,.82);border:1px solid rgba(255,255,255,.22);border-radius:12px;cursor:pointer;touch-action:manipulation}',
+    '.pd-dock{position:fixed;right:max(10px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:calc(100vw - 132px);z-index:5}',
+    '.pd-bar,.pd-acts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}',
+    'button.pd-act{min-height:48px;font-size:14px;border-color:rgba(255,160,70,.6);background:rgba(60,26,8,.85);color:#ffd9b0}',
+    '.pd-photo .pd-top,.pd-photo .pd-hint,.pd-photo .pd-fps,.pd-photo .pd-dock{display:none}',
+    '.pd-toast{position:fixed;left:50%;top:calc(max(8px,env(safe-area-inset-top)) + 76px);transform:translateX(-50%);padding:6px 14px;border-radius:999px;background:rgba(9,11,19,.8);border:1px solid rgba(255,255,255,.2);font-size:13px;z-index:6;pointer-events:none;opacity:0;transition:opacity .25s;white-space:nowrap}',
+    'button.pd-btn{font:600 13px system-ui,sans-serif;min-height:44px;min-width:64px;padding:0 12px;color:#dfe6ff;background:rgba(9,11,19,.82);border:1px solid rgba(255,255,255,.22);border-radius:12px;cursor:pointer;touch-action:manipulation}',
     'button.pd-btn[aria-pressed=true]{background:rgba(255,200,87,.18);border-color:#ffc857;color:#ffe3a3}',
     'button.pd-btn:active{transform:translateY(1px)}',
     '.pd-msg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 14px;background:rgba(9,11,19,.9);border:1px solid #ff6b6b;border-radius:10px;font-size:13px;max-width:80vw;z-index:9}',
@@ -487,6 +673,19 @@
     fps.textContent = 'FPS —';
     document.body.appendChild(fps);
     S.fpsEl = fps;
+    var dock = document.createElement('div');
+    dock.className = 'pd-dock';
+    var acts = document.createElement('div');
+    acts.className = 'pd-acts';
+    (opts.actions || []).forEach(function (a) {
+      var b = document.createElement('button');
+      b.className = 'pd-btn pd-act';
+      b.type = 'button';
+      b.textContent = a.label;
+      b.addEventListener('click', function () { a.click(b); });
+      acts.appendChild(b);
+    });
+    if (opts.actions) dock.appendChild(acts);
     var bar = document.createElement('div');
     bar.className = 'pd-bar';
     (opts.toggles || []).forEach(function (t) {
@@ -498,9 +697,17 @@
       b.addEventListener('click', function () { set(!t.value); t.change(t.value); });
       bar.appendChild(b);
     });
-    document.body.appendChild(bar);
+    dock.appendChild(bar);
+    document.body.appendChild(dock);
+    var toast = document.createElement('div');
+    toast.className = 'pd-toast';
+    document.body.appendChild(toast);
+    var toastT = 0;
     S.info = '';
-    return { setInfo: function (text) { S.info = text; } };
+    return {
+      setInfo: function (text) { S.info = text; },
+      toast: function (text, color) { toast.textContent = text; toast.style.color = color || '#dfe6ff'; toast.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(function () { toast.style.opacity = 0; }, 2200); },
+    };
   };
 
   S.fatal = function (err) {
@@ -514,8 +721,13 @@
   /* ---------------------------------------------------- frame loop and stats */
 
   S.stats = { frames: 0, dtSum: 0, cpuSum: 0, shown: 0 };
+  S.paused = false;
   S.advance = function (dt, render, real) {
-    S.update(dt);
+    if (!S.paused) {
+      var sd = dt;
+      if (S.slowLeft > 0) { S.slowLeft -= dt; sd = dt * 0.3; S.timeScale = 0.3; } else S.timeScale = 1;
+      S.update(sd);
+    }
     var t0 = performance.now();
     render(dt);
     var cpu = performance.now() - t0, st = S.stats;

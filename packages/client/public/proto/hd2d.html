@@ -13,62 +13,135 @@
 } }
 </script>
 <script src="scene.js"></script>
+<style>
+  .ph-ui{position:fixed;inset:0;z-index:7;pointer-events:none;display:none;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#dfe6ff}
+  .pd-photo .ph-ui{display:block}
+  .ph-top{position:absolute;left:0;right:0;top:0;padding:max(10px,env(safe-area-inset-top)) 12px 0;text-align:center}
+  .ph-pill{display:inline-block;background:rgba(9,11,19,.72);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:6px 14px;font-size:12px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .ph-bot{position:absolute;left:0;right:0;bottom:0;padding:0 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px}
+  .ph-row{display:flex;gap:8px;pointer-events:auto;flex-wrap:wrap;justify-content:center}
+  .ph-note{font-size:11px;color:rgba(223,230,255,.75);text-align:center;max-width:320px;text-shadow:0 1px 3px #000}
+  .ph-btn{font:600 13px system-ui,sans-serif;min-height:44px;padding:0 14px;color:#dfe6ff;background:rgba(9,11,19,.82);border:1px solid rgba(255,255,255,.22);border-radius:12px;cursor:pointer;touch-action:manipulation}
+  .ph-btn[aria-pressed=true]{background:rgba(255,200,87,.2);border-color:#ffc857;color:#ffe3a3}
+  .ph-save{background:#ffc857;color:#201400;border-color:#ffc857}
+  .ph-shot{position:fixed;inset:0;z-index:12;background:rgba(5,6,10,.94);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;font-family:system-ui,sans-serif;color:#dfe6ff;text-align:center}
+  .ph-shot img{max-width:100%;max-height:62vh;border:1px solid rgba(255,255,255,.2);border-radius:6px;-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
+  .ph-shot p{margin:0;font-size:13px;max-width:320px}
+  .ph-shot a.ph-btn{display:inline-flex;align-items:center;text-decoration:none}
+</style>
 </head>
 <body>
+<div class="ph-ui">
+  <div class="ph-top"><span class="ph-pill">Фото-режим · драг — орбита · щипок — зум</span></div>
+  <div class="ph-bot">
+    <div class="ph-row" id="ph-filters"></div>
+    <div class="ph-row"><button class="ph-btn ph-save" id="ph-save" type="button">Сохранить</button><button class="ph-btn" id="ph-exit" type="button">✕ Выйти</button></div>
+    <div class="ph-note">В игре кнопка будет сразу отправлять в сторис Telegram</div>
+  </div>
+</div>
+<div class="ph-shot" id="ph-shot">
+  <img id="ph-img" alt="Снимок">
+  <p>Удерживайте картинку, чтобы сохранить её в галерею.</p>
+  <div class="ph-row"><a class="ph-btn ph-save" id="ph-dl" download="pixel-dungeon.png">Скачать PNG</a><button class="ph-btn" id="ph-share" type="button" style="display:none">Поделиться</button><button class="ph-btn" id="ph-close" type="button">Закрыть</button></div>
+  <p style="font-size:11px;opacity:.75">В игре кнопка будет сразу отправлять в сторис Telegram</p>
+</div>
 <script type="module">
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
 
 const S = window.PDScene;
 try {
+  S.extras = true;
   await S.load();
+  await S.loadExtras();
+  S.enableExtras();
   const { W, H, T } = S;
   const rad = (d) => (d * Math.PI) / 180;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const touch = (navigator.maxTouchPoints || 0) > 0;
 
-  /* ---- renderer ---- */
+  /* ---------------------------------------------------------------- renderer */
   const pr = Math.min(window.devicePixelRatio || 1, 2);
-  let vw = window.innerWidth, vh = window.innerHeight;
+  let vw = window.innerWidth, vh = window.innerHeight, cp = pr;
   const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(pr);
   renderer.setSize(vw, vh);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 1.0;
   renderer.domElement.className = 'pd-view';
   document.body.appendChild(renderer.domElement);
 
-  let lightOn = true, postOn = true;
+  let lightOn = true, postOn = true, hq = true, photo = false, filterMode = 0;
   const hud = S.hud({
     title: 'HD-2D · Three.js r' + THREE.REVISION,
     other: { href: 'pixi.html', label: '← 2D-свет (Pixi)' },
-    hint: 'тап — идти · драг — сдвиг · щипок / колесо — зум · наклон телефона / мышь — параллакс',
+    hint: 'тап — идти · тап по сундуку — открыть · драг — сдвиг · щипок — зум',
+    actions: [
+      { label: '🔥 Огненный шар', click: () => castFire() },
+      { label: '📷', click: () => enterPhoto() },
+    ],
     toggles: [
       { id: 'light', on: 'свет вкл', off: 'свет выкл', value: true, change: (v) => { lightOn = v; applyLight(); } },
       { id: 'post', on: 'пост вкл', off: 'пост выкл', value: true, change: (v) => { postOn = v; } },
+      { id: 'q', on: 'кач.: высокое', off: 'кач.: низкое', value: true, change: (v) => { hq = v; applyQuality(); } },
     ],
   });
-  hud.setInfo((renderer.capabilities.isWebGL2 ? 'WebGL2' : 'WebGL1') + ' · ' + pr + 'x');
+  hud.setInfo((renderer.capabilities.isWebGL2 ? 'WebGL2' : 'WebGL1') + ' · ' + pr + 'x' + (touch ? ' · touch' : ''));
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x07080d);
   scene.fog = new THREE.Fog(0x07080d, 60, 120);
-
   const FOV = 28;
   const camera = new THREE.PerspectiveCamera(FOV, vw / vh, 8, 160);
 
-  /* ---- textures: all nearest-neighbour ---- */
+  /* ------------------------------------------------------------------ sound */
+  let ac = null;
+  const audio = () => {
+    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { ac = null; } }
+    if (ac && ac.state === 'suspended') ac.resume().catch(() => {});
+    return ac;
+  };
+  const tone = (f0, f1, dur, type, vol, delay) => {
+    if (!ac) return;
+    const t = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+    g.gain.setValueAtTime(vol || 0.07, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + dur + 0.03);
+  };
+  const noise = (dur, vol) => {
+    if (!ac) return;
+    const n = Math.floor(ac.sampleRate * dur), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+    const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    f.type = 'lowpass'; f.frequency.value = 900; g.gain.value = vol;
+    src.buffer = buf; src.connect(f); f.connect(g); g.connect(ac.destination); src.start();
+  };
+  const sfx = {
+    open: () => { tone(300, 640, 0.25, 'triangle', 0.06); tone(900, 1300, 0.3, 'sine', 0.04, 0.1); },
+    land: () => tone(520, 380, 0.12, 'triangle', 0.05),
+    pickup: () => { tone(880, 1760, 0.12, 'sine', 0.06); tone(1320, 2100, 0.16, 'sine', 0.05, 0.07); },
+    cast: () => tone(520, 110, 0.28, 'sawtooth', 0.035),
+    boom: () => { noise(0.55, 0.28); tone(130, 34, 0.45, 'sine', 0.2); },
+  };
+
+  /* ---------------------------------------------------------------- textures */
   const pix = (src, repeatX, repeatY) => {
     const t = new THREE.Texture(src);
     t.colorSpace = THREE.SRGBColorSpace;
     t.magFilter = THREE.NearestFilter;
     t.minFilter = THREE.NearestFilter;
     t.generateMipmaps = false;
-    t.anisotropy = 1;
     if (repeatX) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeatX, repeatY); }
     t.needsUpdate = true;
     return t;
@@ -85,13 +158,75 @@ try {
     return t;
   };
   const soft = (size, stops) => { const t = new THREE.CanvasTexture(S.radialCanvas(size, stops)); t.colorSpace = THREE.SRGBColorSpace; return t; };
+  /** A sub-rectangle of a sheet as its own texture (the sheet's image is shared). */
+  const baseTexs = new Map();
+  const rectTex = (img, sx, sy, w, h, flip) => {
+    let base = baseTexs.get(img);
+    if (!base) { base = pix(img); baseTexs.set(img, base); }
+    const t = base.clone();
+    t.repeat.set((flip ? -w : w) / img.width, h / img.height);
+    t.offset.set((flip ? sx + w : sx) / img.width, 1 - (sy + h) / img.height);
+    return t;
+  };
 
-  /* ---- the diorama ---- */
+  /** Tileable value noise (a few octaves) for fog and mist, made once. */
+  function makeNoise(size) {
+    const data = new Uint8Array(size * size * 4);
+    const octs = [[4, 0.5], [8, 0.27], [16, 0.15], [32, 0.08]].map(([n, w]) => ({ n, w, a: Float32Array.from({ length: n * n }, Math.random) }));
+    const sm = (t) => t * t * (3 - 2 * t);
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        let v = 0;
+        for (const o of octs) {
+          const fx = (x / size) * o.n, fy = (y / size) * o.n, x0 = Math.floor(fx), y0 = Math.floor(fy), tx = sm(fx - x0), ty = sm(fy - y0);
+          const g = (i, j) => o.a[(j % o.n) * o.n + (i % o.n)];
+          const a = g(x0, y0) + (g(x0 + 1, y0) - g(x0, y0)) * tx, b = g(x0, y0 + 1) + (g(x0 + 1, y0 + 1) - g(x0, y0 + 1)) * tx;
+          v += o.w * (a + (b - a) * ty);
+        }
+        const i = (y * size + x) * 4;
+        data[i] = data[i + 1] = data[i + 2] = Math.min(255, v * 255); data[i + 3] = 255;
+      }
+    }
+    const t = new THREE.DataTexture(data, size, size);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.magFilter = t.minFilter = THREE.LinearFilter;
+    t.needsUpdate = true;
+    return t;
+  }
+  const noiseTex = makeNoise(128);
+
+  /* the fog of war: 1 where the hero has seen (a 12 x 10 texture, filtered smooth) */
+  const exData = new Uint8Array(W * H);
+  const exTex = new THREE.DataTexture(exData, W, H, THREE.RedFormat);
+  exTex.magFilter = exTex.minFilter = THREE.LinearFilter;
+  exTex.wrapS = exTex.wrapT = THREE.ClampToEdgeWrapping;
+  exTex.unpackAlignment = 1;
+  let exCell = -1;
+  function explore() {
+    const h = S.hero, k = h.cx + h.cy * W;
+    if (k === exCell) return;
+    exCell = k;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (Math.hypot(x - h.cx, y - h.cy) <= 4.6) exData[x + y * W] = 255;
+    exTex.needsUpdate = true;
+  }
+
+  /* shared uniforms of the custom shaders */
+  const fx = {
+    time: { value: 0 }, tNoise: { value: noiseTex }, tExp: { value: exTex },
+    torchPos: { value: new THREE.Vector3(4.5, 0.7, 1.4) }, torchI: { value: 1 }, heroPos: { value: new THREE.Vector3() },
+    beamPos: { value: new THREE.Vector3(8.3, 0, 6.2) }, beamI: { value: 1 },
+  };
+  const TORCH_X = 4.5;
+  const BEAM = { x: 8.3, z: 6.2, h: 3.7, tilt: new THREE.Euler(-0.2, 0, -0.34) };
+  const noReflect = new THREE.Group();   // what the mirror must not show: fog, mist, numbers
+  const floatGroup = new THREE.Group();
+  scene.add(noReflect, floatGroup);
+
+  /* ---------------------------------------------------------------- diorama */
   const WALL_H = 1.1;
   const diorama = new THREE.Group();
   scene.add(diorama);
 
-  // A slab of floor with water on top; the baked floor (water cells left clear) lies over it.
   const waterT = pix(S.img.water, (W * T) / 32, (H * T) / 32);
   const sideZ = new THREE.MeshLambertMaterial({ map: tileTex(48, W, 1, 0), color: 0x555a6e });
   const sideX = new THREE.MeshLambertMaterial({ map: tileTex(48, H, 1, 0), color: 0x555a6e });
@@ -111,7 +246,6 @@ try {
   floor.receiveShadow = true;
   diorama.add(floor);
 
-  // Walls: boxes with the sewers' wall face on their sides, the flat brick (darker) on top.
   const topMat = new THREE.MeshLambertMaterial({ map: tileTex(48), color: 0x80869e });
   const faceMats = new Map();
   const faceMat = (idx, h) => {
@@ -120,8 +254,8 @@ try {
     if (!m) { m = new THREE.MeshLambertMaterial({ map: tileTex(idx, 1, Math.min(1, h / WALL_H), 1 - Math.min(1, h / WALL_H)) }); faceMats.set(key, m); }
     return m;
   };
-  const doorMatClosed = tileTex(S.TILE.DOOR), doorMatOpen = tileTex(S.TILE.DOOR_OPEN);
-  const doorMat = new THREE.MeshLambertMaterial({ map: doorMatClosed });
+  const doorClosed = tileTex(S.TILE.DOOR), doorOpen = tileTex(S.TILE.DOOR_OPEN);
+  const doorMat = new THREE.MeshLambertMaterial({ map: doorClosed });
   const pillars = new Set(['6,3', '6,4', '4,6', '5,6']);
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
@@ -130,15 +264,13 @@ try {
       const h = y === H - 1 ? 0.36 : pillars.has(x + ',' + y) ? 0.82 : WALL_H;
       const side = faceMat(ch === 'P' ? S.TILE.FACE_PIPE : S.TILE.FACE, h);
       const plain = faceMat(S.TILE.FACE, h);
-      const mats = [plain, plain, topMat, topMat, ch === 'D' ? doorMat : side, plain];
-      const m = new THREE.Mesh(new THREE.BoxGeometry(1, h, 1), mats);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(1, h, 1), [plain, plain, topMat, topMat, ch === 'D' ? doorMat : side, plain]);
       m.position.set(x + 0.5, h / 2, y + 0.5);
       m.castShadow = true; m.receiveShadow = true;
       diorama.add(m);
     }
   }
 
-  // Plants from terrain_features, standing up as billboards.
   const planted = [];
   const featBase = pix(S.img.features);
   S.decor.forEach((d) => {
@@ -153,22 +285,72 @@ try {
     planted.push(m);
   });
 
-  /* ---- actors: pixel-art billboards standing on the floor ---- */
+  /* ------------------------------------------------- (1) water that reflects */
+  // A Reflector (a mirrored half-resolution render of the scene) lies just under the floor, so it shows only
+  // through the puddle's clear cells; its own shader adds the water texture, a wobble and the rings.
+  const WaterShader = {
+    name: 'WaterShader',
+    uniforms: {
+      color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, tWater: { value: waterT },
+      time: { value: 0 }, rip: { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)) },
+    },
+    vertexShader: `
+      uniform mat4 textureMatrix; varying vec4 vUv; varying vec2 vP;
+      void main() {
+        vUv = textureMatrix * vec4(position, 1.0);
+        vP = vec2(position.x + ${(W / 2).toFixed(1)}, ${(H / 2).toFixed(1)} - position.y);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader: `
+      uniform vec3 color; uniform sampler2D tDiffuse; uniform sampler2D tWater; uniform float time; uniform vec4 rip[8];
+      varying vec4 vUv; varying vec2 vP;
+      #include <common>
+      void main() {
+        vec2 n = vec2(sin(vP.y * 7.0 + time * 1.6) + sin(vP.x * 5.0 - time * 1.1), cos(vP.x * 8.0 + time * 1.3) + cos(vP.y * 6.0 - time * 0.9)) * 0.0035;
+        float hi = 0.0;
+        for (int i = 0; i < 8; i++) {
+          vec4 r = rip[i];
+          if (r.w > 0.0) {
+            vec2 d = vP - r.xy; float L = length(d);
+            float w = exp(-pow((L - r.z) * 7.0, 2.0)) * r.w;
+            n += d / (L + 0.001) * w * 0.028;
+            hi += w;
+          }
+        }
+        vec4 pr = vUv; pr.xy += n * pr.w * 2.0;
+        vec3 refl = texture2DProj(tDiffuse, pr).rgb;
+        vec3 wat = texture2D(tWater, vec2(vP.x * 0.5, vP.y * 0.5 - time * 0.156)).rgb;
+        vec3 col = mix(wat * 0.5, refl, 0.6) + hi * vec3(0.38, 0.5, 0.62) * 0.55;
+        gl_FragColor = vec4(col, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  };
+  const reflector = new Reflector(new THREE.PlaneGeometry(W, H), {
+    textureWidth: 256, textureHeight: 256, clipBias: 0.003, shader: WaterShader, multisample: 0,
+  });
+  reflector.rotation.x = -Math.PI / 2;
+  reflector.position.set(W / 2, 0.005, H / 2);
+  reflector.material.uniforms.tWater.value = waterT;
+  diorama.add(reflector);
+  {
+    const orig = reflector.onBeforeRender.bind(reflector);
+    let n = 0;
+    reflector.onBeforeRender = (r, sc, cam) => {
+      if (!hq) return;
+      if (touch && (n++ & 1)) return; // phones: the mirror refreshes every other frame
+      noReflect.visible = false; floatGroup.visible = false;
+      orig(r, sc, cam);
+      noReflect.visible = hq; floatGroup.visible = true;
+    };
+  }
+
+  /* ------------------------------------------------------- actors (billboards) */
   const frameTexs = new Map();
-  const baseTexs = new Map();
   const frameTex = (sheet, frame, flip) => {
     const key = sheet + ':' + frame + ':' + (flip ? 1 : 0);
     let t = frameTexs.get(key);
-    if (!t) {
-      const r = S.frameRect(sheet, frame);
-      let base = baseTexs.get(r.img);
-      if (!base) { base = pix(r.img); baseTexs.set(r.img, base); }
-      t = base.clone();
-      const iw = r.img.width, ih = r.img.height;
-      t.repeat.set((flip ? -r.w : r.w) / iw, r.h / ih);
-      t.offset.set((flip ? r.sx + r.w : r.sx) / iw, 1 - (r.sy + r.h) / ih);
-      frameTexs.set(key, t);
-    }
+    if (!t) { const r = S.frameRect(sheet, frame); t = rectTex(r.img, r.sx, r.sy, r.w, r.h, flip); frameTexs.set(key, t); }
     return t;
   };
   const blobTex = soft(64, [[0, 'rgba(0,0,0,0.7)'], [0.55, 'rgba(0,0,0,0.35)'], [1, 'rgba(0,0,0,0)']]);
@@ -186,25 +368,38 @@ try {
     return { a, mesh, blob, mat };
   });
 
-  /* ---- the torch: a flat flame on the wall face, a real point light with flicker and shadows ---- */
-  const torchFrames = [];
+  /* ------------------------------------------------------ (4) chest and loot */
+  const chestFrames = [0, 1, 2, 3].map((i) => rectTex(S.img.chests, i * 16, 16, 16, 16, false)); // the golden chest, row 2
+  const chestMat = new THREE.MeshLambertMaterial({ map: chestFrames[0], alphaTest: 0.5, side: THREE.DoubleSide });
+  const chestMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0), chestMat);
+  chestMesh.position.set(S.chest.x + 0.5, 0, S.chest.y + 0.6);
+  chestMesh.scale.y = 1.1;
+  chestMesh.castShadow = true;
+  scene.add(chestMesh);
+  const itemTex = rectTex(S.img.items, (19 % 16) * 16, Math.floor(19 / 16) * 16, 16, 16, false); // crystals
+  const itemMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.62), new THREE.MeshBasicMaterial({ map: itemTex, alphaTest: 0.5, side: THREE.DoubleSide, toneMapped: false, color: new THREE.Color(1.5, 1.4, 1.7) }));
+  itemMesh.visible = false;
+  scene.add(itemMesh);
+
+  /* ------------------------------------------------------------------ lights */
+  const ambient = new THREE.AmbientLight(0x6878b8, 2.7);
+  scene.add(ambient);
+  // The torch is the one light that casts shadows.
+  const torchTexs = [];
   for (let i = 0; i < S.TORCH_FRAMES; i++) {
     const t = pix(S.img.ambient);
     t.repeat.set(16 / S.img.ambient.width, 16 / S.img.ambient.height);
     t.offset.set((i * 16) / S.img.ambient.width, 1 - 16 / S.img.ambient.height);
-    torchFrames.push(t);
+    torchTexs.push(t);
   }
-  const torchMat = new THREE.MeshBasicMaterial({ map: torchFrames[0], alphaTest: 0.1, toneMapped: false, color: new THREE.Color(2.6, 2.2, 1.8) });
+  const torchMat = new THREE.MeshBasicMaterial({ map: torchTexs[0], alphaTest: 0.1, toneMapped: false, color: new THREE.Color(2.6, 2.2, 1.8) });
   const torchMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), torchMat);
-  torchMesh.position.set(8.5, 0.62, 1.012);
+  torchMesh.position.set(TORCH_X, 0.62, 1.012);
   scene.add(torchMesh);
-
-  const ambient = new THREE.AmbientLight(0x6878b8, 2.7);
-  scene.add(ambient);
   const torchLight = new THREE.PointLight(0xff9448, 13, 0, 1.2);
-  torchLight.position.set(8.5, 0.7, 1.45);
+  torchLight.position.set(TORCH_X, 0.7, 1.45);
   torchLight.castShadow = true;
-  torchLight.shadow.mapSize.set(1024, 1024);
+  torchLight.shadow.mapSize.set(touch ? 512 : 1024, touch ? 512 : 1024);
   torchLight.shadow.camera.near = 0.25;
   torchLight.shadow.camera.far = 24;
   torchLight.shadow.bias = -0.0006;
@@ -212,57 +407,239 @@ try {
   scene.add(torchLight);
   const heroLight = new THREE.PointLight(0xffe0b0, 5, 8, 1.6);
   scene.add(heroLight);
+  // Two light-only lights, no shadows: the fireball (also its explosion flash) and the chest / loot glow.
+  const fireLight = new THREE.PointLight(0xff7a2a, 0, 14, 1.4);
+  scene.add(fireLight);
+  const lootLight = new THREE.PointLight(0xb060ff, 0, 7, 1.5);
+  scene.add(lootLight);
 
   function applyLight() {
-    ambient.intensity = lightOn ? 2.7 : 3.6;
     ambient.color.set(lightOn ? 0x6878b8 : 0xd8dcf0);
-    torchLight.visible = lightOn;
-    torchLight.castShadow = lightOn;
-    heroLight.visible = lightOn;
-    blobs(lightOn ? 0.7 : 1);
+    torchLight.visible = lightOn; torchLight.castShadow = lightOn;
+    heroLight.visible = lightOn; fireLight.visible = lightOn; lootLight.visible = lightOn;
+    godGroup.visible = lightOn;
   }
-  function blobs() {}
 
-  /* ---- particles: mist, drips, sparks, ripples ---- */
+  /* ---------------------------------------- (2) god rays, dust, fog, dark mist */
+  const beamMaterial = (color, mode, intensity) => new THREE.ShaderMaterial({
+    uniforms: { uColor: { value: new THREE.Color(color) }, uI: { value: intensity }, uH: { value: 1 }, uMode: { value: mode }, uA: { value: 1 }, time: fx.time },
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
+    vertexShader: `
+      uniform float uH; varying vec3 vN; varying vec3 vV; varying float vH; varying float vA;
+      void main() { vH = position.y / uH; vA = atan(position.z, position.x); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = -mv.xyz; vN = normalMatrix * normal; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `
+      uniform vec3 uColor; uniform float uI, uMode, uA, time; varying vec3 vN; varying vec3 vV; varying float vH; varying float vA;
+      void main() {
+        float edge = pow(abs(dot(normalize(vN), normalize(vV))), 1.4);
+        float fade = uMode < 0.5 ? smoothstep(0.0, 0.22, vH) * (1.0 - smoothstep(0.72, 1.0, vH)) : pow(max(1.0 - vH, 0.0), 0.9) * smoothstep(0.0, 0.03, vH);
+        float st = 0.82 + 0.18 * sin(vA * (uMode < 0.5 ? 9.0 : 5.0) + time * (uMode < 0.5 ? 0.5 : 2.0) + vH * 3.0);
+        gl_FragColor = vec4(uColor, edge * fade * st * uI * uA);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  });
+
+  // A slanted shaft through a grate in the ceiling, with dust drifting in it.
+  const godGroup = new THREE.Group();
+  godGroup.position.set(BEAM.x, 0, BEAM.z);
+  godGroup.rotation.copy(BEAM.tilt);
+  scene.add(godGroup);
+  const godMat = beamMaterial(0xb8d8ff, 0, 0.2);
+  godMat.uniforms.uH.value = BEAM.h;
+  const godCone = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 1.2, BEAM.h, 36, 1, true).translate(0, BEAM.h / 2, 0), godMat);
+  godCone.renderOrder = 4;
+  godGroup.add(godCone);
+  const dotTex = soft(32, [[0, 'rgba(255,255,255,1)'], [0.5, 'rgba(255,255,255,0.6)'], [1, 'rgba(255,255,255,0)']]);
+  const DUST = 46;
+  const dust = Array.from({ length: DUST }, () => ({ t: Math.random(), a: rnd(0, 6.28), r: Math.sqrt(Math.random()), sp: rnd(0.02, 0.07), da: rnd(-0.25, 0.25), ph: rnd(0, 6.28) }));
+  const dustPos = new Float32Array(DUST * 3), dustCol = new Float32Array(DUST * 3);
+  const dustGeo = new THREE.BufferGeometry();
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+  dustGeo.setAttribute('color', new THREE.BufferAttribute(dustCol, 3));
+  const dustPts = new THREE.Points(dustGeo, new THREE.PointsMaterial({ map: dotTex, size: 0.2, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false }));
+  dustPts.frustumCulled = false;
+  godGroup.add(dustPts);
+  const poolTex = soft(128, [[0, 'rgba(190,220,255,0.4)'], [0.6, 'rgba(160,200,255,0.12)'], [1, 'rgba(150,190,255,0)']]);
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2.4).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ map: poolTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false }));
+  pool.position.set(BEAM.x, 0.04, BEAM.z);
+  pool.renderOrder = 2;
+  scene.add(pool);
+
+  // Fog lying low over the floor, lit by the torch (a cheap fake of it), and dark mist over what the hero has not seen.
+  const FOG_VERT = 'varying vec3 vW; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }';
+  const fogMat = (layer) => new THREE.ShaderMaterial({
+    uniforms: { time: fx.time, tNoise: fx.tNoise, torchPos: fx.torchPos, torchI: fx.torchI, heroPos: fx.heroPos, beamPos: fx.beamPos, layer: { value: layer } },
+    transparent: true, depthWrite: false, fog: false, vertexShader: FOG_VERT,
+    fragmentShader: `
+      uniform sampler2D tNoise; uniform float time, torchI, layer; uniform vec3 torchPos, heroPos, beamPos; varying vec3 vW;
+      void main() {
+        vec2 p = vW.xz;
+        float n1 = texture2D(tNoise, p * 0.1 + vec2(time * 0.011 + layer * 0.31, layer * 0.57)).r;
+        float n2 = texture2D(tNoise, p * 0.23 - vec2(time * 0.017, time * 0.006 + layer)).r;
+        float d = smoothstep(0.36, 0.82, n1 * 0.6 + n2 * 0.4);
+        float edge = smoothstep(0.0, 1.6, min(min(vW.x, ${W}.0 - vW.x), min(vW.z, ${H}.0 - vW.z)));
+        vec3 dt = vW - torchPos; vec3 dh = vW - heroPos; vec2 db = vW.xz - beamPos.xz;
+        float tl = torchI * 2.6 / (1.0 + 0.3 * dot(dt, dt));
+        float hl = 0.6 / (1.0 + 0.8 * dot(dh, dh));
+        float bl = 0.5 * exp(-dot(db, db) * 0.25);
+        vec3 col = vec3(0.17, 0.2, 0.3) * 0.5 + vec3(1.0, 0.55, 0.25) * tl * 0.5 + vec3(1.0, 0.85, 0.6) * hl * 0.3 + vec3(0.6, 0.8, 1.0) * bl;
+        gl_FragColor = vec4(col, d * edge * 0.2);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  });
+  [0.1, 0.24, 0.4].forEach((y, i) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(W + 2, H + 2).rotateX(-Math.PI / 2), fogMat(i));
+    m.position.set(W / 2, y, H / 2);
+    m.renderOrder = 3;
+    noReflect.add(m);
+  });
+  const darkMist = new THREE.Mesh(new THREE.PlaneGeometry(W + 2, H + 2).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({
+    uniforms: { time: fx.time, tNoise: fx.tNoise, tExp: fx.tExp },
+    transparent: true, depthWrite: false, fog: false, vertexShader: FOG_VERT,
+    fragmentShader: `
+      uniform sampler2D tNoise, tExp; uniform float time; varying vec3 vW;
+      void main() {
+        vec3 dir = vW - cameraPosition; vec3 g = vW + dir * (-vW.y / dir.y);
+        float ex = texture2D(tExp, g.xz / vec2(${W}.0, ${H}.0)).r;
+        float n = texture2D(tNoise, g.xz * 0.09 + vec2(time * 0.01, -time * 0.006)).r;
+        float n2 = texture2D(tNoise, g.xz * 0.2 - vec2(time * 0.015, 0.0)).r;
+        float cloud = clamp(0.55 + 0.9 * (n * 0.6 + n2 * 0.4 - 0.45), 0.35, 1.0);
+        gl_FragColor = vec4(0.015, 0.02, 0.04, (1.0 - ex) * cloud * 0.84);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  }));
+  darkMist.position.set(W / 2, WALL_H + 0.12, H / 2);
+  darkMist.renderOrder = 6;
+  noReflect.add(darkMist);
+
+  /* -------------------------------------- particles: mist, drips, sparks, smoke */
   const spriteMat = (map, opts) => new THREE.SpriteMaterial(Object.assign({ map, transparent: true, depthWrite: false, fog: false }, opts));
   const mistTex = soft(128, [[0, 'rgba(190,205,235,0.5)'], [0.5, 'rgba(190,205,235,0.2)'], [1, 'rgba(190,205,235,0)']]);
   const mistSprites = S.mist.map((m) => {
-    const s = new THREE.Sprite(spriteMat(mistTex, { color: 0x8c9bc0, opacity: 0.1 }));
+    const s = new THREE.Sprite(spriteMat(mistTex, { color: 0x8c9bc0, opacity: 0.08 }));
     s.scale.set(m.r * 2.2, m.r * 1.4, 1);
-    scene.add(s);
+    noReflect.add(s);
     return s;
   });
-  const dotTex = soft(32, [[0, 'rgba(255,255,255,1)'], [0.5, 'rgba(255,255,255,0.6)'], [1, 'rgba(255,255,255,0)']]);
-  const pool = (n, make) => Array.from({ length: n }, () => { const s = make(); s.visible = false; scene.add(s); return s; });
-  const dropSprites = pool(6, () => new THREE.Sprite(spriteMat(dotTex, { color: 0xbfe4ff })));
-  const sparkSprites = pool(24, () => new THREE.Sprite(spriteMat(dotTex, { color: 0xffb450, blending: THREE.AdditiveBlending, toneMapped: false })));
+  const mkPool = (n, make) => Array.from({ length: n }, () => { const s = make(); s.visible = false; scene.add(s); return s; });
+  const dropSprites = mkPool(6, () => new THREE.Sprite(spriteMat(dotTex, { color: 0xbfe4ff })));
+  const sparkSprites = mkPool(24, () => new THREE.Sprite(spriteMat(dotTex, { color: 0xffb450, blending: THREE.AdditiveBlending, toneMapped: false })));
   const ringCanvas = document.createElement('canvas');
   ringCanvas.width = ringCanvas.height = 64;
   { const g = ringCanvas.getContext('2d'); g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(32, 32, 27, 0, 7); g.stroke(); }
   const ringTex = new THREE.CanvasTexture(ringCanvas);
-  const rippleMeshes = pool(10, () => new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
+  const rippleMeshes = mkPool(14, () => new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ map: ringTex, transparent: true, depthWrite: false, color: 0xcfe9ff })));
-  // The flame's glow (additive, blooms with the pass).
   const flameGlow = new THREE.Sprite(spriteMat(soft(128, [[0, 'rgba(255,190,100,0.9)'], [0.3, 'rgba(255,140,50,0.35)'], [1, 'rgba(255,100,20,0)']]),
-    { blending: THREE.AdditiveBlending, toneMapped: false, opacity: 0.7 }));
-  flameGlow.position.set(8.5, 0.7, 1.06);
+    { blending: THREE.AdditiveBlending, toneMapped: false, opacity: 0.4 }));
+  flameGlow.position.set(TORCH_X, 0.7, 1.06);
   flameGlow.scale.set(1.3, 1.3, 1);
   scene.add(flameGlow);
 
-  /* ---- floating numbers ---- */
+  // Burst particles (the explosion's sparks and embers, sparkles) and smoke puffs.
+  const smokeTex = soft(128, [[0, 'rgba(70,64,58,0.6)'], [0.6, 'rgba(50,46,42,0.3)'], [1, 'rgba(30,28,26,0)']]);
+  const burstPool = mkPool(96, () => new THREE.Sprite(spriteMat(dotTex, { blending: THREE.AdditiveBlending, toneMapped: false })));
+  const smokePool = mkPool(14, () => new THREE.Sprite(spriteMat(smokeTex, {})));
+  const parts = [];
+  function spawn(pool, o) {
+    const s = pool.find((q) => !q.visible);
+    if (!s) return;
+    s.visible = true;
+    s.material.color.set(o.color || 0xffffff);
+    parts.push(Object.assign({ s, age: 0, g: 0, vx: 0, vy: 0, vz: 0, fade: 1, a0: 1, s0: 0.1, s1: 0.1 }, o));
+  }
+  const sparks = (x, y, z, n, o) => {
+    for (let i = 0; i < n; i++) {
+      const a = rnd(0, 6.28), sp = rnd(o.v0, o.v1), up = rnd(o.u0, o.u1);
+      spawn(burstPool, { x, y, z, vx: Math.cos(a) * sp, vz: Math.sin(a) * sp, vy: up, g: o.g, life: rnd(o.l0, o.l1), s0: o.s, s1: o.s * 0.3, color: o.color[(Math.random() * o.color.length) | 0], fade: 1.2 });
+    }
+  };
+  const smoke = (x, y, z, n) => { for (let i = 0; i < n; i++) spawn(smokePool, { x: x + rnd(-0.3, 0.3), y: y + rnd(0, 0.3), z: z + rnd(-0.3, 0.3), vx: rnd(-0.2, 0.2), vz: rnd(-0.2, 0.2), vy: rnd(0.4, 0.9), life: rnd(1100, 1700), s0: 0.5, s1: 1.7, a0: 0.8, fade: 1 }); };
+  function stepParts(sdt) {
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.age += sdt * 1000;
+      const t = p.age / p.life;
+      if (t >= 1) { p.s.visible = false; parts.splice(i, 1); continue; }
+      p.vy += p.g * sdt;
+      p.x += p.vx * sdt; p.y = Math.max(0.02, p.y + p.vy * sdt); p.z += p.vz * sdt;
+      p.s.position.set(p.x, p.y, p.z);
+      const sz = p.s0 + (p.s1 - p.s0) * t;
+      p.s.scale.set(sz, sz, 1);
+      p.s.material.opacity = p.a0 * Math.pow(1 - t, p.fade);
+    }
+  }
+
+  /* fireball: a glowing core and a moving light; explosion flash, shock ring */
+  const fireTex = soft(128, [[0, 'rgba(255,250,215,1)'], [0.22, 'rgba(255,175,60,0.95)'], [0.6, 'rgba(255,90,20,0.35)'], [1, 'rgba(255,60,0,0)']]);
+  const fireCore = new THREE.Sprite(spriteMat(fireTex, { blending: THREE.AdditiveBlending, toneMapped: false }));
+  fireCore.visible = false;
+  scene.add(fireCore);
+  const flashTex = soft(128, [[0, 'rgba(255,245,210,1)'], [0.3, 'rgba(255,170,70,0.6)'], [1, 'rgba(255,110,20,0)']]);
+  const boomFlash = new THREE.Sprite(spriteMat(flashTex, { blending: THREE.AdditiveBlending, toneMapped: false }));
+  boomFlash.visible = false;
+  scene.add(boomFlash);
+  const shock = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ map: ringTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffb060, toneMapped: false }));
+  shock.visible = false;
+  scene.add(shock);
+  let boom = null, shake = 0, shakeT = 0, dofUntil = 0, dofTarget = null;
+
+  /* chest burst, loot beam, floor ring */
+  const starCanvas = document.createElement('canvas');
+  starCanvas.width = starCanvas.height = 128;
+  {
+    const g = starCanvas.getContext('2d');
+    const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(255,245,200,1)'); gr.addColorStop(0.3, 'rgba(255,200,90,0.55)'); gr.addColorStop(1, 'rgba(255,170,40,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    g.translate(64, 64);
+    for (let i = 0; i < 8; i++) {
+      g.rotate(Math.PI / 4);
+      const lg = g.createLinearGradient(0, 0, 62, 0);
+      lg.addColorStop(0, 'rgba(255,240,190,0.9)'); lg.addColorStop(1, 'rgba(255,220,120,0)');
+      g.fillStyle = lg; g.beginPath(); g.moveTo(0, -2.2); g.lineTo(62, 0); g.lineTo(0, 2.2); g.fill();
+    }
+  }
+  const starTex = new THREE.CanvasTexture(starCanvas);
+  const chestStar = new THREE.Sprite(spriteMat(starTex, { blending: THREE.AdditiveBlending, toneMapped: false }));
+  chestStar.visible = false;
+  scene.add(chestStar);
+  let chestBurst = -1, itemFx = 0, lootRingT = 0;
+  const lootMat = beamMaterial(0xb35cff, 1, 2.0);
+  lootMat.uniforms.uH.value = 4.2;
+  const lootBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.26, 4.2, 20, 1, true).translate(0, 2.1, 0), lootMat);
+  lootBeam.visible = false;
+  lootBeam.renderOrder = 5;
+  scene.add(lootBeam);
+  const lootGlow = new THREE.Sprite(spriteMat(soft(128, [[0, 'rgba(200,120,255,0.9)'], [0.4, 'rgba(160,70,255,0.3)'], [1, 'rgba(120,40,255,0)']]), { blending: THREE.AdditiveBlending, toneMapped: false }));
+  lootGlow.visible = false;
+  scene.add(lootGlow);
+  const lootRing = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ map: ringTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xc27bff, toneMapped: false }));
+  lootRing.visible = false;
+  scene.add(lootRing);
+
+  /* floating numbers */
   const textTexs = new Map();
   const textTex = (text, color) => {
     const key = text + color;
     let t = textTexs.get(key);
     if (!t) {
       const c = document.createElement('canvas');
-      c.width = 128; c.height = 64;
+      const font = '800 40px ui-monospace, Consolas, monospace';
       const g = c.getContext('2d');
-      g.font = '800 44px ui-monospace, Consolas, monospace';
+      g.font = font;
+      c.width = Math.ceil(g.measureText(text).width) + 24; c.height = 64;
+      g.font = font;
       g.textAlign = 'center'; g.textBaseline = 'middle';
       g.lineWidth = 8; g.strokeStyle = '#000'; g.lineJoin = 'round';
-      g.strokeText(text, 64, 34); g.fillStyle = color; g.fillText(text, 64, 34);
+      g.strokeText(text, c.width / 2, 34); g.fillStyle = color; g.fillText(text, c.width / 2, 34);
       t = new THREE.CanvasTexture(c);
+      t.userData.aspect = c.width / c.height;
       t.colorSpace = THREE.SRGBColorSpace;
       textTexs.set(key, t);
     }
@@ -270,11 +647,41 @@ try {
   };
   const floatSprites = new Map();
 
-  /* ---- camera: a tilted, narrow-FOV view, panned and zoomed by touch; parallax follows the device or the mouse ---- */
+  /* ----------------------------------------------------------- game events */
+  const W3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  let clock = 0; // the demo's own clock (ms), advanced by each frame's dt, so stepping by hand behaves like running
+  function handleEvent(e) {
+    const now = clock;
+    if (e.type === 'cast') sfx.cast();
+    else if (e.type === 'fireLaunch') sparks(e.x, 0.75, e.y, 6, { v0: 0.5, v1: 2, u0: 0, u1: 1, g: -2, l0: 250, l1: 450, s: 0.12, color: [0xffd070, 0xff9030] });
+    else if (e.type === 'impact') {
+      boom = { t0: now, x: e.x, z: e.y };
+      shake = 0.34; shakeT = now;
+      dofUntil = now + 800; dofTarget = e.target;
+      sparks(e.x, 0.6, e.y, 30, { v0: 2, v1: 7, u0: 1, u1: 4.5, g: -9, l0: 350, l1: 800, s: 0.11, color: [0xffe08a, 0xffa030, 0xff7a20] });
+      sparks(e.x, 0.5, e.y, 10, { v0: 0.2, v1: 1.1, u0: 0.5, u1: 1.6, g: 0.4, l0: 1300, l1: 2300, s: 0.085, color: [0xff6a1f, 0xff8a30] });
+      smoke(e.x, 0.5, e.y, e.killed ? 9 : 6);
+      sfx.boom();
+    } else if (e.type === 'mobDie') smoke(e.x, 0.2, e.y, 3);
+    else if (e.type === 'chestOpen') {
+      chestBurst = now; sfx.open();
+      sparks(e.x, 0.8, e.y + 0.1, 22, { v0: 0.5, v1: 2.4, u0: 1, u1: 3, g: -4, l0: 600, l1: 1100, s: 0.1, color: [0xffe9a0, 0xffd060, 0xffffff] });
+    } else if (e.type === 'itemLand') {
+      itemFx = now; sfx.land();
+      smoke(e.x, 0.05, e.y, 2);
+      sparks(e.x, 0.3, e.y, 12, { v0: 0.4, v1: 1.5, u0: 0.5, u1: 1.8, g: -4, l0: 500, l1: 900, s: 0.08, color: [0xd49bff, 0xffffff, 0xb35cff] });
+    } else if (e.type === 'pickup') {
+      lootRingT = now; sfx.pickup();
+      sparks(e.x, 0.4, e.y, 26, { v0: 0.3, v1: 1.8, u0: 1.5, u1: 4, g: -1.5, l0: 700, l1: 1300, s: 0.09, color: [0xd49bff, 0xffffff, 0xffe9a0, 0xb35cff] });
+    }
+  }
+
+  /* ----------------------------------------------- camera, orbit, parallax */
   const PITCH = rad(40);
   const view = { tx: W / 2, tz: H / 2 + 0.3, zoom: 1 };
   const tilt = { y: 0, p: 0, ty: 0, tp: 0 };
-  let baseDist = 40;
+  const orbit = { yaw: 0, pitch: 0 };
+  let baseDist = 40, camYaw = 0;
   function fit() {
     const tanV = Math.tan(rad(FOV / 2)), tanH = tanV * camera.aspect;
     const dw = (W + 0.8) / (2 * tanH);
@@ -282,7 +689,8 @@ try {
     baseDist = Math.max(dw, dh);
   }
   function placeCamera() {
-    const dist = Math.max(14, baseDist / view.zoom), pitch = PITCH + tilt.p, yaw = tilt.y;
+    const dist = Math.max(14, baseDist / view.zoom), pitch = clamp(PITCH + tilt.p + orbit.pitch, rad(14), rad(78)), yaw = tilt.y + orbit.yaw;
+    camYaw = yaw;
     camera.position.set(view.tx + dist * Math.sin(yaw) * Math.cos(pitch), dist * Math.sin(pitch), view.tz + dist * Math.cos(yaw) * Math.cos(pitch));
     camera.lookAt(view.tx, 0, view.tz);
     camera.updateMatrixWorld(true);
@@ -296,16 +704,14 @@ try {
     return ray.ray.intersectPlane(plane, tmp) ? tmp.clone() : null;
   };
   let anchor = null;
-  const clampView = () => { view.tx = Math.max(-3, Math.min(W + 3, view.tx)); view.tz = Math.max(-3, Math.min(H + 3, view.tz)); };
+  const clampView = () => { view.tx = clamp(view.tx, -3, W + 3); view.tz = clamp(view.tz, -3, H + 3); };
 
-  // Device tilt (Android: at once; iOS: after a tap grants it) and the mouse.
   let tiltBase = null, tiltAsked = false;
   const onOrient = (e) => {
-    if (e.gamma == null || e.beta == null) return;
+    if (photo || e.gamma == null || e.beta == null) return;
     if (!tiltBase) tiltBase = { g: e.gamma, b: e.beta };
-    const cl = (v) => Math.max(-1, Math.min(1, v));
-    tilt.ty = cl((e.gamma - tiltBase.g) / 25) * 0.14;
-    tilt.tp = cl((e.beta - tiltBase.b) / 25) * -0.08;
+    tilt.ty = clamp((e.gamma - tiltBase.g) / 25, -1, 1) * 0.14;
+    tilt.tp = clamp((e.beta - tiltBase.b) / 25, -1, 1) * -0.08;
   };
   const askTilt = () => {
     if (tiltAsked || typeof DeviceOrientationEvent === 'undefined') return;
@@ -318,7 +724,13 @@ try {
 
   S.gestures(renderer.domElement, {
     dragStart: (x, y) => { anchor = ground(x, y); },
-    drag: (x, y) => {
+    drag: (x, y, dx, dy) => {
+      if (photo) {
+        orbit.yaw = clamp(orbit.yaw - dx * 0.006, -1.0, 1.0);
+        orbit.pitch = clamp(orbit.pitch + dy * 0.004, rad(-24), rad(32));
+        placeCamera();
+        return;
+      }
       const p = ground(x, y);
       if (!p || !anchor) return;
       view.tx += anchor.x - p.x; view.tz += anchor.z - p.z;
@@ -326,71 +738,244 @@ try {
     },
     pinch: (ratio, cx, cy) => {
       const before = ground(cx, cy);
-      view.zoom = Math.max(0.45, Math.min(3.2, view.zoom * ratio));
+      view.zoom = photo ? clamp(view.zoom * ratio, 0.7, 2.2) : clamp(view.zoom * ratio, 0.45, 3.2);
       placeCamera();
+      if (photo) return;
       const after = ground(cx, cy);
       if (before && after) { view.tx += before.x - after.x; view.tz += before.z - after.z; clampView(); placeCamera(); }
     },
     tap: (x, y) => {
-      askTilt();
+      audio(); askTilt();
+      if (photo) return;
+      ray.setFromCamera(new THREE.Vector2((x / vw) * 2 - 1, -((y / vh) * 2 - 1)), camera);
+      if (ray.intersectObject(chestMesh, false).length) { S.tapChest(); return; }
       const p = ground(x, y);
-      if (p) S.tapCell(Math.floor(p.x), Math.floor(p.z));
+      if (!p) return;
+      const cx = Math.floor(p.x), cz = Math.floor(p.z);
+      if (S.chest && cx === S.chest.x && cz === S.chest.y) S.tapChest();
+      else S.tapCell(cx, cz);
     },
-    hover: (x, y) => { if (!tiltBase) { tilt.ty = ((x / vw) - 0.5) * 2 * 0.11; tilt.tp = ((y / vh) - 0.5) * 2 * -0.05; } },
+    hover: (x, y) => { if (!tiltBase && !photo) { tilt.ty = ((x / vw) - 0.5) * 2 * 0.11; tilt.tp = ((y / vh) - 0.5) * 2 * -0.05; } },
   });
 
-  /* ---- post: bloom, then a tilt-shift blur (sharp round the hero) with a vignette ---- */
-  const rt = new THREE.WebGLRenderTarget(vw * pr, vh * pr, { type: THREE.HalfFloatType, samples: (navigator.maxTouchPoints > 0 ? 2 : 4) });
+  /* ---------------------------------------------------------------- post */
+  const sampleCount = () => (!hq ? 0 : touch ? 2 : 4);
+  const rt = new THREE.WebGLRenderTarget(vw * pr, vh * pr, { type: THREE.HalfFloatType, samples: sampleCount() });
   const composer = new EffectComposer(renderer, rt);
   composer.setPixelRatio(pr);
   composer.setSize(vw, vh);
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(new THREE.Vector2(vw / 2, vh / 2), 0.4, 0.5, 1.3);
   composer.addPass(bloom);
-  const tiltShift = new ShaderPass({
-    uniforms: { tDiffuse: { value: null }, resolution: { value: new THREE.Vector2(vw * pr, vh * pr) }, focus: { value: 0.45 }, amount: { value: 3.2 * pr }, vig: { value: 0.5 } },
-    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: `
-      uniform sampler2D tDiffuse; uniform vec2 resolution; uniform float focus, amount, vig; varying vec2 vUv;
-      void main() {
-        float d = abs(vUv.y - focus);
-        float b = smoothstep(0.1, 0.55, d) * amount * 3.0;
-        vec4 sum = texture2D(tDiffuse, vUv); float n = 1.0;
-        for (int i = 0; i < 14; i++) {
-          float a = float(i) * 2.399963, r = sqrt((float(i) + 0.5) / 14.0);
-          sum += texture2D(tDiffuse, vUv + vec2(cos(a), sin(a)) * r * b / resolution); n += 1.0;
-        }
-        vec4 c = sum / n;
-        float v = smoothstep(1.0, 0.3, length((vUv - 0.5) * vec2(1.0, 1.2)));
-        c.rgb *= mix(1.0, v, vig);
-        gl_FragColor = c;
-      }`,
-  });
-  composer.addPass(tiltShift);
-  composer.addPass(new OutputPass());
 
-  function resize() {
-    vw = window.innerWidth; vh = window.innerHeight;
+  /** Depth of field (a tilt-shift band that follows the hero, or the target of a fireball), grading filters and a vignette; the blur is made at reduced resolution. */
+  class DofPass extends Pass {
+    constructor(scale) {
+      super();
+      this.scale = scale; this.dof = true;
+      this.blurRT = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
+      const vert = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }';
+      this.blurMat = new THREE.ShaderMaterial({
+        uniforms: { tDiffuse: { value: null }, res: { value: new THREE.Vector2(1, 1) }, radius: { value: 4 } },
+        vertexShader: vert,
+        fragmentShader: `
+          uniform sampler2D tDiffuse; uniform vec2 res; uniform float radius; varying vec2 vUv;
+          void main() {
+            vec3 sum = texture2D(tDiffuse, vUv).rgb; float n = 1.0;
+            for (int i = 0; i < 12; i++) {
+              float a = float(i) * 2.399963, r = sqrt((float(i) + 0.5) / 12.0) * radius;
+              sum += texture2D(tDiffuse, vUv + vec2(cos(a), sin(a)) * r / res).rgb; n += 1.0;
+            }
+            gl_FragColor = vec4(sum / n, 1.0);
+          }`,
+        depthTest: false, depthWrite: false,
+      });
+      this.mixMat = new THREE.ShaderMaterial({
+        uniforms: { tDiffuse: { value: null }, tBlur: { value: null }, focus: { value: 0.45 }, boost: { value: 1 }, useDof: { value: 1 }, vig: { value: 0.5 }, filt: { value: 0 }, time: { value: 0 }, res: { value: new THREE.Vector2(1, 1) } },
+        vertexShader: vert,
+        fragmentShader: `
+          uniform sampler2D tDiffuse, tBlur; uniform float focus, boost, useDof, vig, filt, time; uniform vec2 res; varying vec2 vUv;
+          float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+          void main() {
+            vec4 sharp = texture2D(tDiffuse, vUv); vec3 col = sharp.rgb;
+            vec3 bl = texture2D(tBlur, vUv).rgb;
+            float m = smoothstep(0.1, 0.55, abs(vUv.y - focus)) * boost * useDof;
+            if (filt > 2.5) m = max(m, 0.4);
+            col = mix(col, bl, clamp(m, 0.0, 1.0));
+            if (filt > 0.5 && filt < 1.5) { col *= vec3(1.1, 1.0, 0.84); }
+            else if (filt > 1.5 && filt < 2.5) {
+              float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
+              l = pow(max(0.0, (l - 0.04) * 1.35 + 0.04), 0.9);
+              col = vec3(l) * vec3(0.96, 0.98, 1.02) + (hash(vUv * res + time) - 0.5) * 0.035;
+            } else if (filt > 2.5) col = col * vec3(1.06, 0.97, 1.12) + bl * 0.35 + vec3(0.025, 0.015, 0.04);
+            float v = smoothstep(1.0, 0.3, length((vUv - 0.5) * vec2(1.0, 1.2)));
+            col *= mix(1.0, v, vig + ((filt > 1.5 && filt < 2.5) ? 0.3 : 0.0));
+            gl_FragColor = vec4(col, sharp.a);
+          }`,
+        depthTest: false, depthWrite: false,
+      });
+      this.quadBlur = new FullScreenQuad(this.blurMat);
+      this.quadMix = new FullScreenQuad(this.mixMat);
+    }
+    setSize(w, h) {
+      const bw = Math.max(1, Math.round(w * this.scale)), bh = Math.max(1, Math.round(h * this.scale));
+      this.blurRT.setSize(bw, bh);
+      this.blurMat.uniforms.res.value.set(bw, bh);
+      this.blurMat.uniforms.radius.value = Math.max(2, bh / 150);
+      this.mixMat.uniforms.res.value.set(w, h);
+    }
+    render(renderer, writeBuffer, readBuffer) {
+      const u = this.mixMat.uniforms;
+      const needBlur = this.dof || u.filt.value > 2.5;
+      if (needBlur) {
+        this.blurMat.uniforms.tDiffuse.value = readBuffer.texture;
+        renderer.setRenderTarget(this.blurRT);
+        this.quadBlur.render(renderer);
+      }
+      u.tDiffuse.value = readBuffer.texture;
+      u.tBlur.value = needBlur ? this.blurRT.texture : readBuffer.texture;
+      u.useDof.value = this.dof ? 1 : 0;
+      renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
+      if (this.clear) renderer.clear();
+      this.quadMix.render(renderer);
+    }
+    dispose() { this.blurRT.dispose(); this.blurMat.dispose(); this.mixMat.dispose(); this.quadBlur.dispose(); this.quadMix.dispose(); }
+  }
+  const dofScale = touch ? 0.5 : 1;
+  const bloomScale = touch ? 0.5 : 1;
+  const dof = new DofPass(dofScale);
+  composer.addPass(dof);
+  composer.addPass(new OutputPass());
+  const dofU = dof.mixMat.uniforms;
+
+  const refScale = touch ? 0.35 : 0.5;
+  function applySize(p) {
+    cp = p;
+    renderer.setPixelRatio(p);
     renderer.setSize(vw, vh);
+    composer.setPixelRatio(p);
     composer.setSize(vw, vh);
-    tiltShift.uniforms.resolution.value.set(vw * pr, vh * pr);
+    bloom.setSize(vw * p * bloomScale, vh * p * bloomScale);
+    reflector.getRenderTarget().setSize(Math.max(64, Math.round(vw * p * refScale)), Math.max(64, Math.round(vh * p * refScale)));
     camera.aspect = vw / vh;
     camera.updateProjectionMatrix();
     fit(); placeCamera();
   }
-  window.addEventListener('resize', resize);
-  resize();
+  function setMSAA() {
+    [composer.renderTarget1, composer.renderTarget2].forEach((t) => { t.samples = sampleCount(); t.dispose(); });
+  }
+  /** The quality toggle: low turns off the mirror, the fog and mist, depth of field and MSAA. */
+  function applyQuality() {
+    reflector.visible = hq;
+    noReflect.visible = hq;
+    dof.dof = hq;
+    setMSAA();
+    hud.setInfo((renderer.capabilities.isWebGL2 ? 'WebGL2' : 'WebGL1') + ' · ' + pr + 'x' + (touch ? ' · touch' : '') + (hq ? '' : ' · low'));
+  }
+  window.addEventListener('resize', () => { vw = window.innerWidth; vh = window.innerHeight; applySize(cp); });
+  applySize(pr);
   applyLight();
+  applyQuality();
+  setMSAA();
 
-  /* ---- one frame ---- */
-  const hide = (list, from) => { for (let i = from; i < list.length; i++) list[i].visible = false; };
+  /* ------------------------------------------------------- (3) fireball */
+  function castFire() {
+    audio();
+    if (photo) return;
+    const r = S.castFireball();
+    if (r === -1) hud.toast('Нет целей в поле зрения', '#9fd0ff');
+  }
+
+  /* ---------------------------------------------------------- (5) photo mode */
+  const filters = [['Без', 0], ['Тёплый', 1], ['Ч/Б', 2], ['Мечта', 3]];
+  const rowEl = document.getElementById('ph-filters');
+  const chipEls = filters.map(([label, id]) => {
+    const b = document.createElement('button');
+    b.className = 'ph-btn'; b.type = 'button'; b.textContent = label;
+    b.addEventListener('click', () => setFilter(id));
+    rowEl.appendChild(b);
+    return b;
+  });
+  const bloomDef = { s: 0.4, r: 0.5, t: 1.3 };
+  function setFilter(id) {
+    filterMode = id;
+    dofU.filt.value = id;
+    chipEls.forEach((b, i) => b.setAttribute('aria-pressed', filters[i][1] === id ? 'true' : 'false'));
+    const dreamy = id === 3;
+    bloom.strength = dreamy ? 0.95 : bloomDef.s; bloom.radius = dreamy ? 0.9 : bloomDef.r; bloom.threshold = dreamy ? 0.75 : bloomDef.t;
+  }
+  let zoomBefore = 1;
+  function enterPhoto() {
+    audio();
+    if (photo) return;
+    photo = true; S.paused = true;
+    zoomBefore = view.zoom;
+    tilt.ty = tilt.tp = tilt.y = tilt.p = 0;
+    orbit.yaw = orbit.pitch = 0;
+    document.body.classList.add('pd-photo');
+    setFilter(0);
+    placeCamera();
+  }
+  function exitPhoto() {
+    if (!photo) return;
+    photo = false; S.paused = false;
+    orbit.yaw = orbit.pitch = 0;
+    view.zoom = zoomBefore;
+    document.body.classList.remove('pd-photo');
+    setFilter(0);
+    placeCamera();
+  }
+  document.getElementById('ph-exit').addEventListener('click', exitPhoto);
+  const shot = document.getElementById('ph-shot'), shotImg = document.getElementById('ph-img'), shotDl = document.getElementById('ph-dl'), shotShare = document.getElementById('ph-share');
+  let shotUrl = null, shotBlob = null;
+  function save() {
+    // One more frame at twice the pixel density if the GPU allows it, read straight away.
+    const want = Math.min(2, Math.floor(renderer.capabilities.maxTextureSize / Math.max(vw, vh)));
+    const target = Math.max(pr, want);
+    const big = target !== cp;
+    if (big) applySize(target);
+    draw(0);
+    renderer.domElement.toBlob((blob) => {
+      if (big) applySize(pr);
+      draw(0);
+      if (!blob) { hud.toast('Не удалось сделать снимок'); return; }
+      if (shotUrl) URL.revokeObjectURL(shotUrl);
+      shotBlob = blob;
+      shotUrl = URL.createObjectURL(blob);
+      shotImg.src = shotUrl;
+      shotDl.href = shotUrl;
+      shotShare.style.display = (navigator.canShare && navigator.canShare({ files: [new File([blob], 'pixel-dungeon.png', { type: 'image/png' })] })) ? '' : 'none';
+      shot.style.display = 'flex';
+    }, 'image/png');
+  }
+  document.getElementById('ph-save').addEventListener('click', save);
+  document.getElementById('ph-close').addEventListener('click', () => { shot.style.display = 'none'; });
+  shotShare.addEventListener('click', () => {
+    if (shotBlob) navigator.share({ files: [new File([shotBlob], 'pixel-dungeon.png', { type: 'image/png' })] }).catch(() => {});
+  });
+
+  /* -------------------------------------------------------------- one frame */
   const projected = new THREE.Vector3();
+  const hide = (list, from) => { for (let i = from; i < list.length; i++) list[i].visible = false; };
+  const ripUniform = reflector.material.uniforms.rip.value;
+
   function draw(dt) {
     let i;
-    // Camera parallax eases toward its target.
+    if (!S.paused) clock += dt;
+    const now = clock;
+    const sdt = S.paused ? 0 : (dt * S.timeScale) / 1000;
+    S.events.splice(0).forEach(handleEvent);
+
+    // Camera: parallax eases to its target, shake on top.
     const k = Math.min(1, dt / 120);
     tilt.y += (tilt.ty - tilt.y) * k; tilt.p += (tilt.tp - tilt.p) * k;
-    if (Math.abs(tilt.ty - tilt.y) > 1e-4 || Math.abs(tilt.tp - tilt.p) > 1e-4 || tilt.y !== 0 || tilt.p !== 0) placeCamera();
+    shake = shake > 0.002 ? 0.34 * Math.exp(-(now - shakeT) / 160) : 0;
+    if (shake > 0 || tilt.y !== 0 || tilt.p !== 0 || Math.abs(tilt.ty - tilt.y) > 1e-4) placeCamera();
+    if (shake > 0) {
+      camera.position.x += rnd(-shake, shake); camera.position.y += rnd(-shake, shake) * 0.6; camera.position.z += rnd(-shake, shake);
+      camera.lookAt(view.tx, 0, view.tz);
+      camera.updateMatrixWorld(true);
+    }
 
     // Actors.
     for (i = 0; i < views.length; i++) {
@@ -398,79 +983,201 @@ try {
       v.mat.map = frameTex(a.sheet, a.frame, a.flip);
       v.mat.emissiveIntensity = a.flash * 0.9;
       v.mesh.position.set(a.x, 0, a.y + 0.12);
-      v.mesh.rotation.y = tilt.y;
-      v.blob.position.x = a.x; v.blob.position.z = a.y + 0.12;
+      v.mesh.rotation.y = camYaw;
+      v.blob.position.set(a.x, 0.025, a.y + 0.12);
+      v.blob.visible = !a.dead;
     }
-    planted.forEach((m) => { m.rotation.y = tilt.y; });
-    doorMat.map = S.doorOpen ? doorMatOpen : doorMatClosed;
+    planted.forEach((m) => { m.rotation.y = camYaw; });
+    chestMesh.rotation.y = camYaw;
+    doorMat.map = S.doorOpen ? doorOpen : doorClosed;
+    const c = S.chest;
+    chestMat.map = chestFrames[c.open ? Math.min(3, 1 + Math.floor(c.t / 110)) : 0];
 
-    // Water scrolls, as in the game.
-    waterT.offset.y = (S.time / 200 / 32) % 1;
-
-    // Torch: frame, flicker (the light and its glow), sparks.
+    // Fog of war and the shared shader uniforms.
+    explore();
     const tf = S.torch;
-    torchMat.map = torchFrames[tf.frame];
+    fx.time.value = S.time / 1000;
+    fx.torchI.value = tf.f;
+    fx.heroPos.value.set(S.hero.x, 0.5, S.hero.y);
+    waterT.offset.y = (S.time / 200 / 32) % 1;
+    reflector.material.uniforms.time.value = S.time / 1000;
+
+    // Torch.
+    torchMat.map = torchTexs[tf.frame];
     torchLight.intensity = 13 * tf.f * tf.f;
-    torchLight.position.set(8.5 + (tf.noise - 1) * 0.15, 0.7, 1.45);
+    torchLight.position.set(TORCH_X + (tf.noise - 1) * 0.15, 0.7, 1.45);
     flameGlow.material.opacity = 0.4 * tf.f;
     flameGlow.visible = postOn || lightOn;
     heroLight.position.set(S.hero.x, 1.7, S.hero.y + 0.9);
     for (i = 0; i < S.sparks.length && i < sparkSprites.length; i++) {
       const s = S.sparks[i], sp = sparkSprites[i];
-      sp.visible = true; sp.position.set(s.x, s.h, 1.05); sp.scale.setScalar(0.07);
+      sp.visible = true; sp.position.set(s.x + (TORCH_X - 8.5), s.h, 1.05); sp.scale.setScalar(0.07);
       sp.material.opacity = 1 - s.age / s.life;
     }
     hide(sparkSprites, S.sparks.length);
 
-    // Drips, ripples, mist.
+    // God ray: a slow breath, dust in the cone.
+    const tsec = S.time / 1000;
+    godMat.uniforms.uI.value = 0.2 * (0.9 + 0.1 * Math.sin(tsec * 0.7));
+    pool.material.opacity = 0.9 + 0.1 * Math.sin(tsec * 0.7);
+    for (i = 0; i < DUST; i++) {
+      const d = dust[i];
+      d.t -= d.sp * sdt; if (d.t < 0) d.t += 1;
+      d.a += d.da * sdt;
+      const r = (1.15 + (0.55 - 1.15) * d.t) * 0.9 * d.r + Math.sin(tsec * 0.9 + d.ph) * 0.05;
+      dustPos[i * 3] = Math.cos(d.a) * r; dustPos[i * 3 + 1] = d.t * BEAM.h; dustPos[i * 3 + 2] = Math.sin(d.a) * r;
+      const tw = (0.5 + 0.5 * Math.sin(tsec * 1.7 + d.ph)) * Math.min(1, d.t * 6) * Math.min(1, (1 - d.t) * 5);
+      dustCol[i * 3] = 0.8 * tw; dustCol[i * 3 + 1] = 0.9 * tw; dustCol[i * 3 + 2] = 1.0 * tw;
+    }
+    dustGeo.attributes.position.needsUpdate = true; dustGeo.attributes.color.needsUpdate = true;
+
+    // Drips, ripples (also the rings made by wading), mist.
     for (i = 0; i < S.drops.length && i < dropSprites.length; i++) {
       const d = S.drops[i], sp = dropSprites[i];
       sp.visible = true; sp.position.set(d.x, d.h + 0.02, d.y + 0.03); sp.scale.set(0.05, 0.1, 1);
     }
     hide(dropSprites, S.drops.length);
-    for (i = 0; i < S.ripples.length && i < rippleMeshes.length; i++) {
-      const r = S.ripples[i], m = rippleMeshes[i], p = r.age / r.life;
-      m.visible = true; m.position.set(r.x, 0.03, r.y);
-      m.scale.setScalar((0.12 + p * (r.tap ? 0.55 : 0.4)) * 2);
-      m.material.opacity = (1 - p) * (r.tap ? 0.7 : 0.9);
-      m.material.color.set(r.tap ? 0xffffff : 0xcfe9ff);
+    let rn = 0, rl = 0;
+    for (i = 0; i < S.ripples.length; i++) {
+      const r = S.ripples[i];
+      if (r.age < 0) continue;
+      const p = r.age / r.life;
+      if (rn < rippleMeshes.length) {
+        const m = rippleMeshes[rn++];
+        m.visible = true; m.position.set(r.x, 0.03, r.y);
+        m.scale.setScalar((0.12 + p * (r.tap ? 0.55 : r.big ? 0.6 : 0.4)) * 2);
+        m.material.opacity = (1 - p) * (r.tap ? 0.7 : 0.9);
+        m.material.color.set(r.tap ? 0xffffff : 0xcfe9ff);
+      }
+      // The same rings wobble the mirror (only those over water).
+      if (!r.tap && rl < 8 && S.isWater(Math.floor(r.x), Math.floor(r.y))) ripUniform[rl++].set(r.x, r.y, 0.12 + p * (r.big ? 0.95 : 0.7), (1 - p) * (r.big ? 1 : 0.7));
     }
-    hide(rippleMeshes, S.ripples.length);
+    hide(rippleMeshes, rn);
+    for (; rl < 8; rl++) ripUniform[rl].w = 0;
     for (i = 0; i < S.mist.length; i++) {
       const m = S.mist[i], s = mistSprites[i];
       s.position.set(m.x, 0.28 + 0.06 * Math.sin(S.time / 1300 + m.ph), m.y);
-      s.material.opacity = 0.11 * m.a * (0.7 + 0.3 * Math.sin(S.time / 1500 + m.ph));
+      s.material.opacity = 0.08 * m.a * (0.7 + 0.3 * Math.sin(S.time / 1500 + m.ph));
     }
+
+    // Fireball in flight: core, moving light, trail.
+    const f = S.fire;
+    let fLight = 0;
+    if (f) {
+      fireCore.visible = true;
+      fireCore.position.set(f.x, 0.78, f.y);
+      const fl = 0.85 + 0.15 * Math.sin(now / 35) + rnd(-0.05, 0.05);
+      fireCore.scale.setScalar(0.85 * fl);
+      fireLight.position.set(f.x, 0.8, f.y);
+      fLight = 15 * fl;
+      if (sdt > 0) sparks(f.x - (f.dx || 0) * 0.2, 0.75, f.y - (f.dy || 0) * 0.2, 2, { v0: 0.2, v1: 1.0, u0: 0, u1: 0.8, g: -1.5, l0: 250, l1: 500, s: 0.1, color: [0xffd070, 0xff8a2a] });
+    } else fireCore.visible = false;
+
+    // Explosion: a flash that lights the whole room for about 200 ms, and a shock ring.
+    if (boom) {
+      const bt = now - boom.t0;
+      if (bt > 700) { boom = null; boomFlash.visible = false; shock.visible = false; renderer.toneMappingExposure = 1; }
+      else {
+        fireLight.position.set(boom.x, 0.9, boom.z);
+        fireLight.distance = 40;
+        fLight = 420 * Math.exp(-bt / 70);
+        renderer.toneMappingExposure = 1 + 1.1 * Math.exp(-bt / 80);
+        boomFlash.visible = bt < 300;
+        boomFlash.position.set(boom.x, 0.7, boom.z);
+        boomFlash.scale.setScalar(1.2 + bt / 45);
+        boomFlash.material.opacity = Math.max(0, 1 - bt / 280);
+        shock.visible = bt < 450;
+        shock.position.set(boom.x, 0.05, boom.z);
+        shock.scale.setScalar(0.4 + bt / 110);
+        shock.material.opacity = Math.max(0, 1 - bt / 450) * 0.8;
+      }
+    } else fireLight.distance = 14;
+    fireLight.intensity = fLight;
+
+    // Chest: a burst of light, then the loot glow; the item's arc, its beam and ring.
+    let lootI = 0;
+    const cb = chestBurst < 0 ? 1e9 : now - chestBurst;
+    if (cb < 800) {
+      chestStar.visible = true;
+      chestStar.position.set(S.chest.x + 0.5, 0.75, S.chest.y + 0.7);
+      chestStar.scale.setScalar(0.8 + cb / 160);
+      chestStar.material.opacity = Math.max(0, 1 - cb / 650);
+      chestStar.material.rotation = cb / 500;
+      lootLight.color.set(0xffd27a); lootLight.position.set(S.chest.x + 0.5, 1.1, S.chest.y + 0.9);
+      lootI = 40 * Math.pow(Math.max(0, 1 - cb / 700), 2);
+      lootLight.distance = 12;
+    } else chestStar.visible = false;
+    const it = S.item;
+    if (it && it.state !== 'taken' || (it && it.takenT < 450)) {
+      itemMesh.visible = true;
+      const bob = it.state === 'ground' ? 0.05 * Math.sin(now / 260) : 0;
+      itemMesh.position.set(it.x, it.h + 0.3 + bob, it.y + 0.05);
+      itemMesh.rotation.y = camYaw;
+      const tk = it.state === 'taken' ? it.takenT / 450 : 0;
+      itemMesh.scale.setScalar(1 + tk * 1.2);
+      itemMesh.material.opacity = 1;
+      itemMesh.visible = tk < 1;
+      const beamOn = it.state === 'ground' || it.state === 'taken';
+      const appear = it.state === 'ground' ? Math.min(1, it.t / 350) : it.state === 'taken' ? 1 - Math.min(1, it.takenT / 350) : 0;
+      lootBeam.visible = beamOn && appear > 0.01;
+      lootBeam.position.set(it.x, 0, it.y + 0.05);
+      lootBeam.scale.set(1, Math.max(0.01, appear), 1);
+      lootMat.uniforms.uA.value = appear;
+      lootGlow.visible = it.state !== 'arc';
+      lootGlow.position.set(it.x, 0.35, it.y + 0.1);
+      lootGlow.scale.setScalar(1.3 * (1 + 0.1 * Math.sin(now / 200)));
+      lootGlow.material.opacity = appear * 0.8;
+      lootRing.visible = beamOn && appear > 0.01;
+      lootRing.position.set(it.x, 0.05, it.y + 0.05);
+      lootRing.scale.setScalar(1.2 + 0.18 * Math.sin(now / 300));
+      lootRing.material.opacity = appear * 0.7;
+      if (cb >= 800) { lootLight.color.set(0xb060ff); lootLight.position.set(it.x, 0.8, it.y + 0.2); lootLight.distance = 7; }
+      if (it.state === 'ground') {
+        lootI = Math.max(lootI, 3.2 * (0.85 + 0.15 * Math.sin(now / 240)));
+        if (sdt > 0 && Math.random() < 0.12) spawn(burstPool, { x: it.x + rnd(-0.18, 0.18), y: 0.1, z: it.y + rnd(-0.18, 0.18), vx: 0, vz: 0, vy: rnd(0.8, 1.6), life: rnd(900, 1500), s0: 0.07, s1: 0.02, color: 0xd9a8ff, fade: 1 });
+      }
+      if (it.state === 'taken') lootI = Math.max(lootI, 3.2 * appear);
+    } else {
+      itemMesh.visible = false; lootBeam.visible = false; lootGlow.visible = false; lootRing.visible = false;
+    }
+    lootLight.intensity = lootI;
+
+    stepParts(sdt);
 
     // Floating damage numbers.
     const alive = new Set(S.floaters);
-    floatSprites.forEach((sp, f) => { if (!alive.has(f)) { scene.remove(sp); sp.material.dispose(); floatSprites.delete(f); } });
-    S.floaters.forEach((f) => {
-      let sp = floatSprites.get(f);
+    floatSprites.forEach((sp, fl) => { if (!alive.has(fl)) { floatGroup.remove(sp); sp.material.dispose(); floatSprites.delete(fl); } });
+    S.floaters.forEach((fl) => {
+      let sp = floatSprites.get(fl);
       if (!sp) {
-        sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTex(f.text, f.color), transparent: true, depthTest: false, depthWrite: false, toneMapped: false }));
+        sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTex(fl.text, fl.color), transparent: true, depthTest: false, depthWrite: false, toneMapped: false, fog: false }));
         sp.renderOrder = 20;
-        scene.add(sp);
-        floatSprites.set(f, sp);
+        floatGroup.add(sp);
+        floatSprites.set(fl, sp);
       }
-      const p = f.age / f.life;
-      sp.position.set(f.x, 1.25 + p * 0.8, f.y + 0.5);
+      const p = fl.age / fl.life, grow = (1 + Math.max(0, 0.3 - p)) * (fl.big ? 1.35 : 1);
+      sp.position.set(fl.x, 1.25 + p * 0.8, fl.y + 0.5);
       sp.material.opacity = p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4;
-      const grow = 1 + Math.max(0, 0.3 - p);
-      sp.scale.set(1.5 * grow, 0.75 * grow, 1);
+      sp.scale.set(0.62 * grow * sp.material.map.userData.aspect, 0.62 * grow, 1);
     });
 
-    // Tilt-shift focus follows the hero.
-    projected.set(S.hero.x, 0.4, S.hero.y).project(camera);
-    tiltShift.uniforms.focus.value += ((projected.y * 0.5 + 0.5) - tiltShift.uniforms.focus.value) * Math.min(1, dt / 200);
+    // Depth of field: focus on the hero, or on the fireball's target for a moment.
+    const focusing = now < dofUntil && dofTarget;
+    const fa = focusing ? dofTarget : S.hero;
+    projected.set(fa.x, 0.4, fa.y).project(camera);
+    dofU.focus.value += ((projected.y * 0.5 + 0.5) - dofU.focus.value) * Math.min(1, dt / (focusing ? 60 : 200));
+    dofU.boost.value += ((focusing ? 2.6 : 1) - dofU.boost.value) * Math.min(1, dt / 80);
+    dofU.time.value = S.time / 1000;
+    dofU.vig.value = filterMode === 2 ? 0.55 : 0.5;
 
-    if (postOn) composer.render(dt / 1000);
+    if (postOn || photo) composer.render(dt / 1000);
     else renderer.render(scene, camera);
   }
 
   S.run(draw);
   draw(16);
-  window.__three = { renderer, scene, camera, view };
+  window.__dbg = () => ({ boom, parts: parts.length, clock, fl: fireLight.intensity, fd: fireLight.distance, fv: fireLight.visible, flash: boomFlash.visible, shake });
+  window.__three = { renderer, scene, camera, view, orbit, S, hud, setFilter, enterPhoto, exitPhoto, castFire, applyQuality, get hq() { return hq; }, set hq(v) { hq = v; applyQuality(); } };
 } catch (err) {
   S.fatal(err);
 }

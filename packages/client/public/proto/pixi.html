@@ -251,7 +251,7 @@
       // Ripples and drops on the floor.
       fxFloor.clear();
       for (i = 0; i < S.ripples.length; i++) {
-        var r = S.ripples[i]; p = r.age / r.life;
+        var r = S.ripples[i]; if (r.age < 0) continue; p = r.age / r.life;
         var rx = 2 + p * (r.tap ? 9 : 6);
         fxFloor.ellipse(r.x * T, r.y * T, rx, rx * 0.55).stroke({ width: 1, color: r.tap ? 0xffffff : 0xcfe9ff, alpha: (1 - p) * (r.tap ? 0.7 : 0.9) });
       }
