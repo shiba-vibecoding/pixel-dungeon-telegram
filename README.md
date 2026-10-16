@@ -1,3 +1,5 @@
+> **The game moved to [Pixel Dungeon: Firelight](https://github.com/shiba-vibecoding/pixel-dungeon-firelight).** This repository is archived. Игра переехала в Firelight, этот репозиторий в архиве.
+
 <p align="right"><b>English</b> · <a href="README.ru.md">Русский</a></p>
 
 <p align="center">

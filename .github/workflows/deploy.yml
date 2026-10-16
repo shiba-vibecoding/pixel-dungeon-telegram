@@ -1,48 +1,20 @@
-# Tests every push; on main also publishes the client to GitHub Pages and,
-# when a Cloudflare token is configured, the co-op server to Cloudflare.
-#
-# Publishing is off until the repository variable PD_PUBLISH is «true»: until
-# then GitHub Pages keeps serving whatever was published last (the Java build
-# the bot runs today), and pushes to main only test.
-#
-# Repository settings:
-#   Settings → Pages → Source: GitHub Actions
-#   Settings → Secrets and variables → Actions
-#     Variables: PD_PUBLISH      true, to publish from main
-#                PD_SERVER_URL   wss://pd-coop.<your-subdomain>.workers.dev
-#                PD_TG_APP_LINK  https://t.me/<bot>/<app>
-#     Secrets:   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID (optional; without
-#                them the server is deployed by hand with `npm run deploy:server`)
+# The game moved to Pixel Dungeon: Firelight (https://github.com/shiba-vibecoding/pixel-dungeon-firelight).
+# This repository is archived: GitHub Pages here only redirects old links (with their query and the
+# Telegram #tgWebAppData hash) to the Firelight site, and keeps the /proto/ engine demos.
+# The server pd-coop is deployed from the Firelight repository now; never deploy it from here.
 
-name: CI and deploy
+name: Redirect to Firelight
 
 on:
   push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
-
-  client:
-    needs: test
-    if: github.ref == 'refs/heads/main' && vars.PD_PUBLISH == 'true'
+  pages:
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -52,38 +24,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-        env:
-          VITE_SERVER_URL: ${{ vars.PD_SERVER_URL }}
-          VITE_TG_APP_LINK: ${{ vars.PD_TG_APP_LINK }}
+      - run: cp -r packages/client/public/proto redirect/proto
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: packages/client/dist
+          path: redirect
       - id: deployment
         uses: actions/deploy-pages@v4
-
-  server:
-    needs: test
-    if: github.ref == 'refs/heads/main' && vars.PD_PUBLISH == 'true'
-    runs-on: ubuntu-latest
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-    steps:
-      - uses: actions/checkout@v4
-        if: env.CLOUDFLARE_API_TOKEN != ''
-      - uses: actions/setup-node@v4
-        if: env.CLOUDFLARE_API_TOKEN != ''
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-        if: env.CLOUDFLARE_API_TOKEN != ''
-      - run: npm run deploy:server
-        if: env.CLOUDFLARE_API_TOKEN != ''
