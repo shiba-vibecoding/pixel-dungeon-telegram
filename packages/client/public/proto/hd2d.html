@@ -16,6 +16,12 @@
 <style>
   .cam-sel{position:fixed;left:0;right:0;top:calc(max(8px,env(safe-area-inset-top)) + 62px);display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;padding:0 8px;z-index:5;font:12px system-ui,sans-serif;color:rgba(223,230,255,.8)}
   .pd-photo .cam-sel{display:none}
+  .vw-panel{position:fixed;left:8px;right:8px;top:calc(max(8px,env(safe-area-inset-top)) + 58px);z-index:5;background:rgba(9,11,19,.82);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:8px;display:none;flex-direction:column;gap:8px;font:12px system-ui,sans-serif;color:rgba(223,230,255,.85);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .vw-panel.open{display:flex}
+  .pd-photo .vw-panel{display:none}
+  .vw-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .vw-slider{display:flex;align-items:center;gap:8px;flex:1;min-width:170px}
+  .vw-slider input{flex:1;min-width:0}
   .cam-chip{font:600 12px system-ui,sans-serif;min-height:32px;padding:0 10px;color:#dfe6ff;background:rgba(9,11,19,.78);border:1px solid rgba(255,255,255,.2);border-radius:999px;cursor:pointer;touch-action:manipulation}
   .cam-chip[aria-pressed=true]{background:rgba(255,200,87,.2);border-color:#ffc857;color:#ffe3a3}
   .pd-toast{top:calc(max(8px,env(safe-area-inset-top)) + 118px) !important}
@@ -87,10 +93,11 @@ try {
   const hud = S.hud({
     title: 'HD-2D · Three.js r' + THREE.REVISION,
     other: { href: 'pixi.html', label: '← 2D-свет (Pixi)' },
-    hint: 'тап — идти · драг — сдвиг · щипок — зум',
+    hint: 'тап — идти · драг — сдвиг · щипок — зум · ⚙ — вид',
     actions: [
       { label: '🔥 Огненный шар', click: () => castFire() },
       { label: '📷', click: () => enterPhoto() },
+      { label: '⚙', click: () => document.getElementById('vw-panel').classList.toggle('open') },
     ],
     toggles: [
       { id: 'light', on: 'свет вкл', off: 'свет выкл', value: true, change: (v) => { lightOn = v; applyLight(); } },
@@ -219,7 +226,7 @@ try {
   const fx = {
     time: { value: 0 }, tNoise: { value: noiseTex }, tExp: { value: exTex },
     torchPos: { value: new THREE.Vector3(4.5, 0.7, 1.4) }, torchI: { value: 1 }, heroPos: { value: new THREE.Vector3() },
-    beamPos: { value: new THREE.Vector3(8.3, 0, 6.2) }, beamI: { value: 1 },
+    beamPos: { value: new THREE.Vector3(8.3, 0, 6.2) }, beamI: { value: 1 }, fogA: { value: 1 },
   };
   const TORCH_X = 4.5;
   const BEAM = { x: 8.3, z: 6.2, h: 3.7, tilt: new THREE.Euler(-0.2, 0, -0.34) };
@@ -251,7 +258,7 @@ try {
   floor.receiveShadow = true;
   diorama.add(floor);
 
-  const topMat = new THREE.MeshLambertMaterial({ map: tileTex(48), color: 0x80869e });
+  const topMat = new THREE.MeshLambertMaterial({ map: tileTex(48), color: 0xb4bad4, emissive: 0x1a2030 });   // the wall-top art, seen from above
   const faceMats = new Map();
   const faceMat = (idx, h) => {
     const key = idx + ':' + h;
@@ -306,6 +313,7 @@ try {
     uniforms: {
       color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, tWater: { value: waterT },
       time: { value: 0 }, rip: { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)) },
+      lamp: { value: Array.from({ length: 3 }, () => new THREE.Vector4(0, 0, 0, 0)) }, uMirror: { value: 1 },
     },
     vertexShader: `
       uniform mat4 textureMatrix; varying vec4 vUv; varying vec2 vP;
@@ -315,7 +323,7 @@ try {
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }`,
     fragmentShader: `
-      uniform vec3 color; uniform sampler2D tDiffuse; uniform sampler2D tWater; uniform float time; uniform vec4 rip[8];
+      uniform vec3 color; uniform sampler2D tDiffuse; uniform sampler2D tWater; uniform float time; uniform vec4 rip[8]; uniform vec4 lamp[3]; uniform float uMirror;
       varying vec4 vUv; varying vec2 vP;
       #include <common>
       void main() {
@@ -333,7 +341,17 @@ try {
         vec4 pr = vUv; pr.xy += n * pr.w * 2.0;
         vec3 refl = texture2DProj(tDiffuse, pr).rgb;
         vec3 wat = texture2D(tWater, vec2(vP.x * 0.5, vP.y * 0.5 - time * 0.156)).rgb;
-        vec3 col = mix(wat * 0.5, refl, 0.6) + hi * vec3(0.38, 0.5, 0.62) * 0.55;
+        vec3 col = mix(wat * 0.5, refl, 0.6 * uMirror) + hi * vec3(0.38, 0.5, 0.62) * 0.55;
+        // looking straight down a mirror shows little: the lamps (the torch, the hero, a fireball) glint on the surface instead
+        for (int i = 0; i < 3; i++) {
+          vec4 l = lamp[i];
+          if (l.z > 0.0) {
+            vec2 d = vP - l.xy; float L = length(d);
+            float g = exp(-L * L * 0.55) * (0.55 + 0.45 * sin(L * 9.0 - time * 2.4 + n.x * 90.0 + n.y * 60.0));
+            vec3 lc = i == 0 ? vec3(1.0, 0.6, 0.3) : i == 1 ? vec3(1.0, 0.86, 0.62) : vec3(1.0, 0.55, 0.25);
+            col += lc * g * l.z * (0.25 + 0.55 * (1.0 - uMirror));
+          }
+        }
         gl_FragColor = vec4(col, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -350,7 +368,7 @@ try {
     const orig = reflector.onBeforeRender.bind(reflector);
     let n = 0;
     reflector.onBeforeRender = (r, sc, cam) => {
-      if (!hq) return;
+      if (!hq || angle >= 80) return;
       if (touch && (n++ & 1)) return; // phones: the mirror refreshes every other frame
       noReflect.visible = false; floatGroup.visible = false;
       orig(r, sc, cam);
@@ -373,13 +391,82 @@ try {
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h).translate(0, h / 2, 0), mat);
     mesh.scale.y = 1.12;
     mesh.castShadow = true;
+    const group = new THREE.Group();
+    group.add(mesh);
+    const voxMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0xffffff, emissiveIntensity: 0 });
+    const voxMesh = new THREE.Mesh(new THREE.BufferGeometry(), voxMat);
+    voxMesh.castShadow = true;
+    group.add(voxMesh);
     const blob = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.5).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false }));
     blob.position.y = 0.025;
     blob.renderOrder = 1;
-    scene.add(mesh, blob);
-    return { a, mesh, blob, mat };
+    scene.add(group, blob);
+    return { a, mesh, blob, mat, group, voxMesh, voxMat };
   });
+
+  /* ------------------------------------------------ voxel figures: every opaque pixel a cube */
+  // Each animation frame is extruded once and cached. Depth comes from how deep a pixel lies inside the outline:
+  // the outline (limbs, weapon edges) is one voxel thick, the inside of the body two or three.
+  const VS = 1 / 16;
+  const voxCache = new Map();
+  const vcan = document.createElement('canvas'), vctx = vcan.getContext('2d', { willReadFrequently: true });
+  const FACES = [
+    [1, 0, 0, [[1, -1, 1], [1, -1, -1], [1, 1, -1], [1, 1, 1]]],
+    [-1, 0, 0, [[-1, -1, -1], [-1, -1, 1], [-1, 1, 1], [-1, 1, -1]]],
+    [0, 1, 0, [[-1, 1, 1], [1, 1, 1], [1, 1, -1], [-1, 1, -1]]],
+    [0, -1, 0, [[-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1]]],
+    [0, 0, 1, [[-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]]],
+    [0, 0, -1, [[1, -1, -1], [-1, -1, -1], [-1, 1, -1], [1, 1, -1]]],
+  ];
+  function voxGeo(sheet, frame) {
+    const key = sheet + ':' + frame;
+    let g = voxCache.get(key);
+    if (g) return g;
+    const r = S.frameRect(sheet, frame), w = r.w, h = r.h;
+    vcan.width = w; vcan.height = h;
+    vctx.clearRect(0, 0, w, h);
+    vctx.drawImage(r.img, r.sx, r.sy, w, h, 0, 0, w, h);
+    const px = vctx.getImageData(0, 0, w, h).data;
+    const solid = (x, y) => x >= 0 && y >= 0 && x < w && y < h && px[(y * w + x) * 4 + 3] > 128;
+    const dep = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (!solid(x, y)) continue;
+        let d = 3;
+        search: for (let rr = 1; rr <= 2; rr++) for (let dy = -rr; dy <= rr; dy++) for (let dx = -rr; dx <= rr; dx++) if (!solid(x + dx, y + dy)) { d = rr; break search; }
+        dep[y * w + x] = d;
+      }
+    }
+    const zlo = (d) => -(d >> 1), zhi = (d) => (d - 1) >> 1;
+    const has = (x, y, z) => { if (x < 0 || y < 0 || x >= w || y >= h) return false; const d = dep[y * w + x]; return d > 0 && z >= zlo(d) && z <= zhi(d); };
+    const pos = [], nor = [], col = [], idx = [];
+    const c = new THREE.Color(), hs = VS / 2;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const d = dep[y * w + x];
+        if (!d) continue;
+        const o = (y * w + x) * 4;
+        for (let z = zlo(d); z <= zhi(d); z++) {
+          c.setRGB(px[o] / 255 * (z < 0 ? 0.78 : 1), px[o + 1] / 255 * (z < 0 ? 0.78 : 1), px[o + 2] / 255 * (z < 0 ? 0.78 : 1), THREE.SRGBColorSpace);
+          const cx = (x + 0.5 - w / 2) * VS, cy = (h - y - 0.5) * VS, cz = z * VS;
+          for (const f of FACES) {
+            if (has(x + f[0], y - f[1], z + f[2])) continue;
+            const base = pos.length / 3;
+            for (const v of f[3]) { pos.push(cx + v[0] * hs, cy + v[1] * hs, cz + v[2] * hs); nor.push(f[0], f[1], f[2]); col.push(c.r, c.g, c.b); }
+            idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+          }
+        }
+      }
+    }
+    g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setIndex(idx);
+    voxCache.set(key, g);
+    return g;
+  }
 
   /* ------------------------------------------------------ (4) chest and loot */
   const chestFrames = [0, 1, 2, 3].map((i) => rectTex(S.img.chests, i * 16, 16, 16, 16, false)); // the golden chest, row 2
@@ -406,8 +493,8 @@ try {
     torchTexs.push(t);
   }
   const torchMat = new THREE.MeshBasicMaterial({ map: torchTexs[0], alphaTest: 0.1, toneMapped: false, color: new THREE.Color(2.6, 2.2, 1.8) });
-  const torchMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), torchMat);
-  torchMesh.position.set(TORCH_X, 0.62, 1.012);
+  const torchMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0), torchMat);
+  torchMesh.position.set(TORCH_X, 0.12, 1.012);
   scene.add(torchMesh);
   const torchLight = new THREE.PointLight(0xff9448, 13, 0, 1.2);
   torchLight.position.set(TORCH_X, 0.7, 1.45);
@@ -419,6 +506,11 @@ try {
   torchLight.shadow.normalBias = 0.025;
   scene.add(torchLight);
   const heroLight = new THREE.PointLight(0xffe0b0, 5, 8, 1.6);
+  heroLight.shadow.mapSize.set(512, 512);
+  heroLight.shadow.camera.near = 0.15;
+  heroLight.shadow.camera.far = 14;
+  heroLight.shadow.bias = -0.0008;
+  heroLight.shadow.normalBias = 0.03;
   scene.add(heroLight);
   // Two light-only lights, no shadows: the fireball (also its explosion flash) and the chest / loot glow.
   const fireLight = new THREE.PointLight(0xff7a2a, 0, 14, 1.4);
@@ -430,6 +522,7 @@ try {
     ambient.color.set(lightOn ? 0x6878b8 : 0xd8dcf0);
     torchLight.visible = lightOn; torchLight.castShadow = lightOn;
     heroLight.visible = lightOn; fireLight.visible = lightOn; lootLight.visible = lightOn;
+    heroLight.castShadow = lightOn && hq;
     godGroup.visible = lightOn;
   }
 
@@ -482,10 +575,10 @@ try {
   // Fog lying low over the floor, lit by the torch (a cheap fake of it), and dark mist over what the hero has not seen.
   const FOG_VERT = 'varying vec3 vW; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }';
   const fogMat = (layer) => new THREE.ShaderMaterial({
-    uniforms: { time: fx.time, tNoise: fx.tNoise, torchPos: fx.torchPos, torchI: fx.torchI, heroPos: fx.heroPos, beamPos: fx.beamPos, layer: { value: layer } },
+    uniforms: { time: fx.time, tNoise: fx.tNoise, torchPos: fx.torchPos, torchI: fx.torchI, heroPos: fx.heroPos, beamPos: fx.beamPos, fogA: fx.fogA, layer: { value: layer } },
     transparent: true, depthWrite: false, fog: false, vertexShader: FOG_VERT,
     fragmentShader: `
-      uniform sampler2D tNoise; uniform float time, torchI, layer; uniform vec3 torchPos, heroPos, beamPos; varying vec3 vW;
+      uniform sampler2D tNoise; uniform float time, torchI, layer, fogA; uniform vec3 torchPos, heroPos, beamPos; varying vec3 vW;
       void main() {
         vec2 p = vW.xz;
         float n1 = texture2D(tNoise, p * 0.1 + vec2(time * 0.011 + layer * 0.31, layer * 0.57)).r;
@@ -497,7 +590,7 @@ try {
         float hl = 0.6 / (1.0 + 0.8 * dot(dh, dh));
         float bl = 0.5 * exp(-dot(db, db) * 0.25);
         vec3 col = vec3(0.17, 0.2, 0.3) * 0.5 + vec3(1.0, 0.55, 0.25) * tl * 0.5 + vec3(1.0, 0.85, 0.6) * hl * 0.3 + vec3(0.6, 0.8, 1.0) * bl;
-        gl_FragColor = vec4(col, d * edge * 0.2);
+        gl_FragColor = vec4(col, d * edge * 0.2 * fogA);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
@@ -691,20 +784,23 @@ try {
   }
 
   /* ------------------------------------------- camera: one fixed angle, no sway */
-  const ANGLES = [35, 45, 50, 55, 65];
+  const ANGLES = [35, 45, 50, 55, 65, 70, 75, 80, 85, 90];
   const store = {
     get: (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (_) { return d; } },
     set: (k, v) => { try { localStorage.setItem(k, v); } catch (_) { /* private mode */ } },
   };
-  let angle = +store.get('pd-hd2d-angle', '50');
-  if (!ANGLES.includes(angle)) angle = 50;
-  let ortho = store.get('pd-hd2d-ortho', '1') === '1';   // default: orthographic, the clearest for a tile game
-  const view = { tx: W / 2, tz: H / 2 + 0.3, zoom: 1 };
+  let angle = +store.get('pd-hd2d-angle2', '90');       // default: straight down
+  if (!ANGLES.includes(angle)) angle = 90;
+  let ortho = store.get('pd-hd2d-ortho2', '1') === '1';   // default: orthographic
+  let vox = store.get('pd-hd2d-vox2', '1') === '1';       // figures: voxels (else flat sprites)
+  let tiltDeg = +store.get('pd-hd2d-tilt2', '35');        // how far the figures lean back toward the camera
+  if (!(tiltDeg >= 0 && tiltDeg <= 60)) tiltDeg = 35;
+  const view = { tx: W / 2, tz: H / 2 + 1.0, zoom: 1 };
   const orbit = { yaw: 0, pitch: 0 };   // only ever non-zero inside photo mode
   const tanRef = Math.tan(rad(FOV / 2));
   let baseDist = 40, camYaw = 0, fov = ortho ? 2.5 : FOV;
   function fit() {
-    const tanV = Math.tan(rad(fov / 2)), tanH = tanV * camera.aspect, pitch = rad(angle);
+    const tanV = Math.tan(rad(fov / 2)), tanH = tanV * camera.aspect, pitch = rad(Math.min(angle, 89.6));
     const dw = (W + 0.8) / (2 * tanH);
     const dh = (H * Math.sin(pitch) + WALL_H * Math.cos(pitch) + 2.2) / (2 * tanV);
     baseDist = Math.max(dw, dh);
@@ -712,7 +808,7 @@ try {
   function placeCamera() {
     // "Orthographic" is a perspective camera with a very narrow lens, far away: no distortion, and everything else (mirror, shadows) just works.
     const tanV = Math.tan(rad(fov / 2)), k = tanRef / tanV;
-    const dist = Math.max(14 * k, baseDist / view.zoom), pitch = clamp(rad(angle) + orbit.pitch, rad(14), rad(80)), yaw = orbit.yaw;
+    const dist = Math.max(14 * k, baseDist / view.zoom), pitch = clamp(rad(angle) + orbit.pitch, rad(14), rad(89.6)), yaw = orbit.yaw;
     camYaw = yaw;
     camera.position.set(view.tx + dist * Math.sin(yaw) * Math.cos(pitch), dist * Math.sin(pitch), view.tz + dist * Math.cos(yaw) * Math.cos(pitch));
     camera.lookAt(view.tx, 0, view.tz);
@@ -739,7 +835,7 @@ try {
     drag: (x, y, dx, dy) => {
       if (photo) {
         orbit.yaw = clamp(orbit.yaw - dx * 0.006, -1.0, 1.0);
-        orbit.pitch = clamp(orbit.pitch + dy * 0.004, rad(-24), rad(32));
+        orbit.pitch = clamp(orbit.pitch + dy * 0.004, rad(-60), rad(32));
         placeCamera();
         return;
       }
@@ -769,30 +865,33 @@ try {
     },
   });
 
-  /* the temporary camera selector: angle chips and the orthographic toggle, remembered */
+  /* the view panel (⚙): camera angle, orthographic, how the figures are drawn and how far they lean; all remembered */
   {
-    const bar = document.createElement('div');
-    bar.className = 'cam-sel';
-    const label = document.createElement('span');
-    label.textContent = 'угол:';
-    bar.appendChild(label);
-    const chips = ANGLES.map((a) => {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'cam-chip'; b.textContent = a + '°';
-      b.addEventListener('click', () => { angle = a; store.set('pd-hd2d-angle', String(a)); mark(); applyCamera(); });
-      bar.appendChild(b);
-      return b;
-    });
-    const ob = document.createElement('button');
-    ob.type = 'button'; ob.className = 'cam-chip'; ob.textContent = 'ортографическая';
-    ob.addEventListener('click', () => { ortho = !ortho; store.set('pd-hd2d-ortho', ortho ? '1' : '0'); mark(); applyCamera(); });
-    bar.appendChild(ob);
+    const panel = document.createElement('div');
+    panel.className = 'vw-panel open';
+    panel.id = 'vw-panel';
+    const row = () => { const r = document.createElement('div'); r.className = 'vw-row'; panel.appendChild(r); return r; };
+    const chip = (r, text, fn) => { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'cam-chip'; bt.textContent = text; bt.addEventListener('click', fn); r.appendChild(bt); return bt; };
+    const r1 = row();
+    const lab = document.createElement('span'); lab.textContent = 'угол:'; r1.appendChild(lab);
+    const chips = ANGLES.map((a) => chip(r1, a + '°', () => { angle = a; store.set('pd-hd2d-angle2', String(a)); mark(); applyCamera(); }));
+    const ob = chip(r1, 'ортографическая', () => { ortho = !ortho; store.set('pd-hd2d-ortho2', ortho ? '1' : '0'); mark(); applyCamera(); });
+    const r2 = row();
+    const vb = chip(r2, '', () => { vox = !vox; store.set('pd-hd2d-vox2', vox ? '1' : '0'); mark(); });
+    const sl = document.createElement('label'); sl.className = 'vw-slider';
+    sl.innerHTML = 'наклон фигур <input type="range" min="0" max="60" step="1"><b></b>';
+    r2.appendChild(sl);
+    const inp = sl.querySelector('input'), val = sl.querySelector('b');
+    inp.addEventListener('input', () => { tiltDeg = +inp.value; store.set('pd-hd2d-tilt2', String(tiltDeg)); mark(); });
     const mark = () => {
-      chips.forEach((b, i) => b.setAttribute('aria-pressed', ANGLES[i] === angle ? 'true' : 'false'));
+      chips.forEach((bt, i) => bt.setAttribute('aria-pressed', ANGLES[i] === angle ? 'true' : 'false'));
       ob.setAttribute('aria-pressed', ortho ? 'true' : 'false');
+      vb.textContent = vox ? 'фигуры: воксели' : 'фигуры: спрайты';
+      vb.setAttribute('aria-pressed', vox ? 'true' : 'false');
+      inp.value = tiltDeg; val.textContent = tiltDeg + '°';
     };
     mark();
-    document.body.appendChild(bar);
+    document.body.appendChild(panel);
   }
 
   /* ---------------------------------------------------------------- post */
@@ -906,6 +1005,7 @@ try {
     reflector.visible = hq;
     noReflect.visible = hq;
     dof.dof = hq;
+    heroLight.castShadow = lightOn && hq;
     setMSAA();
     hud.setInfo((renderer.capabilities.isWebGL2 ? 'WebGL2' : 'WebGL1') + ' · ' + pr + 'x' + (touch ? ' · touch' : '') + (hq ? '' : ' · low'));
   }
@@ -995,6 +1095,7 @@ try {
   const hide = (list, from) => { for (let i = from; i < list.length; i++) list[i].visible = false; };
   const ripUniform = reflector.material.uniforms.rip.value;
 
+  const leanTo = (o) => { o.rotation.set(-rad(tiltDeg), camYaw, 0, 'YXZ'); };
   function draw(dt) {
     let i;
     if (!S.paused) clock += dt;
@@ -1018,21 +1119,31 @@ try {
       const v = views[i], a = v.a;
       v.mat.map = frameTex(a.sheet, a.frame, a.flip);
       v.mat.emissiveIntensity = a.flash * 0.9;
-      v.mesh.position.set(a.x, 0, a.y + 0.12);
-      v.mesh.rotation.y = camYaw;
+      v.voxMat.emissiveIntensity = a.flash * 0.9;
+      v.group.position.set(a.x, 0, a.y + 0.12);
+      leanTo(v.group);
+      v.mesh.visible = !vox;
+      v.voxMesh.visible = vox;
+      if (vox) { v.voxMesh.geometry = voxGeo(a.sheet, a.frame); v.voxMesh.scale.x = a.flip ? -1.1 : 1.1; v.voxMesh.scale.y = v.voxMesh.scale.z = 1.1; }
       v.blob.position.set(a.x, 0.025, a.y + 0.12);
       v.blob.visible = !a.dead;
     }
     // Walls between the camera and the hero (the low front parapet, the pillars) fade out, so he is always visible.
-    const hx = S.hero.x, hz = S.hero.y + 0.12, tanP = Math.tan(clamp(rad(angle) + orbit.pitch, rad(14), rad(80)));
+    const hx = S.hero.x, hz = S.hero.y + 0.12, tanP = Math.tan(clamp(rad(angle) + orbit.pitch, rad(14), rad(89.6)));
     for (const f of fades) {
       const d = f.z - hz;
-      const near = !photo && Math.abs(f.x - hx) < 1.2 && d > -0.5 && d < f.h / tanP + 1.1;
+      const near = !photo && angle < 80 && Math.abs(f.x - hx) < 1.2 && d > -0.5 && d < f.h / tanP + 1.1;
       f.op += ((near ? 0.2 : 1) - f.op) * Math.min(1, dt / 90);
       for (const m of f.mats) m.opacity = f.op;
     }
-    planted.forEach((m) => { m.rotation.y = camYaw; });
-    chestMesh.rotation.y = camYaw;
+    planted.forEach(leanTo);
+    leanTo(chestMesh);
+    // The torch: standing on the wall top when seen from high up, flat on the wall face when seen from the side.
+    const topView = angle >= 70;
+    torchMesh.position.set(TORCH_X, topView ? WALL_H : 0.12, topView ? 0.92 : 1.012);
+    torchMesh.scale.setScalar(topView ? 1.15 : 1);
+    if (topView) leanTo(torchMesh); else torchMesh.rotation.set(0, 0, 0);
+    flameGlow.position.set(TORCH_X, topView ? WALL_H + 0.4 : 0.7, topView ? 0.95 : 1.06);
     doorMat.map = S.doorOpen ? doorOpen : doorClosed;
     const c = S.chest;
     chestMat.map = chestFrames[c.open ? Math.min(3, 1 + Math.floor(c.t / 110)) : 0];
@@ -1042,9 +1153,18 @@ try {
     const tf = S.torch;
     fx.time.value = S.time / 1000;
     fx.torchI.value = tf.f;
+    fx.fogA.value = angle >= 80 ? 0.4 : 1;
     fx.heroPos.value.set(S.hero.x, 0.5, S.hero.y);
     waterT.offset.y = (S.time / 200 / 32) % 1;
     reflector.material.uniforms.time.value = S.time / 1000;
+    {
+      const wu = reflector.material.uniforms, lamp = wu.lamp.value;
+      wu.uMirror.value = angle >= 80 ? 0 : 1;
+      lamp[0].set(TORCH_X, 1.1, 1.1 * tf.f, 0);
+      lamp[1].set(S.hero.x, S.hero.y, 0.8, 0);
+      const fl2 = S.fire ? S.fire : boom ? { x: boom.x, y: boom.z } : null;
+      lamp[2].set(fl2 ? fl2.x : 0, fl2 ? fl2.y : 0, fl2 ? 1.2 : 0, 0);
+    }
 
     // Torch.
     torchMat.map = torchTexs[tf.frame];
@@ -1052,7 +1172,7 @@ try {
     torchLight.position.set(TORCH_X + (tf.noise - 1) * 0.15, 0.7, 1.45);
     flameGlow.material.opacity = 0.4 * tf.f;
     flameGlow.visible = postOn || lightOn;
-    heroLight.position.set(S.hero.x, 1.7, S.hero.y + 0.9);
+    heroLight.position.set(S.hero.x, 1.3, S.hero.y + 0.05);
     for (i = 0; i < S.sparks.length && i < sparkSprites.length; i++) {
       const s = S.sparks[i], sp = sparkSprites[i];
       sp.visible = true; sp.position.set(s.x + (TORCH_X - 8.5), s.h, 1.05); sp.scale.setScalar(0.07);
@@ -1156,7 +1276,7 @@ try {
       itemMesh.visible = true;
       const bob = it.state === 'ground' ? 0.05 * Math.sin(now / 260) : 0;
       itemMesh.position.set(it.x, it.h + 0.3 + bob, it.y + 0.05);
-      itemMesh.rotation.y = camYaw;
+      itemMesh.rotation.set(-rad(tiltDeg), camYaw, 0, 'YXZ');
       const tk = it.state === 'taken' ? it.takenT / 450 : 0;
       itemMesh.scale.setScalar(1 + tk * 1.2);
       itemMesh.material.opacity = 1;
@@ -1210,7 +1330,7 @@ try {
     const fa = focusing ? dofTarget : S.hero;
     projected.set(fa.x, 0.4, fa.y).project(camera);
     dofU.focus.value += ((projected.y * 0.5 + 0.5) - dofU.focus.value) * Math.min(1, dt / (focusing ? 60 : 200));
-    dofU.boost.value += ((focusing ? 2.6 : 1) - dofU.boost.value) * Math.min(1, dt / 80);
+    dofU.boost.value += ((focusing ? 2.6 : angle >= 80 ? 0 : 1) - dofU.boost.value) * Math.min(1, dt / 80);
     dofU.time.value = S.time / 1000;
     dofU.vig.value = filterMode === 2 ? 0.55 : 0.5;
 
