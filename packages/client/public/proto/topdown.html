@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0c13">
+<title>Демо · Top-down · варианты вида</title>
+<!-- Pixel Dungeon TS, prototype C: strictly top-down, raw WebGL2: a small deferred pipeline (albedo + normal buffers, one lighting pass).
+     Variants (all toggles, combinable): light in the dark, normal maps, depth layers, sewer atmosphere, noir scouting. Not part of the game. -->
+<script src="scene.js"></script>
+<style>
+  .td-panel{position:fixed;left:10px;right:10px;bottom:calc(max(10px,env(safe-area-inset-bottom)) + 70px);z-index:6;background:rgba(9,11,19,.9);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:10px;display:none;flex-direction:column;gap:8px;font:12px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#dfe6ff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .td-panel.open{display:flex}
+  .td-row{display:flex;flex-wrap:wrap;gap:6px}
+  .td-chip{font:600 12px system-ui,sans-serif;min-height:36px;padding:0 11px;color:#dfe6ff;background:rgba(30,36,56,.8);border:1px solid rgba(255,255,255,.2);border-radius:999px;cursor:pointer;touch-action:manipulation}
+  .td-chip[aria-pressed=true]{background:rgba(255,200,87,.2);border-color:#ffc857;color:#ffe3a3}
+  .td-chip.rec{background:rgba(70,140,90,.25);border-color:#6fd08a;color:#c9f5d4}
+  .td-slider{display:flex;align-items:center;gap:8px}
+  .td-slider input{flex:1;min-width:0}
+  .td-float{position:fixed;left:0;top:0;z-index:4;pointer-events:none;font:800 18px ui-monospace,Consolas,monospace;text-shadow:-2px 0 #000,2px 0 #000,0 -2px #000,0 2px #000,0 0 6px #000;white-space:nowrap;will-change:transform}
+</style>
+</head>
+<body>
+<div class="td-panel" id="td-panel">
+  <div class="td-row"><button class="td-chip rec" id="td-rec" type="button">Пресет: рекомендованный</button></div>
+  <div class="td-row" id="td-chips"></div>
+  <label class="td-slider">нормали <input id="td-ns" type="range" min="0" max="3" step="0.1"><b id="td-nsv"></b></label>
+</div>
+<script>
+(function () {
+  'use strict';
+  var S = window.PDScene;
+  try {
+    S.extras = true; // the fireball and mobs that can die (the chest stays off: no chest here)
+    S.load().then(function () { S.chest = null; start(); }).catch(S.fatal);
+  } catch (e) { S.fatal(e); }
+
+  function start() {
+    var W = S.W, H = S.H, T = S.T;
+    var RAYS = 256;
+    var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
+    var rnd = function (a, b) { return a + Math.random() * (b - a); };
+
+    /* ------------------------------------------------------------ settings */
+    var KEY = 'pd-td-v1';
+    var REC = { dark: 1, norm: 1, par: 1, atm: 1, noir: 0, hq: 1, classic: 0, ns: 0.8 };
+    var st = Object.assign({}, REC);
+    try { var saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved) st = Object.assign(st, saved); } catch (_) { /* private mode */ }
+    var save = function () { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (_) { /* ignore */ } };
+    /** What is really on: «Классика» switches every variant off without forgetting the choices. */
+    var eff = function (k) { return st.classic ? 0 : st[k]; };
+
+    /* --------------------------------------------------------------- canvas, GL */
+    var canvas = document.createElement('canvas');
+    canvas.className = 'pd-view';
+    document.body.appendChild(canvas);
+    var gl = canvas.getContext('webgl2', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+    if (!gl) { S.fatal(new Error('нужен WebGL2')); return; }
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var vw = window.innerWidth, vh = window.innerHeight, cw = 1, ch = 1, gw = 1, gh = 1, q = 1;
+
+    function compile(type, src) {
+      var sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+      return sh;
+    }
+    function program(vs, fs) {
+      var p = gl.createProgram();
+      gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
+      gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+      gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+      var u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+      for (var i = 0; i < n; i++) { var info = gl.getActiveUniform(p, i); var nm = info.name.replace('[0]', ''); u[nm] = gl.getUniformLocation(p, info.name); }
+      return { p: p, u: u };
+    }
+
+    var VS_SPRITE = '#version 300 es\n' +
+      'layout(location=0) in vec2 aPos; uniform vec4 uRect; uniform vec4 uUV; uniform vec2 uShift; uniform vec2 uCam; uniform float uScale; uniform vec2 uCenter; uniform vec2 uSize; out vec2 vUV;\n' +
+      'void main(){ vec2 p = uRect.xy + aPos * uRect.zw + uShift; vec2 g = (p - uCam) * uScale + uCenter; gl_Position = vec4(g.x / uSize.x * 2. - 1., 1. - g.y / uSize.y * 2., 0., 1.); vUV = uUV.xy + aPos * uUV.zw; }';
+    var FS_G = '#version 300 es\nprecision highp float; in vec2 vUV; uniform sampler2D uAlb; uniform sampler2D uNor; uniform vec4 uTint; uniform float uHasN;\n' +
+      'layout(location=0) out vec4 oA; layout(location=1) out vec4 oN;\n' +
+      'void main(){ vec4 c = texture(uAlb, vUV); float a = c.a * uTint.a; vec3 n = uHasN > .5 ? texture(uNor, vUV).rgb : vec3(.5, .5, 1.); oA = vec4(c.rgb * uTint.rgb, a); oN = vec4(n, a); }';
+    var FS_F = '#version 300 es\nprecision highp float; in vec2 vUV; uniform sampler2D uAlb; uniform vec4 uTint; out vec4 o;\n' +
+      'void main(){ o = texture(uAlb, vUV) * uTint; }';
+    var VS_FULL = '#version 300 es\nvoid main(){ vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2. - 1., 0., 1.); }';
+    var FS_LIGHT = '#version 300 es\nprecision highp float; precision highp sampler2D;\n' +
+      'uniform sampler2D uAlb; uniform sampler2D uNor; uniform sampler2D uBlue; uniform sampler2D uExp; uniform sampler2D uRays;\n' +
+      'uniform vec2 uCanvas; uniform vec2 uGsize; uniform vec2 uGcenter; uniform float uGscale; uniform vec2 uCam; uniform vec2 uMap;\n' +
+      'uniform vec4 uLp[4]; uniform vec3 uLc[4]; uniform vec3 uVis;\n' +
+      'uniform float uAmb; uniform float uStr; uniform float uNormOn; uniform float uShadowOn; uniform float uDark; uniform float uNoir; uniform float uLightsOn; uniform float uFlash;\n' +
+      'out vec4 o;\n' +
+      'const float TAU = 6.2831853; const float RAYS = 256.;\n' +
+      'float ray(int row, float ang){ float f = ang / TAU * RAYS; float i0 = floor(f); float t = f - i0; int a = int(mod(i0, RAYS)); int b = int(mod(i0 + 1., RAYS));\n' +
+      '  return mix(texelFetch(uRays, ivec2(a, row), 0).r, texelFetch(uRays, ivec2(b, row), 0).r, t); }\n' +
+      'float shadow(int row, vec2 lp, vec2 fp, float R, float softK){ vec2 d = fp - lp; float dist = length(d); if (dist >= R) return 0.; if (dist < .001) return 1.;\n' +
+      '  float ang = atan(d.y, d.x); if (ang < 0.) ang += TAU; float soft = softK / (dist + .7); float acc = 0.;\n' +
+      '  for (int k = 0; k < TAPS; k++){ float a = mod(ang + ((float(k) + .5) / float(TAPS) - .5) * 2. * soft + TAU, TAU); acc += clamp((ray(row, a) - dist) * 3.5 + .5, 0., 1.); }\n' +
+      '  return acc / float(TAPS); }\n' +
+      'void main(){\n' +
+      '  vec2 uv = gl_FragCoord.xy / uCanvas; vec4 alb = texture(uAlb, uv); vec3 nm = texture(uNor, uv).rgb * 2. - 1.;\n' +
+      '  vec2 gp = vec2(uv.x, 1. - uv.y) * uGsize; vec2 cp = ((gp - uGcenter) / uGscale + uCam) / 16.;\n' +
+      '  vec3 N = vec3(0., 0., 1.); if (uNormOn > .5) N = normalize(vec3(nm.xy * uStr, max(nm.z, .15)));\n' +
+      '  vec3 acc = vec3(uAmb);\n' +
+      '  if (uLightsOn > .5) for (int i = 0; i < 4; i++){ vec4 L = uLp[i]; if (L.w <= 0.) continue; vec2 d = L.xy - cp; float dist = length(d); if (dist >= L.z) continue;\n' +
+      '    float att = 1. - dist / L.z; att *= att; float s = uShadowOn > .5 ? shadow(i + 1, L.xy, cp, L.z, .5) : 1.;\n' +
+      '    float nl = uNormOn > .5 ? max(dot(N, normalize(vec3(d, .9))), 0.) * 1.15 : .85; acc += uLc[i] * L.w * att * s * nl; }\n' +
+      '  vec3 lit = alb.rgb * acc * (1. + uFlash * .7); vec3 col = lit; float vis = 1.;\n' +
+      '  if (uDark > .5 || uNoir > .5) vis = shadow(0, uVis.xy, cp, uVis.z, .18);\n' +
+      '  if (uDark > .5){ float ex = texture(uExp, cp / uMap).r; float l = dot(alb.rgb, vec3(.3, .59, .11)); vec3 dim = vec3(.05, .09, .2) * (.35 + 1.4 * l) * ex; col = mix(dim, lit, vis); }\n' +
+      '  if (uNoir > .5){ vec3 bp = texture(uBlue, cp / uMap).rgb; col = mix(bp, lit, vis) + vec3(.1, .4, .7) * vis * (1. - vis) * .9; }\n' +
+      '  o = vec4(col, 1.); }';
+
+    var progG = program(VS_SPRITE, FS_G), progF = program(VS_SPRITE, FS_F);
+    var progL = null, progLTaps = -1;
+    function lightProgram(taps) {
+      if (progLTaps === taps) return progL;
+      progL = program(VS_FULL, FS_LIGHT.replace(/TAPS/g, String(taps)));
+      progLTaps = taps;
+      return progL;
+    }
+
+    var quadBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+    var vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    var emptyVao = gl.createVertexArray();
+
+    /* ------------------------------------------------------------- textures */
+    function tex(src, o) {
+      o = o || {};
+      var t = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+      var f = o.linear ? gl.LINEAR : gl.NEAREST;
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, f);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, f);
+      var w = o.repeat ? gl.REPEAT : gl.CLAMP_TO_EDGE;
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, w);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, w);
+      return { t: t, w: src.width, h: src.height };
+    }
+    function mkCanvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+
+    /** A normal map made from a picture: height from luminance (and its outline), Sobel for the slopes. */
+    function normalMap(src, k, withAlpha) {
+      var w = src.width, h = src.height, c = mkCanvas(w, h), g = c.getContext('2d', { willReadFrequently: true });
+      g.drawImage(src, 0, 0);
+      var d = g.getImageData(0, 0, w, h), px = d.data, ht = new Float32Array(w * h);
+      for (var i = 0; i < w * h; i++) {
+        var a = px[i * 4 + 3] / 255, lum = (0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2]) / 255;
+        ht[i] = withAlpha ? (lum * 0.6 + 0.4) * a : lum;
+      }
+      var at = function (x, y) { return ht[clamp(y, 0, h - 1) * w + clamp(x, 0, w - 1)]; };
+      var out = g.createImageData(w, h);
+      for (var y = 0; y < h; y++) {
+        for (var x = 0; x < w; x++) {
+          var dx = (at(x + 1, y - 1) + 2 * at(x + 1, y) + at(x + 1, y + 1)) - (at(x - 1, y - 1) + 2 * at(x - 1, y) + at(x - 1, y + 1));
+          var dy = (at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1)) - (at(x - 1, y - 1) + 2 * at(x, y - 1) + at(x + 1, y - 1));
+          var nx = -dx * k, ny = -dy * k, nz = 1, l = Math.sqrt(nx * nx + ny * ny + nz * nz), o = (y * w + x) * 4;
+          out.data[o] = (nx / l * 0.5 + 0.5) * 255; out.data[o + 1] = (ny / l * 0.5 + 0.5) * 255; out.data[o + 2] = (nz / l * 0.5 + 0.5) * 255;
+          out.data[o + 3] = px[o + 3];
+        }
+      }
+      g.putImageData(out, 0, 0);
+      return c;
+    }
+    /** An albedo texture and its generated normal map. */
+    function pair(src, k, withAlpha, o) { return { a: tex(src, o), n: tex(normalMap(src, k, withAlpha), o) }; }
+
+    // The level: the floor (and the water's edges), the plants, and the walls, baked apart so they can drift as layers.
+    var TILES = S.img.tiles;
+    function bake(wallsOnly) {
+      var c = mkCanvas(W * T, H * T), g = c.getContext('2d');
+      g.imageSmoothingEnabled = false;
+      var tile = function (idx, x, y) { g.drawImage(TILES, (idx % 16) * T, Math.floor(idx / 16) * T, T, T, x * T, y * T, T, T); };
+      var ground = function (x, y) { var ch = S.kind(x, y); return ch === '.' || ch === 'D'; };
+      for (var y = 0; y < H; y++) {
+        for (var x = 0; x < W; x++) {
+          var ch = S.kind(x, y), wall = S.isWall(x, y) || ch === 'D';
+          if (wallsOnly) { if (wall) tile(S.wallTile(x, y), x, y); continue; }
+          if (wall) { g.fillStyle = '#050608'; g.fillRect(x * T, y * T, T, T); }
+          else if (ch === '~') {
+            var m = (ground(x, y - 1) ? 1 : 0) + (ground(x + 1, y) ? 2 : 0) + (ground(x, y + 1) ? 4 : 0) + (ground(x - 1, y) ? 8 : 0);
+            tile(S.TILE.WATER + m, x, y);
+          } else tile(S.floorTile(x, y), x, y);
+        }
+      }
+      return c;
+    }
+    var floorP = pair(bake(false), 1.7, false);
+    var wallsP = pair(bake(true), 1.7, false);
+    var waterP = pair(S.img.water, 2.0, false, { repeat: true });
+    var featP = pair(S.img.features, 1.6, true);
+    var doorP = [pair(S.tileCanvas(S.TILE.DOOR), 2.6, false), pair(S.tileCanvas(S.TILE.DOOR_OPEN), 2.6, false)];
+    var sheetP = { warrior: pair(S.img.warrior, 1.5, true), rat: pair(S.img.rat, 1.5, true), gnoll: pair(S.img.gnoll, 1.5, true) };
+    var whites = {};
+    var white = function (key) { return whites[key] || (whites[key] = tex(S.whiteCanvas(key))); };
+    var ambientT = tex(S.img.ambient);
+
+    function soft(size, stops, linear) { return tex(S.radialCanvas(size, stops), { linear: linear !== false }); }
+    var dotT = soft(32, [[0, 'rgba(255,255,255,1)'], [0.5, 'rgba(255,255,255,0.6)'], [1, 'rgba(255,255,255,0)']]);
+    var glowT = soft(128, [[0, 'rgba(255,255,255,0.9)'], [0.3, 'rgba(255,255,255,0.35)'], [1, 'rgba(255,255,255,0)']]);
+    var mistT = soft(128, [[0, 'rgba(210,222,245,0.55)'], [0.5, 'rgba(210,222,245,0.22)'], [1, 'rgba(210,222,245,0)']]);
+    var smokeT = soft(128, [[0, 'rgba(60,56,52,0.7)'], [0.6, 'rgba(45,42,40,0.35)'], [1, 'rgba(30,28,26,0)']]);
+    var blobT = soft(32, [[0, 'rgba(0,0,0,0.6)'], [0.6, 'rgba(0,0,0,0.3)'], [1, 'rgba(0,0,0,0)']]);
+    var pixC = mkCanvas(4, 4);
+    pixC.getContext('2d').fillStyle = '#fff'; pixC.getContext('2d').fillRect(0, 0, 4, 4);
+    var pixT = tex(pixC);
+    var ringC = mkCanvas(128, 128);
+    { var rg = ringC.getContext('2d'); rg.strokeStyle = '#fff'; rg.lineWidth = 4; rg.beginPath(); rg.arc(64, 64, 58, 0, 7); rg.stroke(); }
+    var ringT = tex(ringC, { linear: true });
+
+    /** The whole level as a blueprint: outline lines on dark blue. */
+    function blueprint() {
+      var k = 4, c = mkCanvas(W * T * k, H * T * k), g = c.getContext('2d'), cs = T * k;
+      g.fillStyle = '#06142e'; g.fillRect(0, 0, c.width, c.height);
+      for (var y = 0; y < H; y++) {
+        for (var x = 0; x < W; x++) {
+          var ch = S.kind(x, y);
+          g.fillStyle = S.isWall(x, y) ? '#0f2a57' : ch === '~' ? '#0a2a55' : '#08193a';
+          g.fillRect(x * cs, y * cs, cs, cs);
+          if (ch === '~') {
+            g.save(); g.beginPath(); g.rect(x * cs, y * cs, cs, cs); g.clip();
+            g.strokeStyle = 'rgba(74,163,255,0.55)'; g.lineWidth = 2;
+            for (var i = -cs; i < cs * 2; i += 12) { g.beginPath(); g.moveTo(x * cs + i, y * cs); g.lineTo(x * cs + i + cs, y * cs + cs); g.stroke(); }
+            g.restore();
+          }
+        }
+      }
+      g.strokeStyle = 'rgba(70,130,220,0.22)'; g.lineWidth = 1;
+      for (var gx = 0; gx <= W; gx++) { g.beginPath(); g.moveTo(gx * cs, 0); g.lineTo(gx * cs, c.height); g.stroke(); }
+      for (var gy = 0; gy <= H; gy++) { g.beginPath(); g.moveTo(0, gy * cs); g.lineTo(c.width, gy * cs); g.stroke(); }
+      g.strokeStyle = '#8fd8ff'; g.lineWidth = 4; g.lineCap = 'square';
+      var wl = function (x, y) { return S.isWall(x, y); };
+      for (var yy = 0; yy < H; yy++) {
+        for (var xx = 0; xx < W; xx++) {
+          if (!wl(xx, yy)) continue;
+          var seg = function (x1, y1, x2, y2) { g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); };
+          if (!wl(xx, yy - 1) && yy > 0) seg(xx * cs, yy * cs, xx * cs + cs, yy * cs);
+          if (!wl(xx, yy + 1) && yy < H - 1) seg(xx * cs, yy * cs + cs, xx * cs + cs, yy * cs + cs);
+          if (!wl(xx - 1, yy) && xx > 0) seg(xx * cs, yy * cs, xx * cs, yy * cs + cs);
+          if (!wl(xx + 1, yy) && xx < W - 1) seg(xx * cs + cs, yy * cs, xx * cs + cs, yy * cs + cs);
+        }
+      }
+      g.strokeStyle = '#ffd24a'; g.lineWidth = 5;
+      g.strokeRect(S.doorCell.x * cs + 6, S.doorCell.y * cs + 6, cs - 12, cs - 12);
+      g.fillStyle = '#ff9a3c'; g.beginPath(); g.arc(8.5 * cs, 0.5 * cs, 9, 0, 7); g.fill();
+      return c;
+    }
+    var blueT = tex(blueprint(), { linear: true });
+
+    // Per-light ray distances (5 rows: sight, hero, torch, mushroom, fire), and the explored map.
+    var rayData = new Float32Array(RAYS * 5);
+    var rayT = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, rayT);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, RAYS, 5, 0, gl.RED, gl.FLOAT, rayData);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    var exData = new Uint8Array(W * H);
+    var exT = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, exT);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, W, H, 0, gl.RED, gl.UNSIGNED_BYTE, exData);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    /* ---------------------------------------------------- the G-buffer (albedo + normal) */
+    var fbo = gl.createFramebuffer(), gA = null, gN = null;
+    function makeTarget(w, h) {
+      var t = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return t;
+    }
+    function resize() {
+      vw = window.innerWidth; vh = window.innerHeight;
+      q = st.hq ? 1 : 0.5;
+      cw = Math.round(vw * dpr); ch = Math.round(vh * dpr);
+      canvas.width = cw; canvas.height = ch;
+      gw = Math.max(1, Math.round(cw * q)); gh = Math.max(1, Math.round(ch * q));
+      if (gA) { gl.deleteTexture(gA); gl.deleteTexture(gN); }
+      gA = makeTarget(gw, gh); gN = makeTarget(gw, gh);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, gA, 0);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, gN, 0);
+      gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+
+    /* --------------------------------------------------------------- camera */
+    var cam = { x: (W * T) / 2, y: (H * T) / 2 + 18, zoom: 1 };
+    var cam0 = { x: cam.x, y: cam.y };
+    var shakeV = { x: 0, y: 0 };
+    var baseScale = function () { return Math.min(vw / (W * T + 8), vh / (H * T + 40)); };
+    var scaleG = function () { return Math.max(1, Math.round(baseScale() * cam.zoom * dpr * q)); };   // G-buffer px per art px
+    var cssScale = function () { return scaleG() / q / dpr; };                                       // CSS px per art px
+    var camR = { x: 0, y: 0 };
+    function updateCam() {
+      cam.x = clamp(cam.x, 0, W * T); cam.y = clamp(cam.y, 0, H * T);
+      var s = scaleG();
+      camR.x = Math.round(cam.x * s) / s + shakeV.x; camR.y = Math.round(cam.y * s) / s + shakeV.y;
+    }
+    var toWorld = function (sx, sy) { var s = cssScale(); return { x: (sx - vw / 2) / s + camR.x, y: (sy - vh / 2) / s + camR.y }; };
+
+    S.gestures(canvas, {
+      dragStart: function () {},
+      drag: function (x, y, dx, dy) { var s = cssScale(); cam.x -= dx / s; cam.y -= dy / s; updateCam(); },
+      pinch: function (ratio, cx, cy, dcx, dcy) {
+        var before = toWorld(cx, cy);
+        cam.zoom = clamp(cam.zoom * ratio, 0.4, 6);
+        var s = cssScale();
+        cam.x = before.x - (cx - vw / 2) / s - dcx / s; cam.y = before.y - (cy - vh / 2) / s - dcy / s;
+        updateCam();
+      },
+      tap: function (x, y) { var w = toWorld(x, y); S.tapCell(Math.floor(w.x / T), Math.floor(w.y / T)); },
+    });
+
+    /* ----------------------------------------------------------------- drawing */
+    var cur = null;
+    function useSprite(prog, scale, size) {
+      if (cur !== prog) { gl.useProgram(prog.p); cur = prog; }
+      var u = prog.u;
+      gl.uniform2f(u.uCam, camR.x, camR.y);
+      gl.uniform1f(u.uScale, scale);
+      gl.uniform2f(u.uCenter, size[0] / 2, size[1] / 2);
+      gl.uniform2f(u.uSize, size[0], size[1]);
+    }
+    var shift = { x: 0, y: 0 };
+    /** One textured rectangle: art-pixel rect (x, y, w, h), a sub-rectangle of the texture (in 0..1). */
+    function quad(prog, tx, ty, x, y, w, h, uv, tint, nrm) {
+      var u = prog.u;
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tx.t);
+      if (nrm) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, nrm.t); gl.activeTexture(gl.TEXTURE0); }
+      gl.uniform4f(u.uRect, x, y, w, h);
+      gl.uniform4f(u.uUV, uv[0], uv[1], uv[2], uv[3]);
+      gl.uniform2f(u.uShift, shift.x, shift.y);
+      gl.uniform4f(u.uTint, tint[0], tint[1], tint[2], tint[3]);
+      if (u.uHasN) gl.uniform1f(u.uHasN, nrm ? 1 : 0);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    var FULL = [0, 0, 1, 1], WHITE = [1, 1, 1, 1];
+    var setLayer = function (f, on) {
+      if (!on) { shift.x = shift.y = 0; return; }
+      shift.x = Math.round(-(cam.x - cam0.x) * (f - 1) * scaleG()) / scaleG();
+      shift.y = Math.round(-(cam.y - cam0.y) * (f - 1) * scaleG()) / scaleG();
+    };
+    var sheetUV = function (key, frame, flip) {
+      var r = S.frameRect(key, frame), iw = r.img.width, ih = r.img.height;
+      return flip ? [(r.sx + r.w) / iw, r.sy / ih, -r.w / iw, r.h / ih] : [r.sx / iw, r.sy / ih, r.w / iw, r.h / ih];
+    };
+
+    /* ---- lights ---- */
+    var MUSH = S.decor[1];                 // the glowing mushroom: the plant at (1, 7)
+    var lp = new Float32Array(16), lc = new Float32Array(12);
+    var boom = null, shakeT = -1e9, clock = 0;
+    function lightAt(x, y) {
+      var tot = 0, tf = S.torch;
+      tot += Math.max(0, 1 - Math.hypot(x - S.hero.x, y - S.hero.y) / 5.8);
+      tot += 1.3 * Math.max(0, 1 - Math.hypot(x - tf.lx, y - tf.ly) / 8.5);
+      tot += 0.8 * Math.max(0, 1 - Math.hypot(x - (MUSH.x + 0.5), y - (MUSH.y + 0.5)) / 3.6);
+      return Math.min(1, tot);
+    }
+
+    /** LOS of a point from the hero, from the sight rays computed this frame. */
+    var sightR = 11;
+    function visible(x, y) {
+      var dx = x - S.hero.x, dy = y - S.hero.y, d = Math.hypot(dx, dy);
+      if (d < 0.5) return true;
+      if (d > sightR) return false;
+      var a = Math.atan2(dy, dx); if (a < 0) a += Math.PI * 2;
+      var f = (a / (Math.PI * 2)) * RAYS, i0 = Math.floor(f) % RAYS, i1 = (i0 + 1) % RAYS, t = f - Math.floor(f);
+      return d <= rayData[i0] * (1 - t) + rayData[i1] * t + 0.05;
+    }
+
+    /* ---- particles (forward, in cells: x, y on the floor, h up) ---- */
+    var parts = [];
+    function emit(o) { parts.push(Object.assign({ age: 0, vx: 0, vy: 0, vh: 0, g: 0, h: 0, fade: 1, a0: 1, s0: 2, s1: 2, add: true, t: 'pix', col: [1, 1, 1], life: 600 }, o)); }
+    function sparks(x, y, h, n, o) {
+      for (var i = 0; i < n; i++) { var a = rnd(0, 6.28), sp = rnd(o.v0, o.v1); emit({ x: x, y: y, h: h, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6, vh: rnd(o.u0, o.u1), g: o.g, life: rnd(o.l0, o.l1), s0: o.s, s1: o.s, col: o.col[(Math.random() * o.col.length) | 0], t: 'pix' }); }
+    }
+    function handleEvent(e) {
+      if (e.type === 'impact') {
+        boom = { t0: clock, x: e.x, y: e.y };
+        shakeT = clock;
+        sparks(e.x, e.y, 0.4, 34, { v0: 2, v1: 8, u0: 1, u1: 5, g: -11, l0: 350, l1: 800, s: 1.5, col: [[1, 0.9, 0.5], [1, 0.65, 0.2], [1, 0.45, 0.15]] });
+        sparks(e.x, e.y, 0.3, 12, { v0: 0.2, v1: 1.2, u0: 0.5, u1: 1.6, g: 0.5, l0: 1300, l1: 2300, s: 1, col: [[1, 0.4, 0.12], [1, 0.55, 0.2]] });
+        for (var i = 0; i < 6; i++) emit({ t: 'smoke', add: false, x: e.x + rnd(-0.3, 0.3), y: e.y + rnd(-0.2, 0.2), h: 0.3, vh: rnd(0.3, 0.7), vx: rnd(-0.2, 0.2), life: rnd(1100, 1700), s0: 8, s1: 26, a0: 0.8, col: [1, 1, 1] });
+      } else if (e.type === 'mobDie') {
+        for (var j = 0; j < 3; j++) emit({ t: 'smoke', add: false, x: e.x, y: e.y, h: 0.2, vh: rnd(0.3, 0.6), vx: rnd(-0.2, 0.2), life: 1200, s0: 6, s1: 18, a0: 0.7, col: [1, 1, 1] });
+      }
+    }
+    // Atmosphere: steam over the puddle, dust, glints.
+    var steam = [], dust = [], glints = [];
+    for (var yy = 0; yy < H; yy++) for (var xx = 0; xx < W; xx++) if (S.isWater(xx, yy)) for (var gi = 0; gi < 3; gi++) glints.push({ x: xx + rnd(0.1, 0.9), y: yy + rnd(0.1, 0.9), sp: rnd(0.6, 1.6), ph: rnd(0, 6.3) });
+    for (var di = 0; di < 40; di++) dust.push({ x: rnd(1, W - 1), y: rnd(1, H - 1), vx: rnd(-0.12, 0.12), vy: rnd(-0.1, 0.08), ph: rnd(0, 6.3) });
+    var steamIn = 0;
+
+    /* ---- floating numbers: DOM, so the text stays sharp ---- */
+    var floatEls = new Map();
+    function syncFloaters() {
+      var alive = new Set(S.floaters);
+      floatEls.forEach(function (el, f) { if (!alive.has(f)) { el.remove(); floatEls.delete(f); } });
+      var s = cssScale();
+      S.floaters.forEach(function (f) {
+        var el = floatEls.get(f);
+        if (!el) { el = document.createElement('div'); el.className = 'td-float'; el.textContent = f.text; el.style.color = f.color; document.body.appendChild(el); floatEls.set(f, el); }
+        var p = f.age / f.life;
+        var x = (f.x * T - camR.x) * s + vw / 2, y = (f.y * T - camR.y - p * 12) * s + vh / 2;
+        el.style.opacity = p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4;
+        el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,-100%) scale(' + (f.big ? 1.3 : 1) + ')';
+      });
+    }
+
+    /* ---------------------------------------------------------------- one frame */
+    var exCell = -1;
+    function frame(dt) {
+      var i, a;
+      if (!S.paused) clock += dt;
+      var sdt = (dt * S.timeScale) / 1000;
+      S.events.splice(0).forEach(handleEvent);
+
+      var dark = eff('dark'), norm = eff('norm') && st.hq, par = eff('par'), atm = eff('atm'), noir = eff('noir');
+      var lightsOn = dark || norm || noir;
+
+      // Shake: a small shift in the screen plane, nothing else.
+      var shT = clock - shakeT;
+      if (shT < 300) { var amp = 1.8 * Math.exp(-shT / 90); shakeV.x = rnd(-amp, amp); shakeV.y = rnd(-amp, amp); } else shakeV.x = shakeV.y = 0;
+      updateCam();
+
+      // Lights and their shadow rays.
+      var tf = S.torch, hf = 1 + 0.04 * Math.sin(clock / 90) + 0.03 * Math.sin(clock / 41);
+      var heroR = 5.8 * hf, torchR = 8.5 * tf.f, mushR = 3.6 * (0.95 + 0.05 * Math.sin(clock / 400));
+      var fireI = 0, fireR = 6, fx = 0, fy = 0, fireC = [1, 0.55, 0.2];
+      if (S.fire) { fireI = 1.9 + 0.25 * Math.sin(clock / 30); fx = S.fire.x; fy = S.fire.y; }
+      var flash = 0;
+      if (boom) {
+        var bt = clock - boom.t0;
+        if (bt > 700) boom = null;
+        else { fireI = 5.5 * Math.exp(-bt / 80); fireR = 13; fx = boom.x; fy = boom.y; fireC = [1, 0.78, 0.5]; flash = Math.exp(-bt / 90); }
+      }
+      var lights = [
+        [S.hero.x, S.hero.y, heroR, 1.15, [1.0, 0.72, 0.42], 1],
+        [tf.lx, tf.ly, torchR, 1.45, [1.0, 0.55, 0.25], 2],
+        [MUSH.x + 0.5, MUSH.y + 0.5, mushR, st.hq ? 0.95 : 0, [0.3, 1.0, 0.7], 3],
+        [fx, fy, fireR, fireI, fireC, 4],
+      ];
+      S.castLight(S.hero.x, S.hero.y, sightR, RAYS, rayData.subarray(0, RAYS));
+      for (i = 0; i < 4; i++) {
+        var L = lights[i];
+        if (lightsOn && L[3] > 0) S.castLight(L[0], L[1], L[2], RAYS, rayData.subarray((i + 1) * RAYS, (i + 2) * RAYS));
+        lp[i * 4] = L[0]; lp[i * 4 + 1] = L[1]; lp[i * 4 + 2] = L[2]; lp[i * 4 + 3] = lightsOn ? L[3] : 0;
+        lc[i * 3] = L[4][0]; lc[i * 3 + 1] = L[4][1]; lc[i * 3 + 2] = L[4][2];
+      }
+      gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, rayT);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, RAYS, 5, gl.RED, gl.FLOAT, rayData);
+      // Explored cells (the ones seen so far).
+      var hk = S.hero.cx + S.hero.cy * W, changed = false;
+      if (hk !== exCell || true) {
+        exCell = hk;
+        for (var cy = 0; cy < H; cy++) for (var cx = 0; cx < W; cx++) if (!exData[cx + cy * W] && visible(cx + 0.5, cy + 0.5)) { exData[cx + cy * W] = 255; changed = true; }
+        if (changed) { gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, exT); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, W, H, gl.RED, gl.UNSIGNED_BYTE, exData); }
+      }
+
+      /* ---- pass 1: the G-buffer ---- */
+      var sg = scaleG();
+      for (i = 0; i < 5; i++) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, pixT.t); }   // nothing bound may be a render target
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.viewport(0, 0, gw, gh);
+      gl.clearBufferfv(gl.COLOR, 0, [0, 0, 0, 1]);
+      gl.clearBufferfv(gl.COLOR, 1, [0.5, 0.5, 1, 1]);
+      gl.enable(gl.BLEND);
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      cur = null;
+      gl.bindVertexArray(vao);
+      useSprite(progG, sg, [gw, gh]);
+      gl.uniform1i(progG.u.uAlb, 0); gl.uniform1i(progG.u.uNor, 1);
+      var RW = W * T, RH = H * T;
+      // floor: the water scrolls down 5 px a second under it
+      setLayer(1, false);
+      var wsc = (clock / 200) % 32;
+      quad(progG, waterP.a, null, 0, 0, RW, RH, [0, -wsc / 32, RW / 32, RH / 32], WHITE, waterP.n);
+      quad(progG, floorP.a, null, 0, 0, RW, RH, FULL, WHITE, floorP.n);
+      // items: the plants
+      setLayer(1.03, par);
+      S.decor.forEach(function (d) { quad(progG, featP.a, null, d.x * T, d.y * T, T, T, [(d.tile % 16) * T / S.img.features.width, Math.floor(d.tile / 16) * T / S.img.features.height, T / S.img.features.width, T / S.img.features.height], WHITE, featP.n); });
+      // characters
+      setLayer(1.06, par);
+      var order = S.actors.slice().sort(function (p, r) { return p.y - r.y; });
+      order.forEach(function (ac) {
+        if (ac !== S.hero && (dark || noir) && !visible(ac.x, ac.y)) return;
+        var feet = Math.round(ac.y * T + 8), x = Math.round(ac.x * T);
+        quad(progG, { t: blobT.t }, null, x - 7, feet - 5, 14, 6, FULL, WHITE, null);
+        var p = sheetP[ac.def.img];
+        quad(progG, p.a, null, x - ac.def.w / 2, feet - ac.def.h, ac.def.w, ac.def.h, sheetUV(ac.sheet, ac.frame, ac.flip), WHITE, p.n);
+      });
+      // wall tops (and the door)
+      setLayer(1.12, par);
+      quad(progG, wallsP.a, null, 0, 0, RW, RH, FULL, WHITE, wallsP.n);
+      var dp = doorP[S.doorOpen ? 1 : 0];
+      quad(progG, dp.a, null, S.doorCell.x * T, S.doorCell.y * T, T, T, FULL, WHITE, dp.n);
+      // mist layer (lit like everything else)
+      if (par || atm) {
+        setLayer(1.25, par);
+        S.mist.forEach(function (m) {
+          if (!st.hq && (m.r | 0) % 2) return;
+          quad(progG, mistT, null, m.x * T - m.r * T, m.y * T - m.r * T * 0.7, m.r * 2 * T, m.r * 1.4 * T, FULL, [0.8, 0.86, 1, 0.1 * m.a * (0.7 + 0.3 * Math.sin(clock / 1500 + m.ph))], null);
+        });
+      }
+      setLayer(1, false);
+
+      /* ---- pass 2: lighting, to the screen ---- */
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, cw, ch);
+      gl.disable(gl.BLEND);
+      gl.bindVertexArray(emptyVao);
+      var pl = lightProgram(st.hq ? 7 : 3), u = pl.u;
+      gl.useProgram(pl.p); cur = null;
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gA);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, gN);
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, blueT.t);
+      gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, exT);
+      gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, rayT);
+      gl.uniform1i(u.uAlb, 0); gl.uniform1i(u.uNor, 1); gl.uniform1i(u.uBlue, 2); gl.uniform1i(u.uExp, 3); gl.uniform1i(u.uRays, 4);
+      gl.uniform2f(u.uCanvas, cw, ch); gl.uniform2f(u.uGsize, gw, gh); gl.uniform2f(u.uGcenter, gw / 2, gh / 2); gl.uniform1f(u.uGscale, sg);
+      gl.uniform2f(u.uCam, camR.x, camR.y); gl.uniform2f(u.uMap, W, H);
+      gl.uniform4fv(u.uLp, lp); gl.uniform3fv(u.uLc, lc); gl.uniform3f(u.uVis, S.hero.x, S.hero.y, sightR);
+      gl.uniform1f(u.uAmb, dark ? 0.06 : noir ? 0.85 : norm ? 0.72 : 1);
+      gl.uniform1f(u.uStr, st.ns); gl.uniform1f(u.uNormOn, norm || (noir && st.hq && eff('norm')) ? 1 : 0);
+      gl.uniform1f(u.uShadowOn, dark ? 1 : 0); gl.uniform1f(u.uDark, dark ? 1 : 0); gl.uniform1f(u.uNoir, noir ? 1 : 0);
+      gl.uniform1f(u.uLightsOn, lightsOn ? 1 : 0); gl.uniform1f(u.uFlash, flash);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      /* ---- pass 3: what shines, and the weather (drawn over the lit picture) ---- */
+      gl.enable(gl.BLEND);
+      gl.bindVertexArray(vao);
+      var sc = sg / q, csz = [cw, ch];
+      useSprite(progF, sc, csz);
+      gl.uniform1i(progF.u.uAlb, 0);
+      var halo = function (x, y, size, col, al) { quad(progF, glowT, null, x - size / 2, y - size / 2, size, size, FULL, [col[0], col[1], col[2], al], null); };
+      var dot = function (x, y, w, h, col, al) { quad(progF, pixT, null, Math.round(x), Math.round(y), w, h, FULL, [col[0], col[1], col[2], al], null); };
+      // normal blend: the torch itself, hit flashes
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      quad(progF, ambientT, null, 8 * T, 0, T, T, [tf.frame * T / S.img.ambient.width, 0, T / S.img.ambient.width, T / S.img.ambient.height], WHITE, null);
+      S.actors.forEach(function (ac) {
+        if (ac.flash <= 0 || (ac !== S.hero && (dark || noir) && !visible(ac.x, ac.y))) return;
+        var feet = Math.round(ac.y * T + 8), x = Math.round(ac.x * T);
+        var wy = sheetUV(ac.sheet, ac.frame, ac.flip);
+        shift.x = shift.y = 0;
+        if (par) { shift.x = Math.round(-(cam.x - cam0.x) * 0.06 * sg) / sg; shift.y = Math.round(-(cam.y - cam0.y) * 0.06 * sg) / sg; }
+        quad(progF, white(ac.def.img), null, x - ac.def.w / 2, feet - ac.def.h, ac.def.w, ac.def.h, wy, [1, 1, 1, ac.flash * 0.85], null);
+        shift.x = shift.y = 0;
+      });
+      // smoke and steam: normal blend, dimmed where it is dark
+      parts.forEach(function (p) {
+        if (p.t !== 'smoke') return;
+        var k = p.age / p.life, s = p.s0 + (p.s1 - p.s0) * k, lv = lightsOn && dark ? 0.35 + lightAt(p.x, p.y) : 1;
+        quad(progF, smokeT, null, p.x * T - s / 2, (p.y - p.h) * T - s / 2, s, s, FULL, [lv, lv, lv, p.a0 * Math.pow(1 - k, 1) * 0.8], null);
+      });
+      if (atm) {
+        steamIn -= dt;
+        if (steamIn <= 0 && steam.length < (st.hq ? 9 : 4)) { steamIn = rnd(500, 1100); var wc = []; for (var wy2 = 0; wy2 < H; wy2++) for (var wx2 = 0; wx2 < W; wx2++) if (S.isWater(wx2, wy2)) wc.push([wx2, wy2]); var c = wc[(Math.random() * wc.length) | 0]; steam.push({ x: c[0] + rnd(0.2, 0.8), y: c[1] + rnd(0.3, 0.9), h: 0, age: 0, life: rnd(2600, 4200), dx: rnd(-0.15, 0.15) }); }
+        for (i = steam.length - 1; i >= 0; i--) {
+          var sp = steam[i]; sp.age += sdt * 1000; sp.h += 0.28 * sdt; sp.x += sp.dx * sdt;
+          if (sp.age > sp.life) { steam.splice(i, 1); continue; }
+          var kk = sp.age / sp.life, ss = 8 + kk * 18, al = Math.sin(Math.PI * kk) * 0.2 * (0.3 + (dark ? lightAt(sp.x, sp.y) : 0.7));
+          quad(progF, mistT, null, sp.x * T - ss / 2, (sp.y - sp.h) * T - ss / 2, ss, ss * 0.8, FULL, [0.8, 0.9, 1, al], null);
+        }
+      }
+      // additive: halos, glints, ripples, drops, dust, sparks, fireball
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      if (dark) {
+        halo(tf.lx * T, 0.6 * T, 4.2 * T * tf.f, [1, 0.5, 0.2], 0.5 * tf.f);
+        halo((MUSH.x + 0.5) * T, (MUSH.y + 0.5) * T, 3.2 * T, [0.2, 1, 0.65], 0.4 * (0.8 + 0.2 * Math.sin(clock / 400)));
+      }
+      if (atm) {
+        glints.forEach(function (gl2) {
+          var tw = Math.pow(Math.max(0, Math.sin(clock / 1000 * gl2.sp * 3 + gl2.ph)), 12);
+          if (tw > 0.05) { var lv = dark ? lightAt(gl2.x, gl2.y) : 1; dot(gl2.x * T, gl2.y * T, 2, 1, [0.8, 0.95, 1], tw * lv * 0.9); }
+        });
+        S.drops.forEach(function (d) { dot(d.x * T, d.y * T - d.h * T, 1, 2, [0.75, 0.9, 1], 0.95); });
+        for (i = 0; i < dust.length * (st.hq ? 1 : 0.5); i++) {
+          var du = dust[i]; du.x += du.vx * sdt; du.y += du.vy * sdt + Math.sin(clock / 1700 + du.ph) * 0.02 * sdt;
+          if (du.x < 0.5) du.x = W - 0.5; if (du.x > W - 0.5) du.x = 0.5; if (du.y < 0.5) du.y = H - 0.5; if (du.y > H - 0.5) du.y = 0.5;
+          var lv2 = dark ? lightAt(du.x, du.y) : 0.5;
+          if (lv2 > 0.12 && (!(dark || noir) || visible(du.x, du.y))) dot(du.x * T, du.y * T, 1, 1, [1, 0.92, 0.75], lv2 * (0.35 + 0.35 * Math.sin(clock / 500 + du.ph)));
+        }
+      }
+      // ripples (stepping in or beside water) and the tap ring
+      S.ripples.forEach(function (r) {
+        if (r.age < 0 || (!atm && !r.tap)) return;
+        var p = r.age / r.life, rad = 4 + p * (r.tap ? 16 : r.big ? 20 : 13);
+        quad(progF, ringT, null, r.x * T - rad, r.y * T - rad * 0.55, rad * 2, rad * 1.1, FULL, r.tap ? [1, 1, 1, (1 - p) * 0.6] : [0.7, 0.88, 1, (1 - p) * 0.85], null);
+      });
+      // sparks, embers, the fireball and its flash
+      for (i = parts.length - 1; i >= 0; i--) {
+        var pp = parts[i];
+        pp.age += sdt * 1000;
+        if (pp.age >= pp.life) { parts.splice(i, 1); continue; }
+        pp.vh += pp.g * sdt; pp.x += pp.vx * sdt; pp.y += pp.vy * sdt; pp.h = Math.max(0, pp.h + pp.vh * sdt);
+        if (pp.t === 'pix') { var k2 = pp.age / pp.life; dot(pp.x * T, (pp.y - pp.h) * T, Math.max(1, pp.s0 | 0), Math.max(1, pp.s0 | 0), pp.col, (1 - k2) * 1.2); }
+      }
+      if (S.fire) {
+        var fl = 0.85 + 0.15 * Math.sin(clock / 28);
+        halo(S.fire.x * T, (S.fire.y - 0.5) * T, 44 * fl, [1, 0.55, 0.2], 0.9);
+        dot(S.fire.x * T - 2, (S.fire.y - 0.5) * T - 2, 4, 4, [1, 0.95, 0.7], 1);
+        if (sdt > 0) emit({ x: S.fire.x - (S.fire.dx || 0) * 0.2, y: S.fire.y, h: 0.5, vx: rnd(-0.3, 0.3), vy: rnd(-0.2, 0.2), vh: rnd(0, 0.6), g: -1.5, life: rnd(250, 450), s0: 1, col: [1, rnd(0.55, 0.9), 0.3] });
+      }
+      if (boom) {
+        var b2 = clock - boom.t0;
+        if (b2 < 320) halo(boom.x * T, (boom.y - 0.4) * T, 30 + b2 * 0.5, [1, 0.8, 0.5], Math.max(0, 1 - b2 / 300));
+        if (b2 < 450) { var rr = 6 + b2 * 0.14; quad(progF, ringT, null, boom.x * T - rr, boom.y * T - rr * 0.55, rr * 2, rr * 1.1, FULL, [1, 0.7, 0.35, Math.max(0, 1 - b2 / 450) * 0.8], null); }
+      }
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      syncFloaters();
+    }
+
+    /* ---------------------------------------------------------------- the panel */
+    var CHIPS = [['dark', 'Свет в темноте'], ['norm', 'Живые пиксели'], ['par', 'Слои глубины'], ['atm', 'Атмосфера канализации'], ['noir', 'Нуар-разведка'], ['classic', 'Классика']];
+    var chipEls = {};
+    var chipsEl = document.getElementById('td-chips');
+    CHIPS.forEach(function (c) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'td-chip'; b.textContent = c[1];
+      b.addEventListener('click', function () {
+        st[c[0]] = st[c[0]] ? 0 : 1;
+        if (st[c[0]] && c[0] === 'dark') st.noir = 0;     // the two ways of showing what you can't see exclude each other
+        if (st[c[0]] && c[0] === 'noir') st.dark = 0;
+        if (c[0] !== 'classic' && st[c[0]]) st.classic = 0;
+        refresh();
+      });
+      chipsEl.appendChild(b); chipEls[c[0]] = b;
+    });
+    var qb = document.createElement('button');
+    qb.type = 'button'; qb.className = 'td-chip';
+    qb.addEventListener('click', function () { st.hq = st.hq ? 0 : 1; refresh(); resize(); updateCam(); });
+    chipsEl.appendChild(qb);
+    var ns = document.getElementById('td-ns'), nsv = document.getElementById('td-nsv');
+    ns.addEventListener('input', function () { st.ns = +ns.value; refresh(); });
+    document.getElementById('td-rec').addEventListener('click', function () { st = Object.assign(st, REC, { hq: st.hq }); refresh(); });
+    function refresh() {
+      CHIPS.forEach(function (c) { chipEls[c[0]].setAttribute('aria-pressed', st[c[0]] ? 'true' : 'false'); });
+      qb.textContent = st.hq ? 'кач.: высокое' : 'кач.: низкое';
+      qb.setAttribute('aria-pressed', st.hq ? 'true' : 'false');
+      ns.value = st.ns; nsv.textContent = (+st.ns).toFixed(1);
+      info();
+      save();
+    }
+    var hud = S.hud({
+      title: 'Top-down · WebGL2',
+      other: { href: 'hd2d.html', label: 'HD-2D →' },
+      hint: 'тап — идти · драг — сдвиг · щипок — зум · ⚙ — варианты',
+      actions: [
+        { label: '🔥 Огненный шар', click: function () { var r = S.castFireball(); if (r === -1) hud.toast('Нет целей в поле зрения', '#9fd0ff'); } },
+        { label: '⚙', click: function () { document.getElementById('td-panel').classList.toggle('open'); } },
+      ],
+      toggles: [],
+    });
+    function info() { hud.setInfo('WebGL2 · ' + dpr + 'x' + (st.classic ? ' · классика' : '') + (st.hq ? '' : ' · low')); }
+    document.getElementById('td-panel').classList.add('open');
+
+    window.addEventListener('resize', function () { resize(); updateCam(); });
+    resize();
+    updateCam();
+    refresh();
+    S.run(frame);
+    frame(16);
+    window.__td = { st: st, get state() { return st; }, refresh: refresh, gl: gl };
+  }
+})();
+</script>
+</body>
+</html>
