@@ -14,6 +14,11 @@
 </script>
 <script src="scene.js"></script>
 <style>
+  .cam-sel{position:fixed;left:0;right:0;top:calc(max(8px,env(safe-area-inset-top)) + 62px);display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;padding:0 8px;z-index:5;font:12px system-ui,sans-serif;color:rgba(223,230,255,.8)}
+  .pd-photo .cam-sel{display:none}
+  .cam-chip{font:600 12px system-ui,sans-serif;min-height:32px;padding:0 10px;color:#dfe6ff;background:rgba(9,11,19,.78);border:1px solid rgba(255,255,255,.2);border-radius:999px;cursor:pointer;touch-action:manipulation}
+  .cam-chip[aria-pressed=true]{background:rgba(255,200,87,.2);border-color:#ffc857;color:#ffe3a3}
+  .pd-toast{top:calc(max(8px,env(safe-area-inset-top)) + 118px) !important}
   .ph-ui{position:fixed;inset:0;z-index:7;pointer-events:none;display:none;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#dfe6ff}
   .pd-photo .ph-ui{display:block}
   .ph-top{position:absolute;left:0;right:0;top:0;padding:max(10px,env(safe-area-inset-top)) 12px 0;text-align:center}
@@ -82,7 +87,7 @@ try {
   const hud = S.hud({
     title: 'HD-2D · Three.js r' + THREE.REVISION,
     other: { href: 'pixi.html', label: '← 2D-свет (Pixi)' },
-    hint: 'тап — идти · тап по сундуку — открыть · драг — сдвиг · щипок — зум',
+    hint: 'тап — идти · драг — сдвиг · щипок — зум',
     actions: [
       { label: '🔥 Огненный шар', click: () => castFire() },
       { label: '📷', click: () => enterPhoto() },
@@ -257,6 +262,7 @@ try {
   const doorClosed = tileTex(S.TILE.DOOR), doorOpen = tileTex(S.TILE.DOOR_OPEN);
   const doorMat = new THREE.MeshLambertMaterial({ map: doorClosed });
   const pillars = new Set(['6,3', '6,4', '4,6', '5,6']);
+  const fades = [];
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const ch = S.kind(x, y);
@@ -264,7 +270,14 @@ try {
       const h = y === H - 1 ? 0.36 : pillars.has(x + ',' + y) ? 0.82 : WALL_H;
       const side = faceMat(ch === 'P' ? S.TILE.FACE_PIPE : S.TILE.FACE, h);
       const plain = faceMat(S.TILE.FACE, h);
-      const m = new THREE.Mesh(new THREE.BoxGeometry(1, h, 1), [plain, plain, topMat, topMat, ch === 'D' ? doorMat : side, plain]);
+      let mats = [plain, plain, topMat, topMat, ch === 'D' ? doorMat : side, plain];
+      const fadeable = h < WALL_H;   // the low parapet and the pillars: they can stand between the camera and the hero
+      if (fadeable) {
+        const own = new Map();
+        mats = mats.map((q) => { if (!own.has(q)) { const c = q.clone(); c.transparent = true; own.set(q, c); } return own.get(q); });
+        fades.push({ x: x + 0.5, z: y + 0.5, h, op: 1, mats: [...own.values()] });
+      }
+      const m = new THREE.Mesh(new THREE.BoxGeometry(1, h, 1), mats);
       m.position.set(x + 0.5, h / 2, y + 0.5);
       m.castShadow = true; m.receiveShadow = true;
       diorama.add(m);
@@ -506,7 +519,8 @@ try {
         float n = texture2D(tNoise, g.xz * 0.09 + vec2(time * 0.01, -time * 0.006)).r;
         float n2 = texture2D(tNoise, g.xz * 0.2 - vec2(time * 0.015, 0.0)).r;
         float cloud = clamp(0.55 + 0.9 * (n * 0.6 + n2 * 0.4 - 0.45), 0.35, 1.0);
-        gl_FragColor = vec4(0.015, 0.02, 0.04, (1.0 - ex) * cloud * 0.84);
+        float inRoom = smoothstep(-0.6, 0.2, g.x) * smoothstep(${W}.0 + 0.6, ${W}.0 - 0.2, g.x) * smoothstep(-0.6, 0.2, g.z) * smoothstep(${H}.0 + 0.6, ${H}.0 - 0.2, g.z);
+        gl_FragColor = vec4(0.006, 0.008, 0.016, (1.0 - ex) * cloud * 0.84 * inRoom);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
@@ -656,7 +670,7 @@ try {
     else if (e.type === 'fireLaunch') sparks(e.x, 0.75, e.y, 6, { v0: 0.5, v1: 2, u0: 0, u1: 1, g: -2, l0: 250, l1: 450, s: 0.12, color: [0xffd070, 0xff9030] });
     else if (e.type === 'impact') {
       boom = { t0: now, x: e.x, z: e.y };
-      shake = 0.34; shakeT = now;
+      shake = 1; shakeT = now;
       dofUntil = now + 800; dofTarget = e.target;
       sparks(e.x, 0.6, e.y, 30, { v0: 2, v1: 7, u0: 1, u1: 4.5, g: -9, l0: 350, l1: 800, s: 0.11, color: [0xffe08a, 0xffa030, 0xff7a20] });
       sparks(e.x, 0.5, e.y, 10, { v0: 0.2, v1: 1.1, u0: 0.5, u1: 1.6, g: 0.4, l0: 1300, l1: 2300, s: 0.085, color: [0xff6a1f, 0xff8a30] });
@@ -676,25 +690,39 @@ try {
     }
   }
 
-  /* ----------------------------------------------- camera, orbit, parallax */
-  const PITCH = rad(40);
+  /* ------------------------------------------- camera: one fixed angle, no sway */
+  const ANGLES = [35, 45, 50, 55, 65];
+  const store = {
+    get: (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (_) { return d; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch (_) { /* private mode */ } },
+  };
+  let angle = +store.get('pd-hd2d-angle', '50');
+  if (!ANGLES.includes(angle)) angle = 50;
+  let ortho = store.get('pd-hd2d-ortho', '1') === '1';   // default: orthographic, the clearest for a tile game
   const view = { tx: W / 2, tz: H / 2 + 0.3, zoom: 1 };
-  const tilt = { y: 0, p: 0, ty: 0, tp: 0 };
-  const orbit = { yaw: 0, pitch: 0 };
-  let baseDist = 40, camYaw = 0;
+  const orbit = { yaw: 0, pitch: 0 };   // only ever non-zero inside photo mode
+  const tanRef = Math.tan(rad(FOV / 2));
+  let baseDist = 40, camYaw = 0, fov = ortho ? 2.5 : FOV;
   function fit() {
-    const tanV = Math.tan(rad(FOV / 2)), tanH = tanV * camera.aspect;
+    const tanV = Math.tan(rad(fov / 2)), tanH = tanV * camera.aspect, pitch = rad(angle);
     const dw = (W + 0.8) / (2 * tanH);
-    const dh = (H * Math.sin(PITCH) + WALL_H * Math.cos(PITCH) + 2.2) / (2 * tanV);
+    const dh = (H * Math.sin(pitch) + WALL_H * Math.cos(pitch) + 2.2) / (2 * tanV);
     baseDist = Math.max(dw, dh);
   }
   function placeCamera() {
-    const dist = Math.max(14, baseDist / view.zoom), pitch = clamp(PITCH + tilt.p + orbit.pitch, rad(14), rad(78)), yaw = tilt.y + orbit.yaw;
+    // "Orthographic" is a perspective camera with a very narrow lens, far away: no distortion, and everything else (mirror, shadows) just works.
+    const tanV = Math.tan(rad(fov / 2)), k = tanRef / tanV;
+    const dist = Math.max(14 * k, baseDist / view.zoom), pitch = clamp(rad(angle) + orbit.pitch, rad(14), rad(80)), yaw = orbit.yaw;
     camYaw = yaw;
     camera.position.set(view.tx + dist * Math.sin(yaw) * Math.cos(pitch), dist * Math.sin(pitch), view.tz + dist * Math.cos(yaw) * Math.cos(pitch));
     camera.lookAt(view.tx, 0, view.tz);
+    camera.fov = fov; camera.near = Math.max(1, dist - 45); camera.far = dist + 90;
+    camera.updateProjectionMatrix();
+    scene.fog.near = dist + 25; scene.fog.far = dist + 85;
+    dustPts.material.size = 0.05 / tanV;
     camera.updateMatrixWorld(true);
   }
+  function applyCamera() { fov = ortho ? 2.5 : FOV; fit(); placeCamera(); }
   fit();
   placeCamera();
 
@@ -705,22 +733,6 @@ try {
   };
   let anchor = null;
   const clampView = () => { view.tx = clamp(view.tx, -3, W + 3); view.tz = clamp(view.tz, -3, H + 3); };
-
-  let tiltBase = null, tiltAsked = false;
-  const onOrient = (e) => {
-    if (photo || e.gamma == null || e.beta == null) return;
-    if (!tiltBase) tiltBase = { g: e.gamma, b: e.beta };
-    tilt.ty = clamp((e.gamma - tiltBase.g) / 25, -1, 1) * 0.14;
-    tilt.tp = clamp((e.beta - tiltBase.b) / 25, -1, 1) * -0.08;
-  };
-  const askTilt = () => {
-    if (tiltAsked || typeof DeviceOrientationEvent === 'undefined') return;
-    tiltAsked = true;
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission().then((r) => { if (r === 'granted') window.addEventListener('deviceorientation', onOrient); }).catch(() => {});
-    } else window.addEventListener('deviceorientation', onOrient);
-  };
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') askTilt();
 
   S.gestures(renderer.domElement, {
     dragStart: (x, y) => { anchor = ground(x, y); },
@@ -745,7 +757,7 @@ try {
       if (before && after) { view.tx += before.x - after.x; view.tz += before.z - after.z; clampView(); placeCamera(); }
     },
     tap: (x, y) => {
-      audio(); askTilt();
+      audio();
       if (photo) return;
       ray.setFromCamera(new THREE.Vector2((x / vw) * 2 - 1, -((y / vh) * 2 - 1)), camera);
       if (ray.intersectObject(chestMesh, false).length) { S.tapChest(); return; }
@@ -755,8 +767,33 @@ try {
       if (S.chest && cx === S.chest.x && cz === S.chest.y) S.tapChest();
       else S.tapCell(cx, cz);
     },
-    hover: (x, y) => { if (!tiltBase && !photo) { tilt.ty = ((x / vw) - 0.5) * 2 * 0.11; tilt.tp = ((y / vh) - 0.5) * 2 * -0.05; } },
   });
+
+  /* the temporary camera selector: angle chips and the orthographic toggle, remembered */
+  {
+    const bar = document.createElement('div');
+    bar.className = 'cam-sel';
+    const label = document.createElement('span');
+    label.textContent = 'угол:';
+    bar.appendChild(label);
+    const chips = ANGLES.map((a) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'cam-chip'; b.textContent = a + '°';
+      b.addEventListener('click', () => { angle = a; store.set('pd-hd2d-angle', String(a)); mark(); applyCamera(); });
+      bar.appendChild(b);
+      return b;
+    });
+    const ob = document.createElement('button');
+    ob.type = 'button'; ob.className = 'cam-chip'; ob.textContent = 'ортографическая';
+    ob.addEventListener('click', () => { ortho = !ortho; store.set('pd-hd2d-ortho', ortho ? '1' : '0'); mark(); applyCamera(); });
+    bar.appendChild(ob);
+    const mark = () => {
+      chips.forEach((b, i) => b.setAttribute('aria-pressed', ANGLES[i] === angle ? 'true' : 'false'));
+      ob.setAttribute('aria-pressed', ortho ? 'true' : 'false');
+    };
+    mark();
+    document.body.appendChild(bar);
+  }
 
   /* ---------------------------------------------------------------- post */
   const sampleCount = () => (!hq ? 0 : touch ? 2 : 4);
@@ -910,7 +947,6 @@ try {
     if (photo) return;
     photo = true; S.paused = true;
     zoomBefore = view.zoom;
-    tilt.ty = tilt.tp = tilt.y = tilt.p = 0;
     orbit.yaw = orbit.pitch = 0;
     document.body.classList.add('pd-photo');
     setFilter(0);
@@ -966,14 +1002,14 @@ try {
     const sdt = S.paused ? 0 : (dt * S.timeScale) / 1000;
     S.events.splice(0).forEach(handleEvent);
 
-    // Camera: parallax eases to its target, shake on top.
-    const k = Math.min(1, dt / 120);
-    tilt.y += (tilt.ty - tilt.y) * k; tilt.p += (tilt.tp - tilt.p) * k;
-    shake = shake > 0.002 ? 0.34 * Math.exp(-(now - shakeT) / 160) : 0;
-    if (shake > 0 || tilt.y !== 0 || tilt.p !== 0 || Math.abs(tilt.ty - tilt.y) > 1e-4) placeCamera();
+    // Camera: it never moves by itself. The one exception is the explosion's shake: short, small, a pure shift in the screen plane (no rotation).
+    const wasShaking = shake > 0;
+    shake = (clock - shakeT) < 400 ? 0.09 * Math.exp(-(clock - shakeT) / 110) : 0;
+    if (wasShaking && shake === 0) placeCamera();
     if (shake > 0) {
-      camera.position.x += rnd(-shake, shake); camera.position.y += rnd(-shake, shake) * 0.6; camera.position.z += rnd(-shake, shake);
-      camera.lookAt(view.tx, 0, view.tz);
+      placeCamera();
+      const e = camera.matrixWorld.elements, dx = rnd(-shake, shake), dy = rnd(-shake, shake);
+      camera.position.x += e[0] * dx + e[4] * dy; camera.position.y += e[1] * dx + e[5] * dy; camera.position.z += e[2] * dx + e[6] * dy;
       camera.updateMatrixWorld(true);
     }
 
@@ -986,6 +1022,14 @@ try {
       v.mesh.rotation.y = camYaw;
       v.blob.position.set(a.x, 0.025, a.y + 0.12);
       v.blob.visible = !a.dead;
+    }
+    // Walls between the camera and the hero (the low front parapet, the pillars) fade out, so he is always visible.
+    const hx = S.hero.x, hz = S.hero.y + 0.12, tanP = Math.tan(clamp(rad(angle) + orbit.pitch, rad(14), rad(80)));
+    for (const f of fades) {
+      const d = f.z - hz;
+      const near = !photo && Math.abs(f.x - hx) < 1.2 && d > -0.5 && d < f.h / tanP + 1.1;
+      f.op += ((near ? 0.2 : 1) - f.op) * Math.min(1, dt / 90);
+      for (const m of f.mats) m.opacity = f.op;
     }
     planted.forEach((m) => { m.rotation.y = camYaw; });
     chestMesh.rotation.y = camYaw;
